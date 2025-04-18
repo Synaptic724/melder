@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional, List
-from thread_factory.utils.data_structures.tree_manager import TreeNode
+from melder.utilities.tree_manager import TreeNode
 from tree_manager import TreeManager, TreeNode
 import threading
 import abc

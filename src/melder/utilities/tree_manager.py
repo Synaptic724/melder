@@ -1,11 +1,8 @@
 from typing import List, Optional
 import uuid
-from thread_factory.utils.disposable import Disposable
+from melder.utilities.interfaces import IDisposable
 
-
-# TODO 1: Rename "Tree" to "Synaptic" or "Pulse Storage" later.
-
-class TreeNode(Disposable):
+class TreeNode(IDisposable):
     """
     Represents a node in a hierarchy (with categories and items).
     Categories group items and other categories. Items hold actual content.
@@ -73,7 +70,7 @@ class TreeNode(Disposable):
 
 
 
-class TreeManager(Disposable):
+class TreeManager(IDisposable):
     """
     Manages a hierarchy of TreeNode objects (categories and items).
     """

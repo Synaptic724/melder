@@ -1,0 +1,1 @@
+# this will be used to detect objects and ensure they can be instanced, it will also detect circular references and set dag maps properly
