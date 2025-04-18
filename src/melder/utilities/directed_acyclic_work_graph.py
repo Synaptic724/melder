@@ -188,7 +188,7 @@ class ExecutionContext(IDisposable):
         self.dispose()
 
 
-class Node(Disposable):
+class Node(IDisposable):
     """
     Represents a node in the Directed Acyclic Graph (DAG).
 
