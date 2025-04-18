@@ -1,6 +1,6 @@
 # Melder
 
-**Melder** is a lightweight, high-performance Dependency Injection (DI) container for Python 3.13+ applications.
+**Melder** is a lightweight, high-performance Dependency Injection (DI) container for no-gil Python 3.13+ applications.
 
 Designed for minimal overhead, clean architecture, and simple service management —  
 Melder provides core service registration, lifetime management, and resolution with a focus on speed and clarity.
@@ -25,9 +25,9 @@ Coming soon after initial release.
 
 Once published, you will be able to install Melder via pip:
 
-<bash>
+~~~
 pip install melder
-</bash>
+~~~
 
 ---
 
@@ -35,7 +35,7 @@ pip install melder
 
 Register services and resolve them easily:
 
-<bash>
+~~~
 from melder import Container
 
 container = Container()
@@ -48,14 +48,14 @@ container.register_singleton(DatabaseConnection)
 
 # Resolve the service
 db = container.resolve(DatabaseConnection)
-</bash>
+~~~
 
 Scopes (planned for v0.3):
 
-<bash>
+~~~
 with container.create_scope() as scope:
     service = scope.resolve(DatabaseConnection)
-</bash>
+~~~
 
 ---
 
