@@ -1,6 +1,6 @@
 import unittest
 import time
-from thread_factory.runtime.strategies.factory.directed_acyclic_work_graph import Node, Edge, DirectedAcyclicWorkGraph, StateObject, ExecutionContext
+from melder.utilities.directed_acyclic_work_graph import Node, Edge, DirectedAcyclicWorkGraph, StateObject, ExecutionContext
 
 # Assuming you have all your DAG code in a module named 'dag_module'
 # For example:
