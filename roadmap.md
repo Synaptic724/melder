@@ -14,6 +14,7 @@
   - Thread-safe registrations
   - No scopes yet
   - Basic disposal support (context managers)
+  - thread-safe
 
 - **Internal Disposable Management:**
   - Services supporting `__enter__`/`__exit__` are auto-managed
