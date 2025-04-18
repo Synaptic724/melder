@@ -16,6 +16,7 @@ Melder provides core service registration, lifetime management, and resolution w
 - 🧠 **Scoping**: Support for transient, scoped, and singleton services.
 - 🔍 **Observability**: (Upcoming) Built-in diagnostics and dependency graph visualization.
 - 🌐 **Modern Python**: Async-compatible design planned for full coroutine support.
+- 🧬 **No-GIL**: Built for the future of Python with no-GIL support.
 
 ---
 
