@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel>=0.37"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "melder"
+version = "0.1.0"
+description = "Lightweight, high-performance dependency injection container for Python 3.13+ applications."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.13"
+license = "Apache-2.0"
+
+authors = [
+    { name = "Mark Geleta", email = "SynapticAISystems@gmail.com" }
+]
+
+maintainers = [
+    { name = "Mark Geleta", email = "SynapticAISystems@gmail.com" }
+]
+
+keywords = [
+    "dependency injection",
+    "DI container",
+    "service container",
+    "dependency management",
+    "python di",
+    "dependency injection container",
+    "lightweight di",
+    "scoped services",
+    "singleton services",
+    "service resolution",
+    "melder",
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries",
+    "Environment :: Console",
+]
+
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Synaptic724/melder"
+Repository = "https://github.com/Synaptic724/melder"
+Issues = "https://github.com/Synaptic724/melder/issues"
+Documentation = "https://github.com/Synaptic724/melder"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["melder*"]
+exclude = [
+    "tests*", "docs*", "examples*", "Plans*", "benchmarks*", "benchmark_data*",
+    ".github*", ".venv*", "__pycache__", "*.egg-info", "TestIdeas"
+]
