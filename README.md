@@ -1,11 +1,13 @@
 # Melder
 
-**Melder** is a lightweight, high-performance Dependency Injection (DI) container for no-gil Python 3.13+ applications.
+**Melder** is a lightweight, high-performance, thread-safe Dependency Injection (DI) container built for the future of Python 3.13+ and the No-GIL era.
 
-Designed for minimal overhead, clean architecture, and simple service management —  
-Melder provides core service registration, lifetime management, and resolution with a focus on speed and clarity.
+Designed for clarity, speed, and modular architecture —  
+Melder melds your services together with minimal overhead, supporting transient, scoped, and singleton lifetimes out of the box.
 
-> **"Meld your services, unify your system."**
+Thread-safe by design, Melder enables safe concurrent service resolution across multiple threads — without sacrificing performance.
+
+> **"Meld your services. Unify your system. Build without limits."**
 
 ---
 
@@ -17,6 +19,7 @@ Melder provides core service registration, lifetime management, and resolution w
 - 🔍 **Observability**: (Upcoming) Built-in diagnostics and dependency graph visualization.
 - 🌐 **Modern Python**: Async-compatible design planned for full coroutine support.
 - 🧬 **No-GIL**: Built for the future of Python with no-GIL support.
+- 🛡️ **Thread-Safe**: Designed for safe concurrent resolution across multiple threads.
 
 ---
 
@@ -105,8 +108,12 @@ Melder is licensed under the [Apache 2.0 License](LICENSE).
 
 ## 🤝 Contributing
 
-Contributions are welcome!  
-Please open an issue or submit a pull request to help improve Melder.
+Melder is currently developed as a **solo project** and is **not open to external contributions** at this time.
+
+Bug reports and feature suggestions are welcome via [issues](https://github.com/Synaptic724/melder/issues),  
+but pull requests will not be accepted.
+
+Thank you for respecting the creative direction of the project.
 
 ---
 
