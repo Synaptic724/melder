@@ -120,7 +120,7 @@ class StateObject(IDisposable):
 
 
 
-class ExecutionContext(Disposable):
+class ExecutionContext(IDisposable):
     """
     Abstract base class for defining the 'work to be done' within a Node.
 
@@ -395,7 +395,7 @@ class Node(Disposable):
             self.disposed = True  # Mark the node as disposed
 
 
-class Edge(Disposable):
+class Edge(IDisposable):
     """
     Represents a directed edge in the DAG, connecting two nodes.
 
@@ -427,7 +427,7 @@ class Edge(Disposable):
             self.from_node = None  # Remove the reference to the source node
             self.to_node = None  # Remove the reference to the destination node
 
-class DirectedAcyclicWorkGraph(Disposable):
+class DirectedAcyclicWorkGraph(IDisposable):
     """
     Represents a Directed Acyclic Graph (DAG) composed of nodes and edges.
 

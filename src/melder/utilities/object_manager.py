@@ -1,12 +1,11 @@
 import uuid
 from typing import Optional, List
-from melder.utilities.tree_manager import TreeNode
-from tree_manager import TreeManager, TreeNode
+from melder.utilities.interfaces import IDisposable
 import threading
 import abc
 
 
-class Node(TreeNode):
+class Node(IDisposable):
     """
     Node is a subclass of TreeNode that represents a node in the tree structure.
     It can be extended with additional attributes or methods if needed.
@@ -14,7 +13,8 @@ class Node(TreeNode):
     def __init__(self,
                  name: str,
                  node_type: str,
-                 object_type: type = None):
+                 object_type: Optional[type] = None,
+                 metadata: Optional[dict] = None):
         if node_type not in {"category", "item"}:
             raise ValueError("Type must be 'category' or 'item'.")
         if node_type == "item" and object_type is None:
@@ -26,7 +26,12 @@ class Node(TreeNode):
             "interfaces": Node.find_all_abc_names_for_class(object_type),
         }
 
-        super().__init__(name=name, type=node_type, metadata=metadata)
+        self.name: str = name
+        self.type: str = node_type
+        self.metadata: dict = metadata or {}
+        self.children: List["Node"] = []
+        self.unique_id: str = str(uuid.uuid4())
+        self.disposed: bool = False
 
     @staticmethod
     def find_all_abc_names_for_class(cls):
@@ -52,30 +57,51 @@ class Node(TreeNode):
 
         return list(abc_names)
 
+    def add_child(self, child: "Node") -> None:
+        if self.type != "category":
+            raise ValueError("Only category nodes can have children (items cannot have children).")
+        self.children.append(child)
 
 
-class ObjectManager(TreeManager):
+    def dispose(self):
+        """
+        Dispose of this node and all its children recursively.
+        """
+        if self.disposed:
+            return
+
+        for child in self.children:
+            child.dispose()
+
+        # Here you would release any resources held by this node.
+        self.disposed = True
+        if isinstance(self.metadata, dict):
+            self.metadata.clear()
+        self.children.clear()
+
+
+class ScopeManager(IDisposable):
     """
     ObjectManager is a singleton that manages a TreeManager instance.
     """
 
     _instance = None
-    _lock = threading.Lock()
+    _lock = threading.RLock()
     _initialized = False
 
     def __new__(cls, name: str = "Root"):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = super(ObjectManager, cls).__new__(cls)
+                    cls._instance = super(ScopeManager, cls).__new__(cls)
         return cls._instance
 
     def __init__(self, name: str = "Root"):
-        if not ObjectManager._initialized:
-            super().__init__(name)
-            ObjectManager._initialized = True
-            # Your specific ObjectManager initialization here if needed
-            self.RLock = threading.RLock()
+        if not ScopeManager._initialized:
+            ScopeManager._initialized = True
+            self.root: Node = Node(name=name, type="category")
+            self.RLock = ScopeManager._lock
+            self.disposed = False
 
 
     def add_object(self, name: str, node_type: str, parent_name: str, object_type: type) -> None:
@@ -119,6 +145,18 @@ class ObjectManager(TreeManager):
                 return child
         return None
 
+    def detailed_find_node(self, name: str, parent_name: str) -> Optional[Node]:
+        """
+        Finds a node by name under the specified parent.
+        """
+        parent_node = self.find_node(parent_name)
+        if not parent_node:
+            raise ValueError(f"Parent node '{parent_name}' not found.")
+
+        for child in parent_node.children:
+            if child.name == name:
+                return child
+        return None
 
     def get_parent_node(self, name: str) -> Optional[Node]:
         """
@@ -134,17 +172,6 @@ class ObjectManager(TreeManager):
         return None
 
 
-
-
-class TreeManager(Disposable):
-    """
-    Manages a hierarchy of TreeNode objects (categories and items).
-    """
-
-    def __init__(self, name: str):
-        self.disposed: bool = False
-        self.root: TreeNode = TreeNode(name=name, type="category")
-
     def add_node(self, name: str, type: str, parent_name: str, metadata: Optional[dict] = None) -> None:
         parent_node = self.find_node(parent_name)
         if not parent_node:
@@ -152,10 +179,10 @@ class TreeManager(Disposable):
         if parent_node.type != "category":
             raise ValueError(f"Parent node '{parent_name}' must be a category.")
 
-        new_node = TreeNode(name=name, type=type, metadata=metadata)
+        new_node = Node(name=name, type=type, metadata=metadata)
         parent_node.add_child(new_node)
 
-    def find_node(self, name: str) -> Optional[TreeNode]:
+    def find_node(self, name: str) -> Optional[Node]:
         """
         Finds a node by name using breadth-first search.
         """
@@ -165,19 +192,6 @@ class TreeManager(Disposable):
             if current.name == name:
                 return current
             queue.extend(current.children)
-        return None
-
-    def detailed_find_node(self, name: str, parent_name: str) -> Optional[TreeNode]:
-        """
-        Finds a node by name under the specified parent.
-        """
-        parent_node = self.find_node(parent_name)
-        if not parent_node:
-            raise ValueError(f"Parent node '{parent_name}' not found.")
-
-        for child in parent_node.children:
-            if child.name == name:
-                return child
         return None
 
     def remove_node(self, name: str) -> None:
@@ -216,5 +230,6 @@ class TreeManager(Disposable):
             return
         self.root.dispose()
         self.root = None
+        ScopeManager._instance = None
         self.disposed = True
 
