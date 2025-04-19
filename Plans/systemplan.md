@@ -2,7 +2,7 @@
 
 ## Core Vocabulary
 - `bind()` → register a service into the container
-- `create_state()` → create a lifetime boundary ("state")
+- `create_conduit()` → create a lifetime boundary ("state")
 - `meld()` → resolve (create) a service
 - `seal()` → finalize (dispose) a state
 - `conduit.meld()` → resolve a service within a state
