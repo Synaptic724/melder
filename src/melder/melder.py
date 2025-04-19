@@ -1,3 +1,5 @@
+import uuid
+
 #meld() = resolver
 #create_state() = scope
 #bind() = registration
@@ -17,17 +19,3 @@
 # object UUID
 # object creation time
 #---------------------------------
-#
-#
-#
-#
-#
-#
-#\
-#
-#
-#
-#
-#
-#
-#
