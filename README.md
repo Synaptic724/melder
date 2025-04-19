@@ -15,40 +15,6 @@ Melder solves Dependency Injection’s problems by evolving it into scoped dynam
 
 ---
 
-## 🧱 Philosophy: No More Technical Debt
-
-With the removal of Python's greatest technical debt — the Global Interpreter Lock (GIL) —  
-there are no more excuses.
-
-**Melder is not just another helper library.**  
-It is a foundation for serious Python systems built for the no-GIL, fully concurrent future.
-
-For decades, Python survived without true Dependency Injection because it could get away with it:  
-- Scripts were small.  
-- Services were short-lived.  
-- Single-threaded execution papered over architecture flaws.
-- Tools like multiprocessing acted as a crutch.
-
-**But those days are over. It's time to move forward.**
-
-Python 3.13+ introduces true multithreading, unlocking possibilities the language has never seriously supported before.  
-**The lack of real, thread-safe service containers is no longer tolerable.**  
-Systems will scale wider, codebases will grow larger, and architectural discipline will become mandatory.
-
-Melder is designed for **projects of any size**:
-- From small apps with a handful of services,
-- To massive architectures with **millions of lines of code**,
-- To high-concurrency systems where thread-safety, lifetime management, and composability are not optional — they are survival.
-
-No more duct tape.  
-No more hard-coded spaghetti.  
-No more "just pass the config around" hacks.
-
-We are building **the future of Python** —  
-**modular, fast, clear, and built to last.**
-
----
-
 ## 🧠 Why Use a Dependency Injection Container?
 
 Using a Dependency Injection (DI) container like Melder provides deep structural advantages:

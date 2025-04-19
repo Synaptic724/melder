@@ -65,7 +65,8 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
         Freeze the dictionary to prevent further modifications.
         This is useful for making the dictionary immutable after initialization.
         """
-        self._freeze = True
+        with self._lock:
+            self._freeze = True
 
     @property
     def is_frozen(self) -> bool:
@@ -82,7 +83,8 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
         Unfreeze the dictionary to allow modifications.
         This is useful for making the dictionary mutable again after being frozen.
         """
-        self._freeze = False
+        with self._lock:
+            self._freeze = False
 
     def __getitem__(self, key: _K) -> _V:
         """
