@@ -1,7 +1,7 @@
 import uuid
 
 #meld() = resolver
-#create_state() = scope
+#conduit() = scope
 #bind() = registration
 #seal() = dispose
 #

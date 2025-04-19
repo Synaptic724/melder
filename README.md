@@ -7,7 +7,7 @@ Melder melds your services together with minimal overhead, supporting transient,
 
 Thread-safe by design, Melder enables safe concurrent service resolution across multiple threads — without sacrificing performance.
 
-> **"Meld your services. Unify your system. Build without limits."**
+> **"Meld your services. Unify your system. Awaken your inner digital sorcerer."**
 
 ---
 
@@ -86,7 +86,7 @@ Using a Dependency Injection (DI) container like Melder provides deep structural
 - 🌐 **Modern Python**: Designed for Python 3.13+ and fully compatible with the new concurrency era.
 - 🧬 **No-GIL Ready**: Engineered to thrive in Python’s new free-threading world — no multiprocessing crutches needed.
 - 🛡️ **Thread-Safe by Design**: Safe concurrent resolution across threads — not an afterthought, but a first-class feature.
-- 🛠️ **Explicit, Not Magical**: No hidden behavior. No auto-wiring messes. You control what gets built and how.
+- 🛠️ **Explicit, Not Magical Maybe...**: No hidden behavior. No auto-wiring messes. You control what gets built and how.
 - 🧠 **System Architecture First**: Melder isn't just about convenience — it's about forging scalable, maintainable, high-concurrency systems.
 
 ---
@@ -108,25 +108,25 @@ pip install melder
 Register services and resolve them easily:
 
 ~~~
-from melder import Container
+from melder import spellbook
 
-container = Container()
+spellbook = spellbook()
 
 # Register a singleton service
 class DatabaseConnection:
     ...
 
-container.register_singleton(DatabaseConnection)
+spellbook.bind(DatabaseConnection, existence='unique')
 
 # Resolve the service
-db = container.resolve(DatabaseConnection)
+db = spellbook.meld(DatabaseConnection)
 ~~~
 
 Scopes (planned for v0.3):
 
 ~~~
-with container.create_scope() as scope:
-    service = scope.resolve(DatabaseConnection)
+with spellbook.conduit() as conduit:
+    service = conduit.meld(DatabaseConnection)
 ~~~
 
 ---

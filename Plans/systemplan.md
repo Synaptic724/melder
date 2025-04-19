@@ -5,7 +5,7 @@
 - `create_state()` → create a lifetime boundary ("state")
 - `meld()` → resolve (create) a service
 - `seal()` → finalize (dispose) a state
-- `state.meld()` → resolve a service within a state
+- `conduit.meld()` → resolve a service within a state
 
 ## Hooks System
 - **Prehooks**: before service construction
@@ -13,9 +13,9 @@
 - **Posthooks**: after service is created
 
 ## Lifetime Management
-- **Singleton**: One instance across entire container
-- **Scoped**: One instance per created state
-- **Transient**: Always a fresh instance when `meld()` is called
+- **Unique**: One instance across entire container
+- **Unique per Conduit**: One instance per created state
+- **Many**: Always a fresh instance when `meld()` is called
 
 ## Debugging (Opt-In Feature)
 - If `enable_debug_scope_ids=True`, Melder monkeypatches a ScopeID onto services.
