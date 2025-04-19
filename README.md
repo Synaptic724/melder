@@ -1,13 +1,17 @@
-# Melder
+Melder is a next-generation, lightweight, high-performance, thread-safe system for Dependency Injection (DI) and Modular Scoped Execution — built for the future of Python 3.13+ and the no-GIL era.
 
-**Melder** is a lightweight, high-performance, thread-safe Dependency Injection (DI) container built for the future of Python 3.13+ and the No-GIL era.
+Melder doesn’t just inject dependencies.  
+It **builds dynamic, permissioned, scoped execution graphs**, enabling services to resolve, interact, and scale cleanly — without rigid factory bloat, fragile wiring, or hidden coupling.
 
-Designed for clarity, speed, and modular architecture —  
-Melder melds your services together with minimal overhead, supporting transient, scoped, and singleton lifetimes out of the box.
+Designed for **clarity**, **modularity**, and **speed**,  
+Melder melds your services together with minimal overhead — supporting transient, scoped, and singleton lifetimes with true lifecycle management.
 
-Thread-safe by design, Melder enables safe concurrent service resolution across multiple threads — without sacrificing performance.
+Built for serious architectures, Melder is **thread-safe by design**, enabling safe concurrent service resolution across multiple threads without sacrificing performance — and ready to thrive in Python’s new free-threading world.
 
-> **"Meld your services. Unify your system. Awaken your inner digital sorcerer."**
+> **"Meld your services. Forge your system. Awaken your inner digital sorcerer."**
+
+Melder is not just another helper library.  
+Melder solves Dependency Injection’s problems by evolving it into scoped dynamic modular execution — without losing its soul.
 
 ---
 
@@ -23,9 +27,9 @@ For decades, Python survived without true Dependency Injection because it could 
 - Scripts were small.  
 - Services were short-lived.  
 - Single-threaded execution papered over architecture flaws.
-- Tools like multiprocessing as a crutch
+- Tools like multiprocessing acted as a crutch.
 
-**But those days are over. It's time to move forward**
+**But those days are over. It's time to move forward.**
 
 Python 3.13+ introduces true multithreading, unlocking possibilities the language has never seriously supported before.  
 **The lack of real, thread-safe service containers is no longer tolerable.**  
@@ -65,28 +69,27 @@ Using a Dependency Injection (DI) container like Melder provides deep structural
   You know exactly what depends on what, because it's all wired through a single, auditable registration process.
 
 - 🚮 **Better Resource Cleanup**  
-  Scoped services can be automatically disposed of when the state ends, helping manage memory, close connections, and release resources cleanly.
+  Scoped services can be automatically disposed of when the scope ends, helping manage memory, close connections, and release resources cleanly.
 
 - ⚡ **Faster Changes, Less Risk**  
   Need to swap a database backend, or inject a mock service for testing?  
   Update the container bindings — no need to touch dozens of files.
 
 - 🌱 **Scales With Your Codebase**  
-  Whether you're managing 5 services or 500, a DI container helps you scale cleanly without losing track of what depends on what.
+  Whether you're managing 5 services or 500, a DI container helps you scale cleanly without losing track of your architecture.
 
 ---
-
 
 ## 🚀 Why Melder?
 
 - ⚡ **Fast**: Built for speed and zero-dependency overhead — no slow reflection hacks or runtime magic.
 - 🛠️ **Lightweight**: Small, surgical core — easy to learn, powerful to extend without pulling in massive frameworks.
 - 🧠 **True Scoping**: Full support for transient, scoped, and singleton services — with real scope boundaries, not faked with globals.
-- 🔍 **Observability**: (Upcoming) Built-in diagnostics and dependency graph visualization — making your architecture visible, not invisible.
+- 🔍 **Observability** *(Upcoming)*: Built-in diagnostics and dependency graph visualization — making your architecture visible, not invisible.
 - 🌐 **Modern Python**: Designed for Python 3.13+ and fully compatible with the new concurrency era.
 - 🧬 **No-GIL Ready**: Engineered to thrive in Python’s new free-threading world — no multiprocessing crutches needed.
 - 🛡️ **Thread-Safe by Design**: Safe concurrent resolution across threads — not an afterthought, but a first-class feature.
-- 🛠️ **Explicit, Not Magical Maybe...**: No hidden behavior. No auto-wiring messes. You control what gets built and how.
+- 🧠 **Explicit, Not Magical** *(Maybe...)*: No hidden behavior. No auto-wiring messes. You control what gets built and how.
 - 🧠 **System Architecture First**: Melder isn't just about convenience — it's about forging scalable, maintainable, high-concurrency systems.
 
 ---
