@@ -40,7 +40,7 @@ class Seal(ABC):
         pass
 
 
-class Disposed(ABC):
+class IDisposable(ABC):
     """
     Abstract base class for all disposable objects in the system.
 
