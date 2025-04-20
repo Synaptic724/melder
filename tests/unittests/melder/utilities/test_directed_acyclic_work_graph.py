@@ -1,6 +1,6 @@
 import unittest
 import time
-from melder.dependency_crawler.dag import Node, Edge, DirectedAcyclicWorkGraph, StateObject, ExecutionContext
+from melder.meld.dependency_crawler.dag import Node, Edge, DirectedAcyclicWorkGraph, StateObject, ExecutionContext
 
 # Assuming you have all your DAG code in a module named 'dag_module'
 # For example:
