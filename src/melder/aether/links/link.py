@@ -23,7 +23,7 @@ class LinkPermissions:
         return permission in self.permissions
 
 
-class ILink(ABC, Seal):
+class ILink(ABC, ISeal):
     """
     Interface for Link, which is a graph structure that behaves like a scope and a factory.
     """

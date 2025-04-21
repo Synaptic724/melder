@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict
+from typing import Any, Dict, List
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal
 
@@ -33,10 +33,11 @@ class Configuration(ISeal):
             Configuration._initialized = True
             self.sealed = False
             # Private dictionary storing all properties.
-            self._properties: ConcurrentDict = ConcurrentDict(self._load_default_dictionary())
+            self._properties: ConcurrentDict = ConcurrentDict()
+            self.available_properties: List[str] = ["conduit_state", "debugging", "disposal", "disposal_method_names"]
 
             # Properties that must remain immutable after conjure (idempotent laws of the system).
-            self._idempotent_keys = {"conduit_state", "debugging"}
+            self._idempotent_keys = {"conduit_state", "debugging", "disposal", "disposal_method_names"}
 
             # Indicates whether the properties have been frozen (sealed after conjure).
             self._frozen = False
@@ -45,30 +46,38 @@ class Configuration(ISeal):
         """
         Define or overwrite a property.
 
-        :param key: Property name (must be a string).
-        :param value: Property value (must be a str, int, or bool).
+        - Idempotent properties (like 'conduit_state', 'debugging', etc.)
+          can only be set once. Attempts to overwrite will raise an error,
+          even before the configuration is frozen.
 
-        Behavior:
-          - Idempotent properties cannot be modified after freeze.
-          - Overwriting an existing property triggers a warning (but is allowed pre-freeze).
-
-        Example:
-            aether_properties.set_property('dynamic', False)
+        - Non-idempotent properties can be freely modified before freeze.
         """
         if not isinstance(key, str):
             raise TypeError("Key must be a string.")
 
-        if not isinstance(value, (str, int, bool)):
-            raise TypeError("Value must be of type str, int, or bool.")
+        # Enforce idempotency for critical system properties
+        if key in self._idempotent_keys:
+            if key in self._properties:
+                raise RuntimeError(f"Cannot modify idempotent property '{key}' once set.")
 
-        # Block mutation of critical system properties after freeze
-        if self._frozen and key in self._idempotent_keys:
-            raise RuntimeError(f"Cannot modify idempotent property '{key}' after system freeze.")
-
-        if key in self._properties:
-            print(f"Warning: Overwriting existing property '{key}'.")
+        # Enforce freeze globally
+        if self._frozen:
+            raise RuntimeError("Cannot modify configuration after it is frozen.")
 
         self._properties[key] = value
+
+    def clear_properties(self) -> None:
+        """
+        Clear all properties in the configuration.
+
+        This method is useful for resetting the configuration to its initial state.
+        """
+        if self._frozen:
+            raise RuntimeError("Cannot clear properties after configuration is frozen")
+        elif self.sealed:
+            raise RuntimeError("Cannot clear properties after configuration is sealed")
+        self._properties.clear()
+
 
     def freeze(self) -> None:
         """
@@ -98,8 +107,11 @@ class Configuration(ISeal):
             ValueError if any required property is missing or has an invalid type.
         """
         # Implement validation logic as needed
-        pass
-
+        required_keys = ["conduit_state", "debugging", "disposal", "disposal_method_names"]
+        for key in required_keys:
+            if key not in self._properties:
+                return False
+        return True
 
     def get_property(self, key: str) -> Any:
         """
@@ -137,18 +149,18 @@ class Configuration(ISeal):
         Allow iteration over the properties.
         :return: Property names (keys) in the configuration.
         """
-        return self._properties.__iter__()
+        return iter(self._properties)
 
-
-    def _load_default_dictionary(self) -> Dict[str, Any]:
+    def load_default_dictionary(self) -> None:
         """
-        Load the default dictionary of properties.
-        :return:
+        Load and apply the default dictionary of properties atomically.
         """
-        # This method should be implemented to load default properties.
-        # For now, it returns an empty dictionary.
-        return { "conduit_state" : "automatic",
-                 "debugging" : False }
+        self._properties.batch_update(lambda d: d.update({
+            "conduit_state": "automatic",
+            "debugging": False,
+            "disposal": False,
+            "disposal_method_names": []
+        }))
 
     def seal(self) -> None:
         """

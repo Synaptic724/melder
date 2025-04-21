@@ -7,7 +7,7 @@ class Existence(Enum):
     unique = auto()               # Single instance across all of Aether
     unique_per_conduit = auto()    # One instance per conduit
     many = auto()                  # New instance every time
-    dynamic = auto()               # Instance that can mutate/upgrade at runtime
+#    dynamic = auto()               # Instance that can mutate/upgrade at runtime   // Not really sure what usecase we got here for this
 
     def __str__(self):
         return self.name

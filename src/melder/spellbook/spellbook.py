@@ -64,31 +64,32 @@ class Spellbook(ISpellbook):
     @classmethod
     def configure_conduit_state(cls, **kwargs) -> None:
         """
-        Configure the conduit state
+        Configure the conduit state.
 
-        Available configuration keys:
-
-        - conduit_state: The state to set for the conduit system (please read documentation, automatic set by default)
-        - debugging: Enable or disable debugging mode (please read documentation, disabled by default)
-
-        This method is idempotent meaning it will not allow you to run it more than once. It will also freeze the configuration.
-        :param **kwargs: Configuration options.
+        This method validates and freezes configuration after setup.
+        If any configuration errors occur, all attempted settings are cleared.
         """
         if cls._configuration_locked:
             raise RuntimeError("Configuration is locked. Cannot modify conduit state.")
 
-        for key, value in kwargs.items():
-            if key in cls._configuration:
-                print(f"Warning: Overwriting existing configuration '{key}'.")
-            else:
-                raise KeyError(f"Unknown configuration key '{key}'.")
-            cls._configuration.set_property(key, value)
+        try:
+            for key, value in kwargs.items():
+                if key not in cls._configuration.available_properties:
+                    raise KeyError(f"Unknown configuration key '{key}'.")
+                cls._configuration.set_property(key, value)
 
-        if cls._configuration.validate():
+            if not cls._configuration.validate():
+                raise ValueError("Invalid configuration. Please check your settings.")
+
             cls._configuration.freeze()
             cls._configuration_locked = True
-        else:
-            raise ValueError("Invalid configuration. Please check your settings.")
+
+        except (KeyError, ValueError) as e:
+            # Clear everything only if an error occurred
+            cls._configuration.clear_properties()
+            raise e
+        except Exception:
+            raise
 
     @classmethod
     def get_configuration(cls) -> Configuration:
@@ -113,8 +114,12 @@ class Spellbook(ISpellbook):
         """
         if self.is_configuration_locked():
             raise RuntimeError("Spellbook is already conjured.")
+        else:
+            Spellbook._configuration.load_default_dictionary()
+            Spellbook._configuration.freeze()
+            Spellbook._configuration_locked = True
+
         # Perform any necessary operations to conjure the Spellbook
-        Spellbook._configuration_locked = True
         return Conduit(spellbook=self, name=name, configuration=Spellbook._configuration)
 
 
