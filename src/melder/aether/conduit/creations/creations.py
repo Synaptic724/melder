@@ -35,6 +35,15 @@ class Creations(ISeal):
         self.sealed = False
         self._lock = threading.RLock()
 
+    def add_unique(self, key: str, item: object) -> None:
+        pass
+
+    def add_unique_per_scope(self, key: str, item: object) -> None:
+        pass
+
+    def add_many(self, key: str, item: object) -> None:
+        pass
+
     def seal(self) -> None:
         """
         Seal the creations, cleaning up all managed objects.
