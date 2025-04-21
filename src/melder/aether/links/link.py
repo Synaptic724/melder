@@ -1,7 +1,7 @@
 import threading
 import uuid
 from abc import ABC, abstractmethod
-from melder.utilities.interfaces import Seal
+from melder.utilities.interfaces import ISeal
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 

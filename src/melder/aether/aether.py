@@ -1,10 +1,9 @@
 import uuid
-from melder.utilities.interfaces import Seal
+from melder.utilities.interfaces import ISeal
 from melder.utilities.concurrent_list import ConcurrentList
 import threading
-from melder.aether.configuration.aether_properties import AetherProperties
 
-class Aether(Seal):
+class Aether(ISeal):
     """
     Aether is a class that holds a reference to all conduit systems.
     Aether is also responsible for disposing of all conduits if required.
@@ -27,7 +26,6 @@ class Aether(Seal):
         if not Aether._initialized:
             Aether._initialized = True
             self.sealed = False
-            self._properties = AetherProperties()
             self._conduits = ConcurrentList()
 
     def add_conduit(self, conduit):
@@ -71,6 +69,5 @@ class Aether(Seal):
         for conduit in self._conduits:
             conduit.seal()
         self._conduits.clear()
-        self._properties.seal()
         self.sealed = True
 

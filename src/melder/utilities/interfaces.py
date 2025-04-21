@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 # We got two of the same types of classes, I wanted to stick to the magic theme because it's pretty fun :P
-class Seal(ABC):
+class ISeal(ABC):
     """
     Abstract base class for all disposable objects in the system.
 
