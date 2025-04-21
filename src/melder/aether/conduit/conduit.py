@@ -1,16 +1,13 @@
-import time
-import uuid
-import datetime
-from typing import Optional, List
+from typing import Optional
 from melder.utilities.interfaces import Seal
-from melder.utilities.concurrent_list import ConcurrentList
-from melder.utilities.concurrent_dictionary import ConcurrentDict
+from melder.aether.aether import Aether
+from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 import threading
 from abc import ABC, abstractmethod
 
 
 
-class IConduit(ABC):
+class IConduit(ABC, Seal):
     """
     Interface for Conduit, which is a graph structure that behaves like a scope and a factory.
     """
@@ -23,15 +20,30 @@ class IConduit(ABC):
         pass
 
     @abstractmethod
+    def meld(self):
+        """
+        Melding is the process of creating a new object.
+        :return:
+        """
+        pass
+
+    @abstractmethod
     def seal(self):
         """
         Disposes of the current conduit and its lesser conduits
         """
         pass
 
+    @abstractmethod
+    def create_lesser_conduit(self):
+        """
+        Creates a new lesser conduit.
+        :return:
+        """
+        pass
 
 
-class Conduit(Seal):
+class Conduit(IConduit):
     """
     Conduit is a graph structure that also behaviours like a scope and a factory.
     """
@@ -41,14 +53,16 @@ class Conduit(Seal):
         """
         self.name = name
         self.sealed = False
-
-        self._greater_conduit_link = None
         self._lock = threading.RLock()
-        self._lesser_conduits = ConcurrentList()
-        self._ID = uuid.uuid4()
-        self._creation_time = datetime.datetime.now()
-        self._creation_time_ns = time.time_ns()
-        self._dynamic_environment = False
+        self.CreationContext = ConduitCreationContext()
+
+        self._conduit_links = None
+        self._lesser_conduits = None
+
+        self._spellbook = None
+        self._aether = Aether()
+        self._dynamic_environment = self._aether.dynamic_environment
+
 
     def link(self, target_conduit) -> bool:
         """
@@ -86,5 +100,9 @@ class Conduit(Seal):
                 lesser_conduit.seal()
             # Dispose of the current node
             self._lesser_conduits.dispose()
+
+            self._lesser_conduits = None
+            self._conduit_links = None
+            self._aether = None
             self.sealed = True
 

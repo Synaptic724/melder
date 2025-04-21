@@ -2,6 +2,7 @@ import uuid
 from melder.utilities.interfaces import Seal
 from melder.utilities.concurrent_list import ConcurrentList
 import threading
+from melder.aether.configuration.aether_properties import AetherProperties
 
 class Aether(Seal):
     """
@@ -26,27 +27,27 @@ class Aether(Seal):
         if not Aether._initialized:
             Aether._initialized = True
             self.sealed = False
-            self.conduits = ConcurrentList()
-
+            self._properties = AetherProperties()
+            self._conduits = ConcurrentList()
 
     def add_conduit(self, conduit):
         """
         Adds a new conduit to the Aether.
         """
-        self.conduits.append(conduit)
+        self._conduits.append(conduit)
 
     def remove_conduit(self, conduit):
         """
         Removes a conduit from the Aether.
         """
-        self.conduits.remove(conduit)
+        self._conduits.remove(conduit)
 
     def link_conduit_by_signature(self, req_conduit, conduit_signature: uuid.uuid4):
         """
         Returns a conduit in order to link them.
         """
         raise NotImplementedError("Not implemented.")
-        for conduit in self.conduits:
+        for conduit in self._conduits:
             if conduit.name == conduit_signature:
                 req_conduit.link(conduit)
         raise ValueError(f"Conduit signature: {conduit_signature}, not found.")
@@ -56,7 +57,7 @@ class Aether(Seal):
         Returns a conduit in order to link them.
         """
         raise NotImplementedError("Not implemented.")
-        for conduit in self.conduits:
+        for conduit in self._conduits:
             if conduit.name == conduit_name:
                 req_conduit.link(conduit)
         raise ValueError(f"Conduit name: {conduit_name}, not found.")
@@ -67,8 +68,9 @@ class Aether(Seal):
         """
         if self.sealed:
             return
-        for conduit in self.conduits:
-            conduit.dispose()
-        self.conduits.clear()
+        for conduit in self._conduits:
+            conduit.seal()
+        self._conduits.clear()
+        self._properties.seal()
         self.sealed = True
 
