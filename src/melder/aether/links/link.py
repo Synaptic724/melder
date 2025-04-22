@@ -1,66 +1,123 @@
 import threading
-import uuid
-from abc import ABC, abstractmethod
+from enum import Enum
+from typing import List
+from uuid import UUID
 from melder.utilities.interfaces import ISeal
-from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_dictionary import ConcurrentDict
+
+class Permission(Enum):
+    READ = "read"
+    WRITE = "write"
+    BORROW = "borrow"
+    CLONE = "clone"
+
+class LinkContract:
+    def __init__(self, object_id: UUID, permissions: List[Permission], propagate: bool = False):
+        self.object_id = object_id
+        self.permissions = permissions
+        self.propagate = propagate
 
 class LinkPermissions:
     """
-    Class to manage permissions for linking.
+    Manages permissions for a Link.
+
+    Permissions define what actions are allowed between linked Conduits.
     """
+
     def __init__(self):
-        self.permissions = ConcurrentDict()
+        self._permissions = ConcurrentDict()
 
-    def add_permission(self, permission):
-        self.permissions[permission] = True
+    def add(self, permission: str) -> None:
+        """
+        Add a permission.
 
-    def remove_permission(self, permission):
-        if permission in self.permissions:
-            del self.permissions[permission]
+        Args:
+            permission (str): The permission to add.
+        """
+        self._permissions[permission] = True
 
-    def has_permission(self, permission) -> bool:
-        return permission in self.permissions
+    def remove(self, permission: str) -> None:
+        """
+        Remove a permission if it exists.
+
+        Args:
+            permission (str): The permission to remove.
+        """
+        if permission in self._permissions:
+            del self._permissions[permission]
+
+    def has(self, permission: str) -> bool:
+        """
+        Check if a permission exists.
+
+        Args:
+            permission (str): The permission to check.
+
+        Returns:
+            bool: True if permission exists, False otherwise.
+        """
+        return permission in self._permissions
 
 
 class Link(ISeal):
     """
-    Link is a graph structure that also behaves like a scope and a factory.
+    Represents a connection between two Conduits.
+
+    A Link defines the relationship, permissions, and lifecycle between
+    the creator and target Conduits.
     """
-    def __init__(self):
+
+    def __init__(self, creator: "Conduit", target: "Conduit"):
         """
-        Initializes the Link with a root node.
+        Initialize a new Link between two Conduits.
+
+        Args:
+            creator (Conduit): The Conduit creating the link.
+            target (Conduit): The Conduit being linked to.
         """
+        self._creator = creator
+        self._target = target
+
+        self._incoming_permissions = LinkPermissions()  # Permissions the target has over the creator
+        self._outgoing_permissions = LinkPermissions()  # Permissions the creator has over the target
+
+        self._lock = threading.RLock()
         self.sealed = False
 
-        self._link_creator = None
-        self._link_target = None
-        self._permissions = LinkPermissions()
-        self._lock = threading.RLock()
-        self._ID = uuid.uuid4()
-
-
-    def link(self, target_link) -> bool:
+    def add_outgoing_permission(self, permission: str) -> None:
         """
-        Links the current link to another link while dynamic environment is enabled.
-        :param target_link: The target link to link to.
+        Add a permission allowing the creator to act on the target.
+
+        Args:
+            permission (str): The permission to add.
         """
         if self.sealed:
-            raise RuntimeError("Cannot link to a sealed link.")
-        if not self._dynamic_environment:
-            raise RuntimeError("Dynamic environment is not enabled. Cannot manually link services.")
+            raise RuntimeError("Cannot modify a sealed Link.")
         with self._lock:
-            self._greater_link = target_link
-            target_link._lesser_links.append(self)
+            self._outgoing_permissions.add(permission)
 
-
-    def seal(self):
+    def add_incoming_permission(self, permission: str) -> None:
         """
-        Seals the current link and its lesser links.
+        Add a permission allowing the target to act on the creator.
+
+        Args:
+            permission (str): The permission to add.
         """
         if self.sealed:
-            raise RuntimeError("Link is already sealed.")
+            raise RuntimeError("Cannot modify a sealed Link.")
         with self._lock:
-            for link in self._lesser_links:
-                link.seal()
+            self._incoming_permissions.add(permission)
+
+    def seal(self) -> None:
+        """
+        Seal this Link, preventing any further modifications.
+        """
+        if self.sealed:
+            return
+        with self._lock:
+            self._creator = None
+            self._target = None
+            self._incoming_permissions = None
+            self._outgoing_permissions = None
             self.sealed = True
+

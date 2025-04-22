@@ -1,31 +1,10 @@
 import uuid
-from melder.utilities.interfaces import ISeal
+from melder.utilities.interfaces import ISpellbook
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
 import threading
-from abc import ABC, abstractmethod
-
-class ISpellbook(ABC, ISeal):
-    """
-    Interface for Spellbook, which is a graph structure that behaves like a scope and a factory.
-    """
-    @abstractmethod
-    def bind(self, spell):
-        """
-        Adds a new spell to the Spellbook.
-        :param spell: The spell to add.
-        """
-        pass
-
-    @abstractmethod
-    def remove_bind(self, spell):
-        """
-        Removes a spell from the Spellbook.
-        :param spell: The spell to remove.
-        """
-        pass
 
 class Spellbook(ISpellbook):
     """

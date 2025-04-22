@@ -1,8 +1,7 @@
 from typing import Optional
-from melder.spellbook.spellbook import Spellbook
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
-from melder.utilities.interfaces import ISeal
+from melder.utilities.interfaces import IConduit, ISpellbook
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.spellbook.configuration.configuration import Configuration
@@ -10,42 +9,6 @@ from melder.aether.links.link import Link
 import threading
 from abc import ABC, abstractmethod
 from melder.aether.conduit.creations.creations import Creations
-
-class IConduit(ABC, ISeal):
-    """
-    Interface for a Conduit, which behaves as both a scope and a factory within the system.
-    """
-
-    @abstractmethod
-    def link(self):
-        """
-        Links this Conduit to another Conduit.
-        Only allowed if the world environment is dynamic.
-        """
-        pass
-
-    @abstractmethod
-    def meld(self):
-        """
-        Melding is the process of creating or materializing an object
-        from the Conduit's registered spells.
-        """
-        pass
-
-    @abstractmethod
-    def seal(self):
-        """
-        Seals this Conduit and all its lesser Conduits.
-        Prevents further linking, melding, or creation.
-        """
-        pass
-
-    @abstractmethod
-    def create_lesser_conduit(self):
-        """
-        Creates a new lesser Conduit (child scope) beneath this Conduit.
-        """
-        pass
 
 
 class Conduit(IConduit):
@@ -63,7 +26,7 @@ class Conduit(IConduit):
     _debugger_mode = False
     _dynamic_environment = False
 
-    def __init__(self, spellbook: Spellbook, configuration: Configuration, name: Optional[str] = None):
+    def __init__(self, spellbook: ISpellbook, configuration: Configuration, name: Optional[str] = None):
         """
         Initializes a new Conduit.
 
@@ -125,6 +88,18 @@ class Conduit(IConduit):
         else:
             Conduit._debugger_mode = False
 
+    @classmethod
+    def _add_conduit_to_aether(cls, conduit: IConduit) -> None:
+        """
+        Adds the newly created Conduit into the shared Aether world.
+
+        Args:
+            conduit (Conduit): The Conduit instance to add.
+        """
+        if cls._aether is None:
+            raise RuntimeError("Aether is not initialized.")
+        cls._aether.add_conduit(conduit)
+
     def _create_internal_configuration(self) -> None:
         """
         Creates per-Conduit internal structures based on the current world configuration.
@@ -140,18 +115,6 @@ class Conduit(IConduit):
             self._conduit_links = ConcurrentList()
         else:
             self._conduit_links = None
-
-    @classmethod
-    def _add_conduit_to_aether(cls, conduit) -> None:
-        """
-        Adds the newly created Conduit into the shared Aether world.
-
-        Args:
-            conduit (Conduit): The Conduit instance to add.
-        """
-        if cls._aether is None:
-            raise RuntimeError("Aether is not initialized.")
-        cls._aether.add_conduit(conduit)
 
     def link(self, target_conduit) -> bool:
         """
@@ -172,7 +135,26 @@ class Conduit(IConduit):
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
 
-    def create_lesser_conduit(self, spellbook: Spellbook, name: Optional[str] = None) -> "Conduit":
+    def _link_lesser_conduit(self, target_conduit) -> bool:
+        """
+        Attempts to link this Conduit to a lesser Conduit.
+        This is meant for internal use please do not use this outside of the class.
+
+        Linking for Automatic mode will transfer the spellbook of the existing conduit into the
+        lesser conduit and setup permissions between objects using link.
+
+        Args:
+            target_conduit (Conduit): The target Conduit to link to.
+
+        Returns:
+            bool: True if linking succeeds (currently not implemented).
+        """
+        if self.sealed:
+            raise RuntimeError("Cannot link to a sealed Conduit.")
+        with self._lock:
+            raise NotImplementedError("Linking conduits is not implemented yet.")
+
+    def create_lesser_conduit(self, spellbook: ISpellbook, name: Optional[str] = None) -> IConduit:
         """
         Creates a lesser Conduit (child node) attached to this Conduit.
 
