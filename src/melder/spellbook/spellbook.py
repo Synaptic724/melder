@@ -66,7 +66,9 @@ class Spellbook(ISpellbook):
         """
         Configure the conduit state.
 
-        This method validates and freezes configuration after setup.
+        Only verifies allowed keys at this stage.
+        Type and value validation happens during final validation.
+
         If any configuration errors occur, all attempted settings are cleared.
         """
         if cls._configuration_locked:
@@ -75,7 +77,11 @@ class Spellbook(ISpellbook):
         try:
             for key, value in kwargs.items():
                 if key not in cls._configuration.available_properties:
-                    raise KeyError(f"Unknown configuration key '{key}'.")
+                    raise KeyError(
+                        f"Unknown configuration key '{key}'. "
+                        f"Allowed keys are: {list(cls._configuration.available_properties.keys())}"
+                    )
+
                 cls._configuration.set_property(key, value)
 
             if not cls._configuration.validate():
@@ -85,9 +91,9 @@ class Spellbook(ISpellbook):
             cls._configuration_locked = True
 
         except (KeyError, ValueError) as e:
-            # Clear everything only if an error occurred
             cls._configuration.clear_properties()
             raise e
+
         except Exception:
             raise
 

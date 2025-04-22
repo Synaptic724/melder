@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Type
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal
 
@@ -34,7 +34,12 @@ class Configuration(ISeal):
             self.sealed = False
             # Private dictionary storing all properties.
             self._properties: ConcurrentDict = ConcurrentDict()
-            self.available_properties: List[str] = ["conduit_state", "debugging", "disposal", "disposal_method_names"]
+            self.available_properties: Dict[str, Type] = {
+                "conduit_state": str,
+                "debugging": bool,
+                "disposal": bool,
+                "disposal_method_names": list
+            }
 
             # Properties that must remain immutable after conjure (idempotent laws of the system).
             self._idempotent_keys = {"conduit_state", "debugging", "disposal", "disposal_method_names"}
@@ -98,19 +103,24 @@ class Configuration(ISeal):
 
     def validate(self) -> bool:
         """
-        Validate the properties to ensure they are set correctly.
-
-        This method should be called before sealing the configuration.
-        It checks for required properties and their types.
+        Validate that all required configuration properties exist and match expected types.
 
         Raises:
-            ValueError if any required property is missing or has an invalid type.
+            ValueError: If any property is missing or has the wrong type.
         """
-        # Implement validation logic as needed
-        required_keys = ["conduit_state", "debugging", "disposal", "disposal_method_names"]
-        for key in required_keys:
+        for key, expected_type in self.available_properties.items():
+            # Check presence
             if key not in self._properties:
-                return False
+                raise ValueError(f"Missing required configuration property: '{key}'.")
+
+            # Check type
+            value = self._properties[key]
+            if not isinstance(value, expected_type):
+                raise ValueError(
+                    f"Invalid type for property '{key}': "
+                    f"expected {expected_type.__name__}, got {type(value).__name__}."
+                )
+
         return True
 
     def get_property(self, key: str) -> Any:

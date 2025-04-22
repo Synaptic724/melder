@@ -23,28 +23,7 @@ class LinkPermissions:
         return permission in self.permissions
 
 
-class ILink(ABC, ISeal):
-    """
-    Interface for Link, which is a graph structure that behaves like a scope and a factory.
-    """
-    @abstractmethod
-    def link(self):
-        """
-        Links the conduit to another conduit.
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def seal(self):
-        """
-        Disposes of the current conduit and its lesser conduits
-        """
-        pass
-
-
-
-class Link(ILink):
+class Link(ISeal):
     """
     Link is a graph structure that also behaves like a scope and a factory.
     """

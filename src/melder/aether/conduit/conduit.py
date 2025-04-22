@@ -203,12 +203,38 @@ class Conduit(IConduit):
         if self.sealed:
             return
         with self._lock:
-            if self._lesser_conduits:
-                for lesser_conduit in self._lesser_conduits:
-                    lesser_conduit.seal()
-                self._lesser_conduits.dispose()
+            self.clean_up_lesser_conduits()
+            self.clean_up_links()
+            self._spellbook.seal()
+            self._creations.seal()
+            self._conduit_links.dispose()
 
+            # Null out everything
+            self._spellbook = None
+            self._creations = None
+            self._conduit_links = None
+            self._creation_context = None
             self._lesser_conduits = None
             self._conduit_links = None
-            self._aether = None
+
             self.sealed = True
+
+    def clean_up_lesser_conduits(self):
+        """
+        Cleans up all lesser conduits.
+        :return:
+        """
+        if self._lesser_conduits:
+            for lesser_conduit in self._lesser_conduits:
+                lesser_conduit.seal()
+            self._lesser_conduits.dispose()
+
+    def clean_up_links(self):
+        """
+        Cleans up all links.
+        :return:
+        """
+        if self._conduit_links:
+            for link in self._conduit_links:
+                link.seal()
+            self._conduit_links.dispose()
