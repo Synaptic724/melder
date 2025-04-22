@@ -7,7 +7,6 @@ from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContex
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.links.link import Link
 import threading
-from abc import ABC, abstractmethod
 from melder.aether.conduit.creations.creations import Creations
 
 
@@ -23,8 +22,8 @@ class Conduit(IConduit):
     _aether = Aether()
 
     _configuration_set = False
-    _debugger_mode = False
-    _dynamic_environment = False
+    __debugger_mode__ = False
+    __dynamic_environment__ = False
 
     def __init__(self, spellbook: ISpellbook, configuration: Configuration, name: Optional[str] = None):
         """
@@ -38,7 +37,7 @@ class Conduit(IConduit):
         self.name = name
         self.sealed = False
         self._lock = threading.RLock()
-        self._creation_context = ConduitCreationContext()
+        self.__creation_context__ = ConduitCreationContext()
         self._spellbook = spellbook
         self._creations = Creations(configuration.get_property("disposal"), configuration.get_property("disposal_method_names"))
         Conduit._configuration = configuration
@@ -48,7 +47,7 @@ class Conduit(IConduit):
                 Conduit._set_configuration()
 
         self._conduit_links = None
-        self._lesser_conduits = None
+        self._lesser_conduits_links = ConcurrentList()
 
         self._create_internal_configuration()
         Conduit._add_conduit_to_aether(self)
@@ -74,9 +73,9 @@ class Conduit(IConduit):
         Dynamic mode allows runtime linking; automatic prohibits it.
         """
         if Conduit._configuration.get_property("conduit_state") == "automatic":
-            Conduit._dynamic_environment = False
+            Conduit.__dynamic_environment__ = False
         elif Conduit._configuration.get_property("conduit_state") == "dynamic":
-            Conduit._dynamic_environment = True
+            Conduit.__dynamic_environment__ = True
 
     @classmethod
     def _set_debug_settings(cls):
@@ -84,9 +83,9 @@ class Conduit(IConduit):
         Sets the debugging mode for Conduits based on system configuration.
         """
         if Conduit._configuration.get_property("debugging"):
-            Conduit._debugger_mode = True
+            Conduit.__debugger_mode__ = True
         else:
-            Conduit._debugger_mode = False
+            Conduit.__debugger_mode__ = False
 
     @classmethod
     def _add_conduit_to_aether(cls, conduit: IConduit) -> None:
@@ -111,7 +110,7 @@ class Conduit(IConduit):
         Configures whether this Conduit maintains linkable connections.
         Only enabled in dynamic environments.
         """
-        if Conduit._dynamic_environment:
+        if Conduit.__dynamic_environment__:
             self._conduit_links = ConcurrentList()
         else:
             self._conduit_links = None
@@ -130,7 +129,7 @@ class Conduit(IConduit):
         """
         if self.sealed:
             raise RuntimeError("Cannot link to a sealed Conduit.")
-        if not Conduit._dynamic_environment:
+        if not Conduit.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manually link services.")
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
@@ -172,7 +171,7 @@ class Conduit(IConduit):
             configuration=self._configuration,
             name=name
         )
-        self._lesser_conduits.append(new_conduit)
+        self._lesser_conduits_links.append(new_conduit)
         return new_conduit
 
     def seal(self):
@@ -185,7 +184,7 @@ class Conduit(IConduit):
         if self.sealed:
             return
         with self._lock:
-            self.clean_up_lesser_conduits()
+            self.clean_up_lesser_conduits_links()
             self.clean_up_links()
             self._spellbook.seal()
             self._creations.seal()
@@ -195,21 +194,23 @@ class Conduit(IConduit):
             self._spellbook = None
             self._creations = None
             self._conduit_links = None
-            self._creation_context = None
-            self._lesser_conduits = None
-            self._conduit_links = None
+            self.__creation_context__ = None
+            self._lesser_conduits_links = None
+
+            if self._aether and not self._aether.sealed:
+                self._aether.remove_conduit(self)
 
             self.sealed = True
 
-    def clean_up_lesser_conduits(self):
+    def clean_up_lesser_conduits_links(self):
         """
         Cleans up all lesser conduits.
         :return:
         """
-        if self._lesser_conduits:
-            for lesser_conduit in self._lesser_conduits:
+        if self._lesser_conduits_links:
+            for lesser_conduit in self._lesser_conduits_links:
                 lesser_conduit.seal()
-            self._lesser_conduits.dispose()
+            self._lesser_conduits_links.dispose()
 
     def clean_up_links(self):
         """

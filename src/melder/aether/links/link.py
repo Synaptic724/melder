@@ -2,8 +2,9 @@ import threading
 from enum import Enum
 from typing import List
 from uuid import UUID
-from melder.utilities.interfaces import ISeal
+from melder.utilities.interfaces import ISeal, IConduit
 from melder.utilities.concurrent_dictionary import ConcurrentDict
+
 
 class Permission(Enum):
     READ = "read"
@@ -67,7 +68,7 @@ class Link(ISeal):
     the creator and target Conduits.
     """
 
-    def __init__(self, creator: "Conduit", target: "Conduit"):
+    def __init__(self, creator: IConduit, target: IConduit):
         """
         Initialize a new Link between two Conduits.
 
