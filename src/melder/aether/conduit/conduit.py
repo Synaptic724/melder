@@ -134,6 +134,17 @@ class Conduit(IConduit):
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
 
+    def sever_link(self):
+        """
+        Sever the link between this Conduit and its target Conduit.
+
+        This is meant for internal use please do not use this outside of the class.
+        """
+        if self.sealed:
+            raise RuntimeError("Cannot sever a link in a sealed Conduit.")
+        with self._lock:
+            raise NotImplementedError("Severing links is not implemented yet.")
+
     def _link_lesser_conduit(self, target_conduit) -> bool:
         """
         Attempts to link this Conduit to a lesser Conduit.
