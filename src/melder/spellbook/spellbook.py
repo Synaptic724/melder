@@ -12,38 +12,30 @@ class Spellbook(ISpellbook):
     The Spellbook stores all spells and sets the system configuration
     if it's the first Spellbook created.
     """
-    _lock = threading.RLock()
-    # Class variable shared across all Spellbooks
-    _configuration_locked: bool = False
-    _configuration = Configuration()
-
-    @classmethod
-    def is_configuration_locked(cls) -> bool:
-        """
-        Check if the global configuration has been locked.
-        """
-        return cls._configuration_locked
-
-    @classmethod
-    def lock_configuration(cls) -> None:
-        """
-        Lock the global configuration, preventing future modification.
-        """
-        if cls._configuration_locked:
-            raise RuntimeError("Configuration is already locked.")
-        # Lock the configuration
-
-        with cls._lock:
-            # Perform any necessary operations to lock the configuration
-            cls._configuration_locked = True
 
     def __init__(self):
         # Normal instance variables here
         self._lock = threading.RLock()
         self._conjured = False
+        self._configuration_locked: bool = False
+        self._configuration = Configuration()
 
-    @classmethod
-    def configure_conduit_state(cls, **kwargs) -> None:
+    def is_configuration_locked(self) -> bool:
+        """
+        Check if the configuration for this Spellbook has been locked.
+        """
+        return self._configuration_locked
+
+    def lock_configuration(self) -> None:
+        """
+        Lock this Spellbook's configuration, preventing future modification.
+        """
+        if self._configuration_locked:
+            raise RuntimeError("Configuration is already locked.")
+        with self._lock:
+            self._configuration_locked = True
+
+    def configure_conduit_state(self, **kwargs) -> None:
         """
         Configure the conduit state.
 
@@ -52,92 +44,62 @@ class Spellbook(ISpellbook):
 
         If any configuration errors occur, all attempted settings are cleared.
         """
-        if cls._configuration_locked:
+        if self._configuration_locked:
             raise RuntimeError("Configuration is locked. Cannot modify conduit state.")
 
         try:
             for key, value in kwargs.items():
-                if key not in cls._configuration.available_properties:
+                if key not in self._configuration.available_properties:
                     raise KeyError(
                         f"Unknown configuration key '{key}'. "
-                        f"Allowed keys are: {list(cls._configuration.available_properties.keys())}"
+                        f"Allowed keys are: {list(self._configuration.available_properties.keys())}"
                     )
 
-                cls._configuration.set_property(key, value)
+                self._configuration.set_property(key, value)
 
-            if not cls._configuration.validate():
+            if not self._configuration.validate():
                 raise ValueError("Invalid configuration. Please check your settings.")
 
-            cls._configuration.freeze()
-            cls._configuration_locked = True
+            self._configuration.freeze()
+            self._configuration_locked = True
 
         except (KeyError, ValueError) as e:
-            cls._configuration.clear_properties()
+            self._configuration.clear_properties()
             raise e
 
         except Exception:
             raise
 
-    @classmethod
-    def get_configuration(cls) -> Configuration:
+    def get_configuration(self) -> Configuration:
         """
         Get the current configuration of the Spellbook.
         :return: The current configuration.
         """
-        return cls._configuration
+        return self._configuration
 
-    def conjure(self, name: str = None) -> None:
+    def conjure(self, name: str = None) -> Conduit:
         """
         Conjure a new Conduit from this Spellbook.
 
         Automatic mode:
-            - Only one spellbook can conjure.
+            - Only one conduit per Spellbook.
             - Configuration is frozen once.
 
         Dynamic mode:
-            - Each spellbook can conjure once.
+            - Each Spellbook can conjure once.
             - Configuration is frozen the first time.
-        """
-        mode = Spellbook._configuration.get_property("conduit_state")
-
-        if mode == "automatic":
-            self._conjure_automatic(name)
-        elif mode == "dynamic":
-            self._conjure_dynamic(name)
-        else:
-            raise RuntimeError(f"Unknown conduit_state: {mode}")
-
-    def _conjure_automatic(self, name: str = None) -> Conduit:
-        """
-        Conjure a new Conduit from this Spellbook in automatic mode.
-        """
-        with Spellbook._lock:
-            # Dynamically create the __global_conjured__ attribute if it doesn't exist
-            if getattr(Spellbook, "__global_conjured__", False):
-                raise RuntimeError("Automatic mode allows only one Spellbook to conjure once.")
-
-            if not Spellbook.is_configuration_locked():
-                Spellbook._configuration.load_default_dictionary()
-                Spellbook._configuration.freeze()
-                Spellbook._configuration_locked = True
-
-            # Only now — patch the global conjure flag
-            setattr(Spellbook, "__global_conjured__", True)
-
-            return Conduit(spellbook=self, name=name, configuration=Spellbook._configuration)
-
-    def _conjure_dynamic(self, name: str = None) -> Conduit:
-        """
-        Conjure a new Conduit from this Spellbook in dynamic mode.
         """
         with self._lock:
             if self._conjured:
-                raise RuntimeError("This Spellbook already conjured a Conduit.")
+                raise RuntimeError(
+                    "This Spellbook has already conjured a Conduit. "
+                    "Only one is allowed per Spellbook."
+                )
 
-            if not Spellbook.is_configuration_locked():
-                Spellbook._configuration.load_default_dictionary()
-                Spellbook._configuration.freeze()
-                Spellbook._configuration_locked = True
+            if not self.is_configuration_locked():
+                self._configuration.load_default_dictionary()
+                self._configuration.freeze()
+                self._configuration_locked = True
 
             self._conjured = True
-            return Conduit(spellbook=self, name=name, configuration=Spellbook._configuration)
+            return Conduit(spellbook=self, name=name, conduit_state="normal", configuration=self._configuration)

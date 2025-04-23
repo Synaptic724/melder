@@ -420,7 +420,7 @@ class Edge(IDisposable):
         """
         Disposes of the Edge, releasing references to the connected nodes.
         """
-        if self.dispose:  # Prevent double disposal (typo in original code, should be self.disposed)
+        if self.disposed:  # Prevent double disposal (typo in original code, should be self.disposed)
             return
         with self._edge_lock:  # Acquire the lock for thread-safe disposal
             self.disposed = True  # Mark the edge as disposed

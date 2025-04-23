@@ -137,3 +137,25 @@ class IConduit(ABC, ISeal):
         Creates a new lesser Conduit (child scope) beneath this Conduit.
         """
         pass
+
+
+
+class ILink(ISeal):
+    """
+    Interface for a Link, which represents a connection between two Conduits.
+    """
+
+    @abstractmethod
+    def sever(self):
+        """
+        Sever the link between two Conduits.
+        """
+        pass
+
+    @abstractmethod
+    def seal(self):
+        """
+        Seals the link from other conduits and undoes the activities it created by ending the contract.
+        Prevents further linking, melding, or creation.
+        """
+        pass

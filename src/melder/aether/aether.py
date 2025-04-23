@@ -1,6 +1,6 @@
 import uuid
-from melder.utilities.interfaces import ISeal
-from melder.utilities.concurrent_list import ConcurrentList
+from melder.utilities.concurrent_dictionary import ConcurrentDict
+from melder.utilities.interfaces import ISeal, IConduit
 import threading
 
 class Aether(ISeal):
@@ -26,38 +26,58 @@ class Aether(ISeal):
         if not Aether._initialized:
             Aether._initialized = True
             self.sealed = False
-            self._conduits = ConcurrentList()
+            self._conduits = ConcurrentDict()
 
-    def add_conduit(self, conduit):
+    def get_conduit(self, name: str) -> IConduit:
         """
-        Adds a new conduit to the Aether.
+        Returns a conduit by its name.
         """
-        self._conduits.append(conduit)
+        for conduit in self._conduits.values():
+            if conduit.name == name:
+                return conduit
+        raise ValueError(f"Conduit with name {name} not found.")
 
-    def remove_conduit(self, conduit):
+    def get_conduit_by_signature(self, signature: uuid.uuid4) -> IConduit:
         """
-        Removes a conduit from the Aether.
+        Returns a conduit by its signature.
         """
-        self._conduits.remove(conduit)
+        for conduit in self._conduits.values():
+            if conduit.signature == signature:
+                return conduit
+        raise ValueError(f"Conduit with signature {signature} not found.")
 
-    def link_conduit_by_signature(self, req_conduit, conduit_signature: uuid.uuid4):
+    def _add_conduit(self, conduit: IConduit):
         """
-        Returns a conduit in order to link them.
+        Adds a new conduit to the Aether. This is primarily used by conduits internally. Not meant for external use.
         """
-        raise NotImplementedError("Not implemented.")
-        for conduit in self._conduits:
-            if conduit.name == conduit_signature:
+        self._conduits[conduit.__creation_context__._conduit_id] = conduit
+
+    def _remove_conduit(self, conduit: IConduit):
+        """
+        Removes a conduit from the Aether. Not meant for external use.
+        """
+        self._conduits.pop(conduit.__creation_context__._conduit_id)
+
+    def _link_conduit_by_signature(self, req_conduit, conduit_signature: uuid.uuid4):
+        """
+        Returns a conduit in order to link them. Not meant for external use.
+        """
+        raise NotImplementedError()
+        for conduit in self._conduits.values():
+            if conduit.signature == conduit_signature:
                 req_conduit.link(conduit)
+                return
         raise ValueError(f"Conduit signature: {conduit_signature}, not found.")
 
-    def link_conduit_by_name(self, req_conduit, conduit_name: str):
+    def _link_conduit_by_name(self, req_conduit: IConduit, conduit_name: str):
         """
-        Returns a conduit in order to link them.
+        Returns a conduit in order to link them. Not meant for external use.
         """
         raise NotImplementedError("Not implemented.")
-        for conduit in self._conduits:
+        for conduit in self._conduits.values():
             if conduit.name == conduit_name:
                 req_conduit.link(conduit)
+                return
         raise ValueError(f"Conduit name: {conduit_name}, not found.")
 
     def seal(self):
@@ -66,8 +86,7 @@ class Aether(ISeal):
         """
         if self.sealed:
             return
-        for conduit in self._conduits:
+        for conduit in self._conduits.values():
             conduit.seal()
         self._conduits.clear()
         self.sealed = True
-

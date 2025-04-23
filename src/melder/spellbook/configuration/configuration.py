@@ -12,40 +12,27 @@ class Configuration(ISeal):
       - How Scopes and dynamic behaviors function
       - System-wide flags such as debugging mode, dynamic expansion, and policies
 
-    It is a singleton class, ensuring that only one instance exists throughout the system.
-    Once Aether is conjured, critical properties become immutable to preserve system integrity.
-
     This object should only be configured once and then frozen to prevent any further changes.
+    Thread-safe operations are ensured with RLock.
     """
-    _instance = None
-    _lock = threading.RLock()
-    _initialized = False
-
-    def __new__(cls):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(Configuration, cls).__new__(cls)
-        return cls._instance
 
     def __init__(self):
-        if not Configuration._initialized:
-            Configuration._initialized = True
-            self.sealed = False
-            # Private dictionary storing all properties.
-            self._properties: ConcurrentDict = ConcurrentDict()
-            self.available_properties: Dict[str, Type] = {
-                "conduit_state": str,
-                "debugging": bool,
-                "disposal": bool,
-                "disposal_method_names": list
-            }
+        # Thread-safe lock for concurrent access
+        self._lock = threading.RLock()
+        self.sealed = False
+        self._frozen = False
 
-            # Properties that must remain immutable after conjure (idempotent laws of the system).
-            self._idempotent_keys = {"conduit_state", "debugging", "disposal", "disposal_method_names"}
+        # Private dictionary storing all properties.
+        self._properties: ConcurrentDict = ConcurrentDict()
+        self.available_properties: Dict[str, Type] = {
+            "conduit_state": str,
+            "debugging": bool,
+            "disposal": bool,
+            "disposal_method_names": list
+        }
 
-            # Indicates whether the properties have been frozen (sealed after conjure).
-            self._frozen = False
+        # Properties that must remain immutable after conjure (idempotent laws of the system).
+        self._idempotent_keys = {"conduit_state", "debugging", "disposal", "disposal_method_names"}
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -60,16 +47,14 @@ class Configuration(ISeal):
         if not isinstance(key, str):
             raise TypeError("Key must be a string.")
 
-        # Enforce idempotency for critical system properties
-        if key in self._idempotent_keys:
-            if key in self._properties:
+        with self._lock:
+            if key in self._idempotent_keys and key in self._properties:
                 raise RuntimeError(f"Cannot modify idempotent property '{key}' once set.")
 
-        # Enforce freeze globally
-        if self._frozen:
-            raise RuntimeError("Cannot modify configuration after it is frozen.")
+            if self._frozen:
+                raise RuntimeError("Cannot modify configuration after it is frozen.")
 
-        self._properties[key] = value
+            self._properties[key] = value
 
     def clear_properties(self) -> None:
         """
@@ -77,12 +62,12 @@ class Configuration(ISeal):
 
         This method is useful for resetting the configuration to its initial state.
         """
-        if self._frozen:
-            raise RuntimeError("Cannot clear properties after configuration is frozen")
-        elif self.sealed:
-            raise RuntimeError("Cannot clear properties after configuration is sealed")
-        self._properties.clear()
-
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot clear properties after configuration is frozen")
+            elif self.sealed:
+                raise RuntimeError("Cannot clear properties after configuration is sealed")
+            self._properties.clear()
 
     def freeze(self) -> None:
         """
@@ -97,9 +82,9 @@ class Configuration(ISeal):
         if not self.validate():
             raise ValueError("Configuration validation failed. Cannot freeze.")
         self._properties.freeze()
-        with Configuration._lock:
+        with self._lock:
             self.sealed = True
-        self._frozen = True
+            self._frozen = True
 
     def validate(self) -> bool:
         """
@@ -109,11 +94,9 @@ class Configuration(ISeal):
             ValueError: If any property is missing or has the wrong type.
         """
         for key, expected_type in self.available_properties.items():
-            # Check presence
             if key not in self._properties:
                 raise ValueError(f"Missing required configuration property: '{key}'.")
 
-            # Check type
             value = self._properties[key]
             if not isinstance(value, expected_type):
                 raise ValueError(
@@ -132,9 +115,6 @@ class Configuration(ISeal):
 
         Raises:
             KeyError if the property does not exist.
-
-        Example:
-            dynamic_mode = aether_properties.get_property('dynamic')
         """
         try:
             return self._properties[key]
@@ -147,10 +127,6 @@ class Configuration(ISeal):
 
         :param key: The property name to check.
         :return: True if the property exists, False otherwise.
-
-        Example:
-            if aether_properties.has_property('debugging'):
-                # Safe to access 'debugging' property
         """
         return key in self._properties
 
@@ -178,9 +154,9 @@ class Configuration(ISeal):
 
         This is called automatically during Aether conjure.
         """
-        if self.sealed:
-            return
-        with Configuration._lock:
+        with self._lock:
+            if self.sealed:
+                return
             self._properties.dispose()
             self.sealed = True
             self._frozen = True
