@@ -1,5 +1,6 @@
 import uuid
 from melder.utilities.concurrent_dictionary import ConcurrentDict
+from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.interfaces import ISeal, IConduit
 import threading
 
@@ -26,7 +27,8 @@ class Aether(ISeal):
         if not Aether._initialized:
             Aether._initialized = True
             self.sealed = False
-            self._conduits = ConcurrentDict()
+            self._conduits = ConcurrentDict() #This retains all normal conduits i.e roots created by a spellbook
+            self._conduit_clusters: ConcurrentDict[str, ConcurrentList[uuid.UUID]] = ConcurrentDict()  # Clusters only
 
     def get_conduit(self, name: str) -> IConduit:
         """
@@ -57,6 +59,39 @@ class Aether(ISeal):
         Removes a conduit from the Aether. Not meant for external use.
         """
         self._conduits.pop(conduit.__creation_context__._conduit_id)
+
+
+    def _create_cluster(self, cluster_name: str):
+        """
+        Creates a new cluster in the Aether. Not meant for external use.
+        """
+        if cluster_name in self._conduit_clusters:
+            raise ValueError(f"Cluster with name {cluster_name} already exists.")
+        self._conduit_clusters[cluster_name] = ConcurrentList()
+
+    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str):
+        """
+        Adds a conduit to a cluster in the Aether. Not meant for external use.
+        """
+        if cluster_name not in self._conduit_clusters:
+            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
+        self._conduit_clusters[cluster_name].append(conduit.__creation_context__._conduit_id)
+
+    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str):
+        """
+        Removes a conduit from a cluster in the Aether. Not meant for external use.
+        """
+        if cluster_name not in self._conduit_clusters:
+            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
+        self._conduit_clusters[cluster_name].remove(conduit.__creation_context__._conduit_id)
+
+    def _get_conduits_in_cluster(self, cluster_name: str) -> ConcurrentList[uuid.UUID]:
+        """
+        Returns a list of conduits in a cluster. Not meant for external use.
+        """
+        if cluster_name not in self._conduit_clusters:
+            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
+        return self._conduit_clusters[cluster_name]
 
     def _link_conduit_by_signature(self, req_conduit, conduit_signature: uuid.uuid4):
         """

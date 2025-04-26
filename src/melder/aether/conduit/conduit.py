@@ -1,11 +1,9 @@
 from typing import Optional
-from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.interfaces import IConduit, ISpellbook
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.spellbook.configuration.configuration import Configuration
-from melder.aether.links.link import Link
 import threading
 from melder.aether.conduit.creations.creations import Creations
 from enum import Enum, auto
@@ -80,6 +78,7 @@ class Conduit(IConduit):
             self._conduit_state = ConduitState.normal
         else:
             raise RuntimeError("Only lesser conduits can be upgraded.")
+
 
     def _apply_configuration_flags(self):
         """
