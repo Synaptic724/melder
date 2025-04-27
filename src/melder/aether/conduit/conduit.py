@@ -5,7 +5,7 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.spellbook.configuration.configuration import Configuration
 import threading
-from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.creations.creations import Creations, LesserCreations
 from enum import Enum, auto
 
 class ConduitState(Enum):
@@ -35,25 +35,30 @@ class Conduit(IConduit):
             conduit_state (str): The role of this Conduit ('normal' or 'lesser').
             name (str, optional): An optional name for easier identification.
         """
+        # General Init
+        self._lock = threading.RLock()
         self.name = name
         self.sealed = False
-        self._conduit_state = self._set_conduit_state(conduit_state)  # can be normal, lesser
-        self._lock = threading.RLock()
+        self.__debugger_mode__ = False
+        self.__dynamic_environment__ = False
         self._creation_context = ConduitCreationContext()
 
-        self._spellbook = spellbook
-        self._creations = Creations(configuration.get_property("disposal"), configuration.get_property("disposal_method_names"))
-        self._configuration = configuration
-
+        # Conduit Links
         self._conduit_links = None
         self._lesser_conduits_links = ConcurrentList()
 
-        self.__debugger_mode__ = False
-        self.__dynamic_environment__ = False
+        # Special Configuration
+        self._configuration = configuration
+        self._conduit_state = self._set_conduit_state(conduit_state)  # can be normal, lesser
+        self._creations = self._creations_configuration(configuration)
+        self._spellbook = spellbook
 
+        # Internal configuration
         self._apply_configuration_flags()
         self._create_internal_configuration()
-        Conduit._add_conduit_to_aether(self)
+
+        if self._conduit_state == ConduitState.normal:
+            Conduit._add_conduit_to_aether(self)
 
     @staticmethod
     def _set_conduit_state(state: str) -> ConduitState:
@@ -67,19 +72,47 @@ class Conduit(IConduit):
         else:
             raise ValueError("Conduit state is unknown")
 
+    def _creations_configuration(self, configuration: Configuration) -> Creations or LesserCreations:
+        """
+        Returns the current creations configuration for this Conduit.
+        """
+        if self._conduit_state == ConduitState.lesser:
+            return LesserCreations(configuration.get_property("disposal"), configuration.get_property("disposal_method_names"))
+        elif self._conduit_state == ConduitState.normal:
+            return Creations(configuration.get_property("disposal"), configuration.get_property("disposal_method_names"))
+        else:
+            raise RuntimeError("Conduit state is unknown")
+
     def upgrade_to_normal(self):
         """
         Upgrades this Conduit to a normal state. This allows the conduit to create its own links
         through the aether system. This will fork this conduit into a new tree and create new links with the parent.
         This conduit and its children go with it, only a normal scope can access the spellbook to bind new spells.
+
         :return:
         """
-        raise NotImplementedError("Not ready yet, this needs to fork into another tree and create new links with parent")
-        if self._conduit_state == ConduitState.lesser:
-            self._conduit_state = ConduitState.normal
-        else:
-            raise RuntimeError("Only lesser conduits can be upgraded.")
+        with self._lock:
+            if self._conduit_state != ConduitState.lesser:
+                raise RuntimeError("Only lesser conduits can be upgraded.")
 
+            # Step 1: Change state
+            self._conduit_state = ConduitState.normal
+
+            # Step 2: Transfer creation data
+            creations_data = self._creations.transfer_data_and_clear()
+
+            # Step 3: Create new Creations and inject data
+            new_creations = Creations(
+                disposal_enabled=self._configuration.get_property("disposal"),
+                disposal_method_names=self._configuration.get_property("disposal_method_names")
+            )
+            new_creations._upgrade_from_lesser_conduit(**creations_data)
+
+            # Step 4: Replace the old creations
+            self._creations = new_creations
+
+            # Step 5: Register as a full Conduit in Aether
+            Conduit._add_conduit_to_aether(self)
 
     def _apply_configuration_flags(self):
         """

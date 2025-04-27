@@ -1,7 +1,7 @@
 import uuid
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
-from melder.utilities.interfaces import ISeal, IConduit
+from melder.utilities.interfaces import ISeal, IConduit, ISpellbook
 import threading
 
 class Aether(ISeal):
@@ -11,6 +11,8 @@ class Aether(ISeal):
 
     It's a tool that will be used by conduits to link them together and
     allow them to communicate and extend their own behaviours.
+
+    UUID for each conduit is created by __creation_context__.conduit_id in each conduit class.
     """
     _instance = None
     _lock = threading.Lock()
@@ -43,21 +45,24 @@ class Aether(ISeal):
         """
         Returns a conduit by its signature.
         """
-        for conduit in self._conduits.values():
-            if conduit.signature == signature:
-                return conduit
+        if signature in self._conduits:
+            return self._conduits[signature]
         raise ValueError(f"Conduit with signature {signature} not found.")
 
     def _add_conduit(self, conduit: IConduit):
         """
         Adds a new conduit to the Aether. This is primarily used by conduits internally. Not meant for external use.
         """
+        if conduit.__creation_context__._conduit_id in self._conduits:
+            raise ValueError(f"Conduit with ID {conduit.__creation_context__._conduit_id} already exists.")
         self._conduits[conduit.__creation_context__._conduit_id] = conduit
 
     def _remove_conduit(self, conduit: IConduit):
         """
         Removes a conduit from the Aether. Not meant for external use.
         """
+        if conduit.__creation_context__._conduit_id not in self._conduits:
+            raise ValueError(f"Conduit with ID {conduit.__creation_context__._conduit_id} does not exist.")
         self._conduits.pop(conduit.__creation_context__._conduit_id)
 
 
