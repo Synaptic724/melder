@@ -15,7 +15,6 @@ class ConduitState(Enum):
     normal = auto()
     lesser = auto()
 
-
 class Conduit(IConduit):
     """
     A Conduit is a modular graph node that behaves like a scope and a factory.
@@ -71,9 +70,11 @@ class Conduit(IConduit):
     def upgrade_to_normal(self):
         """
         Upgrades this Conduit to a normal state. This allows the conduit to create its own links
-        through the aether system.
+        through the aether system. This will fork this conduit into a new tree and create new links with the parent.
+        This conduit and its children go with it, only a normal scope can access the spellbook to bind new spells.
         :return:
         """
+        raise NotImplementedError("Not ready yet, this needs to fork into another tree and create new links with parent")
         if self._conduit_state == ConduitState.lesser:
             self._conduit_state = ConduitState.normal
         else:
