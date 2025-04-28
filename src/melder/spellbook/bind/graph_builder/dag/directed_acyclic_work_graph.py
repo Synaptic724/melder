@@ -1,9 +1,4 @@
-import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from melder.utilities.interfaces import IDisposable
-
-# TODO: Remember that this DAG system is not adapted for parallelization. It sequentially executes work.
-
 
 class StateObject(IDisposable):
     """
@@ -26,7 +21,6 @@ class StateObject(IDisposable):
         super().__init__()  # Initialize the Disposable base class
         self._dag = dag  # Store a reference to the DAG
         self._execution_data = {}  # Dictionary to store the execution status of each node (node_id: status)
-        self._state_lock = threading.RLock()  # Reentrant lock for thread-safe access to the state
         self.disposed = False  # Flag indicating if the object has been disposed
 
     def register_node_result(self, node_id, success=True):
@@ -41,12 +35,11 @@ class StateObject(IDisposable):
             node_id: The unique identifier of the node.
             success: A boolean indicating whether the node execution was successful (True) or not (False).
         """
-        with self._state_lock:  # Acquire the lock to ensure thread-safe modification of the state
-            if success:
-                self._execution_data[node_id] = "SUCCESS"  # Mark the node as successfully executed
-            else:
-                self._execution_data[node_id] = "FAILED"  # Mark the node as failed
-                self.remove_node_and_edges(node_id)  # If it failed, remove it from the DAG
+        if success:
+            self._execution_data[node_id] = "SUCCESS"  # Mark the node as successfully executed
+        else:
+            self._execution_data[node_id] = "FAILED"  # Mark the node as failed
+            self.remove_node_and_edges(node_id)  # If it failed, remove it from the DAG
 
     def remove_node_and_edges(self, node_id):
         """
@@ -74,10 +67,9 @@ class StateObject(IDisposable):
         Returns:
             A list of nodes in topological order.
         """
-        with self._state_lock:  # Acquire the lock for thread-safe access to the DAG
-            # Just recompute a new topological order on the DAG
-            new_order = self._dag.topological_sort()
-            return new_order
+        # Just recompute a new topological order on the DAG
+        new_order = self._dag.topological_sort()
+        return new_order
 
     def get_status(self, node_id):
         """
@@ -89,8 +81,7 @@ class StateObject(IDisposable):
         Returns:
             A string representing the status of the node ("SUCCESS", "FAILED", or "UNKNOWN" if not yet recorded).
         """
-        with self._state_lock:  # Acquire the lock for thread-safe access to the execution data
-            return self._execution_data.get(node_id, "UNKNOWN")  # Return the status or "UNKNOWN" if not found
+        return self._execution_data.get(node_id, "UNKNOWN")  # Return the status or "UNKNOWN" if not found
 
     def get_all_statuses(self):
         """
@@ -99,8 +90,7 @@ class StateObject(IDisposable):
         Returns:
             A dictionary where keys are node IDs and values are their corresponding statuses.
         """
-        with self._state_lock:  # Acquire the lock for thread-safe access to the execution data
-            return dict(self._execution_data)  # Return a copy of the status dictionary
+        return dict(self._execution_data)  # Return a copy of the status dictionary
 
     def dispose(self):
         """
@@ -112,11 +102,9 @@ class StateObject(IDisposable):
         """
         if self.disposed:  # Prevent double disposal
             return
-        with self._state_lock:  # Acquire the lock for thread-safe access during disposal
-            self._execution_data.clear()  # Clear the dictionary of execution statuses
-            self._dag = None  # Remove the reference to the DAG
-            self.disposed = True  # Mark the object as disposed
-        print("[StateObject] Disposal complete.")
+        self._execution_data.clear()  # Clear the dictionary of execution statuses
+        self._dag = None  # Remove the reference to the DAG
+        self.disposed = True  # Mark the object as disposed
 
 
 
@@ -142,7 +130,6 @@ class ExecutionContext(IDisposable):
         """
         self.state = state  # Store a reference to the shared state object
         self.disposed = False  # Flag indicating if the object has been disposed
-        self._dispose_lock = threading.RLock()  # Lock for thread-safe disposal
 
     def execute(self):
         """
@@ -159,10 +146,9 @@ class ExecutionContext(IDisposable):
         This method ensures that the disposal logic is executed only once and
         that the reference to the StateObject is cleared.
         """
-        with self._dispose_lock:  # Acquire the lock for thread-safe disposal
-            if not self.disposed:  # Check if already disposed
-                self.state = None  # Remove the reference to the StateObject
-                self.disposed = True  # Mark as disposed
+        if not self.disposed:  # Check if already disposed
+            self.state = None  # Remove the reference to the StateObject
+            self.disposed = True  # Mark as disposed
 
     def __enter__(self):
         """
@@ -209,7 +195,6 @@ class Node(IDisposable):
         super().__init__()  # Initialize the Disposable base class
         self.id = node_id  # Unique identifier of the node
         self.disposed = False  # Flag indicating if the node has been disposed
-        self._lock = threading.RLock()  # Reentrant lock for thread-safe access to node data
 
         # Data structures to manage connections and tasks
         self._incoming_edges = []  # List of Edge objects pointing to this node
@@ -224,8 +209,7 @@ class Node(IDisposable):
         Args:
             context: An instance of an ExecutionContext subclass.
         """
-        with self._lock:  # Acquire the lock for thread-safe modification
-            self._execution_context = context
+        self._execution_context = context
 
     def get_execution_context(self):
         """
@@ -234,8 +218,7 @@ class Node(IDisposable):
         Returns:
             The ExecutionContext instance associated with this node, or None if not set.
         """
-        with self._lock:  # Acquire the lock for thread-safe access
-            return self._execution_context
+        return self._execution_context
 
     def add_incoming_edge(self, edge):
         """
@@ -244,8 +227,7 @@ class Node(IDisposable):
         Args:
             edge: An instance of the Edge class pointing to this node.
         """
-        with self._lock:  # Acquire the lock for thread-safe modification
-            self._incoming_edges.append(edge)
+        self._incoming_edges.append(edge)
 
     def remove_incoming_edge(self, edge):
         """
@@ -254,9 +236,8 @@ class Node(IDisposable):
         Args:
             edge: The Edge object to remove.
         """
-        with self._lock:  # Acquire the lock for thread-safe modification
-            if edge in self._incoming_edges:
-                self._incoming_edges.remove(edge)
+        if edge in self._incoming_edges:
+            self._incoming_edges.remove(edge)
 
     def add_outgoing_edge(self, edge):
         """
@@ -265,8 +246,7 @@ class Node(IDisposable):
         Args:
             edge: An instance of the Edge class originating from this node.
         """
-        with self._lock:  # Acquire the lock for thread-safe modification
-            self._outgoing_edges.append(edge)
+        self._outgoing_edges.append(edge)
 
     def remove_outgoing_edge(self, edge):
         """
@@ -275,9 +255,8 @@ class Node(IDisposable):
         Args:
             edge: The Edge object to remove.
         """
-        with self._lock:  # Acquire the lock for thread-safe modification
-            if edge in self._outgoing_edges:
-                self._outgoing_edges.remove(edge)
+        if edge in self._outgoing_edges:
+            self._outgoing_edges.remove(edge)
 
     def get_incoming_edges(self):
         """
@@ -286,8 +265,7 @@ class Node(IDisposable):
         Returns:
             A new list containing the incoming Edge objects.
         """
-        with self._lock:  # Acquire the lock for thread-safe access
-            return list(self._incoming_edges)  # Return a copy to prevent external modification
+        return list(self._incoming_edges)  # Return a copy to prevent external modification
 
     def get_outgoing_edges(self):
         """
@@ -296,8 +274,7 @@ class Node(IDisposable):
         Returns:
             A new list containing the outgoing Edge objects.
         """
-        with self._lock:  # Acquire the lock for thread-safe access
-            return list(self._outgoing_edges)  # Return a copy to prevent external modification
+        return list(self._outgoing_edges)  # Return a copy to prevent external modification
 
     def add_task(self, task):
         """
@@ -306,8 +283,7 @@ class Node(IDisposable):
         Args:
             task: A callable object (e.g., a function or a lambda).
         """
-        with self._lock:  # Acquire the lock for thread-safe modification
-            self._tasks.append(task)
+        self._tasks.append(task)
 
     def execute_tasks(self):
         """
@@ -319,9 +295,8 @@ class Node(IDisposable):
         parallelism or long-running operations within the tasks themselves. The
         ExecutionContext's execution happens after the simple tasks.
         """
-        with self._lock:  # Acquire the lock to get a copy of the tasks and the context
-            tasks_copy = list(self._tasks)  # Create a copy of the tasks to avoid issues if the list is modified during execution
-            context = self._execution_context
+        tasks_copy = list(self._tasks)  # Create a copy of the tasks to avoid issues if the list is modified during execution
+        context = self._execution_context
 
         # First execute all tasks without holding the lock
         for task in tasks_copy:
@@ -357,8 +332,7 @@ class Node(IDisposable):
         Returns:
             The next Node object in the sequence, or None if there isn't one.
         """
-        with self._lock:  # Acquire the lock for thread-safe access
-            return self._outgoing_edges[0].to_node if self._outgoing_edges else None
+        return self._outgoing_edges[0].to_node if self._outgoing_edges else None
 
     def find_target_node(self, target_id):
         """
@@ -374,10 +348,9 @@ class Node(IDisposable):
         Returns:
             The target Node object if found, otherwise None.
         """
-        with self._lock:  # Acquire the lock for thread-safe access to outgoing edges
-            for edge in self._outgoing_edges:
-                if edge.to_node.id == target_id:
-                    return edge.to_node
+        for edge in self._outgoing_edges:
+            if edge.to_node.id == target_id:
+                return edge.to_node
         return None
 
     def dispose(self):
@@ -385,14 +358,13 @@ class Node(IDisposable):
         Disposes of the Node, releasing references to edges, tasks, and the
         execution context.
         """
-        with self._lock:  # Acquire the lock for thread-safe disposal
-            self._incoming_edges.clear()  # Clear the list of incoming edges
-            self._outgoing_edges.clear()  # Clear the list of outgoing edges
-            self._tasks.clear()  # Clear the list of tasks
-            if self._execution_context is not None:
-                self._execution_context.dispose()  # Dispose of the execution context if it exists
-            self._execution_context = None  # Remove the reference to the execution context
-            self.disposed = True  # Mark the node as disposed
+        self._incoming_edges.clear()  # Clear the list of incoming edges
+        self._outgoing_edges.clear()  # Clear the list of outgoing edges
+        self._tasks.clear()  # Clear the list of tasks
+        if self._execution_context is not None:
+            self._execution_context.dispose()  # Dispose of the execution context if it exists
+        self._execution_context = None  # Remove the reference to the execution context
+        self.disposed = True  # Mark the node as disposed
 
 
 class Edge(IDisposable):
@@ -414,7 +386,6 @@ class Edge(IDisposable):
         self.disposed = False  # Flag indicating if the edge has been disposed
         self.from_node = from_node  # The source node of the edge
         self.to_node = to_node  # The destination node of the edge
-        self._edge_lock = threading.RLock()  # Lock for thread-safe disposal
 
     def dispose(self):
         """
@@ -422,10 +393,9 @@ class Edge(IDisposable):
         """
         if self.disposed:  # Prevent double disposal (typo in original code, should be self.disposed)
             return
-        with self._edge_lock:  # Acquire the lock for thread-safe disposal
-            self.disposed = True  # Mark the edge as disposed
-            self.from_node = None  # Remove the reference to the source node
-            self.to_node = None  # Remove the reference to the destination node
+        self.disposed = True  # Mark the edge as disposed
+        self.from_node = None  # Remove the reference to the source node
+        self.to_node = None  # Remove the reference to the destination node
 
 class DirectedAcyclicWorkGraph(IDisposable):
     """
@@ -445,7 +415,6 @@ class DirectedAcyclicWorkGraph(IDisposable):
         # Data structures to store nodes and edges
         self._nodes = {}  # Dictionary to store nodes (node_id: Node object)
         self._edges = []  # List to store Edge objects
-        self._lock = threading.RLock()  # Reentrant lock for thread-safe access to the DAG's data structures
         self.disposed = False  # Flag indicating if the DAG has been disposed
 
     def add_node(self, node):
@@ -455,9 +424,8 @@ class DirectedAcyclicWorkGraph(IDisposable):
         Args:
             node: An instance of the Node class to add.
         """
-        with self._lock:  # Acquire the lock for thread-safe modification of the nodes dictionary
-            if node.id not in self._nodes:
-                self._nodes[node.id] = node
+        if node.id not in self._nodes:
+            self._nodes[node.id] = node
 
     def remove_node(self, node):
         """
@@ -466,14 +434,13 @@ class DirectedAcyclicWorkGraph(IDisposable):
         Args:
             node: The Node object to remove.
         """
-        with self._lock:  # Acquire the lock for thread-safe modification of nodes and edges
-            if node.id in self._nodes:
-                # Remove edges connected to this node by filtering the edges list
-                self._edges = [
-                    e for e in self._edges
-                    if e.from_node != node and e.to_node != node
-                ]
-                del self._nodes[node.id]
+        if node.id in self._nodes:
+            # Remove edges connected to this node by filtering the edges list
+            self._edges = [
+                e for e in self._edges
+                if e.from_node != node and e.to_node != node
+            ]
+            del self._nodes[node.id]
 
     def add_edge(self, edge):
         """
@@ -483,12 +450,11 @@ class DirectedAcyclicWorkGraph(IDisposable):
             edge: An instance of the Edge class to add. The source and destination
                   nodes of the edge must already be present in the DAG.
         """
-        with self._lock:  # Acquire the lock for thread-safe modification of edges and node connections
-            if (edge.from_node.id in self._nodes and
-                    edge.to_node.id in self._nodes):
-                self._edges.append(edge)
-                edge.from_node.add_outgoing_edge(edge)  # Update the outgoing edges of the source node
-                edge.to_node.add_incoming_edge(edge)    # Update the incoming edges of the destination node
+        if (edge.from_node.id in self._nodes and
+                edge.to_node.id in self._nodes):
+            self._edges.append(edge)
+            edge.from_node.add_outgoing_edge(edge)  # Update the outgoing edges of the source node
+            edge.to_node.add_incoming_edge(edge)    # Update the incoming edges of the destination node
 
     def remove_edge(self, edge):
         """
@@ -497,9 +463,8 @@ class DirectedAcyclicWorkGraph(IDisposable):
         Args:
             edge: The Edge object to remove.
         """
-        with self._lock:  # Acquire the lock for thread-safe modification of the edges list
-            if edge in self._edges:
-                self._edges.remove(edge)
+        if edge in self._edges:
+            self._edges.remove(edge)
         edge.from_node.remove_outgoing_edge(edge)  # Update the outgoing edges of the source node
         edge.to_node.remove_incoming_edge(edge)    # Update the incoming edges of the destination node
 
@@ -510,8 +475,7 @@ class DirectedAcyclicWorkGraph(IDisposable):
         Returns:
             A new list containing all Node objects in the DAG.
         """
-        with self._lock:  # Acquire the lock for thread-safe access to the nodes dictionary
-            return list(self._nodes.values())
+        return list(self._nodes.values())
 
     def get_edges(self):
         """
@@ -520,8 +484,7 @@ class DirectedAcyclicWorkGraph(IDisposable):
         Returns:
             A new list containing all Edge objects in the DAG.
         """
-        with self._lock:  # Acquire the lock for thread-safe access to the edges list
-            return list(self._edges)
+        return list(self._edges)
 
     def find_node_by_id(self, node_id):
         """
@@ -533,8 +496,7 @@ class DirectedAcyclicWorkGraph(IDisposable):
         Returns:
             The Node object with the given ID, or None if not found.
         """
-        with self._lock:  # Acquire the lock for thread-safe access to the nodes dictionary
-            return self._nodes.get(node_id, None)
+        return self._nodes.get(node_id, None)
 
     def topological_sort(self):
         """
@@ -551,8 +513,7 @@ class DirectedAcyclicWorkGraph(IDisposable):
         Returns:
             A list of Node objects in topological order.
         """
-        with self._lock:  # Acquire the lock to get a copy of the nodes
-            nodes_copy = list(self._nodes.values())
+        nodes_copy = list(self._nodes.values())
 
         sorted_list = []  # List to store the topologically sorted nodes
         visited = set()  # Set to keep track of visited nodes
@@ -592,53 +553,38 @@ class DirectedAcyclicWorkGraph(IDisposable):
         for node in sorted_nodes:
             node.execute_tasks()  # Execute the tasks associated with each node
 
-    def execute_layered(self, max_workers=4):
+    def execute_layered(self):
         """
-        Executes the nodes in the DAG in parallel layers using a breadth-first search (BFS) approach.
+        Executes the nodes in the DAG sequentially, layer by layer.
 
-        This method identifies nodes with no incoming dependencies (in-degree of 0) as the
-        first layer. These nodes are executed in parallel using a thread pool. Once all
-        nodes in a layer have finished, the method identifies the next layer of nodes
-        whose dependencies have been met and executes them in parallel, and so on.
-
-        Args:
-            max_workers: The maximum number of threads to use for parallel execution.
+        Each layer is composed of nodes whose dependencies have been met.
+        Layers are executed sequentially, and nodes within a layer are also
+        executed sequentially (no threading or parallelism).
         """
-        # Build an in-degree map: how many incoming edges each node has
-        with self._lock:  # Acquire the lock to get a list of nodes
-            nodes_list = list(self._nodes.values())
+        nodes_list = list(self._nodes.values())
 
-        in_degree = {}  # Dictionary to store the in-degree of each node
+        in_degree = {}
         for node in nodes_list:
-            # number of incoming edges
             in_degree[node] = len(node.get_incoming_edges())
 
-        # Start with all nodes that have no dependencies (in-degree = 0)
         current_wave = [n for n in nodes_list if in_degree[n] == 0]
 
-        # We'll use a BFS layering approach with a thread pool
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            while current_wave:
-                # 1) Run current_wave in parallel
-                futures = {executor.submit(n.execute_tasks): n for n in current_wave}
+        while current_wave:
+            for node in current_wave:
+                node.execute_tasks()  # No parallelism — just execute one by one
 
-                # 2) Wait for all to finish
-                for future in as_completed(futures):
-                    finished_node = futures[future]
-                    for edge in finished_node.get_outgoing_edges():
-                        child = edge.to_node
-                        in_degree[child] -= 1  # Decrement the in-degree of the child nodes
+                for edge in node.get_outgoing_edges():
+                    child = edge.to_node
+                    in_degree[child] -= 1
 
-                # 3) Clear out the current wave from in_degree (or mark them as done)
-                for node in current_wave:
-                    if node in in_degree:
-                        del in_degree[node]
+            # Mark current wave nodes as completed
+            for node in current_wave:
+                if node in in_degree:
+                    del in_degree[node]
 
-                # 4) Build next_wave: find nodes whose in-degree has become 0
-                next_wave = [n for (n, deg) in in_degree.items() if deg == 0]
-
-                # 5) current_wave = next_wave
-                current_wave = next_wave
+            # Build next wave
+            next_wave = [n for (n, deg) in in_degree.items() if deg == 0]
+            current_wave = next_wave
 
     def generate_dot_file(self, file_path):
         """
@@ -650,8 +596,7 @@ class DirectedAcyclicWorkGraph(IDisposable):
         Args:
             file_path: The path to the file where the .dot representation will be written.
         """
-        with self._lock:  # Acquire the lock to get a copy of the edges
-            edges_copy = list(self._edges)
+        edges_copy = list(self._edges)
 
         with open(file_path, 'w') as writer:
             writer.write("digraph G {\n")  # Start of the .dot file content
@@ -665,16 +610,15 @@ class DirectedAcyclicWorkGraph(IDisposable):
         """
         if self.disposed:  # Prevent double disposal
             return
-        with self._lock:  # Acquire the lock for thread-safe disposal
-            for node in self._nodes.values():
-                node.dispose()  # Dispose of each node
-            self._nodes.clear()  # Clear the dictionary of nodes
+        for node in self._nodes.values():
+            node.dispose()  # Dispose of each node
+        self._nodes.clear()  # Clear the dictionary of nodes
 
-            for edge in self._edges:
-                edge.dispose()  # Dispose of each edge
-            self._edges.clear()  # Clear the list of edges
+        for edge in self._edges:
+            edge.dispose()  # Dispose of each edge
+        self._edges.clear()  # Clear the list of edges
 
-            self.disposed = True  # Mark the DAG as disposed
+        self.disposed = True  # Mark the DAG as disposed
 
 
 # # Assume Node, Edge, ExecutionContext, etc. are defined

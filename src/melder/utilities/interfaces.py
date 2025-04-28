@@ -81,7 +81,7 @@ class IDisposable(ABC):
         pass
 
 
-class ISpellbook(ABC, ISeal):
+class ISpellbook(ISeal):
     """
     Interface for Spellbook, which is a graph structure that behaves like a scope and a factory.
     """
@@ -101,7 +101,7 @@ class ISpellbook(ABC, ISeal):
         """
         pass
 
-class ISpell(ABC, ISeal):
+class ISpell(ISeal):
     """
     Interface for a Spell, which is a unit of magic that can be cast.
     """
@@ -129,7 +129,7 @@ class ISpell(ABC, ISeal):
         pass
 
 
-class IMeld(ABC, ISeal):
+class IMeld(ISeal):
     """
     Interface for a Meld, which is a process of creating or materializing an object
     from the Conduit's registered spells.
@@ -145,7 +145,7 @@ class IMeld(ABC, ISeal):
 
 
 
-class IConduit(ABC, ISeal):
+class IConduit(ISeal):
     """
     Interface for a Conduit, which behaves as both a scope and a factory within the system.
     """
@@ -175,7 +175,7 @@ class IConduit(ABC, ISeal):
 
 
 
-class ILink(ABC, ISeal):
+class ILink(ISeal):
     """
     Interface for a Link, which represents a connection between two Conduits.
     """

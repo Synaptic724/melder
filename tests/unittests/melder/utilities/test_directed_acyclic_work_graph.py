@@ -1,6 +1,7 @@
 import unittest
 import time
-from melder.spellbook.bind.graph_builder.dag import Node, Edge, DirectedAcyclicWorkGraph, StateObject, ExecutionContext
+from melder.spellbook.bind.graph_builder.dag.directed_acyclic_work_graph import Node, Edge, DirectedAcyclicWorkGraph, StateObject, ExecutionContext
+import random
 
 # Assuming you have all your DAG code in a module named 'dag_module'
 # For example:
@@ -219,7 +220,7 @@ class TestDAGSystem(unittest.TestCase):
         b.add_task(taskB)
         c.add_task(taskC)
 
-        dag.execute_layered(max_workers=2)
+        dag.execute_layered()
 
         # A and B can be in any order, but C must be last.
         self.assertEqual(call_list[-1], "C", "C must be last in BFS layering.")
@@ -262,7 +263,7 @@ class TestDAGSystem(unittest.TestCase):
         node_e.add_task(lambda: call_list.append("E"))
         node_f.add_task(lambda: call_list.append("F"))
 
-        dag.execute_layered(max_workers=3)
+        dag.execute_layered()
 
         # Check that each node executed exactly once
         self.assertCountEqual(call_list, ["A","B","C","D","E","F"],
@@ -346,6 +347,72 @@ class TestDAGSystem(unittest.TestCase):
         self.assertEqual(state.get_all_statuses(), {}, "Execution data should be cleared after dispose.")
 
 
+class TestDAGMegaStress(unittest.TestCase):
+    def build_large_dag(self, num_nodes=1000, max_edges_per_node=3):
+        """
+        Build a large Directed Acyclic Graph with the given number of nodes.
+        Each node can have up to `max_edges_per_node` outgoing edges.
+        """
+        dag = DirectedAcyclicWorkGraph()
+        nodes = []
+
+        # Create nodes
+        for i in range(num_nodes):
+            node = Node(f"Node_{i}")
+            node._test_ran = False  # 👈 Add a marker field on each node
+            node.add_task(lambda n=node: setattr(n, "_test_ran", True))  # Mark task as 'ran'
+            dag.add_node(node)
+            nodes.append(node)
+
+        # Randomly add edges (only from lower index to higher to prevent cycles)
+        for i in range(num_nodes):
+            from_node = nodes[i]
+            possible_targets = nodes[i+1:]
+            targets = random.sample(possible_targets, min(len(possible_targets), max_edges_per_node))
+            for to_node in targets:
+                dag.add_edge(Edge(from_node, to_node))
+
+        return dag, nodes
+
+    def test_execute_large_dag_sequential(self):
+        """
+        Test Sequential execution of a large DAG and assert that all nodes executed.
+        """
+        num_nodes = 5000
+        max_edges_per_node = 5
+
+        dag, nodes = self.build_large_dag(num_nodes=num_nodes, max_edges_per_node=max_edges_per_node)
+
+        start_time = time.perf_counter()
+        dag.execute()
+        duration = time.perf_counter() - start_time
+
+        # ✅ Assert: all nodes should have run (i.e., _test_ran == True)
+        for node in nodes:
+            self.assertTrue(node._test_ran, f"Node {node.id} did not execute its task!")
+
+        # ✅ Optionally: performance assertion (won't fail unless super slow)
+        self.assertLess(duration, 10, f"Sequential execution took too long: {duration:.2f} seconds.")
+
+    def test_execute_large_dag_layered(self):
+        """
+        Test Layered execution of a large DAG and assert that all nodes executed.
+        """
+        num_nodes = 5000
+        max_edges_per_node = 5
+
+        dag, nodes = self.build_large_dag(num_nodes=num_nodes, max_edges_per_node=max_edges_per_node)
+
+        start_time = time.perf_counter()
+        dag.execute_layered()
+        duration = time.perf_counter() - start_time
+
+        # ✅ Assert: all nodes should have run (i.e., _test_ran == True)
+        for node in nodes:
+            self.assertTrue(node._test_ran, f"Node {node.id} did not execute its task!")
+
+        # ✅ Optionally: performance assertion
+        self.assertLess(duration, 10, f"Layered execution took too long: {duration:.2f} seconds.")
+
 if __name__ == "__main__":
-    # This allows you to run the tests from this file via: python test_dag_system.py
     unittest.main()
