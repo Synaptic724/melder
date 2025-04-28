@@ -61,9 +61,10 @@ class Aether(ISeal):
         """
         Removes a conduit from the Aether. Not meant for external use.
         """
-        if conduit.__creation_context__._conduit_id not in self._conduits:
-            raise ValueError(f"Conduit with ID {conduit.__creation_context__._conduit_id} does not exist.")
-        self._conduits.pop(conduit.__creation_context__._conduit_id)
+        conduit_id = conduit.__creation_context__._conduit_id
+        removed = self._conduits.pop(conduit_id, None)
+        if removed is None:
+            raise ValueError(f"Conduit with ID {conduit_id} does not exist.")
 
 
     def _create_cluster(self, cluster_name: str):

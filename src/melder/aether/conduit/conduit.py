@@ -1,6 +1,6 @@
 from typing import Optional
 from melder.utilities.concurrent_list import ConcurrentList
-from melder.utilities.interfaces import IConduit, ISpellbook
+from melder.utilities.interfaces import IConduit, ISpellbook, IMeld
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.spellbook.configuration.configuration import Configuration
@@ -187,7 +187,7 @@ class Conduit(IConduit):
         if self.sealed:
             raise RuntimeError("Cannot link to a sealed Conduit.")
         if not self.__dynamic_environment__:
-            raise RuntimeError("Dynamic environment is not enabled. Cannot manually link services.")
+            raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
 
@@ -199,6 +199,8 @@ class Conduit(IConduit):
         """
         if self.sealed:
             raise RuntimeError("Cannot sever a link in a sealed Conduit.")
+        if not self.__dynamic_environment__:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         with self._lock:
             raise NotImplementedError("Severing links is not implemented yet.")
 

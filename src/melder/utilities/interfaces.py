@@ -101,6 +101,49 @@ class ISpellbook(ABC, ISeal):
         """
         pass
 
+class ISpell(ABC, ISeal):
+    """
+    Interface for a Spell, which is a unit of magic that can be cast.
+    """
+
+    @abstractmethod
+    def add_spell_details(self):
+        """
+        Casts the spell.
+        """
+        pass
+
+    @abstractmethod
+    def add_owned_conduit(self):
+        """
+        Adds the conduit ID that owns this spell.
+        :param conduit_id: The ID of the conduit that owns this spell.
+        """
+        pass
+
+    @abstractmethod
+    def cast(self):
+        """
+        Casts the spell.
+        """
+        pass
+
+
+class IMeld(ABC, ISeal):
+    """
+    Interface for a Meld, which is a process of creating or materializing an object
+    from the Conduit's registered spells.
+    """
+
+    @abstractmethod
+    def meld(self):
+        """
+        Melding is the process of creating or materializing an object
+        from the Conduit's registered spells.
+        """
+        pass
+
+
 
 class IConduit(ABC, ISeal):
     """
@@ -124,14 +167,6 @@ class IConduit(ABC, ISeal):
         pass
 
     @abstractmethod
-    def seal(self):
-        """
-        Seals this Conduit and all its lesser Conduits.
-        Prevents further linking, melding, or creation.
-        """
-        pass
-
-    @abstractmethod
     def create_lesser_conduit(self):
         """
         Creates a new lesser Conduit (child scope) beneath this Conduit.
@@ -140,7 +175,7 @@ class IConduit(ABC, ISeal):
 
 
 
-class ILink(ISeal):
+class ILink(ABC, ISeal):
     """
     Interface for a Link, which represents a connection between two Conduits.
     """
@@ -149,13 +184,5 @@ class ILink(ISeal):
     def sever(self):
         """
         Sever the link between two Conduits.
-        """
-        pass
-
-    @abstractmethod
-    def seal(self):
-        """
-        Seals the link from other conduits and undoes the activities it created by ending the contract.
-        Prevents further linking, melding, or creation.
         """
         pass

@@ -300,14 +300,13 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
         """
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentDict.")
-        else:
-            # Use the lock to ensure thread safety
-            with self._lock:
-                if key in self._dict:
-                    return self._dict.pop(key)
+        with self._lock:
+            try:
+                return self._dict.pop(key)
+            except KeyError:
                 if default is not None:
                     return default
-                raise KeyError(key)
+                raise
 
     def popitem(self) -> Tuple[_K, _V]:
         """
