@@ -50,6 +50,7 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
                 Initial data for the dictionary. Can be another dictionary,
                 or an iterable of (key, value) pairs.
         """
+        super().__init__()
         if initial is None:
             initial = {}
         # Convert 'initial' to a dict:
@@ -57,7 +58,7 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
         # - If it's an iterable of (key, value) pairs, dict(...) will handle that as well.
         self._dict: Dict[_K, _V] = dict(initial)
         self._lock: threading.RLock = threading.RLock()
-        self.disposed = False
+        self._disposed = False
         self._freeze = False
 
     def freeze(self) -> None:
@@ -653,10 +654,10 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
 
         This method is idempotent — multiple calls won't cause errors.
         """
-        if not self.disposed:
+        if not self._disposed:
             with self._lock:
                 self._dict.clear()
-            self.disposed = True
+            self._disposed = True
         warnings.warn(
             "Your ConcurrentDictionary has been disposed and should not be used further. ",
             UserWarning

@@ -26,9 +26,10 @@ class ConcurrentList(Generic[_T], IDisposable):
         Args:
             initial (Iterable[_T], optional): An iterable to initialize the list.
         """
+        super().__init__()
         self._lock = threading.RLock()
         self._list: List[_T] = list(initial) if initial else []
-        self.disposed = False
+        self._disposed = False
         self._freeze = False
 
     def freeze(self) -> None:
@@ -692,10 +693,10 @@ class ConcurrentList(Generic[_T], IDisposable):
 
         This method is idempotent — multiple calls won't cause errors.
         """
-        if not self.disposed:
+        if not self._disposed:
             with self._lock:
                 self._list.clear()
-            self.disposed = True
+            self._disposed = True
         warnings.warn(
             "Your ConcurrentList has been disposed and should not be used further. ",
             UserWarning

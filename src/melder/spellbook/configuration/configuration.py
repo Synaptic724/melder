@@ -18,8 +18,9 @@ class Configuration(ISeal):
 
     def __init__(self):
         # Thread-safe lock for concurrent access
+        super().__init__()
         self._lock = threading.RLock()
-        self.sealed = False
+        self._sealed = False
         self._frozen = False
 
         # Private dictionary storing all properties.
@@ -65,7 +66,7 @@ class Configuration(ISeal):
         with self._lock:
             if self._frozen:
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
-            elif self.sealed:
+            elif self._sealed:
                 raise RuntimeError("Cannot clear properties after configuration is sealed")
             self._properties.clear()
 
@@ -83,7 +84,7 @@ class Configuration(ISeal):
             raise ValueError("Configuration validation failed. Cannot freeze.")
         self._properties.freeze()
         with self._lock:
-            self.sealed = True
+            self._sealed = True
             self._frozen = True
 
     def validate(self) -> bool:
@@ -155,8 +156,8 @@ class Configuration(ISeal):
         This is called automatically during Aether conjure.
         """
         with self._lock:
-            if self.sealed:
+            if self._sealed:
                 return
             self._properties.dispose()
-            self.sealed = True
+            self._sealed = True
             self._frozen = True

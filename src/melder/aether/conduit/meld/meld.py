@@ -14,8 +14,8 @@ class Meld(IMeld):
     """
 
     def __init__(self, creations: LesserCreations | Creations, spellbook: ISpellbook):
+        super().__init__()
         self._lock = threading.RLock()
-        self.sealed = False
 
         # Spellbook
         self._owned_spell = spellbook._spells
@@ -42,9 +42,9 @@ class Meld(IMeld):
         Seal the conduit to prevent further modifications.
         """
         with self._lock:
-            if self.sealed:
+            if self._sealed:
                 return
             self._owned_spell = None
             self._contracted = None
             self._creations = None
-            self.sealed = True
+            self._sealed = True

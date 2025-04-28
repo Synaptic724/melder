@@ -1,3 +1,4 @@
+import threading
 from abc import ABC, abstractmethod
 
 
@@ -20,12 +21,24 @@ class ISeal(ABC):
         - Register all their cleanups inside `seal()`.
         - Handle multiple calls to `seal()` gracefully.
     """
+    def __init__(self):
+        self._sealed = False
+
+    @property
+    def sealed(self):
+        """
+        Check if the object is sealed.
+        :return: True if sealed, False otherwise.
+        """
+        return self._sealed
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.seal()
+
+
 
     @abstractmethod
     def seal(self):
@@ -60,6 +73,16 @@ class IDisposable(ABC):
         - Optionally provide a `cleanup()` alias.
         - Handle multiple calls to `dispose()` gracefully.
     """
+    def __init__(self):
+        self._disposed = False
+
+    @property
+    def disposed(self):
+        """
+        Check if the object is sealed.
+        :return: True if sealed, False otherwise.
+        """
+        return self._disposed
 
     def __enter__(self):
         return self

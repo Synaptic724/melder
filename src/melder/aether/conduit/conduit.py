@@ -35,10 +35,10 @@ class Conduit(IConduit):
             conduit_state (str): The role of this Conduit ('normal' or 'lesser').
             name (str, optional): An optional name for easier identification.
         """
+        super().__init__()
         # General Init
         self._lock = threading.RLock()
         self.name = name
-        self.sealed = False
         self.__debugger_mode__ = False
         self.__dynamic_environment__ = False
         self._creation_context = ConduitCreationContext()
@@ -184,7 +184,7 @@ class Conduit(IConduit):
         Returns:
             bool: True if linking succeeds (currently not implemented).
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot link to a sealed Conduit.")
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
@@ -197,7 +197,7 @@ class Conduit(IConduit):
 
         This is meant for internal use please do not use this outside of the class.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot sever a link in a sealed Conduit.")
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
@@ -218,7 +218,7 @@ class Conduit(IConduit):
         Returns:
             bool: True if linking succeeds (currently not implemented).
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot link to a sealed Conduit.")
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
@@ -234,7 +234,7 @@ class Conduit(IConduit):
         Returns:
             Conduit: The newly created lesser Conduit.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot create a lesser Conduit in a sealed Conduit.")
 
         with self._lock:
@@ -254,10 +254,10 @@ class Conduit(IConduit):
         Prevents further operation, releases internal references,
         and unregisters from the Aether.
         """
-        if self.sealed:
+        if self._sealed:
             return
         with self._lock:
-            if self.sealed:
+            if self._sealed:
                 return
 
             # Phase 1: Cleanup and disposal
@@ -277,7 +277,7 @@ class Conduit(IConduit):
             if self._aether and not self._aether.sealed:
                 self._aether._remove_conduit(self)
 
-            self.sealed = True
+            self._sealed = True
 
     def __repr__(self):
         return (

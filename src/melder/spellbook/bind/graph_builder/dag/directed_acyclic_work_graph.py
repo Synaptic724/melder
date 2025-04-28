@@ -21,7 +21,7 @@ class StateObject(IDisposable):
         super().__init__()  # Initialize the Disposable base class
         self._dag = dag  # Store a reference to the DAG
         self._execution_data = {}  # Dictionary to store the execution status of each node (node_id: status)
-        self.disposed = False  # Flag indicating if the object has been disposed
+        self._disposed = False  # Flag indicating if the object has been disposed
 
     def register_node_result(self, node_id, success=True):
         """
@@ -100,11 +100,11 @@ class StateObject(IDisposable):
         the object when it is no longer needed. It clears the execution data and
         removes the reference to the DAG to prevent memory leaks.
         """
-        if self.disposed:  # Prevent double disposal
+        if self._disposed:  # Prevent double disposal
             return
         self._execution_data.clear()  # Clear the dictionary of execution statuses
         self._dag = None  # Remove the reference to the DAG
-        self.disposed = True  # Mark the object as disposed
+        self._disposed = True  # Mark the object as disposed
 
 
 
@@ -128,8 +128,9 @@ class ExecutionContext(IDisposable):
         Args:
             state: The shared StateObject instance.
         """
+        super().__init__()
         self.state = state  # Store a reference to the shared state object
-        self.disposed = False  # Flag indicating if the object has been disposed
+        self._disposed = False  # Flag indicating if the object has been disposed
 
     def execute(self):
         """
@@ -146,9 +147,9 @@ class ExecutionContext(IDisposable):
         This method ensures that the disposal logic is executed only once and
         that the reference to the StateObject is cleared.
         """
-        if not self.disposed:  # Check if already disposed
+        if not self._disposed:  # Check if already disposed
             self.state = None  # Remove the reference to the StateObject
-            self.disposed = True  # Mark as disposed
+            self._disposed = True  # Mark as disposed
 
     def __enter__(self):
         """
@@ -194,7 +195,7 @@ class Node(IDisposable):
         """
         super().__init__()  # Initialize the Disposable base class
         self.id = node_id  # Unique identifier of the node
-        self.disposed = False  # Flag indicating if the node has been disposed
+        self._disposed = False  # Flag indicating if the node has been disposed
 
         # Data structures to manage connections and tasks
         self._incoming_edges = []  # List of Edge objects pointing to this node
@@ -364,7 +365,7 @@ class Node(IDisposable):
         if self._execution_context is not None:
             self._execution_context.dispose()  # Dispose of the execution context if it exists
         self._execution_context = None  # Remove the reference to the execution context
-        self.disposed = True  # Mark the node as disposed
+        self._disposed = True  # Mark the node as disposed
 
 
 class Edge(IDisposable):
@@ -383,7 +384,7 @@ class Edge(IDisposable):
             to_node: The Node object where the edge points to.
         """
         super().__init__()  # Initialize the Disposable base class
-        self.disposed = False  # Flag indicating if the edge has been disposed
+        self._disposed = False  # Flag indicating if the edge has been disposed
         self.from_node = from_node  # The source node of the edge
         self.to_node = to_node  # The destination node of the edge
 
@@ -391,9 +392,9 @@ class Edge(IDisposable):
         """
         Disposes of the Edge, releasing references to the connected nodes.
         """
-        if self.disposed:  # Prevent double disposal (typo in original code, should be self.disposed)
+        if self._disposed:  # Prevent double disposal (typo in original code, should be self._disposed)
             return
-        self.disposed = True  # Mark the edge as disposed
+        self._disposed = True  # Mark the edge as disposed
         self.from_node = None  # Remove the reference to the source node
         self.to_node = None  # Remove the reference to the destination node
 
@@ -415,7 +416,7 @@ class DirectedAcyclicWorkGraph(IDisposable):
         # Data structures to store nodes and edges
         self._nodes = {}  # Dictionary to store nodes (node_id: Node object)
         self._edges = []  # List to store Edge objects
-        self.disposed = False  # Flag indicating if the DAG has been disposed
+        self._disposed = False  # Flag indicating if the DAG has been disposed
 
     def add_node(self, node):
         """
@@ -608,7 +609,7 @@ class DirectedAcyclicWorkGraph(IDisposable):
         """
         Disposes of all nodes and edges in the DAG, releasing their resources.
         """
-        if self.disposed:  # Prevent double disposal
+        if self._disposed:  # Prevent double disposal
             return
         for node in self._nodes.values():
             node.dispose()  # Dispose of each node
@@ -618,7 +619,7 @@ class DirectedAcyclicWorkGraph(IDisposable):
             edge.dispose()  # Dispose of each edge
         self._edges.clear()  # Clear the list of edges
 
-        self.disposed = True  # Mark the DAG as disposed
+        self._disposed = True  # Mark the DAG as disposed
 
 
 # # Assume Node, Edge, ExecutionContext, etc. are defined

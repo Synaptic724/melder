@@ -76,6 +76,7 @@ class Link(ISeal):
             creator (Conduit): The Conduit creating the link.
             target (Conduit): The Conduit being linked to.
         """
+        super().__init__()
         self._creator = creator
         self._target = target
 
@@ -83,7 +84,6 @@ class Link(ISeal):
         self._outgoing_permissions = LinkPermissions()  # Permissions the creator has over the target
 
         self._lock = threading.RLock()
-        self.sealed = False
 
     def add_outgoing_permission(self, permission: str) -> None:
         """
@@ -92,7 +92,7 @@ class Link(ISeal):
         Args:
             permission (str): The permission to add.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot modify a sealed Link.")
         with self._lock:
             self._outgoing_permissions.add(permission)
@@ -104,7 +104,7 @@ class Link(ISeal):
         Args:
             permission (str): The permission to add.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot modify a sealed Link.")
         with self._lock:
             self._incoming_permissions.add(permission)
@@ -113,12 +113,12 @@ class Link(ISeal):
         """
         Seal this Link, preventing any further modifications.
         """
-        if self.sealed:
+        if self._sealed:
             return
         with self._lock:
             self._creator = None
             self._target = None
             self._incoming_permissions = None
             self._outgoing_permissions = None
-            self.sealed = True
+            self._sealed = True
 

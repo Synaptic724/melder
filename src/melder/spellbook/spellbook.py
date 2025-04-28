@@ -34,9 +34,10 @@ class Spell(ISpell):
             tags: Optional[List[str]] = None,
             metadata: Optional[dict] = None
     ):
+        super().__init__()
         self.spell_type = self.define_spell_type(spell_type)
         self._lock = threading.RLock()
-        self.sealed = False
+        self._sealed = False
 
         # Spell Type
         self.owned_spell = None
@@ -102,7 +103,7 @@ class Spell(ISpell):
         """
         raise NotImplementedError("Not implemented.")
         with self._lock:
-            if self.sealed:
+            if self._sealed:
                 raise RuntimeError("Spell is sealed and cannot be cast.")
             # Implement the actual casting logic here
             if self.user_created_object:
@@ -117,10 +118,10 @@ class Spell(ISpell):
         Seals the spell, preventing any further modifications.
         """
         with self._lock:
-            if self.sealed:
+            if self._sealed:
                 return
             self.dependency_graph.dispose()
-            self.sealed = True
+            self._sealed = True
 
 
 class Spellbook(ISpellbook):

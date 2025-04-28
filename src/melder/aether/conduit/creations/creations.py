@@ -27,6 +27,8 @@ class Creations(ISeal):
         The items in this dictionary hold references to the objects created by the conduit.
         The UUID is the spellID of the object.
         """
+        super().__init__()
+        self._lock = threading.RLock()
         self._unique: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
         self._unique_per_scope: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
         self._many: ConcurrentDict[uuid.UUID, ConcurrentList[object]] = ConcurrentDict()
@@ -35,9 +37,6 @@ class Creations(ISeal):
 
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
-
-        self.sealed = False
-        self._lock = threading.RLock()
 
     def _upgrade_from_lesser_conduit(self, **kwargs) -> None:
         """
@@ -59,7 +58,7 @@ class Creations(ISeal):
             key (uuid4): Unique identifier.
             item (object): Object to manage.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot add to sealed Creations.")
         if key in self._unique:
             raise ValueError(f"Key {key} already exists in unique objects.")
@@ -73,7 +72,7 @@ class Creations(ISeal):
             key (uuid4): Unique identifier.
             item (object): Object to manage.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot add to sealed Creations.")
         if key in self._unique_per_lineage:
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
@@ -87,7 +86,7 @@ class Creations(ISeal):
             key (uuid4): Unique identifier.
             item (object): Object to manage.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot add to sealed Creations.")
         if key in self._unique_per_cluster:
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
@@ -101,7 +100,7 @@ class Creations(ISeal):
             key (uuid4): Unique identifier.
             item (object): Object to manage.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot add to sealed Creations.")
         if key in self._unique_per_scope:
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
@@ -115,7 +114,7 @@ class Creations(ISeal):
             key (uuid4): Collection identifier.
             item (object): Object to add.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot add to sealed Creations.")
         if key not in self._many:
             self._many[key] = ConcurrentList()
@@ -127,7 +126,7 @@ class Creations(ISeal):
 
         Once sealed, no further modifications are allowed.
         """
-        if self.sealed:
+        if self._sealed:
             return
 
         with self._lock:
@@ -143,7 +142,7 @@ class Creations(ISeal):
             self._unique_per_scope = None
             self._many = None
             self._disposal_method_names = None
-            self.sealed = True
+            self._sealed = True
 
             if errors:
                 raise ExceptionGroup("Errors occurred during sealing", errors)
@@ -292,13 +291,14 @@ class LesserCreations(ISeal):
         The items in this dictionary hold references to the objects created by the conduit.
         The UUID is the spellID of the object.
         """
+        super().__init__()
         self._unique_per_scope: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
         self._many: ConcurrentDict[uuid.UUID, ConcurrentList[object]] = ConcurrentDict()
 
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
 
-        self.sealed = False
+        self._sealed = False
         self._lock = threading.RLock()
 
     def transfer_data_and_clear(self) -> dict:
@@ -327,7 +327,7 @@ class LesserCreations(ISeal):
             key (uuid4): Unique identifier.
             item (object): Object to manage.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot add to sealed Creations.")
         if key in self._unique_per_scope:
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
@@ -341,7 +341,7 @@ class LesserCreations(ISeal):
             key (uuid4): Collection identifier.
             item (object): Object to add.
         """
-        if self.sealed:
+        if self._sealed:
             raise RuntimeError("Cannot add to sealed Creations.")
         if key not in self._many:
             self._many[key] = ConcurrentList()
@@ -353,7 +353,7 @@ class LesserCreations(ISeal):
 
         Once sealed, no further modifications are allowed.
         """
-        if self.sealed:
+        if self._sealed:
             return
 
         with self._lock:
@@ -365,7 +365,7 @@ class LesserCreations(ISeal):
             self._unique_per_scope = None
             self._many = None
             self._disposal_method_names = None
-            self.sealed = True
+            self._sealed = True
 
             if errors:
                 raise ExceptionGroup("Errors occurred during sealing", errors)

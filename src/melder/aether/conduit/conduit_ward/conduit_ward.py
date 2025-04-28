@@ -1,6 +1,5 @@
 import uuid
 from abc import ABC
-
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.interfaces import ISeal, IConduit, ISpellbook
@@ -13,6 +12,8 @@ class ConduitWard(ISeal):
         Conduitward is a class that manages the links between conduits.
         :param conduit:
         """
+        super().__init__()
+        self._lock = threading.RLock()
         self._conduit = conduit
         self.active_links = ConcurrentList()
 
