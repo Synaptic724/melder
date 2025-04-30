@@ -3,44 +3,47 @@ from inspect import Parameter
 import json
 from typing import Any, Dict, List, Optional, Type, Callable
 
+class InspectorUtility:
+    @staticmethod
+    def safe_repr(obj: Any, max_len: int = 120) -> str:
+        """
+        Return a defensive, truncated repr() string.
 
-def safe_repr(obj: Any, max_len: int = 120) -> str:
-    """
-    Return a defensive, truncated repr() string.
+        Handles potential exceptions during repr() calls and limits the length
+        of the representation string, indicating truncation and original length.
 
-    Handles potential exceptions during repr() calls and limits the length
-    of the representation string, indicating truncation and original length.
+        Args:
+            obj: The object to get the representation of.
+            max_len: The maximum allowed length for the representation string.
 
-    Args:
-        obj: The object to get the representation of.
-        max_len: The maximum allowed length for the representation string.
+        Returns:
+            A string representation, truncated if necessary (with original length),
+            or an error placeholder.
+        """
+        try:
+            r = repr(obj)
+            r_len = len(r)
+            # Truncate the string and add ellipsis + original length if it exceeds max_len
+            if r_len > max_len:
+                # Keep space for "... (len NNN)" approx 10-15 chars
+                trunc_len = max(10, max_len - 15)
+                return f"{r[:trunc_len]}... (len {r_len})"
+            else:
+                return r
+        except Exception:
+            # If repr() fails for any reason, return a placeholder indicating the type
+            return f"<unrepr-able {type(obj).__name__}>"
 
-    Returns:
-        A string representation, truncated if necessary (with original length),
-        or an error placeholder.
-    """
-    try:
-        r = repr(obj)
-        r_len = len(r)
-        # Truncate the string and add ellipsis + original length if it exceeds max_len
-        if r_len > max_len:
-             # Keep space for "... (len NNN)" approx 10-15 chars
-             trunc_len = max(10, max_len - 15)
-             return f"{r[:trunc_len]}... (len {r_len})"
-        else:
-             return r
-    except Exception:
-        # If repr() fails for any reason, return a placeholder indicating the type
-        return f"<unrepr-able {type(obj).__name__}>"
+    @staticmethod
+    def is_extension_module(module: Optional[object]) -> bool:
+        """Checks if a module object points to a C extension module (.so, .pyd)."""
+        if not module:
+            return False
+        # Use __spec__.origin which should point to the file path for extensions
+        spec = getattr(module, "__spec__", None)
+        origin = getattr(spec, "origin", None)
+        return bool(origin and origin.lower().endswith((".so", ".pyd", ".dylib")))
 
-def _is_extension_module(module: Optional[object]) -> bool:
-    """Checks if a module object points to a C extension module (.so, .pyd)."""
-    if not module:
-        return False
-    # Use __spec__.origin which should point to the file path for extensions
-    spec = getattr(module, "__spec__", None)
-    origin = getattr(spec, "origin", None)
-    return bool(origin and origin.lower().endswith((".so", ".pyd", ".dylib")))
 
 
 
@@ -72,6 +75,7 @@ class ClassInspector:
         """
         if not inspect.isclass(cls):
             raise TypeError("ClassInspector expects a class object.")
+        self.utility = InspectorUtility()
         self.cls = cls
         self.dunders = show_dunders
         # Removed self.include_gc assignment
@@ -117,7 +121,7 @@ class ClassInspector:
                 "slots": getattr(c, "__slots__", None), # Value of __slots__ if defined
                 # Check if the class belongs to a built-in or C extension module
                 "is_builtin_module": bool(module and inspect.isbuiltin(module)),
-                "is_extension_module": _is_extension_module(module),
+                "is_extension_module": self.utility.is_extension_module(module),
             }
         )
 
@@ -176,7 +180,7 @@ class ClassInspector:
                 "callable": callable(obj),
                 "property": isinstance(obj, property),
                 "abstract": inspect.isabstract(obj) if callable(obj) else False,
-                "repr": safe_repr(obj, self.max_repr),
+                "repr": self.utility.safe_repr(obj, self.max_repr),
                 "signature": None,
                 "src_line": None,
             }
@@ -189,8 +193,8 @@ class ClassInspector:
                         {
                             "name": p.name,
                             "kind": p.kind.name,
-                            "default": None if p.default is Parameter.empty else safe_repr(p.default, self.max_repr),
-                            "annotation": None if p.annotation is Parameter.empty else safe_repr(p.annotation,
+                            "default": None if p.default is Parameter.empty else self.utility.safe_repr(p.default, self.max_repr),
+                            "annotation": None if p.annotation is Parameter.empty else self.utility.safe_repr(p.annotation,
                                                                                                  self.max_repr),
                         }
                         for p in sig.parameters.values()
@@ -248,6 +252,7 @@ class MethodInspector:
         """
         if not callable(fn):
             raise TypeError("MethodInspector expects a callable.")
+        self.utility = InspectorUtility()
         self.fn = fn
         self.max_repr = max_repr
         self.data: Dict[str, Any] = {}
@@ -274,9 +279,9 @@ class MethodInspector:
                 "module": getattr(f, "__module__", None),
                 "id": id(f),
                 "type": type(f).__name__,
-                "repr": safe_repr(f, self.max_repr),
+                "repr": self.utility.safe_repr(f, self.max_repr),
                 "builtin_mod": bool(module and inspect.isbuiltin(module)),
-                "extension_mod": _is_extension_module(module),
+                "extension_mod": self.utility.is_extension_module(module),
             }
         )
 
@@ -299,8 +304,8 @@ class MethodInspector:
                 {
                     "name": p.name,
                     "kind": p.kind.name,
-                    "default": None if p.default is Parameter.empty else safe_repr(p.default, self.max_repr),
-                    "annotation": None if p.annotation is Parameter.empty else safe_repr(p.annotation, self.max_repr),
+                    "default": None if p.default is Parameter.empty else self.utility.safe_repr(p.default, self.max_repr),
+                    "annotation": None if p.annotation is Parameter.empty else self.utility.safe_repr(p.annotation, self.max_repr),
 
                 }
                 for p in sig.parameters.values()
@@ -349,7 +354,7 @@ class MethodInspector:
             self.data["closure"] = None
             closure = getattr(f, "__closure__", None)
             if closure:
-                self.data["closure"] = [safe_repr(c.cell_contents, self.max_repr) for c in closure]
+                self.data["closure"] = [self.utility.safe_repr(c.cell_contents, self.max_repr) for c in closure]
         except Exception:
             self.data["closure"] = "<error>"
 
@@ -357,7 +362,7 @@ class MethodInspector:
             unwrapped = inspect.unwrap(f, stop=None)
             if unwrapped is not f:
                 self.data["decorated"] = True
-                self.data["wrapped_repr"] = safe_repr(unwrapped, self.max_repr)
+                self.data["wrapped_repr"] = self.utility.safe_repr(unwrapped, self.max_repr)
             else:
                 self.data["decorated"] = False
         except Exception:
@@ -387,6 +392,7 @@ class SpellExaminer:
             show_dunders: Configures dunder visibility for class inspection.
             max_repr: Configures max repr length for all inspections.
         """
+        self.utility = InspectorUtility()
         self.obj = obj
         self.dunders = show_dunders
         self.max_repr = max_repr
@@ -429,7 +435,7 @@ class SpellExaminer:
         # Fallback for objects that are neither specifically handled classes nor callables
         return {
             "object_type": "instance_or_other", # Clarify it's not class/callable
-            "repr": safe_repr(self.obj, self.max_repr), # Provide basic info
+            "repr": self.utility.safe_repr(self.obj, self.max_repr), # Provide basic info
             "id": id(self.obj),
             "type": type(self.obj).__name__, # Add type name for clarity
         }
@@ -442,4 +448,3 @@ class SpellExaminer:
             A JSON string representation of the inspection data.
         """
         return json.dumps(self.inspect(), default=str, indent=2)
-

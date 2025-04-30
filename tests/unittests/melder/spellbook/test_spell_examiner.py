@@ -6,25 +6,7 @@ import types
 import unittest
 from pathlib import Path
 from unittest import mock
-
-
-# --------------------------------------------------------------------------- #
-#  Load the module under test dynamically (adjust path if needed)             #
-# --------------------------------------------------------------------------- #
-ROOT = Path(__file__).resolve().parents[1]          # project root
-MOD_FILE = ROOT / "spell_inspector.py"              # your inspector module
-
-spec = importlib.util.spec_from_file_location("spell_inspector", MOD_FILE)
-spell_inspector = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(spell_inspector)
-
-# pull symbols
-SpellExaminer        = spell_inspector.SpellExaminer
-ClassInspector       = spell_inspector.ClassInspector
-MethodInspector      = spell_inspector.MethodInspector
-safe_repr            = spell_inspector.safe_repr
-_is_extension_module = spell_inspector._is_extension_module
-
+from melder.spellbook.bind.graph_builder.inspector.spell_examiner import SpellExaminer, ClassInspector, MethodInspector
 
 # --------------------------------------------------------------------------- #
 #  Helper classes / callables used in multiple tests                          #
@@ -61,19 +43,19 @@ class SafeReprTests(unittest.TestCase):
     def test_handles_unreprable(self):
         class Bad:
             def __repr__(self): raise RuntimeError("boom")
-        self.assertIn("unrepr-able", safe_repr(Bad()))
+        self.assertIn("unrepr-able", SpellExaminer.utility.safe_repr(Bad()))
 
 
 class ExtensionModuleTests(unittest.TestCase):
     def test_detects_py_module_as_false(self):
-        self.assertFalse(_is_extension_module(sys.modules[__name__]))
+        self.assertFalse(SpellExaminer.utility.is_extension_module(sys.modules[__name__]))
 
     def test_detects_so_extension(self):
         dummy = types.ModuleType("dummy")
         dummy.__spec__ = importlib.machinery.ModuleSpec(
             "dummy", None, origin="/x/libdummy.so"
         )
-        self.assertTrue(_is_extension_module(dummy))
+        self.assertTrue(SpellExaminer.utility.is_extension_module(dummy))
 
 
 class ClassInspectorTests(unittest.TestCase):
