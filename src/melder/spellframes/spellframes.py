@@ -1,22 +1,19 @@
 import threading
-from typing import Optional, Type
+import uuid
+from typing import Optional, Type, Dict, Any
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal
+
 
 class SpellFrame(ISeal):
     """
     Singleton registry for managing and validating unique SpellFrame interfaces.
 
-    Each SpellFrame is:
-        - A Python class (typically an abstract interface or base contract)
-        - Registered exactly once (identified by its memory id)
-        - Rejected if marked as disabled via the `__spell_disabled__` attribute
-        - Validated at runtime via isinstance checks
-
-    This registry supports:
-        - Safe runtime enforcement of frame compliance
-        - Internal metadata tracking for debugging or export
-        - Optional sealing to lock the registry and clear its contents
+    Enhancements:
+        - Uses class name as key instead of memory id
+        - Assigns UUID to each registered frame
+        - Allows custom metadata injection
+        - Inspects class structure for debugging or auditing
     """
 
     _instance = None
@@ -34,19 +31,20 @@ class SpellFrame(ISeal):
         if not SpellFrame._initialized:
             self._sealed = False
             super().__init__()
-            self._frame_map = ConcurrentDict()  # {id(frame_type): metadata}
+            self._frame_map: ConcurrentDict[str, Dict[str, Any]] = ConcurrentDict()
             SpellFrame._initialized = True
 
-    def bind(self, frame_type: Type):
+    def bind(self, frame_type: Type, extra_metadata: Optional[Dict[str, Any]] = None):
         """
-        Registers a SpellFrame type into the registry.
+        Registers a SpellFrame class.
 
         Args:
-            frame_type (Type): The class/interface to register.
+            frame_type (Type): Class to register.
+            extra_metadata (dict, optional): Additional metadata to attach.
 
         Raises:
             TypeError: If frame_type is not a class.
-            ValueError: If already registered or marked as disabled.
+            ValueError: If already registered or disabled.
         """
         if self._sealed:
             raise RuntimeError("SpellFrame registry is sealed and cannot be modified.")
@@ -54,58 +52,54 @@ class SpellFrame(ISeal):
         if not isinstance(frame_type, type):
             raise TypeError("Only class types can be registered as SpellFrames.")
 
-        frame_id = id(frame_type)
-
-        if frame_id in self._frame_map:
-            raise ValueError(f"SpellFrame '{frame_type.__name__}' is already registered.")
-
         if getattr(frame_type, "__spell_disabled__", False):
-            raise ValueError(f"SpellFrame '{frame_type.__name__}' is disabled and cannot be registered.")
+            raise ValueError(f"SpellFrame '{frame_type.__name__}' is disabled.")
 
-        self._frame_map[frame_id] = {
-            "frame": frame_type,
-            "name": frame_type.__name__,
+        name = frame_type.__name__
+        if name in self._frame_map:
+            raise ValueError(f"SpellFrame '{name}' is already registered.")
+
+        metadata = {
+            "uuid": str(uuid.uuid4()),
+            "name": name,
             "module": frame_type.__module__,
             "qualname": frame_type.__qualname__,
-            "id": frame_id,
+            "methods": [m for m in dir(frame_type) if callable(getattr(frame_type, m)) and not m.startswith("__")],
+            "properties": [a for a in dir(frame_type) if not callable(getattr(frame_type, a)) and not a.startswith("__")],
+            "type": frame_type,
         }
 
-    def validate(self, obj, frame_type: Type) -> bool:
+        if extra_metadata:
+            metadata.update(extra_metadata)
+
+        self._frame_map[name] = metadata
+
+    def validate(self, obj: Any, frame_type: Type) -> bool:
         """
-        Verifies that an object conforms to a registered SpellFrame.
-
-        Args:
-            obj: The object to check.
-            frame_type (Type): The SpellFrame class the object must implement.
-
-        Returns:
-            bool: True if compliant.
+        Validates that `obj` is an instance of a registered frame_type.
 
         Raises:
             ValueError: If the frame_type is not registered.
-            TypeError: If the object does not conform.
+            TypeError: If the object is not a valid instance.
         """
-        frame_id = id(frame_type)
+        name = frame_type.__name__
 
-        if frame_id not in self._frame_map:
-            raise ValueError(f"SpellFrame '{frame_type.__name__}' has not been registered.")
+        if name not in self._frame_map:
+            raise ValueError(f"SpellFrame '{name}' is not registered.")
 
         if not isinstance(obj, frame_type):
-            raise TypeError(f"Object does not comply with SpellFrame '{frame_type.__name__}'.")
+            raise TypeError(f"Object does not conform to SpellFrame '{name}'.")
 
         return True
 
-    def meld(self, frame_type: Type) -> Optional[dict]:
+    def meld(self, frame_type: Type) -> Optional[Dict[str, Any]]:
         """
         Retrieves metadata for a registered SpellFrame.
 
-        Args:
-            frame_type (Type): The SpellFrame class to query.
-
         Returns:
-            Optional[dict]: Metadata dict, or None if not found.
+            Metadata dict or None if not found.
         """
-        return self._frame_map.get(id(frame_type))
+        return self._frame_map.get(frame_type.__name__)
 
     def _reset_for_testing(self):
         with self._lock:
@@ -116,9 +110,7 @@ class SpellFrame(ISeal):
 
     def seal(self):
         """
-        Seals the SpellFrame registry. This:
-            - Clears all registered frames
-            - Prevents any further registration attempts
+        Seals the registry and clears all entries.
         """
         with self._lock:
             if self._sealed:
