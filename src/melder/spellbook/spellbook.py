@@ -132,12 +132,23 @@ class Spellbook(ISpellbook):
 
     def __init__(self):
         # Normal instance variables here
+        super().__init__()
         self._lock = threading.RLock()
         self._conjured = False
         self._configuration_locked: bool = False
         self._configuration = Configuration()
         self._spells: ConcurrentDict[uuid.UUID, Spell] = ConcurrentDict()
         self._contracted_spells: ConcurrentDict[uuid.UUID, Spell] = ConcurrentDict()
+
+
+    def _find_spell(self, spell_id: uuid.UUID) -> Optional[Spell]:
+        """
+        Find a spell by its ID.
+        :param spell_id: The ID of the spell to find.
+        :return: The found spell or None if not found.
+        """
+        with self._lock:
+            return self._spells.get(spell_id)
 
     def is_configuration_locked(self) -> bool:
         """

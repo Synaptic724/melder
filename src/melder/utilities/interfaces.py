@@ -1,5 +1,6 @@
 import threading
 from abc import ABC, abstractmethod
+from typing import Type
 
 
 # We got two of the same types of classes, I wanted to stick to the magic theme because it's pretty fun :P
@@ -182,7 +183,7 @@ class IConduit(ISeal):
         pass
 
     @abstractmethod
-    def meld(self):
+    def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
         """
         Melding is the process of creating or materializing an object
         from the Conduit's registered spells.

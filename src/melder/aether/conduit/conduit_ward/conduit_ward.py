@@ -1,5 +1,4 @@
 import uuid
-from abc import ABC
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.interfaces import ISeal, IConduit, ISpellbook

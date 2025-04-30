@@ -1,9 +1,11 @@
-from typing import Optional
+from typing import Optional, Type
 from melder.utilities.concurrent_list import ConcurrentList
-from melder.utilities.interfaces import IConduit, ISpellbook, IMeld
+from melder.utilities.overload_dispatcher import OverloadDispatcher
+from melder.utilities.interfaces import IConduit, ISpellbook
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.spellbook.configuration.configuration import Configuration
+from melder.aether.conduit.meld.meld import Meld
 import threading
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
 from enum import Enum, auto
@@ -39,6 +41,7 @@ class Conduit(IConduit):
         # General Init
         self._lock = threading.RLock()
         self.name = name
+        self._dispatchers = {}
         self.__debugger_mode__ = False
         self.__dynamic_environment__ = False
         self._creation_context = ConduitCreationContext()
@@ -52,6 +55,7 @@ class Conduit(IConduit):
         self._conduit_state = self._set_conduit_state(conduit_state)  # can be normal, lesser
         self._creations = self._creations_configuration(configuration)
         self._spellbook = spellbook
+        self._meld = Meld(self._creations, self._spellbook) # instance melder which is used by the conduit to create objects
 
         # Internal configuration
         self._apply_configuration_flags()
@@ -59,6 +63,47 @@ class Conduit(IConduit):
 
         if self._conduit_state == ConduitState.normal:
             Conduit._add_conduit_to_aether(self)
+
+    def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
+        if spell_type == "class":
+            class_spell = self._spellbook.get(spell_name)
+            if not class_spell:
+                raise ValueError(f"No class registered for spell '{spell_name}'")
+            instance = class_spell()
+            if spellframe and not isinstance(instance, spellframe):
+                raise TypeError(
+                    f"Spell '{spell_name}' does not comply with required SpellFrame '{spellframe.__name__}'")
+            return instance
+
+        elif spell_type == "method":
+            method_spell = self._spellbook.get(spell_name)
+            if not method_spell:
+                raise ValueError(f"No method registered for spell '{spell_name}'")
+            result = method_spell()
+            if spellframe and not isinstance(result, spellframe):
+                raise TypeError(
+                    f"Spell '{spell_name}' does not comply with required SpellFrame '{spellframe.__name__}'")
+            return result
+
+        else:
+            raise ValueError(f"Invalid spell type '{spell_type}'")
+
+
+    def _define(self, method_name):
+        # Create the dispatcher if not yet defined
+        if method_name not in self._dispatchers:
+            self._dispatchers[method_name] = OverloadDispatcher()
+
+            # Install a dynamic method onto this Conduit instance
+            def dynamic_method(*args, **kwargs):
+                return self._dispatchers[method_name](*args, **kwargs)
+            setattr(self, method_name, dynamic_method)
+
+        def decorator(func):
+            self._dispatchers[method_name].register(func)
+            return func
+
+        return decorator
 
     @staticmethod
     def _set_conduit_state(state: str) -> ConduitState:
