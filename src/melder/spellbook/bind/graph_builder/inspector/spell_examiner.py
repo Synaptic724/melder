@@ -3,6 +3,7 @@ from inspect import Parameter
 import json
 from typing import Any, Dict, List, Optional, Type, Callable
 
+
 class InspectorUtility:
     @staticmethod
     def safe_repr(obj: Any, max_len: int = 120) -> str:
@@ -54,6 +55,7 @@ class ClassInspector:
     Collects metadata, source information, member details (attributes, methods),
     and protocol implementation checks. (GC info removed).
     """
+    utility = InspectorUtility
     def __init__(
         self,
         cls: Type, # The class object to inspect
@@ -75,7 +77,6 @@ class ClassInspector:
         """
         if not inspect.isclass(cls):
             raise TypeError("ClassInspector expects a class object.")
-        self.utility = InspectorUtility()
         self.cls = cls
         self.dunders = show_dunders
         # Removed self.include_gc assignment
@@ -152,7 +153,7 @@ class ClassInspector:
         cls_dict = self.cls.__dict__ # Cache class dict
 
         # Python 3.11+ has classify_members; older versions don’t.
-        if hasattr(inspect, "classify_members"):
+        if callable(getattr(inspect, "classify_members", None)):
             classified = inspect.classify_members(self.cls)
         else:
             # crude fallback: label callables as "method", everything else as "data"
@@ -239,6 +240,7 @@ class MethodInspector:
     Inspects a Python callable object (function, method, lambda, etc.)
     and gathers detailed information about it.
     """
+    utility = InspectorUtility
     def __init__(self, fn: Callable, *, max_repr: int = 120):
         """
         Initializes the MethodInspector.
@@ -252,7 +254,7 @@ class MethodInspector:
         """
         if not callable(fn):
             raise TypeError("MethodInspector expects a callable.")
-        self.utility = InspectorUtility()
+
         self.fn = fn
         self.max_repr = max_repr
         self.data: Dict[str, Any] = {}
@@ -377,6 +379,7 @@ class SpellExaminer:
     to the appropriate inspector (ClassInspector or MethodInspector)
     based on its type. Handles unsupported types gracefully.
     """
+    utility = InspectorUtility
     def __init__(
         self,
         obj: Any, # The object to examine
@@ -392,7 +395,6 @@ class SpellExaminer:
             show_dunders: Configures dunder visibility for class inspection.
             max_repr: Configures max repr length for all inspections.
         """
-        self.utility = InspectorUtility()
         self.obj = obj
         self.dunders = show_dunders
         self.max_repr = max_repr

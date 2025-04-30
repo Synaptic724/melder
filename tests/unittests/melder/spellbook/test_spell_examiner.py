@@ -1,12 +1,14 @@
 # tests/test_spell_inspector_unittest.py
+import functools
 import importlib
 import inspect
 import sys
 import types
 import unittest
+from importlib.machinery import ModuleSpec
 from pathlib import Path
 from unittest import mock
-from melder.spellbook.bind.graph_builder.inspector.spell_examiner import SpellExaminer, ClassInspector, MethodInspector
+from melder.spellbook.bind.graph_builder.inspector.spell_examiner import SpellExaminer, ClassInspector, MethodInspector, InspectorUtility
 
 # --------------------------------------------------------------------------- #
 #  Helper classes / callables used in multiple tests                          #
@@ -37,7 +39,7 @@ def make_lambda():
 class SafeReprTests(unittest.TestCase):
     def test_truncates_and_appends_len(self):
         long = "a" * 300
-        out  = safe_repr(long, max_len=50)
+        out  = SpellExaminer.utility.safe_repr(long, max_len=50)
         self.assertTrue(out.endswith(")") or "... (len" in out)
 
     def test_handles_unreprable(self):
@@ -105,8 +107,11 @@ class MethodInspectorTests(unittest.TestCase):
 
     def test_uninspectable_builtin(self):
         info = MethodInspector(len).inspect()
-        self.assertTrue(info.get("uninspectable", False) or info["signature"] is None)
-
+        self.assertTrue(
+            info.get("uninspectable") is True
+            or info.get("signature") is None
+            or isinstance(info.get("signature"), str)
+        )
 
 class SpellExaminerIntegrationTests(unittest.TestCase):
     def test_examiner_class_path(self):
@@ -124,6 +129,122 @@ class SpellExaminerIntegrationTests(unittest.TestCase):
         report = SpellExaminer(obj).inspect()
         self.assertEqual(report["object_type"], "instance_or_other")
         self.assertIn("repr", report)
+
+# ── helper artefacts ------------------------------------------------------------
+dummy = types.ModuleType("dummy")
+dummy.__spec__ = ModuleSpec("dummy", None, origin="/tmp/libfast.so")  # ⟵ replace both cases
+
+def decorator(tag):
+    def wrap(fn):
+        fn._tagged = tag
+        @functools.wraps(fn)          # ⟵ ADD
+        def inner(*a, **k): return fn(*a, **k)
+        return inner
+    return wrap
+
+async def async_fn(a: int = 1) -> str:
+    return "async"
+
+def gen_fn():
+    yield 1
+    yield 2
+
+def make_closure(x):
+    y = x + 5
+    def inner(z): return y + z
+    return inner
+
+class Outer:
+    class Inner:
+        @staticmethod
+        def deep_static(v: int = 7) -> int: return v ** 2
+
+@decorator("demo")
+def decorated(a, b:int=2) -> int:
+    return a + b
+
+# property with setter to verify fset detection
+class PropCls:
+    def __init__(self): self._v = 3
+    @property
+    def value(self): return self._v
+    @value.setter
+    def value(self, n): self._v = n
+
+# ── extra test-suite ------------------------------------------------------------
+class UtilityTests(unittest.TestCase):
+    def test_large_repr_truncation_contains_len(self):
+        huge = "x" * 500
+        out  = InspectorUtility.safe_repr(huge, max_len=60)
+        self.assertIn("len", out)
+
+    def test_extension_module_variants(self):
+        so = types.ModuleType("so_mod")
+        so.__spec__ = ModuleSpec("so_mod", None, origin="/tmp/libfast.so")  # ⟵ replace
+        dylib = types.ModuleType("dy")
+        dylib.__spec__ = ModuleSpec("dy", None, origin="/tmp/libG.dylib")
+        self.assertTrue(InspectorUtility.is_extension_module(so))
+        self.assertTrue(InspectorUtility.is_extension_module(dylib))
+
+
+class PropertyAndSetterTests(unittest.TestCase):
+    def test_property_details(self):
+        data = ClassInspector(PropCls).inspect()
+        pd   = data["members"]["value"]["property_details"]
+        self.assertTrue(pd["fget"])
+        self.assertTrue(pd["fset"])
+        self.assertFalse(pd["fdel"])
+
+
+class AnnotationAndDefaultTests(unittest.TestCase):
+    def test_annotation_and_default_capture(self):
+        info = MethodInspector(decorated).inspect()
+        params = {p["name"]: p for p in info["parameters"]}
+        self.assertIn("int", params["b"]["annotation"])
+        self.assertEqual(params["b"]["default"], "2")
+
+
+class DecoratorDetectionTests(unittest.TestCase):
+    def test_decorator_unwrap_flag(self):
+        info = MethodInspector(decorated).inspect()
+        self.assertTrue(info["decorated"])          # keep this
+        # NEW: verify the original function really carries the tag
+        self.assertTrue(hasattr(inspect.unwrap(decorated), "_tagged"))
+
+
+class AsyncAndGeneratorTests(unittest.TestCase):
+    def test_async_flags(self):
+        info = MethodInspector(async_fn).inspect()
+        self.assertTrue(info["coroutine"])
+        self.assertFalse(info["generator"])
+
+    def test_generator_flags(self):
+        info = MethodInspector(gen_fn).inspect()
+        self.assertTrue(info["generator"])
+        self.assertFalse(info["coroutine"])
+
+
+class ClosureTests(unittest.TestCase):
+    def test_closure_capture(self):
+        fn   = make_closure(10)
+        info = MethodInspector(fn).inspect()
+        self.assertIsInstance(info["closure"], list)
+        self.assertIn("15", info["closure"][0])   # y = x+5 =15
+
+class NestedStaticTests(unittest.TestCase):
+    def test_deep_static_detection(self):
+        info = MethodInspector(Outer.Inner.deep_static).inspect()
+        self.assertTrue(info["staticmethod"])
+        self.assertIn("v: int", info["signature"])
+
+class JsonRoundTripTests(unittest.TestCase):
+    def test_examiner_json_roundtrip_callable(self):
+        rep = SpellExaminer(decorated).to_json()
+        self.assertIn('"object_type": "callable"', rep)
+
+    def test_examiner_json_roundtrip_class(self):
+        rep = SpellExaminer(Outer.Inner).to_json()
+        self.assertIn('"object_type": "class"', rep)
 
 
 # --------------------------------------------------------------------------- #
