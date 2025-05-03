@@ -4,8 +4,8 @@ import unittest
 import random
 import time
 import copy
-from thread_factory.concurrency.concurrent_set import ConcurrentSet
-from thread_factory.concurrency.concurrent_list import ConcurrentList
+from melder.utilities.concurrent_set import ConcurrentSet
+from melder.utilities.concurrent_list import ConcurrentList
 
 
 class TestConcurrentSet(unittest.TestCase):

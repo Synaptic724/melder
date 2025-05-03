@@ -37,7 +37,6 @@ class Spell(ISpell):
         super().__init__()
         self.spell_type = self.define_spell_type(spell_type)
         self._lock = threading.RLock()
-        self._sealed = False
 
         # Spell Type
         self.owned_spell = None

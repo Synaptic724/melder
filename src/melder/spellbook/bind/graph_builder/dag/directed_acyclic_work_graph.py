@@ -21,7 +21,6 @@ class StateObject(IDisposable):
         super().__init__()  # Initialize the Disposable base class
         self._dag = dag  # Store a reference to the DAG
         self._execution_data = {}  # Dictionary to store the execution status of each node (node_id: status)
-        self._disposed = False  # Flag indicating if the object has been disposed
 
     def register_node_result(self, node_id, success=True):
         """
@@ -130,7 +129,6 @@ class ExecutionContext(IDisposable):
         """
         super().__init__()
         self.state = state  # Store a reference to the shared state object
-        self._disposed = False  # Flag indicating if the object has been disposed
 
     def execute(self):
         """
@@ -195,7 +193,6 @@ class Node(IDisposable):
         """
         super().__init__()  # Initialize the Disposable base class
         self.id = node_id  # Unique identifier of the node
-        self._disposed = False  # Flag indicating if the node has been disposed
 
         # Data structures to manage connections and tasks
         self._incoming_edges = []  # List of Edge objects pointing to this node
@@ -384,7 +381,6 @@ class Edge(IDisposable):
             to_node: The Node object where the edge points to.
         """
         super().__init__()  # Initialize the Disposable base class
-        self._disposed = False  # Flag indicating if the edge has been disposed
         self.from_node = from_node  # The source node of the edge
         self.to_node = to_node  # The destination node of the edge
 
@@ -416,7 +412,6 @@ class DirectedAcyclicWorkGraph(IDisposable):
         # Data structures to store nodes and edges
         self._nodes = {}  # Dictionary to store nodes (node_id: Node object)
         self._edges = []  # List to store Edge objects
-        self._disposed = False  # Flag indicating if the DAG has been disposed
 
     def add_node(self, node):
         """

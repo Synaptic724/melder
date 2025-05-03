@@ -54,7 +54,6 @@ class SpellFrame(ISeal):
 
     def __init__(self):
         if not SpellFrame._initialized:
-            self._sealed = False
             super().__init__()
             self._frame_map: ConcurrentDict[str, Dict[str, Any]] = ConcurrentDict()
             SpellFrame._initialized = True

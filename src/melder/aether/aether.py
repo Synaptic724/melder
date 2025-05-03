@@ -29,7 +29,6 @@ class Aether(ISeal):
         if not Aether._initialized:
             super().__init__()
             Aether._initialized = True
-            self._sealed = False
             self._conduits: ConcurrentDict[uuid.UUID, IConduit] = ConcurrentDict() #This retains all normal conduits i.e roots created by a spellbook
             self._conduit_clusters: ConcurrentDict[str, ConcurrentList[uuid.UUID]] = ConcurrentDict()  # Clusters only
 
