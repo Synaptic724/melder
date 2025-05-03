@@ -6,19 +6,10 @@ from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
+from melder.spellbook.bind.bind import Bind
+from melder.spellbook.spell_types.spell_types import SpellType
 from enum import Enum, auto
 import threading
-
-
-class SpellType(enum.Enum):
-    """
-    Enum for different types of spells.
-    """
-    NORMAL = auto()
-    NAMED = auto()
-    EXISTING_CLASS = auto()
-    NORMAL_METHOD = auto()
-    NAMED_METHOD = auto()
 
 
 class Spell(ISpell):

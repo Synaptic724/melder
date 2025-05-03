@@ -1,6 +1,6 @@
 import threading
 from abc import ABC, abstractmethod
-from typing import Type
+from typing import Type, Optional, Any
 
 
 # We got two of the same types of classes, I wanted to stick to the magic theme because it's pretty fun :P
@@ -140,6 +140,32 @@ class ISpell(ISeal):
     def cast(self):
         """
         Casts the spell.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+
+class IBind(ISeal):
+    """
+    Interface for a Bind, which is a binding mechanism for spells.
+    """
+    #__slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+
+    @abstractmethod
+    def bind(self):
+        """
+        Binds a spell to the Spellbook.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    def bind_named(self,
+        name: str,
+        spell: Any,
+        spellframe: Type = None,
+        existence: Optional[str] = None
+    ):
+        """
+        Binds a spell to the Spellbook.
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
