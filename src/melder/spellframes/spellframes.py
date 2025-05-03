@@ -7,13 +7,38 @@ from melder.utilities.interfaces import ISeal
 
 class SpellFrame(ISeal):
     """
-    Singleton registry for managing and validating unique SpellFrame interfaces.
+    SpellFrame: A singleton interface registry for AI-generated or dynamically composed class interfaces.
 
-    Enhancements:
-        - Uses class name as key instead of memory id
-        - Assigns UUID to each registered frame
-        - Allows custom metadata injection
-        - Inspects class structure for debugging or auditing
+    ⚠️ Not intended for traditional, static interface development.
+
+    SpellFrame is a runtime-only registry used to bind, track, and validate AI-generated or
+    dynamically resolved interface classes. It supports storing metadata like UUIDs, method/property maps,
+    and module information, enabling runtime introspection, dependency injection, or agentic behavior modeling.
+
+    Common use cases:
+        - AI-generated service contracts
+        - Runtime-defined plugin schemas
+        - Dynamic behavior trees or agent frameworks
+        - Code synthesis systems that evolve structure during runtime
+
+    Design Rationale:
+        - Not compatible with static typing tools or linters (e.g., Pyright, MyPy)
+        - Designed for frameworks where class structures are generated or mutated at runtime
+        - Enables systems to reason about available capabilities, even if the code is fluid
+        - Avoids traditional interface inheritance patterns, and instead tracks class structure reflectively
+
+    Features:
+        - Uses the class `__name__` as a unique key
+        - Prevents duplicate bindings
+        - Generates and stores UUIDs for each frame
+        - Inspects and tracks public methods and properties
+        - Supports metadata injection for downstream introspection or serialization
+        - Can be sealed to disable further registrations (for safety or immutability)
+
+    ⚠️ Developers working on typical business applications, libraries, or team-based codebases should NOT
+       rely on SpellFrame for interface management. Prefer static interfaces, `abc.ABC`, or formal DI frameworks instead.
+
+    SpellFrame is built for the future — for AI-native runtimes that change and grow.
     """
 
     _instance = None

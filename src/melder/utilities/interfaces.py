@@ -33,14 +33,6 @@ class ISeal(ABC):
         """
         return self._sealed
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.seal()
-
-
-
     @abstractmethod
     def seal(self):
         """
@@ -52,7 +44,7 @@ class ISeal(ABC):
             - Clear any persistent state to avoid memory leakage.
             - Be idempotent (safe to call multiple times).
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 class IDisposable(ABC):
@@ -85,12 +77,6 @@ class IDisposable(ABC):
         """
         return self._disposed
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.dispose()
-
     @abstractmethod
     def dispose(self):
         """
@@ -102,7 +88,7 @@ class IDisposable(ABC):
             - Clear any persistent state to avoid memory leakage.
             - Be idempotent (safe to call multiple times).
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 class ISpellbook(ISeal):
@@ -115,7 +101,7 @@ class ISpellbook(ISeal):
         Adds a new spell to the Spellbook.
         :param spell: The spell to add.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def remove_bind(self, spell):
@@ -123,7 +109,7 @@ class ISpellbook(ISeal):
         Removes a spell from the Spellbook.
         :param spell: The spell to remove.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
 class ISpell(ISeal):
     """
@@ -135,7 +121,7 @@ class ISpell(ISeal):
         """
         Casts the spell.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def add_owned_conduit(self):
@@ -143,14 +129,14 @@ class ISpell(ISeal):
         Adds the conduit ID that owns this spell.
         :param conduit_id: The ID of the conduit that owns this spell.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def cast(self):
         """
         Casts the spell.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 class IMeld(ISeal):
@@ -165,7 +151,7 @@ class IMeld(ISeal):
         Melding is the process of creating or materializing an object
         from the Conduit's registered spells.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 
@@ -180,7 +166,7 @@ class IConduit(ISeal):
         Links this Conduit to another Conduit.
         Only allowed if the world environment is dynamic.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
@@ -188,14 +174,14 @@ class IConduit(ISeal):
         Melding is the process of creating or materializing an object
         from the Conduit's registered spells.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def create_lesser_conduit(self):
         """
         Creates a new lesser Conduit (child scope) beneath this Conduit.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 
@@ -209,4 +195,4 @@ class ILink(ISeal):
         """
         Sever the link between two Conduits.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")

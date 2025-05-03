@@ -46,8 +46,6 @@ class InspectorUtility:
         return bool(origin and origin.lower().endswith((".so", ".pyd", ".dylib")))
 
 
-
-
 class ClassInspector:
     """
     Inspects a Python class object and gathers detailed information about it.

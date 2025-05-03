@@ -13,6 +13,18 @@ Built for serious architectures, Melder is **thread-safe by design**, enabling s
 Melder is not just another helper library.  
 Melder solves Dependency Injection’s problems by evolving it into scoped dynamic modular execution — without losing its soul.
 
+
+[![PyPI version](https://badge.fury.io/py/melder.svg)](https://badge.fury.io/py/melder)
+[![License](https://img.shields.io/github/license/Synaptic724/melder)](https://github.com/Synaptic724/melder/blob/prod/LICENSE)
+[![Python Version](https://img.shields.io/pypi/pyversions/melder)](https://pypi.org/project/melder)
+
+[![PyPI Downloads](https://static.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
+[![PyPI Downloads](https://static.pepy.tech/badge/melder/week)](https://pepy.tech/projects/melder)
+[![PyPI Downloads](https://static.pepy.tech/badge/melder)](https://pepy.tech/projects/melder)
+
+[![Upload Python Package](https://github.com/Synaptic724/melder/actions/workflows/python-publish.yml/badge.svg)](https://github.com/Synaptic724/ThreadFactory/actions/workflows/python-publish.yml)
+[![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
+
 ---
 
 ## 🧠 Why Use a Dependency Injection Container?

@@ -2,3 +2,7 @@ This is an interface cache intended to be used inplace of user interfaces, inter
 once you register an object you can also create an interface for it and define its methods
 
 These features allow the user to import a spellframe class that stores all the interfaces for your project
+
+
+
+THIS is mainly for AI Native interfaces
