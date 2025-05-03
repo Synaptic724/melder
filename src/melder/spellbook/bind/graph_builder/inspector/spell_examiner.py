@@ -2,8 +2,9 @@ import inspect
 from inspect import Parameter
 import json
 from typing import Any, Dict, List, Optional, Type, Callable
+from dataclasses import dataclass, field
 
-
+#region InspectorUtility
 class InspectorUtility:
     @staticmethod
     def safe_repr(obj: Any, max_len: int = 120) -> str:
@@ -44,8 +45,8 @@ class InspectorUtility:
         spec = getattr(module, "__spec__", None)
         origin = getattr(spec, "origin", None)
         return bool(origin and origin.lower().endswith((".so", ".pyd", ".dylib")))
-
-
+#endregion
+#region ClassInspector
 class ClassInspector:
     """
     Inspects a Python class object and gathers detailed information about it.
@@ -97,7 +98,8 @@ class ClassInspector:
         self._source()      # Source file and line information
         self._members()     # Attributes, methods, properties
         self._protocols()   # Common protocol checks (e.g., __len__, __iter__)
-        # Removed GC-related call
+        self._detect_decorator_wrapping() # Check for decorator wrapping
+
         return self.data
 
     # private blocks
@@ -112,6 +114,7 @@ class ClassInspector:
                 "qualname": getattr(c, "__qualname__", "<unnamed>"), # Qualified name (e.g., Outer.Inner)
                 "module": getattr(c, "__module__", "<unknown>"), # Module name
                 "id": id(c), # Memory address (unique identifier)
+                "decorated": self._is_probably_decorated() or hasattr(c, "_decorated") or hasattr(c, "_marked"),
                 "bases": [b.__name__ for b in getattr(c, "__bases__", ())], # Names of base classes
                 # eval_str=True resolves forward references if possible
                 "annotations": inspect.get_annotations(c, eval_str=True, globals=getattr(module, '__dict__', None)),
@@ -121,6 +124,7 @@ class ClassInspector:
                 # Check if the class belongs to a built-in or C extension module
                 "is_builtin_module": bool(module and inspect.isbuiltin(module)),
                 "is_extension_module": self.utility.is_extension_module(module),
+                "is_dataclass": hasattr(c, "__dataclass_fields__"),
             }
         )
 
@@ -233,6 +237,59 @@ class ClassInspector:
             "str": has("__str__"),
         }
 
+    def _detect_decorator_wrapping(self) -> None:
+        try:
+            orig_cls = inspect.unwrap(self.cls)
+            if orig_cls is not self.cls:
+                self.data["decorated"] = True
+                self.data["wrapped_repr"] = InspectorUtility.safe_repr(orig_cls)
+                return
+        except Exception:
+            pass
+
+        # Additional heuristics
+        decorated = (
+                hasattr(self.cls, '__wrapped__') or
+                hasattr(self.cls, '_decorated') or
+                type(self.cls).__name__ != 'type'
+        )
+
+        self.data["decorated"] = decorated
+
+    def _is_probably_decorated(self) -> bool:
+        """
+        Heuristically determines whether the inspected class has been decorated.
+
+        This detects cases where a decorator wraps the original class with a callable,
+        modifies and returns it, or replaces it with an instance.
+
+        Returns:
+            True if the object appears to be a decorated class.
+        """
+        obj = self.cls
+
+        # If it's not a class anymore, it's definitely decorated
+        if not inspect.isclass(obj):
+            return True
+
+        # If the __class__ is not 'type', it's something else pretending to be a class
+        if type(obj) is not type:
+            return True
+
+        # Check if functools.wraps has tagged this object (used in decorator wrappers)
+        if hasattr(obj, '__wrapped__'):
+            return True
+
+        # Heuristic: decorators often return a different qualname
+        qualname = getattr(obj, '__qualname__', '')
+        name = getattr(obj, '__name__', '')
+        if qualname and '.' in qualname and not name in qualname:
+            return True
+
+        return False
+#endregion
+
+#region MethodInspector
 class MethodInspector:
     """
     Inspects a Python callable object (function, method, lambda, etc.)
@@ -369,82 +426,148 @@ class MethodInspector:
             self.data["decorated"] = "<error>"
 
         return self.data
+#endregion
+
+#region Profiles
+@dataclass
+class ClassProfile:
+    """Structured, IDE‑friendly representation of ClassInspector output."""
+    # Required (no defaults)
+    name: str
+    qualname: str
+    module: str
+
+    # Optional / defaulted – must come after required fields (dataclass rule)
+    mro: List[str] = field(default_factory=list)
+    bases: List[str] = field(default_factory=list)
+    annotations: Dict[str, str] = field(default_factory=dict)
+    protocols: Dict[str, bool] = field(default_factory=dict)
+    slots: Optional[List[str]] = None
+    origin_file: Optional[str] = None
+    origin_line: Optional[int] = None
+    source_preview: Optional[str] = None
+    members: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+
+    is_dataclass: bool = False
+    decorated: bool = False
 
 
+@dataclass
+class MethodProfile:
+    """Structured, IDE‑friendly representation of MethodInspector output."""
+    # Required fields
+    name: str
+    qualname: Optional[str]
+    module: Optional[str]
+    id: int
+    type: str
+    repr: str
+    builtin_mod: bool
+    extension_mod: bool
+
+    # Optional / defaulted
+    file: Optional[str] = None
+    preview: Optional[str] = None
+    src_offset: Optional[int] = None
+    signature: Optional[str] = None
+    parameters: List[Dict[str, Any]] = field(default_factory=list)
+    uninspectable: bool = False
+
+    # Callable trait flags – default to False
+    func: bool = False
+    method: bool = False
+    builtin: bool = False
+    classmethod: bool = False
+    staticmethod: bool = False
+    generator: bool = False
+    async_gen: bool = False
+    coroutine: bool = False
+    lambda_fn: bool = False
+    abstract: bool = False
+
+    # Advanced details
+    closure: Optional[List[str]] = None
+    decorated: Optional[bool] = None
+    wrapped_repr: Optional[str] = None
+
+#endregion
+#region SpellExaminer
 class SpellExaminer:
-    """
-    A dispatcher class that examines a Python object and routes it
-    to the appropriate inspector (ClassInspector or MethodInspector)
-    based on its type. Handles unsupported types gracefully.
-    """
     utility = InspectorUtility
     def __init__(
         self,
-        obj: Any, # The object to examine
+        obj: Any,
         *,
-        show_dunders: bool = False, # Passed to ClassInspector
-        max_repr   : int  = 120,    # Passed to both inspectors
+        show_dunders: bool = False,
+        max_repr: int = 120,
     ):
-        """
-        Initializes the SpellExaminer.
-
-        Args:
-            obj: The Python object to inspect.
-            show_dunders: Configures dunder visibility for class inspection.
-            max_repr: Configures max repr length for all inspections.
-        """
         self.obj = obj
         self.dunders = show_dunders
         self.max_repr = max_repr
 
-    def inspect(self) -> Dict[str, Any]:
-        """
-        Inspects the stored object.
-
-        Determines if the object is a class, a callable, or something else,
-        then calls the appropriate inspector or provides basic info.
-
-        Returns:
-            A dictionary containing the type of object inspected ('object_type')
-            and the specific inspection data ('class_data' or 'callable_data').
-            For unsupported types, returns basic info like repr and id.
-        """
-        # Check if the object is a class
+    def inspect(self) -> Any:
         if inspect.isclass(self.obj):
-            return {
-                "object_type": "class", # Indicate the type
-                # Delegate inspection to ClassInspector
-                "class_data": ClassInspector(
-                    self.obj,
-                    show_dunders=self.dunders,
-                    # Removed include_gc argument
-                    max_repr=self.max_repr,
-                ).inspect(),
-            }
-        # Check if the object is callable (function, method, lambda, callable class instance)
-        # Exclude classes themselves here, as they are handled above
-        if callable(self.obj) and not inspect.isclass(self.obj):
-            return {
-                "object_type": "callable", # Indicate the type
-                # Delegate inspection to MethodInspector
-                "callable_data": MethodInspector(
-                    self.obj,
-                    max_repr=self.max_repr,
-                ).inspect(),
-            }
-        # Fallback for objects that are neither specifically handled classes nor callables
+            inspector = ClassInspector(self.obj, show_dunders=self.dunders, max_repr=self.max_repr)
+            data = inspector.inspect()
+            return ClassProfile(
+                name=data["name"],
+                qualname=data["qualname"],
+                module=data["module"],
+                mro=data["mro"],
+                bases=data["bases"],
+                annotations=data["annotations"],
+                protocols=data["protocols"],
+                slots=data["slots"],
+                origin_file=data["file"],
+                origin_line=data["source_line_offset"],
+                source_preview=data["source_preview"],
+                members=data["members"],
+                is_dataclass=data["is_dataclass"],
+                decorated=data["decorated"],
+            )
+
+        elif callable(self.obj) and not inspect.isclass(self.obj):
+            inspector = MethodInspector(self.obj, max_repr=self.max_repr)
+            data = inspector.inspect()
+            return MethodProfile(
+                name=data["name"],
+                qualname=data["qualname"],
+                module=data["module"],
+                id=data["id"],
+                type=data["type"],
+                repr=data["repr"],
+                builtin_mod=data["builtin_mod"],
+                extension_mod=data["extension_mod"],
+                file=data["file"],
+                preview=data["preview"],
+                src_offset=data["src_offset"],
+                signature=data.get("signature"),
+                parameters=data.get("parameters", []),
+                uninspectable=data.get("uninspectable", False),
+                func=data.get("func", False),
+                method=data.get("method", False),
+                builtin=data.get("builtin", False),
+                classmethod=data.get("classmethod", False),
+                staticmethod=data.get("staticmethod", False),
+                generator=data.get("generator", False),
+                async_gen=data.get("async_gen", False),
+                coroutine=data.get("coroutine", False),
+                lambda_fn=data.get("lambda_fn", False),
+                abstract=data.get("abstract", False),
+                closure=data.get("closure"),
+                decorated=data.get("decorated"),
+                wrapped_repr=data.get("wrapped_repr"),
+            )
         return {
-            "object_type": "instance_or_other", # Clarify it's not class/callable
-            "repr": self.utility.safe_repr(self.obj, self.max_repr), # Provide basic info
+            "object_type": "instance_or_other",
+            "repr": self.utility.safe_repr(self.obj, self.max_repr),
             "id": id(self.obj),
-            "type": type(self.obj).__name__, # Add type name for clarity
+            "type": type(self.obj).__name__,
         }
 
     def to_json(self) -> str:
-        """
-        Convenience method to get the inspection results as a formatted JSON string.
-
-        Returns:
-            A JSON string representation of the inspection data.
-        """
-        return json.dumps(self.inspect(), default=str, indent=2)
+        result = self.inspect()
+        if isinstance(result, (ClassProfile, MethodProfile)):
+            return json.dumps(result.__dict__, default=str, indent=2)
+        return json.dumps(result, default=str, indent=2)
+#endregion
