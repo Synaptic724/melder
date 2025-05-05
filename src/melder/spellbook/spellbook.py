@@ -1,90 +1,108 @@
-import enum
 import uuid
-from typing import Optional, List
+from typing import Optional, List, Dict, Any, Type, Callable, NamedTuple
+from melder.spellbook.bind.graph_builder.inspector.spell_examiner import MethodProfile, ClassProfile
 from melder.utilities.interfaces import ISpellbook, ISeal, ISpell
-from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
 from melder.spellbook.spell_types.spell_types import SpellType
-from enum import Enum, auto
+from melder.spellbook.existence.existence import Existence
 import threading
 
 
 class Spell(ISpell):
     def __init__(
             self,
-            name: str,
-            description: str,
-            existence: str,
-            spell_type: str,
-            owner_conduit_id: uuid.UUID = None,
+            spell: Any,
+            spellframe: Optional[Any],
+            binding_name: str,
+            spell_name: str,
+            existence: Existence,
+            spell_type: SpellType,
+            profile: ClassProfile | MethodProfile,
             existing_object: object = None,
-            dependency_graph: object = None,  # We'll type it more strictly later if needed
-            tags: Optional[List[str]] = None,
-            metadata: Optional[dict] = None
     ):
         super().__init__()
-        self.spell_type = self.define_spell_type(spell_type)
         self._lock = threading.RLock()
 
         # Spell Type
         self.owned_spell = None
 
         # Spell Data
-        self.uuid: uuid.UUID = uuid.uuid4()
-        self.name: str = name
-        self.existence: str = existence
-        self.description: str = description
-        self.owner_conduit_id: uuid.UUID = owner_conduit_id
+        self.spell = spell
+        self.spell_id: uuid.UUID = uuid.uuid4()
+        self.spellframe: Optional[Any] = spellframe
+        self.spell_type: SpellType = spell_type
         self.user_created_object: object = existing_object
-        self.dependency_graph = dependency_graph
+        self.binding_name: str = binding_name
+        self.spell_name: str = spell_name
+        self.existence: Existence = existence
+        self.profile: ClassProfile | MethodProfile = profile
 
         # Spell Metadata
-        self.tags = tags or []
-        self.metadata = metadata or {}
+        self.tags = []
+        self.metadata = {}
 
-    def define_spell_type(self, value: str) -> enum.Enum:
-        """
-        Convert a string to an Enum member safely.
+        # hooks
+        self.pre_hooks: List[Callable] = []
+        self.activation_hooks: List[Callable] = []
+        self.post_hooks: List[Callable] = []
 
-        Args:
-            enum_class (Type[Enum]): The enum class (e.g., SpellType).
-            value (str): The string representation of the enum name.
+        # Created During validation
+        self.dependency_graph = None
 
-        Returns:
-            Enum: The corresponding Enum member.
+        # Created after Conduit Made
+        self._owner_conduit_id: uuid.UUID | None = None
 
-        Raises:
-            ValueError: If the value does not match any enum member.
-        """
-        with self._lock:
-            try:
-                return SpellType[value.upper()]
-            except KeyError:
-                raise ValueError(f"'{value}' is not a valid member of {SpellType.__name__}")
+        # Key for the spell in the Spellbook
+        self._key = (self.spellframe or type(self.spell), self.binding_name or "__default__")
 
-    def add_spell_details(self, dependency_graph: object, existing_object: object = None):
+    def add_spell_details(self, *args, **kwargs):
         """
         Add details to the spell.
         :param dependency_graph: DAG system of dependencies.
         :param existing_object: existing object if applicable.
         """
         with self._lock:
-            self.dependency_graph = dependency_graph
-            self.user_created_object = existing_object
+            self.tags = args
+            self.metadata = kwargs
 
-    def add_owned_conduit(self, conduit_id: uuid.UUID):
+    def _add_owned_conduit(self, conduit_id: uuid.UUID):
         """
         Add the conduit ID that owns this spell.
         :param conduit_id: The ID of the conduit that owns this spell.
         """
         with self._lock:
-            self.owner_conduit_id = conduit_id
+            self._owner_conduit_id = conduit_id
+
+    def _add_dag(self, dag: Any):
+        """
+        Add details to the spell.
+        :param dependency_graph: DAG system of dependencies.
+        :param existing_object: existing object if applicable.
+        """
+        if dag is None:
+            raise ValueError("Dependency graph cannot be None.")
+
+        with self._lock:
+            self.dependency_graph = dag
+
+
+    def add_hooks(self, pre_hooks: List[Callable], activation_hooks: List[Callable], post_hooks: List[Callable]):
+        """
+        Add hooks to the spell.
+        :param pre_hooks: List of pre-cast hooks.
+        :param activation_hooks: List of activation hooks.
+        :param post_hooks: List of post-cast hooks.
+        """
+        with self._lock:
+            self.pre_hooks = pre_hooks
+            self.activation_hooks = activation_hooks
+            self.post_hooks = post_hooks
 
     def __repr__(self):
-        return f"Spell(name={self.name}, uuid={self.uuid}, owner={self.owner_conduit_id})"
+        return f"Spell(name={self.spell_name}, binding={self.binding_name or '__default__'}, frame={self.spellframe}, uuid={self.spell_id})"
 
     def cast(self) -> object:
         """
@@ -121,15 +139,71 @@ class Spellbook(ISpellbook):
     """
 
     def __init__(self):
-        # Normal instance variables here
         super().__init__()
         self._lock = threading.RLock()
+
+        # Configuration
         self._conjured = False
         self._configuration_locked: bool = False
         self._configuration = Configuration()
-        self._spells: ConcurrentDict[uuid.UUID, Spell] = ConcurrentDict()
-        self._contracted_spells: ConcurrentDict[uuid.UUID, Spell] = ConcurrentDict()
 
+        self.__spells: ConcurrentDict[uuid.UUID, Spell] = ConcurrentDict()
+        self.__lookup_spells: ConcurrentDict[tuple, uuid.UUID] = ConcurrentDict()
+
+        # Contracted Spells — Used for outbound links / remote contracts
+        self.__contracted_spells: ConcurrentDict[uuid.UUID, Spell] = ConcurrentDict()
+        self.__lookup_contracted_spells: ConcurrentDict[tuple, uuid.UUID] = ConcurrentDict()
+
+        # SpellBinder — Used to register spells from user input
+        self._bind = Bind()
+
+#region properties
+    @property
+    def _spells(self) -> ConcurrentDict[uuid.UUID, Spell]:
+        """
+        All registered spells (UUID-keyed).
+        """
+        return self.__spells
+
+    @property
+    def _lookup_spells(self) -> ConcurrentDict[tuple, uuid.UUID]:
+        """
+        Lookup table from (interface, binding_name) to UUID.
+        """
+        return self.__lookup_spells
+
+    @property
+    def _contracted_spells(self) -> ConcurrentDict[uuid.UUID, Spell]:
+        """
+        Spells contracted from other conduits or networks.
+        """
+        return self.__contracted_spells
+
+    @property
+    def _lookup_contracted_spells(self) -> ConcurrentDict[tuple, uuid.UUID]:
+        """
+        Lookup table for contracted spells.
+        """
+        return self.__lookup_contracted_spells
+
+#endregion
+#region core methods
+    def bind(self, spell, existence: Existence, *, spellframe=None, name=None):
+        """
+        Binds a new spell into the system via the SpellBinder.
+        This stores the UUID and lookup key entry for fast resolution.
+        """
+        try:
+            spell = self._bind.bind(
+                spell=spell,
+                spellframe=spellframe,
+                name=name,
+                existence=existence
+            )
+            self._lookup_spells[spell._key] = spell.spell_id
+            self._spells[spell.spell_id] = spell
+        except Exception:
+            raise
 
     def _find_spell(self, spell_id: uuid.UUID) -> Optional[Spell]:
         """
@@ -186,7 +260,6 @@ class Spellbook(ISpellbook):
         except (KeyError, ValueError) as e:
             self._configuration.clear_properties()
             raise e
-
         except Exception:
             raise
 
@@ -224,6 +297,10 @@ class Spellbook(ISpellbook):
             self._conjured = True
             return Conduit(spellbook=self, name=name, conduit_state="normal", configuration=self._configuration)
 
+#endregion
 
     def seal(self):
+        """
+        Finalize the Spellbook (optional override).
+        """
         pass

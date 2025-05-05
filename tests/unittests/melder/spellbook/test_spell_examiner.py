@@ -395,6 +395,23 @@ class DetectTrueDecoratorWrapping(unittest.TestCase):
             self.assertEqual(result.type, "function")
 
 
+class test_method_profiles_extracted(unittest.TestCase):
+    def test_method_profiles_extracted(self):
+        report = SpellExaminer(Sub).inspect()
+        self.assertIsInstance(report, ClassProfile)
+        self.assertIn("bar", report.methods)
+        method = report.methods["bar"]
+        self.assertIsInstance(method, MethodProfile)
+        self.assertEqual(method.name, "bar")
+        self.assertTrue(method.method or method.func)
+        self.assertTrue("int" in method.signature)
+
+    def test_static_method_flag_in_profile(self):
+        report = SpellExaminer(Sub).inspect()
+        sm = report.methods["sm"]
+        self.assertTrue(sm.staticmethod)
+
+
 # --------------------------------------------------------------------------- #
 #  Entry-point so `python -m unittest discover` picks this file up directly.  #
 # --------------------------------------------------------------------------- #

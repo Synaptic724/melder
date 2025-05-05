@@ -430,29 +430,6 @@ class MethodInspector:
 
 #region Profiles
 @dataclass
-class ClassProfile:
-    """Structured, IDE‑friendly representation of ClassInspector output."""
-    # Required (no defaults)
-    name: str
-    qualname: str
-    module: str
-
-    # Optional / defaulted – must come after required fields (dataclass rule)
-    mro: List[str] = field(default_factory=list)
-    bases: List[str] = field(default_factory=list)
-    annotations: Dict[str, str] = field(default_factory=dict)
-    protocols: Dict[str, bool] = field(default_factory=dict)
-    slots: Optional[List[str]] = None
-    origin_file: Optional[str] = None
-    origin_line: Optional[int] = None
-    source_preview: Optional[str] = None
-    members: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-
-    is_dataclass: bool = False
-    decorated: bool = False
-
-
-@dataclass
 class MethodProfile:
     """Structured, IDE‑friendly representation of MethodInspector output."""
     # Required fields
@@ -490,6 +467,30 @@ class MethodProfile:
     decorated: Optional[bool] = None
     wrapped_repr: Optional[str] = None
 
+@dataclass
+class ClassProfile:
+    """Structured, IDE‑friendly representation of ClassInspector output."""
+    # Required (no defaults)
+    name: str
+    qualname: str
+    module: str
+
+    # Optional / defaulted – must come after required fields (dataclass rule)
+    mro: List[str] = field(default_factory=list)
+    bases: List[str] = field(default_factory=list)
+    annotations: Dict[str, str] = field(default_factory=dict)
+    protocols: Dict[str, bool] = field(default_factory=dict)
+    slots: Optional[List[str]] = None
+    origin_file: Optional[str] = None
+    origin_line: Optional[int] = None
+    source_preview: Optional[str] = None
+    members: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    methods: Dict[str, MethodProfile] = field(default_factory=dict)
+    is_dataclass: bool = False
+    decorated: bool = False
+
+
+
 #endregion
 #region SpellExaminer
 class SpellExaminer:
@@ -509,6 +510,47 @@ class SpellExaminer:
         if inspect.isclass(self.obj):
             inspector = ClassInspector(self.obj, show_dunders=self.dunders, max_repr=self.max_repr)
             data = inspector.inspect()
+
+            method_profiles: Dict[str, MethodProfile] = {}
+            for name, info in data["members"].items():
+                if info.get("callable"):
+                    try:
+                        # Get the actual method reference from the class
+                        fn = getattr(self.obj, name)
+                        method_data = MethodInspector(fn, max_repr=self.max_repr).inspect()
+                        method_profiles[name] = MethodProfile(
+                            name=method_data["name"],
+                            qualname=method_data["qualname"],
+                            module=method_data["module"],
+                            id=method_data["id"],
+                            type=method_data["type"],
+                            repr=method_data["repr"],
+                            builtin_mod=method_data["builtin_mod"],
+                            extension_mod=method_data["extension_mod"],
+                            file=method_data["file"],
+                            preview=method_data["preview"],
+                            src_offset=method_data["src_offset"],
+                            signature=method_data.get("signature"),
+                            parameters=method_data.get("parameters", []),
+                            uninspectable=method_data.get("uninspectable", False),
+                            func=method_data.get("func", False),
+                            method=method_data.get("method", False),
+                            builtin=method_data.get("builtin", False),
+                            classmethod=method_data.get("classmethod", False),
+                            staticmethod=method_data.get("staticmethod", False),
+                            generator=method_data.get("generator", False),
+                            async_gen=method_data.get("async_gen", False),
+                            coroutine=method_data.get("coroutine", False),
+                            lambda_fn=method_data.get("lambda_fn", False),
+                            abstract=method_data.get("abstract", False),
+                            closure=method_data.get("closure"),
+                            decorated=method_data.get("decorated"),
+                            wrapped_repr=method_data.get("wrapped_repr"),
+                        )
+                    except Exception as e:
+                        # fallback if something goes wrong
+                        continue
+
             return ClassProfile(
                 name=data["name"],
                 qualname=data["qualname"],
@@ -521,7 +563,8 @@ class SpellExaminer:
                 origin_file=data["file"],
                 origin_line=data["source_line_offset"],
                 source_preview=data["source_preview"],
-                members=data["members"],
+                members=data["members"],  #original dict
+                methods=method_profiles,  #structured MethodProfile dict
                 is_dataclass=data["is_dataclass"],
                 decorated=data["decorated"],
             )
@@ -558,6 +601,7 @@ class SpellExaminer:
                 decorated=data.get("decorated"),
                 wrapped_repr=data.get("wrapped_repr"),
             )
+
         return {
             "object_type": "instance_or_other",
             "repr": self.utility.safe_repr(self.obj, self.max_repr),

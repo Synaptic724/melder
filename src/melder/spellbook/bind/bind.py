@@ -1,80 +1,114 @@
-from typing import Any, Dict, Optional, Union, Type
+import inspect
+import threading
+from typing import Any, Optional, Union
 from melder.spellbook.bind.graph_builder.inspector.spell_examiner import (
-    SpellExaminer,
-    ClassProfile,
-    MethodProfile,
+    SpellExaminer, ClassProfile, MethodProfile
 )
-from melder.utilities.interfaces import IBind
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
-
-class BoundSpell:
-    def __init__(
-        self,
-        name: str,
-        profile: Union[ClassProfile, MethodProfile, Dict[str, Any]],
-        role: Optional[str] = None  # e.g., "interface", "model", etc.
-    ):
-        self.name = name
-        self.profile = profile
-        self.spell_type = self._detect_type(profile)
-        self.role = role or self._infer_role()
-
-    @staticmethod
-    def _detect_type(profile: Any) -> str:
-        if isinstance(profile, ClassProfile):
-            return "class"
-        elif isinstance(profile, MethodProfile):
-            return "method"
-        elif isinstance(profile, dict):
-            return profile.get("object_type", "unknown")
-        return "unknown"
-
-    def _infer_role(self) -> Optional[str]:
-        if isinstance(self.profile, ClassProfile):
-            if self.profile.protocols.get("call"):
-                return "interface"  # Heuristic fallback
-            if self.profile.annotations:
-                return "contract"
-        return None
-
-    def __repr__(self):
-        return f"<BoundSpell name={self.name} type={self.spell_type} role={self.role}>"
+from melder.spellbook.spellbook import Spell
+from melder.utilities.interfaces import IBind
 
 
 class Bind(IBind):
     def __init__(self):
         super().__init__()
-        self._registry: Dict[str, BoundSpell] = {}
+        self._lock = threading.RLock()
 
-    def bind_named(
+    def bind(self, spell=None, *, spellframe=None, name=None, existence=Existence.unique):
+        if spell is None:
+            # Decorator usage
+            def decorator(obj):
+                return self._bind_logic(obj, spellframe, name, existence)
+            return decorator
+        else:
+            # Direct usage
+            return self._bind_logic(spell, spellframe, name, existence)
+
+    def _bind_logic(self, spell: Any, spellframe: Optional[Any], binding_name: Optional[str], existence: Existence) -> Spell:
+        with self._lock:
+            # Get the class or method profile
+            profile = SpellExaminer(spell).inspect()
+
+            # Check if spell is an instance (not a class/function)
+            is_instance = not inspect.isclass(spell) and not inspect.isfunction(spell)
+
+            self._validate_binding(profile, is_instance, binding_name, existence)
+
+            if isinstance(profile, MethodProfile):
+                if existence != Existence.unique:
+                    print(
+                        f"[WARN] Overriding existence to `Existence.unique` for method/lambda spell: {getattr(spell, '__name__', repr(spell))}")
+                existence = Existence.unique
+
+            # Determine the spell type
+            spell_type = self._determine_spell_type(spell, profile, binding_name, spellframe, is_instance)
+
+            # Resolve spell name and frame
+            spell_name = getattr(spell, "__name__", type(spell).__name__)
+
+            # Create the Spell instance, attach profile
+            new_spell = Spell(
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                spell_name=spell_name,
+                existence=existence,
+                spell_type=spell_type,
+                existing_object=spell if is_instance else None,
+                profile=profile,
+            )
+
+            print(f"[BIND] Registered: {spell_name} | Frame: {spellframe} | Type: {spell_type} | Existence: {existence}")
+            return new_spell
+
+    def _validate_binding(self, profile, is_instance, binding_name, existence):
+        """
+        Perform checks on the method profile to ensure it is valid for binding.
+        :param profile:
+        :param is_instance:
+        :param binding_name:
+        :return:
+        """
+        if is_instance and binding_name:
+            raise ValueError("Existing instances cannot be bound with a binding name.")
+
+        # Enforce lambda naming rule
+        if profile and isinstance(profile, MethodProfile) and profile.lambda_fn and not binding_name:
+            raise ValueError(
+                "Cannot bind a lambda method without providing a `name=`. "
+                "Lambdas must be registered as NAMED_LAMBDA_METHOD spells."
+            )
+
+        if isinstance(profile, MethodProfile) and existence != Existence.unique:
+            raise ValueError("Method and lambda spells must use Existence.unique.")
+
+    def _determine_spell_type(
         self,
-        name: str,
         spell: Any,
-        spellframe: Type = None,
-        role: Optional[str] = None
-    ) -> BoundSpell:
-        profile = SpellExaminer(spell).inspect()
-        bound = BoundSpell(name, profile, role=role)
-        self._registry[name] = bound
-        return bound
+        profile: Union[ClassProfile, MethodProfile, dict],
+        name: Optional[str],
+        spellframe: Optional[Any],
+        is_instance: bool
+    ) -> SpellType:
+        if isinstance(profile, ClassProfile):
+            if name and spellframe:
+                return SpellType.NAMED_INTERFACED
+            elif spellframe:
+                return SpellType.NORMAL_INTERFACED
+            elif name:
+                return SpellType.NAMED
+            elif is_instance:
+                return SpellType.EXISTING_CLASS
+            else:
+                return SpellType.NORMAL
 
-    def bind(self, spell: Any, spellframe: Type = None, role: Optional[str] = None) -> BoundSpell:
-        name = getattr(spell, "__name__", f"unnamed_{id(spell)}")
-        return self.bind_named(name, spell, spellframe, role=role)
-
-    def get(self, name: str) -> Optional[BoundSpell]:
-        return self._registry.get(name)
-
-    def all(self) -> Dict[str, BoundSpell]:
-        return self._registry
-
-    def __repr__(self):
-        return f"<Bind {len(self._registry)} spells>"
-
-    def seal(self) -> None:
-        """
-        Seals the binding, preventing further modifications.
-        """
-        self._registry.clear()
-
+        elif isinstance(profile, MethodProfile):
+            if name and profile.lambda_fn:
+                return SpellType.NAMED_LAMBDA_METHOD
+            elif name:
+                return SpellType.NAMED_METHOD
+            else:
+                return SpellType.NORMAL_METHOD
+        else:
+            return SpellType.EXISTING_CLASS if is_instance else SpellType.NORMAL

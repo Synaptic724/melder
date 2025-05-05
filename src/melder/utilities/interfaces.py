@@ -1,6 +1,10 @@
-import threading
+from typing import Type, Optional, Any, Dict, NamedTuple
 from abc import ABC, abstractmethod
-from typing import Type, Optional, Any
+from typing import Optional, Any
+import uuid
+from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.existence.existence import Existence
+from melder.utilities.concurrent_dictionary import ConcurrentDict
 
 
 # We got two of the same types of classes, I wanted to stick to the magic theme because it's pretty fun :P
@@ -93,46 +97,33 @@ class IDisposable(ABC):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
-
-
-class ISpellbook(ISeal):
-    """
-    Interface for Spellbook, which is a graph structure that behaves like a scope and a factory.
-    """
-    __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
-    @abstractmethod
-    def bind(self, spell):
-        """
-        Adds a new spell to the Spellbook.
-        :param spell: The spell to add.
-        """
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @abstractmethod
-    def remove_bind(self, spell):
-        """
-        Removes a spell from the Spellbook.
-        :param spell: The spell to remove.
-        """
-        raise NotImplementedError("Subclasses must implement this method.")
-
 class ISpell(ISeal):
     """
     Interface for a Spell, which is a unit of magic that can be cast.
     """
     __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
     @abstractmethod
-    def add_spell_details(self):
+    def add_spell_details(self, *args, **kwargs):
         """
-        Casts the spell.
+        Add details to the spell.
+        :param dependency_graph: DAG system of dependencies.
+        :param existing_object: existing object if applicable.
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def add_owned_conduit(self):
+    def _add_owned_conduit(self, conduit_id: uuid.UUID):
         """
-        Adds the conduit ID that owns this spell.
+        Add the conduit ID that owns this spell.
         :param conduit_id: The ID of the conduit that owns this spell.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def _add_dag(self, dag: Any):
+        """
+        Add details to the spell.
+        :param dependency_graph: DAG system of dependencies.
+        :param existing_object: existing object if applicable.
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
@@ -143,27 +134,120 @@ class ISpell(ISeal):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+class ISpellbook(ISeal):
+    """
+    Interface for a Spellbook — the central registry and configuration manager
+    for all spells in the system. It behaves as a binder, store, and
+    configuration authority for conduits.
+    """
+    @property
+    @abstractmethod
+    def _spells(self) -> ConcurrentDict[uuid.UUID, ISpell]:
+        pass
 
-class IBind(ISeal):
+    @property
+    @abstractmethod
+    def _contracted_spells(self) -> ConcurrentDict[uuid.UUID, ISpell]:
+        pass
+
+    @property
+    @abstractmethod
+    def _lookup_spells(self) -> ConcurrentDict[tuple, uuid.UUID]:
+        pass
+
+    @property
+    @abstractmethod
+    def _lookup_contracted_spells(self) -> ConcurrentDict[tuple, uuid.UUID]:
+        pass
+
+    @abstractmethod
+    def bind(self, *, spell: Any, existence: Existence, spellframe: Optional[Any] = None, name: Optional[str] = None):
+        """
+        Register a new spell with the spellbook.
+
+        Args:
+            spell: The class, method, or lambda to register.
+            existence: The lifecycle pattern (unique, many, etc.).
+            spellframe: Optional interface or grouping type.
+            name: Optional user-defined binding name.
+        """
+        pass
+
+    @abstractmethod
+    def remove_bind(self, spell: Any):
+        """
+        Removes a spell from the registry. Typically used during teardown
+        or re-binding scenarios.
+        """
+        pass
+
+    @abstractmethod
+    def _find_spell(self, spell_id: uuid.UUID) -> Optional[Any]:
+        """
+        Internal spell resolution by UUID. Useful for resolving specific
+        spell references across systems or conduit links.
+        """
+        pass
+
+    @abstractmethod
+    def conjure(self, name: Optional[str] = None) -> Any:
+        """
+        Finalizes configuration and returns a new conduit bound to this Spellbook.
+
+        Args:
+            name: Optional name for the conduit.
+
+        Returns:
+            A configured Conduit instance.
+        """
+        pass
+
+    @abstractmethod
+    def get_configuration(self) -> Configuration:
+        """
+        Returns the current configuration used by this Spellbook.
+        """
+        pass
+
+    @abstractmethod
+    def configure_conduit_state(self, **kwargs):
+        """
+        Apply configuration properties to the conduit before sealing.
+        Raises if configuration is already locked.
+        """
+        pass
+
+    @abstractmethod
+    def lock_configuration(self):
+        """
+        Locks the configuration to prevent further modification.
+        """
+        pass
+
+    @abstractmethod
+    def is_configuration_locked(self) -> bool:
+        """
+        Returns whether the configuration has been locked.
+        """
+        pass
+
+    @abstractmethod
+    def seal(self):
+        """
+        Optional system-level lock to finalize and seal the entire Spellbook.
+        Typically called once before shutdown or final execution phase.
+        """
+        pass
+
+
+class IBind:
     """
     Interface for a Bind, which is a binding mechanism for spells.
     """
-    #__slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+    __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
 
     @abstractmethod
     def bind(self):
-        """
-        Binds a spell to the Spellbook.
-        """
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @abstractmethod
-    def bind_named(self,
-        name: str,
-        spell: Any,
-        spellframe: Type = None,
-        existence: Optional[str] = None
-    ):
         """
         Binds a spell to the Spellbook.
         """
@@ -177,7 +261,7 @@ class IMeld(ISeal):
     """
     __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
     @abstractmethod
-    def meld(self):
+    def meld(self, spell, *, spellframe=None, name=None, spell_override: Optional[Dict[str, Any]] = None):
         """
         Melding is the process of creating or materializing an object
         from the Conduit's registered spells.

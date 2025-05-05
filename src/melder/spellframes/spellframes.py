@@ -4,6 +4,35 @@ from typing import Optional, Type, Dict, Any
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal
 
+# ─────────────────────────────────────────────────────────────────────────────
+# TODO: Implement SpellFrame-based SpellMaps and MethodMaps
+#
+# 📌 Objective:
+#   Each spellframe (interface or grouping class) should manage its own map
+#   of spells and methods bound to it, enabling localized resolution, inspection,
+#   and version control.
+#
+# 🧩 Core Tasks:
+#   - [ ] Create a `SpellFrame` object or class to encapsulate:
+#         - spell_map: Dict[str, Spell]
+#         - method_map: Dict[str, Spell]
+#   - [ ] On each `bind(...)`, if a `spellframe` is provided:
+#         - Retrieve or create the corresponding `SpellFrame`
+#         - Register the spell into the appropriate map
+#   - [ ] Add resolution helpers:
+#         - frame.resolve(name=None, method=False) → Spell
+#         - frame.all_spells() → List[Spell]
+#   - [ ] Store these `SpellFrame` containers in a global SpellFrameRegistry
+#         for quick access by frame class/type
+#
+# ✅ Benefits:
+#   - Isolated resolution per frame
+#   - Support for multiple named spells
+#   - Clean introspection of spellframe capabilities
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+
 
 class SpellFrame(ISeal):
     """

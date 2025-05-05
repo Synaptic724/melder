@@ -76,3 +76,29 @@ class SpellMap(Generic[T]):
 #         for name in bound
 #     })
 #     return ParserDispatcher(map)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 🧠 TODO: Implement SpellMap and MethodMap Separation
+#
+# Melder currently stores all spells in a single unified dictionary (_spells),
+# but for clarity and faster access patterns, we should split spells into:
+#
+# 1. SpellMap    — for class-based/service spells (SpellType.CLASS-derived)
+# 2. MethodMap   — for method/lambda/function spells (SpellType.METHOD-derived)
+#
+# 🔧 Why?
+# - Enables type-safe operations (e.g., casting only class spells from one map)
+# - Improves lookup logic during DAG execution and reflection
+# - Lets us build specialized tooling for each spell type
+#
+# 🎯 Action Plan:
+# - [ ] Create internal SpellMap and MethodMap dictionaries
+# - [ ] Update bind() to insert into the correct map based on SpellType
+# - [ ] Refactor resolve logic (Meld) to query the appropriate map
+# - [ ] Build diagnostics: print all class spells, all method spells, etc.
+# - [ ] Optional: Add a unified API for read-only merged view (if needed)
+#
+# 📌 Key Insight:
+# SpellType already encodes all needed type info. Let that guide partitioning.
+# ──────────────────────────────────────────────────────────────────────────────
