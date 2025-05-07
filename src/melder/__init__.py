@@ -1,17 +1,23 @@
 """
-factory
-High-performance concurrency collections and parallel operations for Python 3.13+.
+melder
+Lightweight dependency injection system designed for high-performance modular Python systems like ThreadFactory.
 """
-DEBUG_MODE = True
+
 import sys
 import warnings
-from melder.__version__ import __version__ as version
 
-# 🚫 Exit if Python version is less than 3.13
+from melder.__version__ import __version__ as base_version
+from melder.__author__ import CREATOR as __author__
+from melder.__license__ import __license__
+from melder.__description__ import __description__
+
+DEBUG_MODE = True
+
+# 🚫 Exit if Python version is less than 3.13 (hard fail)
 if sys.version_info < (3, 13):
     sys.exit("melder requires Python 3.13 or higher.")
 
-# ✅ Exit with warning if Python version is less than 3.13 (soft requirement)
+# ✅ Soft warning if not optimized Python version
 if sys.version_info < (3, 13):
     warnings.warn(
         f"melder is optimized for Python 3.13+ (no-GIL). "
@@ -19,12 +25,14 @@ if sys.version_info < (3, 13):
         UserWarning
     )
 
-if DEBUG_MODE:
-    version += "-dev"
-__version__ = version
+# 🔧 Append "-dev" in DEBUG_MODE without mutating original
+__version__ = base_version + "-dev" if DEBUG_MODE else base_version
 
 __all__ = [
-    "__version__"
+    "__version__",
+    "__author__",
+    "__license__",
+    "__description__"
 ]
 
 def _detect_nogil_mode() -> None:

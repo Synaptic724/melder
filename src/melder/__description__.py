@@ -1,0 +1,1 @@
+__description__ = "Melder is a lightweight dependency injection system designed for high-performance modular Python systems like ThreadFactory."
