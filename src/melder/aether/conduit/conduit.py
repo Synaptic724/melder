@@ -1,5 +1,6 @@
 from typing import Optional, Type
 from melder.utilities.concurrent_list import ConcurrentList
+from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.overload_dispatcher import OverloadDispatcher
 from melder.utilities.interfaces import IConduit, ISpellbook
 from melder.aether.aether import Aether
@@ -62,9 +63,12 @@ class Conduit(IConduit):
         self._create_internal_configuration()
 
         if self._conduit_state == ConduitState.normal:
-            Conduit._add_conduit_to_aether(self)
+            self._add_conduit_to_aether()
+            self._add_spells_to_aether()
 
+#region fakemeld
     def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
+        raise NotImplementedError("Not ready yet, not even using real class")
         if spell_type == "class":
             class_spell = self._spellbook.get(spell_name)
             if not class_spell:
@@ -87,7 +91,7 @@ class Conduit(IConduit):
 
         else:
             raise ValueError(f"Invalid spell type '{spell_type}'")
-
+#endregion
 
     def _define(self, method_name):
         # Create the dispatcher if not yet defined
@@ -189,17 +193,30 @@ class Conduit(IConduit):
         """
         return self._creation_context
 
-    @classmethod
-    def _add_conduit_to_aether(cls, conduit: IConduit) -> None:
+    def _add_conduit_to_aether(self) -> None:
         """
         Adds the newly created Conduit into the shared Aether world.
 
         Args:
             conduit (Conduit): The Conduit instance to add.
         """
-        if cls._aether is None:
+        if Conduit._aether is None:
             raise RuntimeError("Aether is not initialized.")
-        cls._aether._add_conduit(conduit)
+        Conduit._aether._add_conduit(self)
+
+
+    def _add_spells_to_aether(self) -> None:
+        """
+        Adds the newly created Conduit into the shared Aether world.
+
+        Args:
+            conduit (Conduit): The Conduit instance to add.
+        """
+        if Conduit._aether is None:
+            raise RuntimeError("Aether is not initialized.")
+
+        spell_set= ConcurrentSet(self._spellbook._spells.keys())
+        Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set)
 
     def _create_internal_configuration(self) -> None:
         """
@@ -268,7 +285,7 @@ class Conduit(IConduit):
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
 
-    def create_lesser_conduit(self, spellbook: ISpellbook, name: Optional[str] = None) -> IConduit:
+    def create_lesser_conduit(self, name: Optional[str] = None) -> IConduit:
         """
         Creates a lesser Conduit (child node) attached to this Conduit.
 
@@ -284,7 +301,7 @@ class Conduit(IConduit):
 
         with self._lock:
             new_conduit = Conduit(
-                spellbook=spellbook,
+                spellbook=self._spellbook._lesser_conduit_spellbook_copy(),
                 configuration=self._configuration,
                 conduit_state="lesser",
                 name=name

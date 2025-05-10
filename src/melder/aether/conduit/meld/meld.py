@@ -19,12 +19,12 @@ class Meld(IMeld):
         self._lock = threading.RLock()
 
         # Spellbook: stores all bound spell references by UUID
-        self._owned_spell: ConcurrentDict[uuid.UUID, ISpell] = spellbook._spells
-        self._contracted: ConcurrentDict[uuid.UUID, ISpell] = spellbook._contracted_spells
+        self._owned_spell: ConcurrentDict[str, ISpell] = spellbook._spells
+        self._contracted: ConcurrentDict[str, ISpell] = spellbook._contracted_spells
 
         # Lookup maps (interface + name) -> UUID
-        self._owned_spells_lookup: ConcurrentDict[tuple, uuid.UUID] = spellbook._lookup_spells
-        self._lookup_contracted_spells: ConcurrentDict[tuple, uuid.UUID] = spellbook._lookup_contracted_spells
+        self._owned_spells_lookup: ConcurrentDict[tuple, str] = spellbook._lookup_spells
+        self._lookup_contracted_spells: ConcurrentDict[tuple, str] = spellbook._lookup_contracted_spells
 
         # Creation manager (conduit-local instantiation context)
         self._creations = creations

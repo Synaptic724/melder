@@ -1,6 +1,7 @@
 import uuid
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
+from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces import ISeal, IConduit, ISpellbook
 import threading
 
@@ -30,6 +31,7 @@ class Aether(ISeal):
             super().__init__()
             Aether._initialized = True
             self._conduits: ConcurrentDict[uuid.UUID, IConduit] = ConcurrentDict() #This retains all normal conduits i.e roots created by a spellbook
+            self._spell_registry: ConcurrentDict[uuid.UUID, ConcurrentSet[str]] = ConcurrentDict() # Holds conduit UUIDs and their spell IDs which are SHA256 hashes of internal components
             self._conduit_clusters: ConcurrentDict[str, ConcurrentList[uuid.UUID]] = ConcurrentDict()  # Clusters only
 
     def _reset_for_testing(self):
@@ -39,6 +41,34 @@ class Aether(ISeal):
             self._sealed = False
             Aether._initialized = False
             Aether._instance = None
+
+
+    def _check_for_spell(self, spell_id: str):
+        """
+        This will check if the spell exists within the spell registry.
+        :param spell_id:
+        :return:
+        """
+        for spell_set in self._spell_registry.values():
+            if spell_id in spell_set:
+                return True
+        return False
+
+    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str]):
+        """
+        Register a group of spell IDs under a conduit ID in the global registry.
+
+        Args:
+            conduit_id: The UUID of the owning conduit.
+            spell_set: A concurrent set of spell IDs to register.
+
+        Raises:
+            ValueError: If the conduit ID is already registered.
+        """
+        if conduit_id not in self._spell_registry:
+            self._spell_registry[conduit_id] = spell_set
+        else:
+            raise ValueError(f"Spell registry already contains Conduit ID {conduit_id}.")
 
     def get_conduit(self, name: str) -> IConduit:
         """
@@ -138,4 +168,6 @@ class Aether(ISeal):
         for conduit in self._conduits.values():
             conduit.seal()
         self._conduits.clear()
+        self._spell_registry.clear()
+        self._conduit_clusters.clear()
         self._sealed = True

@@ -8,12 +8,43 @@ from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spell
 from melder.utilities.interfaces import IBind
-
+import hashlib
 
 class Bind(IBind):
     def __init__(self):
         super().__init__()
         self._lock = threading.RLock()
+
+    @staticmethod
+    def sha256_profile(profile: ClassProfile | MethodProfile) -> str:
+        parts = ["v1"]  # fingerprint version tag
+
+        if isinstance(profile, ClassProfile):
+            parts += [
+                profile.name,
+                profile.qualname,
+                profile.module,
+                ",".join(sorted(profile.bases)),
+                ",".join(sorted(profile.mro)),
+                ",".join(sorted(profile.annotations.keys())),
+                ",".join(sorted(profile.methods.keys())),
+                (profile.source_preview or "").strip(),
+            ]
+        elif isinstance(profile, MethodProfile):
+            param_parts = [
+                f"{p['name']}:{p['kind']}={p['default']}" for p in profile.parameters
+            ]
+            parts += [
+                profile.name,
+                profile.qualname or "",
+                profile.module or "",
+                profile.signature or "",
+                ",".join(param_parts),
+                (profile.preview or "").strip(),
+            ]
+
+        key = "::".join(parts)
+        return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
     def bind(self, spell=None, *, spellframe=None, name=None, existence=Existence.unique):
         if spell is None:
@@ -29,6 +60,7 @@ class Bind(IBind):
         with self._lock:
             # Get the class or method profile
             profile = SpellExaminer(spell).inspect()
+            fingerprint = Bind.sha256_profile(profile)
 
             # Check if spell is an instance (not a class/function)
             is_instance = not inspect.isclass(spell) and not inspect.isfunction(spell)
@@ -57,6 +89,7 @@ class Bind(IBind):
                 spell_type=spell_type,
                 existing_object=spell if is_instance else None,
                 profile=profile,
+                spell_id=fingerprint,
             )
 
             print(f"[BIND] Registered: {spell_name} | Frame: {spellframe} | Type: {spell_type} | Existence: {existence}")

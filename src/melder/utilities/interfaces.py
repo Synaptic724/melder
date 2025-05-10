@@ -2,9 +2,6 @@ from typing import Type, Optional, Any, Dict, NamedTuple
 from abc import ABC, abstractmethod
 from typing import Optional, Any
 import uuid
-from melder.spellbook.configuration.configuration import Configuration
-from melder.spellbook.existence.existence import Existence
-from melder.utilities.concurrent_dictionary import ConcurrentDict
 
 
 # We got two of the same types of classes, I wanted to stick to the magic theme because it's pretty fun :P
@@ -142,26 +139,54 @@ class ISpellbook(ISeal):
     """
     @property
     @abstractmethod
-    def _spells(self) -> ConcurrentDict[uuid.UUID, ISpell]:
+    def _spells(self) -> 'ConcurrentDict[str, ISpell]':
         pass
 
     @property
     @abstractmethod
-    def _contracted_spells(self) -> ConcurrentDict[uuid.UUID, ISpell]:
+    def _contracted_spells(self) -> 'ConcurrentDict[str, ISpell]':
         pass
 
     @property
     @abstractmethod
-    def _lookup_spells(self) -> ConcurrentDict[tuple, uuid.UUID]:
+    def _lookup_spells(self) -> 'ConcurrentDict[tuple, str]':
         pass
 
     @property
     @abstractmethod
-    def _lookup_contracted_spells(self) -> ConcurrentDict[tuple, uuid.UUID]:
+    def _lookup_contracted_spells(self) -> 'ConcurrentDict[tuple, str]':
+        pass
+
+    @_spells.setter
+    @abstractmethod
+    def _spells(self, value: 'ConcurrentDict[str, ISpell]'):
+        pass
+
+
+    @_lookup_spells.setter
+    @abstractmethod
+    def _lookup_spells(self, value: 'ConcurrentDict[tuple, str]'):
+        pass
+
+    @_contracted_spells.setter
+    @abstractmethod
+    def _contracted_spells(self, value: 'ConcurrentDict[str, ISpell]'):
+        pass
+
+    @_lookup_contracted_spells.setter
+    @abstractmethod
+    def _lookup_contracted_spells(self, value: 'ConcurrentDict[tuple, str]'):
+        pass
+
+    def _lesser_conduit_spellbook_copy(self) -> 'ISpellbook':
+        """
+        Returns a copy of the spellbook for use in a lesser conduit.
+        :return:
+        """
         pass
 
     @abstractmethod
-    def bind(self, *, spell: Any, existence: Existence, spellframe: Optional[Any] = None, name: Optional[str] = None):
+    def bind(self, *, spell: Any, existence: 'Existence', spellframe: Optional[Any] = None, name: Optional[str] = None):
         """
         Register a new spell with the spellbook.
 
@@ -203,7 +228,7 @@ class ISpellbook(ISeal):
         pass
 
     @abstractmethod
-    def get_configuration(self) -> Configuration:
+    def get_configuration(self) -> 'Configuration':
         """
         Returns the current configuration used by this Spellbook.
         """

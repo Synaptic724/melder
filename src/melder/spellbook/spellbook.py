@@ -1,5 +1,6 @@
 import uuid
 from typing import Optional, List, Dict, Any, Type, Callable, NamedTuple
+from melder.aether.aether import Aether
 from melder.spellbook.bind.graph_builder.inspector.spell_examiner import MethodProfile, ClassProfile
 from melder.utilities.interfaces import ISpellbook, ISeal, ISpell
 from melder.utilities.concurrent_dictionary import ConcurrentDict
@@ -21,7 +22,10 @@ class Spell(ISpell):
             existence: Existence,
             spell_type: SpellType,
             profile: ClassProfile | MethodProfile,
+            spell_id: str,
             existing_object: object = None,
+            *args,
+            **kwargs
     ):
         super().__init__()
         self._lock = threading.RLock()
@@ -31,7 +35,7 @@ class Spell(ISpell):
 
         # Spell Data
         self.spell = spell
-        self.spell_id: uuid.UUID = uuid.uuid4()
+        self.spell_id: spell_id
         self.spellframe: Optional[Any] = spellframe
         self.spell_type: SpellType = spell_type
         self.user_created_object: object = existing_object
@@ -41,8 +45,8 @@ class Spell(ISpell):
         self.profile: ClassProfile | MethodProfile = profile
 
         # Spell Metadata
-        self.tags = []
-        self.metadata = {}
+        self.tags = args if args else []
+        self.metadata = kwargs if kwargs else {}
 
         # hooks
         self.pre_hooks: List[Callable] = []
@@ -58,16 +62,6 @@ class Spell(ISpell):
         # Key for the spell in the Spellbook
         self._key = (self.spellframe or type(self.spell), self.binding_name or "__default__")
 
-    def add_spell_details(self, *args, **kwargs):
-        """
-        Add details to the spell.
-        :param dependency_graph: DAG system of dependencies.
-        :param existing_object: existing object if applicable.
-        """
-        with self._lock:
-            self.tags = args
-            self.metadata = kwargs
-
     def _add_owned_conduit(self, conduit_id: uuid.UUID):
         """
         Add the conduit ID that owns this spell.
@@ -75,6 +69,7 @@ class Spell(ISpell):
         """
         with self._lock:
             self._owner_conduit_id = conduit_id
+            self.owned_spell = True
 
     def _add_dag(self, dag: Any):
         """
@@ -134,64 +129,97 @@ class Spell(ISpell):
 
 class Spellbook(ISpellbook):
     """
-    The Spellbook stores all spells and sets the system configuration
-    if it's the first Spellbook created.
+    The Spellbook acts as the authoritative registry for all active spells.
+    It also manages configuration and controls Conduit conjuring.
     """
-
+    _aether = Aether()
     def __init__(self):
         super().__init__()
         self._lock = threading.RLock()
 
-        # Configuration
+        # Internal state
         self._conjured = False
         self._configuration_locked: bool = False
         self._configuration = Configuration()
 
-        self.__spells: ConcurrentDict[uuid.UUID, Spell] = ConcurrentDict()
-        self.__lookup_spells: ConcurrentDict[tuple, uuid.UUID] = ConcurrentDict()
+        # Core spell storage (SHA256-keyed)
+        self.__spells: ConcurrentDict[str, Spell] = ConcurrentDict()
+        self.__lookup_spells: ConcurrentDict[tuple, str] = ConcurrentDict()
 
-        # Contracted Spells — Used for outbound links / remote contracts
-        self.__contracted_spells: ConcurrentDict[uuid.UUID, Spell] = ConcurrentDict()
-        self.__lookup_contracted_spells: ConcurrentDict[tuple, uuid.UUID] = ConcurrentDict()
+        # Networked/remote spell support
+        self.__contracted_spells: ConcurrentDict[str, Spell] = ConcurrentDict()
+        self.__lookup_contracted_spells: ConcurrentDict[tuple, str] = ConcurrentDict()
 
-        # SpellBinder — Used to register spells from user input
+        # Binding system
         self._bind = Bind()
 
-#region properties
+    #region Properties
+
     @property
-    def _spells(self) -> ConcurrentDict[uuid.UUID, Spell]:
-        """
-        All registered spells (UUID-keyed).
-        """
+    def _spells(self) -> ConcurrentDict[str, Spell]:
         return self.__spells
 
+    @_spells.setter
+    def _spells(self, value: ConcurrentDict[str, Spell]):
+        self.__spells = value
+
     @property
-    def _lookup_spells(self) -> ConcurrentDict[tuple, uuid.UUID]:
-        """
-        Lookup table from (interface, binding_name) to UUID.
-        """
+    def _lookup_spells(self) -> ConcurrentDict[tuple, str]:
         return self.__lookup_spells
 
+    @_lookup_spells.setter
+    def _lookup_spells(self, value: ConcurrentDict[tuple, str]):
+        self.__lookup_spells = value
+
     @property
-    def _contracted_spells(self) -> ConcurrentDict[uuid.UUID, Spell]:
-        """
-        Spells contracted from other conduits or networks.
-        """
+    def _contracted_spells(self) -> ConcurrentDict[str, Spell]:
         return self.__contracted_spells
 
+    @_contracted_spells.setter
+    def _contracted_spells(self, value: ConcurrentDict[str, Spell]):
+        self.__contracted_spells = value
+
     @property
-    def _lookup_contracted_spells(self) -> ConcurrentDict[tuple, uuid.UUID]:
-        """
-        Lookup table for contracted spells.
-        """
+    def _lookup_contracted_spells(self) -> ConcurrentDict[tuple, str]:
         return self.__lookup_contracted_spells
 
-#endregion
-#region core methods
-    def bind(self, spell, existence: Existence, *, spellframe=None, name=None):
+    @_lookup_contracted_spells.setter
+    def _lookup_contracted_spells(self, value: ConcurrentDict[tuple, str]):
+        self.__lookup_contracted_spells = value
+
+    #endregion
+
+    #region Core Methods
+
+    def _lesser_conduit_spellbook_copy(self) -> ISpellbook:
         """
-        Binds a new spell into the system via the SpellBinder.
-        This stores the UUID and lookup key entry for fast resolution.
+        Create a copy of the spellbook for a lesser conduit.
+        This is a placeholder for the actual logic to create a lesser conduit copy.
+        """
+        with self._lock:
+            spellbook = Spellbook()
+            spellbook._contracted_spells = self.__spells.copy()
+            spellbook._lookup_contracted_spells = self.__lookup_spells.copy()
+            spellbook.conjured = True
+            spellbook._configuration = self._configuration
+            spellbook._configuration_locked = True
+            return spellbook
+
+
+    def bind(self, spell, existence: Existence, *, spellframe=None, name=None, **kwargs) -> None:
+        """
+        Bind a spell to the spellbook using the `Bind` system.
+
+        This will:
+        - Inspect and profile the spell
+        - Generate a fingerprint-based spell_id
+        - Register it in the global registry
+
+        Kwargs can be attached to add hooks into the spell.
+        `pre_hooks`, `activation_hooks`, and `post_hooks` are all lists of callable functions.
+
+        Example:
+            dict = { "pre_hooks": [hook1, hook2], "activation_hooks": [hook3], "post_hooks": [hook4] }
         """
         try:
             spell = self._bind.bind(
@@ -200,30 +228,67 @@ class Spellbook(ISpellbook):
                 name=name,
                 existence=existence
             )
+            if Spellbook._aether._check_for_spell(spell.spell_id):
+                raise RuntimeError(
+                    f"Spell with ID {spell.spell_id} already exists in the registry."
+                )
+            self._add_hooks_to_spell(spell, **kwargs)
             self._lookup_spells[spell._key] = spell.spell_id
             self._spells[spell.spell_id] = spell
         except Exception:
             raise
 
-    def _find_spell(self, spell_id: uuid.UUID) -> Optional[Spell]:
+    def _add_hooks_to_spell(self, spell: Spell, **kwargs) -> None:
         """
-        Find a spell by its ID.
-        :param spell_id: The ID of the spell to find.
-        :return: The found spell or None if not found.
+        Add hooks to the spell.
+        :param spell:
+        :param kwargs:
+        :return:
         """
+        if not isinstance(spell, Spell):
+            raise TypeError("spell must be an instance of Spell.")
+
+        with self._lock:
+            if "pre_hooks" in kwargs:
+                for hook in kwargs["pre_hooks"]:
+                    if not callable(hook):
+                        raise TypeError("pre_hooks must be a list of callables.")
+                spell.pre_hooks = kwargs["pre_hooks"]
+            if "activation_hooks" in kwargs:
+                for hook in kwargs["activation_hooks"]:
+                    if not callable(hook):
+                        raise TypeError("pre_hooks must be a list of callables.")
+                spell.activation_hooks = kwargs["activation_hooks"]
+            if "post_hooks" in kwargs:
+                for hook in kwargs["post_hooks"]:
+                    if not callable(hook):
+                        raise TypeError("pre_hooks must be a list of callables.")
+                spell.post_hooks = kwargs["post_hooks"]
+
+
+    def _check_all_spells(self) -> None:
+        """
+        Check all spells in the spellbook for validity.
+        This is a placeholder for the actual validation logic.
+        """
+        with self._lock:
+            for spell in self._spells.keys():
+                if Spellbook._aether._check_for_spell(spell):
+                    raise RuntimeError(
+                        f"Spell with ID {spell} already exists in the registry."
+                    )
+
+    def _find_spell(self, spell_id: str) -> Optional[Spell]:
+        """Internal method to locate a spell by its spell_id."""
         with self._lock:
             return self._spells.get(spell_id)
 
     def is_configuration_locked(self) -> bool:
-        """
-        Check if the configuration for this Spellbook has been locked.
-        """
+        """Check whether spellbook configuration is frozen."""
         return self._configuration_locked
 
     def lock_configuration(self) -> None:
-        """
-        Lock this Spellbook's configuration, preventing future modification.
-        """
+        """Lock configuration to prevent mutation."""
         if self._configuration_locked:
             raise RuntimeError("Configuration is already locked.")
         with self._lock:
@@ -231,12 +296,8 @@ class Spellbook(ISpellbook):
 
     def configure_conduit_state(self, **kwargs) -> None:
         """
-        Configure the conduit state.
-
-        Only verifies allowed keys at this stage.
-        Type and value validation happens during final validation.
-
-        If any configuration errors occur, all attempted settings are cleared.
+        Apply conduit-specific configuration properties.
+        If the config is invalid or keys are wrong, the changes are discarded.
         """
         if self._configuration_locked:
             raise RuntimeError("Configuration is locked. Cannot modify conduit state.")
@@ -264,30 +325,24 @@ class Spellbook(ISpellbook):
             raise
 
     def get_configuration(self) -> Configuration:
-        """
-        Get the current configuration of the Spellbook.
-        :return: The current configuration.
-        """
+        """Return the active configuration for this Spellbook."""
         return self._configuration
 
     def conjure(self, name: str = None) -> Conduit:
         """
-        Conjure a new Conduit from this Spellbook.
+        Create a new Conduit (execution channel) from this Spellbook.
 
-        Automatic mode:
-            - Only one conduit per Spellbook.
-            - Configuration is frozen once.
-
-        Dynamic mode:
-            - Each Spellbook can conjure once.
-            - Configuration is frozen the first time.
+        Rules:
+        - Only one conduit per spellbook
+        - Configuration is frozen at conjuring time
         """
         with self._lock:
             if self._conjured:
                 raise RuntimeError(
-                    "This Spellbook has already conjured a Conduit. "
-                    "Only one is allowed per Spellbook."
+                    "This Spellbook has already conjured a Conduit. Only one is allowed per Spellbook."
                 )
+
+            self._check_all_spells()
 
             if not self.is_configuration_locked():
                 self._configuration.load_default_dictionary()
@@ -295,12 +350,30 @@ class Spellbook(ISpellbook):
                 self._configuration_locked = True
 
             self._conjured = True
-            return Conduit(spellbook=self, name=name, conduit_state="normal", configuration=self._configuration)
+            conduit = Conduit(
+                spellbook=self,
+                name=name,
+                conduit_state="normal",
+                configuration=self._configuration
+            )
+            self._define_conduit_into_spells(conduit)
+            return conduit
 
-#endregion
+    def _define_conduit_into_spells(self, conduit: Conduit) -> None:
+        """
+        Define the conduit into all spells.
+        This is a placeholder for the actual logic to define the conduit into spells.
+        """
+        with self._lock:
+            for spell in self._spells.values():
+                spell._add_owned_conduit(conduit.__creation_context__._conduit_id)
+                #spell._add_dag(conduit.dependency_graph) # This is a placeholder for the actual DAG system
 
     def seal(self):
         """
-        Finalize the Spellbook (optional override).
+        Finalize and seal the spellbook.
+        (Optional override point for releasing resources or locking down the system.)
         """
         pass
+
+    #endregion
