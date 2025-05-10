@@ -140,50 +140,50 @@ class ISpellbook(ISeal):
     @property
     @abstractmethod
     def _spells(self) -> 'ConcurrentDict[str, ISpell]':
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @property
     @abstractmethod
     def _contracted_spells(self) -> 'ConcurrentDict[str, ISpell]':
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @property
     @abstractmethod
     def _lookup_spells(self) -> 'ConcurrentDict[tuple, str]':
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @property
     @abstractmethod
     def _lookup_contracted_spells(self) -> 'ConcurrentDict[tuple, str]':
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @_spells.setter
     @abstractmethod
     def _spells(self, value: 'ConcurrentDict[str, ISpell]'):
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
     @_lookup_spells.setter
     @abstractmethod
     def _lookup_spells(self, value: 'ConcurrentDict[tuple, str]'):
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @_contracted_spells.setter
     @abstractmethod
     def _contracted_spells(self, value: 'ConcurrentDict[str, ISpell]'):
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @_lookup_contracted_spells.setter
     @abstractmethod
     def _lookup_contracted_spells(self, value: 'ConcurrentDict[tuple, str]'):
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     def _lesser_conduit_spellbook_copy(self) -> 'ISpellbook':
         """
         Returns a copy of the spellbook for use in a lesser conduit.
         :return:
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def bind(self, *, spell: Any, existence: 'Existence', spellframe: Optional[Any] = None, name: Optional[str] = None):
@@ -196,7 +196,7 @@ class ISpellbook(ISeal):
             spellframe: Optional interface or grouping type.
             name: Optional user-defined binding name.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def remove_bind(self, spell: Any):
@@ -204,7 +204,7 @@ class ISpellbook(ISeal):
         Removes a spell from the registry. Typically used during teardown
         or re-binding scenarios.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def _find_spell(self, spell_id: uuid.UUID) -> Optional[Any]:
@@ -212,7 +212,7 @@ class ISpellbook(ISeal):
         Internal spell resolution by UUID. Useful for resolving specific
         spell references across systems or conduit links.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def conjure(self, name: Optional[str] = None) -> Any:
@@ -225,14 +225,14 @@ class ISpellbook(ISeal):
         Returns:
             A configured Conduit instance.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def get_configuration(self) -> 'Configuration':
         """
         Returns the current configuration used by this Spellbook.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def configure_conduit_state(self, **kwargs):
@@ -240,21 +240,21 @@ class ISpellbook(ISeal):
         Apply configuration properties to the conduit before sealing.
         Raises if configuration is already locked.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def lock_configuration(self):
         """
         Locks the configuration to prevent further modification.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def is_configuration_locked(self) -> bool:
         """
         Returns whether the configuration has been locked.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def seal(self):
@@ -262,7 +262,7 @@ class ISpellbook(ISeal):
         Optional system-level lock to finalize and seal the entire Spellbook.
         Typically called once before shutdown or final execution phase.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 class IBind:
@@ -293,13 +293,22 @@ class IMeld(ISeal):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
-
-
 class IConduit(ISeal):
     """
     Interface for a Conduit, which behaves as both a scope and a factory within the system.
     """
     __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @name.setter
+    @abstractmethod
+    def name(self, value: str):
+        raise NotImplementedError("Subclasses must implement this method.")
+
     @abstractmethod
     def link(self):
         """
@@ -323,6 +332,18 @@ class IConduit(ISeal):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+class IConduitCloud(ISeal):
+    """
+    Interface for a ConduitCloud, which manages multiple Conduits.
+    """
+    __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+
+    @abstractmethod
+    def get_conduit(self, name: str) -> IConduit:
+        """
+        Returns a Conduit by its name.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 class ILink(ISeal):

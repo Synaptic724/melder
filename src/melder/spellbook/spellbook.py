@@ -198,10 +198,9 @@ class Spellbook(ISpellbook):
         """
         with self._lock:
             spellbook = Spellbook()
-            spellbook._contracted_spells = self.__spells.copy()
-            spellbook._lookup_contracted_spells = self.__lookup_spells.copy()
-            spellbook.conjured = True
-            spellbook._configuration = self._configuration
+            #spellbook._contracted_spells = self.__spells.copy()   We actually need the contract to create this effect
+            #spellbook._lookup_contracted_spells = self.__lookup_spells.copy() We need to link to this object to create this effect
+            spellbook._conjured = True
             spellbook._configuration_locked = True
             return spellbook
 

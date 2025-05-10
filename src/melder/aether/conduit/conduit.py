@@ -2,7 +2,7 @@ from typing import Optional, Type
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.overload_dispatcher import OverloadDispatcher
-from melder.utilities.interfaces import IConduit, ISpellbook
+from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.spellbook.configuration.configuration import Configuration
@@ -41,7 +41,7 @@ class Conduit(IConduit):
         super().__init__()
         # General Init
         self._lock = threading.RLock()
-        self.name = name
+        self._name = name
         self._dispatchers = {}
         self.__debugger_mode__ = False
         self.__dynamic_environment__ = False
@@ -65,6 +65,57 @@ class Conduit(IConduit):
         if self._conduit_state == ConduitState.normal:
             self._add_conduit_to_aether()
             self._add_spells_to_aether()
+            if self.__dynamic_environment__ and self._name is not None:
+                Conduit._aether._register_conduit_cloud()
+        elif self._conduit_state == ConduitState.lesser:
+            self.lesser_conduit_contract_link()
+
+    @property
+    def name(self) -> str:
+        """
+        Returns the name of this Conduit. Name must be created during conduit creation.
+        """
+        return self._name if self._name else None
+
+
+    @name.setter
+    def name(self, name: str):
+        """
+        Allows user to name conduit if available
+        :return:
+        """
+        if self._name is not None:
+            raise RuntimeError("Conduit name is set.")
+        self._name = name
+
+
+    def register_conduit_cloud(self, conduit: IConduit):
+        """
+        Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit in order
+        to name it afterwards and register it. You can only register it once.
+        :param conduit:
+        :return:
+        """
+        if self._conduit_state == ConduitState.lesser:
+            raise RuntimeError("Lesser conduits cannot register in the conduit cloud.")
+        if self.__dynamic_environment__ and self._name is not None:
+            Conduit._aether._register_conduit_cloud(conduit)
+
+
+    def get_conduit_cloud(self) -> IConduitCloud:
+        """
+        Returns the conduit cloud. The conduit cloud is a registry of all conduits it behaves
+        like an abstractfactory object under the best circumstances. Users should separate their objects into
+        different conduits and use the conduit cloud to access them. This is a global registry of all conduits.
+
+        This object is designed to be used in dynamic mode only. It mitigates the service locator pattern.
+        :return:
+        """
+        if self._conduit_state == ConduitState.lesser:
+            raise RuntimeError("Lesser conduits cannot access the conduit cloud.")
+        if self.__dynamic_environment__:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
+        return Conduit._aether._get_conduit_cloud()
 
 #region fakemeld
     def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
@@ -132,12 +183,13 @@ class Conduit(IConduit):
         else:
             raise RuntimeError("Conduit state is unknown")
 
-    def upgrade_to_normal(self):
+    def upgrade_to_normal(self, name: Optional[str] = None) -> None:
         """
         Upgrades this Conduit to a normal state. This allows the conduit to create its own links
         through the aether system. This will fork this conduit into a new tree and create new links with the parent.
         This conduit and its children go with it, only a normal scope can access the spellbook to bind new spells.
 
+        Please name the conduit if your intention is to add it to the Conduit Cloud.
         :return:
         """
         with self._lock:
@@ -160,6 +212,7 @@ class Conduit(IConduit):
             # Step 4: Replace the old creations
             self._creations = new_creations
 
+            self._name = name
             # Step 5: Register as a full Conduit in Aether
             Conduit._add_conduit_to_aether(self)
 

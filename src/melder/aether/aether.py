@@ -2,8 +2,61 @@ import uuid
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_set import ConcurrentSet
-from melder.utilities.interfaces import ISeal, IConduit, ISpellbook
+from melder.utilities.interfaces import ISeal, IConduit, IConduitCloud
 import threading
+
+class ConduitCloud(IConduitCloud):
+    """
+    This object will only be active if dynamic mode is enabled.
+    It will automatically register all named conduits into a specific location for retrieval and usage.
+
+    This object is thread-safe and can be used in a multi-threaded environment. This is meant to
+    behave like an abstract factory for conduits. It allows you to store your conduits in a central
+    location and retrieve them by name. This is useful for dynamic mode where conduits are created
+    at runtime and need to be registered and retrieved by name.
+
+    This object is meant to be used in your project to call your conduits in situations where you
+    don't want to create a contract to bind them to a specific conduit. It helps balance
+    seperation of concerns between conduit types.
+    """
+    def __init__(self):
+        super().__init__()
+        self._lock = threading.RLock()
+        self._registry = ConcurrentDict()
+
+
+    def get_conduit(self, name: str) -> IConduit:
+        """
+        Returns a conduit by its name.
+        """
+        if self._sealed:
+            raise RuntimeError("ConduitCloud is sealed and cannot be used.")
+        if name in self._registry:
+            return self._registry[name]
+        raise ValueError(f"Conduit with name {name} not found.")
+
+    def _register_conduit(self, conduit: IConduit):
+        """
+        Register a conduit in the dynamic mode registry.
+        :param conduit:
+        :return:
+        """
+        if conduit.name is None:
+            raise ValueError("Conduit name cannot be None.")
+
+        if conduit.name in self._registry:
+            raise ValueError(f"Conduit with name {conduit.name} already exists in the cloud. Please rename conduit to something unique.")
+        self._registry[conduit.name] = conduit
+
+    def seal(self):
+        """
+        Dispose of the ConduitCloud and all its conduits.
+        """
+        with self._lock:
+            if self._sealed:
+                return
+            self._registry.clear()
+            self._sealed = True
 
 class Aether(ISeal):
     """
@@ -33,6 +86,8 @@ class Aether(ISeal):
             self._conduits: ConcurrentDict[uuid.UUID, IConduit] = ConcurrentDict() #This retains all normal conduits i.e roots created by a spellbook
             self._spell_registry: ConcurrentDict[uuid.UUID, ConcurrentSet[str]] = ConcurrentDict() # Holds conduit UUIDs and their spell IDs which are SHA256 hashes of internal components
             self._conduit_clusters: ConcurrentDict[str, ConcurrentList[uuid.UUID]] = ConcurrentDict()  # Clusters only
+            self._conduit_cloud = ConduitCloud()  # This is the dynamic mode registry
+
 
     def _reset_for_testing(self):
         with self._lock:
@@ -42,6 +97,21 @@ class Aether(ISeal):
             Aether._initialized = False
             Aether._instance = None
 
+
+    def _register_conduit_cloud(self, conduit: IConduit):
+        """
+        Register a conduit in the dynamic mode registry.
+        :param conduit:
+        :return:
+        """
+        self._conduit_cloud._register_conduit(conduit)
+
+    def _get_conduit_cloud(self) -> ConduitCloud:
+        """
+        Returns the conduit cloud.
+        :return:
+        """
+        return self._conduit_cloud
 
     def _check_for_spell(self, spell_id: str):
         """
@@ -170,4 +240,5 @@ class Aether(ISeal):
         self._conduits.clear()
         self._spell_registry.clear()
         self._conduit_clusters.clear()
+        self._conduit_cloud.seal()
         self._sealed = True
