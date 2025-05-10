@@ -1,5 +1,0 @@
-This class is setup to export all classes and interfaces in a meaningful way
-
-This is intended for AI First development, the idea here is when an AI builds a system and its interfaces and objects
-it will allow the user to export them in a meaningful form, currently we will support JSON and YAML then later
-implement DB exports.

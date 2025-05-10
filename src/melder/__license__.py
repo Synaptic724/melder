@@ -1,1 +1,0 @@
-__license__ = "Apache 2.0"
