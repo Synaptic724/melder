@@ -173,3 +173,8 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 /Plans/
+
+
+#Pycharm
+.idea/
+/src/melder/testing_stuff/
