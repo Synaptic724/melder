@@ -269,7 +269,7 @@ class IBind:
     """
     Interface for a Bind, which is a binding mechanism for spells.
     """
-    __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+    __slots__ = []
 
     @abstractmethod
     def bind(self):
@@ -284,7 +284,7 @@ class IMeld(ISeal):
     Interface for a Meld, which is a process of creating or materializing an object
     from the Conduit's registered spells.
     """
-    __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+    __slots__ = []
     @abstractmethod
     def meld(self, spell, *, spellframe=None, name=None, spell_override: Optional[Dict[str, Any]] = None):
         """
@@ -293,11 +293,69 @@ class IMeld(ISeal):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+class IConduitWard(ISeal):
+    """
+    Interface for a ConduitWard, which manages the links between conduits.
+    """
+    __slots__ = []
+
+    @abstractmethod
+    @property
+    def policy(self) -> 'IPolicy':
+        """
+        Returns the policy for the conduit ward.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    @policy.setter
+    def policy(self, value: policy):
+        """
+        Sets the policy for the conduit ward.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    def remove_link(self, other_conduit):
+        """
+        Removes a link between two conduits.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    def get_links(self):
+        """
+        Returns all active links.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+
+class IPolicy(ISeal):
+    """
+    Interface for a Policy, which defines the rules and behaviors for the ConduitWard.
+    """
+    __slots__ = []
+
+    @abstractmethod
+    def apply_policy(self):
+        """
+        Applies the policy to the ConduitWard.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    def get_policy(self, policy_name: str) -> Optional[Any]:
+        """
+        Returns the current policy.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+
 class IConduit(ISeal):
     """
     Interface for a Conduit, which behaves as both a scope and a factory within the system.
     """
-    __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+    __slots__ = []
 
     @property
     @abstractmethod
@@ -336,7 +394,7 @@ class IConduitCloud(ISeal):
     """
     Interface for a ConduitCloud, which manages multiple Conduits.
     """
-    __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+    __slots__ = []
 
     @abstractmethod
     def get_conduit(self, name: str) -> IConduit:
@@ -350,7 +408,7 @@ class ILink(ISeal):
     """
     Interface for a Link, which represents a connection between two Conduits.
     """
-    __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+    __slots__ = []
     @abstractmethod
     def sever(self):
         """

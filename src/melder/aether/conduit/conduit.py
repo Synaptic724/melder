@@ -7,6 +7,7 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.meld.meld import Meld
+from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 import threading
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
 from enum import Enum, auto
@@ -47,10 +48,6 @@ class Conduit(IConduit):
         self.__dynamic_environment__ = False
         self._creation_context = ConduitCreationContext()
 
-        # Conduit Links
-        self._conduit_links = None
-        self._lesser_conduits_links = ConcurrentList()
-
         # Special Configuration
         self._configuration = configuration
         self._conduit_state = self._set_conduit_state(conduit_state)  # can be normal, lesser
@@ -68,7 +65,7 @@ class Conduit(IConduit):
             if self.__dynamic_environment__ and self._name is not None:
                 Conduit._aether._register_conduit_cloud()
         elif self._conduit_state == ConduitState.lesser:
-            self.lesser_conduit_contract_link()
+            self.lesser_conduit_contract_link() # TODO: some kind of operation should happen here
 
     @property
     def name(self) -> str:
@@ -92,7 +89,7 @@ class Conduit(IConduit):
     def register_conduit_cloud(self, conduit: IConduit):
         """
         Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit in order
-        to name it afterwards and register it. You can only register it once.
+        to name it afterward and register it. You can only register it once.
         :param conduit:
         :return:
         """
