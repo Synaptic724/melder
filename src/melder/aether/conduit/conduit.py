@@ -1,8 +1,6 @@
 from logging import warning
 from typing import Optional, Type
-from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_set import ConcurrentSet
-from melder.utilities.overload_dispatcher import OverloadDispatcher
 from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
@@ -13,6 +11,7 @@ from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from threading import RLock
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
 
+#region Conduit
 class Conduit(IConduit):
     """
     A Conduit is a modular graph node that behaves like a scope and a factory.
@@ -37,7 +36,6 @@ class Conduit(IConduit):
         # General Init
         self._lock = RLock()
         self._name = name
-        self._dispatchers = {}
         self.__debugger_mode__ = False
         self.__dynamic_environment__ = False
         self._creation_context = ConduitCreationContext()
@@ -83,7 +81,22 @@ class Conduit(IConduit):
             raise RuntimeError("Conduit name is set.")
         self._name = name
 
+    @property
+    def __creation_context__(self) -> ConduitCreationContext:
+        """
+        🔮 Public (Advanced) API — use with care.
 
+        This property exposes the internal creation metadata for this conduit,
+        including unique ID, creation path, and lifecycle configuration context.
+
+        Intended for:
+        - Advanced diagnostics
+        - Contract validation systems
+        - Internal resolver systems
+        """
+        return self._creation_context
+#endregion
+#region Conduit Configuration
     def register_conduit_cloud(self, conduit: IConduit):
         """
         Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit in order
@@ -95,65 +108,44 @@ class Conduit(IConduit):
             raise RuntimeError("Lesser conduits cannot register in the conduit cloud.")
         if self.__dynamic_environment__ and self._name is not None:
             Conduit._aether._register_conduit_cloud(conduit)
-#endregion
-
-    def get_conduit_cloud(self) -> IConduitCloud:
+    def _apply_configuration_flags(self):
         """
-        Returns the conduit cloud. The conduit cloud is a registry of all conduits it behaves
-        like an abstractfactory object under the best circumstances. Users should separate their objects into
-        different conduits and use the conduit cloud to access them. This is a global registry of all conduits.
-
-        This object is designed to be used in dynamic mode only. It mitigates the service locator pattern.
-        :return:
+        Sets the environment mode and debugging mode for this Conduit
+        based on the configuration instance passed.
         """
-        if self._conduit_state == ConduitState.lesser:
-            raise RuntimeError("Lesser conduits cannot access the conduit cloud.")
-        if self.__dynamic_environment__:
-            raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
-        return Conduit._aether._get_conduit_cloud()
+        if self._configuration.get_property("conduit_state") == "automatic":
+            self.__dynamic_environment__ = False
+        elif self._configuration.get_property("conduit_state") == "dynamic":
+            self.__dynamic_environment__ = True
 
-#region fakemeld
-    def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
-        raise NotImplementedError("Not ready yet, not even using real class")
-        if spell_type == "class":
-            class_spell = self._spellbook.get(spell_name)
-            if not class_spell:
-                raise ValueError(f"No class registered for spell '{spell_name}'")
-            instance = class_spell()
-            if spellframe and not isinstance(instance, spellframe):
-                raise TypeError(
-                    f"Spell '{spell_name}' does not comply with required SpellFrame '{spellframe.__name__}'")
-            return instance
+        if self._configuration.get_property("debugging"):
+            self.__debugger_mode__ = True
 
-        elif spell_type == "method":
-            method_spell = self._spellbook.get(spell_name)
-            if not method_spell:
-                raise ValueError(f"No method registered for spell '{spell_name}'")
-            result = method_spell()
-            if spellframe and not isinstance(result, spellframe):
-                raise TypeError(
-                    f"Spell '{spell_name}' does not comply with required SpellFrame '{spellframe.__name__}'")
-            return result
+    def _add_conduit_to_aether(self) -> None:
+        """
+        Adds the newly created Conduit into the shared Aether world.
 
-        else:
-            raise ValueError(f"Invalid spell type '{spell_type}'")
-#endregion
+        Args:
+            conduit (Conduit): The Conduit instance to add.
+        """
+        if Conduit._aether is None:
+            raise RuntimeError("Aether is not initialized.")
+        Conduit._aether._add_conduit(self)
 
-    def _define(self, method_name):
-        # Create the dispatcher if not yet defined
-        if method_name not in self._dispatchers:
-            self._dispatchers[method_name] = OverloadDispatcher()
 
-            # Install a dynamic method onto this Conduit instance
-            def dynamic_method(*args, **kwargs):
-                return self._dispatchers[method_name](*args, **kwargs)
-            setattr(self, method_name, dynamic_method)
+    def _add_spells_to_aether(self) -> None:
+        """
+        Adds the newly created Conduit into the shared Aether world.
 
-        def decorator(func):
-            self._dispatchers[method_name].register(func)
-            return func
+        Args:
+            conduit (Conduit): The Conduit instance to add.
+        """
+        if Conduit._aether is None:
+            raise RuntimeError("Aether is not initialized.")
 
-        return decorator
+        spell_set= ConcurrentSet(self._spellbook._spells.keys())
+        Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set)
+
 
     def _creations_configuration(self, configuration: Configuration) -> Creations or LesserCreations:
         """
@@ -166,6 +158,8 @@ class Conduit(IConduit):
         else:
             raise RuntimeError("Conduit state is unknown")
 
+#endregion Conduit Configuration
+#region Conduit Management
     def upgrade_to_normal(self, name: Optional[str] = None) -> None:
         """
         Upgrades this Conduit to a normal state. This allows the conduit to create its own links
@@ -176,6 +170,9 @@ class Conduit(IConduit):
         :return:
         """
         with self._lock:
+            if not self.__dynamic_environment__:
+                raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
+
             if self._conduit_state != ConduitState.lesser:
                 raise RuntimeError("Only lesser conduits can be upgraded.")
 
@@ -203,61 +200,73 @@ class Conduit(IConduit):
 
             self._conduit_ward._change_conduit_type(self._conduit_state)
 
-    def _apply_configuration_flags(self):
+    def create_lesser_conduit(self) -> IConduit:
         """
-        Sets the environment mode and debugging mode for this Conduit
-        based on the configuration instance passed.
-        """
-        if self._configuration.get_property("conduit_state") == "automatic":
-            self.__dynamic_environment__ = False
-        elif self._configuration.get_property("conduit_state") == "dynamic":
-            self.__dynamic_environment__ = True
-
-        if self._configuration.get_property("debugging"):
-            self.__debugger_mode__ = True
-
-    @property
-    def __creation_context__(self) -> ConduitCreationContext:
-        """
-        🔮 Public (Advanced) API — use with care.
-
-        This property exposes the internal creation metadata for this conduit,
-        including unique ID, creation path, and lifecycle configuration context.
-
-        Intended for:
-        - Advanced diagnostics
-        - Contract validation systems
-        - Internal resolver systems
-
-        Not recommended for casual use.
-        """
-        return self._creation_context
-
-    def _add_conduit_to_aether(self) -> None:
-        """
-        Adds the newly created Conduit into the shared Aether world.
+        Creates a lesser Conduit (child node) attached to this Conduit.
 
         Args:
-            conduit (Conduit): The Conduit instance to add.
+            spellbook (Spellbook): The Spellbook to govern the new Conduit.
+            name (str, optional): Optional name for the new Conduit.
+
+        Returns:
+            Conduit: The newly created lesser Conduit.
         """
-        if Conduit._aether is None:
-            raise RuntimeError("Aether is not initialized.")
-        Conduit._aether._add_conduit(self)
+        if self._sealed:
+            raise RuntimeError("Cannot create a lesser Conduit in a sealed Conduit.")
 
+        with self._lock:
+            new_conduit = Conduit(
+                spellbook=self._spellbook._lesser_conduit_spellbook_copy(),
+                configuration=self._configuration,
+                conduit_state=ConduitState.lesser
+            )
+        #TODO: Do something with ConduitWard to link the conduits and contracts
+        self._lesser_conduits_links.append(new_conduit)
+        return new_conduit
 
-    def _add_spells_to_aether(self) -> None:
+#endregion Conduit Management
+#region fakemeld
+    def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
+        raise NotImplementedError("Not ready yet, not even using real class")
+        if spell_type == "class":
+            class_spell = self._spellbook.get(spell_name)
+            if not class_spell:
+                raise ValueError(f"No class registered for spell '{spell_name}'")
+            instance = class_spell()
+            if spellframe and not isinstance(instance, spellframe):
+                raise TypeError(
+                    f"Spell '{spell_name}' does not comply with required SpellFrame '{spellframe.__name__}'")
+            return instance
+
+        elif spell_type == "method":
+            method_spell = self._spellbook.get(spell_name)
+            if not method_spell:
+                raise ValueError(f"No method registered for spell '{spell_name}'")
+            result = method_spell()
+            if spellframe and not isinstance(result, spellframe):
+                raise TypeError(
+                    f"Spell '{spell_name}' does not comply with required SpellFrame '{spellframe.__name__}'")
+            return result
+
+        else:
+            raise ValueError(f"Invalid spell type '{spell_type}'")
+#endregion
+#region Conduit Cloud
+    def get_conduit_cloud(self) -> IConduitCloud:
         """
-        Adds the newly created Conduit into the shared Aether world.
+        Returns the conduit cloud. The conduit cloud is a registry of all conduits it behaves
+        like an abstractfactory object under the best circumstances. Users should separate their objects into
+        different conduits and use the conduit cloud to access them. This is a global registry of all conduits.
 
-        Args:
-            conduit (Conduit): The Conduit instance to add.
+        This object is designed to be used in dynamic mode only. It mitigates the service locator pattern.
+        :return:
         """
-        if Conduit._aether is None:
-            raise RuntimeError("Aether is not initialized.")
-
-        spell_set= ConcurrentSet(self._spellbook._spells.keys())
-        Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set)
-
+        if self._conduit_state == ConduitState.lesser:
+            raise RuntimeError("Lesser conduits cannot access the conduit cloud.")
+        if self.__dynamic_environment__:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
+        return Conduit._aether._get_conduit_cloud()
+#endregion Conduit Cloud
 #region Link Management
     def link(self, target_conduit) -> bool:
         """
@@ -309,32 +318,8 @@ class Conduit(IConduit):
             raise RuntimeError("Cannot link to a sealed Conduit.")
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
-
-
 #endregion Link Management
-    def create_lesser_conduit(self) -> IConduit:
-        """
-        Creates a lesser Conduit (child node) attached to this Conduit.
-
-        Args:
-            spellbook (Spellbook): The Spellbook to govern the new Conduit.
-            name (str, optional): Optional name for the new Conduit.
-
-        Returns:
-            Conduit: The newly created lesser Conduit.
-        """
-        if self._sealed:
-            raise RuntimeError("Cannot create a lesser Conduit in a sealed Conduit.")
-
-        with self._lock:
-            new_conduit = Conduit(
-                spellbook=self._spellbook._lesser_conduit_spellbook_copy(),
-                configuration=self._configuration,
-                conduit_state=ConduitState.lesser
-            )
-        #TODO: Do something with ConduitWard to link the conduits and contracts
-        self._lesser_conduits_links.append(new_conduit)
-        return new_conduit
+#region Cleanup and Disposal
 
     def seal(self):
         """
@@ -373,3 +358,5 @@ class Conduit(IConduit):
             f"id={self._creation_context._conduit_id}>"
         )
 
+#endregion Cleanup and Disposal
+#endregion Conduit
