@@ -23,7 +23,7 @@ class Conduit(IConduit):
 
     _aether = Aether()
 
-    def __init__(self, spellbook: ISpellbook, configuration: Configuration, conduit_state: str, name: Optional[str] = None):
+    def __init__(self, spellbook: ISpellbook, configuration: Configuration, conduit_state: ConduitState, name: Optional[str] = None):
         """
         Initializes a new Conduit.
 
@@ -44,7 +44,7 @@ class Conduit(IConduit):
 
         # Special Configuration
         self._configuration = configuration
-        self._conduit_state = self._set_conduit_state(conduit_state)  # can be normal, lesser
+        self._conduit_state = conduit_state  # can be normal, lesser
         self._creations = self._creations_configuration(configuration)
         self._spellbook = spellbook
         self._meld = Meld(self._creations, self._spellbook) # instance melder which is used by the conduit to create objects
@@ -154,18 +154,6 @@ class Conduit(IConduit):
             return func
 
         return decorator
-
-    @staticmethod
-    def _set_conduit_state(state: str) -> ConduitState:
-        """
-        Sets the conduit state to normal or lesser.
-        """
-        if state == "lesser":
-            return ConduitState.lesser
-        elif state == "normal":
-            return ConduitState.normal
-        else:
-            raise ValueError("Conduit state is unknown")
 
     def _creations_configuration(self, configuration: Configuration) -> Creations or LesserCreations:
         """
@@ -324,7 +312,7 @@ class Conduit(IConduit):
 
 
 #endregion Link Management
-    def create_lesser_conduit(self, name: Optional[str] = None) -> IConduit:
+    def create_lesser_conduit(self) -> IConduit:
         """
         Creates a lesser Conduit (child node) attached to this Conduit.
 
@@ -342,9 +330,9 @@ class Conduit(IConduit):
             new_conduit = Conduit(
                 spellbook=self._spellbook._lesser_conduit_spellbook_copy(),
                 configuration=self._configuration,
-                conduit_state="lesser",
-                name=name
+                conduit_state=ConduitState.lesser
             )
+        #TODO: Do something with ConduitWard to link the conduits and contracts
         self._lesser_conduits_links.append(new_conduit)
         return new_conduit
 
@@ -370,13 +358,11 @@ class Conduit(IConduit):
             # Phase 2: De-reference internal structures
             self._spellbook = None
             self._creations = None
-            self._conduit_links = None
             self._creation_context = None
-            self._lesser_conduits_links = None
 
             # Phase 3: Deregister from the world
-            if self._aether and not self._aether.sealed:
-                self._aether._remove_conduit(self)
+            if Conduit._aether and not Conduit._aether.sealed:
+                Conduit._aether._remove_conduit(self)
 
             self._conduit_state = ConduitState.sealed
             self._sealed = True

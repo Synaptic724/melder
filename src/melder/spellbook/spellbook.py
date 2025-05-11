@@ -9,6 +9,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from threading import RLock
 
 #region Spell
@@ -139,7 +140,7 @@ class Spellbook(ISpellbook):
     It also manages configuration and controls Conduit conjuring.
     """
     _aether = Aether()
-    def __init__(self):
+    def __init__(self, conduit_type: ConduitState = None):
         super().__init__()
         self._lock = RLock()
 
@@ -147,14 +148,17 @@ class Spellbook(ISpellbook):
         self._conjured = False
         self._configuration_locked: bool = False
         self._configuration = Configuration()
+        self._conduit_type = conduit_type
 
         # Core spell storage (SHA256-keyed)
-        self.__spells: ConcurrentDict[str, Spell] = ConcurrentDict()
-        self.__lookup_spells: ConcurrentDict[tuple, str] = ConcurrentDict()
+        self.__spells: ConcurrentDict[str, Spell] = None if ConduitState.lesser else ConcurrentDict()
+        self.__lookup_spells: ConcurrentDict[tuple, str] = None if ConduitState.lesser else ConcurrentDict()
 
         # Networked/remote spell support
-        self.__contracted_spells: ConcurrentDict[str, Spell] = ConcurrentDict()
-        self.__lookup_contracted_spells: ConcurrentDict[tuple, str] = ConcurrentDict()
+        # Basically if we're using dynamic mode it's a dict of dicts else it's not
+        # This is mainly because we need to maintain the contract system while using lesser scopes
+        self.__contracted_spells: ConcurrentDict[str, ConcurrentDict[str, Spell]] | ConcurrentDict[str, Spell] | None = ConcurrentDict() if ConduitState.lesser else None
+        self.__lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]] | ConcurrentDict[tuple, str] | None = ConcurrentDict() if ConduitState.lesser else None
 
         # Binding system
         self._bind = Bind()
@@ -204,12 +208,10 @@ class Spellbook(ISpellbook):
         """
         with self._lock:
             spellbook = Spellbook()
-            #spellbook._contracted_spells = self.__spells.copy()   We actually need the contract to create this effect
-            #spellbook._lookup_contracted_spells = self.__lookup_spells.copy() We need to link to this object to create this effect
             spellbook._conjured = True
             spellbook._configuration_locked = True
+            spellbook._conduit_type = ConduitState.lesser
             return spellbook
-
 
     def bind(self, spell, existence: Existence, *, spellframe=None, name=None, **kwargs) -> None:
         """
@@ -358,10 +360,11 @@ class Spellbook(ISpellbook):
                 self._configuration_locked = True
 
             self._conjured = True
+            self._conduit_type = ConduitState.normal
             conduit = Conduit(
                 spellbook=self,
                 name=name,
-                conduit_state="normal",
+                conduit_state=ConduitState.normal,
                 configuration=self._configuration
             )
             self._define_conduit_into_spells(conduit)
