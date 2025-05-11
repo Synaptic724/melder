@@ -25,15 +25,13 @@ class Spell(ISpell):
             spell_type: SpellType,
             profile: ClassProfile | MethodProfile,
             spell_id: str,
+            whitelist: bool = True,
             existing_object: object = None,
             *args,
             **kwargs
     ):
         super().__init__()
         self._lock = RLock()
-
-        # Spell Type
-        self.owned_spell = None
 
         # Spell Data
         self.spell = spell #Object reference
@@ -45,6 +43,7 @@ class Spell(ISpell):
         self.spell_name: str = spell_name
         self.existence: Existence = existence
         self.profile: ClassProfile | MethodProfile = profile
+        self.whitelist: bool = whitelist
 
         # Spell Metadata
         self.tags = args if args else []
@@ -61,6 +60,7 @@ class Spell(ISpell):
         # Created after Conduit Made
         self._owner_conduit_id: uuid.UUID | None = None
         self._owner_conduit_name: str | None = None
+        self.owned_spell = None
 
         # Key for the spell in the Spellbook
         self._key = (self.spellframe or type(self.spell).__name__, self.binding_name or "__default__")
@@ -271,7 +271,7 @@ class Spellbook(ISpellbook):
             spellbook._conduit_type = ConduitState.lesser
             return spellbook
 
-    def bind(self, spell, existence: Existence, *, spellframe=None, name=None, **kwargs) -> None:
+    def bind(self, spell, existence: Existence, *, spellframe=None, name=None, whitelist:bool = True, **kwargs) -> str:
         """
         Bind a spell to the spellbook using the `Bind` system.
 
@@ -283,6 +283,16 @@ class Spellbook(ISpellbook):
         Kwargs can be attached to add hooks into the spell.
         `pre_hooks`, `activation_hooks`, and `post_hooks` are all lists of callable functions.
 
+        The return for this can be ignored and is only used in dynamic mode.
+
+        :param spell: The spell to bind.
+        :param existence: The existence type of the spell.
+        :param spellframe: The frame of the spell.
+        :param name: The name of the spell.
+        :param whitelist: Whether to use a whitelist for the spell.
+        :param kwargs: Additional keyword arguments for hooks.
+        :return: The spell ID.
+
         Example:
             dict = { "pre_hooks": [hook1, hook2], "activation_hooks": [hook3], "post_hooks": [hook4] }
         """
@@ -291,7 +301,8 @@ class Spellbook(ISpellbook):
                 spell=spell,
                 spellframe=spellframe,
                 name=name,
-                existence=existence
+                existence=existence,
+                whitelist=whitelist,
             )
             if Spellbook._aether._check_for_spell(spell.spell_id):
                 raise RuntimeError(
@@ -300,6 +311,7 @@ class Spellbook(ISpellbook):
             self._add_hooks_to_spell(spell, **kwargs)
             self._lookup_spells[spell._key] = spell.spell_id
             self._spells[spell.spell_id] = spell
+            return spell.spell_id
         except Exception:
             raise
 

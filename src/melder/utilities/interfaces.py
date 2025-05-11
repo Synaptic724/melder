@@ -218,15 +218,30 @@ class ISpellbook(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def bind(self, *, spell: Any, existence: 'Existence', spellframe: Optional[Any] = None, name: Optional[str] = None):
+    def bind(self, *, spell: Any, existence: 'Existence', spellframe: Optional[Any] = None, name: Optional[str] = None, whitelist: Optional[bool] = True, **kwargs) -> Optional[str]:
         """
-        Register a new spell with the spellbook.
+        Bind a spell to the spellbook using the `Bind` system.
 
-        Args:
-            spell: The class, method, or lambda to register.
-            existence: The lifecycle pattern (unique, many, etc.).
-            spellframe: Optional interface or grouping type.
-            name: Optional user-defined binding name.
+        This will:
+        - Inspect and profile the spell
+        - Generate a fingerprint-based spell_id
+        - Register it in the global registry
+
+        Kwargs can be attached to add hooks into the spell.
+        `pre_hooks`, `activation_hooks`, and `post_hooks` are all lists of callable functions.
+
+        The return for this can be ignored and is only used in dynamic mode.
+
+        :param spell: The spell to bind.
+        :param existence: The existence type of the spell.
+        :param spellframe: The frame of the spell.
+        :param name: The name of the spell.
+        :param whitelist: Whether to use a whitelist for the spell.
+        :param kwargs: Additional keyword arguments for hooks.
+        :return: The spell ID.
+
+        Example:
+            dict = { "pre_hooks": [hook1, hook2], "activation_hooks": [hook3], "post_hooks": [hook4] }
         """
         raise NotImplementedError("Subclasses must implement this method.")
 

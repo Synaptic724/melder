@@ -1,5 +1,7 @@
 from logging import warning
 from typing import Optional, Type, Any
+
+from melder.spellbook.existence.existence import Existence
 from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -266,6 +268,41 @@ class Conduit(IConduit):
             raise ValueError(f"Spell '{spell}' not found in the spellbook.")
         return spell_id
 
+
+    def bind(self, spell, existence: Existence, *, spellframe=None, name=None, whitelist:bool = True, **kwargs) -> str:
+        """
+        Bind a spell to the spellbook using the `Bind` system.
+
+        This will:
+        - Inspect and profile the spell
+        - Generate a fingerprint-based spell_id
+        - Register it in the global registry
+
+        Kwargs can be attached to add hooks into the spell.
+        `pre_hooks`, `activation_hooks`, and `post_hooks` are all lists of callable functions.
+
+        The return for this can be ignored and is only used in dynamic mode.
+
+        :param spell: The spell to bind.
+        :param existence: The existence type of the spell.
+        :param spellframe: The frame of the spell.
+        :param name: The name of the spell.
+        :param whitelist: Whether to use a whitelist for the spell.
+        :param kwargs: Additional keyword arguments for hooks.
+        :return: The spell ID.
+
+        Example:
+            dict = { "pre_hooks": [hook1, hook2], "activation_hooks": [hook3], "post_hooks": [hook4] }
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot bind spells in a sealed Conduit.")
+        if not self._conduit_state == ConduitState.normal:
+            raise RuntimeError("Only normal conduits can bind spells.")
+
+        with self._lock:
+            return self._spellbook.bind(spell=spell, existence=existence, spellframe=spellframe, name=name, whitelist=whitelist, **kwargs)
+
+
 #endregion Spellbook Management API
 
 #region fakemeld
@@ -310,7 +347,7 @@ class Conduit(IConduit):
             raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
         return Conduit._aether._get_conduit_cloud()
 #endregion Conduit Cloud
-#region Link Management
+#region Conduit Ward API
     def link(self, target_conduit) -> bool:
         """
         Attempts to link this Conduit to another Conduit.
@@ -361,9 +398,8 @@ class Conduit(IConduit):
             raise RuntimeError("Cannot link to a sealed Conduit.")
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
-#endregion Link Management
+#endregion Conduit Ward API
 #region Cleanup and Disposal
-
     def seal(self):
         """
         Seals this Conduit and all its lesser Conduits.

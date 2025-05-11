@@ -9,6 +9,7 @@ from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces import IConduit, IConduitWard, IPolicy
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 
+#region ConduitWard
 class ConduitWard(IConduitWard):
     """
     Conduitward is a class that manages the links between conduits.
@@ -224,3 +225,4 @@ class ConduitWard(IConduitWard):
                 link.seal()
             self._conduit_links.dispose()
 #endregion Cleanup
+#endregion ConduitWard
