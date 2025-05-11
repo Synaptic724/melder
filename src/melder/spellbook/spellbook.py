@@ -1,8 +1,9 @@
 import uuid
-from typing import Optional, List, Dict, Any, Type, Callable, NamedTuple
+from logging import warning
+from typing import Optional, List, Dict, Any, Type, Callable
 from melder.aether.aether import Aether
 from melder.spellbook.bind.graph_builder.inspector.spell_examiner import MethodProfile, ClassProfile
-from melder.utilities.interfaces import ISpellbook, ISeal, ISpell
+from melder.utilities.interfaces import ISpellbook, ISpell
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
@@ -35,8 +36,8 @@ class Spell(ISpell):
         self.owned_spell = None
 
         # Spell Data
-        self.spell = spell
-        self.spell_id: spell_id
+        self.spell = spell #Object reference
+        self.spell_id: spell_id = spell_id
         self.spellframe: Optional[Any] = spellframe
         self.spell_type: SpellType = spell_type
         self.user_created_object: object = existing_object
@@ -62,10 +63,14 @@ class Spell(ISpell):
         self._owner_conduit_name: str | None = None
 
         # Key for the spell in the Spellbook
-        self._key = (self.spellframe or type(self.spell), self.binding_name or "__default__")
+        self._key = (self.spellframe or type(self.spell).__name__, self.binding_name or "__default__")
 
     def __repr__(self):
-        return f"Spell(name={self.spell_name}, binding={self.binding_name or '__default__'}, frame={self.spellframe}, uuid={self.spell_id})"
+        frame = self.spellframe.__name__ if self.spellframe else type(self.spell).__name__
+        return (
+            f"Spell(name={self.spell_name}, binding={self.binding_name or '__default__'}, "
+            f"frame={frame}, SHA256={self.spell_id})"
+        )
 
 #region Configuration
     def _add_owned_conduit(self, conduit_id: uuid.UUID, conduit_name: str = None):
@@ -201,6 +206,59 @@ class Spellbook(ISpellbook):
 
 #region Core Methods
 #region Binding API
+    def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
+        """
+        Find a spell by its frame, name, and binding name.
+        :param spellframe:
+        :param spell_name:
+        :param binding_name:
+        :return:
+        """
+        # Key for the spell in the Spellbook
+        key = (spellframe or spell_name, binding_name or "__default__")
+
+        if key in self._lookup_spells:
+            return self._lookup_spells[key]
+        elif key in self._lookup_contracted_spells:
+            return self._lookup_contracted_spells[key]
+        else:
+            warning("Spell not found in the spellbook.")
+            return None
+
+    def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
+        """
+        Find a spell by its frame, name, and binding name.
+        :param spellframe:
+        :param spell_name:
+        :param binding_name:
+        :return:
+        """
+        # Key for the spell in the Spellbook
+        key = (spellframe or spell_name, binding_name or "__default__")
+
+        if key in self._lookup_spells:
+            return key
+        elif key in self._lookup_contracted_spells:
+            return key
+        else:
+            warning("Spell not found in the spellbook.")
+            return None
+
+
+    def inspect_spell(self, spell: Any) -> Optional[str]:
+        """
+        This method will inspect any object placed into it and check if its
+        a valid spell in the Aether Registry. Returns the SHA256 if found, else None
+        :param spell:
+        :return:
+        """
+        with self._lock:
+            if isinstance(spell, object):
+                spell_id = self._bind.spell_id_inspector(spell)
+                if Spellbook._aether._check_for_spell(spell_id):
+                    return spell_id
+            return None
+
     def _lesser_conduit_spellbook_copy(self) -> ISpellbook:
         """
         Create a copy of the spellbook for a lesser conduit.

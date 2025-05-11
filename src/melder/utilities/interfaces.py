@@ -178,9 +178,41 @@ class ISpellbook(ISeal):
     def _lookup_contracted_spells(self, value: 'ConcurrentDict[tuple, str]'):
         raise NotImplementedError("Subclasses must implement this method.")
 
+    @abstractmethod
     def _lesser_conduit_spellbook_copy(self) -> 'ISpellbook':
         """
         Returns a copy of the spellbook for use in a lesser conduit.
+        :return:
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
+        """
+        Find the spell ID based on the spell frame, spell name, and binding name.
+        :param spellframe:
+        :param spell_name:
+        :param binding_name:
+        :return:
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
+        """
+        Find the spell key based on the spell frame, spell name, and binding name.
+        :param spellframe:
+        :param spell_name:
+        :param binding_name:
+        :return:
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    def inspect_spell(self, spell: Any) -> Optional[str]:
+        """
+        Inspects a spell to find its ID then checks if the spell exists in the Aether.
+        :param spell:
         :return:
         """
         raise NotImplementedError("Subclasses must implement this method.")

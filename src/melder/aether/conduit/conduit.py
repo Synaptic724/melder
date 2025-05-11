@@ -1,5 +1,5 @@
 from logging import warning
-from typing import Optional, Type
+from typing import Optional, Type, Any
 from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -225,6 +225,49 @@ class Conduit(IConduit):
         return new_conduit
 
 #endregion Conduit Management
+#region Spellbook Management API
+    def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
+        """
+        Find a spell by its frame, name, and binding name.
+        :param spellframe:
+        :param spell_name:
+        :param binding_name:
+        :return: SHA256 of the spell
+        """
+        spell_id = self._spellbook.find_spell_id(spellframe, spell_name, binding_name)
+        if not spell_id:
+            raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
+        return spell_id
+
+
+    def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
+        """
+        Find a spell by its frame, name, and binding name.
+        :param spellframe:
+        :param spell_name:
+        :param binding_name:
+        :return: spell's key
+        """
+        spell_key = self._spellbook.find_spell_key(spellframe, spell_name, binding_name)
+        if not spell_key:
+            raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
+        return spell_key
+
+
+    def inspect_spell(self, spell: Any) -> Optional[str]:
+        """
+        This method will inspect any object placed into it and check if it's
+        a valid spell in the Aether Registry. Returns the SHA256 if found, else None
+        :param spell:
+        :return: SHA256 of the spell
+        """
+        spell_id = self._spellbook.inspect_spell(spell)
+        if not spell_id:
+            raise ValueError(f"Spell '{spell}' not found in the spellbook.")
+        return spell_id
+
+#endregion Spellbook Management API
+
 #region fakemeld
     def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
         raise NotImplementedError("Not ready yet, not even using real class")

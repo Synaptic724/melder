@@ -16,6 +16,16 @@ class Bind(IBind):
         self._lock = threading.RLock()
 
     @staticmethod
+    def spell_id_inspector(spell: Any) -> str:
+        """
+        Generate a unique identifier for the spell based on its profile.
+        :param spell: The spell object to inspect.
+        :return: A unique identifier string for the spell.
+        """
+        profile = SpellExaminer(spell).inspect()
+        return Bind.sha256_profile(profile)
+
+    @staticmethod
     def sha256_profile(profile: ClassProfile | MethodProfile) -> str:
         parts = ["v1"]  # fingerprint version tag
 
