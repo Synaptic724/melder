@@ -1,5 +1,5 @@
 import functools
-import threading
+from threading import RLock
 import warnings
 from copy import deepcopy
 from typing import Any, Callable, Optional, List, TypeVar, Generic
@@ -27,7 +27,7 @@ class ConcurrentList(Generic[_T], IDisposable):
             initial (Iterable[_T], optional): An iterable to initialize the list.
         """
         super().__init__()
-        self._lock = threading.RLock()
+        self._lock = RLock()
         self._list: List[_T] = list(initial) if initial else []
         self._freeze = False
 

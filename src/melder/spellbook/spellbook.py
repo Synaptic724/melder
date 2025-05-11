@@ -9,9 +9,9 @@ from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
-import threading
+from threading import RLock
 
-
+#region Spell
 class Spell(ISpell):
     def __init__(
             self,
@@ -28,7 +28,7 @@ class Spell(ISpell):
             **kwargs
     ):
         super().__init__()
-        self._lock = threading.RLock()
+        self._lock = RLock()
 
         # Spell Type
         self.owned_spell = None
@@ -58,17 +58,23 @@ class Spell(ISpell):
 
         # Created after Conduit Made
         self._owner_conduit_id: uuid.UUID | None = None
+        self._owner_conduit_name: str | None = None
 
         # Key for the spell in the Spellbook
         self._key = (self.spellframe or type(self.spell), self.binding_name or "__default__")
 
-    def _add_owned_conduit(self, conduit_id: uuid.UUID):
+    def __repr__(self):
+        return f"Spell(name={self.spell_name}, binding={self.binding_name or '__default__'}, frame={self.spellframe}, uuid={self.spell_id})"
+
+#region Configuration
+    def _add_owned_conduit(self, conduit_id: uuid.UUID, conduit_name: str = None):
         """
         Add the conduit ID that owns this spell.
         :param conduit_id: The ID of the conduit that owns this spell.
         """
         with self._lock:
             self._owner_conduit_id = conduit_id
+            self._owner_conduit_name = conduit_name
             self.owned_spell = True
 
     def _add_dag(self, dag: Any):
@@ -95,10 +101,8 @@ class Spell(ISpell):
             self.pre_hooks = pre_hooks
             self.activation_hooks = activation_hooks
             self.post_hooks = post_hooks
-
-    def __repr__(self):
-        return f"Spell(name={self.spell_name}, binding={self.binding_name or '__default__'}, frame={self.spellframe}, uuid={self.spell_id})"
-
+#endregion Configuration
+#region Casting
     def cast(self) -> object:
         """
         Casts the spell.
@@ -114,8 +118,8 @@ class Spell(ISpell):
                 return self.user_created_object
             else:
                 return self.dependency_graph.execute()
-
-
+#endregion Casting
+#region Disposal
     def seal(self):
         """
         Seals the spell, preventing any further modifications.
@@ -125,8 +129,10 @@ class Spell(ISpell):
                 return
             self.dependency_graph.dispose()
             self._sealed = True
+#endregion Disposal
+#endregion Spell
 
-
+#region Spellbook
 class Spellbook(ISpellbook):
     """
     The Spellbook acts as the authoritative registry for all active spells.
@@ -135,7 +141,7 @@ class Spellbook(ISpellbook):
     _aether = Aether()
     def __init__(self):
         super().__init__()
-        self._lock = threading.RLock()
+        self._lock = RLock()
 
         # Internal state
         self._conjured = False
@@ -153,7 +159,7 @@ class Spellbook(ISpellbook):
         # Binding system
         self._bind = Bind()
 
-    #region Properties
+#region Properties
 
     @property
     def _spells(self) -> ConcurrentDict[str, Spell]:
@@ -187,10 +193,10 @@ class Spellbook(ISpellbook):
     def _lookup_contracted_spells(self, value: ConcurrentDict[tuple, str]):
         self.__lookup_contracted_spells = value
 
-    #endregion
+#endregion
 
-    #region Core Methods
-
+#region Core Methods
+#region Binding API
     def _lesser_conduit_spellbook_copy(self) -> ISpellbook:
         """
         Create a copy of the spellbook for a lesser conduit.
@@ -282,6 +288,8 @@ class Spellbook(ISpellbook):
         with self._lock:
             return self._spells.get(spell_id)
 
+#endregion Binding API
+#region Configuration API
     def is_configuration_locked(self) -> bool:
         """Check whether spellbook configuration is frozen."""
         return self._configuration_locked
@@ -326,7 +334,8 @@ class Spellbook(ISpellbook):
     def get_configuration(self) -> Configuration:
         """Return the active configuration for this Spellbook."""
         return self._configuration
-
+#endregion Configuration API
+#region Conduit API
     def conjure(self, name: str = None) -> Conduit:
         """
         Create a new Conduit (execution channel) from this Spellbook.
@@ -356,6 +365,7 @@ class Spellbook(ISpellbook):
                 configuration=self._configuration
             )
             self._define_conduit_into_spells(conduit)
+            # TODO: Implement validation cycle to ensure all spells are valid
             return conduit
 
     def _define_conduit_into_spells(self, conduit: Conduit) -> None:
@@ -365,8 +375,12 @@ class Spellbook(ISpellbook):
         """
         with self._lock:
             for spell in self._spells.values():
-                spell._add_owned_conduit(conduit.__creation_context__._conduit_id)
+                spell._add_owned_conduit(conduit.__creation_context__._conduit_id, conduit._name)
                 #spell._add_dag(conduit.dependency_graph) # This is a placeholder for the actual DAG system
+
+#endregion Conduit API
+
+#region Disposal
 
     def seal(self):
         """
@@ -375,4 +389,6 @@ class Spellbook(ISpellbook):
         """
         pass
 
-    #endregion
+#endregion Disposal
+
+#endregion

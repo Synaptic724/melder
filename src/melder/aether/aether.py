@@ -3,7 +3,8 @@ from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces import ISeal, IConduit, IConduitCloud
-import threading
+from threading import RLock, Lock
+
 
 class ConduitCloud(IConduitCloud):
     """
@@ -21,7 +22,7 @@ class ConduitCloud(IConduitCloud):
     """
     def __init__(self):
         super().__init__()
-        self._lock = threading.RLock()
+        self._lock = Lock()
         self._registry = ConcurrentDict()
 
 
@@ -69,7 +70,7 @@ class Aether(ISeal):
     UUID for each conduit is created by __creation_context__.conduit_id in each conduit class.
     """
     _instance = None
-    _lock = threading.Lock()
+    _lock = RLock()
     _initialized = False
 
     def __new__(cls):

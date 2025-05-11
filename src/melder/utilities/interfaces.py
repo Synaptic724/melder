@@ -109,7 +109,7 @@ class ISpell(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def _add_owned_conduit(self, conduit_id: uuid.UUID):
+    def _add_owned_conduit(self, conduit_id: uuid.UUID, conduit_name: str = None ):
         """
         Add the conduit ID that owns this spell.
         :param conduit_id: The ID of the conduit that owns this spell.
@@ -299,6 +299,7 @@ class IConduitWard(ISeal):
     """
     __slots__ = []
 
+#region Properties
     @abstractmethod
     @property
     def policy(self) -> 'IPolicy':
@@ -312,6 +313,23 @@ class IConduitWard(ISeal):
     def policy(self, value: policy):
         """
         Sets the policy for the conduit ward.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    @property
+    def conduit_type(self) -> 'ConduitState':
+        """
+        Gets the policy for the conduit ward.
+        :return:
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+#endregion
+
+    @abstractmethod
+    def _change_conduit_type(self, conduit_type: 'ConduitState'):
+        """
+        Changes the conduit type.
         """
         raise NotImplementedError("Subclasses must implement this method.")
 

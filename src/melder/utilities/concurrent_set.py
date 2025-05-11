@@ -1,5 +1,5 @@
 import functools
-import threading
+from threading import RLock
 import warnings
 from copy import deepcopy
 from typing import Any, Callable, Generic, Iterable, Iterator, Optional, Set, TypeVar
@@ -59,7 +59,7 @@ class ConcurrentSet(Generic[_T], IDisposable):
         # Call the parent class constructor if applicable (e.g., IDisposable)
         super().__init__()
 
-        self._lock = threading.RLock()
+        self._lock = RLock()
 
         # Attempt to create the internal set from the initial iterable. If `initial`
         try:

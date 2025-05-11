@@ -1,5 +1,5 @@
 import functools
-import threading
+from threading import RLock
 import warnings
 from copy import deepcopy
 from typing import (
@@ -57,7 +57,7 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
         # - If it's already dict-like, dict(...) copies it.
         # - If it's an iterable of (key, value) pairs, dict(...) will handle that as well.
         self._dict: Dict[_K, _V] = dict(initial)
-        self._lock: threading.RLock = threading.RLock()
+        self._lock: RLock = RLock()
         self._freeze = False
 
     def freeze(self) -> None:

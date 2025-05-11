@@ -1,23 +1,17 @@
+from logging import warning
 from typing import Optional, Type
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.overload_dispatcher import OverloadDispatcher
 from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
-import threading
+from threading import RLock
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
-from enum import Enum, auto
-
-class ConduitState(Enum):
-    """
-    Enum representing the state of a Conduit.
-    """
-    normal = auto()
-    lesser = auto()
 
 class Conduit(IConduit):
     """
@@ -41,7 +35,7 @@ class Conduit(IConduit):
         """
         super().__init__()
         # General Init
-        self._lock = threading.RLock()
+        self._lock = RLock()
         self._name = name
         self._dispatchers = {}
         self.__debugger_mode__ = False
@@ -57,7 +51,7 @@ class Conduit(IConduit):
 
         # Internal configuration
         self._apply_configuration_flags()
-        self._create_internal_configuration()
+        self._conduit_ward = ConduitWard(self, self.__dynamic_environment__, self._conduit_state) # The conduit ward is responsible for maintaining the links between conduits and their behaviours.
 
         if self._conduit_state == ConduitState.normal:
             self._add_conduit_to_aether()
@@ -65,8 +59,12 @@ class Conduit(IConduit):
             if self.__dynamic_environment__ and self._name is not None:
                 Conduit._aether._register_conduit_cloud()
         elif self._conduit_state == ConduitState.lesser:
+            if self._name is not None:
+                warning("Lesser conduits cannot have a name. self._name is now set to None.")
+            self._name = None
             self.lesser_conduit_contract_link() # TODO: some kind of operation should happen here
 
+#region Properties
     @property
     def name(self) -> str:
         """
@@ -97,7 +95,7 @@ class Conduit(IConduit):
             raise RuntimeError("Lesser conduits cannot register in the conduit cloud.")
         if self.__dynamic_environment__ and self._name is not None:
             Conduit._aether._register_conduit_cloud(conduit)
-
+#endregion
 
     def get_conduit_cloud(self) -> IConduitCloud:
         """
@@ -195,6 +193,7 @@ class Conduit(IConduit):
 
             # Step 1: Change state
             self._conduit_state = ConduitState.normal
+            self._name = name
 
             # Step 2: Transfer creation data
             creations_data = self._creations.transfer_data_and_clear()
@@ -209,9 +208,12 @@ class Conduit(IConduit):
             # Step 4: Replace the old creations
             self._creations = new_creations
 
-            self._name = name
             # Step 5: Register as a full Conduit in Aether
             Conduit._add_conduit_to_aether(self)
+            if self.__dynamic_environment__ and self._name is not None:
+                Conduit._aether._register_conduit_cloud()
+
+            self._conduit_ward._change_conduit_type(self._conduit_state)
 
     def _apply_configuration_flags(self):
         """
@@ -268,22 +270,7 @@ class Conduit(IConduit):
         spell_set= ConcurrentSet(self._spellbook._spells.keys())
         Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set)
 
-    def _create_internal_configuration(self) -> None:
-        """
-        Creates per-Conduit internal structures based on the current world configuration.
-        """
-        self._configure_conduit_links()
-
-    def _configure_conduit_links(self) -> None:
-        """
-        Configures whether this Conduit maintains linkable connections.
-        Only enabled in dynamic environments.
-        """
-        if self.__dynamic_environment__:
-            self._conduit_links = ConcurrentList()
-        else:
-            self._conduit_links = None
-
+#region Link Management
     def link(self, target_conduit) -> bool:
         """
         Attempts to link this Conduit to another Conduit.
@@ -335,6 +322,8 @@ class Conduit(IConduit):
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
 
+
+#endregion Link Management
     def create_lesser_conduit(self, name: Optional[str] = None) -> IConduit:
         """
         Creates a lesser Conduit (child node) attached to this Conduit.
@@ -389,6 +378,7 @@ class Conduit(IConduit):
             if self._aether and not self._aether.sealed:
                 self._aether._remove_conduit(self)
 
+            self._conduit_state = ConduitState.sealed
             self._sealed = True
 
     def __repr__(self):
@@ -397,22 +387,3 @@ class Conduit(IConduit):
             f"id={self._creation_context._conduit_id}>"
         )
 
-    def _clean_up_lesser_conduits_links(self):
-        """
-        Cleans up all lesser conduits.
-        :return:
-        """
-        if self._lesser_conduits_links:
-            for lesser_conduit in self._lesser_conduits_links:
-                lesser_conduit.seal()
-            self._lesser_conduits_links.dispose()
-
-    def _clean_up_links(self):
-        """
-        Cleans up all links.
-        :return:
-        """
-        if self._conduit_links:
-            for link in self._conduit_links:
-                link.seal()
-            self._conduit_links.dispose()

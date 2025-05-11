@@ -1,6 +1,6 @@
 import uuid
 from uuid import uuid4
-import threading
+from threading import RLock
 from typing import List, Optional
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
@@ -28,7 +28,7 @@ class Creations(ISeal):
         The UUID is the spellID of the object.
         """
         super().__init__()
-        self._lock = threading.RLock()
+        self._lock = RLock()
         self._unique: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
         self._unique_per_scope: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
         self._many: ConcurrentDict[uuid.UUID, ConcurrentList[object]] = ConcurrentDict()
@@ -299,7 +299,7 @@ class LesserCreations(ISeal):
         self._disposal_method_names = disposal_method_names or []
 
         self._sealed = False
-        self._lock = threading.RLock()
+        self._lock = RLock()
 
     def transfer_data_and_clear(self) -> dict:
         """

@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any, NamedTuple
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import IConduit, ISpellbook, ISpell, IMeld
-import threading
+from threading import RLock
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
 from enum import Enum, auto
 
@@ -16,7 +16,7 @@ class Meld(IMeld):
 
     def __init__(self, creations: LesserCreations | Creations, spellbook: ISpellbook):
         super().__init__()
-        self._lock = threading.RLock()
+        self._lock = RLock()
 
         # Spellbook: stores all bound spell references by UUID
         self._owned_spell: ConcurrentDict[str, ISpell] = spellbook._spells
