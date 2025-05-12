@@ -1,12 +1,13 @@
 from uuid import UUID
 import threading
 from enum import Enum
-from typing import List
+from typing import List, Optional
 from melder.aether.aether import Aether
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_set import ConcurrentSet
-from melder.utilities.interfaces import IConduit, IConduitWard, IPolicy
+from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 
 #region ConduitWard
@@ -15,7 +16,7 @@ class ConduitWard(IConduitWard):
     Conduitward is a class that manages the links between conduits.
     """
     _aether = Aether()
-    def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState):
+    def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies = None):
         """
         Conduitward is a class that manages the links between conduits.
         :param conduit:
@@ -27,7 +28,9 @@ class ConduitWard(IConduitWard):
         self._conduit = conduit
         self._dynamic = dynamic
         self._conduit_type = conduit_type
-        self._policy = None
+
+        self._policy_set = False
+        self._policy = self._set_policy(policy)
 
         ## Conduit links
         self._conduit_links = None
@@ -38,21 +41,12 @@ class ConduitWard(IConduitWard):
 
 #region Properties
     @property
-    def policy(self) -> IPolicy:
+    def policy(self) -> Policies:
         """
         Gets the policy for the conduit ward.
         :return:
         """
         return self._policy
-
-    @policy.setter
-    def policy(self, value: IPolicy):
-        """
-        Sets the policy for the conduit ward.
-        :param policy:
-        :return:
-        """
-        self._policy = value
 
     @property
     def conduit_type(self) -> ConduitState:
@@ -82,6 +76,26 @@ class ConduitWard(IConduitWard):
             else:
                 raise RuntimeError("No parent conduit link found. Cannot convert to normal conduit. Unknown error")
 
+    def _set_policy(self, policy: Policies) -> Optional[Policies]:
+        """
+        Sets the default policy for this Conduit.
+        This is meant for internal use please do not use this outside of the class.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot set policy on a sealed Conduit.")
+
+        # Ensure only valid enum instances are passed
+        if not policy is None:
+            if not isinstance(policy, Policies):
+                raise TypeError(f"permissions must be an instance of Permissions enum, got {type(policy).__name__}")
+            self._policy_set = True
+            return policy
+
+        with self._lock:
+            if self._dynamic and self._conduit_type == ConduitState.lesser:
+                raise NotImplementedError("Parent conduit link is not implemented yet as delegate.")
+            else:
+                raise RuntimeError("Policy already set. Cannot set policy again.")
 
 #endregion Conduit Ward Configuration
 #region Link Management

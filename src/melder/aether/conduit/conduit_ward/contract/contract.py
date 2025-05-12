@@ -18,8 +18,9 @@ class NormalConduitDetail(ISeal):
         self.spell_id = spell_id
 
         # Ensure only valid enum instances are passed
-        if not isinstance(permissions, Permissions):
-            raise TypeError(f"permissions must be an instance of Permissions enum, got {type(permissions).__name__}")
+        if not permissions is None:
+            if not isinstance(permissions, Permissions):
+                raise TypeError(f"permissions must be an instance of Permissions enum, got {type(permissions).__name__}")
 
         self.permissions = permissions
         self._link_id: UUID = link_id
