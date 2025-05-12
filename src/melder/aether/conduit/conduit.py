@@ -1,6 +1,5 @@
 from logging import warning
 from typing import Optional, Type, Any
-
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud
@@ -63,6 +62,14 @@ class Conduit(IConduit):
                 warning("Lesser conduits cannot have a name. self._name is now set to None.")
             self._name = None
             self.lesser_conduit_contract_link() # TODO: some kind of operation should happen here
+
+#region Utilities
+    def __repr__(self):
+        return (
+            f"<Conduit name={self.name} "
+            f"id={self._creation_context._conduit_id}>"
+        )
+#endregion Utilities
 
 #region Properties
     @property
@@ -400,6 +407,7 @@ class Conduit(IConduit):
             raise NotImplementedError("Linking conduits is not implemented yet.")
 #endregion Conduit Ward API
 #region Cleanup and Disposal
+
     def seal(self):
         """
         Seals this Conduit and all its lesser Conduits.
@@ -430,12 +438,6 @@ class Conduit(IConduit):
 
             self._conduit_state = ConduitState.sealed
             self._sealed = True
-
-    def __repr__(self):
-        return (
-            f"<Conduit name={self.name} "
-            f"id={self._creation_context._conduit_id}>"
-        )
 
 #endregion Cleanup and Disposal
 #endregion Conduit

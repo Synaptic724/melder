@@ -1,4 +1,4 @@
-import uuid
+from uuid import uuid4, UUID
 from logging import warning
 from typing import Optional, List, Dict, Any, Type, Callable
 from melder.aether.aether import Aether
@@ -25,7 +25,7 @@ class Spell(ISpell):
             spell_type: SpellType,
             profile: ClassProfile | MethodProfile,
             spell_id: str,
-            whitelist: bool = True,
+            whitelist: bool = False,
             existing_object: object = None,
             *args,
             **kwargs
@@ -58,7 +58,7 @@ class Spell(ISpell):
         self.dependency_graph = None
 
         # Created after Conduit Made
-        self._owner_conduit_id: uuid.UUID | None = None
+        self._owner_conduit_id: UUID | None = None
         self._owner_conduit_name: str | None = None
         self.owned_spell = None
 
@@ -73,7 +73,7 @@ class Spell(ISpell):
         )
 
 #region Configuration
-    def _add_owned_conduit(self, conduit_id: uuid.UUID, conduit_name: str = None):
+    def _add_owned_conduit(self, conduit_id: UUID, conduit_name: str = None):
         """
         Add the conduit ID that owns this spell.
         :param conduit_id: The ID of the conduit that owns this spell.

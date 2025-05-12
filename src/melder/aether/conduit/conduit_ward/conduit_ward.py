@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 import threading
 from enum import Enum
 from typing import List
@@ -29,14 +29,12 @@ class ConduitWard(IConduitWard):
         self._conduit_type = conduit_type
         self._policy = None
 
-        ## Internal structures
-        self._create_internal_configuration()
-
         ## Conduit links
         self._conduit_links = None
+
+        # Internal structures
         self._parent_conduit_link = None
         self._lesser_conduits_links = None
-
 
 #region Properties
     @property
@@ -84,21 +82,7 @@ class ConduitWard(IConduitWard):
             else:
                 raise RuntimeError("No parent conduit link found. Cannot convert to normal conduit. Unknown error")
 
-    def _create_internal_configuration(self) -> None:
-        """
-        Creates per-Conduit internal structures based on the current world configuration.
-        """
-        self._configure_conduit_links()
 
-    def _configure_conduit_links(self) -> None:
-        """
-        Configures whether this Conduit maintains linkable connections.
-        Only enabled in dynamic environments.
-        """
-        if self._dynamic:
-            self._conduit_links = ConcurrentList()
-        else:
-            self._conduit_links = None
 #endregion Conduit Ward Configuration
 #region Link Management
     def link(self, target_conduit) -> bool:

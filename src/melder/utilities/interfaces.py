@@ -1,7 +1,7 @@
 from typing import Type, Optional, Any, Dict, NamedTuple
 from abc import ABC, abstractmethod
 from typing import Optional, Any
-import uuid
+from uuid import UUID
 
 
 # We got two of the same types of classes, I wanted to stick to the magic theme because it's pretty fun :P
@@ -109,7 +109,7 @@ class ISpell(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def _add_owned_conduit(self, conduit_id: uuid.UUID, conduit_name: str = None ):
+    def _add_owned_conduit(self, conduit_id: UUID, conduit_name: str = None ):
         """
         Add the conduit ID that owns this spell.
         :param conduit_id: The ID of the conduit that owns this spell.
@@ -254,7 +254,7 @@ class ISpellbook(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def _find_spell(self, spell_id: uuid.UUID) -> Optional[Any]:
+    def _find_spell(self, spell_id: UUID) -> Optional[Any]:
         """
         Internal spell resolution by UUID. Useful for resolving specific
         spell references across systems or conduit links.
@@ -395,27 +395,6 @@ class IConduitWard(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
 
-class IPolicy(ISeal):
-    """
-    Interface for a Policy, which defines the rules and behaviors for the ConduitWard.
-    """
-    __slots__ = []
-
-    @abstractmethod
-    def apply_policy(self):
-        """
-        Applies the policy to the ConduitWard.
-        """
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @abstractmethod
-    def get_policy(self, policy_name: str) -> Optional[Any]:
-        """
-        Returns the current policy.
-        """
-        raise NotImplementedError("Subclasses must implement this method.")
-
-
 class IConduit(ISeal):
     """
     Interface for a Conduit, which behaves as both a scope and a factory within the system.
@@ -480,3 +459,15 @@ class ILink(ISeal):
         Sever the link between two Conduits.
         """
         raise NotImplementedError("Subclasses must implement this method.")
+
+
+class IDetail(ISeal):
+    @property
+    @abstractmethod
+    def type(self) -> 'ContractTypes':
+        pass
+
+    @abstractmethod
+    def affects_permissions(self) -> bool:
+        """Indicates whether this detail modifies the spell permission map."""
+        pass

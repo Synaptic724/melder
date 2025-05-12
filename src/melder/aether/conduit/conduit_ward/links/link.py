@@ -1,7 +1,7 @@
 import threading
 from enum import Enum
 from typing import List
-from uuid import UUID
+from uuid import UUID, uuid4
 from melder.utilities.interfaces import ISeal, IConduit
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 
@@ -23,6 +23,7 @@ class Link(ISeal):
             target (Conduit): The Conduit being linked to.
         """
         super().__init__()
+        self.link_id: UUID = uuid4()  # Unique identifier for the link
         self._creator = creator
         self._target = target
 

@@ -1,5 +1,4 @@
-import uuid
-from uuid import uuid4
+from uuid import UUID, uuid4
 from threading import RLock
 from typing import List, Optional
 from melder.utilities.concurrent_dictionary import ConcurrentDict
@@ -29,11 +28,11 @@ class Creations(ISeal):
         """
         super().__init__()
         self._lock = RLock()
-        self._unique: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
-        self._unique_per_scope: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
-        self._many: ConcurrentDict[uuid.UUID, ConcurrentList[object]] = ConcurrentDict()
-        self._unique_per_lineage: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
-        self._unique_per_cluster: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
+        self._unique: ConcurrentDict[UUID, object] = ConcurrentDict()
+        self._unique_per_scope: ConcurrentDict[UUID, object] = ConcurrentDict()
+        self._many: ConcurrentDict[UUID, ConcurrentList[object]] = ConcurrentDict()
+        self._unique_per_lineage: ConcurrentDict[UUID, object] = ConcurrentDict()
+        self._unique_per_cluster: ConcurrentDict[UUID, object] = ConcurrentDict()
 
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
@@ -50,7 +49,7 @@ class Creations(ISeal):
         self._unique_per_scope = kwargs.get("unique_per_scope")
         self._many = kwargs.get("many")
 
-    def add_unique(self, key: uuid4, item: object) -> None:
+    def add_unique(self, key: UUID, item: object) -> None:
         """
         Add a unique object to the manager.
 
@@ -64,7 +63,7 @@ class Creations(ISeal):
             raise ValueError(f"Key {key} already exists in unique objects.")
         self._unique[key] = item
 
-    def add_unique_per_lineage(self, key: uuid4, item: object) -> None:
+    def add_unique_per_lineage(self, key: UUID, item: object) -> None:
         """
         Add a unique-per-lineage object to the manager.
 
@@ -78,7 +77,7 @@ class Creations(ISeal):
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
         self._unique_per_lineage[key] = item
 
-    def add_unique_per_cluster(self, key: uuid4, item: object) -> None:
+    def add_unique_per_cluster(self, key: UUID, item: object) -> None:
         """
         Add a unique-per-cluster object to the manager.
 
@@ -92,7 +91,7 @@ class Creations(ISeal):
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
         self._unique_per_cluster[key] = item
 
-    def add_unique_per_scope(self, key: uuid4, item: object) -> None:
+    def add_unique_per_scope(self, key: UUID, item: object) -> None:
         """
         Add a unique-per-scope object to the manager.
 
@@ -106,7 +105,7 @@ class Creations(ISeal):
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = item
 
-    def add_many(self, key: uuid4, item: object) -> None:
+    def add_many(self, key: UUID, item: object) -> None:
         """
         Add an object to a multi-instance collection.
 
@@ -292,8 +291,8 @@ class LesserCreations(ISeal):
         The UUID is the spellID of the object.
         """
         super().__init__()
-        self._unique_per_scope: ConcurrentDict[uuid.UUID, object] = ConcurrentDict()
-        self._many: ConcurrentDict[uuid.UUID, ConcurrentList[object]] = ConcurrentDict()
+        self._unique_per_scope: ConcurrentDict[UUID, object] = ConcurrentDict()
+        self._many: ConcurrentDict[UUID, ConcurrentList[object]] = ConcurrentDict()
 
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
@@ -319,7 +318,7 @@ class LesserCreations(ISeal):
             self.seal()
 
 
-    def add_unique_per_scope(self, key: uuid4, item: object) -> None:
+    def add_unique_per_scope(self, key: UUID, item: object) -> None:
         """
         Add a unique-per-scope object to the manager.
 
@@ -333,12 +332,12 @@ class LesserCreations(ISeal):
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = item
 
-    def add_many(self, key: uuid4, item: object) -> None:
+    def add_many(self, key: UUID, item: object) -> None:
         """
         Add an object to a multi-instance collection.
 
         Args:
-            key (uuid4): Collection identifier.
+            key (UUID): Collection identifier.
             item (object): Object to add.
         """
         if self._sealed:
