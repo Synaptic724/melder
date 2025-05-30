@@ -16,7 +16,7 @@ class Bind(IBind):
         super().__init__()
         self._lock = threading.RLock()
 
-    def bind(self, spell=None, *, spellframe=None, name=None, existence=Existence.unique, whitelist=True):
+    def bind(self, whitelist=True, *, spell=None, spellframe=None, name=None, existence=Existence.unique):
         if spell is None:
             # Decorator usage
             def decorator(obj):

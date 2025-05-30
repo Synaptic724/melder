@@ -25,13 +25,6 @@ class NormalConduitDetail(ISeal):
         self.permissions = permissions
         self._link_id: UUID = link_id
 
-    @staticmethod
-    def type() -> ContractTypes:
-        """
-        Identifies this detail as belonging to a normal conduit contract.
-        """
-        return ContractTypes.normal_conduit
-
     def seal(self):
         """
         Seal the detail to make it immutable and clean up any sensitive data.
@@ -61,6 +54,14 @@ class NormalConduitContract(ISeal):
 
         # Concurrent dictionary mapping spell_id → NormalConduitDetail
         self._contract_details: ConcurrentDict[str, NormalConduitDetail] = ConcurrentDict()
+
+    @staticmethod
+    def type() -> ContractTypes:
+        """
+        Identifies this detail as belonging to a normal conduit contract.
+        """
+        return ContractTypes.normal_conduit
+
 
     def add(self, contract_detail: NormalConduitDetail) -> None:
         """
@@ -118,6 +119,13 @@ class LesserConduitContract(ISeal):
 
         # All lesser conduits default to WRITE permission
         self.permissions = Permissions.WRITE
+
+    @staticmethod
+    def type() -> ContractTypes:
+        """
+        Identifies this detail as belonging to a normal conduit contract.
+        """
+        return ContractTypes.lesser_conduit
 
     def has(self, permission: Permissions) -> bool:
         """

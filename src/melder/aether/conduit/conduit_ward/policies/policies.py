@@ -20,7 +20,8 @@ class Policies(Enum):
     - block_all: Blocks all spell access unless a spell explicitly opts into access
                  via 'meta["whitelist"] = True'.
 
-    - delegate: Allows a lesser conduit to act as a delegate for the parent conduit.
+    - delegate: Allows a lesser conduit to act as a delegate for the parent conduit, technically this would just inherit the parents policy by default so delegate should just point to the parent.
+    this is specifically for dynamic system mode.
     """
     automatic = auto()
     dynamic = auto()
