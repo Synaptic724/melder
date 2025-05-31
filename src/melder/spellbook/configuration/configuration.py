@@ -2,6 +2,8 @@ import threading
 from typing import Any, Dict, List, Type
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal
+from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
 
 class Configuration(ISeal):
     """
@@ -26,15 +28,15 @@ class Configuration(ISeal):
         # Private dictionary storing all properties.
         self._properties: ConcurrentDict = ConcurrentDict()
         self.available_properties: Dict[str, Type] = {
-            "conduit_state": str,
+            "system_state": (str, SystemState),
             "debugging": bool,
             "disposal": bool,
             "disposal_method_names": list,
-            "policy": str,
+            "policy": (str, Policies),
         }
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
-        self._idempotent_keys = {"conduit_state", "debugging", "disposal", "disposal_method_names", "policy"}
+        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names", "policy"}
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -56,6 +58,7 @@ class Configuration(ISeal):
             if self._frozen:
                 raise RuntimeError("Cannot modify configuration after it is frozen.")
 
+            value = self._convert_enum_if_needed(key, value)
             self._properties[key] = value
 
     def clear_properties(self) -> None:
@@ -100,13 +103,66 @@ class Configuration(ISeal):
                 raise ValueError(f"Missing required configuration property: '{key}'.")
 
             value = self._properties[key]
-            if not isinstance(value, expected_type):
+            if not isinstance(value, expected_type if isinstance(expected_type, tuple) else (expected_type,)):
                 raise ValueError(
                     f"Invalid type for property '{key}': "
                     f"expected {expected_type.__name__}, got {type(value).__name__}."
                 )
 
+        # Additional validation for specific properties
+        if self.validate_enums():
+            return True
+        else:
+            raise ValueError("Enum validation failed. Invalid enum values found in properties.")
+
+    def validate_enums(self) -> bool:
+        """
+        Validate that all enum properties are set to valid values.
+        :return:
+        """
+        # Additional validation for specific properties
+        if "system_state" in self._properties:
+            system_state = self._properties["system_state"]
+            if not isinstance(system_state, SystemState):
+                raise ValueError(
+                    f"Invalid type for 'system_state': expected SystemState, got {type(system_state).__name__}."
+                )
+        if "policy" in self._properties:
+            policy = self._properties["policy"]
+            if not isinstance(policy, Policies):
+                raise ValueError(
+                    f"Invalid type for 'policy': expected Policies, got {type(policy).__name__}."
+                )
+
         return True
+
+
+    def _convert_enum_if_needed(self, key: str, value: Any) -> Any:
+        """
+        Converts string inputs into the correct enum types for known keys.
+        Raises ValueError if the conversion fails.
+        """
+        enum_map = {
+            "policy": Policies,
+            "system_state": SystemState,
+        }
+
+        if key in enum_map:
+            enum_type = enum_map[key]
+            if isinstance(value, str):
+                try:
+                    return enum_type[value.lower()]  # Requires enum keys to be lowercase
+                except KeyError:
+                    valid_options = [e.name for e in enum_type]
+                    raise ValueError(
+                        f"Invalid value '{value}' for '{key}'. "
+                        f"Expected one of: {valid_options}."
+                    )
+            elif not isinstance(value, enum_type):
+                raise ValueError(
+                    f"Invalid type for '{key}': expected {enum_type.__name__}, got {type(value).__name__}."
+                )
+        return value
 
     def get_property(self, key: str) -> Any:
         """
@@ -144,11 +200,11 @@ class Configuration(ISeal):
         Load and apply the default dictionary of properties atomically.
         """
         self._properties.batch_update(lambda d: d.update({
-            "conduit_state": "automatic",
+            "system_state": self._convert_enum_if_needed("system_state", "automatic"),
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
-            "policy": "automatic",
+            "policy": self._convert_enum_if_needed("policy", "automatic"),
         }))
 
     def seal(self) -> None:

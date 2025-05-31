@@ -377,13 +377,98 @@ class Spellbook(ISpellbook):
         with self._lock:
             self._configuration_locked = True
 
-    def configure_conduit_state(self, **kwargs) -> None:
+    def configure_aether_frame(self,
+                                *,
+                                system_state: Optional[str],
+                                debugging: Optional[bool],
+                                disposal: Optional[bool],
+                                disposal_method_names: Optional[List[str]],
+                                policy: Optional[str]) -> None:
         """
-        Apply conduit-specific configuration properties.
-        If the config is invalid or keys are wrong, the changes are discarded.
+        Configure the conduit’s operational state and access control behavior.
+
+        This method sets the conduit’s configuration before it is sealed. Once sealed,
+        the configuration becomes immutable. Invalid keys or configurations are rejected,
+        and the conduit reverts to its prior state.
+
+        Parameters:
+            system_state (str):
+                Indicates the type of conduit.
+                - "Automatic": A standard conduit that operates under the default spell access control.
+                Linking is disabled. Single Parent Conduit can be created. Conduit cloud disabled. Lesser conduits can be created.
+                - "Dynamic": Allows for the creation of many conduits with dynamic linking capabilities.
+                You gain access to the conduit cloud and can link to other conduits to contract their spells into any of your conduits.
+                Conduits can be upgraded from lesser to normal, but not the other way around. Unlocks different kinds of policies not available in automatic mode.
+                More details in documentation.
+
+            debugging (bool):
+                Enables internal UUID tagging for all objects created by the conduit.
+                Useful for debugging object origins, especially across nested scopes.
+
+            disposal (bool):
+                Enables automatic disposal behavior. When the conduit is sealed,
+                registered disposal methods will be invoked on objects created by this conduit.
+
+            disposal_method_names (List[str]):
+                A list of method names (e.g., ["close", "cleanup"]) to invoke on objects
+                during disposal. These methods must exist on the objects produced by the conduit.
+
+            policy (str):
+                Determines the spell access control behavior for this conduit.
+                Valid options match the `Policies` enum (see below).
+
+        Policies:
+            These control how a conduit resolves spell access. They operate under the current
+            system mode (automatic or dynamic).
+
+            In **automatic** mode:
+                - "automatic":
+                    🔒 Disables linking from normal conduits.
+                    ✅ Allows linking from lesser conduits only.
+                    🔁 Delegates access checks to parent or source conduit.
+
+            In **dynamic** mode:
+                - "dynamic":
+                    🔓 Enables custom runtime evaluation and linking.
+                    🧠 Allows handler functions for advanced access resolution.
+
+                - "whitelist_all":
+                    ✅ Grants access to all local spells in this conduit.
+                    ⛔ Ignores individual `meta["whitelist"]` tags.
+                    🔒 Only available under the "dynamic" policy mode.
+
+                - "block_all":
+                    ⛔ Denies access to all spells unless they explicitly declare
+                       `meta["whitelist"] = True`.
+                    📌 Applies to local spells only.
+                    🔒 Only available under the "dynamic" policy mode.
+
+            Available in all modes:
+                - "delegate":
+                    🔗 Forwards access decisions to a parent conduit.
+                    🪶 Used by lesser conduits to inherit spell access without duplication.
+                    📭 Does not host any spells itself.
+
+        Raises:
+            RuntimeError:
+                If the conduit configuration has already been locked/sealed.
+            KeyError:
+                If an invalid configuration key is provided.
+            ValueError:
+                If the provided configuration fails validation.
         """
         if self._configuration_locked:
             raise RuntimeError("Configuration is locked. Cannot modify conduit state.")
+
+        kwargs = {
+            k: v for k, v in {
+                "system_state": system_state,
+                "debugging": debugging,
+                "disposal": disposal,
+                "disposal_method_names": disposal_method_names,
+                "policy": policy
+            }.items() if v is not None
+        }
 
         try:
             for key, value in kwargs.items():

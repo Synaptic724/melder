@@ -10,6 +10,8 @@ from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 
+# TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
+
 #region ConduitWard
 class ConduitWard(IConduitWard):
     """

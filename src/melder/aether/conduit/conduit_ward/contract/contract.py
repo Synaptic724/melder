@@ -34,12 +34,10 @@ class NormalConduitDetail(ISeal):
         with self._lock:
             if self._sealed:
                 return
-
             self._sealed = True
             self.spell_id = None
             self.permissions = None
             self._link_id = None
-
 
 class NormalConduitContract(ISeal):
     """
@@ -105,13 +103,11 @@ class NormalConduitContract(ISeal):
             detail.seal()
         self._contract_details.clear()
 
-
 class LesserConduitContract(ISeal):
     """
     Lightweight contract for lesser conduits.
     Does not track per-spell permissions — assumes global WRITE-level permission.
     """
-
     def __init__(self, link_id: UUID):
         super().__init__()
         self._lock = RLock()

@@ -123,9 +123,9 @@ class Conduit(IConduit):
         Sets the environment mode and debugging mode for this Conduit
         based on the configuration instance passed.
         """
-        if self._configuration.get_property("conduit_state") == "automatic":
+        if self._configuration.get_property("system_state") == "automatic":
             self.__dynamic_environment__ = False
-        elif self._configuration.get_property("conduit_state") == "dynamic":
+        elif self._configuration.get_property("system_state") == "dynamic":
             self.__dynamic_environment__ = True
 
         if self._configuration.get_property("debugging"):
