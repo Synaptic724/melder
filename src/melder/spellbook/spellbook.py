@@ -271,7 +271,7 @@ class Spellbook(ISpellbook):
             spellbook._conduit_type = ConduitState.lesser
             return spellbook
 
-    def bind(self, spell, existence: Existence, *, spellframe=None, name=None, whitelist:bool = True, **kwargs) -> str:
+    def bind(self, spell, existence: Existence, whitelist: bool = True, *, spellframe=None, name=None, **kwargs) -> str:
         """
         Bind a spell to the spellbook using the `Bind` system.
 
@@ -298,11 +298,11 @@ class Spellbook(ISpellbook):
         """
         try:
             spell = self._bind.bind(
+                whitelist=whitelist,
                 spell=spell,
                 spellframe=spellframe,
                 name=name,
                 existence=existence,
-                whitelist=whitelist,
             )
             if Spellbook._aether._check_for_spell(spell.spell_id):
                 raise RuntimeError(

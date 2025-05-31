@@ -276,7 +276,7 @@ class Conduit(IConduit):
         return spell_id
 
 
-    def bind(self, spell, existence: Existence, *, spellframe=None, name=None, whitelist:bool = True, **kwargs) -> str:
+    def bind(self, spell, existence: Existence, whitelist: bool = True, *, spellframe=None, name=None, **kwargs) -> str:
         """
         Bind a spell to the spellbook using the `Bind` system.
 
