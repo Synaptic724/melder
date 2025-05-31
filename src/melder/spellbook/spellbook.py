@@ -155,20 +155,20 @@ class Spellbook(ISpellbook):
 
         # Internal state
         self._conjured = False
-        self._configuration_locked: bool = False
-        self._configuration = Configuration()
-        self._conduit_type = conduit_type
         self._aetheric_frame = aether_frame
+        self._configuration_locked: bool = False
+        self._configuration = Configuration(self._aetheric_frame)
+        self._conduit_type = ConduitState.resolve(conduit_type)
 
         # Core spell storage (SHA256-keyed)
-        self.__spells: ConcurrentDict[str, Spell] = None if ConduitState.lesser else ConcurrentDict()
-        self.__lookup_spells: ConcurrentDict[tuple, str] = None if ConduitState.lesser else ConcurrentDict()
+        self.__spells: ConcurrentDict[str, Spell] = None if self._conduit_type == ConduitState.lesser else ConcurrentDict()
+        self.__lookup_spells: ConcurrentDict[tuple, str] = None if self._conduit_type == ConduitState.lesser else ConcurrentDict()
 
         # Networked/remote spell support
         # Basically if we're using dynamic mode it's a dict of dicts else it's not
         # This is mainly because we need to maintain the contract system while using lesser scopes
-        self.__contracted_spells: ConcurrentDict[str, ConcurrentDict[str, Spell]] | ConcurrentDict[str, Spell] | None = ConcurrentDict() if ConduitState.lesser else None
-        self.__lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]] | ConcurrentDict[tuple, str] | None = ConcurrentDict() if ConduitState.lesser else None
+        self.__contracted_spells: ConcurrentDict[str, ConcurrentDict[str, Spell]] | ConcurrentDict[str, Spell] | None = ConcurrentDict() if self._conduit_type == ConduitState.lesser else None
+        self.__lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]] | ConcurrentDict[tuple, str] | None = ConcurrentDict() if self._conduit_type == ConduitState.lesser else None
 
         # Binding system
         self._bind = Bind()
@@ -210,6 +210,7 @@ class Spellbook(ISpellbook):
 #endregion
 
 #region Core Methods
+
 #region Binding API
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """

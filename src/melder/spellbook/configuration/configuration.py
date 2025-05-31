@@ -18,10 +18,11 @@ class Configuration(ISeal):
     Thread-safe operations are ensured with RLock.
     """
 
-    def __init__(self):
+    def __init__(self, aether_frame: str = None):
         # Thread-safe lock for concurrent access
         super().__init__()
         self._lock = threading.RLock()
+        self._aether_frame = aether_frame
         self._sealed = False
         self._frozen = False
 
