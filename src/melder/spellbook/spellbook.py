@@ -145,8 +145,53 @@ class Spell(ISpell):
 #region Spellbook
 class Spellbook(ISpellbook):
     """
-    The Spellbook acts as the authoritative registry for all active spells.
-    It also manages configuration and controls Conduit conjuring.
+    🧙 The Spellbook is the central authority for all spell definitions, bindings, and conduit conjurations.
+
+    It acts as a high-level composition container and registry. All spells added to a Spellbook must be
+    uniquely identifiable and comply with the Aetheric access rules and configuration state.
+
+     -------------------------------------------------------------------------------
+     ⚠️  WARNING: DO NOT USE `aether_frame` UNLESS YOU UNDERSTAND THE IMPLICATIONS!
+     ⚠️  IMPORTANT: AETHER FRAMES
+
+     The `aether_frame` parameter allows multiple Spellbooks to share the same
+     configuration and spell visibility. This feature is **extremely powerful**
+     and supports system-wide coordination, contract binding, and cross-agent
+     sharing of spells.
+
+     🧠 However, **do not use `aether_frame` unless you have read the
+     documentation** and understand the implications of shared scope,
+     mutation locking, and distributed spell ownership.
+
+     By default the (aether_frame=None) will generate a unique frame that is isolated for general use.
+     Which will work as intended for most use cases.
+     -------------------------------------------------------------------------------
+
+    Responsibilities:
+    - Holds and registers all known spells (via `bind()`).
+    - Ensures configuration is frozen and synchronized via the Aether.
+    - Provides conduit conjuring (`conjure()`) based on validated spells.
+    - Supports optional shared configuration state through the `aether_frame` system.
+
+    Parameters:
+        conduit_type (ConduitState, optional):
+            The initial conduit type to use. Defaults to `ConduitState.normal` if omitted.
+            If a string is passed, it will be automatically converted to a valid enum.
+
+        aether_frame (str, optional):
+            A shared frame name used to join multiple Spellbooks under the same Aetheric
+            configuration and spell contract scope. Refer to documentation before using.
+
+    Usage Example:
+        spellbook = Spellbook()
+        spellbook.configure_aether_frame(system_state="automatic", debugging=True)
+        spellbook.bind(my_spell, existence=Existence.SINGLETON)
+        conduit = spellbook.conjure()
+
+    Notes:
+        - You may only conjure one conduit per spellbook instance.
+        - Configuration is locked automatically upon conjuring.
+        - If configuration is already shared via an aether frame, it will be reused.
     """
     _aether = Aether()
     def __init__(self, conduit_type: ConduitState = None, aether_frame: str = None):
@@ -156,8 +201,13 @@ class Spellbook(ISpellbook):
         # Internal state
         self._conjured = False
         self._aetheric_frame = aether_frame
+
+        # Configuration state
         self._configuration_locked: bool = False
-        self._configuration = Configuration(self._aetheric_frame)
+        self._configuration = None
+        self._initialize_configuration()
+
+        # Conduit type
         self._conduit_type = ConduitState.resolve(conduit_type)
 
         # Core spell storage (SHA256-keyed)
@@ -212,6 +262,26 @@ class Spellbook(ISpellbook):
 #region Core Methods
 
 #region Binding API
+    def _initialize_configuration(self) -> None:
+        """
+        Setup the configuration for the spellbook.
+        This is used to ensure that the spellbook's configuration is in sync with the Aether's state.
+        """
+        self._configuration = self._get_configuration_from_aether
+
+        if self._configuration:
+            self._configuration_locked = True
+        else:
+            self._configuration = Configuration(self._aetheric_frame)
+            self._configuration_locked = False
+
+    def _get_configuration_from_aether(self) -> Configuration:
+        """
+        Retrieve the current configuration from the Aether.
+        This is used to ensure that the spellbook's configuration is in sync with the Aether's state.
+        """
+        return Spellbook._aether._get_configuration(self._aetheric_frame)
+
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """
         Find a spell by its frame, name, and binding name.
@@ -486,7 +556,9 @@ class Spellbook(ISpellbook):
 
             self._configuration.freeze()
             self._configuration_locked = True
-
+            Spellbook._aether._bind_configuration(
+                self._configuration, self._aetheric_frame
+            )
         except (KeyError, ValueError) as e:
             self._configuration.clear_properties()
             raise e
@@ -518,6 +590,9 @@ class Spellbook(ISpellbook):
                 self._configuration.load_default_dictionary()
                 self._configuration.freeze()
                 self._configuration_locked = True
+                Spellbook._aether._bind_configuration(
+                    self._configuration, self._aetheric_frame
+                )
 
             self._conjured = True
             self._conduit_type = ConduitState.normal

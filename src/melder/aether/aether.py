@@ -22,7 +22,8 @@ class AethericFrame(ISeal):
         self._conduits: ConcurrentDict[uuid.UUID, IConduit] = ConcurrentDict()  # This retains all normal conduits i.e roots created by a spellbook
         self._spell_registry: ConcurrentDict[uuid.UUID, ConcurrentSet[str]] = ConcurrentDict()  # Holds conduit UUIDs and their spell IDs which are SHA256 hashes of internal components
         self._conduit_clusters: ConcurrentDict[str, ConcurrentList[uuid.UUID]] = ConcurrentDict()  # Clusters only
-        self._conduit_cloud = ConduitCloud()  # This is the dynamic mode registry
+        self._conduit_cloud = ConduitCloud(name)  # This is the dynamic mode registry
+        self._configuration = None  # This is the configuration for the Aetheric Frame
 
     def seal(self):
         """
@@ -58,9 +59,10 @@ class ConduitCloud(IConduitCloud):
     don't want to create a contract to bind them to a specific conduit. It helps balance
     seperation of concerns between conduit types.
     """
-    def __init__(self):
+    def __init__(self, name: str):
         super().__init__()
         self._lock = Lock()
+        self._name = name
         self._registry = ConcurrentDict()
 
 
@@ -136,6 +138,32 @@ class Aether(ISeal):
             Aether._initialized = False
             Aether._instance = None
 
+    def _bind_configuration(self, configuration, aetheric_frame_name: str = None) -> None:
+        """
+        Binds a configuration to the Aetheric Frame.
+        :param configuration: The configuration to bind.
+        :param aetheric_frame_name: The name of the Aetheric Frame to bind the configuration to.
+        """
+        if aetheric_frame_name is not None:
+            try:
+                self._aetheric_frames[aetheric_frame_name]._configuration = configuration
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            self._default_frame._configuration = configuration
+
+    def _get_configuration(self, aetheric_frame_name: str = None) -> 'Configuration' or None:
+        """
+        Binds a configuration to the Aetheric Frame.
+        :param aetheric_frame_name: The name of the Aetheric Frame to bind the configuration to.
+        """
+        if aetheric_frame_name is not None:
+            try:
+                return self._aetheric_frames[aetheric_frame_name]._configuration
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            return self._default_frame._configuration
 
     def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = None):
         """
