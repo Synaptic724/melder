@@ -15,7 +15,7 @@ class ConduitState(Enum):
         return self.name.lower()
 
     @staticmethod
-    def resolve(value: str | 'ConduitState' | None) -> 'ConduitState':
+    def resolve(value: str | 'ConduitState' | None) -> 'ConduitState | None':
         """
         Resolve a string or ConduitState value into a valid ConduitState enum.
 
@@ -37,6 +37,6 @@ class ConduitState(Enum):
                 valid = [s.name.lower() for s in ConduitState]
                 raise ValueError(f"Invalid ConduitState '{value}'. Expected one of: {valid}")
         elif value is None:
-            return ConduitState.normal  # default fallback (you can change this)
+            return None
         else:
             raise TypeError(f"Expected str, ConduitState, or None — got {type(value).__name__}.")

@@ -264,12 +264,20 @@ class Spellbook(ISpellbook):
 #region Binding API
     def _initialize_configuration(self) -> None:
         """
-        Setup the configuration for the spellbook.
-        This is used to ensure that the spellbook's configuration is in sync with the Aether's state.
+        This method initializes the configuration for the Spellbook. It grabs the configuration from the Aether
+        by providing the specific aetheric frame. It initializes the configuration if it does not exist.
+        If the configuration already exists, it checks if the aetheric frame matches the one in the configuration.
+
+        Raises:
+            RuntimeError: If the configuration name does not match the aetheric frame.
+
+        This is called during the Spellbook's initialization to ensure that the configuration is ready for use.
         """
-        self._configuration = self._get_configuration_from_aether
+        self._configuration: Any = self._get_configuration_from_aether
 
         if self._configuration:
+            if self._configuration._aether_frame != self._aetheric_frame:
+                raise RuntimeError("Configuration name does not match the aetheric frame.")
             self._configuration_locked = True
         else:
             self._configuration = Configuration(self._aetheric_frame)
@@ -279,6 +287,8 @@ class Spellbook(ISpellbook):
         """
         Retrieve the current configuration from the Aether.
         This is used to ensure that the spellbook's configuration is in sync with the Aether's state.
+
+        :return: The current configuration for the Spellbook.
         """
         return Spellbook._aether._get_configuration(self._aetheric_frame)
 
@@ -456,9 +466,9 @@ class Spellbook(ISpellbook):
                                 disposal_method_names: Optional[List[str]],
                                 policy: Optional[str]) -> None:
         """
-        Configure the conduit’s operational state and access control behavior.
+        Configure the systems operational state and access control behavior.
 
-        This method sets the conduit’s configuration before it is sealed. Once sealed,
+        This method sets the configuration before it is sealed. Once sealed,
         the configuration becomes immutable. Invalid keys or configurations are rejected,
         and the conduit reverts to its prior state.
 
@@ -594,7 +604,6 @@ class Spellbook(ISpellbook):
                     self._configuration, self._aetheric_frame
                 )
 
-            self._conjured = True
             self._conduit_type = ConduitState.normal
             conduit = Conduit(
                 spellbook=self,
@@ -603,6 +612,7 @@ class Spellbook(ISpellbook):
                 configuration=self._configuration,
                 aetheric_frame=self._aetheric_frame,
             )
+            self._conjured = True
             self._define_conduit_into_spells(conduit)
             # TODO: Implement validation cycle to ensure all spells are valid
             return conduit
