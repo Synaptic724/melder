@@ -107,6 +107,7 @@ class Bind(IBind):
 
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
     @staticmethod
     def _validate_binding(profile, is_instance, binding_name, existence):
         """

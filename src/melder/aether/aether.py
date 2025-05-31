@@ -5,6 +5,44 @@ from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces import ISeal, IConduit, IConduitCloud
 from threading import RLock, Lock
 
+class AethericFrame(ISeal):
+    """
+    This object is used to hold the Aetheric Frame for the Aether. It isolates
+    the Aetheric Frame from the Aether itself, allowing for a clean separation
+    of concerns. It allows multiple packages or modules to use the Aether
+    without interfering with each other. This is useful for dynamic mode where
+    conduits are created at runtime and need to be registered and retrieved by name.
+
+    This object is thread-safe and can be used in a multi-threaded environment.
+    """
+    def __init__(self, name: str):
+        super().__init__()
+        self.name = name
+        self._lock = RLock()
+        self._conduits: ConcurrentDict[uuid.UUID, IConduit] = ConcurrentDict()  # This retains all normal conduits i.e roots created by a spellbook
+        self._spell_registry: ConcurrentDict[uuid.UUID, ConcurrentSet[str]] = ConcurrentDict()  # Holds conduit UUIDs and their spell IDs which are SHA256 hashes of internal components
+        self._conduit_clusters: ConcurrentDict[str, ConcurrentList[uuid.UUID]] = ConcurrentDict()  # Clusters only
+        self._conduit_cloud = ConduitCloud()  # This is the dynamic mode registry
+
+    def seal(self):
+        """
+        Dispose of the Aetheric Frame and all its conduits.
+        """
+        if self._sealed:
+            return
+        with self._lock:
+            if self._sealed:
+                return
+            # Seal all conduits and clear the registry
+            for conduit in self._conduits.values():
+                conduit.seal()
+            self._conduits.clear()
+            self._spell_registry.clear()
+            self._conduit_clusters.clear()
+            self._conduit_cloud.seal()
+            self._sealed = True
+
+
 
 class ConduitCloud(IConduitCloud):
     """
@@ -84,48 +122,70 @@ class Aether(ISeal):
         if not Aether._initialized:
             super().__init__()
             Aether._initialized = True
-            self._conduits: ConcurrentDict[uuid.UUID, IConduit] = ConcurrentDict() #This retains all normal conduits i.e roots created by a spellbook
-            self._spell_registry: ConcurrentDict[uuid.UUID, ConcurrentSet[str]] = ConcurrentDict() # Holds conduit UUIDs and their spell IDs which are SHA256 hashes of internal components
-            self._conduit_clusters: ConcurrentDict[str, ConcurrentList[uuid.UUID]] = ConcurrentDict()  # Clusters only
-            self._conduit_cloud = ConduitCloud()  # This is the dynamic mode registry
+            self._aetheric_frames: ConcurrentDict[str, AethericFrame] = ConcurrentDict()
+            self._aetheric_frames["default"] = AethericFrame("default")
+            self._default_frame = self._aetheric_frames["default"]
 
 
     def _reset_for_testing(self):
         with self._lock:
-            self._conduits.clear()
-            self._conduit_clusters.clear()
+            self._default_frame._conduits.clear()
+            self._default_frame._conduit_clusters.clear()
+            self._default_frame._sealed = False
             self._sealed = False
             Aether._initialized = False
             Aether._instance = None
 
 
-    def _register_conduit_cloud(self, conduit: IConduit):
+    def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = None):
         """
         Register a conduit in the dynamic mode registry.
         :param conduit:
         :return:
         """
-        self._conduit_cloud._register_conduit(conduit)
+        if aetheric_frame_name is not None:
+            try:
+                conduit_cloud =  self._aetheric_frames[aetheric_frame_name]._conduit_cloud
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            conduit_cloud = self._default_frame._conduit_cloud
 
-    def _get_conduit_cloud(self) -> ConduitCloud:
-        """
-        Returns the conduit cloud.
-        :return:
-        """
-        return self._conduit_cloud
+        conduit_cloud._register_conduit(conduit)
 
-    def _check_for_spell(self, spell_id: str):
+    def _get_conduit_cloud(self, aetheric_frame_name: str = None) -> ConduitCloud:
+        """
+        Returns the conduit cloud associated with the specified Aetheric Frame.
+        If no name is provided, returns the default frame's conduit cloud.
+        """
+        if aetheric_frame_name is not None:
+            try:
+                return self._aetheric_frames[aetheric_frame_name]._conduit_cloud
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            return self._default_frame._conduit_cloud
+
+    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = None):
         """
         This will check if the spell exists within the spell registry.
         :param spell_id:
         :return:
         """
-        for spell_set in self._spell_registry.values():
+        if aetheric_frame_name is not None:
+            try:
+                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            spell_registry = self._default_frame._spell_registry
+
+        for spell_set in spell_registry.values():
             if spell_id in spell_set:
                 return True
         return False
 
-    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str]):
+    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str], aetheric_frame_name: str = None):
         """
         Register a group of spell IDs under a conduit ID in the global registry.
 
@@ -136,79 +196,151 @@ class Aether(ISeal):
         Raises:
             ValueError: If the conduit ID is already registered.
         """
-        if conduit_id not in self._spell_registry:
-            self._spell_registry[conduit_id] = spell_set
+        if aetheric_frame_name is not None:
+            try:
+                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            spell_registry = self._default_frame._spell_registry
+
+        if conduit_id not in spell_registry:
+            spell_registry[conduit_id] = spell_set
         else:
             raise ValueError(f"Spell registry already contains Conduit ID {conduit_id}.")
 
-    def get_conduit(self, name: str) -> IConduit:
+    def get_conduit(self, name: str, aetheric_frame_name: str = None) -> IConduit:
         """
         Returns a conduit by its name.
         """
-        for conduit in self._conduits.values():
+        if aetheric_frame_name is not None:
+            try:
+                conduits = self._aetheric_frames[aetheric_frame_name]._conduits
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            conduits = self._default_frame._conduits
+
+        for conduit in conduits.values():
             if conduit.name == name:
                 return conduit
         raise ValueError(f"Conduit with name {name} not found.")
 
-    def get_conduit_by_signature(self, signature: uuid.uuid4) -> IConduit:
+    def get_conduit_by_signature(self, signature: uuid.uuid4, aetheric_frame_name: str = None) -> IConduit:
         """
         Returns a conduit by its signature.
         """
-        if signature in self._conduits:
-            return self._conduits[signature]
+        if aetheric_frame_name is not None:
+            try:
+                conduits = self._aetheric_frames[aetheric_frame_name]._conduits
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            conduits = self._default_frame._conduits
+
+        if signature in conduits:
+            return conduits[signature]
         raise ValueError(f"Conduit with signature {signature} not found.")
 
-    def _add_conduit(self, conduit: IConduit):
+    def _add_conduit(self, conduit: IConduit, aetheric_frame_name: str = None):
         """
         Adds a new conduit to the Aether. This is primarily used by conduits internally. Not meant for external use.
         """
-        if conduit.__creation_context__._conduit_id in self._conduits:
-            raise ValueError(f"Conduit with ID {conduit.__creation_context__._conduit_id} already exists.")
-        self._conduits[conduit.__creation_context__._conduit_id] = conduit
+        if aetheric_frame_name is not None:
+            try:
+                conduits = self._aetheric_frames[aetheric_frame_name]._conduits
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            conduits = self._default_frame._conduits
 
-    def _remove_conduit(self, conduit: IConduit):
+        if conduit.__creation_context__._conduit_id in conduits:
+            raise ValueError(f"Conduit with ID {conduit.__creation_context__._conduit_id} already exists.")
+        conduits[conduit.__creation_context__._conduit_id] = conduit
+
+    def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = None):
         """
         Removes a conduit from the Aether. Not meant for external use.
         """
+        if aetheric_frame_name is not None:
+            try:
+                conduits = self._aetheric_frames[aetheric_frame_name]._conduits
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            conduits = self._default_frame._conduits
+
         conduit_id = conduit.__creation_context__._conduit_id
-        removed = self._conduits.pop(conduit_id, None)
+        removed = conduits.pop(conduit_id, None)
         if removed is None:
             raise ValueError(f"Conduit with ID {conduit_id} does not exist.")
 
 
-    def _create_cluster(self, cluster_name: str):
+    def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = None):
         """
         Creates a new cluster in the Aether. Not meant for external use.
         """
-        if cluster_name in self._conduit_clusters:
-            raise ValueError(f"Cluster with name {cluster_name} already exists.")
-        self._conduit_clusters[cluster_name] = ConcurrentList()
+        if aetheric_frame_name is not None:
+            try:
+                conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            conduit_clusters = self._default_frame._conduit_clusters
 
-    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str):
+        if cluster_name in conduit_clusters:
+            raise ValueError(f"Cluster with name {cluster_name} already exists.")
+        conduit_clusters[cluster_name] = ConcurrentList()
+
+    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = None):
         """
         Adds a conduit to a cluster in the Aether. Not meant for external use.
         """
-        if cluster_name not in self._conduit_clusters:
-            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
-        self._conduit_clusters[cluster_name].append(conduit.__creation_context__._conduit_id)
+        if aetheric_frame_name is not None:
+            try:
+                conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            conduit_clusters = self._default_frame._conduit_clusters
 
-    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str):
+        if cluster_name not in conduit_clusters:
+            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
+        conduit_clusters[cluster_name].append(conduit.__creation_context__._conduit_id)
+
+    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = None):
         """
         Removes a conduit from a cluster in the Aether. Not meant for external use.
         """
-        if cluster_name not in self._conduit_clusters:
-            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
-        self._conduit_clusters[cluster_name].remove(conduit.__creation_context__._conduit_id)
+        if aetheric_frame_name is not None:
+            try:
+                conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            conduit_clusters = self._default_frame._conduit_clusters
 
-    def _get_conduits_in_cluster(self, cluster_name: str) -> ConcurrentList[uuid.UUID]:
+        if cluster_name not in conduit_clusters:
+            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
+        conduit_clusters[cluster_name].remove(conduit.__creation_context__._conduit_id)
+
+    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = None) -> ConcurrentList[uuid.UUID]:
         """
         Returns a list of conduits in a cluster. Not meant for external use.
         """
-        if cluster_name not in self._conduit_clusters:
-            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
-        return self._conduit_clusters[cluster_name]
+        if aetheric_frame_name is not None:
+            try:
+                conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            conduit_clusters = self._default_frame._conduit_clusters
 
-    def _link_conduit_by_signature(self, req_conduit, conduit_signature: uuid.uuid4):
+        if cluster_name not in conduit_clusters:
+            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
+        return conduit_clusters[cluster_name]
+
+    def _link_conduit_by_signature(self, req_conduit, conduit_signature: uuid.uuid4, aetheric_frame_name: str = None):
         """
         Returns a conduit in order to link them. Not meant for external use.
         """
@@ -219,7 +351,7 @@ class Aether(ISeal):
                 return
         raise ValueError(f"Conduit signature: {conduit_signature}, not found.")
 
-    def _link_conduit_by_name(self, req_conduit: IConduit, conduit_name: str):
+    def _link_conduit_by_name(self, req_conduit: IConduit, conduit_name: str, aetheric_frame_name: str = None):
         """
         Returns a conduit in order to link them. Not meant for external use.
         """
@@ -236,10 +368,18 @@ class Aether(ISeal):
         """
         if self._sealed:
             return
-        for conduit in self._conduits.values():
-            conduit.seal()
-        self._conduits.clear()
-        self._spell_registry.clear()
-        self._conduit_clusters.clear()
-        self._conduit_cloud.seal()
-        self._sealed = True
+        with self._lock:
+            if self._sealed:
+                return
+            self.seal_aetheric_frames()
+            self._default_frame = None
+            self._aetheric_frames.clear()
+            self._sealed = True
+
+
+    def seal_aetheric_frames(self):
+        """
+        Seals all aetheric frames and their contents.
+        """
+        for frame in self._aetheric_frames.values():
+            frame.seal()

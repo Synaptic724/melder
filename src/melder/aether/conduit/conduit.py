@@ -23,7 +23,7 @@ class Conduit(IConduit):
 
     _aether = Aether()
 
-    def __init__(self, spellbook: ISpellbook, configuration: Configuration, conduit_state: ConduitState, name: Optional[str] = None):
+    def __init__(self, spellbook: ISpellbook, configuration: Configuration, conduit_state: ConduitState, name: Optional[str] = None, aetheric_frame: str = None):
         """
         Initializes a new Conduit.
 
@@ -40,6 +40,7 @@ class Conduit(IConduit):
         self.__debugger_mode__ = False
         self.__dynamic_environment__ = False
         self._creation_context = ConduitCreationContext()
+        self._aetheric_frame = aetheric_frame
 
         # Special Configuration
         self._configuration = configuration
@@ -56,7 +57,7 @@ class Conduit(IConduit):
             self._add_conduit_to_aether()
             self._add_spells_to_aether()
             if self.__dynamic_environment__ and self._name is not None:
-                Conduit._aether._register_conduit_cloud()
+                Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
         elif self._conduit_state == ConduitState.lesser:
             if self._name is not None:
                 warning("Lesser conduits cannot have a name. self._name is now set to None.")
@@ -116,7 +117,7 @@ class Conduit(IConduit):
         if self._conduit_state == ConduitState.lesser:
             raise RuntimeError("Lesser conduits cannot register in the conduit cloud.")
         if self.__dynamic_environment__ and self._name is not None:
-            Conduit._aether._register_conduit_cloud(conduit)
+            Conduit._aether._register_conduit_cloud(conduit, self._aetheric_frame)
     def _apply_configuration_flags(self):
         """
         Sets the environment mode and debugging mode for this Conduit
@@ -139,7 +140,7 @@ class Conduit(IConduit):
         """
         if Conduit._aether is None:
             raise RuntimeError("Aether is not initialized.")
-        Conduit._aether._add_conduit(self)
+        Conduit._aether._add_conduit(self, self._aetheric_frame)
 
 
     def _add_spells_to_aether(self) -> None:
@@ -153,7 +154,7 @@ class Conduit(IConduit):
             raise RuntimeError("Aether is not initialized.")
 
         spell_set= ConcurrentSet(self._spellbook._spells.keys())
-        Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set)
+        Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set, self._aetheric_frame)
 
 
     def _creations_configuration(self, configuration: Configuration) -> Creations or LesserCreations:
@@ -205,7 +206,7 @@ class Conduit(IConduit):
             # Step 5: Register as a full Conduit in Aether
             Conduit._add_conduit_to_aether(self)
             if self.__dynamic_environment__ and self._name is not None:
-                Conduit._aether._register_conduit_cloud()
+                Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
 
             self._conduit_ward._change_conduit_type(self._conduit_state)
 
@@ -227,7 +228,8 @@ class Conduit(IConduit):
             new_conduit = Conduit(
                 spellbook=self._spellbook._lesser_conduit_spellbook_copy(),
                 configuration=self._configuration,
-                conduit_state=ConduitState.lesser
+                conduit_state=ConduitState.lesser,
+                aetheric_frame=self._aetheric_frame,
             )
         #TODO: Do something with ConduitWard to link the conduits and contracts
         self._lesser_conduits_links.append(new_conduit)
@@ -352,7 +354,7 @@ class Conduit(IConduit):
             raise RuntimeError("Lesser conduits cannot access the conduit cloud.")
         if self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
-        return Conduit._aether._get_conduit_cloud()
+        return Conduit._aether._get_conduit_cloud(self._aetheric_frame)
 #endregion Conduit Cloud
 #region Conduit Ward API
     def link(self, target_conduit) -> bool:
@@ -434,7 +436,7 @@ class Conduit(IConduit):
 
             # Phase 3: Deregister from the world
             if Conduit._aether and not Conduit._aether.sealed:
-                Conduit._aether._remove_conduit(self)
+                Conduit._aether._remove_conduit(self, self._aetheric_frame)
 
             self._conduit_state = ConduitState.sealed
             self._sealed = True

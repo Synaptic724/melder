@@ -4,23 +4,35 @@ class Policies(Enum):
     """
     Defines conduit policy behaviors within the conduit ward system.
 
-    These policies determine how a conduit handles spell access, inheritance,
-    and enforcement of permissions.
+    These policies control how a conduit grants spell access, inherits behavior,
+    and evaluates permissions from other conduits or its parent.
 
     Available Policies:
 
-    - automatic: Delegates access resolution to the parent conduit or source link.
-                 Used for reflective/spawned conduits that inherit behavior.
+    If system mode automatic is enabled the below policies are available:
+    - automatic: 🔒 Disables linking from normal conduits.
+                 ✅ Allows linking from lesser conduits only.
+                 🔁 Delegates access resolution to the parent or source.
 
-    - dynamic: Enables runtime decision-making; policy evaluation may be
-               delegated to external logic or context-aware resolution.
 
-    - whitelist_all: Allows all spells without checking the spell's 'whitelist' flag.
+    If system mode dynamic is enabled the below policies are available:
+    - dynamic: 🔓 Enables custom runtime evaluation and linking.
+               🧠 Users may inject a handler function for access decisions.
+               🎯 Required for advanced behaviors like selective linking.
 
-    - block_all: Blocks all spell access unless a spell explicitly opts into access
-                 via 'meta["whitelist"] = True'.
+    - whitelist_all: ✅ Grants access to all **local** spells in the conduit,
+                     ⛔ Ignores spell-level `meta["whitelist"]` flags.
+                     🔒 Only allowed when policy is `dynamic`.
 
-    - delegate: In delegate mode, this conduit behaves like a logical mount point. It has no spells. Its borrowing all of them.
+    - block_all: ⛔ Denies all access by default.
+                 ✅ Allows only spells explicitly marked with `meta["whitelist"] = True`.
+                 📌 Applies only to **local** spells.
+                 🔒 Only allowed when policy is `dynamic`.
+
+    Available Policies in all modes:
+    - delegate: 🔗 Forwards all access checks to a parent conduit.
+                🪶 Used by lesser conduits that mount or reflect a parent's behavior.
+                📭 Contains no spells of its own.
     """
     automatic = auto()
     dynamic = auto()

@@ -48,6 +48,7 @@ class Spell(ISpell):
         # Spell Metadata
         self.tags = args if args else []
         self.metadata = kwargs if kwargs else {}
+        self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
         # hooks
         self.pre_hooks: List[Callable] = []
@@ -83,7 +84,7 @@ class Spell(ISpell):
             self._owner_conduit_name = conduit_name
             self.owned_spell = True
 
-    def _add_dag(self, dag: Any):
+    def _add_build_details(self, dag: Any, dependencies: List[str] = None):
         """
         Add details to the spell.
         :param dependency_graph: DAG system of dependencies.
@@ -91,9 +92,12 @@ class Spell(ISpell):
         """
         if dag is None:
             raise ValueError("Dependency graph cannot be None.")
+        if dependencies is None:
+            raise ValueError("Dependencies cannot be None.")
 
         with self._lock:
             self.dependency_graph = dag
+            self.dependencies = dependencies
 
 
     def add_hooks(self, pre_hooks: List[Callable], activation_hooks: List[Callable], post_hooks: List[Callable]):
@@ -145,7 +149,7 @@ class Spellbook(ISpellbook):
     It also manages configuration and controls Conduit conjuring.
     """
     _aether = Aether()
-    def __init__(self, conduit_type: ConduitState = None):
+    def __init__(self, conduit_type: ConduitState = None, aether_frame: str = None):
         super().__init__()
         self._lock = RLock()
 
@@ -154,6 +158,7 @@ class Spellbook(ISpellbook):
         self._configuration_locked: bool = False
         self._configuration = Configuration()
         self._conduit_type = conduit_type
+        self._aetheric_frame = aether_frame
 
         # Core spell storage (SHA256-keyed)
         self.__spells: ConcurrentDict[str, Spell] = None if ConduitState.lesser else ConcurrentDict()
@@ -249,13 +254,12 @@ class Spellbook(ISpellbook):
         """
         This method will inspect any object placed into it and check if its
         a valid spell in the Aether Registry. Returns the SHA256 if found, else None
-        :param spell:
         :return:
         """
         with self._lock:
             if isinstance(spell, object):
                 spell_id = self._bind.spell_id_inspector(spell)
-                if Spellbook._aether._check_for_spell(spell_id):
+                if Spellbook._aether._check_for_spell(spell_id, self._aetheric_frame):
                     return spell_id
             return None
 
@@ -304,7 +308,7 @@ class Spellbook(ISpellbook):
                 name=name,
                 existence=existence,
             )
-            if Spellbook._aether._check_for_spell(spell.spell_id):
+            if Spellbook._aether._check_for_spell(spell.spell_id, self._aetheric_frame):
                 raise RuntimeError(
                     f"Spell with ID {spell.spell_id} already exists in the registry."
                 )
@@ -350,7 +354,7 @@ class Spellbook(ISpellbook):
         """
         with self._lock:
             for spell in self._spells.keys():
-                if Spellbook._aether._check_for_spell(spell):
+                if Spellbook._aether._check_for_spell(spell, self._aetheric_frame):
                     raise RuntimeError(
                         f"Spell with ID {spell} already exists in the registry."
                     )
@@ -406,6 +410,7 @@ class Spellbook(ISpellbook):
     def get_configuration(self) -> Configuration:
         """Return the active configuration for this Spellbook."""
         return self._configuration
+
 #endregion Configuration API
 #region Conduit API
     def conjure(self, name: str = None) -> Conduit:
@@ -421,7 +426,6 @@ class Spellbook(ISpellbook):
                 raise RuntimeError(
                     "This Spellbook has already conjured a Conduit. Only one is allowed per Spellbook."
                 )
-
             self._check_all_spells()
 
             if not self.is_configuration_locked():
@@ -435,7 +439,8 @@ class Spellbook(ISpellbook):
                 spellbook=self,
                 name=name,
                 conduit_state=ConduitState.normal,
-                configuration=self._configuration
+                configuration=self._configuration,
+                aetheric_frame=self._aetheric_frame,
             )
             self._define_conduit_into_spells(conduit)
             # TODO: Implement validation cycle to ensure all spells are valid
@@ -449,7 +454,7 @@ class Spellbook(ISpellbook):
         with self._lock:
             for spell in self._spells.values():
                 spell._add_owned_conduit(conduit.__creation_context__._conduit_id, conduit._name)
-                #spell._add_dag(conduit.dependency_graph) # This is a placeholder for the actual DAG system
+                #spell._add_build_details(conduit.dependency_graph) # This is a placeholder for the actual DAG system
 
 #endregion Conduit API
 

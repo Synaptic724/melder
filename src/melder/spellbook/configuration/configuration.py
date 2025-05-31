@@ -29,11 +29,12 @@ class Configuration(ISeal):
             "conduit_state": str,
             "debugging": bool,
             "disposal": bool,
-            "disposal_method_names": list
+            "disposal_method_names": list,
+            "policy": str,
         }
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
-        self._idempotent_keys = {"conduit_state", "debugging", "disposal", "disposal_method_names"}
+        self._idempotent_keys = {"conduit_state", "debugging", "disposal", "disposal_method_names", "policy"}
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -146,7 +147,8 @@ class Configuration(ISeal):
             "conduit_state": "automatic",
             "debugging": False,
             "disposal": False,
-            "disposal_method_names": []
+            "disposal_method_names": [],
+            "policy": "automatic",
         }))
 
     def seal(self) -> None:
