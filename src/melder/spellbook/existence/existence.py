@@ -10,7 +10,10 @@ class Existence(Enum):
     unique_per_conduit_cluster = auto()  # One instance per conduit cluster, users can cluster conduits into their own desired groups owned by the aether
     unique_per_conduit_lineage = auto()  # One instance per conduit lineage, a lineage is a tree of conduits from child to parent
 
-#    dynamic = auto()               # Instance that can mutate/upgrade at runtime   // Not really sure what usecase we got here for this
+    # Spell spaces are locations or a boundry created by a conduit for a quick scope, these boundrys are semaphored zones where spells can be cast, specifically just the initations and resets are locked otherwise its
+    # location where can quickly cast spells without having to worry about the state of the conduit, this is useful for spells that need to be cast in a specific location or context and fast disposals
+    unique_per_spell_space = auto()  # One instance per spell space, a spell space is a boundry where spells can be cast, "create spell space, close spell space" is a common pattern
+    unique_per_spell_space_refresh = auto()  # One instance per spell space, but reset on each spell space reset, this is useful for spells that need to be re-initialized on each spell space reset
 
     def __str__(self):
         return self.name

@@ -5,7 +5,7 @@ from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TODO: Implement SpellFrame-based SpellMaps and MethodMaps
+# TODO: Implement SpellFrame-based SpellMaps
 #
 # 📌 Objective:
 #   Each spellframe (interface or grouping class) should manage its own map

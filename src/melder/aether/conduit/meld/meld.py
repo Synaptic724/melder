@@ -138,3 +138,40 @@ class Meld(IMeld):
 #NAMED_METHOD (interfaced)   | "process_data"    | IDataPipeline        | "process"     | bind(process_data, name="process", spellframe=IDataPipeline) | meld(IDataPipeline, name="process")
 #NAMED_LAMBDA_METHOD         | "<lambda>"        | IMathOps             | "scale"       | bind(lambda x: x+1, name="scale", spellframe=IMathOps)       | meld(IMathOps, name="scale")
 # ──────────────────────────────────────────────────────────────────────────────
+
+
+
+## IMPORTANT FOR MELDER DEVELOPERS ##
+# This specific part of the file needs to be understood well because we will be using all three styles of spell resolution in Melder.
+# ─────────────────────────────────────────────────────────────────────────────
+# 📘 SpellFrame Usage in Melder
+#
+# Melder supports three interface styles for organizing and resolving spells:
+#
+# ┌────────────────────────────┬─────────────────────────────────────────────┐
+# │ Style                      │ Description                                 │
+# ├────────────────────────────┼─────────────────────────────────────────────┤
+# │ 1. Real Interfaces         │ Use `abc.ABC` or Protocols to define formal │
+# │                            │ contracts. Best for linter and IDE support. │
+# ├────────────────────────────┼─────────────────────────────────────────────┤
+# │ 2. SpellFrame Classes      │ Dynamically registered classes that act as  │
+# │                            │ AI-native interfaces. No need for strict    │
+# │                            │ inheritance. Registered via `SpellFrame`.   │
+# ├────────────────────────────┼─────────────────────────────────────────────┤
+# │ 3. String-based Categories │ Lightweight categorization for rapid dev.   │
+# │                            │ Allows using strings like `"IMathOps"` as   │
+# │                            │ categories during `bind()` or `meld()`.     │
+# └────────────────────────────┴─────────────────────────────────────────────┘
+#
+# ✅ All three methods are supported.
+# ✅ You can mix and match styles depending on the use case.
+# ✅ The system prioritizes flexibility — not rigid enforcement.
+#
+# 🔧 Example Bindings:
+#   bind(MyService, spellframe=IMyService)              # Real Interface
+#   bind(MyService, spellframe=MyDynamicFrame)          # SpellFrame class
+#   bind(MyService, spellframe="IDataPipeline")         # String category
+#
+# 🧙‍♂️ Melder is built for AI-native systems. Let your code evolve, self-organize,
+#      and resolve structure at runtime. Structure when you want it. Chaos when you need it.
+# ─────────────────────────────────────────────────────────────────────────────

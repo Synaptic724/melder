@@ -14,6 +14,10 @@ from melder.aether.conduit.conduit_ward.contract.contract import ContractHolder,
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
 # TODO: If a specific policy is set such as blacklist or whitelist, ensure that the spellbook the entire spellbook is managed properly.
 
+##### IMPORTANT NOTE #####
+# TODO: Remember that this entire system is revolved around dynamic spell management. If a core scope that everyone is borrowing from is disposed, how can we handle that situation?
+
+
 #region ConduitWard
 class ConduitWard(IConduitWard):
     """
@@ -44,7 +48,7 @@ class ConduitWard(IConduitWard):
         self._provider_links: ConcurrentSet[UUID] = ConcurrentSet()
 
         # Internal structures
-        self._parent_conduit_link: ConcurrentSet[UUID] = ConcurrentSet()
+        self._parent_conduit_link: UUID | None = None
         self._lesser_conduits_links: ConcurrentSet[UUID] = ConcurrentSet()
 
 #region Properties
