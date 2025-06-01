@@ -5,7 +5,7 @@ T = TypeVar("T", bound=Enum)
 
 class EnumHelpers:
     @staticmethod
-    def convert_enum_and_check(value: str, enum: Type[T]) -> T:
+    def convert_enum_and_check(value: str | Enum, enum: Type[T]) -> T:
         """
         Converts a string input into the correct Enum member.
         Raises ValueError if the string doesn't match an enum name.

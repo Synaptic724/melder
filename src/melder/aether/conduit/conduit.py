@@ -330,7 +330,14 @@ class Conduit(IConduit):
             raise RuntimeError("Only normal conduits can bind spells.")
 
         with self._lock:
-            return self._spellbook.bind(spell=spell, existence=existence, spellframe=spellframe, name=name, whitelist=whitelist, **kwargs)
+            try:
+                return self._spellbook.bind(spell=spell, existence=existence, spellframe=spellframe, name=name, whitelist=whitelist, **kwargs)
+            finally:
+                if self._conduit_ward.policy == Policies.delegate and self._spellbook._find_spell_count() > 0 and self.__dynamic_environment__:
+                    # If the conduit is in delegate mode, we need to change the policy to automatic
+                    # after the first spell is registered.
+                    self._conduit_ward._set_new_policy("dynamic")
+
 
 
 #endregion Spellbook Management API

@@ -99,7 +99,7 @@ class ConduitWard(IConduitWard):
             else:
                 raise RuntimeError("Policy already set. Cannot set policy again.")
 
-    def _set_new_policy(self, policy: str) -> None:
+    def _set_new_policy(self, policy: str | Policies) -> None:
         """
         Sets a new policy for this Conduit.
         This is meant for internal use; do not call externally.
