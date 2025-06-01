@@ -251,8 +251,10 @@ class Conduit(IConduit):
                 configuration=self._configuration,
                 conduit_state=ConduitState.lesser,
                 aetheric_frame=self._aetheric_frame,
+                policy=Policies.delegate
             )
         #TODO: Do something with ConduitWard to link the conduits and contracts
+        #TODO: Do something with the spell copy system for quick copy of a spellbook
         self._lesser_conduits_links.append(new_conduit)
         return new_conduit
 

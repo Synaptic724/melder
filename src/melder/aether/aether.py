@@ -144,13 +144,14 @@ class Aether(ISeal):
         :param configuration: The configuration to bind.
         :param aetheric_frame_name: The name of the Aetheric Frame to bind the configuration to.
         """
-        if aetheric_frame_name is not "default":
-            try:
-                self._aetheric_frames[aetheric_frame_name]._configuration = configuration
-            except KeyError:
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            self._default_frame._configuration = configuration
+        with self._lock:
+            if aetheric_frame_name is not "default":
+                try:
+                    self._aetheric_frames[aetheric_frame_name]._configuration = configuration
+                except KeyError:
+                    raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+            else:
+                self._default_frame._configuration = configuration
 
     def _get_configuration(self, aetheric_frame_name: str = "default") -> 'Configuration' or None:
         """

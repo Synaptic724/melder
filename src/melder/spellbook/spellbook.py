@@ -369,10 +369,8 @@ class Spellbook(ISpellbook):
         This is a placeholder for the actual logic to create a lesser conduit copy.
         """
         with self._lock:
-            spellbook = Spellbook()
+            spellbook = Spellbook(ConduitState.lesser, self._aetheric_frame)
             spellbook._conjured = True
-            spellbook._configuration_locked = True
-            spellbook._conduit_type = ConduitState.lesser
             return spellbook
 
     def bind(self, spell, existence: Existence, whitelist: bool = True, *, spellframe=None, name=None, **kwargs) -> str:

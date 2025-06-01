@@ -5,10 +5,32 @@ from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal
 from threading import RLock
 
-
-class NormalConduitDetail(ISeal):
+class ContractHolder(ISeal):
     """
-    Represents a spell-level permission entry within a NormalConduitContract.
+    Base class for all contract holders.
+    Provides a common interface for sealing and managing contracts.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._lock = RLock()
+        self._Contract = None
+        self._DelegateContract = None
+
+    def seal(self):
+        """
+        Seal the contract holder to prevent further modifications.
+        """
+        if self._sealed:
+            return
+        with self._lock:
+            if self._sealed:
+                return
+            self._sealed = True
+
+class Detail(ISeal):
+    """
+    Represents a spell-level permission entry within a Contract.
     Each instance binds a specific spell to a set of permissions.
     """
 
@@ -39,7 +61,7 @@ class NormalConduitDetail(ISeal):
             self.permissions = None
             self._link_id = None
 
-class NormalConduitContract(ISeal):
+class Contract(ISeal):
     """
     Standard contract for normal conduit links.
     Maintains fine-grained control over individual spell permissions.
@@ -50,8 +72,8 @@ class NormalConduitContract(ISeal):
         self._lock = RLock()
         self.link_id = link_id
 
-        # Concurrent dictionary mapping spell_id → NormalConduitDetail
-        self._contract_details: ConcurrentDict[str, NormalConduitDetail] = ConcurrentDict()
+        # Concurrent dictionary mapping spell_id → Detail
+        self._contract_details: ConcurrentDict[str, Detail] = ConcurrentDict()
 
     @staticmethod
     def type() -> ContractTypes:
@@ -61,13 +83,13 @@ class NormalConduitContract(ISeal):
         return ContractTypes.normal_conduit
 
 
-    def add(self, contract_detail: NormalConduitDetail) -> None:
+    def add(self, contract_detail: Detail) -> None:
         """
         Add a new permission entry to the contract.
         """
         self._contract_details[contract_detail.spell_id] = contract_detail
 
-    def remove(self, contract_detail: NormalConduitDetail) -> None:
+    def remove(self, contract_detail: Detail) -> None:
         """
         Remove a permission entry from the contract.
         """
@@ -103,7 +125,7 @@ class NormalConduitContract(ISeal):
             detail.seal()
         self._contract_details.clear()
 
-class LesserConduitContract(ISeal):
+class DelegateContract(ISeal):
     """
     Lightweight contract for lesser conduits.
     Does not track per-spell permissions — assumes global WRITE-level permission.

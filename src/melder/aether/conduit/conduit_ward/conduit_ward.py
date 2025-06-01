@@ -10,8 +10,10 @@ from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.general_helpers import EnumHelpers
 from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.conduit_ward.contract.contract import ContractHolder
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
+# TODO: If a specific policy is set such as blacklist or whitelist, ensure that the spellbook the entire spellbook is managed properly.
 
 #region ConduitWard
 class ConduitWard(IConduitWard):
@@ -34,6 +36,9 @@ class ConduitWard(IConduitWard):
 
         self._policy_set = False
         self._policy = self._set_initial_policy(policy)
+
+        # Contracts
+        self._contract_holder: ContractHolder = ContractHolder()
 
         ## Conduit links
         self._conduit_links = None
