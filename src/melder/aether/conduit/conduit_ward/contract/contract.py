@@ -2,7 +2,8 @@ from uuid import UUID, uuid4
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.interfaces import ISeal
+from melder.utilities.concurrent_list import ConcurrentList
+from melder.utilities.interfaces import ISeal, IConduitWard
 from threading import RLock
 
 class ContractHolder(ISeal):
@@ -14,8 +15,8 @@ class ContractHolder(ISeal):
     def __init__(self):
         super().__init__()
         self._lock = RLock()
-        self._Contract = None
-        self._DelegateContract = None
+        self._contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict()
+        self._delegate_contract: ConcurrentDict[UUID, DelegateContract] = ConcurrentDict()
 
     def seal(self):
         """
@@ -34,7 +35,7 @@ class Detail(ISeal):
     Each instance binds a specific spell to a set of permissions.
     """
 
-    def __init__(self, link_id: UUID, spell_id: str, permissions: Permissions):
+    def __init__(self, provider_id: UUID, spell_id: str, permissions: Permissions):
         super().__init__()
         self._lock = RLock()
         self.spell_id = spell_id
@@ -45,7 +46,7 @@ class Detail(ISeal):
                 raise TypeError(f"permissions must be an instance of Permissions enum, got {type(permissions).__name__}")
 
         self.permissions = permissions
-        self._link_id: UUID = link_id
+        self._provider_id: UUID = provider_id
 
     def seal(self):
         """
@@ -59,7 +60,7 @@ class Detail(ISeal):
             self._sealed = True
             self.spell_id = None
             self.permissions = None
-            self._link_id = None
+            self._provider_id = None
 
 class Contract(ISeal):
     """
@@ -67,10 +68,13 @@ class Contract(ISeal):
     Maintains fine-grained control over individual spell permissions.
     """
 
-    def __init__(self, link_id: UUID):
+    def __init__(self, initiator_id: UUID, initiator_ward: IConduitWard, provider_id: UUID, provider_ward: IConduitWard):
         super().__init__()
         self._lock = RLock()
-        self.link_id = link_id
+        self._initiator_id: UUID = initiator_id
+        self._initiator_ward: IConduitWard = initiator_ward
+        self._provider_id: UUID = provider_id
+        self._provider_ward: IConduitWard = provider_ward
 
         # Concurrent dictionary mapping spell_id → Detail
         self._contract_details: ConcurrentDict[str, Detail] = ConcurrentDict()
@@ -114,8 +118,11 @@ class Contract(ISeal):
             if self._sealed:
                 return
             self.clean_up()
+            self._initiator_id = None
+            self._initiator_ward = None
+            self._provider_id = None
+            self._provider_ward = None
             self._sealed = True
-            self.link_id = None
 
     def clean_up(self):
         """
@@ -130,13 +137,16 @@ class DelegateContract(ISeal):
     Lightweight contract for lesser conduits.
     Does not track per-spell permissions — assumes global WRITE-level permission.
     """
-    def __init__(self, link_id: UUID):
+    def __init__(self, source_id: UUID, source_ward: IConduitWard, delegate_id: UUID, delegate_ward: IConduitWard):
         super().__init__()
         self._lock = RLock()
-        self.link_id = link_id
+        self._source_id: UUID = source_id
+        self._source_ward: IConduitWard = source_ward
+        self._delegate_id: UUID = delegate_id
+        self._delegate_ward: IConduitWard = delegate_ward
 
         # All lesser conduits default to WRITE permission
-        self.permissions = Permissions.WRITE
+        self.permissions = Permissions.write
 
     @staticmethod
     def type() -> ContractTypes:
@@ -163,5 +173,8 @@ class DelegateContract(ISeal):
                 return
 
             self._sealed = True
-            self.link_id = None
+            self._source_id = None
+            self._source_ward = None
+            self._delegate_id = None
+            self._delegate_ward = None
             self.permissions = None

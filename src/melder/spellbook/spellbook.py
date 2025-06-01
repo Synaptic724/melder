@@ -196,9 +196,12 @@ class Spellbook(ISpellbook):
         - If configuration is already shared via an aether frame, it will be reused.
     """
     _aether = Aether()
-    def __init__(self, conduit_type: ConduitState = None, aetheric_frame: str = "default"):
+    def __init__(self, conduit_type: ConduitState = None, aetheric_frame: str = "default", configuration: Optional[Configuration] = None):
         super().__init__()
         self._lock = RLock()
+
+        # Conduit type
+        self._conduit_type = ConduitState.resolve(conduit_type)
 
         # Internal state
         self._conjured = False
@@ -206,21 +209,26 @@ class Spellbook(ISpellbook):
 
         # Configuration state
         self._configuration_locked: bool = False
-        self._configuration = None
-        self._initialize_configuration()
-
-        # Conduit type
-        self._conduit_type = ConduitState.resolve(conduit_type)
+        self._configuration = configuration
 
         # Core spell storage (SHA256-keyed)
-        self.__spells: ConcurrentDict[str, Spell] = None if self._conduit_type == ConduitState.lesser else ConcurrentDict()
-        self.__lookup_spells: ConcurrentDict[tuple, str] = None if self._conduit_type == ConduitState.lesser else ConcurrentDict()
+        self.__spells: ConcurrentDict[str, Spell] | None= None
+        self.__lookup_spells: ConcurrentDict[tuple, str] | None = None
 
         # Networked/remote spell support
         # Basically if we're using dynamic mode it's a dict of dicts else it's not
         # This is mainly because we need to maintain the contract system while using lesser scopes
-        self.__contracted_spells: ConcurrentDict[str, ConcurrentDict[str, Spell]] | ConcurrentDict[str, Spell] | None = ConcurrentDict() if self._conduit_type == ConduitState.lesser else None
-        self.__lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]] | ConcurrentDict[tuple, str] | None = ConcurrentDict() if self._conduit_type == ConduitState.lesser else None
+        self.__contracted_spells: ConcurrentDict[str, ConcurrentDict[str, Spell]] | ConcurrentDict[str, Spell] | None
+        self.__lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]] | ConcurrentDict[tuple, str] | None
+
+        if self._conduit_type != ConduitState.lesser:
+            self._initialize_configuration()
+            self.__spells = ConcurrentDict()
+            self.__lookup_spells = ConcurrentDict()
+            self.__contracted_spells = ConcurrentDict()
+            self.__lookup_contracted_spells = ConcurrentDict()
+        else:
+            self._configuration_locked = False
 
         # Binding system
         self._bind = Bind()
@@ -369,8 +377,7 @@ class Spellbook(ISpellbook):
         This is a placeholder for the actual logic to create a lesser conduit copy.
         """
         with self._lock:
-            spellbook = Spellbook(ConduitState.lesser, self._aetheric_frame)
-            spellbook._conjured = True
+            spellbook = Spellbook(ConduitState.lesser, self._aetheric_frame, self._configuration)
             return spellbook
 
     def bind(self, spell, existence: Existence, whitelist: bool = True, *, spellframe=None, name=None, **kwargs) -> str:

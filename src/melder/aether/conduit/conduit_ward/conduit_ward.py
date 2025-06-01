@@ -1,6 +1,5 @@
 from uuid import UUID
 import threading
-from enum import Enum
 from typing import List, Optional
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -10,7 +9,7 @@ from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.general_helpers import EnumHelpers
 from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.conduit_ward.contract.contract import ContractHolder
+from melder.aether.conduit.conduit_ward.contract.contract import ContractHolder, Detail, Contract, DelegateContract
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
 # TODO: If a specific policy is set such as blacklist or whitelist, ensure that the spellbook the entire spellbook is managed properly.
@@ -27,25 +26,26 @@ class ConduitWard(IConduitWard):
         :param conduit:
         """
         super().__init__()
-        self._lock = threading.RLock()
+        self._lock: threading.RLock  = threading.RLock()
 
         ## Conduit Ward properties
-        self._conduit = conduit
-        self._dynamic = dynamic
-        self._conduit_type = conduit_type
+        self._conduit: IConduit = conduit
+        self._dynamic: bool = dynamic
+        self._conduit_type: ConduitState = conduit_type
 
-        self._policy_set = False
-        self._policy = self._set_initial_policy(policy)
+        self._policy_set: bool = False
+        self._policy: Policies = self._set_initial_policy(policy)
 
         # Contracts
         self._contract_holder: ContractHolder = ContractHolder()
 
         ## Conduit links
-        self._conduit_links = None
+        self._initiated_links: ConcurrentSet[UUID] = ConcurrentSet()
+        self._provider_links: ConcurrentSet[UUID] = ConcurrentSet()
 
         # Internal structures
-        self._parent_conduit_link = None
-        self._lesser_conduits_links = None
+        self._parent_conduit_link: ConcurrentSet[UUID] = ConcurrentSet()
+        self._lesser_conduits_links: ConcurrentSet[UUID] = ConcurrentSet()
 
 #region Properties
     @property
@@ -191,28 +191,6 @@ class ConduitWard(IConduitWard):
                 self._lesser_conduits_links = ConcurrentList()
             else:
                 raise NotImplementedError("Linking conduits is not implemented yet.")
-
-    def _link_parent_conduit(self, target_conduit) -> bool:
-        """
-        Attempts to link this Conduit to a parent Conduit.
-        This is meant for internal use please do not use this outside of the class.
-
-        Linking for Automatic mode will transfer the spellbook of the existing conduit into the
-        lesser conduit and setup permissions between objects using link.
-
-        Args:
-            target_conduit (Conduit): The target Conduit to link to.
-
-        Returns:
-            bool: True if linking succeeds (currently not implemented).
-        """
-        if self._sealed:
-            raise RuntimeError("Cannot link to a sealed Conduit.")
-        with self._lock:
-            if self._parent_conduit_link is None:
-                self._parent_conduit_link = target_conduit
-            else:
-                raise RuntimeError("Parent Conduit already set.")
 
     def remove_link(self, other_conduit):
         pass
