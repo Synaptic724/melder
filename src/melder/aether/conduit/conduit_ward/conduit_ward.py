@@ -7,6 +7,7 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_set import ConcurrentSet
+from melder.utilities.general_helpers import EnumHelpers
 from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 
@@ -18,7 +19,7 @@ class ConduitWard(IConduitWard):
     Conduitward is a class that manages the links between conduits.
     """
     _aether = Aether()
-    def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies = None):
+    def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies):
         """
         Conduitward is a class that manages the links between conduits.
         :param conduit:
@@ -32,7 +33,7 @@ class ConduitWard(IConduitWard):
         self._conduit_type = conduit_type
 
         self._policy_set = False
-        self._policy = self._set_policy(policy)
+        self._policy = self._set_initial_policy(policy)
 
         ## Conduit links
         self._conduit_links = None
@@ -73,12 +74,11 @@ class ConduitWard(IConduitWard):
                 raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
             if self._parent_conduit_link is not None and self._conduit_type == ConduitState.lesser:
                 self._parent_conduit_link = None
-                self._conduit_type = ConduitState.normal
-                # TODO: we need to add some kind of policy change here
+                self._conduit_type = ConduitState.normal #policy stays as delegate until the user adds a spell then it goes to dynamic
             else:
                 raise RuntimeError("No parent conduit link found. Cannot convert to normal conduit. Unknown error")
 
-    def _set_policy(self, policy: Policies) -> Optional[Policies]:
+    def _set_initial_policy(self, policy: Policies) -> Optional[Policies]:
         """
         Sets the default policy for this Conduit.
         This is meant for internal use please do not use this outside of the class.
@@ -99,7 +99,39 @@ class ConduitWard(IConduitWard):
             else:
                 raise RuntimeError("Policy already set. Cannot set policy again.")
 
-#endregion Conduit Ward Configuration
+    def _set_new_policy(self, policy: str) -> None:
+        """
+        Sets a new policy for this Conduit.
+        This is meant for internal use; do not call externally.
+
+        Please note that policies will automatically change if a delegate policy is set and a spell is added.
+        It will automatically change to dynamic policy.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot set policy on a sealed Conduit.")
+        if not self._dynamic:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot set policy.")
+        if self._conduit_type == ConduitState.lesser:
+            raise RuntimeError("Cannot set policy on a lesser Conduit. Convert to a normal Conduit first.")
+
+        with self._lock:
+            spellcount = self._conduit._spellbook._find_spell_count()
+            new_policy = EnumHelpers.convert_enum_and_check(policy, Policies)
+
+            if spellcount == 0:
+                if new_policy != Policies.delegate:
+                    raise RuntimeError("Must add at least one spell before changing policy. "
+                                       "Only 'delegate' is allowed when spellbook is empty.")
+            else:
+                if new_policy == Policies.delegate:
+                    raise RuntimeError("Cannot set policy to 'delegate' when spells exist in the conduit.")
+
+            if new_policy == Policies.automatic:
+                raise RuntimeError("Cannot set policy to 'automatic' in dynamic mode.")
+
+            self._policy = new_policy
+
+    #endregion Conduit Ward Configuration
 #region Link Management
     def link(self, target_conduit) -> bool:
         """

@@ -262,12 +262,13 @@ class ISpellbook(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def conjure(self, name: Optional[str] = None) -> Any:
+    def conjure(self, policy: Optional[str], name: str = None) -> Any:
         """
         Finalizes configuration and returns a new conduit bound to this Spellbook.
 
         Args:
             name: Optional name for the conduit.
+            policy: Optional policy to apply to the conduit.
 
         Returns:
             A configured Conduit instance.

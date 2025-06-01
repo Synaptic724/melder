@@ -79,6 +79,13 @@ class Meld(IMeld):
             self._sealed = True
             print("[MELD] Conduit sealed. Resources released.")
 
+#PARAMETER INJECTION EXAMPLE
+#
+#meld(UserService, override={
+#    "db": meld(PostgresConnection, override={"dsn": "override_me"})
+#})
+
+
 
 
 # ──────────────────────────────────────────────────────────────────────────────

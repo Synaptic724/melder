@@ -138,13 +138,13 @@ class Aether(ISeal):
             Aether._initialized = False
             Aether._instance = None
 
-    def _bind_configuration(self, configuration, aetheric_frame_name: str = None) -> None:
+    def _bind_configuration(self, configuration, aetheric_frame_name: str = "default") -> None:
         """
         Binds a configuration to the Aetheric Frame.
         :param configuration: The configuration to bind.
         :param aetheric_frame_name: The name of the Aetheric Frame to bind the configuration to.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 self._aetheric_frames[aetheric_frame_name]._configuration = configuration
             except KeyError:
@@ -152,12 +152,12 @@ class Aether(ISeal):
         else:
             self._default_frame._configuration = configuration
 
-    def _get_configuration(self, aetheric_frame_name: str = None) -> 'Configuration' or None:
+    def _get_configuration(self, aetheric_frame_name: str = "default") -> 'Configuration' or None:
         """
         Binds a configuration to the Aetheric Frame.
         :param aetheric_frame_name: The name of the Aetheric Frame to bind the configuration to.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 return self._aetheric_frames[aetheric_frame_name]._configuration
             except KeyError:
@@ -165,13 +165,13 @@ class Aether(ISeal):
         else:
             return self._default_frame._configuration
 
-    def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = None):
+    def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
         Register a conduit in the dynamic mode registry.
         :param conduit:
         :return:
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 conduit_cloud =  self._aetheric_frames[aetheric_frame_name]._conduit_cloud
             except KeyError:
@@ -181,12 +181,12 @@ class Aether(ISeal):
 
         conduit_cloud._register_conduit(conduit)
 
-    def _get_conduit_cloud(self, aetheric_frame_name: str = None) -> ConduitCloud:
+    def _get_conduit_cloud(self, aetheric_frame_name: str = "default") -> ConduitCloud:
         """
         Returns the conduit cloud associated with the specified Aetheric Frame.
         If no name is provided, returns the default frame's conduit cloud.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 return self._aetheric_frames[aetheric_frame_name]._conduit_cloud
             except KeyError:
@@ -194,13 +194,13 @@ class Aether(ISeal):
         else:
             return self._default_frame._conduit_cloud
 
-    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = None):
+    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default"):
         """
         This will check if the spell exists within the spell registry.
         :param spell_id:
         :return:
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
             except KeyError:
@@ -213,7 +213,7 @@ class Aether(ISeal):
                 return True
         return False
 
-    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str], aetheric_frame_name: str = None):
+    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str], aetheric_frame_name: str = "default"):
         """
         Register a group of spell IDs under a conduit ID in the global registry.
 
@@ -224,7 +224,7 @@ class Aether(ISeal):
         Raises:
             ValueError: If the conduit ID is already registered.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
             except KeyError:
@@ -237,11 +237,11 @@ class Aether(ISeal):
         else:
             raise ValueError(f"Spell registry already contains Conduit ID {conduit_id}.")
 
-    def get_conduit(self, name: str, aetheric_frame_name: str = None) -> IConduit:
+    def get_conduit(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
         """
         Returns a conduit by its name.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 conduits = self._aetheric_frames[aetheric_frame_name]._conduits
             except KeyError:
@@ -254,11 +254,11 @@ class Aether(ISeal):
                 return conduit
         raise ValueError(f"Conduit with name {name} not found.")
 
-    def get_conduit_by_signature(self, signature: uuid.uuid4, aetheric_frame_name: str = None) -> IConduit:
+    def get_conduit_by_signature(self, signature: uuid.uuid4, aetheric_frame_name: str = "default") -> IConduit:
         """
         Returns a conduit by its signature.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 conduits = self._aetheric_frames[aetheric_frame_name]._conduits
             except KeyError:
@@ -270,11 +270,11 @@ class Aether(ISeal):
             return conduits[signature]
         raise ValueError(f"Conduit with signature {signature} not found.")
 
-    def _add_conduit(self, conduit: IConduit, aetheric_frame_name: str = None):
+    def _add_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
         Adds a new conduit to the Aether. This is primarily used by conduits internally. Not meant for external use.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 conduits = self._aetheric_frames[aetheric_frame_name]._conduits
             except KeyError:
@@ -286,11 +286,11 @@ class Aether(ISeal):
             raise ValueError(f"Conduit with ID {conduit.__creation_context__._conduit_id} already exists.")
         conduits[conduit.__creation_context__._conduit_id] = conduit
 
-    def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = None):
+    def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
         Removes a conduit from the Aether. Not meant for external use.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 conduits = self._aetheric_frames[aetheric_frame_name]._conduits
             except KeyError:
@@ -304,11 +304,11 @@ class Aether(ISeal):
             raise ValueError(f"Conduit with ID {conduit_id} does not exist.")
 
 
-    def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = None):
+    def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = "default"):
         """
         Creates a new cluster in the Aether. Not meant for external use.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
             except KeyError:
@@ -320,11 +320,11 @@ class Aether(ISeal):
             raise ValueError(f"Cluster with name {cluster_name} already exists.")
         conduit_clusters[cluster_name] = ConcurrentList()
 
-    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = None):
+    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
         Adds a conduit to a cluster in the Aether. Not meant for external use.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
             except KeyError:
@@ -336,11 +336,11 @@ class Aether(ISeal):
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
         conduit_clusters[cluster_name].append(conduit.__creation_context__._conduit_id)
 
-    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = None):
+    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
         Removes a conduit from a cluster in the Aether. Not meant for external use.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
             except KeyError:
@@ -352,11 +352,11 @@ class Aether(ISeal):
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
         conduit_clusters[cluster_name].remove(conduit.__creation_context__._conduit_id)
 
-    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = None) -> ConcurrentList[uuid.UUID]:
+    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> ConcurrentList[uuid.UUID]:
         """
         Returns a list of conduits in a cluster. Not meant for external use.
         """
-        if aetheric_frame_name is not None:
+        if aetheric_frame_name is not "default":
             try:
                 conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
             except KeyError:
@@ -368,7 +368,7 @@ class Aether(ISeal):
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
         return conduit_clusters[cluster_name]
 
-    def _link_conduit_by_signature(self, req_conduit, conduit_signature: uuid.uuid4, aetheric_frame_name: str = None):
+    def _link_conduit_by_signature(self, req_conduit, conduit_signature: uuid.uuid4, aetheric_frame_name: str = "default"):
         """
         Returns a conduit in order to link them. Not meant for external use.
         """
@@ -379,7 +379,7 @@ class Aether(ISeal):
                 return
         raise ValueError(f"Conduit signature: {conduit_signature}, not found.")
 
-    def _link_conduit_by_name(self, req_conduit: IConduit, conduit_name: str, aetheric_frame_name: str = None):
+    def _link_conduit_by_name(self, req_conduit: IConduit, conduit_name: str, aetheric_frame_name: str = "default"):
         """
         Returns a conduit in order to link them. Not meant for external use.
         """

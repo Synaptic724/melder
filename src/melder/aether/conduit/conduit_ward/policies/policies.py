@@ -29,10 +29,9 @@ class Policies(Enum):
                  📌 Applies only to **local** spells.
                  🔒 Only allowed when policy is `dynamic`.
 
-    Available Policies in all modes:
-    - delegate: 🔗 Forwards all access checks to a parent conduit.
-                🪶 Used by lesser conduits that mount or reflect a parent's behavior.
-                📭 Contains no spells of its own.
+    - delegate: 🔗 Forwards all access checks to another conduit.
+                🪶 Used to create a special conduit that only has linking capability.
+                📭 Can be created to contain no spells, only links to other conduits.
     """
     automatic = auto()
     dynamic = auto()

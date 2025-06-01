@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Type
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal
 from melder.spellbook.configuration.system_state import SystemState
-from melder.aether.conduit.conduit_ward.policies.policies import Policies
 
 class Configuration(ISeal):
     """
@@ -18,7 +17,7 @@ class Configuration(ISeal):
     Thread-safe operations are ensured with RLock.
     """
 
-    def __init__(self, aether_frame: str = None):
+    def __init__(self, aether_frame: str = "default"):
         # Thread-safe lock for concurrent access
         super().__init__()
         self._lock = threading.RLock()
@@ -32,12 +31,11 @@ class Configuration(ISeal):
             "system_state": (str, SystemState),
             "debugging": bool,
             "disposal": bool,
-            "disposal_method_names": list,
-            "policy": (str, Policies),
+            "disposal_method_names": list
         }
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
-        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names", "policy"}
+        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -128,13 +126,6 @@ class Configuration(ISeal):
                 raise ValueError(
                     f"Invalid type for 'system_state': expected SystemState, got {type(system_state).__name__}."
                 )
-        if "policy" in self._properties:
-            policy = self._properties["policy"]
-            if not isinstance(policy, Policies):
-                raise ValueError(
-                    f"Invalid type for 'policy': expected Policies, got {type(policy).__name__}."
-                )
-
         return True
 
 
@@ -144,7 +135,6 @@ class Configuration(ISeal):
         Raises ValueError if the conversion fails.
         """
         enum_map = {
-            "policy": Policies,
             "system_state": SystemState,
         }
 
@@ -205,7 +195,6 @@ class Configuration(ISeal):
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
-            "policy": self._convert_enum_if_needed("policy", "automatic"),
         }))
 
     def seal(self) -> None:

@@ -12,6 +12,8 @@ from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from threading import RLock
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.utilities.general_helpers import EnumHelpers
 
 #region Spell
 class Spell(ISpell):
@@ -194,13 +196,13 @@ class Spellbook(ISpellbook):
         - If configuration is already shared via an aether frame, it will be reused.
     """
     _aether = Aether()
-    def __init__(self, conduit_type: ConduitState = None, aether_frame: str = None):
+    def __init__(self, conduit_type: ConduitState = None, aetheric_frame: str = "default"):
         super().__init__()
         self._lock = RLock()
 
         # Internal state
         self._conjured = False
-        self._aetheric_frame = aether_frame
+        self._aetheric_frame = aetheric_frame
 
         # Configuration state
         self._configuration_locked: bool = False
@@ -260,7 +262,24 @@ class Spellbook(ISpellbook):
 #endregion
 
 #region Core Methods
+#region General Methods
+    def _find_spell_count(self) -> int:
+        """
+        Returns the number of spells in the spellbook.
+        This is a simple utility method to check how many spells are currently registered.
+        """
+        with self._lock:
+            return len(self._spells) if self._contracted_spells else 0
 
+    def _find_contracted_spell_count(self) -> int:
+        """
+        Returns the number of contracted spells in the spellbook.
+        This is a simple utility method to check how many contracted spells are currently registered.
+        """
+        with self._lock:
+            return len(self._contracted_spells) if self._contracted_spells else 0
+
+#endregion General Methods
 #region Binding API
     def _initialize_configuration(self) -> None:
         """
@@ -451,20 +470,12 @@ class Spellbook(ISpellbook):
         """Check whether spellbook configuration is frozen."""
         return self._configuration_locked
 
-    def lock_configuration(self) -> None:
-        """Lock configuration to prevent mutation."""
-        if self._configuration_locked:
-            raise RuntimeError("Configuration is already locked.")
-        with self._lock:
-            self._configuration_locked = True
-
     def configure_aether_frame(self,
                                 *,
                                 system_state: Optional[str],
                                 debugging: Optional[bool],
                                 disposal: Optional[bool],
-                                disposal_method_names: Optional[List[str]],
-                                policy: Optional[str]) -> None:
+                                disposal_method_names: Optional[List[str]]) -> None:
         """
         Configure the systems operational state and access control behavior.
 
@@ -494,42 +505,6 @@ class Spellbook(ISpellbook):
                 A list of method names (e.g., ["close", "cleanup"]) to invoke on objects
                 during disposal. These methods must exist on the objects produced by the conduit.
 
-            policy (str):
-                Determines the spell access control behavior for this conduit.
-                Valid options match the `Policies` enum (see below).
-
-        Policies:
-            These control how a conduit resolves spell access. They operate under the current
-            system mode (automatic or dynamic).
-
-            In **automatic** mode:
-                - "automatic":
-                    🔒 Disables linking from normal conduits.
-                    ✅ Allows linking from lesser conduits only.
-                    🔁 Delegates access checks to parent or source conduit.
-
-            In **dynamic** mode:
-                - "dynamic":
-                    🔓 Enables custom runtime evaluation and linking.
-                    🧠 Allows handler functions for advanced access resolution.
-
-                - "whitelist_all":
-                    ✅ Grants access to all local spells in this conduit.
-                    ⛔ Ignores individual `meta["whitelist"]` tags.
-                    🔒 Only available under the "dynamic" policy mode.
-
-                - "block_all":
-                    ⛔ Denies access to all spells unless they explicitly declare
-                       `meta["whitelist"] = True`.
-                    📌 Applies to local spells only.
-                    🔒 Only available under the "dynamic" policy mode.
-
-            Available in all modes:
-                - "delegate":
-                    🔗 Forwards access decisions to a parent conduit.
-                    🪶 Used by lesser conduits to inherit spell access without duplication.
-                    📭 Does not host any spells itself.
-
         Raises:
             RuntimeError:
                 If the conduit configuration has already been locked/sealed.
@@ -546,8 +521,7 @@ class Spellbook(ISpellbook):
                 "system_state": system_state,
                 "debugging": debugging,
                 "disposal": disposal,
-                "disposal_method_names": disposal_method_names,
-                "policy": policy
+                "disposal_method_names": disposal_method_names
             }.items() if v is not None
         }
 
@@ -581,20 +555,61 @@ class Spellbook(ISpellbook):
 
 #endregion Configuration API
 #region Conduit API
-    def conjure(self, name: str = None) -> Conduit:
+    def conjure(self, policy: Optional[str] = "automatic", name: str = None) -> Conduit:
         """
         Create a new Conduit (execution channel) from this Spellbook.
+
+        name (str, optional):
+            The name of the conduit. If not provided, it will remain null.
+
+        policy (str):
+                Determines the spell access control behavior for this conduit.
+                Valid options match the `Policies` enum (see below).
 
         Rules:
         - Only one conduit per spellbook
         - Configuration is frozen at conjuring time
+
+        Please note policies are only available in dynamic mode otherwise automatic mode is defined as defualt.
+        You must select system state dynamic to use other policies.
+
+        Policies:
+            These control how a conduit resolves spell access. They operate under the current
+            system mode (automatic or dynamic).
+
+            In **automatic** mode *default*:
+                - "automatic":
+                    🔒 Disables linking from normal conduits.
+                    ✅ Allows linking from lesser conduits only.
+                    🔁 Delegates access checks to parent or source conduit.
+
+            In **dynamic** mode:
+                - "dynamic":
+                    🔓 Enables custom runtime evaluation and linking.
+                    🧠 Allows handler functions for advanced access resolution.
+                    🔒 Selectively whitelist or block spells based on dynamic conditions.
+
+                - "whitelist_all":
+                    ✅ Grants access to all local spells in this conduit.
+                    ⛔ Ignores individual `meta["whitelist"]` tags.
+                    🔒 Only available under the "dynamic" policy mode.
+
+                - "block_all":
+                    ⛔ Denies access to all spells unless they explicitly declare
+                       `meta["whitelist"] = True`.
+                    📌 Applies to local spells only.
+                    🔒 Only available under the "dynamic" policy mode.
+
+                - delegate:
+                    🔗 Forwards all access checks to another conduit.
+                    🪶 Used to create a special conduit that only has linking capability.
+                    📭 Can be created to contain no spells, only links to other conduits.
         """
         with self._lock:
             if self._conjured:
                 raise RuntimeError(
                     "This Spellbook has already conjured a Conduit. Only one is allowed per Spellbook."
                 )
-            self._check_all_spells()
 
             if not self.is_configuration_locked():
                 self._configuration.load_default_dictionary()
@@ -604,6 +619,10 @@ class Spellbook(ISpellbook):
                     self._configuration, self._aetheric_frame
                 )
 
+            self._check_system_state(policy)  # Ensure the system state is valid for conjuring
+            policy = EnumHelpers.convert_enum_and_check(policy)  # Ensure the policy is valid
+            self._check_all_spells()
+
             self._conduit_type = ConduitState.normal
             conduit = Conduit(
                 spellbook=self,
@@ -611,11 +630,26 @@ class Spellbook(ISpellbook):
                 conduit_state=ConduitState.normal,
                 configuration=self._configuration,
                 aetheric_frame=self._aetheric_frame,
+                policy=policy
             )
             self._conjured = True
             self._define_conduit_into_spells(conduit)
             # TODO: Implement validation cycle to ensure all spells are valid
             return conduit
+
+    def _check_system_state(self, policy: str) -> None:
+        """
+        Check if the system state is valid for conjuring a conduit.
+
+        :param policy: The policy to check against the current configuration.
+        :raises RuntimeError: If the system state is not valid for conjuring.
+        """
+        if self._configuration.get_property("system_state") == "automatic" and policy != Policies.automatic:
+            raise RuntimeError(
+                "Cannot use dynamic policies in automatic mode. "
+                "Please set system_state to 'dynamic' in the configuration."
+            )
+
 
     def _define_conduit_into_spells(self, conduit: Conduit) -> None:
         """

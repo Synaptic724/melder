@@ -1,5 +1,7 @@
 from logging import warning
 from typing import Optional, Type, Any
+
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud
@@ -23,7 +25,7 @@ class Conduit(IConduit):
 
     _aether = Aether()
 
-    def __init__(self, spellbook: ISpellbook, configuration: Configuration, conduit_state: ConduitState, name: Optional[str] = None, aetheric_frame: str = None):
+    def __init__(self, spellbook: ISpellbook, configuration: Configuration, conduit_state: ConduitState, aetheric_frame: str, policy: Policies, name: Optional[str] = None):
         """
         Initializes a new Conduit.
 
@@ -51,7 +53,7 @@ class Conduit(IConduit):
 
         # Internal configuration
         self._apply_configuration_flags()
-        self._conduit_ward = ConduitWard(self, self.__dynamic_environment__, self._conduit_state) # The conduit ward is responsible for maintaining the links between conduits and their behaviours.
+        self._conduit_ward = ConduitWard(self, self.__dynamic_environment__, self._conduit_state, policy) # The conduit ward is responsible for maintaining the links between conduits and their behaviours.
 
         if self._conduit_state == ConduitState.normal:
             self._add_conduit_to_aether()
@@ -70,6 +72,7 @@ class Conduit(IConduit):
             f"<Conduit name={self.name} "
             f"id={self._creation_context._conduit_id}>"
         )
+
 #endregion Utilities
 
 #region Properties
@@ -114,10 +117,15 @@ class Conduit(IConduit):
         :param conduit:
         :return:
         """
+        if self.__dynamic_environment__ == False:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot register in the conduit cloud.")
         if self._conduit_state == ConduitState.lesser:
             raise RuntimeError("Lesser conduits cannot register in the conduit cloud.")
-        if self.__dynamic_environment__ and self._name is not None:
+        if self._name is None:
+            raise RuntimeError("Conduit name is not set. Please set a name before registering in the conduit cloud.")
+        if self.__dynamic_environment__:
             Conduit._aether._register_conduit_cloud(conduit, self._aetheric_frame)
+
     def _apply_configuration_flags(self):
         """
         Sets the environment mode and debugging mode for this Conduit
@@ -176,6 +184,8 @@ class Conduit(IConduit):
         through the aether system. This will fork this conduit into a new tree and create new links with the parent.
         This conduit and its children go with it, only a normal scope can access the spellbook to bind new spells.
 
+        This conduit will begin as a delegate policy conduit then change automatically after a single spell is registered and not just contracted.
+
         Please name the conduit if your intention is to add it to the Conduit Cloud.
         :return:
         """
@@ -209,6 +219,17 @@ class Conduit(IConduit):
                 Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
 
             self._conduit_ward._change_conduit_type(self._conduit_state)
+
+    def set_new_policy(self, policy: str) -> None:
+        """
+        Sets a new policy for this Conduit. This is only allowed in dynamic mode.
+        :param policy: The new policy to set.
+        :return:
+        """
+        if not self.__dynamic_environment__:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot set new policy.")
+        with self._lock:
+            self._conduit_ward._set_new_policy(policy)
 
     def create_lesser_conduit(self) -> IConduit:
         """
@@ -355,6 +376,7 @@ class Conduit(IConduit):
         if self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
         return Conduit._aether._get_conduit_cloud(self._aetheric_frame)
+
 #endregion Conduit Cloud
 #region Conduit Ward API
     def link(self, target_conduit) -> bool:
