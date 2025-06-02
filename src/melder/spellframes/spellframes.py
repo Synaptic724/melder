@@ -31,9 +31,6 @@ from melder.utilities.interfaces import ISeal
 #   - Clean introspection of spellframe capabilities
 # ─────────────────────────────────────────────────────────────────────────────
 
-
-
-
 class SpellFrame(ISeal):
     """
     SpellFrame: A singleton interface registry for AI-generated or dynamically composed class interfaces.

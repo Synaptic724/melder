@@ -63,7 +63,6 @@ class Conduit(IConduit):
             if self._name is not None:
                 warning("Lesser conduits cannot have a name. self._name is now set to None.")
             self._name = None
-            self.lesser_conduit_contract_link() # TODO: some kind of operation should happen here
 
 #region Utilities
     def __repr__(self):
@@ -404,9 +403,9 @@ class Conduit(IConduit):
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         with self._lock:
-            raise NotImplementedError("Linking conduits is not implemented yet.")
+            self._conduit_ward._link_conduit(target_conduit)
 
-    def sever_link(self):
+    def sever_link(self, target_conduit) -> bool:
         """
         Sever the link between this Conduit and its target Conduit.
 
@@ -417,7 +416,7 @@ class Conduit(IConduit):
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         with self._lock:
-            raise NotImplementedError("Severing links is not implemented yet.")
+            self._conduit_ward._sever_link(target_conduit)
 
     def _link_lesser_conduit(self, target_conduit) -> bool:
         """
@@ -436,7 +435,9 @@ class Conduit(IConduit):
         if self._sealed:
             raise RuntimeError("Cannot link to a sealed Conduit.")
         with self._lock:
-            raise NotImplementedError("Linking conduits is not implemented yet.")
+            self._conduit_ward._link_lesser_conduit(target_conduit)
+
+
 #endregion Conduit Ward API
 #region Cleanup and Disposal
 

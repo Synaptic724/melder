@@ -52,25 +52,13 @@ class ConduitWard(IConduitWard):
         self._lesser_conduits_links: ConcurrentSet[UUID] = ConcurrentSet()
 
 #region Properties
-    @property
-    def policy(self) -> Policies:
-        """
-        Gets the policy for the conduit ward.
-        :return:
-        """
-        return self._policy
+#endregion Properties
 
-    @property
-    def conduit_type(self) -> ConduitState:
-        """
-        Gets the policy for the conduit ward.
-        :return:
-        """
-        return self._conduit_type
-#endregion
 #region Conduit Ward Configuration
     def _convert_to_normal_conduit(self) -> None:
         """
+        Internal
+
         Converts this Conduit to a normal Conduit.
         This is meant for internal use please do not use this outside of the class.
         """
@@ -89,6 +77,8 @@ class ConduitWard(IConduitWard):
 
     def _set_initial_policy(self, policy: Policies) -> Optional[Policies]:
         """
+        Internal
+
         Sets the default policy for this Conduit.
         This is meant for internal use please do not use this outside of the class.
         """
@@ -110,6 +100,8 @@ class ConduitWard(IConduitWard):
 
     def _set_new_policy(self, policy: str | Policies) -> None:
         """
+        Internal
+
         Sets a new policy for this Conduit.
         This is meant for internal use; do not call externally.
 
@@ -140,10 +132,12 @@ class ConduitWard(IConduitWard):
 
             self._policy = new_policy
 
-    #endregion Conduit Ward Configuration
+#endregion Conduit Ward Configuration
 #region Link Management
-    def link(self, target_conduit) -> bool:
+    def _link(self, target_conduit) -> bool:
         """
+        Internal
+
         Attempts to link this Conduit to another Conduit.
 
         Linking is only allowed if the world is in dynamic mode.
@@ -161,8 +155,10 @@ class ConduitWard(IConduitWard):
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
 
-    def sever_link(self):
+    def _sever_link(self):
         """
+        Internal
+
         Sever the link between this Conduit and its target Conduit.
 
         This is meant for internal use please do not use this outside of the class.
@@ -176,6 +172,8 @@ class ConduitWard(IConduitWard):
 
     def _link_lesser_conduit(self, target_conduit) -> bool:
         """
+        Internal
+
         Attempts to link this Conduit to a lesser Conduit.
         This is meant for internal use please do not use this outside of the class.
 
@@ -196,14 +194,97 @@ class ConduitWard(IConduitWard):
             else:
                 raise NotImplementedError("Linking conduits is not implemented yet.")
 
-    def remove_link(self, other_conduit):
-        pass
+    def _get_links(self):
+        """
+        Internal
 
-    def get_links(self):
-        return self._active_links
+        Returns a list of all links associated with this conduit. Excluding lesser conduits.
+        :return:
+        """
+        raise NotImplementedError("get_links is not implemented yet.")
 
-    def add_link(self, other_conduit):
-        pass
+    def _get_lesser_conduits(self) -> List[IConduit]:
+        """
+        Private
+
+        Returns a list of lesser conduits linked to this conduit.
+        :return: List of lesser conduits.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get lesser conduits from a sealed Conduit.")
+        with self._lock:
+            raise NotImplementedError("get_links is not implemented yet.")
+
+    def _get_lesser_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+        """
+        Internal
+
+        Returns a specific lesser conduit linked to this conduit by its ID.
+
+        Args:
+            conduit_id (UUID): The ID of the conduit to retrieve.
+
+        Returns:
+            Optional[IConduit]: The linked conduit if found, otherwise None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get lesser conduits from a sealed Conduit.")
+        with self._lock:
+            raise NotImplementedError("get_linked_conduit is not implemented yet.")
+
+    def _get_linked_conduits(self) -> List[IConduit]:
+        """
+        Internal
+
+        Returns a list of conduits linked to this conduit.
+        :return: List of linked conduits.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit.")
+        with self._lock:
+            raise NotImplementedError("get_links is not implemented yet.")
+
+    def _get_linked_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+        """
+        Internal
+
+        Returns a specific conduit linked to this conduit by its ID.
+
+        Args:
+            conduit_id (UUID): The ID of the conduit to retrieve.
+
+        Returns:
+            Optional[IConduit]: The linked conduit if found, otherwise None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit.")
+        with self._lock:
+            raise NotImplementedError("get_linked_conduit is not implemented yet.")
+
+
+    def _sever_all_lesser_conduits(self) -> None:
+        """
+        Private
+
+        Sever all lesser conduits linked to this conduit.
+        This is meant for internal use please do not use this outside of the class.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot sever links in a sealed Conduit.")
+        with self._lock:
+            raise NotImplementedError("Severing all lesser conduits is not implemented yet.")
+
+    def _sever_all_linked_conduits(self) -> None:
+        """
+        Private
+
+        Severs all links to conduits linked to this conduit. Excludes lesser conduits.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot sever links in a sealed Conduit.")
+        with self._lock:
+            raise NotImplementedError("Severing all links is not implemented yet.")
+
 
 #endregion Link Management
 #region Cleanup
@@ -211,6 +292,7 @@ class ConduitWard(IConduitWard):
         """
         Seals the conduit ward, preventing any further modifications.
         """
+        raise NotImplementedError("is not implemented yet.")
         if self._sealed:
             return
         with self._lock:
@@ -229,6 +311,7 @@ class ConduitWard(IConduitWard):
         Cleans up all lesser conduits.
         :return:
         """
+        raise NotImplementedError("is not implemented yet.")
         if self._lesser_conduits_links:
             for lesser_conduit in self._lesser_conduits_links:
                 lesser_conduit.seal()
@@ -239,6 +322,7 @@ class ConduitWard(IConduitWard):
         Cleans up all links.
         :return:
         """
+        raise NotImplementedError("is not implemented yet.")
         if self._conduit_links:
             for link in self._conduit_links:
                 link.seal()

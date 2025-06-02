@@ -33,6 +33,7 @@ class ContractHolder(ISeal):
         Seal the contract holder to prevent further mutation.
         All contract modifications will be blocked after sealing.
         """
+        raise NotImplementedError("is not implemented yet.")
         if self._sealed:
             return
         with self._lock:
@@ -74,6 +75,7 @@ class Detail(ISeal):
         """
         Seal the Detail entry, making it immutable and nullifying sensitive fields.
         """
+        raise NotImplementedError("is not implemented yet.")
         if self._sealed:
             return
         with self._lock:
@@ -149,6 +151,7 @@ class Contract(ISeal):
         Seal the contract and its associated details.
         Clears all internal state to ensure immutability and cleanup.
         """
+        raise NotImplementedError("is not implemented yet.")
         if self._sealed:
             return
         with self._lock:
@@ -216,6 +219,7 @@ class DelegateContract(ISeal):
         """
         Seal the delegate contract, clearing all internal sensitive data.
         """
+        raise NotImplementedError("is not implemented yet.")
         if self._sealed:
             return
         with self._lock:
