@@ -3,6 +3,11 @@ from typing import Dict, Generic, TypeVar, Optional, Iterator
 T = TypeVar("T")
 # TODO: We will need to have enumerable injection for the spellmap, so that we can inject a list of spells that match a certain interface
 
+
+
+# TODO: IMPORTANT#################
+# TODO: OUR CONSTRUCTOR INJECTION IS GARBAGE WE NEED TO FIX IT
+
 class SpellMap(Generic[T]):
     """
     A named spell dispatcher for a given interface type.
@@ -79,7 +84,7 @@ class SpellMap(Generic[T]):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 🧠 TODO: Implement SpellMap and MethodMap Separation
+# 🧠 TODO: Implement SpellMap and MethodMap Separation, we may not need methodmaps
 #
 # Melder currently stores all spells in a single unified dictionary (_spells),
 # but for clarity and faster access patterns, we should split spells into:

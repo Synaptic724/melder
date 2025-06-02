@@ -2,25 +2,36 @@ from uuid import UUID, uuid4
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.interfaces import ISeal, IConduitWard
 from threading import RLock
 
 class ContractHolder(ISeal):
     """
     Base class for all contract holders.
-    Provides a common interface for sealing and managing contracts.
+
+    A contract holder is responsible for storing and managing active contracts,
+    both normal and delegated. It supports thread-safe operations and sealing.
+
+    Responsibilities:
+    - Hold a collection of active contracts keyed by UUID
+    - Separate normal and delegate contracts
+    - Support sealing (immutability and cleanup)
     """
 
     def __init__(self):
         super().__init__()
         self._lock = RLock()
+
+        # Maps contract UUID → Contract
         self._contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict()
+
+        # Maps contract UUID → DelegateContract
         self._delegate_contract: ConcurrentDict[UUID, DelegateContract] = ConcurrentDict()
 
     def seal(self):
         """
-        Seal the contract holder to prevent further modifications.
+        Seal the contract holder to prevent further mutation.
+        All contract modifications will be blocked after sealing.
         """
         if self._sealed:
             return
@@ -32,7 +43,16 @@ class ContractHolder(ISeal):
 class Detail(ISeal):
     """
     Represents a spell-level permission entry within a Contract.
-    Each instance binds a specific spell to a set of permissions.
+
+    Each Detail object binds a specific spell ID to a set of permissions
+    and tracks which provider conduit issued the permission.
+
+    Fields:
+    - spell_id: Unique identifier for the spell
+    - permissions: Enum defining granted permissions (e.g., READ, WRITE)
+    - _provider_id: UUID of the conduit providing the spell
+
+    Once sealed, the Detail becomes immutable and clears sensitive fields.
     """
 
     def __init__(self, provider_id: UUID, spell_id: str, permissions: Permissions):
@@ -40,17 +60,19 @@ class Detail(ISeal):
         self._lock = RLock()
         self.spell_id = spell_id
 
-        # Ensure only valid enum instances are passed
-        if not permissions is None:
+        # Enforce type safety for permissions enum
+        if permissions is not None:
             if not isinstance(permissions, Permissions):
-                raise TypeError(f"permissions must be an instance of Permissions enum, got {type(permissions).__name__}")
+                raise TypeError(
+                    f"permissions must be an instance of Permissions enum, got {type(permissions).__name__}"
+                )
 
         self.permissions = permissions
         self._provider_id: UUID = provider_id
 
     def seal(self):
         """
-        Seal the detail to make it immutable and clean up any sensitive data.
+        Seal the Detail entry, making it immutable and nullifying sensitive fields.
         """
         if self._sealed:
             return
@@ -65,7 +87,15 @@ class Detail(ISeal):
 class Contract(ISeal):
     """
     Standard contract for normal conduit links.
-    Maintains fine-grained control over individual spell permissions.
+
+    This contract allows fine-grained permission control per spell.
+    It tracks both ends of the conduit relationship (initiator and provider)
+    and holds a mapping from spell_id to permission details.
+
+    Fields:
+    - _initiator_id / _initiator_ward: UUID and ward initiating the contract
+    - _provider_id / _provider_ward: UUID and ward providing the spells
+    - _contract_details: Maps spell_id → Detail (permissions, etc.)
     """
 
     def __init__(self, initiator_id: UUID, initiator_ward: IConduitWard, provider_id: UUID, provider_ward: IConduitWard):
@@ -76,33 +106,39 @@ class Contract(ISeal):
         self._provider_id: UUID = provider_id
         self._provider_ward: IConduitWard = provider_ward
 
-        # Concurrent dictionary mapping spell_id → Detail
+        # Spell-level permission map
         self._contract_details: ConcurrentDict[str, Detail] = ConcurrentDict()
 
     @staticmethod
     def type() -> ContractTypes:
         """
-        Identifies this detail as belonging to a normal conduit contract.
+        Returns the contract type: normal conduit.
         """
         return ContractTypes.normal_conduit
 
-
     def add(self, contract_detail: Detail) -> None:
         """
-        Add a new permission entry to the contract.
+        Add a spell-level permission entry to the contract.
         """
         self._contract_details[contract_detail.spell_id] = contract_detail
 
     def remove(self, contract_detail: Detail) -> None:
         """
-        Remove a permission entry from the contract.
+        Remove a spell-level permission entry from the contract.
         """
         if contract_detail.spell_id in self._contract_details:
             del self._contract_details[contract_detail.spell_id]
 
     def has(self, spell_id: str, permission: Permissions) -> bool:
         """
-        Check if a spell has the specified permission.
+        Check if a spell has the required permission.
+
+        Args:
+            spell_id (str): The identifier for the spell
+            permission (Permissions): The permission to check for
+
+        Returns:
+            bool: True if permission exists, False otherwise
         """
         if spell_id not in self._contract_details:
             return False
@@ -110,7 +146,8 @@ class Contract(ISeal):
 
     def seal(self):
         """
-        Seal the entire contract and its details, clearing internal state.
+        Seal the contract and its associated details.
+        Clears all internal state to ensure immutability and cleanup.
         """
         if self._sealed:
             return
@@ -126,7 +163,7 @@ class Contract(ISeal):
 
     def clean_up(self):
         """
-        Clean up and seal all contract details before clearing them.
+        Seal and remove all spell-level details in the contract.
         """
         for detail in self._contract_details.values():
             detail.seal()
@@ -135,8 +172,17 @@ class Contract(ISeal):
 class DelegateContract(ISeal):
     """
     Lightweight contract for lesser conduits.
-    Does not track per-spell permissions — assumes global WRITE-level permission.
+
+    Unlike a normal contract, this version assumes a default global WRITE permission
+    and does not store per-spell permission data. It is intended for delegated conduits
+    that inherit or mirror access patterns from a parent.
+
+    Fields:
+    - _source_id / _source_ward: The source conduit being delegated
+    - _delegate_id / _delegate_ward: The delegate conduit
+    - permissions: Always WRITE (default)
     """
+
     def __init__(self, source_id: UUID, source_ward: IConduitWard, delegate_id: UUID, delegate_ward: IConduitWard):
         super().__init__()
         self._lock = RLock()
@@ -145,33 +191,36 @@ class DelegateContract(ISeal):
         self._delegate_id: UUID = delegate_id
         self._delegate_ward: IConduitWard = delegate_ward
 
-        # All lesser conduits default to WRITE permission
+        # Lesser conduits operate with global WRITE permission
         self.permissions = Permissions.write
 
     @staticmethod
     def type() -> ContractTypes:
         """
-        Identifies this detail as belonging to a normal conduit contract.
+        Returns the contract type: lesser conduit.
         """
         return ContractTypes.lesser_conduit
 
     def has(self, permission: Permissions) -> bool:
         """
         Check if the requested permission is allowed.
-        For lesser conduits, only WRITE is allowed.
+
+        For lesser conduits, only WRITE is permitted.
+
+        Returns:
+            bool: True if permission is WRITE, False otherwise
         """
         return permission == self.permissions
 
     def seal(self):
         """
-        Seal the lesser contract, nullifying sensitive fields.
+        Seal the delegate contract, clearing all internal sensitive data.
         """
         if self._sealed:
             return
         with self._lock:
             if self._sealed:
                 return
-
             self._sealed = True
             self._source_id = None
             self._source_ward = None
