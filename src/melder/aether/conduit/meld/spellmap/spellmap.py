@@ -1,7 +1,7 @@
 from typing import Dict, Generic, TypeVar, Optional, Iterator
 
 T = TypeVar("T")
-
+# TODO: We will need to have enumerable injection for the spellmap, so that we can inject a list of spells that match a certain interface
 
 class SpellMap(Generic[T]):
     """
@@ -101,4 +101,97 @@ class SpellMap(Generic[T]):
 #
 # 📌 Key Insight:
 # SpellType already encodes all needed type info. Let that guide partitioning.
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 🧙 Melder Spell Entry Matrix — Autofac-style Constructor Injection
+#
+# This matrix shows how to bind, resolve, and inject spells using Melder’s spellmaps.
+# It mirrors Autofac’s DI model, especially for named/multi-resolution logic.
+#
+# spellname        — Method/class name being bound
+# interface        — Optional SpellFrame (grouping interface)
+# binding_name     — Optional user label for disambiguation
+# bind(...)        — How the spell is registered
+# meld(...)        — How the spell is resolved
+# constructor_injection — How to inject it into a class
+#───────────────────────────────────────────────────────────────────────────────
+# SpellType                  | spellname         | interface           | binding_name | bind(...)                                             | meld(...)                              | constructor_injection
+#────────────────────────────|-------------------|----------------------|---------------|-------------------------------------------------------|----------------------------------------|-------------------------------------------
+# NORMAL                     | "MyService"       | None                 | None          | bind(MyService)                                      | meld(MyService)                        | def __init__(self, svc: MyService)
+# NAMED                      | "MyService"       | None                 | "alpha"       | bind(MyService, name="alpha")                        | meld(MyService, name="alpha")          | def __init__(self, svcs: dict[str, MyService]): svc = svcs["alpha"]
+# NORMAL_INTERFACED          | "MyService"       | IMyService           | None          | bind(MyService, spellframe=IMyService)               | meld(IMyService)                       | def __init__(self, svc: IMyService)
+# NAMED_INTERFACED           | "MyService"       | IMyService           | "v1"          | bind(MyService, spellframe=IMyService, name="v1")    | meld(IMyService, name="v1")            | def __init__(self, svcs: dict[str, IMyService]): svc = svcs["v1"]
+# EXISTING_CLASS             | "MyService"       | None                 | None          | bind(my_service_instance)                            | meld(MyService)                        | def __init__(self, svc: MyService)
+# EXISTING_INTERFACED_CLASS  | "MyService"       | IMyService           | None          | bind(my_service_instance, spellframe=IMyService)     | meld(IMyService)                       | def __init__(self, svc: IMyService)
+# NORMAL_METHOD              | "process_data"    | None                 | None          | bind(process_data)                                   | meld(process_data)                     | def __init__(self, fn: Callable): result = fn()
+# NAMED_METHOD               | "process_data"    | None                 | "process"     | bind(process_data, name="process")                   | meld("process")                        | def __init__(self, fns: dict[str, Callable]): result = fns["process"]()
+# NAMED_METHOD (interfaced)  | "process_data"    | IDataPipeline        | "process"     | bind(process_data, name="process", spellframe=...)   | meld(IDataPipeline, name="process")    | def __init__(self, fns: dict[str, Callable]): result = fns["process"]()
+# NAMED_LAMBDA_METHOD        | "<lambda>"        | IMathOps             | "scale"       | bind(lambda x: x+1, name="scale", spellframe=...)    | meld(IMathOps, name="scale")           | def __init__(self, mathops: dict
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 🧠 Autofac Constructor Injection Patterns — Reference for Melder Injection Logic
+#
+# This block explains how Autofac performs injection and how we should mirror that
+# behavior in Melder using `meld(...)`, `spellmaps[...]`, and other patterns.
+#
+# ✅ Standard (Unnamed) Injection
+# Autofac:
+#   builder.RegisterType[MyService]().As[IMyService]()
+#   Constructor:
+#       def __init__(self, service: IMyService): ...
+#
+# Melder:
+#   bind(MyService, spellframe=IMyService)
+#   Constructor:
+#       def __init__(self, service: IMyService): ...
+#
+# 🔐 Named Injection (using a label/key)
+# Autofac:
+#   builder.RegisterType[MyService]().Named[IMyService]("alpha")
+#   Constructor:
+#       def __init__(self, services: IIndex[str, IMyService]):
+#           self._service = services["alpha"]
+#
+# Melder:
+#   bind(MyService, name="alpha", spellframe=IMyService)
+#   Constructor:
+#       def __init__(self, services: dict[str, IMyService]):
+#           self._service = services["alpha"]
+#   or
+#       def __init__(self, spellmaps: SpellMap):
+#           self._service = spellmaps[IMyService]["alpha"]
+#
+# 🧩 Multiple Implementations (all registered services)
+# Autofac:
+#   builder.RegisterType[AlphaService]().As[IMyService]()
+#   builder.RegisterType[BetaService]().As[IMyService]()
+#   Constructor:
+#       def __init__(self, services: list[IMyService]): ...
+#
+# Melder:
+#   bind(AlphaService, spellframe=IMyService)
+#   bind(BetaService, spellframe=IMyService)
+#   Constructor:
+#       def __init__(self, services: list[IMyService]): ...
+#   or (explicit helper)
+#       services = meld_all(IMyService)
+#
+# 🛠 Factory Injection (runtime key-based access)
+# Autofac:
+#   def __init__(self, factory: Callable[[str], IMyService]):
+#       self._svc = factory("alpha")
+#
+# Melder:
+#   def __init__(self, resolver: Callable[[str], IMyService]):
+#       self._svc = resolver("alpha")
+#
+#       # This can be generated by:
+#       factory = lambda name: spellmaps[IMyService].get(name)
 # ──────────────────────────────────────────────────────────────────────────────
