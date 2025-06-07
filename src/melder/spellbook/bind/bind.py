@@ -8,6 +8,7 @@ from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spell
 from melder.utilities.interfaces import IBind
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 import hashlib
 
 #region Bind
@@ -16,17 +17,17 @@ class Bind(IBind):
         super().__init__()
         self._lock = threading.RLock()
 
-    def bind(self, whitelist=True, *, spell=None, spellframe=None, name=None, existence=Existence.unique):
+    def bind(self, permissions: Permissions, *, spell=None, spellframe=None, name=None, existence=Existence.unique):
         if spell is None:
             # Decorator usage
             def decorator(obj):
-                return self._bind_logic(obj, spellframe, name, existence, whitelist)
+                return self._bind_logic(obj, spellframe, name, existence, permissions)
             return decorator
         else:
             # Direct usage
-            return self._bind_logic(spell, spellframe, name, existence, whitelist)
+            return self._bind_logic(spell, spellframe, name, existence, permissions)
 
-    def _bind_logic(self, spell: Any, spellframe: Optional[Any], binding_name: Optional[str], existence: Existence, whitelist:bool) -> Spell:
+    def _bind_logic(self, spell: Any, spellframe: Optional[Any], binding_name: Optional[str], existence: Existence, permissions: Permissions) -> Spell:
         with self._lock:
             # Get the class or method profile
             profile = SpellExaminer(spell).inspect()
@@ -60,7 +61,7 @@ class Bind(IBind):
                 existing_object=spell if is_instance else None,
                 profile=profile,
                 spell_id=fingerprint,
-                whitelist=whitelist
+                permissions=permissions
             )
 
             print(f"[BIND] Registered: {spell_name} | Frame: {spellframe} | Type: {spell_type} | Existence: {existence}")

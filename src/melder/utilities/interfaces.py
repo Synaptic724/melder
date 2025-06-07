@@ -320,7 +320,7 @@ class IBind:
     __slots__ = []
 
     @abstractmethod
-    def bind(self):
+    def bind(self, permissions: str, *, spell=None, spellframe=None, name=None, existence='Existence.unique'):
         """
         Binds a spell to the Spellbook.
         """

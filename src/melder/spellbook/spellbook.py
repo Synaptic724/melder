@@ -14,9 +14,81 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from threading import RLock
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_helpers import EnumHelpers
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 
 #region Spell
 class Spell(ISpell):
+    """
+    Private
+
+    🪄 Represents a registered spell within the Melder system.
+
+    A `Spell` encapsulates an instantiable or callable unit of logic (class or method)
+    that can be bound, shared, and conjured via conduits within a Spellbook context.
+    It includes type metadata, existence constraints, dependency information,
+    and permission rules for downstream access.
+
+    Core Responsibilities:
+    - Holds an immutable reference to the object (function/class) it represents.
+    - Tracks configuration data: type, profile, spellframe, ownership, and hooks.
+    - Defines dependency DAGs for invocation and construction.
+    - Manages permission control via the `Permissions` enum.
+    - Enables hook-based lifecycle support (pre, activate, post).
+    - Acts as a source of truth for spell identity and access.
+
+    🔐 Permissions (Permissions Enum):
+        - `read`: Allows other conduits to use the spell as-is, but not modify or recreate it.
+        - `create`: Allows other conduits to instantiate or construct new versions.
+        - `block`: Prevents external access. Internal (owner conduit) access is still allowed.
+
+    🎯 Key Concepts:
+        - Each spell has a unique SHA256 `spell_id`, generated from its signature and metadata.
+        - `spellframe` distinguishes the context it was declared in (e.g., class name).
+        - Spells may be sealed (`seal()`), after which modification is disallowed.
+        - Supports dependency-based object generation via a DAG executor.
+        - Permissions are enforced during conduit contract evaluation.
+
+    Parameters:
+        spell (Any):
+            The actual object to register (function, class, or other construct).
+
+        spellframe (Optional[Any]):
+            Frame context (usually a class or module) to scope the spell's identity.
+
+        binding_name (str):
+            The logical name this spell is bound to (e.g., "database", "engine").
+
+        spell_name (str):
+            The actual internal name of the object or callable (for display/debugging).
+
+        existence (Existence):
+            The spell's lifecycle policy (singleton, transient, etc.).
+
+        spell_type (SpellType):
+            Indicates if the spell is a class, method, or other construct.
+
+        profile (ClassProfile | MethodProfile):
+            Captures metadata and reflection info from spell inspection.
+
+        spell_id (str):
+            Unique identifier derived from object fingerprinting.
+
+        permissions (Permissions):
+            Defines access control level for borrowing, invoking, or recreating this spell.
+
+        existing_object (Optional[object]):
+            Optional pre-instantiated object to attach to the spell.
+
+        *args / **kwargs:
+            Arbitrary tags and metadata for internal use or future extensions.
+
+    Notes:
+        - This class is never used directly by users. It is created during `bind()` and
+          registered into the Spellbook and Aether.
+        - Internal mutation after sealing is disallowed.
+        - Dependency graphs and hooks must be defined prior to casting.
+    """
+
     def __init__(
             self,
             spell: Any,
@@ -27,7 +99,7 @@ class Spell(ISpell):
             spell_type: SpellType,
             profile: ClassProfile | MethodProfile,
             spell_id: str,
-            whitelist: bool = False,
+            permissions: Permissions,
             existing_object: object = None,
             *args,
             **kwargs
@@ -45,7 +117,9 @@ class Spell(ISpell):
         self.spell_name: str = spell_name
         self.existence: Existence = existence
         self.profile: ClassProfile | MethodProfile = profile
-        self.whitelist: bool = whitelist
+
+        # Permissions
+        self.permissions: Permissions = permissions
 
         # Spell Metadata
         self.tags = args if args else []
@@ -147,6 +221,8 @@ class Spell(ISpell):
 #region Spellbook
 class Spellbook(ISpellbook):
     """
+    Public API
+
     🧙 The Spellbook is the central authority for all spell definitions, bindings, and conduit conjurations.
 
     It acts as a high-level composition container and registry. All spells added to a Spellbook must be
@@ -211,6 +287,10 @@ class Spellbook(ISpellbook):
         self._configuration_locked: bool = False
         self._configuration = configuration
 
+        # Spellbook-wide policy flags
+        self._block_all_spells: bool = False  # Used to block all spells in the spellbook
+        self._whitelist_all_spells: bool = False  # Used to whitelist all spells in the spellbook, treated like create status
+
         # Core spell storage (SHA256-keyed)
         self.__spells: ConcurrentDict[str, Spell] | None= None
         self.__lookup_spells: ConcurrentDict[tuple, str] | None = None
@@ -228,7 +308,7 @@ class Spellbook(ISpellbook):
             self.__contracted_spells = ConcurrentDict()
             self.__lookup_contracted_spells = ConcurrentDict()
         else:
-            self._configuration_locked = False
+            self._configuration_locked = True
 
         # Binding system
         self._bind = Bind()
@@ -273,6 +353,8 @@ class Spellbook(ISpellbook):
 #region General Methods
     def _find_spell_count(self) -> int:
         """
+        Internal
+
         Returns the number of spells in the spellbook.
         This is a simple utility method to check how many spells are currently registered.
         """
@@ -281,6 +363,8 @@ class Spellbook(ISpellbook):
 
     def _find_contracted_spell_count(self) -> int:
         """
+        Internal
+
         Returns the number of contracted spells in the spellbook.
         This is a simple utility method to check how many contracted spells are currently registered.
         """
@@ -291,6 +375,8 @@ class Spellbook(ISpellbook):
 #region Binding API
     def _initialize_configuration(self) -> None:
         """
+        Internal
+
         This method initializes the configuration for the Spellbook. It grabs the configuration from the Aether
         by providing the specific aetheric frame. It initializes the configuration if it does not exist.
         If the configuration already exists, it checks if the aetheric frame matches the one in the configuration.
@@ -312,6 +398,8 @@ class Spellbook(ISpellbook):
 
     def _get_configuration_from_aether(self) -> Configuration:
         """
+        Internal
+
         Retrieve the current configuration from the Aether.
         This is used to ensure that the spellbook's configuration is in sync with the Aether's state.
 
@@ -321,6 +409,8 @@ class Spellbook(ISpellbook):
 
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """
+        Public API
+
         Find a spell by its frame, name, and binding name.
         :param spellframe:
         :param spell_name:
@@ -340,6 +430,8 @@ class Spellbook(ISpellbook):
 
     def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
         """
+        Public API
+
         Find a spell by its frame, name, and binding name.
         :param spellframe:
         :param spell_name:
@@ -360,6 +452,8 @@ class Spellbook(ISpellbook):
 
     def inspect_spell(self, spell: Any) -> Optional[str]:
         """
+        Public API
+
         This method will inspect any object placed into it and check if its
         a valid spell in the Aether Registry. Returns the SHA256 if found, else None
         :return:
@@ -373,41 +467,102 @@ class Spellbook(ISpellbook):
 
     def _lesser_conduit_spellbook_copy(self) -> ISpellbook:
         """
-        Create a copy of the spellbook for a lesser conduit.
-        This is a placeholder for the actual logic to create a lesser conduit copy.
+        Internal
+
+        Creates a spellbook reference for a lesser conduit.
+
+        The resulting spellbook is linked to the original's contracted spell zone,
+        allowing the lesser conduit to access spells without owning or modifying them.
+
+        This ensures proper delegation: the lesser conduit operates in read-only mode
+        over contracted spells defined by the parent.
+
+        Returns:
+            A Spellbook instance configured for a lesser conduit with shared contracted spells.
         """
         with self._lock:
             spellbook = Spellbook(ConduitState.lesser, self._aetheric_frame, self._configuration)
+            spellbook._contracted_spells = self.__spells
+            spellbook._lookup_contracted_spells = self.__lookup_spells
             return spellbook
 
-    def bind(self, spell, existence: Existence, whitelist: bool = True, *, spellframe=None, name=None, **kwargs) -> str:
+
+    def convert_to_normal_conduit_spellbook(self) -> None:
+        """
+        Internal
+
+        Converts the current spellbook to a normal conduit spellbook.
+
+        This method is used to upgrade a lesser conduit spellbook to a normal conduit spellbook.
+        It ensures that the configuration is locked and the spells are properly registered.
+
+        Raises:
+            RuntimeError: If the spellbook is already conjured or configuration is locked.
+        """
+        with self._lock:
+            self._spells = ConcurrentDict()
+            self._lookup_spells = ConcurrentDict()
+            self._contracted_spells = ConcurrentDict()
+            self._lookup_contracted_spells = ConcurrentDict()
+            self._conduit_state = ConduitState.normal
+
+    def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
         """
         Bind a spell to the spellbook using the `Bind` system.
 
         This will:
-        - Inspect and profile the spell
-        - Generate a fingerprint-based spell_id
-        - Register it in the global registry
+        - Inspect and profile the spell.
+        - Generate a fingerprint-based spell_id.
+        - Register it in the global registry under the given permissions.
+        - Optionally attach lifecycle hooks.
 
-        Kwargs can be attached to add hooks into the spell.
-        `pre_hooks`, `activation_hooks`, and `post_hooks` are all lists of callable functions.
+        ⚠️ Permissions govern how the spell may be accessed by other conduits
+        under contract or delegation. They do **not** affect spell behavior
+        within the owner conduit.
 
-        The return for this can be ignored and is only used in dynamic mode.
+        ──────────────────────────────────────────────
+        Permissions:
+            - "read":
+                Allows downstream conduits to use the spell but not modify or recreate it.
 
-        :param spell: The spell to bind.
-        :param existence: The existence type of the spell.
-        :param spellframe: The frame of the spell.
-        :param name: The name of the spell.
-        :param whitelist: Whether to use a whitelist for the spell.
-        :param kwargs: Additional keyword arguments for hooks.
-        :return: The spell ID.
+            - "create":
+                Grants full access — including creation of new instances derived from the spell.
 
-        Example:
-            dict = { "pre_hooks": [hook1, hook2], "activation_hooks": [hook3], "post_hooks": [hook4] }
+            - "block":
+                Disallows all borrowing or usage from other conduits.
+                Still usable within the owning conduit.
+
+        Parameters:
+            spell (object):
+                The spell object to bind.
+
+            existence (Existence):
+                Declares the lifecycle type of the spell (e.g., SINGLETON, TRANSIENT).
+
+            permissions (str):
+                Access level exposed to downstream conduits.
+                Must be one of: "read", "create", "block"
+                Defaults to "create".
+
+            spellframe (str, optional):
+                Optional frame/grouping for organizational lookup.
+
+            name (str, optional):
+                Optional override for spell binding name.
+
+            **kwargs:
+                - pre_hooks: List[Callable] — Executed before casting.
+                - activation_hooks: List[Callable] — Executed during casting.
+                - post_hooks: List[Callable] — Executed after casting.
+
+        Returns:
+            str: The unique SHA256 spell ID.
         """
         try:
+
+            permissions = EnumHelpers.convert_enum_and_check(permissions, Permissions)  # Ensure the policy is valid
             spell = self._bind.bind(
-                whitelist=whitelist,
+                permissions=permissions,
                 spell=spell,
                 spellframe=spellframe,
                 name=name,
@@ -604,11 +759,6 @@ class Spellbook(ISpellbook):
                        `meta["whitelist"] = True`.
                     📌 Applies to local spells only.
                     🔒 Only available under the "dynamic" policy mode.
-
-                - delegate:
-                    🔗 Forwards all access checks to another conduit.
-                    🪶 Used to create a special conduit that only has linking capability.
-                    📭 Can be created to contain no spells, only links to other conduits.
         """
         with self._lock:
             if self._conjured:
@@ -625,7 +775,7 @@ class Spellbook(ISpellbook):
                 )
 
             self._check_system_state(policy)  # Ensure the system state is valid for conjuring
-            policy = EnumHelpers.convert_enum_and_check(policy)  # Ensure the policy is valid
+            policy = EnumHelpers.convert_enum_and_check(policy, Policies)  # Ensure the policy is valid
             self._check_all_spells()
 
             self._conduit_type = ConduitState.normal
@@ -665,6 +815,20 @@ class Spellbook(ISpellbook):
             for spell in self._spells.values():
                 spell._add_owned_conduit(conduit.__creation_context__._conduit_id, conduit._name)
                 #spell._add_build_details(conduit.dependency_graph) # This is a placeholder for the actual DAG system
+
+    def _set_policy_state(self, policy: Policies) -> None:
+        """
+        Set the policy state for the conduit.
+        This is a placeholder for the actual logic to set the policy state.
+        :param policy: The policy to set.
+        """
+        with self._lock:
+            if policy == Policies.whitelist_all:
+                self._block_all_spells = False
+                self._whitelist_all_spells = True
+            elif policy == Policies.block_all:
+                self._block_all_spells = True
+                self._whitelist_all_spells = False
 
 #endregion Conduit API
 

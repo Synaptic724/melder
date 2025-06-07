@@ -9,7 +9,7 @@ from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.general_helpers import EnumHelpers
 from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.conduit_ward.contract.contract import ContractHolder, Detail, Contract, DelegateContract
+from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
 # TODO: If a specific policy is set such as blacklist or whitelist, ensure that the spellbook the entire spellbook is managed properly.
@@ -40,16 +40,13 @@ class ConduitWard(IConduitWard):
         self._policy_set: bool = False
         self._policy: Policies = self._set_initial_policy(policy)
 
-        # Contracts
-        self._contract_holder: ContractHolder = ContractHolder()
+        ## Dynamic Conduit Links
+        self._initiated_contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict()
+        self._provider_contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict()
 
-        ## Conduit links
-        self._initiated_links: ConcurrentSet[UUID] = ConcurrentSet()
-        self._provider_links: ConcurrentSet[UUID] = ConcurrentSet()
-
-        # Internal structures
-        self._parent_conduit_link: UUID | None = None
-        self._lesser_conduits_links: ConcurrentSet[UUID] = ConcurrentSet()
+        # Lineage Links
+        self._parent_conduit: IConduit | None = None
+        self._lesser_conduits: ConcurrentDict[UUID, IConduit] = ConcurrentDict()
 
 #region Properties
 #endregion Properties
@@ -69,9 +66,10 @@ class ConduitWard(IConduitWard):
         with self._lock:
             if not self._dynamic:
                 raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
-            if self._parent_conduit_link is not None and self._conduit_type == ConduitState.lesser:
-                self._parent_conduit_link = None
+            if self._parent_conduit is not None and self._conduit_type == ConduitState.lesser and self._lesser_conduits is None:
+                self._parent_conduit = None
                 self._conduit_type = ConduitState.normal #policy stays as delegate until the user adds a spell then it goes to dynamic
+                self._policy = Policies.dynamic #Sets default to dynamic policy
             else:
                 raise RuntimeError("No parent conduit link found. Cannot convert to normal conduit. Unknown error")
 
@@ -93,8 +91,8 @@ class ConduitWard(IConduitWard):
             return policy
 
         with self._lock:
-            if self._dynamic and self._conduit_type == ConduitState.lesser:
-                raise NotImplementedError("Parent conduit link is not implemented yet as delegate.")
+            if self._conduit_type == ConduitState.lesser:
+                return Policies.lesser_conduit
             else:
                 raise RuntimeError("Policy already set. Cannot set policy again.")
 
@@ -105,8 +103,9 @@ class ConduitWard(IConduitWard):
         Sets a new policy for this Conduit.
         This is meant for internal use; do not call externally.
 
-        Please note that policies will automatically change if a delegate policy is set and a spell is added.
-        It will automatically change to dynamic policy.
+        This method is internal and assumes the conduit is operating in dynamic mode.
+        Certain policies like `block_all` and `whitelist_all` require an empty spellbook.
+        Policy `lesser_conduit` is restricted to conduits of type `lesser`.
         """
         if self._sealed:
             raise RuntimeError("Cannot set policy on a sealed Conduit.")
@@ -116,19 +115,14 @@ class ConduitWard(IConduitWard):
             raise RuntimeError("Cannot set policy on a lesser Conduit. Convert to a normal Conduit first.")
 
         with self._lock:
-            spellcount = self._conduit._spellbook._find_spell_count()
             new_policy = EnumHelpers.convert_enum_and_check(policy, Policies)
-
-            if spellcount == 0:
-                if new_policy != Policies.delegate:
-                    raise RuntimeError("Must add at least one spell before changing policy. "
-                                       "Only 'delegate' is allowed when spellbook is empty.")
-            else:
-                if new_policy == Policies.delegate:
-                    raise RuntimeError("Cannot set policy to 'delegate' when spells exist in the conduit.")
 
             if new_policy == Policies.automatic:
                 raise RuntimeError("Cannot set policy to 'automatic' in dynamic mode.")
+            if new_policy == Policies.lesser_conduit and self._conduit_type != ConduitState.lesser:
+                raise RuntimeError("Cannot set policy to 'lesser_conduit' on a non-lesser Conduit.")
+            if (new_policy == Policies.block_all or new_policy == Policies.whitelist_all) and self._conduit._spellbook._find_spell_count() > 0:
+                raise RuntimeError("Cannot set policy to 'block_all' or 'whitelist_all' when there are existing spells in the spellbook.")
 
             self._policy = new_policy
 
@@ -149,9 +143,7 @@ class ConduitWard(IConduitWard):
             bool: True if linking succeeds (currently not implemented).
         """
         if self._sealed:
-            raise RuntimeError("Cannot link to a sealed Conduit.")
-        if not self._dynamic:
-            raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
+            raise RuntimeError("Cannot link to a sealed Conduit Ward.")
         with self._lock:
             raise NotImplementedError("Linking conduits is not implemented yet.")
 
@@ -164,35 +156,55 @@ class ConduitWard(IConduitWard):
         This is meant for internal use please do not use this outside of the class.
         """
         if self._sealed:
-            raise RuntimeError("Cannot sever a link in a sealed Conduit.")
-        if not self._dynamic:
-            raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
+            raise RuntimeError("Cannot sever a link in a sealed Conduit Ward.")
         with self._lock:
             raise NotImplementedError("Severing links is not implemented yet.")
 
-    def _link_lesser_conduit(self, target_conduit) -> bool:
+    def _link_lesser_conduit(self, lesser_conduit: IConduit):
         """
         Internal
 
-        Attempts to link this Conduit to a lesser Conduit.
-        This is meant for internal use please do not use this outside of the class.
+        Links a lesser conduit to this conduit in automatic mode.
 
-        Linking for Automatic mode will transfer the spellbook of the existing conduit into the
-        lesser conduit and setup permissions between objects using link.
+        This sets up the tree relationship between the current conduit and the lesser one.
+        It should only be called internally. When called, the lesser conduit is registered
+        under this ward, and the parent conduit reference is assigned in the lesser.
 
         Args:
-            target_conduit (Conduit): The target Conduit to link to.
-
-        Returns:
-            bool: True if linking succeeds (currently not implemented).
+            lesser_conduit (Conduit): The lesser conduit to link.
         """
         if self._sealed:
-            raise RuntimeError("Cannot link to a sealed Conduit.")
+            raise RuntimeError("Cannot link to a sealed Conduit Ward.")
         with self._lock:
-            if self._lesser_conduits_links is None:
-                self._lesser_conduits_links = ConcurrentList()
-            else:
-                raise NotImplementedError("Linking conduits is not implemented yet.")
+            self._lesser_conduits[lesser_conduit.__creation_context__._conduit_id] = lesser_conduit
+            lesser_conduit._parent_conduit = self._conduit
+
+    def _get_lesser_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+        """
+        Recursively searches for a lesser conduit with the given ID.
+
+        Args:
+            conduit_id (UUID): The ID of the conduit to retrieve.
+
+        Returns:
+            Optional[IConduit]: The matched conduit if found, else None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get lesser conduits from a sealed Conduit Ward.")
+
+        # Search immediate children
+        for conduit in self._lesser_conduits.values():
+            if conduit.__creation_context__._conduit_id == conduit_id:
+                return conduit
+
+            # Recurse into the child's ward if it has one
+            ward = getattr(conduit, "_conduit_ward", None)
+            if ward:
+                result = ward._get_lesser_conduit(conduit_id)
+                if result is not None:
+                    return result
+
+        return None
 
     def _get_links(self):
         """
@@ -203,35 +215,6 @@ class ConduitWard(IConduitWard):
         """
         raise NotImplementedError("get_links is not implemented yet.")
 
-    def _get_lesser_conduits(self) -> List[IConduit]:
-        """
-        Private
-
-        Returns a list of lesser conduits linked to this conduit.
-        :return: List of lesser conduits.
-        """
-        if self._sealed:
-            raise RuntimeError("Cannot get lesser conduits from a sealed Conduit.")
-        with self._lock:
-            raise NotImplementedError("get_links is not implemented yet.")
-
-    def _get_lesser_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
-        """
-        Internal
-
-        Returns a specific lesser conduit linked to this conduit by its ID.
-
-        Args:
-            conduit_id (UUID): The ID of the conduit to retrieve.
-
-        Returns:
-            Optional[IConduit]: The linked conduit if found, otherwise None.
-        """
-        if self._sealed:
-            raise RuntimeError("Cannot get lesser conduits from a sealed Conduit.")
-        with self._lock:
-            raise NotImplementedError("get_linked_conduit is not implemented yet.")
-
     def _get_linked_conduits(self) -> List[IConduit]:
         """
         Internal
@@ -240,7 +223,7 @@ class ConduitWard(IConduitWard):
         :return: List of linked conduits.
         """
         if self._sealed:
-            raise RuntimeError("Cannot get linked conduits from a sealed Conduit.")
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
         with self._lock:
             raise NotImplementedError("get_links is not implemented yet.")
 
@@ -257,22 +240,30 @@ class ConduitWard(IConduitWard):
             Optional[IConduit]: The linked conduit if found, otherwise None.
         """
         if self._sealed:
-            raise RuntimeError("Cannot get linked conduits from a sealed Conduit.")
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
         with self._lock:
             raise NotImplementedError("get_linked_conduit is not implemented yet.")
 
 
-    def _sever_all_lesser_conduits(self) -> None:
+    def seal_all_lesser_conduits(self) -> None:
         """
-        Private
+        Public
 
-        Sever all lesser conduits linked to this conduit.
-        This is meant for internal use please do not use this outside of the class.
+        Severs all lesser conduits linked to this conduit.
+
+        This is typically used when upgrading a conduit to a normal state,
+        as lesser conduits must be detached first.
+
+        Note:
+            You can also simply call `seal()` on the parent conduit, which will
+            recursively seal all linked lesser conduits automatically.
         """
         if self._sealed:
-            raise RuntimeError("Cannot sever links in a sealed Conduit.")
+            raise RuntimeError("Cannot sever links in a sealed Conduit Ward.")
         with self._lock:
-            raise NotImplementedError("Severing all lesser conduits is not implemented yet.")
+            for conduit in self._lesser_conduits.values():
+                conduit.seal()
+            self._lesser_conduits.clear()
 
     def _sever_all_linked_conduits(self) -> None:
         """
@@ -281,7 +272,7 @@ class ConduitWard(IConduitWard):
         Severs all links to conduits linked to this conduit. Excludes lesser conduits.
         """
         if self._sealed:
-            raise RuntimeError("Cannot sever links in a sealed Conduit.")
+            raise RuntimeError("Cannot sever links in a sealed Conduit Ward.")
         with self._lock:
             raise NotImplementedError("Severing all links is not implemented yet.")
 

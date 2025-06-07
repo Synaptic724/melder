@@ -5,42 +5,6 @@ from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal, IConduitWard
 from threading import RLock
 
-class ContractHolder(ISeal):
-    """
-    Base class for all contract holders.
-
-    A contract holder is responsible for storing and managing active contracts,
-    both normal and delegated. It supports thread-safe operations and sealing.
-
-    Responsibilities:
-    - Hold a collection of active contracts keyed by UUID
-    - Separate normal and delegate contracts
-    - Support sealing (immutability and cleanup)
-    """
-
-    def __init__(self):
-        super().__init__()
-        self._lock = RLock()
-
-        # Maps contract UUID → Contract
-        self._contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict()
-
-        # Maps contract UUID → DelegateContract
-        self._delegate_contract: ConcurrentDict[UUID, DelegateContract] = ConcurrentDict()
-
-    def seal(self):
-        """
-        Seal the contract holder to prevent further mutation.
-        All contract modifications will be blocked after sealing.
-        """
-        raise NotImplementedError("is not implemented yet.")
-        if self._sealed:
-            return
-        with self._lock:
-            if self._sealed:
-                return
-            self._sealed = True
-
 class Detail(ISeal):
     """
     Represents a spell-level permission entry within a Contract.
@@ -56,7 +20,7 @@ class Detail(ISeal):
     Once sealed, the Detail becomes immutable and clears sensitive fields.
     """
 
-    def __init__(self, provider_id: UUID, spell_id: str, permissions: Permissions):
+    def __init__(self, spell_id: str, permissions: Permissions):
         super().__init__()
         self._lock = RLock()
         self.spell_id = spell_id
@@ -69,13 +33,11 @@ class Detail(ISeal):
                 )
 
         self.permissions = permissions
-        self._provider_id: UUID = provider_id
 
     def seal(self):
         """
         Seal the Detail entry, making it immutable and nullifying sensitive fields.
         """
-        raise NotImplementedError("is not implemented yet.")
         if self._sealed:
             return
         with self._lock:
@@ -84,7 +46,6 @@ class Detail(ISeal):
             self._sealed = True
             self.spell_id = None
             self.permissions = None
-            self._provider_id = None
 
 class Contract(ISeal):
     """
@@ -151,7 +112,6 @@ class Contract(ISeal):
         Seal the contract and its associated details.
         Clears all internal state to ensure immutability and cleanup.
         """
-        raise NotImplementedError("is not implemented yet.")
         if self._sealed:
             return
         with self._lock:
@@ -171,63 +131,3 @@ class Contract(ISeal):
         for detail in self._contract_details.values():
             detail.seal()
         self._contract_details.clear()
-
-class DelegateContract(ISeal):
-    """
-    Lightweight contract for lesser conduits.
-
-    Unlike a normal contract, this version assumes a default global WRITE permission
-    and does not store per-spell permission data. It is intended for delegated conduits
-    that inherit or mirror access patterns from a parent.
-
-    Fields:
-    - _source_id / _source_ward: The source conduit being delegated
-    - _delegate_id / _delegate_ward: The delegate conduit
-    - permissions: Always WRITE (default)
-    """
-
-    def __init__(self, source_id: UUID, source_ward: IConduitWard, delegate_id: UUID, delegate_ward: IConduitWard):
-        super().__init__()
-        self._lock = RLock()
-        self._source_id: UUID = source_id
-        self._source_ward: IConduitWard = source_ward
-        self._delegate_id: UUID = delegate_id
-        self._delegate_ward: IConduitWard = delegate_ward
-
-        # Lesser conduits operate with global WRITE permission
-        self.permissions = Permissions.write
-
-    @staticmethod
-    def type() -> ContractTypes:
-        """
-        Returns the contract type: lesser conduit.
-        """
-        return ContractTypes.lesser_conduit
-
-    def has(self, permission: Permissions) -> bool:
-        """
-        Check if the requested permission is allowed.
-
-        For lesser conduits, only WRITE is permitted.
-
-        Returns:
-            bool: True if permission is WRITE, False otherwise
-        """
-        return permission == self.permissions
-
-    def seal(self):
-        """
-        Seal the delegate contract, clearing all internal sensitive data.
-        """
-        raise NotImplementedError("is not implemented yet.")
-        if self._sealed:
-            return
-        with self._lock:
-            if self._sealed:
-                return
-            self._sealed = True
-            self._source_id = None
-            self._source_ward = None
-            self._delegate_id = None
-            self._delegate_ward = None
-            self.permissions = None

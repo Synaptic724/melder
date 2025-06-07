@@ -1,3 +1,4 @@
+import threading
 from logging import warning
 from typing import Optional, Type, Any
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -26,6 +27,8 @@ class Conduit(IConduit):
 
     def __init__(self, spellbook: ISpellbook, configuration: Configuration, conduit_state: ConduitState, aetheric_frame: str, policy: Policies, name: Optional[str] = None):
         """
+        Public API
+
         Initializes a new Conduit.
 
         Args:
@@ -36,7 +39,7 @@ class Conduit(IConduit):
         """
         super().__init__()
         # General Init
-        self._lock = RLock()
+        self._lock: threading.RLock = RLock()
         self._name = name
         self.__debugger_mode__ = False
         self.__dynamic_environment__ = False
@@ -66,6 +69,12 @@ class Conduit(IConduit):
 
 #region Utilities
     def __repr__(self):
+        """
+        Public API
+
+        Returns a string representation of the Conduit instance.
+        :return:
+        """
         return (
             f"<Conduit name={self.name} "
             f"id={self._creation_context._conduit_id}>"
@@ -77,6 +86,8 @@ class Conduit(IConduit):
     @property
     def name(self) -> str:
         """
+        Public API
+
         Returns the name of this Conduit. Name must be created during conduit creation.
         """
         return self._name if self._name else None
@@ -85,6 +96,8 @@ class Conduit(IConduit):
     @name.setter
     def name(self, name: str):
         """
+        Public API
+
         Allows user to name conduit if available
         :return:
         """
@@ -95,7 +108,7 @@ class Conduit(IConduit):
     @property
     def __creation_context__(self) -> ConduitCreationContext:
         """
-        🔮 Public (Advanced) API — use with care.
+        Public API
 
         This property exposes the internal creation metadata for this conduit,
         including unique ID, creation path, and lifecycle configuration context.
@@ -110,6 +123,8 @@ class Conduit(IConduit):
 #region Conduit Configuration
     def register_conduit_cloud(self, conduit: IConduit):
         """
+        Public API
+
         Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit in order
         to name it afterward and register it. You can only register it once.
         :param conduit:
@@ -126,6 +141,8 @@ class Conduit(IConduit):
 
     def _apply_configuration_flags(self):
         """
+        Internal
+
         Sets the environment mode and debugging mode for this Conduit
         based on the configuration instance passed.
         """
@@ -139,6 +156,8 @@ class Conduit(IConduit):
 
     def _add_conduit_to_aether(self) -> None:
         """
+        Internal
+
         Adds the newly created Conduit into the shared Aether world.
 
         Args:
@@ -151,6 +170,8 @@ class Conduit(IConduit):
 
     def _add_spells_to_aether(self) -> None:
         """
+        Internal
+
         Adds the newly created Conduit into the shared Aether world.
 
         Args:
@@ -165,6 +186,8 @@ class Conduit(IConduit):
 
     def _creations_configuration(self, configuration: Configuration) -> Creations or LesserCreations:
         """
+        Internal
+
         Returns the current creations configuration for this Conduit.
         """
         if self._conduit_state == ConduitState.lesser:
@@ -178,11 +201,13 @@ class Conduit(IConduit):
 #region Conduit Management
     def upgrade_to_normal(self, name: Optional[str] = None) -> None:
         """
+        Public API
+
         Upgrades this Conduit to a normal state. This allows the conduit to create its own links
         through the aether system. This will fork this conduit into a new tree and create new links with the parent.
         This conduit and its children go with it, only a normal scope can access the spellbook to bind new spells.
 
-        This conduit will begin as a delegate policy conduit then change automatically after a single spell is registered and not just contracted.
+        This conduit will begin as a lesser_conduit policy conduit then change automatically after a single spell is registered and not just contracted.
 
         Please name the conduit if your intention is to add it to the Conduit Cloud.
         :return:
@@ -211,15 +236,22 @@ class Conduit(IConduit):
             # Step 4: Replace the old creations
             self._creations = new_creations
 
-            # Step 5: Register as a full Conduit in Aether
+            # Step 5: Reconfigure the conduit ward
+            self._conduit_ward._convert_to_normal_conduit()
+
+            # Step 6: Reconfigure the spellbook
+            self._spellbook.convert_to_normal_conduit_spellbook()
+
+            # Step 7: Register as a full Conduit in Aether
             Conduit._add_conduit_to_aether(self)
             if self.__dynamic_environment__ and self._name is not None:
                 Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
 
-            self._conduit_ward._change_conduit_type(self._conduit_state)
 
     def set_new_policy(self, policy: str) -> None:
         """
+        Public API
+
         Sets a new policy for this Conduit. This is only allowed in dynamic mode.
         :param policy: The new policy to set.
         :return:
@@ -231,6 +263,8 @@ class Conduit(IConduit):
 
     def create_lesser_conduit(self) -> IConduit:
         """
+        Public API
+
         Creates a lesser Conduit (child node) attached to this Conduit.
 
         Args:
@@ -249,17 +283,22 @@ class Conduit(IConduit):
                 configuration=self._configuration,
                 conduit_state=ConduitState.lesser,
                 aetheric_frame=self._aetheric_frame,
-                policy=Policies.delegate
+                policy=Policies.lesser_conduit
             )
-        #TODO: Do something with ConduitWard to link the conduits and contracts
-        #TODO: Do something with the spell copy system for quick copy of a spellbook
-        self._lesser_conduits_links.append(new_conduit)
+
+        with new_conduit._spellbook._lock:
+            new_conduit._spellbook._conjured = True  # Mark as conjured spellbook
+
+        self._conduit_ward._link_lesser_conduit(new_conduit)
+
         return new_conduit
 
 #endregion Conduit Management
 #region Spellbook Management API
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """
+        Public API
+
         Find a spell by its frame, name, and binding name.
         :param spellframe:
         :param spell_name:
@@ -274,6 +313,8 @@ class Conduit(IConduit):
 
     def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
         """
+        Public API
+
         Find a spell by its frame, name, and binding name.
         :param spellframe:
         :param spell_name:
@@ -288,6 +329,8 @@ class Conduit(IConduit):
 
     def inspect_spell(self, spell: Any) -> Optional[str]:
         """
+        Public API
+
         This method will inspect any object placed into it and check if it's
         a valid spell in the Aether Registry. Returns the SHA256 if found, else None
         :param spell:
@@ -299,30 +342,57 @@ class Conduit(IConduit):
         return spell_id
 
 
-    def bind(self, spell, existence: Existence, whitelist: bool = True, *, spellframe=None, name=None, **kwargs) -> str:
+    def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
         """
         Bind a spell to the spellbook using the `Bind` system.
 
         This will:
-        - Inspect and profile the spell
-        - Generate a fingerprint-based spell_id
-        - Register it in the global registry
+        - Inspect and profile the spell.
+        - Generate a fingerprint-based spell_id.
+        - Register it in the global registry under the given permissions.
+        - Optionally attach lifecycle hooks.
 
-        Kwargs can be attached to add hooks into the spell.
-        `pre_hooks`, `activation_hooks`, and `post_hooks` are all lists of callable functions.
+        ⚠️ Permissions govern how the spell may be accessed by other conduits
+        under contract or delegation. They do **not** affect spell behavior
+        within the owner conduit.
 
-        The return for this can be ignored and is only used in dynamic mode.
+        ──────────────────────────────────────────────
+        Permissions:
+            - "read":
+                Allows downstream conduits to use the spell but not modify or recreate it.
 
-        :param spell: The spell to bind.
-        :param existence: The existence type of the spell.
-        :param spellframe: The frame of the spell.
-        :param name: The name of the spell.
-        :param whitelist: Whether to use a whitelist for the spell.
-        :param kwargs: Additional keyword arguments for hooks.
-        :return: The spell ID.
+            - "create":
+                Grants full access — including creation of new instances derived from the spell.
 
-        Example:
-            dict = { "pre_hooks": [hook1, hook2], "activation_hooks": [hook3], "post_hooks": [hook4] }
+            - "block":
+                Disallows all borrowing or usage from other conduits.
+                Still usable within the owning conduit.
+
+        Parameters:
+            spell (object):
+                The spell object to bind.
+
+            existence (Existence):
+                Declares the lifecycle type of the spell (e.g., SINGLETON, TRANSIENT).
+
+            permissions (str):
+                Access level exposed to downstream conduits.
+                Must be one of: "read", "create", "block"
+                Defaults to "create".
+
+            spellframe (str, optional):
+                Optional frame/grouping for organizational lookup.
+
+            name (str, optional):
+                Optional override for spell binding name.
+
+            **kwargs:
+                - pre_hooks: List[Callable] — Executed before casting.
+                - activation_hooks: List[Callable] — Executed during casting.
+                - post_hooks: List[Callable] — Executed after casting.
+
+        Returns:
+            str: The unique SHA256 spell ID.
         """
         if self._sealed:
             raise RuntimeError("Cannot bind spells in a sealed Conduit.")
@@ -330,13 +400,7 @@ class Conduit(IConduit):
             raise RuntimeError("Only normal conduits can bind spells.")
 
         with self._lock:
-            try:
-                return self._spellbook.bind(spell=spell, existence=existence, spellframe=spellframe, name=name, whitelist=whitelist, **kwargs)
-            finally:
-                if self._conduit_ward.policy == Policies.delegate and self._spellbook._find_spell_count() > 0 and self.__dynamic_environment__:
-                    # If the conduit is in delegate mode, we need to change the policy to automatic
-                    # after the first spell is registered.
-                    self._conduit_ward._set_new_policy("dynamic")
+            return self._spellbook.bind(spell=spell, existence=existence, spellframe=spellframe, name=name, permissions=permissions, **kwargs)
 
 
 
@@ -344,6 +408,14 @@ class Conduit(IConduit):
 
 #region fakemeld
     def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
+        """
+        Public API
+
+        :param spell_name:
+        :param spell_type:
+        :param spellframe:
+        :return:
+        """
         raise NotImplementedError("Not ready yet, not even using real class")
         if spell_type == "class":
             class_spell = self._spellbook.get(spell_name)
@@ -371,6 +443,8 @@ class Conduit(IConduit):
 #region Conduit Cloud
     def get_conduit_cloud(self) -> IConduitCloud:
         """
+        Public API
+
         Returns the conduit cloud. The conduit cloud is a registry of all conduits it behaves
         like an abstractfactory object under the best circumstances. Users should separate their objects into
         different conduits and use the conduit cloud to access them. This is a global registry of all conduits.
@@ -388,6 +462,8 @@ class Conduit(IConduit):
 #region Conduit Ward API
     def link(self, target_conduit) -> bool:
         """
+        Public API
+
         Attempts to link this Conduit to another Conduit.
 
         Linking is only allowed if the world is in dynamic mode.
@@ -407,7 +483,10 @@ class Conduit(IConduit):
 
     def sever_link(self, target_conduit) -> bool:
         """
-        Sever the link between this Conduit and its target Conduit.
+        Public API
+
+        Sever the link between this Conduit and its target Conduit. This will also validate if the link exists, if it can be severed, and
+        it will remove the link and contracted spells from the Conduit.
 
         This is meant for internal use please do not use this outside of the class.
         """
@@ -418,31 +497,91 @@ class Conduit(IConduit):
         with self._lock:
             self._conduit_ward._sever_link(target_conduit)
 
-    def _link_lesser_conduit(self, target_conduit) -> bool:
+
+    def _sever_link(self):
         """
-        Attempts to link this Conduit to a lesser Conduit.
+        Internal
+
+        Sever the link between this Conduit and its target Conduit.
+
         This is meant for internal use please do not use this outside of the class.
-
-        Linking for Automatic mode will transfer the spellbook of the existing conduit into the
-        lesser conduit and setup permissions between objects using link.
-
-        Args:
-            target_conduit (Conduit): The target Conduit to link to.
-
-        Returns:
-            bool: True if linking succeeds (currently not implemented).
         """
         if self._sealed:
-            raise RuntimeError("Cannot link to a sealed Conduit.")
+            raise RuntimeError("Cannot sever a link in a sealed Conduit.")
+        if not self.__dynamic_environment__:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         with self._lock:
-            self._conduit_ward._link_lesser_conduit(target_conduit)
+            raise NotImplementedError("Severing links is not implemented yet.")
 
+
+    def get_links(self):
+        """
+        Public API
+
+        Returns a list of all links associated with this conduit. Excluding lesser conduits.
+        :return:
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get links in a sealed Conduit.")
+        if not self.__dynamic_environment__:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
+        raise NotImplementedError("get_links is not implemented yet.")
+
+    def get_lesser_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+        """
+        Internal
+
+        Returns a specific lesser conduit linked to this conduit by its ID.
+
+        Args:
+            conduit_id (UUID): The ID of the conduit to retrieve.
+
+        Returns:
+            Optional[IConduit]: The linked conduit if found, otherwise None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get lesser conduits from a sealed Conduit.")
+        with self._lock:
+            raise NotImplementedError("get_linked_conduit is not implemented yet.")
+
+
+    def get_linked_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+        """
+        Public API
+
+        Returns a specific conduit linked to this conduit by its ID.
+
+        Args:
+            conduit_id (UUID): The ID of the conduit to retrieve.
+
+        Returns:
+            Optional[IConduit]: The linked conduit if found, otherwise None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit.")
+        if not self.__dynamic_environment__:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
+        with self._lock:
+            raise NotImplementedError("get_linked_conduit is not implemented yet.")
+
+    def seal_lesser_conduits(self):
+        """
+        Public API
+
+        Seals all lesser conduits linked to this conduit.
+        This is used to prevent further operations on lesser conduits.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit.")
+        self._conduit_ward.seal_all_lesser_conduits()
 
 #endregion Conduit Ward API
 #region Cleanup and Disposal
 
     def seal(self):
         """
+        Public API
+
         Seals this Conduit and all its lesser Conduits.
 
         Prevents further operation, releases internal references,

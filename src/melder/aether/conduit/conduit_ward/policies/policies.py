@@ -5,36 +5,34 @@ class Policies(Enum):
     Defines conduit policy behaviors within the conduit ward system.
 
     These policies control how a conduit grants spell access, inherits behavior,
-    and evaluates permissions from other conduits or its parent.
+    and evaluates permissions.
 
     Available Policies:
 
-    If system mode automatic is enabled the below policies are available:
-    - automatic: 🔒 Disables linking from normal conduits.
-                 ✅ Allows linking from lesser conduits only.
-                 🔁 Delegates access resolution to the parent or source.
+    If system mode is 'automatic':
+    - automatic: 🔒 Disables outbound linking.
+                 ✅ Accepts inbound links from lesser conduits only.
+                 🔁 Defers access decisions to static whitelist metadata.
 
+    If system mode is 'dynamic':
+    - dynamic: 🔓 Enables runtime access evaluation and linking.
+               🧠 Supports dynamic permission handlers and spell-level logic.
 
-    If system mode dynamic is enabled the below policies are available:
-    - dynamic: 🔓 Enables custom runtime evaluation and linking.
-               🧠 Users may inject a handler function for access decisions.
-               🎯 Required for advanced behaviors like selective linking.
-
-    - whitelist_all: ✅ Grants access to all **local** spells in the conduit,
-                     ⛔ Ignores spell-level `meta["whitelist"]` flags.
-                     🔒 Only allowed when policy is `dynamic`.
+    - whitelist_all: ✅ Grants access to all local spells.
+                     ⛔ Ignores `meta["whitelist"]` flags.
+                     🔒 Dynamic mode only.
 
     - block_all: ⛔ Denies all access by default.
-                 ✅ Allows only spells explicitly marked with `meta["whitelist"] = True`.
-                 📌 Applies only to **local** spells.
-                 🔒 Only allowed when policy is `dynamic`.
+                 ✅ Only allows spells explicitly marked with `meta["whitelist"] = True`.
+                 🔒 Dynamic mode only.
 
-    - delegate: 🔗 Forwards all access checks to another conduit.
-                🪶 Used to create a special conduit that only has linking capability.
-                📭 Can be created to contain no spells, only links to other conduits.
+    - lesser_conduit: 🪶 Applies to delegated lesser conduits.
+                      🔗 Does not evaluate policies; inherits access from parent structure.
+                      🚫 Cannot link or modify spellbook.
+                      🧼 Used as a passive scope only.
     """
     automatic = auto()
     dynamic = auto()
     whitelist_all = auto()
     block_all = auto()
-    delegate = auto()
+    lesser_conduit = auto()

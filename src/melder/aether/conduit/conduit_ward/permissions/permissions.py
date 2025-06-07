@@ -4,6 +4,6 @@ class Permissions(Enum):
     """
     Each level of permission inherits from the previous one.
     """
-    not_set = auto()
     read = auto()
-    write = auto()
+    create = auto()
+    block = auto()
