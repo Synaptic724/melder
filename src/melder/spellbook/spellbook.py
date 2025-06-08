@@ -833,7 +833,7 @@ class Spellbook(ISpellbook):
         Finalize and seal the spellbook.
         (Optional override point for releasing resources or locking down the system.)
         """
-        pass
+        raise NotImplementedError("Sealing is not implemented yet.")
 
 #endregion Disposal
 

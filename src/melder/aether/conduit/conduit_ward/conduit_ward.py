@@ -7,7 +7,7 @@ from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.general_helpers import EnumHelpers
 from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
+from melder.aether.conduit.conduit_ward.contract.contract import _Detail, _Contract
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
 # TODO: If a specific policy is set such as blacklist or whitelist, ensure that the spellbook the entire spellbook is managed properly.
@@ -50,7 +50,7 @@ class ConduitWard(IConduitWard):
         self._initiated_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # [Target ConduitID] -> [ContractID]
         self._received_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # [Source ConduitID] -> [ContractID]
 
-        self._contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict() # [ContractID] -> Contract
+        self._contracts: ConcurrentDict[UUID, _Contract] = ConcurrentDict() # [ContractID] -> Contract
 
         # Lineage Links
         self._parent_conduit: IConduit | None = None
@@ -129,8 +129,8 @@ class ConduitWard(IConduitWard):
                 raise RuntimeError("Cannot set policy to 'automatic' in dynamic mode.")
             if new_policy == Policies.lesser_conduit and self._conduit_type != ConduitState.lesser:
                 raise RuntimeError("Cannot set policy to 'lesser_conduit' on a non-lesser Conduit.")
-            if (new_policy == Policies.block_all or new_policy == Policies.whitelist_all) and self._conduit._spellbook._find_spell_count() > 0:
-                raise RuntimeError("Cannot set policy to 'block_all' or 'whitelist_all' when there are existing spells in the spellbook.")
+            if (new_policy == Policies.block_all or new_policy == Policies.whitelist_all) and len(self._contracts) > 0:
+                raise RuntimeError("Cannot set policy to 'block_all' or 'whitelist_all' when there are existing contracts.")
 
             self._policy = new_policy
 
@@ -180,7 +180,7 @@ class ConduitWard(IConduitWard):
         """
         with self._lock:
             # Create new contract
-            contract = Contract(self, target_conduit._conduit_ward)
+            contract = _Contract(self, target_conduit._conduit_ward)
 
             # Register the contract in both wards
             self._contracts[contract._id] = contract
@@ -214,7 +214,7 @@ class ConduitWard(IConduitWard):
 
         return initiated_contract if initiated_contract is not None else received_contract
 
-    def _find_contract(self, target_conduit: IConduit) -> Optional[Contract]:
+    def _find_contract(self, target_conduit: IConduit) -> Optional[_Contract]:
         """
         Internal
 
@@ -243,7 +243,12 @@ class ConduitWard(IConduitWard):
         if self._sealed:
             raise RuntimeError("Cannot sever a link in a sealed Conduit Ward.")
         with self._lock:
-            raise NotImplementedError("Severing links is not implemented yet.")
+             if (contract := self._find_contract(target_conduit)) is not None:
+                raise NotImplementedError("Contract removal is not yet implemented.")
+             else:
+                raise RuntimeError("No contract found to sever with the target conduit.")
+
+
 
     def _link_lesser_conduit(self, lesser_conduit: IConduit):
         """
@@ -283,68 +288,100 @@ class ConduitWard(IConduitWard):
                 return conduit
 
             # Recurse into the child's ward if it has one
-            ward = getattr(conduit, "_conduit_ward", None)
-            if ward:
-                result = ward._get_lesser_conduit(conduit_id)
-                if result is not None:
+            if (ward := getattr(conduit, "_conduit_ward", None)):
+                if (result := ward._get_lesser_conduit(conduit_id)) is not None:
                     return result
 
         return None
 
-    def _get_links(self):
+    def _get_links(self) -> List[IConduit]:
         """
         Internal
 
         Returns a list of all links associated with this conduit. Excluding lesser conduits.
         :return:
         """
-        raise NotImplementedError("get_links is not implemented yet.")
+        with self._lock:
+            return self._get_initiated_conduits() + self._get_provider_conduits()
 
-    def _get_linked_conduits(self) -> List[IConduit]:
+
+    def _get_initiated_conduits(self) -> List[IConduit]:
         """
         Internal
 
-        Returns a list of conduits linked to this conduit.
-        :return: List of linked conduits.
+        Retrieves all conduits that this conduit has initiated contracts toward.
+
+        Returns:
+            List[IConduit]: A list of conduits that this conduit has initiated contracts with.
         """
         if self._sealed:
             raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
-        with self._lock:
-            raise NotImplementedError("get_links is not implemented yet.")
+        return [
+            conduit for conduit_id in self._initiated_index.keys()
+            if (conduit := self._get_initiated_conduit(conduit_id)) is not None
+        ]
+
+
+    def _get_provider_conduits(self) -> List[IConduit]:
+        """
+        Internal
+
+        Retrieves all conduits that have initiated contracts to this conduit.
+
+        Returns:
+            List[IConduit]: A list of conduits that have linked to this conduit as a provider.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
+        return [
+            conduit for conduit_id in self._received_index.keys()
+            if (conduit := self._get_provider_conduit(conduit_id)) is not None
+        ]
 
     def _get_initiated_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
         """
         Internal
 
-        Returns a specific conduit linked to this conduit by its ID.
+        Retrieves the conduit that this conduit has initiated a contract *toward*.
+
+        This method uses the `_initiated_index` to resolve an outbound connection,
+        where this conduit was the initiator of the contract.
 
         Args:
-            conduit_id (UUID): The ID of the conduit to retrieve.
+            conduit_id (UUID): The ID of the target conduit this conduit linked to.
 
         Returns:
-            Optional[IConduit]: The linked conduit if found, otherwise None.
+            Optional[IConduit]: The target conduit if the link exists, otherwise None.
         """
         if self._sealed:
             raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
-        with self._lock:
-            raise NotImplementedError("get_linked_conduit is not implemented yet.")
+        if conduit_id in self._initiated_index:
+            contract_id = self._initiated_index[conduit_id]
+            if (contract := self._contracts.get(contract_id, None)) is not None:
+                return contract._ward_b._conduit if conduit_id == contract._ward_b._id else contract._ward_a._conduit
 
     def _get_provider_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
         """
         Internal
 
-        Returns a specific conduit linked to this conduit by its ID.
+        Retrieves the conduit that initiated a contract *to this* conduit.
+
+        This method uses the `_received_index` to resolve an inbound connection,
+        where another conduit linked to this one as the contract provider.
 
         Args:
-            conduit_id (UUID): The ID of the conduit to retrieve.
+            conduit_id (UUID): The ID of the source conduit that linked to this one.
 
         Returns:
-            Optional[IConduit]: The linked conduit if found, otherwise None.
+            Optional[IConduit]: The source conduit if the link exists, otherwise None.
         """
         if self._sealed:
             raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
-        with self._lock:
-            raise NotImplementedError("get_linked_conduit is not implemented yet.")
+        if conduit_id in self._received_index:
+            contract_id = self._received_index[conduit_id]
+            if (contract := self._contracts.get(contract_id, None)) is not None:
+                return contract._ward_b._conduit if conduit_id == contract._ward_b._id else contract._ward_a._conduit
+
 
     def seal_all_lesser_conduits(self) -> None:
         """
@@ -384,7 +421,7 @@ class ConduitWard(IConduitWard):
         """
         Seals the conduit ward, preventing any further modifications.
         """
-        raise NotImplementedError("is not implemented yet.")
+        raise NotImplementedError("Sealing is not implemented yet.")
         if self._sealed:
             return
         with self._lock:

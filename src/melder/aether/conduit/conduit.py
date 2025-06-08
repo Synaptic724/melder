@@ -1,6 +1,8 @@
 import threading
 from logging import warning
 from typing import Optional, Type, Any
+from uuid import UUID
+
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.concurrent_set import ConcurrentSet
@@ -460,7 +462,7 @@ class Conduit(IConduit):
 
 #endregion Conduit Cloud
 #region Conduit Ward API
-    def link(self, target_conduit) -> bool:
+    def link(self, target_conduit: IConduit) -> bool:
         """
         Public API
 
@@ -479,9 +481,9 @@ class Conduit(IConduit):
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         with self._lock:
-            self._conduit_ward._link_conduit(target_conduit)
+            return self._conduit_ward._link(target_conduit)
 
-    def sever_link(self, target_conduit) -> bool:
+    def sever_link(self, target_conduit: IConduit) -> bool:
         """
         Public API
 
@@ -498,22 +500,6 @@ class Conduit(IConduit):
             self._conduit_ward._sever_link(target_conduit)
 
 
-    def _sever_link(self):
-        """
-        Internal
-
-        Sever the link between this Conduit and its target Conduit.
-
-        This is meant for internal use please do not use this outside of the class.
-        """
-        if self._sealed:
-            raise RuntimeError("Cannot sever a link in a sealed Conduit.")
-        if not self.__dynamic_environment__:
-            raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
-        with self._lock:
-            raise NotImplementedError("Severing links is not implemented yet.")
-
-
     def get_links(self):
         """
         Public API
@@ -525,7 +511,8 @@ class Conduit(IConduit):
             raise RuntimeError("Cannot get links in a sealed Conduit.")
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
-        raise NotImplementedError("get_links is not implemented yet.")
+        with self._lock:
+            return self._conduit_ward._get_links()
 
     def get_lesser_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
         """
@@ -542,27 +529,49 @@ class Conduit(IConduit):
         if self._sealed:
             raise RuntimeError("Cannot get lesser conduits from a sealed Conduit.")
         with self._lock:
-            raise NotImplementedError("get_linked_conduit is not implemented yet.")
+            return self._conduit_ward._get_lesser_conduit(conduit_id)
 
 
-    def get_linked_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+    def get_initiated_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
         """
         Public API
 
-        Returns a specific conduit linked to this conduit by its ID.
+        Retrieves the conduit that this conduit has initiated a contract *toward*.
+
+        This method uses the `_initiated_index` to resolve an outbound connection,
+        where this conduit was the initiator of the contract.
 
         Args:
-            conduit_id (UUID): The ID of the conduit to retrieve.
+            conduit_id (UUID): The ID of the target conduit this conduit linked to.
 
         Returns:
-            Optional[IConduit]: The linked conduit if found, otherwise None.
+            Optional[IConduit]: The target conduit if the link exists, otherwise None.
         """
         if self._sealed:
-            raise RuntimeError("Cannot get linked conduits from a sealed Conduit.")
-        if not self.__dynamic_environment__:
-            raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
         with self._lock:
-            raise NotImplementedError("get_linked_conduit is not implemented yet.")
+            return self._conduit_ward._get_initiated_conduit(conduit_id)
+
+
+    def get_provider_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+        """
+        Public API
+
+        Retrieves the conduit that initiated a contract *to this* conduit.
+
+        This method uses the `_received_index` to resolve an inbound connection,
+        where another conduit linked to this one as the contract provider.
+
+        Args:
+            conduit_id (UUID): The ID of the source conduit that linked to this one.
+
+        Returns:
+            Optional[IConduit]: The source conduit if the link exists, otherwise None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
+        with self._lock:
+            return self._conduit_ward._get_provider_conduit(conduit_id)
 
     def seal_lesser_conduits(self):
         """
@@ -590,6 +599,7 @@ class Conduit(IConduit):
         Prevents further operation, releases internal references,
         and unregisters from the Aether.
         """
+        raise NotImplementedError("Sealing is not implemented yet.")
         if self._sealed:
             return
         with self._lock:

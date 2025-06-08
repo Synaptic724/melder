@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID, uuid4
 from threading import RLock
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -5,7 +6,7 @@ from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal, IConduitWard
 
 
-class Detail(ISeal):
+class _Detail(ISeal):
     """
     Represents a spell-level permission entry for a specific conduit
     within a contract. This defines what access the conduit has to a spell.
@@ -32,6 +33,8 @@ class Detail(ISeal):
 
     def seal(self):
         """
+        Internal
+
         Seal this detail, nullifying sensitive data and marking it immutable.
         """
         if self._sealed:
@@ -44,7 +47,7 @@ class Detail(ISeal):
             self.permissions = None
 
 
-class Contract(ISeal):
+class _Contract(ISeal):
     """
     A symmetric contract between two conduit wards.
 
@@ -67,11 +70,13 @@ class Contract(ISeal):
         self._ward_b: IConduitWard = ward_b
 
         # Each side stores its own view of spell permissions.
-        self._details_a: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit b
-        self._details_b: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit a
+        self._details_a: ConcurrentDict[str, _Detail] = ConcurrentDict() # Borrowed from conduit b
+        self._details_b: ConcurrentDict[str, _Detail] = ConcurrentDict() # Borrowed from conduit a
 
-    def get_peer(self, ward: IConduitWard) -> IConduitWard:
+    def _get_peer(self, ward: IConduitWard) -> IConduitWard:
         """
+        Internal
+
         Return the opposite conduit in this contract.
         """
         if ward is self._ward_a:
@@ -80,9 +85,26 @@ class Contract(ISeal):
             return self._ward_a
         raise ValueError("Ward is not a member of this contract.")
 
-    def _get_detail_map(self, ward: IConduitWard) -> ConcurrentDict[str, Detail]:
+    def _get_opposite_conduit(self, contract: '_Contract', known_id: UUID) -> Optional['IConduit']:
         """
-        Internal helper to return the permission map associated with a given ward.
+        Internal
+
+        Helper to find the opposite conduit in a contract based on a known conduit ID.
+        :param contract:
+        :param known_id:
+        :return:
+        """
+        if contract._ward_a._id == known_id:
+            return contract._ward_b._conduit
+        elif contract._ward_b._id == known_id:
+            return contract._ward_a._conduit
+        return None
+
+    def _get_detail_map(self, ward: IConduitWard) -> ConcurrentDict[str, _Detail]:
+        """
+        Internal
+
+        Helper to return the permission map associated with a given ward.
         """
         if ward is self._ward_a:
             return self._details_a
@@ -90,22 +112,28 @@ class Contract(ISeal):
             return self._details_b
         raise ValueError("Invalid ward for contract access.")
 
-    def add(self, ward: IConduitWard, contract_detail: Detail) -> None:
+    def _add(self, ward: IConduitWard, contract_detail: _Detail) -> None:
         """
+        Internal
+
         Add a spell-level permission detail to the contract on behalf of the given ward.
         """
         self._get_detail_map(ward)[contract_detail.spell_id] = contract_detail
 
-    def remove(self, ward: IConduitWard, spell_id: str) -> None:
+    def _remove(self, ward: IConduitWard, spell_id: str) -> None:
         """
+        Internal
+
         Remove a spell-level permission detail from the given ward's view.
         """
         detail_map = self._get_detail_map(ward)
         if spell_id in detail_map:
             del detail_map[spell_id]
 
-    def has(self, ward: IConduitWard, spell_id: str, permission: Permissions) -> bool:
+    def _has(self, ward: IConduitWard, spell_id: str, permission: Permissions) -> bool:
         """
+        Internal
+
         Check if the given ward has permission for the specified spell.
         """
         detail_map = self._get_detail_map(ward)
@@ -113,8 +141,10 @@ class Contract(ISeal):
             return False
         return detail_map[spell_id].permissions == permission
 
-    def grant(self, ward: IConduitWard, spell_ids: list[str], permission: Permissions):
+    def _grant(self, ward: IConduitWard, spell_ids: list[str], permission: Permissions):
         """
+        Internal
+
         Grant a list of spells with a single permission type for the specified ward.
 
         Args:
@@ -124,10 +154,12 @@ class Contract(ISeal):
         """
         detail_map = self._get_detail_map(ward)
         for spell_id in spell_ids:
-            detail_map[spell_id] = Detail(spell_id, permission)
+            detail_map[spell_id] = _Detail(spell_id, permission)
 
     def seal(self):
         """
+        Internal
+
         Seal the contract, clearing its wards and internal details.
         """
         if self._sealed:
@@ -142,6 +174,8 @@ class Contract(ISeal):
 
     def clean_up(self):
         """
+        Internal
+
         Seal and clear all spell details from both sides.
         """
         for detail in self._details_a.values():
