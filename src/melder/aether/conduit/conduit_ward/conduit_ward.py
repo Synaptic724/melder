@@ -48,14 +48,14 @@ class ConduitWard(IConduitWard):
         self._policy: Policies = self._set_initial_policy(policy)
 
         # Contracts between conduits
-        self._initiated_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # Maps contract ID to target conduit ID
-        self._received_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # Maps contract ID to source conduit ID
+        self._initiated_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # [Target ConduitID] -> [ContractID]
+        self._received_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # [Source ConduitID] -> [ContractID]
 
-        self._contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict() # All contracts associated with this conduit ward
+        self._contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict() # [ContractID] -> Contract
 
         # Lineage Links
         self._parent_conduit: IConduit | None = None
-        self._lesser_conduits: ConcurrentDict[UUID, IConduit] = ConcurrentDict()
+        self._lesser_conduits: ConcurrentDict[UUID, IConduit] = ConcurrentDict() # [Lesser ConduitID] -> Lesser Conduit
 
 #region Properties
 #endregion Properties
@@ -162,16 +162,42 @@ class ConduitWard(IConduitWard):
             if target_conduit._conduit_state == ConduitState.lesser:
                 raise RuntimeError("Cannot link to a lesser conduit. Use _link_lesser_conduit instead.")
             if target_conduit._conduit_state == ConduitState.normal:
-                # If the target conduit is normal, we can link it
-                self._contracts.append(Contract(self, target_conduit._conduit_ward))
+                if self._find_contract(target_conduit):
+                    return True
+                else:
+                    # If the target conduit is normal, we can link it
+                    if self._create_new_contract(target_conduit):
+                        return True
+                    else:
+                        raise RuntimeError("Failed to create a new contract with the target conduit.")
+            return False
 
-                return True
+    def _create_new_contract(self, target_conduit: IConduit) -> bool:
+        """
+        Internal
+        Creates a new contract with the specified target conduit.
+        :param target_conduit:
+        :return:
+        """
+        with self._lock:
+            # Create new contract
+            contract = Contract(self, target_conduit._conduit_ward)
 
-    def _find_contract(self, target_conduit: IConduit) -> Optional[Contract]:
+            # Register the contract in both wards
+            self._contracts[contract._id] = contract
+            target_conduit._conduit_ward._contracts[contract._id] = contract
+
+            # Update the initiated and received indices
+            self._initiated_index[target_conduit.__creation_context__._conduit_id] = contract._id
+            target_conduit._conduit_ward._received_index[self._id] = contract._id
+            return True
+
+
+    def _find_contract_id(self, target_conduit: IConduit) -> Optional[UUID]:
         """
         Internal
 
-        Finds a contract with the specified target conduit.
+        Finds a contract ID with the specified target conduit.
 
         Args:
             target_conduit (IConduit): The target conduit to find the contract for.
@@ -181,12 +207,31 @@ class ConduitWard(IConduitWard):
         """
         if self._sealed:
             raise RuntimeError("Cannot find contracts in a sealed Conduit Ward.")
+        if not isinstance(target_conduit, IConduit):
+            raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
 
-        for contract in self._contracts:
-            if contract._ward_a == self or contract._ward_b == self:
-                if target_conduit.__creation_context__._conduit_id in (contract._ward_a._id, contract._ward_b._id):
-                    return contract
-            return None
+        initiated_contract = self._initiated_index.get(target_conduit._conduit_ward._id, None)
+        received_contract = self._received_index.get(target_conduit._conduit_ward._id, None)
+
+        return initiated_contract if initiated_contract is not None else received_contract
+
+    def _find_contract(self, target_conduit: IConduit) -> Optional[Contract]:
+        """
+        Internal
+
+        Finds the contract object linked to the given target conduit.
+
+        Returns:
+            Optional[Contract]: The contract object if it exists.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot find contracts in a sealed Conduit Ward.")
+        if not isinstance(target_conduit, IConduit):
+            raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
+
+        peer_id = target_conduit._conduit_ward._id
+        contract_id = self._initiated_index.get(peer_id) or self._received_index.get(peer_id)
+        return self._contracts.get(contract_id)
 
     def _sever_link(self, target_conduit: IConduit):
         """

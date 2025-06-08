@@ -55,13 +55,13 @@ class Contract(ISeal):
     Fields:
     - _ward_a / _ward_b: The two conduit ward participants in this contract.
     - _details_a / _details_b: Spell permission maps for each ward's view.
-    - contract_id: Unique identifier for this contract instance.
+    - _id: Unique identifier for this contract instance.
     """
 
     def __init__(self, ward_a: IConduitWard, ward_b: IConduitWard):
         super().__init__()
         self._lock = RLock()
-        self.contract_id: UUID = uuid4()
+        self._id: UUID = uuid4()
 
         self._ward_a: IConduitWard = ward_a
         self._ward_b: IConduitWard = ward_b
