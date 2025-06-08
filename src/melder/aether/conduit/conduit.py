@@ -570,6 +570,9 @@ class Conduit(IConduit):
 
         Seals all lesser conduits linked to this conduit.
         This is used to prevent further operations on lesser conduits.
+        Generally used when upgrading a lesser conduit to a normal conduit.
+
+        This method is called when you seal a conduit, or you can call it manually to seal all lesser conduits.
         """
         if self._sealed:
             raise RuntimeError("Cannot get linked conduits from a sealed Conduit.")

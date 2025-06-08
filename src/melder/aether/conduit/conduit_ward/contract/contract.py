@@ -1,42 +1,38 @@
 from uuid import UUID, uuid4
-from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
+from threading import RLock
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal, IConduitWard
-from threading import RLock
+
 
 class Detail(ISeal):
     """
-    Represents a spell-level permission entry within a Contract.
-
-    Each Detail object binds a specific spell ID to a set of permissions
-    and tracks which provider conduit issued the permission.
+    Represents a spell-level permission entry for a specific conduit
+    within a contract. This defines what access the conduit has to a spell.
 
     Fields:
-    - spell_id: Unique identifier for the spell
-    - permissions: Enum defining granted permissions (e.g., READ, WRITE)
-    - _provider_id: UUID of the conduit providing the spell
+    - spell_id: The identifier of the spell this permission applies to.
+    - permissions: Permissions enum (read, create, block).
 
-    Once sealed, the Detail becomes immutable and clears sensitive fields.
+    Once sealed, the Detail becomes immutable and clears internal state.
     """
 
     def __init__(self, spell_id: str, permissions: Permissions):
         super().__init__()
         self._lock = RLock()
-        self.spell_id = spell_id
 
-        # Enforce type safety for permissions enum
-        if permissions is not None:
-            if not isinstance(permissions, Permissions):
-                raise TypeError(
-                    f"permissions must be an instance of Permissions enum, got {type(permissions).__name__}"
-                )
+        if not isinstance(permissions, Permissions):
+            raise TypeError(
+                f"permissions must be an instance of Permissions enum, got {type(permissions).__name__}"
+            )
 
-        self.permissions = permissions
+        with self._lock:
+            self.spell_id = spell_id
+            self.permissions = permissions
 
     def seal(self):
         """
-        Seal the Detail entry, making it immutable and nullifying sensitive fields.
+        Seal this detail, nullifying sensitive data and marking it immutable.
         """
         if self._sealed:
             return
@@ -47,70 +43,92 @@ class Detail(ISeal):
             self.spell_id = None
             self.permissions = None
 
+
 class Contract(ISeal):
     """
-    Standard contract for normal conduit links.
+    A symmetric contract between two conduit wards.
 
-    This contract allows fine-grained permission control per spell.
-    It tracks both ends of the conduit relationship (initiator and provider)
-    and holds a mapping from spell_id to permission details.
+    Each contract maintains permission details for both sides independently.
+    There is no directional bias (no initiator or provider); both parties
+    may define what spells they allow the other to use.
 
     Fields:
-    - _initiator_id / _initiator_ward: UUID and ward initiating the contract
-    - _provider_id / _provider_ward: UUID and ward providing the spells
-    - _contract_details: Maps spell_id → Detail (permissions, etc.)
+    - _ward_a / _ward_b: The two conduit ward participants in this contract.
+    - _details_a / _details_b: Spell permission maps for each ward's view.
+    - contract_id: Unique identifier for this contract instance.
     """
 
-    def __init__(self, initiator_id: UUID, initiator_ward: IConduitWard, provider_id: UUID, provider_ward: IConduitWard):
+    def __init__(self, ward_a: IConduitWard, ward_b: IConduitWard):
         super().__init__()
         self._lock = RLock()
-        self._initiator_id: UUID = initiator_id
-        self._initiator_ward: IConduitWard = initiator_ward
-        self._provider_id: UUID = provider_id
-        self._provider_ward: IConduitWard = provider_ward
+        self.contract_id: UUID = uuid4()
 
-        # Spell-level permission map
-        self._contract_details: ConcurrentDict[str, Detail] = ConcurrentDict()
+        self._ward_a: IConduitWard = ward_a
+        self._ward_b: IConduitWard = ward_b
 
-    @staticmethod
-    def type() -> ContractTypes:
-        """
-        Returns the contract type: normal conduit.
-        """
-        return ContractTypes.normal_conduit
+        # Each side stores its own view of spell permissions.
+        self._details_a: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit b
+        self._details_b: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit a
 
-    def add(self, contract_detail: Detail) -> None:
+    def get_peer(self, ward: IConduitWard) -> IConduitWard:
         """
-        Add a spell-level permission entry to the contract.
+        Return the opposite conduit in this contract.
         """
-        self._contract_details[contract_detail.spell_id] = contract_detail
+        if ward is self._ward_a:
+            return self._ward_b
+        if ward is self._ward_b:
+            return self._ward_a
+        raise ValueError("Ward is not a member of this contract.")
 
-    def remove(self, contract_detail: Detail) -> None:
+    def _get_detail_map(self, ward: IConduitWard) -> ConcurrentDict[str, Detail]:
         """
-        Remove a spell-level permission entry from the contract.
+        Internal helper to return the permission map associated with a given ward.
         """
-        if contract_detail.spell_id in self._contract_details:
-            del self._contract_details[contract_detail.spell_id]
+        if ward is self._ward_a:
+            return self._details_a
+        if ward is self._ward_b:
+            return self._details_b
+        raise ValueError("Invalid ward for contract access.")
 
-    def has(self, spell_id: str, permission: Permissions) -> bool:
+    def add(self, ward: IConduitWard, contract_detail: Detail) -> None:
         """
-        Check if a spell has the required permission.
+        Add a spell-level permission detail to the contract on behalf of the given ward.
+        """
+        self._get_detail_map(ward)[contract_detail.spell_id] = contract_detail
+
+    def remove(self, ward: IConduitWard, spell_id: str) -> None:
+        """
+        Remove a spell-level permission detail from the given ward's view.
+        """
+        detail_map = self._get_detail_map(ward)
+        if spell_id in detail_map:
+            del detail_map[spell_id]
+
+    def has(self, ward: IConduitWard, spell_id: str, permission: Permissions) -> bool:
+        """
+        Check if the given ward has permission for the specified spell.
+        """
+        detail_map = self._get_detail_map(ward)
+        if spell_id not in detail_map:
+            return False
+        return detail_map[spell_id].permissions == permission
+
+    def grant(self, ward: IConduitWard, spell_ids: list[str], permission: Permissions):
+        """
+        Grant a list of spells with a single permission type for the specified ward.
 
         Args:
-            spell_id (str): The identifier for the spell
-            permission (Permissions): The permission to check for
-
-        Returns:
-            bool: True if permission exists, False otherwise
+            ward (IConduitWard): The ward granting access.
+            spell_ids (list[str]): List of spell IDs to grant.
+            permission (Permissions): The permission level to assign.
         """
-        if spell_id not in self._contract_details:
-            return False
-        return self._contract_details[spell_id].permissions == permission
+        detail_map = self._get_detail_map(ward)
+        for spell_id in spell_ids:
+            detail_map[spell_id] = Detail(spell_id, permission)
 
     def seal(self):
         """
-        Seal the contract and its associated details.
-        Clears all internal state to ensure immutability and cleanup.
+        Seal the contract, clearing its wards and internal details.
         """
         if self._sealed:
             return
@@ -118,16 +136,18 @@ class Contract(ISeal):
             if self._sealed:
                 return
             self.clean_up()
-            self._initiator_id = None
-            self._initiator_ward = None
-            self._provider_id = None
-            self._provider_ward = None
+            self._ward_a = None
+            self._ward_b = None
             self._sealed = True
 
     def clean_up(self):
         """
-        Seal and remove all spell-level details in the contract.
+        Seal and clear all spell details from both sides.
         """
-        for detail in self._contract_details.values():
+        for detail in self._details_a.values():
             detail.seal()
-        self._contract_details.clear()
+        self._details_a.clear()
+
+        for detail in self._details_b.values():
+            detail.seal()
+        self._details_b.clear()

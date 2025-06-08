@@ -5,7 +5,6 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
-from melder.utilities.concurrent_set import ConcurrentSet
 from melder.utilities.general_helpers import EnumHelpers
 from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -21,14 +20,21 @@ from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contrac
 #region ConduitWard
 class ConduitWard(IConduitWard):
     """
-    Conduitward is a class that manages the links between conduits.
+    ConduitWard manages the dynamic linking, lineage, and permission policy
+    for a single conduit within the Melder framework.
+
+    Key Responsibilities:
+    - Maintains contracts with other conduits (both outbound and inbound).
+    - Handles lineage via parent and lesser conduit tracking.
+    - Enforces conduit access policies (e.g., whitelist, block, dynamic).
+    - Manages thread-safe operations using internal locking.
+
+    Contract Directionality:
+    - _initiated_contracts: Links this conduit has initiated to others.
+    - _provider_contracts: Links where this conduit has been the provider target.
     """
     _aether = Aether()
     def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies):
-        """
-        Conduitward is a class that manages the links between conduits.
-        :param conduit:
-        """
         super().__init__()
         self._lock: threading.RLock  = threading.RLock()
 
@@ -36,13 +42,16 @@ class ConduitWard(IConduitWard):
         self._conduit: IConduit = conduit
         self._dynamic: bool = dynamic
         self._conduit_type: ConduitState = conduit_type
+        self._id = conduit.__creation_context__._conduit_id
 
         self._policy_set: bool = False
         self._policy: Policies = self._set_initial_policy(policy)
 
-        ## Dynamic Conduit Links
-        self._initiated_contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict()
-        self._provider_contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict()
+        # Contracts between conduits
+        self._initiated_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # Maps contract ID to target conduit ID
+        self._received_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # Maps contract ID to source conduit ID
+
+        self._contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict() # All contracts associated with this conduit ward
 
         # Lineage Links
         self._parent_conduit: IConduit | None = None
@@ -128,7 +137,7 @@ class ConduitWard(IConduitWard):
 
 #endregion Conduit Ward Configuration
 #region Link Management
-    def _link(self, target_conduit) -> bool:
+    def _link(self, target_conduit: IConduit) -> bool:
         """
         Internal
 
@@ -145,9 +154,41 @@ class ConduitWard(IConduitWard):
         if self._sealed:
             raise RuntimeError("Cannot link to a sealed Conduit Ward.")
         with self._lock:
-            raise NotImplementedError("Linking conduits is not implemented yet.")
+            if not self._dynamic:
+                raise RuntimeError("Dynamic environment is not enabled. Cannot link conduits.")
+            if target_conduit.__creation_context__._conduit_id == self._id:
+                raise RuntimeError("Cannot link a conduit to itself.")
+            # Check if the target conduit is already linked
+            if target_conduit._conduit_state == ConduitState.lesser:
+                raise RuntimeError("Cannot link to a lesser conduit. Use _link_lesser_conduit instead.")
+            if target_conduit._conduit_state == ConduitState.normal:
+                # If the target conduit is normal, we can link it
+                self._contracts.append(Contract(self, target_conduit._conduit_ward))
 
-    def _sever_link(self):
+                return True
+
+    def _find_contract(self, target_conduit: IConduit) -> Optional[Contract]:
+        """
+        Internal
+
+        Finds a contract with the specified target conduit.
+
+        Args:
+            target_conduit (IConduit): The target conduit to find the contract for.
+
+        Returns:
+            Optional[Contract]: The found contract or None if not found.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot find contracts in a sealed Conduit Ward.")
+
+        for contract in self._contracts:
+            if contract._ward_a == self or contract._ward_b == self:
+                if target_conduit.__creation_context__._conduit_id in (contract._ward_a._id, contract._ward_b._id):
+                    return contract
+            return None
+
+    def _sever_link(self, target_conduit: IConduit):
         """
         Internal
 
@@ -227,7 +268,7 @@ class ConduitWard(IConduitWard):
         with self._lock:
             raise NotImplementedError("get_links is not implemented yet.")
 
-    def _get_linked_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+    def _get_initiated_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
         """
         Internal
 
@@ -244,6 +285,22 @@ class ConduitWard(IConduitWard):
         with self._lock:
             raise NotImplementedError("get_linked_conduit is not implemented yet.")
 
+    def _get_provider_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+        """
+        Internal
+
+        Returns a specific conduit linked to this conduit by its ID.
+
+        Args:
+            conduit_id (UUID): The ID of the conduit to retrieve.
+
+        Returns:
+            Optional[IConduit]: The linked conduit if found, otherwise None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
+        with self._lock:
+            raise NotImplementedError("get_linked_conduit is not implemented yet.")
 
     def seal_all_lesser_conduits(self) -> None:
         """

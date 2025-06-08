@@ -163,8 +163,6 @@ class Spell(ISpell):
     def _add_build_details(self, dag: Any, dependencies: List[str] = None):
         """
         Add details to the spell.
-        :param dependency_graph: DAG system of dependencies.
-        :param existing_object: existing object if applicable.
         """
         if dag is None:
             raise ValueError("Dependency graph cannot be None.")
@@ -286,10 +284,6 @@ class Spellbook(ISpellbook):
         # Configuration state
         self._configuration_locked: bool = False
         self._configuration = configuration
-
-        # Spellbook-wide policy flags
-        self._block_all_spells: bool = False  # Used to block all spells in the spellbook
-        self._whitelist_all_spells: bool = False  # Used to whitelist all spells in the spellbook, treated like create status
 
         # Core spell storage (SHA256-keyed)
         self.__spells: ConcurrentDict[str, Spell] | None= None
