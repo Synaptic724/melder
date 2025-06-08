@@ -345,6 +345,19 @@ class Conduit(IConduit):
             raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
         return spell_key
 
+    def get_spell_details(self, spell_id: str) -> Optional[dict]:
+        """
+        Public API
+
+        Retrieves the details of a spell by its SHA256 ID.
+        :param spell_id: The SHA256 ID of the spell.
+        :return: A dictionary containing spell details, or None if not found.
+        """
+        spell_details = self._spellbook.get_spell_details(spell_id)
+        if not spell_details:
+            raise ValueError(f"Spell with ID '{spell_id}' not found in the spellbook.")
+        return spell_details
+
 
     def inspect_spell(self, spell: Any) -> Optional[str]:
         """
@@ -478,6 +491,41 @@ class Conduit(IConduit):
         return Conduit._aether._get_conduit_cloud(self._aetheric_frame)
 
 #endregion Conduit Cloud
+#region Aether API
+    def get_conduit_by_id(self, conduit_id: UUID) -> Optional[IConduit]:
+        """
+        Public API
+
+        Retrieves a conduit by its unique ID.
+
+        Args:
+            conduit_id (UUID): The unique identifier of the conduit.
+
+        Returns:
+            Optional[IConduit]: The conduit instance if found, otherwise None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get conduits in a sealed Conduit.")
+        with self._lock:
+            return Conduit._aether._get_conduit_by_id(conduit_id)
+
+    def get_conduit_by_name(self, name: str) -> Optional[IConduit]:
+        """
+        Public API
+
+        Retrieves a conduit by its name.
+
+        Args:
+            name (str): The name of the conduit.
+
+        Returns:
+            Optional[IConduit]: The conduit instance if found, otherwise None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get conduits in a sealed Conduit.")
+        with self._lock:
+            return Conduit._aether._get_conduit_by_name(name, self._aetheric_frame)
+#endregion Aether API
 #region Conduit Ward API
     def link(self, target_conduit: IConduit) -> bool:
         """

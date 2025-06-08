@@ -1,7 +1,6 @@
 from uuid import UUID
 import threading
 from typing import List, Optional
-from melder.aether.aether import Aether
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.general_helpers import EnumHelpers
@@ -32,7 +31,6 @@ class ConduitWard(IConduitWard):
     - _initiated_contracts: Links this conduit has initiated to others.
     - _provider_contracts: Links where this conduit has been the provider target.
     """
-    _aether = Aether()
     def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies):
         super().__init__()
         self._lock: threading.RLock  = threading.RLock()

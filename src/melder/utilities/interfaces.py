@@ -413,7 +413,7 @@ class IConduit(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def link(self):
+    def link(self, target_conduit: 'IConduit') -> bool:
         """
         Links this Conduit to another Conduit.
         Only allowed if the world environment is dynamic.

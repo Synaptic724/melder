@@ -216,7 +216,8 @@ class Aether(ISeal):
 
     def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
         """
-        Returns a conduit by its spell ID.
+        Returns a conduit by its spell ID. This is used to find the conduit associated with a specific spell ID.
+
         :param spell_id: The spell ID to search for.
         :param aetheric_frame_name: The name of the Aetheric Frame to search in.
         :return: The conduit associated with the given spell ID.
@@ -231,7 +232,7 @@ class Aether(ISeal):
 
         for conduit_id, spell_set in spell_registry.items():
             if spell_id in spell_set:
-                return self.get_conduit_by_signature(conduit_id, aetheric_frame_name)
+                return self._get_conduit_by_signature(conduit_id, aetheric_frame_name)
         raise ValueError(f"Spell ID {spell_id} not found in any conduit.")
 
     def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str], aetheric_frame_name: str = "default"):
@@ -258,7 +259,7 @@ class Aether(ISeal):
         else:
             raise ValueError(f"Spell registry already contains Conduit ID {conduit_id}.")
 
-    def get_conduit(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
+    def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
         """
         Returns a conduit by its name.
         """
@@ -275,7 +276,7 @@ class Aether(ISeal):
                 return conduit
         raise ValueError(f"Conduit with name {name} not found.")
 
-    def get_conduit_by_signature(self, signature: uuid.uuid4, aetheric_frame_name: str = "default") -> IConduit:
+    def _get_conduit_by_id(self, signature: uuid.uuid4, aetheric_frame_name: str = "default") -> IConduit:
         """
         Returns a conduit by its signature.
         """
@@ -388,28 +389,6 @@ class Aether(ISeal):
         if cluster_name not in conduit_clusters:
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
         return conduit_clusters[cluster_name]
-
-    def _link_conduit_by_signature(self, req_conduit, conduit_signature: uuid.uuid4, aetheric_frame_name: str = "default"):
-        """
-        Returns a conduit in order to link them. Not meant for external use.
-        """
-        raise NotImplementedError()
-        for conduit in self._conduits.values():
-            if conduit.signature == conduit_signature:
-                req_conduit.link(conduit)
-                return
-        raise ValueError(f"Conduit signature: {conduit_signature}, not found.")
-
-    def _link_conduit_by_name(self, req_conduit: IConduit, conduit_name: str, aetheric_frame_name: str = "default"):
-        """
-        Returns a conduit in order to link them. Not meant for external use.
-        """
-        raise NotImplementedError("Not implemented.")
-        for conduit in self._conduits.values():
-            if conduit.name == conduit_name:
-                req_conduit.link(conduit)
-                return
-        raise ValueError(f"Conduit name: {conduit_name}, not found.")
 
     def seal(self):
         """
