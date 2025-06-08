@@ -4,7 +4,6 @@ from typing import List, Optional
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.general_helpers import EnumHelpers
 from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
