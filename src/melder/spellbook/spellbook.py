@@ -19,7 +19,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 #region Spell
 class Spell(ISpell):
     """
-    Private
+    Internal
 
     🪄 Represents a registered spell within the Melder system.
 
@@ -173,18 +173,6 @@ class Spell(ISpell):
             self.dependency_graph = dag
             self.dependencies = dependencies
 
-
-    def add_hooks(self, pre_hooks: List[Callable], activation_hooks: List[Callable], post_hooks: List[Callable]):
-        """
-        Add hooks to the spell.
-        :param pre_hooks: List of pre-cast hooks.
-        :param activation_hooks: List of activation hooks.
-        :param post_hooks: List of post-cast hooks.
-        """
-        with self._lock:
-            self.pre_hooks = pre_hooks
-            self.activation_hooks = activation_hooks
-            self.post_hooks = post_hooks
 #endregion Configuration
 #region Casting
     def cast(self) -> object:

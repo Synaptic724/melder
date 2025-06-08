@@ -152,6 +152,8 @@ class ConduitWard(IConduitWard):
         """
         if self._sealed:
             raise RuntimeError("Cannot link to a sealed Conduit Ward.")
+        if target_conduit.__creation_context__._conduit_id == self._id:
+            raise RuntimeError("Cannot link a conduit to itself.")
         with self._lock:
             if not self._dynamic:
                 raise RuntimeError("Dynamic environment is not enabled. Cannot link conduits.")
@@ -170,6 +172,7 @@ class ConduitWard(IConduitWard):
                     else:
                         raise RuntimeError("Failed to create a new contract with the target conduit.")
             return False
+
 
     def _create_new_contract(self, target_conduit: IConduit) -> bool:
         """

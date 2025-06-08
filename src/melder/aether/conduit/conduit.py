@@ -295,6 +295,23 @@ class Conduit(IConduit):
 
         return new_conduit
 
+    def get_conduit_by_spell_id(self, spell_id: str) -> Optional[IConduit]:
+        """
+        Public API
+
+        Retrieves the conduit that has registered a spell with the given spell_id.
+
+        Args:
+            spell_id (str): The unique identifier of the spell.
+
+        Returns:
+            Optional[IConduit]: The conduit that registered the spell, or None if not found.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get conduits in a sealed Conduit.")
+        with self._lock:
+            return Conduit._aether._get_conduit_by_spell_id(spell_id)
+
 #endregion Conduit Management
 #region Spellbook Management API
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
@@ -480,6 +497,10 @@ class Conduit(IConduit):
             raise RuntimeError("Cannot link to a sealed Conduit.")
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
+        if not isinstance(target_conduit, IConduit):
+            raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
+        if not target_conduit.__creation_context__._conduit_id:
+            raise RuntimeError("Target conduit does not have a valid creation context.")
         with self._lock:
             return self._conduit_ward._link(target_conduit)
 
@@ -497,7 +518,7 @@ class Conduit(IConduit):
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         with self._lock:
-            self._conduit_ward._sever_link(target_conduit)
+            return self._conduit_ward._sever_link(target_conduit)
 
 
     def get_links(self):
