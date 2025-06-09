@@ -137,47 +137,6 @@ class ISpellbook(ISeal):
     for all spells in the system. It behaves as a binder, store, and
     configuration authority for conduits.
     """
-    @property
-    @abstractmethod
-    def _spells(self) -> 'ConcurrentDict[str, ISpell]':
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @property
-    @abstractmethod
-    def _contracted_spells(self) -> 'ConcurrentDict[str, ISpell]':
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @property
-    @abstractmethod
-    def _lookup_spells(self) -> 'ConcurrentDict[tuple, str]':
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @property
-    @abstractmethod
-    def _lookup_contracted_spells(self) -> 'ConcurrentDict[tuple, str]':
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @_spells.setter
-    @abstractmethod
-    def _spells(self, value: 'ConcurrentDict[str, ISpell]'):
-        raise NotImplementedError("Subclasses must implement this method.")
-
-
-    @_lookup_spells.setter
-    @abstractmethod
-    def _lookup_spells(self, value: 'ConcurrentDict[tuple, str]'):
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @_contracted_spells.setter
-    @abstractmethod
-    def _contracted_spells(self, value: 'ConcurrentDict[str, ISpell]'):
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @_lookup_contracted_spells.setter
-    @abstractmethod
-    def _lookup_contracted_spells(self, value: 'ConcurrentDict[tuple, str]'):
-        raise NotImplementedError("Subclasses must implement this method.")
-
     @abstractmethod
     def _lesser_conduit_spellbook_copy(self) -> 'ISpellbook':
         """
@@ -346,7 +305,6 @@ class IConduitWard(ISeal):
     Interface for a ConduitWard, which manages the links between conduits.
     """
     __slots__ = []
-
 #region Properties
     @abstractmethod
     @property

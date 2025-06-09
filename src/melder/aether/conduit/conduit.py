@@ -2,7 +2,6 @@ import threading
 from logging import warning
 from typing import Optional, Type, Any
 from uuid import UUID
-
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.concurrent_set import ConcurrentSet
@@ -242,7 +241,7 @@ class Conduit(IConduit):
             self._conduit_ward._convert_to_normal_conduit()
 
             # Step 6: Reconfigure the spellbook
-            self._spellbook.convert_to_normal_conduit_spellbook()
+            self._spellbook.create_new_preset_spellbook()
 
             # Step 7: Register as a full Conduit in Aether
             Conduit._add_conduit_to_aether(self)
@@ -281,15 +280,12 @@ class Conduit(IConduit):
 
         with self._lock:
             new_conduit = Conduit(
-                spellbook=self._spellbook._lesser_conduit_spellbook_copy(),
+                spellbook=self._spellbook,
                 configuration=self._configuration,
                 conduit_state=ConduitState.lesser,
                 aetheric_frame=self._aetheric_frame,
                 policy=Policies.lesser_conduit
             )
-
-        with new_conduit._spellbook._lock:
-            new_conduit._spellbook._conjured = True  # Mark as conjured spellbook
 
         self._conduit_ward._link_lesser_conduit(new_conduit)
 
@@ -314,6 +310,7 @@ class Conduit(IConduit):
 
 #endregion Conduit Management
 #region Spellbook Management API
+
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """
         Public API
@@ -434,7 +431,19 @@ class Conduit(IConduit):
         with self._lock:
             return self._spellbook.bind(spell=spell, existence=existence, spellframe=spellframe, name=name, permissions=permissions, **kwargs)
 
+    def get_spell_permissions(self, spell_id: str) -> Optional[str]:
+        """
+        Public API
 
+        Get the permissions for a spell by its spell_id.
+        :param spell_id: The unique identifier of the spell.
+        :return: The permissions associated with the spell, or None if not found.
+        """
+        spell = self._spellbook._find_spell(spell_id)
+        if spell:
+            return spell.permissions.name
+        else:
+            raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
 
 #endregion Spellbook Management API
 
@@ -527,6 +536,9 @@ class Conduit(IConduit):
             return Conduit._aether._get_conduit_by_name(name, self._aetheric_frame)
 #endregion Aether API
 #region Conduit Ward API
+    def create_spell_contract(self, target_conduit: IConduit, spell_id: str) -> bool:
+        pass
+
     def link(self, target_conduit: IConduit) -> bool:
         """
         Public API

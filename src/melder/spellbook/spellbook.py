@@ -227,7 +227,7 @@ class Spellbook(ISpellbook):
      documentation** and understand the implications of shared scope,
      mutation locking, and distributed spell ownership.
 
-     By default the (aether_frame=None) will generate a unique frame that is isolated for general use.
+     By default, the (aether_frame=None) will generate a unique frame that is isolated for general use.
      Which will work as intended for most use cases.
      -------------------------------------------------------------------------------
 
@@ -238,11 +238,7 @@ class Spellbook(ISpellbook):
     - Supports optional shared configuration state through the `aether_frame` system.
 
     Parameters:
-        conduit_type (ConduitState, optional):
-            The initial conduit type to use. Defaults to `ConduitState.normal` if omitted.
-            If a string is passed, it will be automatically converted to a valid enum.
-
-        aether_frame (str, optional):
+        aetheric_frame (str, optional):
             A shared frame name used to join multiple Spellbooks under the same Aetheric
             configuration and spell contract scope. Refer to documentation before using.
 
@@ -258,12 +254,9 @@ class Spellbook(ISpellbook):
         - If configuration is already shared via an aether frame, it will be reused.
     """
     _aether = Aether()
-    def __init__(self, conduit_type: ConduitState = None, aetheric_frame: str = "default", configuration: Optional[Configuration] = None):
+    def __init__(self, aetheric_frame: str = "default", configuration: Optional[Configuration] = None):
         super().__init__()
         self._lock = RLock()
-
-        # Conduit type
-        self._conduit_type = ConduitState.resolve(conduit_type)
 
         # Internal state
         self._conjured = False
@@ -274,65 +267,36 @@ class Spellbook(ISpellbook):
         self._configuration = configuration
 
         # Core spell storage (SHA256-keyed)
-        self.__spells: ConcurrentDict[str, Spell] | None= None
-        self.__lookup_spells: ConcurrentDict[tuple, str] | None = None
+        self._spells: ConcurrentDict[str, Spell] = ConcurrentDict()
+        self._lookup_spells: ConcurrentDict[tuple, str]  = ConcurrentDict()
 
         # Networked/remote spell support
         # Basically if we're using dynamic mode it's a dict of dicts else it's not
         # This is mainly because we need to maintain the contract system while using lesser scopes
-        self.__contracted_spells: ConcurrentDict[str, ConcurrentDict[str, Spell]] | ConcurrentDict[str, Spell] | None
-        self.__lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]] | ConcurrentDict[tuple, str] | None
+        self._contracted_spells: ConcurrentDict[str, ConcurrentDict[str, Spell]] = ConcurrentDict(ConcurrentDict())
+        self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]]  = ConcurrentDict(ConcurrentDict())
 
-        if self._conduit_type != ConduitState.lesser:
-            self._initialize_configuration()
-            self.__spells = ConcurrentDict()
-            self.__lookup_spells = ConcurrentDict()
-            self.__contracted_spells = ConcurrentDict()
-            self.__lookup_contracted_spells = ConcurrentDict()
-        else:
-            self._configuration_locked = True
+        self._initialize_configuration()
 
         # Binding system
         self._bind = Bind()
 
-#region Properties
-
-    @property
-    def _spells(self) -> ConcurrentDict[str, Spell]:
-        return self.__spells
-
-    @_spells.setter
-    def _spells(self, value: ConcurrentDict[str, Spell]):
-        self.__spells = value
-
-    @property
-    def _lookup_spells(self) -> ConcurrentDict[tuple, str]:
-        return self.__lookup_spells
-
-    @_lookup_spells.setter
-    def _lookup_spells(self, value: ConcurrentDict[tuple, str]):
-        self.__lookup_spells = value
-
-    @property
-    def _contracted_spells(self) -> ConcurrentDict[str, Spell]:
-        return self.__contracted_spells
-
-    @_contracted_spells.setter
-    def _contracted_spells(self, value: ConcurrentDict[str, Spell]):
-        self.__contracted_spells = value
-
-    @property
-    def _lookup_contracted_spells(self) -> ConcurrentDict[tuple, str]:
-        return self.__lookup_contracted_spells
-
-    @_lookup_contracted_spells.setter
-    def _lookup_contracted_spells(self, value: ConcurrentDict[tuple, str]):
-        self.__lookup_contracted_spells = value
-
-#endregion
-
 #region Core Methods
 #region General Methods
+    def get_spell_permissions(self, spell_id: str) -> Optional[str]:
+        """
+        Public API
+
+        Get the permissions for a spell by its spell_id.
+        :param spell_id: The unique identifier of the spell.
+        :return: The permissions associated with the spell, or None if not found.
+        """
+        spell = self._find_spell(spell_id)
+        if spell:
+            return spell.permissions.name
+        else:
+            raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
+
     def _find_spell_count(self) -> int:
         """
         Internal
@@ -353,42 +317,6 @@ class Spellbook(ISpellbook):
         with self._lock:
             return len(self._contracted_spells) if self._contracted_spells else 0
 
-#endregion General Methods
-#region Binding API
-    def _initialize_configuration(self) -> None:
-        """
-        Internal
-
-        This method initializes the configuration for the Spellbook. It grabs the configuration from the Aether
-        by providing the specific aetheric frame. It initializes the configuration if it does not exist.
-        If the configuration already exists, it checks if the aetheric frame matches the one in the configuration.
-
-        Raises:
-            RuntimeError: If the configuration name does not match the aetheric frame.
-
-        This is called during the Spellbook's initialization to ensure that the configuration is ready for use.
-        """
-        self._configuration: Any = self._get_configuration_from_aether
-
-        if self._configuration:
-            if self._configuration._aether_frame != self._aetheric_frame:
-                raise RuntimeError("Configuration name does not match the aetheric frame.")
-            self._configuration_locked = True
-        else:
-            self._configuration = Configuration(self._aetheric_frame)
-            self._configuration_locked = False
-
-    def _get_configuration_from_aether(self) -> Configuration:
-        """
-        Internal
-
-        Retrieve the current configuration from the Aether.
-        This is used to ensure that the spellbook's configuration is in sync with the Aether's state.
-
-        :return: The current configuration for the Spellbook.
-        """
-        return Spellbook._aether._get_configuration(self._aetheric_frame)
-
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """
         Public API
@@ -402,13 +330,16 @@ class Spellbook(ISpellbook):
         # Key for the spell in the Spellbook
         key = (spellframe or spell_name, binding_name or "__default__")
 
+
         if key in self._lookup_spells:
             return self._lookup_spells[key]
-        elif key in self._lookup_contracted_spells:
-            return self._lookup_contracted_spells[key]
+
+        for contracted_spells in self._lookup_contracted_spells.values():
+            if key in contracted_spells:
+                # If the spell is contracted, we need to return the spell_id from the contracted spells
+                return contracted_spells[key]
         else:
-            warning("Spell not found in the spellbook.")
-            return None
+            raise RuntimeError("Spell not found in the spellbook.")
 
     def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
         """
@@ -425,18 +356,19 @@ class Spellbook(ISpellbook):
 
         if key in self._lookup_spells:
             return key
-        elif key in self._lookup_contracted_spells:
-            return key
+        for contracted_spells in self._lookup_contracted_spells.values():
+            if key in contracted_spells:
+                # If the spell is contracted, we need to return the spell_id from the contracted spells
+                return key
         else:
-            warning("Spell not found in the spellbook.")
-            return None
+            raise RuntimeError("Spell key not found in the spellbook.")
 
 
     def inspect_spell(self, spell: Any) -> Optional[str]:
         """
         Public API
 
-        This method will inspect any object placed into it and check if its
+        This method will inspect any object placed into it and check if it's
         a valid spell in the Aether Registry. Returns the SHA256 if found, else None
         :return:
         """
@@ -447,46 +379,24 @@ class Spellbook(ISpellbook):
                     return spell_id
             return None
 
-    def _lesser_conduit_spellbook_copy(self) -> ISpellbook:
+    def _check_all_spells(self) -> None:
         """
-        Internal
-
-        Creates a spellbook reference for a lesser conduit.
-
-        The resulting spellbook is linked to the original's contracted spell zone,
-        allowing the lesser conduit to access spells without owning or modifying them.
-
-        This ensures proper delegation: the lesser conduit operates in read-only mode
-        over contracted spells defined by the parent.
-
-        Returns:
-            A Spellbook instance configured for a lesser conduit with shared contracted spells.
+        Check all spells in the spellbook for validity.
+        This is a placeholder for the actual validation logic.
         """
         with self._lock:
-            spellbook = Spellbook(ConduitState.lesser, self._aetheric_frame, self._configuration)
-            spellbook._contracted_spells = self.__spells
-            spellbook._lookup_contracted_spells = self.__lookup_spells
-            return spellbook
+            for spell in self._spells.keys():
+                if Spellbook._aether._check_for_spell(spell, self._aetheric_frame):
+                    raise RuntimeError(
+                        f"Spell with ID {spell} already exists in the registry."
+                    )
 
+    def _find_spell(self, spell_id: str) -> Optional[Spell]:
+        """Internal method to locate a spell by its spell_id."""
+        return self._spells.get(spell_id)
 
-    def convert_to_normal_conduit_spellbook(self) -> None:
-        """
-        Internal
-
-        Converts the current spellbook to a normal conduit spellbook.
-
-        This method is used to upgrade a lesser conduit spellbook to a normal conduit spellbook.
-        It ensures that the configuration is locked and the spells are properly registered.
-
-        Raises:
-            RuntimeError: If the spellbook is already conjured or configuration is locked.
-        """
-        with self._lock:
-            self._spells = ConcurrentDict()
-            self._lookup_spells = ConcurrentDict()
-            self._contracted_spells = ConcurrentDict()
-            self._lookup_contracted_spells = ConcurrentDict()
-            self._conduit_state = ConduitState.normal
+#endregion General Methods
+#region Binding API
 
     def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
         """
@@ -588,28 +498,46 @@ class Spellbook(ISpellbook):
                         raise TypeError("pre_hooks must be a list of callables.")
                 spell.post_hooks = kwargs["post_hooks"]
 
-
-    def _check_all_spells(self) -> None:
-        """
-        Check all spells in the spellbook for validity.
-        This is a placeholder for the actual validation logic.
-        """
-        with self._lock:
-            for spell in self._spells.keys():
-                if Spellbook._aether._check_for_spell(spell, self._aetheric_frame):
-                    raise RuntimeError(
-                        f"Spell with ID {spell} already exists in the registry."
-                    )
-
-    def _find_spell(self, spell_id: str) -> Optional[Spell]:
-        """Internal method to locate a spell by its spell_id."""
-        with self._lock:
-            return self._spells.get(spell_id)
-
 #endregion Binding API
 #region Configuration API
+    def _initialize_configuration(self) -> None:
+        """
+        Internal
+
+        This method initializes the configuration for the Spellbook. It grabs the configuration from the Aether
+        by providing the specific aetheric frame. It initializes the configuration if it does not exist.
+        If the configuration already exists, it checks if the aetheric frame matches the one in the configuration.
+
+        Raises:
+            RuntimeError: If the configuration name does not match the aetheric frame.
+
+        This is called during the Spellbook's initialization to ensure that the configuration is ready for use.
+        """
+        self._configuration: Any = self._get_configuration_from_aether
+
+        if self._configuration:
+            if self._configuration._aether_frame != self._aetheric_frame:
+                raise RuntimeError("Configuration name does not match the aetheric frame.")
+            self._configuration_locked = True
+        else:
+            self._configuration = Configuration(self._aetheric_frame)
+            self._configuration_locked = False
+
+    def _get_configuration_from_aether(self) -> Configuration:
+        """
+        Internal
+
+        Retrieve the current configuration from the Aether.
+        This is used to ensure that the spellbook's configuration is in sync with the Aether's state.
+
+        :return: The current configuration for the Spellbook.
+        """
+        return Spellbook._aether._get_configuration(self._aetheric_frame)
+
     def is_configuration_locked(self) -> bool:
-        """Check whether spellbook configuration is frozen."""
+        """
+        Check whether spellbook configuration is frozen.
+        """
         return self._configuration_locked
 
     def configure_aether_frame(self,
@@ -697,6 +625,22 @@ class Spellbook(ISpellbook):
 
 #endregion Configuration API
 #region Conduit API
+
+    def create_new_preset_spellbook(self) -> 'Spellbook':
+        """
+        Internal
+
+        Converts the current spellbook to a normal conduit spellbook.
+
+        This method is used to upgrade a lesser conduit spellbook to a normal conduit spellbook.
+        It ensures that the configuration is locked and the spells are properly registered.
+
+        Raises:
+            RuntimeError: If the spellbook is already conjured or configuration is locked.
+        """
+        return Spellbook(self._aetheric_frame, self._configuration)
+
+
     def conjure(self, policy: Optional[str] = "automatic", name: str = None) -> Conduit:
         """
         Create a new Conduit (execution channel) from this Spellbook.
@@ -712,7 +656,7 @@ class Spellbook(ISpellbook):
         - Only one conduit per spellbook
         - Configuration is frozen at conjuring time
 
-        Please note policies are only available in dynamic mode otherwise automatic mode is defined as defualt.
+        Please note policies are only available in dynamic mode otherwise automatic mode is defined as default.
         You must select system state dynamic to use other policies.
 
         Policies:
@@ -760,7 +704,6 @@ class Spellbook(ISpellbook):
             policy = EnumHelpers.convert_enum_and_check(policy, Policies)  # Ensure the policy is valid
             self._check_all_spells()
 
-            self._conduit_type = ConduitState.normal
             conduit = Conduit(
                 spellbook=self,
                 name=name,
