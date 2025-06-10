@@ -17,17 +17,17 @@ class Bind(IBind):
         super().__init__()
         self._lock = threading.RLock()
 
-    def bind(self, permissions: Permissions, *, spell=None, spellframe=None, name=None, existence=Existence.unique):
+    def bind(self, permissions: Permissions, *, aetheric_frame: str, spell=None, spellframe=None, name=None, existence=Existence.unique) -> Union[Spell, Any]:
         if spell is None:
             # Decorator usage
             def decorator(obj):
-                return self._bind_logic(obj, spellframe, name, existence, permissions)
+                return self._bind_logic(obj, spellframe, name, existence, permissions, aetheric_frame)
             return decorator
         else:
             # Direct usage
-            return self._bind_logic(spell, spellframe, name, existence, permissions)
+            return self._bind_logic(spell, spellframe, name, existence, permissions, aetheric_frame)
 
-    def _bind_logic(self, spell: Any, spellframe: Optional[Any], binding_name: Optional[str], existence: Existence, permissions: Permissions) -> Spell:
+    def _bind_logic(self, spell: Any, spellframe: Optional[Any], binding_name: Optional[str], existence: Existence, permissions: Permissions, aetheric_frame: str) -> Spell:
         with self._lock:
             # Get the class or method profile
             profile = SpellExaminer(spell).inspect()
@@ -61,7 +61,8 @@ class Bind(IBind):
                 existing_object=spell if is_instance else None,
                 profile=profile,
                 spell_id=fingerprint,
-                permissions=permissions
+                permissions=permissions,
+                aetheric_frame = aetheric_frame
             )
 
             print(f"[BIND] Registered: {spell_name} | Frame: {spellframe} | Type: {spell_type} | Existence: {existence}")

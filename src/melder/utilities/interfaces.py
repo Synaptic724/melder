@@ -279,7 +279,8 @@ class IBind:
     __slots__ = []
 
     @abstractmethod
-    def bind(self, permissions: str, *, spell=None, spellframe=None, name=None, existence='Existence.unique'):
+    def bind(self, permissions: 'Permissions', *, aetheric_frame: str, spell=None, spellframe=None, name=None,
+             existence='Existence.unique') -> 'Union[Spell, Any]':
         """
         Binds a spell to the Spellbook.
         """

@@ -100,6 +100,7 @@ class Spell(ISpell):
             profile: ClassProfile | MethodProfile,
             spell_id: str,
             permissions: Permissions,
+            aetheric_frame: str,
             existing_object: object = None,
             *args,
             **kwargs
@@ -117,6 +118,7 @@ class Spell(ISpell):
         self.spell_name: str = spell_name
         self.existence: Existence = existence
         self.profile: ClassProfile | MethodProfile = profile
+        self.aetheric_frame: str = aetheric_frame
 
         # Permissions
         self.permissions: Permissions = permissions
@@ -261,6 +263,8 @@ class Spellbook(ISpellbook):
         # Internal state
         self._conjured = False
         self._aetheric_frame = aetheric_frame
+        if not isinstance(self._aetheric_frame, str):
+            raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
 
         # Configuration state
         self._configuration_locked: bool = False
@@ -459,6 +463,7 @@ class Spellbook(ISpellbook):
                 spellframe=spellframe,
                 name=name,
                 existence=existence,
+                aetheric_frame=self._aetheric_frame,
             )
             if Spellbook._aether._check_for_spell(spell.spell_id, self._aetheric_frame):
                 raise RuntimeError(
