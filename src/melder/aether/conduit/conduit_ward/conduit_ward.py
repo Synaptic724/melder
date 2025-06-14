@@ -619,27 +619,21 @@ class ConduitWard(IConduitWard):
 
         return True
 
-    def _add_spells_to_contract(self):
+    def _add_spells_to_contract(self, *, spell_ids: list[str] = None, permissions: str = "create", aetheric_frame = "default") -> dict:
         """
         Internal
 
         Creates a new spell contracts for this conduit. This is used to create multiple contracts.
         :return: bool
         """
-        # Check if permissions are valid
-
-        # Check if spell_ids are provided, if not, inspect the spells to get its ID and make a list of them
-
-        # Check if the spells exists in our contracted spells, ignore the ones that are already contracted
-
-        # Check if spells is available with the required permissions throw error if not.
-
-        # Check if contract link exists if not create the contract.
-
-        # Create Detail with the spell_id and permissions
-
-        # Add spells to spellbook
-        pass
+        report = {"success": [], "failed": {}}
+        for spell_id in spell_ids:
+            try:
+                self._add_spell_to_contract(spell_id=spell_id, permissions=permissions, aetheric_frame=aetheric_frame)
+                report["success"].append(spell_id)
+            except Exception as e:
+                report["failed"][spell_id] = str(e)
+        return report
 
     def _remove_spell_from_contract(self, spell_id: str):
         """

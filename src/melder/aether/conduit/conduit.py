@@ -760,7 +760,7 @@ class Conduit(IConduit):
         return self._conduit_ward._add_spell_to_contract(spell=spell, spell_id=spell_id, permissions=permissions, aetheric_frame=aetheric_frame)
 
 
-    def add_spells_to_contract(self):
+    def add_spells_to_contract(self, spell_ids: list[str] = None, permissions: str = "create", aetheric_frame = "default") -> dict:
         """
         Public API
 
@@ -768,8 +768,7 @@ class Conduit(IConduit):
         :return: bool
         """
         self._qualify_contracts()
-
-        pass
+        return self._conduit_ward._add_spells_to_contract(spell_ids=spell_ids, permissions=permissions, aetheric_frame=aetheric_frame)
 
     def remove_spell_from_contract(self, spell_id: str):
         """
