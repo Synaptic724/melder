@@ -137,6 +137,12 @@ class ISpellbook(ISeal):
     for all spells in the system. It behaves as a binder, store, and
     configuration authority for conduits.
     """
+
+    def __init__(self):
+        super().__init__()
+        self._spells = None
+        self._bind = None
+
     @abstractmethod
     def _lesser_conduit_spellbook_copy(self) -> 'ISpellbook':
         """
@@ -271,6 +277,13 @@ class ISpellbook(ISeal):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+    @abstractmethod
+    def create_new_preset_spellbook(self):
+        pass
+
+    def get_spell_details(self, spell_id):
+        pass
+
 
 class IBind:
     """
@@ -307,7 +320,11 @@ class IConduitWard(ISeal):
     """
     __slots__ = []
 #region Properties
-    @abstractmethod
+    def __init__(self):
+        super().__init__()
+        self._id = None
+        self._conduit = None
+
     @property
     def policy(self) -> 'IPolicy':
         """
@@ -315,7 +332,6 @@ class IConduitWard(ISeal):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
-    @abstractmethod
     @policy.setter
     def policy(self, value: policy):
         """
@@ -323,7 +339,6 @@ class IConduitWard(ISeal):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
-    @abstractmethod
     @property
     def conduit_type(self) -> 'ConduitState':
         """
@@ -333,21 +348,18 @@ class IConduitWard(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 #endregion
 
-    @abstractmethod
     def _change_conduit_type(self, conduit_type: 'ConduitState'):
         """
         Changes the conduit type.
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
-    @abstractmethod
     def remove_link(self, other_conduit):
         """
         Removes a link between two conduits.
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
-    @abstractmethod
     def get_links(self):
         """
         Returns all active links.
@@ -360,6 +372,11 @@ class IConduit(ISeal):
     Interface for a Conduit, which behaves as both a scope and a factory within the system.
     """
     __slots__ = []
+
+    def __init__(self):
+        super().__init__()
+        self._spellbook = None
+        self.__creation_context__ = None
 
     @property
     @abstractmethod
@@ -393,6 +410,16 @@ class IConduit(ISeal):
         Creates a new lesser Conduit (child scope) beneath this Conduit.
         """
         raise NotImplementedError("Subclasses must implement this method.")
+
+    def check_spell_id(self, spell_id, aetheric_frame):
+        pass
+
+    def inspect_spell(self, spell, aetheric_frame):
+        pass
+
+    def get_spell_by_id(self, spell_id, aetheric_frame):
+        pass
+
 
 class IConduitCloud(ISeal):
     """

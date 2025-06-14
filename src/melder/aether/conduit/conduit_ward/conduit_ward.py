@@ -1,10 +1,12 @@
 from uuid import UUID
 import threading
-from typing import List, Optional
+from typing import List, Optional, Any, Tuple
+
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.general_helpers import EnumHelpers
-from melder.utilities.interfaces import IConduit, IConduitWard
+from melder.utilities.interfaces import IConduit, IConduitWard, ISpell
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 
@@ -233,6 +235,23 @@ class ConduitWard(IConduitWard):
         contract_id = self._initiated_index.get(peer_id) or self._received_index.get(peer_id)
         return self._contracts.get(contract_id)
 
+    def _find_contract_by_id(self, conduit_id: UUID) -> Optional[Contract]:
+        """
+        Internal
+
+        Finds a contract by its ID.
+
+        Args:
+            contract_id (UUID): The ID of the contract to find.
+
+        Returns:
+            Optional[Contract]: The found contract or None if not found.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot find contracts in a sealed Conduit Ward.")
+        check_id = self._initiated_index.get(conduit_id) or self._received_index.get(conduit_id)
+        return self._contracts.get(check_id)
+
     def _sever_link(self, target_conduit: IConduit):
         """
         Internal
@@ -417,6 +436,228 @@ class ConduitWard(IConduitWard):
 
 
 #endregion Link Management
+#region Spellbinding API
+    def _check_spell_id_and_spell(
+            self,
+            spell: ISpell = None,
+            spell_id: str = None,
+            aetheric_frame: str = "default"
+    ) -> Tuple[str, ISpell]:
+        """
+        Internal
+
+        Validation and resolution of spell_id and spell object.
+
+        Requires either spell or spell_id. Resolves and validates the pair.
+        Returns (spell_id, spell).
+        """
+        if spell is None and spell_id is None:
+            raise ValueError("Either spell or spell_id must be provided.")
+
+        # Resolve spell from spell_id
+        if spell is None:
+            if not isinstance(spell_id, str):
+                raise TypeError(f"Expected spell_id as str, got {type(spell_id).__name__}")
+            spell = self._conduit.get_spell_by_id(spell_id, aetheric_frame)
+            if spell is None:
+                raise RuntimeError(f"Could not resolve spell for spell_id '{spell_id}'.")
+
+        # Resolve spell_id from spell
+        if spell_id is None:
+            if not isinstance(spell, ISpell):
+                raise TypeError(f"Expected ISpell instance, got {type(spell).__name__}")
+            spell_id = self._conduit.inspect_spell(spell, aetheric_frame)
+            if spell_id is None:
+                raise RuntimeError("Could not determine spell_id from spell.")
+
+        # Final integrity check
+        inspected_id = self._conduit.inspect_spell(spell, aetheric_frame)
+        if spell_id != inspected_id:
+            raise RuntimeError(f"Provided spell_id '{spell_id}' does not match inspected ID '{inspected_id}'.")
+
+        return spell_id, spell
+
+
+    def _check_conduit_id_and_conduit(self,
+            conduit: IConduit = None,
+            conduit_id: UUID = None, aetheric_frame = "default"):
+        """
+        Internal
+
+        Validation and resolution of conduit_id and conduit object.
+
+        Requires either conduit or conduit_id. Resolves and validates the pair.
+        Returns (conduit_id, conduit).
+        """
+        if conduit is None and conduit_id is None:
+            raise ValueError("Either conduit or conduit_id must be provided.")
+
+        # Resolve conduit from conduit_id
+        if conduit is None:
+            if not isinstance(conduit_id, UUID):
+                raise TypeError(f"Expected conduit_id as UUID, got {type(conduit_id).__name__}")
+            conduit = self._conduit.get_conduit_by_id(conduit_id)
+            if conduit is None:
+                raise RuntimeError(f"Could not resolve conduit for conduit_id '{conduit_id}'.")
+
+        # Resolve conduit_id from conduit
+        if conduit_id is None:
+            if not isinstance(conduit, IConduit):
+                raise TypeError(f"Expected IConduit instance, got {type(conduit).__name__}")
+            conduit_id = conduit.__creation_context__._conduit_id
+            if conduit_id is None:
+                raise RuntimeError("Could not determine conduit_id from conduit.")
+
+        inspected_id = conduit.__creation_context__._conduit_id
+        if conduit_id != inspected_id:
+            raise RuntimeError(
+                f"Provided conduit_id '{conduit_id}' does not match conduit internal ID '{inspected_id}'.")
+
+        return conduit_id, conduit
+
+    def _add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: UUID = None,
+                               permissions: str = "create", aetheric_frame = "default") -> bool | None:
+        """
+        Internal
+
+        Creates a new spell contract for this conduit. This is used to create a contract
+        :return: bool
+        """
+        # Check if permissions are valid
+        permissions = EnumHelpers.convert_enum_and_check(permissions, Permissions)
+
+        spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
+
+        if conduit_id is not None:
+            if not isinstance(conduit_id, UUID):
+                raise TypeError(f"Expected UUID for conduit_id, got {type(conduit_id).__name__}")
+        elif conduit is not None:
+            if not isinstance(conduit, IConduit):
+                raise TypeError(f"Expected IConduit instance, got {type(conduit).__name__}")
+            conduit_id = conduit.__creation_context__._conduit_id
+        else:
+            raise ValueError("Either conduit_id or conduit must be provided.")
+
+        if contract := self._find_contract_by_id(conduit_id):
+            if contract is None:
+                raise RuntimeError(f"No contract found for conduit ID {conduit_id}, please link to this conduit prior to spell contract initiation.")
+
+
+        # Check if the spell exists in our contracted spells
+
+        # Check if spell is available with the required permissions
+
+        # Check if contract link exists if not create it.
+
+        # Check if contract link exists if not create the contract.
+
+        # Create Detail with the spell_id and permissions
+
+        # Add spell to spellbook
+        pass
+
+    def _add_spells_to_contract(self):
+        """
+        Internal
+
+        Creates a new spell contracts for this conduit. This is used to create multiple contracts.
+        :return: bool
+        """
+        # Check if permissions are valid
+
+        # Check if spell_ids are provided, if not, inspect the spells to get its ID and make a list of them
+
+        # Check if the spells exists in our contracted spells, ignore the ones that are already contracted
+
+        # Check if spells is available with the required permissions throw error if not.
+
+        # Check if contract link exists if not create the contract.
+
+        # Create Detail with the spell_id and permissions
+
+        # Add spells to spellbook
+        pass
+
+    def _remove_spell_from_contract(self, spell_id: str):
+        """
+        Internal
+
+        Removes a specific spell contract by its spell or spell_id.
+        :param spell_id:
+        :return: bool
+        """
+        pass
+
+    def _remove_spells_from_contract(self):
+        """
+        Internal
+
+        Removes some spells from the contract associated with this conduit.
+        :return: bool
+        """
+        pass
+
+    def _remove_all_spells_from_contract(self):
+        """
+        Internal
+
+        Removes all spell contracts associated with this conduit.
+        :return: bool
+        """
+        pass
+
+    def _get_all_spells_in_contracts(self) -> list | None:
+        """
+        Internal
+
+        Retrieves all spell contracts associated with this conduit.
+
+        :return: Dictionary of conduit ID and dictionary of spellID and permissions or None if not found.
+        """
+        pass
+
+    def _get_spell_in_contract(self, spell: Any, spell_id: str) -> Optional[Any]:
+        """
+        Internal
+
+        Retrieves a specific spell contract by its spell or spell_id.
+
+        :param spell_id:
+        :return: tuple of spellID and permissions, or None if not found.
+        """
+        pass
+
+    def _get_spells_in_contract_by_conduit(self, conduit_id: UUID) -> list | None:
+        """
+        Internal
+
+        Retrieves all spell contracts associated with a specific conduit by its ID.
+
+        :param conduit_id:
+        :return: Dictionary of spellID and permissions or None if not found.
+        """
+        pass
+
+    def _get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> list | None:
+        """
+        Internal
+
+        Retrieves all spell contracts associated with a specific conduit by its name.
+        :param conduit_name:
+        :return: Dictionary of spellID and permissions or None if not found.
+        """
+        pass
+
+    def _get_contracted_conduits(self) -> list | None:
+        """
+        Internal
+
+        Retrieves all conduits that have contracted spells with this conduit.
+        :return: Dictionary of conduits that have contracted spells with this conduit, UUID as key and list of conduit as value.
+        """
+        pass
+
+# endregion Spellbinding API
 #region Cleanup
     def seal(self):
         """

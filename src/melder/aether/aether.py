@@ -138,6 +138,8 @@ class Aether(ISeal):
             Aether._initialized = False
             Aether._instance = None
 
+#region Configuration
+
     def _bind_configuration(self, configuration, aetheric_frame_name: str = "default") -> None:
         """
         Binds a configuration to the Aetheric Frame.
@@ -166,6 +168,8 @@ class Aether(ISeal):
         else:
             return self._default_frame._configuration
 
+#endregion Configuration
+#region Conduit Management
     def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
         Register a conduit in the dynamic mode registry.
@@ -194,70 +198,6 @@ class Aether(ISeal):
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             return self._default_frame._conduit_cloud
-
-    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default"):
-        """
-        This will check if the spell exists within the spell registry.
-        :param spell_id:
-        :return:
-        """
-        if aetheric_frame_name is not "default":
-            try:
-                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
-            except KeyError:
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            spell_registry = self._default_frame._spell_registry
-
-        for spell_set in spell_registry.values():
-            if spell_id in spell_set:
-                return True
-        return False
-
-    def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
-        """
-        Returns a conduit by its spell ID. This is used to find the conduit associated with a specific spell ID.
-
-        :param spell_id: The spell ID to search for.
-        :param aetheric_frame_name: The name of the Aetheric Frame to search in.
-        :return: The conduit associated with the given spell ID.
-        """
-        if aetheric_frame_name is not "default":
-            try:
-                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
-            except KeyError:
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            spell_registry = self._default_frame._spell_registry
-
-        for conduit_id, spell_set in spell_registry.items():
-            if spell_id in spell_set:
-                return self._get_conduit_by_signature(conduit_id, aetheric_frame_name)
-        raise ValueError(f"Spell ID {spell_id} not found in any conduit.")
-
-    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str], aetheric_frame_name: str = "default"):
-        """
-        Register a group of spell IDs under a conduit ID in the global registry.
-
-        Args:
-            conduit_id: The UUID of the owning conduit.
-            spell_set: A concurrent set of spell IDs to register.
-
-        Raises:
-            ValueError: If the conduit ID is already registered.
-        """
-        if aetheric_frame_name is not "default":
-            try:
-                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
-            except KeyError:
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            spell_registry = self._default_frame._spell_registry
-
-        if conduit_id not in spell_registry:
-            spell_registry[conduit_id] = spell_set
-        else:
-            raise ValueError(f"Spell registry already contains Conduit ID {conduit_id}.")
 
     def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
         """
@@ -390,6 +330,74 @@ class Aether(ISeal):
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
         return conduit_clusters[cluster_name]
 
+    def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
+        """
+        Returns a conduit by its spell ID. This is used to find the conduit associated with a specific spell ID.
+
+        :param spell_id: The spell ID to search for.
+        :param aetheric_frame_name: The name of the Aetheric Frame to search in.
+        :return: The conduit associated with the given spell ID.
+        """
+        if aetheric_frame_name is not "default":
+            try:
+                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            spell_registry = self._default_frame._spell_registry
+
+        for conduit_id, spell_set in spell_registry.items():
+            if spell_id in spell_set:
+                return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
+        raise ValueError(f"Spell ID {spell_id} not found in any conduit.")
+
+#endregion Conduit Management
+#region Spell Management
+
+    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
+        """
+        This will check if the spell exists within the spell registry.
+        :param spell_id:
+        :return:
+        """
+        if aetheric_frame_name is not "default":
+            try:
+                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            spell_registry = self._default_frame._spell_registry
+
+        for spell_set in spell_registry.values():
+            if spell_id in spell_set:
+                return True
+        return False
+
+    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str], aetheric_frame_name: str = "default"):
+        """
+        Register a group of spell IDs under a conduit ID in the global registry.
+
+        Args:
+            conduit_id: The UUID of the owning conduit.
+            spell_set: A concurrent set of spell IDs to register.
+
+        Raises:
+            ValueError: If the conduit ID is already registered.
+        """
+        if aetheric_frame_name is not "default":
+            try:
+                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            spell_registry = self._default_frame._spell_registry
+
+        if conduit_id not in spell_registry:
+            spell_registry[conduit_id] = spell_set
+        else:
+            raise ValueError(f"Spell registry already contains Conduit ID {conduit_id}.")
+
+#endregion Spell Management
     def seal(self):
         """
         Dispose of the Aether and all its conduits.

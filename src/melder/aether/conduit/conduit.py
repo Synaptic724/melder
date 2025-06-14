@@ -169,22 +169,6 @@ class Conduit(IConduit):
         Conduit._aether._add_conduit(self, self._aetheric_frame)
 
 
-    def _add_spells_to_aether(self) -> None:
-        """
-        Internal
-
-        Adds the newly created Conduit into the shared Aether world.
-
-        Args:
-            conduit (Conduit): The Conduit instance to add.
-        """
-        if Conduit._aether is None:
-            raise RuntimeError("Aether is not initialized.")
-
-        spell_set= ConcurrentSet(self._spellbook._spells.keys())
-        Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set, self._aetheric_frame)
-
-
     def _creations_configuration(self, configuration: Configuration) -> Creations or LesserCreations:
         """
         Internal
@@ -291,7 +275,25 @@ class Conduit(IConduit):
 
         return new_conduit
 
-    def get_conduit_by_spell_id(self, spell_id: str) -> Optional[IConduit]:
+
+#endregion Conduit Management
+#region Spellbook Management API
+    def _add_spells_to_aether(self) -> None:
+        """
+        Internal
+
+        Adds the newly created Conduit into the shared Aether world.
+
+        Args:
+            conduit (Conduit): The Conduit instance to add.
+        """
+        if Conduit._aether is None:
+            raise RuntimeError("Aether is not initialized.")
+
+        spell_set= ConcurrentSet(self._spellbook._spells.keys())
+        Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set, self._aetheric_frame)
+
+    def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[IConduit]:
         """
         Public API
 
@@ -299,6 +301,7 @@ class Conduit(IConduit):
 
         Args:
             spell_id (str): The unique identifier of the spell.
+            aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
             Optional[IConduit]: The conduit that registered the spell, or None if not found.
@@ -306,10 +309,44 @@ class Conduit(IConduit):
         if self._sealed:
             raise RuntimeError("Cannot get conduits in a sealed Conduit.")
         with self._lock:
-            return Conduit._aether._get_conduit_by_spell_id(spell_id)
+            return Conduit._aether._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
 
-#endregion Conduit Management
-#region Spellbook Management API
+    def check_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
+        """
+        Public API
+
+        Checks if a spell with the given spell_id exists in the spellbook.
+
+        Args:
+            spell_id (str): The unique identifier of the spell.
+            aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
+
+        Returns:
+            bool: True if the spell exists, False otherwise.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot check spells in a sealed Conduit.")
+        with self._lock:
+            return Conduit._aether._check_for_spell(spell_id, aetheric_frame_name)
+
+    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Any]:
+        """
+        Public API
+
+        Retrieves a spell by its unique identifier (spell_id) from the spellbook.
+
+        Args:
+            spell_id (str): The unique identifier of the spell.
+            aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
+
+        Returns:
+            Optional[Any]: The spell object if found, otherwise None.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get spells in a sealed Conduit.")
+        with self._lock:
+            conduit = self.get_conduit_by_spell_id(spell_id, aetheric_frame_name)
+            return conduit._spellbook._find_spell(spell_id) if conduit else None
 
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """
@@ -342,34 +379,20 @@ class Conduit(IConduit):
             raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
         return spell_key
 
-    def get_spell_details(self, spell_id: str) -> Optional[dict]:
-        """
-        Public API
-
-        Retrieves the details of a spell by its SHA256 ID.
-        :param spell_id: The SHA256 ID of the spell.
-        :return: A dictionary containing spell details, or None if not found.
-        """
-        spell_details = self._spellbook.get_spell_details(spell_id)
-        if not spell_details:
-            raise ValueError(f"Spell with ID '{spell_id}' not found in the spellbook.")
-        return spell_details
-
-
-    def inspect_spell(self, spell: Any) -> Optional[str]:
+    def inspect_spell(self, spell: Any, aetheric_frame= "default") -> Optional[str]:
         """
         Public API
 
         This method will inspect any object placed into it and check if it's
         a valid spell in the Aether Registry. Returns the SHA256 if found, else None
-        :param spell:
-        :return: SHA256 of the spell
+        :return:
         """
-        spell_id = self._spellbook.inspect_spell(spell)
-        if not spell_id:
-            raise ValueError(f"Spell '{spell}' not found in the spellbook.")
-        return spell_id
-
+        with self._lock:
+            if isinstance(spell, object):
+                spell_id = self._spellbook._bind.spell_id_inspector(spell)
+                if Conduit._aether._check_for_spell(spell_id, aetheric_frame):
+                    return spell_id
+            return None
 
     def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
         """
@@ -501,7 +524,7 @@ class Conduit(IConduit):
 
 #endregion Conduit Cloud
 #region Aether API
-    def get_conduit_by_id(self, conduit_id: UUID) -> Optional[IConduit]:
+    def get_conduit_by_id(self, conduit_id: UUID, aetheric_frame:str = "default") -> Optional[IConduit]:
         """
         Public API
 
@@ -509,16 +532,22 @@ class Conduit(IConduit):
 
         Args:
             conduit_id (UUID): The unique identifier of the conduit.
+            aetheric_frame (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
             Optional[IConduit]: The conduit instance if found, otherwise None.
         """
         if self._sealed:
             raise RuntimeError("Cannot get conduits in a sealed Conduit.")
-        with self._lock:
-            return Conduit._aether._get_conduit_by_id(conduit_id)
+        if not isinstance(aetheric_frame, str):
+            raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
+        if aetheric_frame == "default":
+            aetheric_frame = self._aetheric_frame
 
-    def get_conduit_by_name(self, name: str) -> Optional[IConduit]:
+        with self._lock:
+            return Conduit._aether._get_conduit_by_id(conduit_id, aetheric_frame)
+
+    def get_conduit_by_name(self, name: str, aetheric_frame:str = "default") -> Optional[IConduit]:
         """
         Public API
 
@@ -526,14 +555,20 @@ class Conduit(IConduit):
 
         Args:
             name (str): The name of the conduit.
+            aetheric_frame (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
             Optional[IConduit]: The conduit instance if found, otherwise None.
         """
         if self._sealed:
             raise RuntimeError("Cannot get conduits in a sealed Conduit.")
+        if not isinstance(aetheric_frame, str):
+            raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
+        if aetheric_frame == "default":
+            aetheric_frame = self._aetheric_frame
         with self._lock:
-            return Conduit._aether._get_conduit_by_name(name, self._aetheric_frame)
+            return Conduit._aether._get_conduit_by_name(name, aetheric_frame)
+
 #endregion Aether API
 #region Conduit Ward API
     def link(self, target_conduit: IConduit) -> bool:
@@ -715,7 +750,7 @@ class Conduit(IConduit):
             raise RuntimeError("Dynamic environment is not enabled. Cannot interact with spell contracts.")
 
 
-    def create_spell_contract(self):
+    def add_spell_to_contract(self, spell: Any, spell_id: str = None, permissions: str = "create", aetheric_frame = "default") -> bool | None:
         """
         Public API
 
@@ -723,9 +758,10 @@ class Conduit(IConduit):
         :return: bool
         """
         self._qualify_contracts()
+
         pass
 
-    def create_spell_contracts(self):
+    def add_spells_to_contract(self):
         """
         Public API
 
@@ -733,9 +769,10 @@ class Conduit(IConduit):
         :return: bool
         """
         self._qualify_contracts()
+
         pass
 
-    def remove_spell_contract(self, spell_id: str):
+    def remove_spell_from_contract(self, spell_id: str):
         """
         Public API
 
@@ -746,7 +783,17 @@ class Conduit(IConduit):
         self._qualify_contracts()
         pass
 
-    def remove_spell_contracts(self):
+    def remove_spells_from_contract(self):
+        """
+        Public API
+
+        Removes some spells from the contract associated with this conduit.
+        :return: bool
+        """
+        self._qualify_contracts()
+        pass
+
+    def _remove_all_spells_from_contract(self):
         """
         Public API
 
@@ -756,17 +803,7 @@ class Conduit(IConduit):
         self._qualify_contracts()
         pass
 
-    def remove_all_spell_contracts(self):
-        """
-        Public API
-
-        Removes all spell contracts associated with this conduit.
-        :return: bool
-        """
-        self._qualify_contracts()
-        pass
-
-    def get_all_spell_contracts(self) -> list | None:
+    def get_all_spells_in_contract(self) -> list | None:
         """
         Public API
 
@@ -777,7 +814,7 @@ class Conduit(IConduit):
         self._qualify_contracts()
         pass
 
-    def get_spell_contract(self, spell: Any, spell_id: str) -> Optional[Any]:
+    def get_spell_in_contract(self, spell: Any, spell_id: str) -> Optional[Any]:
         """
         Public API
 
@@ -789,7 +826,7 @@ class Conduit(IConduit):
         self._qualify_contracts()
         pass
 
-    def get_spell_contracts_by_conduit(self, conduit_id: UUID) -> list | None:
+    def get_spells_in_contract_by_conduit(self, conduit_id: UUID) -> list | None:
         """
         Public API
 
@@ -801,7 +838,7 @@ class Conduit(IConduit):
         self._qualify_contracts()
         pass
 
-    def get_spell_contracts_by_conduit_name(self, conduit_name: str) -> list | None:
+    def get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> list | None:
         """
         Public API
 
