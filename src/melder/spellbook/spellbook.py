@@ -277,8 +277,8 @@ class Spellbook(ISpellbook):
         # Networked/remote spell support
         # Basically if we're using dynamic mode it's a dict of dicts else it's not
         # This is because we're interested in the contract spells from conduits
-        self._contracted_spells: ConcurrentDict[str, ConcurrentDict[str, Spell]] = ConcurrentDict(ConcurrentDict())
-        self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]]  = ConcurrentDict(ConcurrentDict())
+        self._contracted_spells: ConcurrentDict[UUID, ConcurrentDict[str, Spell]] = ConcurrentDict(ConcurrentDict())
+        self._lookup_contracted_spells: ConcurrentDict[UUID, ConcurrentDict[tuple, str]]  = ConcurrentDict(ConcurrentDict())
 
         self._initialize_configuration()
 
@@ -340,7 +340,7 @@ class Spellbook(ISpellbook):
         :return:
         """
         # Key for the spell in the Spellbook
-        key = (spellframe or spell_name, binding_name or "__default__")
+        key = self._make_spell_key(spellframe, spell_name, binding_name)
 
 
         if key in self._lookup_spells:
@@ -352,6 +352,20 @@ class Spellbook(ISpellbook):
                 return contracted_spells[key]
         else:
             raise RuntimeError("Spell not found in the spellbook.")
+
+    def _make_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> tuple:
+        """
+        Internal
+
+        Create a normalized key for the spell in the Spellbook or contracted lookup.
+
+        - If spellframe is not provided, fallback to spell_name.
+        - If binding_name is not provided, default to '__default__'.
+
+        Returns:
+            tuple: (frame_or_name, binding_name)
+        """
+        return (spellframe or spell_name, binding_name or "__default__")
 
     def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
         """
@@ -405,6 +419,95 @@ class Spellbook(ISpellbook):
 
 
 #endregion General Methods
+#region Contract API
+
+    def _create_link_contract(self, conduit_id: UUID):
+        """
+        Internal
+
+        Create a link contract for the given conduit ID.
+
+        This method ensures both internal maps (_contracted_spells and _lookup_contracted_spells)
+        are initialized together. If only one exists, raises a RuntimeError to avoid partial state.
+        """
+        a_exists = conduit_id in self._contracted_spells
+        b_exists = conduit_id in self._lookup_contracted_spells
+
+        if a_exists != b_exists:
+            raise RuntimeError(
+                f"Inconsistent link contract state for conduit ID {conduit_id}: "
+                f"_contracted_spells={a_exists}, _lookup_contracted_spells={b_exists}"
+            )
+
+        if not a_exists and not b_exists:
+            self._contracted_spells[conduit_id] = ConcurrentDict()
+            self._lookup_contracted_spells[conduit_id] = ConcurrentDict()
+
+    def _remove_link_contract(self, conduit_id: UUID):
+        """
+        Internal
+
+        Remove a link contract for the given conduit ID.
+
+        Ensures both internal maps (_contracted_spells and _lookup_contracted_spells)
+        are removed together. If only one exists, raises a RuntimeError to avoid inconsistent cleanup.
+        """
+        a_exists = conduit_id in self._contracted_spells
+        b_exists = conduit_id in self._lookup_contracted_spells
+
+        if a_exists != b_exists:
+            raise RuntimeError(
+                f"Inconsistent link contract state for conduit ID {conduit_id}: "
+                f"_contracted_spells={a_exists}, _lookup_contracted_spells={b_exists}"
+            )
+
+        if a_exists and b_exists:
+            self._contracted_spells.pop(conduit_id)
+            self._lookup_contracted_spells.pop(conduit_id)
+
+    def _add_contracted_spell(self, spell: Spell, conduit_id: UUID) -> None:
+        """
+        Internal
+
+        Add a spell to the contracted spells for the given conduit ID.
+        Ensures both maps are updated atomically.
+        """
+        with self._lock:
+            if conduit_id not in self._contracted_spells:
+                self._create_link_contract(conduit_id)
+
+            spell_key = self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
+
+            self._contracted_spells[conduit_id][spell.spell_id] = spell
+            self._lookup_contracted_spells[conduit_id][spell_key] = spell.spell_id
+
+    def _remove_contracted_spell(self, spell_id: str, conduit_id: UUID) -> None:
+        """
+        Internal
+
+        Remove a spell from the contracted spells for the given conduit ID.
+        Ensures both maps are cleaned consistently.
+        """
+        with self._lock:
+            if conduit_id not in self._contracted_spells:
+                raise RuntimeError(f"No contracted spells found for conduit ID {conduit_id}.")
+
+            spell_map = self._contracted_spells[conduit_id]
+            if spell_id not in spell_map:
+                raise RuntimeError(f"Spell ID {spell_id} not found for conduit ID {conduit_id}.")
+
+            # Get spell info before deletion
+            spell = spell_map[spell_id]
+            key = self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
+
+            if key not in self._lookup_contracted_spells[conduit_id]:
+                raise RuntimeError(f"Spell key {key} not found in lookup for conduit ID {conduit_id}.")
+
+            # Delete from both maps
+            spell_map.pop(spell_id, None)
+            self._lookup_contracted_spells[conduit_id].pop(key, None)
+
+    #endregion Contract API
 #region Binding API
 
     def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
