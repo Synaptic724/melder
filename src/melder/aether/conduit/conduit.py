@@ -51,7 +51,7 @@ class Conduit(IConduit):
         self._configuration = configuration
         self._conduit_state = conduit_state  # can be normal, lesser
         self._creations = self._creations_configuration(configuration)
-        self._spellbook = spellbook
+        self._spellbook: ISpellbook = spellbook
         self._meld = Meld(self._creations, self._spellbook) # instance melder which is used by the conduit to create objects
 
         # Internal configuration
@@ -700,6 +700,20 @@ class Conduit(IConduit):
 
 #endregion Conduit Ward API
 #region Spellbinding API
+    def _qualify_contracts(self):
+        """
+        Internal
+
+        This method is used to qualify the contracts for spellbinding.
+        :return:
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot interact with spell contracts in a sealed Conduit.")
+        if self._conduit_state != ConduitState.normal:
+            raise RuntimeError("Only normal conduits can create spell contracts.")
+        if not self.__dynamic_environment__:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot interact with spell contracts.")
+
 
     def create_spell_contract(self):
         """
@@ -708,6 +722,7 @@ class Conduit(IConduit):
         Creates a new spell contract for this conduit. This is used to create a contract
         :return: bool
         """
+        self._qualify_contracts()
         pass
 
     def create_spell_contracts(self):
@@ -717,6 +732,7 @@ class Conduit(IConduit):
         Creates a new spell contracts for this conduit. This is used to create multiple contracts.
         :return: bool
         """
+        self._qualify_contracts()
         pass
 
     def remove_spell_contract(self, spell_id: str):
@@ -727,6 +743,7 @@ class Conduit(IConduit):
         :param spell_id:
         :return: bool
         """
+        self._qualify_contracts()
         pass
 
     def remove_spell_contracts(self):
@@ -736,6 +753,7 @@ class Conduit(IConduit):
         Removes all spell contracts associated with this conduit.
         :return: bool
         """
+        self._qualify_contracts()
         pass
 
     def remove_all_spell_contracts(self):
@@ -745,9 +763,10 @@ class Conduit(IConduit):
         Removes all spell contracts associated with this conduit.
         :return: bool
         """
+        self._qualify_contracts()
         pass
 
-    def get_all_spell_contracts(self) -> list:
+    def get_all_spell_contracts(self) -> list | None:
         """
         Public API
 
@@ -755,6 +774,7 @@ class Conduit(IConduit):
 
         :return: Dictionary of conduit ID and dictionary of spellID and permissions or None if not found.
         """
+        self._qualify_contracts()
         pass
 
     def get_spell_contract(self, spell: Any, spell_id: str) -> Optional[Any]:
@@ -766,9 +786,10 @@ class Conduit(IConduit):
         :param spell_id:
         :return: tuple of spellID and permissions, or None if not found.
         """
+        self._qualify_contracts()
         pass
 
-    def get_spell_contracts_by_conduit(self, conduit_id: UUID) -> list:
+    def get_spell_contracts_by_conduit(self, conduit_id: UUID) -> list | None:
         """
         Public API
 
@@ -777,9 +798,10 @@ class Conduit(IConduit):
         :param conduit_id:
         :return: Dictionary of spellID and permissions or None if not found.
         """
+        self._qualify_contracts()
         pass
 
-    def get_spell_contracts_by_conduit_name(self, conduit_name: str) -> list:
+    def get_spell_contracts_by_conduit_name(self, conduit_name: str) -> list | None:
         """
         Public API
 
@@ -787,15 +809,17 @@ class Conduit(IConduit):
         :param conduit_name:
         :return: Dictionary of spellID and permissions or None if not found.
         """
+        self._qualify_contracts()
         pass
 
-    def get_contracted_conduits(self) -> list:
+    def get_contracted_conduits(self) -> list | None:
         """
         Public API
 
         Retrieves all conduits that have contracted spells with this conduit.
         :return: Dictionary of conduits that have contracted spells with this conduit, UUID as key and list of conduit as value.
         """
+        self._qualify_contracts()
         pass
 
 #endregion Spellbinding API

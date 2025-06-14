@@ -213,7 +213,7 @@ class ISpellbook(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def _find_spell(self, spell_id: UUID) -> Optional[Any]:
+    def _find_spell(self, spell_id: str) -> Optional[Any]:
         """
         Internal spell resolution by UUID. Useful for resolving specific
         spell references across systems or conduit links.

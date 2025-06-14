@@ -6,7 +6,7 @@ from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.general_helpers import EnumHelpers
 from melder.utilities.interfaces import IConduit, IConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.conduit_ward.contract.contract import _Detail, _Contract
+from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
 # TODO: If a specific policy is set such as blacklist or whitelist, ensure that the spellbook the entire spellbook is managed properly.
@@ -48,7 +48,7 @@ class ConduitWard(IConduitWard):
         self._initiated_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # [Target ConduitID] -> [ContractID]
         self._received_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # [Source ConduitID] -> [ContractID]
 
-        self._contracts: ConcurrentDict[UUID, _Contract] = ConcurrentDict() # [ContractID] -> Contract
+        self._contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict() # [ContractID] -> Contract
 
         # Lineage Links
         self._parent_conduit: IConduit | None = None
@@ -181,7 +181,7 @@ class ConduitWard(IConduitWard):
         """
         with self._lock:
             # Create new contract
-            contract = _Contract(self, target_conduit._conduit_ward)
+            contract = Contract(self, target_conduit._conduit_ward)
 
             # Register the contract in both wards
             self._contracts[contract._id] = contract
@@ -215,7 +215,7 @@ class ConduitWard(IConduitWard):
 
         return initiated_contract if initiated_contract is not None else received_contract
 
-    def _find_contract(self, target_conduit: IConduit) -> Optional[_Contract]:
+    def _find_contract(self, target_conduit: IConduit) -> Optional[Contract]:
         """
         Internal
 
@@ -300,7 +300,7 @@ class ConduitWard(IConduitWard):
         Internal
 
         Returns a list of all links associated with this conduit. Excluding lesser conduits.
-        :return:
+        :return: List[IConduit]
         """
         with self._lock:
             return self._get_initiated_conduits() + self._get_provider_conduits()

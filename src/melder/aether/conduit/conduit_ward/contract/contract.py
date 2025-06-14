@@ -6,7 +6,7 @@ from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import ISeal, IConduitWard
 
 
-class _Detail(ISeal):
+class Detail(ISeal):
     """
     Represents a spell-level permission entry for a specific conduit
     within a contract. This defines what access the conduit has to a spell.
@@ -47,7 +47,7 @@ class _Detail(ISeal):
             self.permissions = None
 
 
-class _Contract(ISeal):
+class Contract(ISeal):
     """
     A symmetric contract between two conduit wards.
 
