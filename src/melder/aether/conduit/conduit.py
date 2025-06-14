@@ -749,7 +749,7 @@ class Conduit(IConduit):
             raise RuntimeError("Dynamic environment is not enabled. Cannot interact with spell contracts.")
 
 
-    def add_spell_to_contract(self, spell: Any, spell_id: str = None, permissions: str = "create", aetheric_frame = "default") -> bool | None:
+    def add_spell_to_contract(self, *, spell: Any, spell_id: str = None, permissions: str = "create", aetheric_frame = "default") -> bool | None:
         """
         Public API
 
@@ -757,8 +757,8 @@ class Conduit(IConduit):
         :return: bool
         """
         self._qualify_contracts()
+        return self._conduit_ward._add_spell_to_contract(spell=spell, spell_id=spell_id, permissions=permissions, aetheric_frame=aetheric_frame)
 
-        pass
 
     def add_spells_to_contract(self):
         """

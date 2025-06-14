@@ -1,6 +1,7 @@
+from types import MappingProxyType
 from uuid import uuid4, UUID
 from logging import warning
-from typing import Optional, List, Dict, Any, Type, Callable
+from typing import Optional, List, Dict, Any, Type, Callable, Mapping
 from melder.aether.aether import Aether
 from melder.spellbook.bind.graph_builder.inspector.spell_examiner import MethodProfile, ClassProfile
 from melder.utilities.interfaces import ISpellbook, ISpell
@@ -284,6 +285,33 @@ class Spellbook(ISpellbook):
 
         # Binding system
         self._bind = Bind()
+
+#region Properties
+
+    @property
+    def spells(self) -> Mapping[str, Spell]:
+        """
+        Public API
+
+        Read-only view of the spells registered in the spellbook.
+        This provides safe introspection without allowing mutation.
+        """
+        return MappingProxyType(self._spells)
+
+    @property
+    def contracted_spells(self) -> Mapping[UUID, Mapping[str, Spell]]:
+        """
+        Public API
+
+        Returns a per-conduit read-only view of contracted spells.
+        Each conduit ID maps to its own immutable spell dict.
+        """
+        return MappingProxyType({
+            conduit_id: MappingProxyType(dict(spells))  # Make inner dict immutable too
+            for conduit_id, spells in self._contracted_spells.items()
+        })
+
+#endregion Properties
 
 #region Core Methods
 #region General Methods
