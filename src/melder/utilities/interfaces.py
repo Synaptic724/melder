@@ -296,6 +296,9 @@ class ISpellbook(ISeal):
     def _create_link_contract(self, _id):
         pass
 
+    def _sever_link_contract(self, _conduit_id):
+        pass
+
 
 class IBind:
     """
@@ -334,6 +337,8 @@ class IConduitWard(ISeal):
 #region Properties
     def __init__(self):
         super().__init__()
+        self._contracts = None
+        self._lock = None
         self._received_index = None
         self._policy = None
         self._id = None
@@ -389,6 +394,7 @@ class IConduit(ISeal):
 
     def __init__(self):
         super().__init__()
+        self._conduit_state = None
         self.__creation_context__ = None
         self._conduit_ward: IConduitWard = None
         self._spellbook: ISpellbook = None

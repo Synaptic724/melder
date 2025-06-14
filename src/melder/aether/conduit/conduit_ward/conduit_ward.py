@@ -152,51 +152,61 @@ class ConduitWard(IConduitWard):
         """
         if self._sealed:
             raise RuntimeError("Cannot link to a sealed Conduit Ward.")
+        if target_conduit._conduit_state == ConduitState.lesser:
+            raise RuntimeError("Cannot link to a lesser conduit. Use _link_lesser_conduit instead.")
         if target_conduit.__creation_context__._conduit_id == self._id:
             raise RuntimeError("Cannot link a conduit to itself.")
-        with self._lock:
-            if not self._dynamic:
-                raise RuntimeError("Dynamic environment is not enabled. Cannot link conduits.")
-            if target_conduit.__creation_context__._conduit_id == self._id:
-                raise RuntimeError("Cannot link a conduit to itself.")
-            # Check if the target conduit is already linked
-            if target_conduit._conduit_state == ConduitState.lesser:
-                raise RuntimeError("Cannot link to a lesser conduit. Use _link_lesser_conduit instead.")
-            if target_conduit._conduit_state == ConduitState.normal:
-                if self._find_contract(target_conduit):
-                    return True
-                else:
-                    # If the target conduit is normal, we can link it
-                    if self._create_new_contract(target_conduit):
-                        return True
-                    else:
-                        raise RuntimeError("Failed to create a new contract with the target conduit.")
-            return False
+        if not self._dynamic:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot link conduits.")
+
+        # Check if the target conduit is already linked
+        if target_conduit._conduit_state == ConduitState.normal:
+            if self._find_contract(target_conduit):
+                return True
+            return self._create_new_contract(target_conduit)
+
+        return False
 
 
     def _create_new_contract(self, target_conduit: IConduit) -> bool:
         """
         Internal
+
         Creates a new contract with the specified target conduit.
-        :param target_conduit:
-        :return:
+
+        Args:
+            target_conduit (IConduit): The conduit to link with.
+
+        Returns:
+            bool: True if the contract was created successfully.
         """
-        with self._lock:
-            # Create new contract
-            contract = Contract(self, target_conduit._conduit_ward)
+        ward_a = self
+        ward_b = target_conduit._conduit_ward
 
-            # Register the contract in both wards
-            self._contracts[contract._id] = contract
-            target_conduit._conduit_ward._contracts[contract._id] = contract
+        # Lock both wards in a consistent order to avoid deadlocks
+        locks = sorted([ward_a._lock, ward_b._lock], key=id)
+        with locks[0]:
+            with locks[1]:
+                target_id = target_conduit.__creation_context__._conduit_id
 
-            # Update the initiated and received indices
-            self._initiated_index[target_conduit.__creation_context__._conduit_id] = contract._id
-            target_conduit._conduit_ward._received_index[self._id] = contract._id
+                # Double-check in case of race
+                if self._find_contract(target_conduit):
+                    return True
 
-            # Add spellbook entry
-            target_conduit._spellbook._create_link_contract(target_conduit.__creation_context__._conduit_id)
-            return True
+                contract = Contract(self, ward_b)
 
+                # Register in both wards
+                self._contracts[contract._id] = contract
+                ward_b._contracts[contract._id] = contract
+
+                # Index updates
+                self._initiated_index[target_id] = contract._id
+                ward_b._received_index[self._id] = contract._id
+
+                # Create spellbook entries
+                ward_b._conduit._spellbook._create_link_contract(target_id)
+
+                return True
 
     def _find_contract_id(self, target_conduit: IConduit) -> Optional[UUID]:
         """
@@ -255,23 +265,41 @@ class ConduitWard(IConduitWard):
         check_id = self._initiated_index.get(conduit_id) or self._received_index.get(conduit_id)
         return self._contracts.get(check_id)
 
-    def _sever_link(self, target_conduit: IConduit):
+    def _sever_link(self, target_conduit: IConduit) -> bool:
         """
         Internal
 
         Sever the link between this Conduit and its target Conduit.
-
-        This is meant for internal use please do not use this outside of the class.
         """
         if self._sealed:
             raise RuntimeError("Cannot sever a link in a sealed Conduit Ward.")
-        with self._lock:
-             if (contract := self._find_contract(target_conduit)) is not None:
-                raise NotImplementedError("Contract removal is not yet implemented.")
-             else:
+
+        locks = sorted([self._lock, target_conduit._conduit_ward._lock], key=id)
+        with locks[0]:
+            with locks[1]:
+                if self._find_contract(target_conduit):
+                    return self._remove_contract(target_conduit)
                 raise RuntimeError("No contract found to sever with the target conduit.")
 
+    def _remove_contract(self, target_conduit: IConduit) -> bool:
+        """
+        Internal
 
+        Removes the contract with the specified target conduit.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot remove contracts in a sealed Conduit Ward.")
+
+        if (contract := self._find_contract(target_conduit)) is not None:
+            del self._contracts[contract._id]
+            del target_conduit._conduit_ward._contracts[contract._id]
+
+            del self._initiated_index[target_conduit.__creation_context__._conduit_id]
+            del target_conduit._conduit_ward._received_index[self._id]
+
+            target_conduit._spellbook._sever_link_contract(target_conduit.__creation_context__._conduit_id)
+            return True
+        return False
 
     def _link_lesser_conduit(self, lesser_conduit: IConduit):
         """
