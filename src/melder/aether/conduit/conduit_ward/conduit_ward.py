@@ -515,6 +515,42 @@ class ConduitWard(IConduitWard):
 
         return conduit_id, conduit
 
+    def _create_detail(self, spell_id: str, permissions: Permissions) -> Detail:
+        """
+        Internal
+
+        Creates a new Detail instance for spell permissions.
+
+        Args:
+            spell_id (str): The ID of the spell this detail applies to.
+            permissions (Permissions): The permissions granted for this spell.
+
+        Returns:
+            Detail: A new Detail instance with the specified spell_id and permissions.
+        """
+        if not isinstance(permissions, Permissions):
+            raise TypeError(f"Expected Permissions enum, got {type(permissions).__name__}")
+        return Detail(spell_id, permissions)
+
+
+    def _check_spell_if_eligible(self, spell: ISpell, conduit: IConduit, permissions: Permissions) -> None:
+        """
+        Internal
+        Checks if the provided spell is eligible for contracting based on the conduit policy.
+        :param spell: The spell to check.
+        :return: bool indicating if the spell is eligible.
+        """
+        if conduit._conduit_ward._policy == Policies.block_all:
+            raise RuntimeError("Cannot contract spells when policy is set to block_all.")
+        if permissions == Permissions.create and spell._permissions != Permissions.create:
+            raise RuntimeError(f"Spell '{spell.__name__}' does not have create permissions, cannot contract with create permissions.")
+        if permissions == Permissions.read and spell._permissions not in (Permissions.read, Permissions.create):
+            raise RuntimeError(f"Spell '{spell.__name__}' does not have read permissions, cannot contract with read permissions.")
+        if spell._permissions == Permissions.block and conduit._conduit_ward._policy != Policies.whitelist_all:
+            raise RuntimeError("Cannot contract spells with block permissions.")
+        if spell._owner_conduit_id != conduit.__creation_context__._conduit_id:
+            raise RuntimeError(f"Spell '{spell.__name__}' is not owned by this conduit, cannot contract it.")
+
     def _add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: UUID = None,
                                permissions: str = "create", aetheric_frame = "default") -> bool | None:
         """
@@ -526,25 +562,29 @@ class ConduitWard(IConduitWard):
         # Check if permissions are valid
         permissions = EnumHelpers.convert_enum_and_check(permissions, Permissions)
 
+        # Check if spell or spell_id is provided, if not, raise an error
         spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
 
+        # Check if conduit is provided, if not, resolve it from conduit_id
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
 
+        # Check if contract exists for the conduit if not raise an error. Link must exist prior to spell contract initiation.
         if (contract := self._find_contract_by_id(conduit_id)) is None:
             raise RuntimeError(f"No contract found for conduit ID {conduit_id}, please link to this conduit prior to spell contract initiation.")
 
-
         # Check if the spell exists in our contracted spells
+        if contract._check_if_exists_and_permissions(conduit._conduit_ward, spell_id, permissions):
+            raise RuntimeError(f"Spell with ID '{spell_id}' is already contracted in this conduit with these permissions.")
 
         # Check if spell is available with the required permissions
-
-        # Check if contract link exists if not create it.
-
-        # Check if contract link exists if not create the contract.
+        self._check_spell_if_eligible(spell, conduit, permissions)
 
         # Create Detail with the spell_id and permissions
+        detail = self._create_detail(spell_id, permissions)
+        contract._add(conduit._conduit_ward, detail)
 
         # Add spell to spellbook
+
         pass
 
     def _add_spells_to_contract(self):

@@ -70,8 +70,8 @@ class Contract(ISeal):
         self._ward_b: IConduitWard = ward_b
 
         # Each side stores its own view of spell permissions.
-        self._details_a: ConcurrentDict[str, _Detail] = ConcurrentDict() # Borrowed from conduit b
-        self._details_b: ConcurrentDict[str, _Detail] = ConcurrentDict() # Borrowed from conduit a
+        self._details_a: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit b
+        self._details_b: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit a
 
     def _get_peer(self, ward: IConduitWard) -> IConduitWard:
         """
@@ -85,7 +85,7 @@ class Contract(ISeal):
             return self._ward_a
         raise ValueError("Ward is not a member of this contract.")
 
-    def _get_opposite_conduit(self, contract: '_Contract', known_id: UUID) -> Optional['IConduit']:
+    def _get_opposite_conduit(self, contract: 'Contract', known_id: UUID) -> Optional['IConduit']:
         """
         Internal
 
@@ -100,7 +100,7 @@ class Contract(ISeal):
             return contract._ward_a._conduit
         return None
 
-    def _get_detail_map(self, ward: IConduitWard) -> ConcurrentDict[str, _Detail]:
+    def _get_detail_map(self, ward: IConduitWard) -> ConcurrentDict[str, Detail]:
         """
         Internal
 
@@ -112,7 +112,7 @@ class Contract(ISeal):
             return self._details_b
         raise ValueError("Invalid ward for contract access.")
 
-    def _add(self, ward: IConduitWard, contract_detail: _Detail) -> None:
+    def _add(self, ward: IConduitWard, contract_detail: Detail) -> None:
         """
         Internal
 
@@ -130,7 +130,7 @@ class Contract(ISeal):
         if spell_id in detail_map:
             del detail_map[spell_id]
 
-    def _has(self, ward: IConduitWard, spell_id: str, permission: Permissions) -> bool:
+    def _check_if_exists_and_permissions(self, ward: IConduitWard, spell_id: str, permission: Permissions) -> bool:
         """
         Internal
 
@@ -140,6 +140,15 @@ class Contract(ISeal):
         if spell_id not in detail_map:
             return False
         return detail_map[spell_id].permissions == permission
+
+    def _check_if_exists(self, ward: IConduitWard, spell_id: str) -> bool:
+        """
+        Internal
+
+        Check if a spell exists in the given ward's permission map.
+        """
+        detail_map = self._get_detail_map(ward)
+        return spell_id in detail_map
 
     def _grant(self, ward: IConduitWard, spell_ids: list[str], permission: Permissions):
         """
@@ -154,7 +163,7 @@ class Contract(ISeal):
         """
         detail_map = self._get_detail_map(ward)
         for spell_id in spell_ids:
-            detail_map[spell_id] = _Detail(spell_id, permission)
+            detail_map[spell_id] = Detail(spell_id, permission)
 
     def seal(self):
         """

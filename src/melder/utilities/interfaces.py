@@ -99,6 +99,12 @@ class ISpell(ISeal):
     Interface for a Spell, which is a unit of magic that can be cast.
     """
     __slots__ = [] # Prevents memory leaks by ensuring the object is not kept alive by circular references.
+
+    def __init__(self):
+        super().__init__()
+        self._owner_conduit_id = None
+        self._permissions = None
+
     @abstractmethod
     def add_spell_details(self, *args, **kwargs):
         """
@@ -322,6 +328,7 @@ class IConduitWard(ISeal):
 #region Properties
     def __init__(self):
         super().__init__()
+        self._policy = None
         self._id = None
         self._conduit = None
 
@@ -375,7 +382,8 @@ class IConduit(ISeal):
 
     def __init__(self):
         super().__init__()
-        self._spellbook = None
+        self._conduit_ward: IConduitWard = None
+        self._spellbook: ISpellbook = None
         self.__creation_context__ = None
 
     @property
