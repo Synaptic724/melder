@@ -420,6 +420,9 @@ class IConduit(ISeal):
     def get_spell_by_id(self, spell_id, aetheric_frame):
         pass
 
+    def get_conduit_by_id(self, conduit_id, aetheric_frame):
+        pass
+
 
 class IConduitCloud(ISeal):
     """

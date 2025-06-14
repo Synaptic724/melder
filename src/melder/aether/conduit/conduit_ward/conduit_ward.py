@@ -480,7 +480,7 @@ class ConduitWard(IConduitWard):
 
     def _check_conduit_id_and_conduit(self,
             conduit: IConduit = None,
-            conduit_id: UUID = None, aetheric_frame = "default"):
+            conduit_id: UUID = None, aetheric_frame = "default") -> Tuple[UUID, IConduit]:
         """
         Internal
 
@@ -496,7 +496,7 @@ class ConduitWard(IConduitWard):
         if conduit is None:
             if not isinstance(conduit_id, UUID):
                 raise TypeError(f"Expected conduit_id as UUID, got {type(conduit_id).__name__}")
-            conduit = self._conduit.get_conduit_by_id(conduit_id)
+            conduit = self._conduit.get_conduit_by_id(conduit_id, aetheric_frame)
             if conduit is None:
                 raise RuntimeError(f"Could not resolve conduit for conduit_id '{conduit_id}'.")
 
@@ -528,19 +528,10 @@ class ConduitWard(IConduitWard):
 
         spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
 
-        if conduit_id is not None:
-            if not isinstance(conduit_id, UUID):
-                raise TypeError(f"Expected UUID for conduit_id, got {type(conduit_id).__name__}")
-        elif conduit is not None:
-            if not isinstance(conduit, IConduit):
-                raise TypeError(f"Expected IConduit instance, got {type(conduit).__name__}")
-            conduit_id = conduit.__creation_context__._conduit_id
-        else:
-            raise ValueError("Either conduit_id or conduit must be provided.")
+        conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
 
-        if contract := self._find_contract_by_id(conduit_id):
-            if contract is None:
-                raise RuntimeError(f"No contract found for conduit ID {conduit_id}, please link to this conduit prior to spell contract initiation.")
+        if (contract := self._find_contract_by_id(conduit_id)) is None:
+            raise RuntimeError(f"No contract found for conduit ID {conduit_id}, please link to this conduit prior to spell contract initiation.")
 
 
         # Check if the spell exists in our contracted spells
