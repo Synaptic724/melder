@@ -5,7 +5,7 @@ from uuid import UUID
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.concurrent_set import ConcurrentSet
-from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud
+from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
@@ -467,7 +467,6 @@ class Conduit(IConduit):
             return spell.permissions.name
         else:
             raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
-
 #endregion Spellbook Management API
 
 #region fakemeld
@@ -734,7 +733,7 @@ class Conduit(IConduit):
         self._conduit_ward.seal_all_lesser_conduits()
 
 #endregion Conduit Ward API
-#region Spellbinding API
+#region Spell Contracting API
     def _qualify_contracts(self):
         """
         Internal
@@ -859,7 +858,7 @@ class Conduit(IConduit):
         self._qualify_contracts()
         pass
 
-#endregion Spellbinding API
+#endregion Spell Contracting API
 #region Cleanup and Disposal
 
     def seal(self):

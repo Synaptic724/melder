@@ -192,6 +192,9 @@ class ConduitWard(IConduitWard):
             # Update the initiated and received indices
             self._initiated_index[target_conduit.__creation_context__._conduit_id] = contract._id
             target_conduit._conduit_ward._received_index[self._id] = contract._id
+
+            # Add spellbook entry
+            target_conduit._spellbook._create_link_contract(target_conduit.__creation_context__._conduit_id)
             return True
 
 
@@ -584,8 +587,9 @@ class ConduitWard(IConduitWard):
         contract._add(conduit._conduit_ward, detail)
 
         # Add spell to spellbook
+        conduit._spellbook._add_contracted_spell(spell, conduit_id)
 
-        pass
+        return True
 
     def _add_spells_to_contract(self):
         """

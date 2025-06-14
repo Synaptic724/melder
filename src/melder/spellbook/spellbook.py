@@ -507,8 +507,33 @@ class Spellbook(ISpellbook):
             spell_map.pop(spell_id, None)
             self._lookup_contracted_spells[conduit_id].pop(key, None)
 
+    def _sever_link_contract(self, conduit_id: UUID) -> None:
+        """
+        Internal
+
+        Sever the link contract for a given conduit ID.
+        This method removes all contracted spells and lookup entries for the conduit,
+        ensuring both internal maps are cleaned consistently.
+
+        Raises:
+            RuntimeError: If only one of the maps contains the conduit ID (inconsistent state).
+        """
+        with self._lock:
+            a_exists = conduit_id in self._contracted_spells
+            b_exists = conduit_id in self._lookup_contracted_spells
+
+            if a_exists != b_exists:
+                raise RuntimeError(
+                    f"Inconsistent contract state for conduit ID {conduit_id}: "
+                    f"_contracted_spells={a_exists}, _lookup_contracted_spells={b_exists}"
+                )
+
+            if a_exists and b_exists:
+                self._contracted_spells.pop(conduit_id, None)
+                self._lookup_contracted_spells.pop(conduit_id, None)
+
     #endregion Contract API
-#region Binding API
+    #region Binding API
 
     def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
         """

@@ -227,7 +227,7 @@ class ISpellbook(ISeal):
     @abstractmethod
     def _find_spell(self, spell_id: str) -> Optional[Any]:
         """
-        Internal spell resolution by UUID. Useful for resolving specific
+        Internal spell resolution by string. Useful for resolving specific
         spell references across systems or conduit links.
         """
         raise NotImplementedError("Subclasses must implement this method.")
@@ -290,6 +290,12 @@ class ISpellbook(ISeal):
     def get_spell_details(self, spell_id):
         pass
 
+    def _add_contracted_spell(self, spell, conduit_id):
+        pass
+
+    def _create_link_contract(self, _id):
+        pass
+
 
 class IBind:
     """
@@ -328,6 +334,7 @@ class IConduitWard(ISeal):
 #region Properties
     def __init__(self):
         super().__init__()
+        self._received_index = None
         self._policy = None
         self._id = None
         self._conduit = None
@@ -382,6 +389,7 @@ class IConduit(ISeal):
 
     def __init__(self):
         super().__init__()
+        self.__creation_context__ = None
         self._conduit_ward: IConduitWard = None
         self._spellbook: ISpellbook = None
         self.__creation_context__ = None
