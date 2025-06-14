@@ -276,7 +276,7 @@ class Spellbook(ISpellbook):
 
         # Networked/remote spell support
         # Basically if we're using dynamic mode it's a dict of dicts else it's not
-        # This is mainly because we need to maintain the contract system while using lesser scopes
+        # This is because we're interested in the contract spells from conduits
         self._contracted_spells: ConcurrentDict[str, ConcurrentDict[str, Spell]] = ConcurrentDict(ConcurrentDict())
         self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]]  = ConcurrentDict(ConcurrentDict())
 
@@ -301,6 +301,14 @@ class Spellbook(ISpellbook):
         else:
             raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
 
+    def _find_spell(self, spell_id: str) -> Optional[Spell]:
+        """
+        Internal
+
+        method to locate a spell by its spell_id.
+        """
+        return self._spells.get(spell_id)
+
     def _find_spell_count(self) -> int:
         """
         Internal
@@ -309,7 +317,7 @@ class Spellbook(ISpellbook):
         This is a simple utility method to check how many spells are currently registered.
         """
         with self._lock:
-            return len(self._spells) if self._contracted_spells else 0
+            return len(self._spells) if self._spells else 0
 
     def _find_contracted_spell_count(self) -> int:
         """
@@ -395,9 +403,6 @@ class Spellbook(ISpellbook):
                         f"Spell with ID {spell} already exists in the registry."
                     )
 
-    def _find_spell(self, spell_id: str) -> Optional[Spell]:
-        """Internal method to locate a spell by its spell_id."""
-        return self._spells.get(spell_id)
 
 #endregion General Methods
 #region Binding API

@@ -536,9 +536,6 @@ class Conduit(IConduit):
             return Conduit._aether._get_conduit_by_name(name, self._aetheric_frame)
 #endregion Aether API
 #region Conduit Ward API
-    def create_spell_contract(self, target_conduit: IConduit, spell_id: str) -> bool:
-        pass
-
     def link(self, target_conduit: IConduit) -> bool:
         """
         Public API
@@ -654,6 +651,39 @@ class Conduit(IConduit):
         with self._lock:
             return self._conduit_ward._get_provider_conduit(conduit_id)
 
+
+    def get_initiated_conduits(self) -> list[IConduit]:
+        """
+        Public API
+
+        Returns a list of all conduits that this conduit has initiated contracts toward.
+
+        This method retrieves all conduits that this conduit has linked to as the initiator.
+
+        Returns:
+            list[IConduit]: A list of conduits that this conduit has initiated contracts toward.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
+        with self._lock:
+            return self._conduit_ward._get_initiated_conduits()
+
+    def get_provider_conduits(self) -> list[IConduit]:
+        """
+        Public API
+
+        Returns a list of all conduits that have linked to this conduit as the provider.
+
+        This method retrieves all conduits that have initiated contracts to this conduit.
+
+        Returns:
+            list[IConduit]: A list of conduits that have linked to this conduit as the provider.
+        """
+        if self._sealed:
+            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
+        with self._lock:
+            return self._conduit_ward._get_provider_conduits()
+
     def seal_lesser_conduits(self):
         """
         Public API
@@ -669,6 +699,106 @@ class Conduit(IConduit):
         self._conduit_ward.seal_all_lesser_conduits()
 
 #endregion Conduit Ward API
+#region Spellbinding API
+
+    def create_spell_contract(self):
+        """
+        Public API
+
+        Creates a new spell contract for this conduit. This is used to create a contract
+        :return: bool
+        """
+        pass
+
+    def create_spell_contracts(self):
+        """
+        Public API
+
+        Creates a new spell contracts for this conduit. This is used to create multiple contracts.
+        :return: bool
+        """
+        pass
+
+    def remove_spell_contract(self, spell_id: str):
+        """
+        Public API
+
+        Removes a specific spell contract by its spell or spell_id.
+        :param spell_id:
+        :return: bool
+        """
+        pass
+
+    def remove_spell_contracts(self):
+        """
+        Public API
+
+        Removes all spell contracts associated with this conduit.
+        :return: bool
+        """
+        pass
+
+    def remove_all_spell_contracts(self):
+        """
+        Public API
+
+        Removes all spell contracts associated with this conduit.
+        :return: bool
+        """
+        pass
+
+    def get_all_spell_contracts(self) -> list:
+        """
+        Public API
+
+        Retrieves all spell contracts associated with this conduit.
+
+        :return: Dictionary of conduit ID and dictionary of spellID and permissions or None if not found.
+        """
+        pass
+
+    def get_spell_contract(self, spell: Any, spell_id: str) -> Optional[Any]:
+        """
+        Public API
+
+        Retrieves a specific spell contract by its spell or spell_id.
+
+        :param spell_id:
+        :return: tuple of spellID and permissions, or None if not found.
+        """
+        pass
+
+    def get_spell_contracts_by_conduit(self, conduit_id: UUID) -> list:
+        """
+        Public API
+
+        Retrieves all spell contracts associated with a specific conduit by its ID.
+
+        :param conduit_id:
+        :return: Dictionary of spellID and permissions or None if not found.
+        """
+        pass
+
+    def get_spell_contracts_by_conduit_name(self, conduit_name: str) -> list:
+        """
+        Public API
+
+        Retrieves all spell contracts associated with a specific conduit by its name.
+        :param conduit_name:
+        :return: Dictionary of spellID and permissions or None if not found.
+        """
+        pass
+
+    def get_contracted_conduits(self) -> list:
+        """
+        Public API
+
+        Retrieves all conduits that have contracted spells with this conduit.
+        :return: Dictionary of conduits that have contracted spells with this conduit, UUID as key and list of conduit as value.
+        """
+        pass
+
+#endregion Spellbinding API
 #region Cleanup and Disposal
 
     def seal(self):
