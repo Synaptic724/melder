@@ -619,23 +619,26 @@ class ConduitWard(IConduitWard):
 
         return True
 
-    def _add_spells_to_contract(self, *, spell_ids: list[str] = None, permissions: str = "create", aetheric_frame = "default") -> dict:
+    def _add_spells_to_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None, conduit_id: UUID = None,
+                               permissions: str = "create", aetheric_frame = "default") -> dict:
         """
         Internal
 
         Creates a new spell contracts for this conduit. This is used to create multiple contracts.
-        :return: bool
+        :return: dict with success and failed spell IDs.
         """
         report = {"success": [], "failed": {}}
         for spell_id in spell_ids:
             try:
-                self._add_spell_to_contract(spell_id=spell_id, permissions=permissions, aetheric_frame=aetheric_frame)
+                self._add_spell_to_contract(spell_id=spell_id, conduit=conduit, conduit_id=conduit_id,
+                                            permissions=permissions, aetheric_frame=aetheric_frame)
                 report["success"].append(spell_id)
             except Exception as e:
                 report["failed"][spell_id] = str(e)
         return report
 
-    def _remove_spell_from_contract(self, spell_id: str):
+    def _remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
+                                    conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
         """
         Internal
 
@@ -643,9 +646,24 @@ class ConduitWard(IConduitWard):
         :param spell_id:
         :return: bool
         """
-        pass
+        # Check if spell or spell_id is provided, if not, raise an error
+        spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
 
-    def _remove_spells_from_contract(self):
+        # Check if conduit is provided, if not, resolve it from conduit_id
+        conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
+
+        # Check if contract exists for the conduit if not raise an error. Link must exist prior to spell contract initiation.
+        if (contract := self._find_contract_by_id(conduit_id)) is not None:
+            return True
+
+        # Check if the spell exists in our contracted spells
+        if not contract._check_if_exists(conduit._conduit_ward, spell_id):
+            return True
+
+
+
+    def _remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
+                                     conduit_id: UUID = None, aetheric_frame = "default") -> dict:
         """
         Internal
 
@@ -654,7 +672,7 @@ class ConduitWard(IConduitWard):
         """
         pass
 
-    def _remove_all_spells_from_contract(self):
+    def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
         """
         Internal
 

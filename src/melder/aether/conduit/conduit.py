@@ -388,11 +388,7 @@ class Conduit(IConduit):
         :return:
         """
         with self._lock:
-            if isinstance(spell, object):
-                spell_id = self._spellbook._bind.spell_id_inspector(spell)
-                if Conduit._aether._check_for_spell(spell_id, aetheric_frame):
-                    return spell_id
-            return None
+            return self._spellbook.inspect_spell(spell, aetheric_frame)
 
     def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
         """
@@ -459,7 +455,7 @@ class Conduit(IConduit):
         Public API
 
         Get the permissions for a spell by its spell_id.
-        :param spell_id: The unique identifier of the spell.
+        :param spell_id: SHA256 identifier of the spell.
         :return: The permissions associated with the spell, or None if not found.
         """
         spell = self._spellbook._find_spell(spell_id)
@@ -467,6 +463,7 @@ class Conduit(IConduit):
             return spell.permissions.name
         else:
             raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
+
 #endregion Spellbook Management API
 
 #region fakemeld
@@ -749,7 +746,8 @@ class Conduit(IConduit):
             raise RuntimeError("Dynamic environment is not enabled. Cannot interact with spell contracts.")
 
 
-    def add_spell_to_contract(self, *, spell: Any, spell_id: str = None, permissions: str = "create", aetheric_frame = "default") -> bool | None:
+    def add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: UUID = None,
+                               permissions: str = "create", aetheric_frame = "default") -> bool | None:
         """
         Public API
 
@@ -757,10 +755,12 @@ class Conduit(IConduit):
         :return: bool
         """
         self._qualify_contracts()
-        return self._conduit_ward._add_spell_to_contract(spell=spell, spell_id=spell_id, permissions=permissions, aetheric_frame=aetheric_frame)
+        return self._conduit_ward._add_spell_to_contract(spell=spell, spell_id=spell_id, conduit=conduit, conduit_id=conduit_id,
+                                                          permissions=permissions, aetheric_frame=aetheric_frame)
 
 
-    def add_spells_to_contract(self, spell_ids: list[str] = None, permissions: str = "create", aetheric_frame = "default") -> dict:
+    def add_spells_to_contract(self, spell_ids: list[str], conduit: IConduit = None, conduit_id: UUID = None,
+                               permissions: str = "create", aetheric_frame = "default") -> dict:
         """
         Public API
 
@@ -768,9 +768,12 @@ class Conduit(IConduit):
         :return: bool
         """
         self._qualify_contracts()
-        return self._conduit_ward._add_spells_to_contract(spell_ids=spell_ids, permissions=permissions, aetheric_frame=aetheric_frame)
+        return self._conduit_ward._add_spells_to_contract(spell_ids=spell_ids,
+                                                          conduit=conduit, conduit_id=conduit_id,
+                                                          permissions=permissions, aetheric_frame=aetheric_frame)
 
-    def remove_spell_from_contract(self, spell_id: str):
+    def remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
+                                    conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
         """
         Public API
 
@@ -781,7 +784,8 @@ class Conduit(IConduit):
         self._qualify_contracts()
         pass
 
-    def remove_spells_from_contract(self):
+    def remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
+                                     conduit_id: UUID = None, aetheric_frame = "default") -> dict:
         """
         Public API
 
@@ -791,7 +795,7 @@ class Conduit(IConduit):
         self._qualify_contracts()
         pass
 
-    def _remove_all_spells_from_contract(self):
+    def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
         """
         Public API
 

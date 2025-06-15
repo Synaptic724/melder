@@ -418,7 +418,7 @@ class Spellbook(ISpellbook):
             raise RuntimeError("Spell key not found in the spellbook.")
 
 
-    def inspect_spell(self, spell: Any) -> Optional[str]:
+    def inspect_spell(self, spell: Any, aetheric_frame= "default") -> Optional[str]:
         """
         Public API
 
@@ -429,9 +429,10 @@ class Spellbook(ISpellbook):
         with self._lock:
             if isinstance(spell, object):
                 spell_id = self._bind.spell_id_inspector(spell)
-                if Spellbook._aether._check_for_spell(spell_id, self._aetheric_frame):
+                if Spellbook._aether._check_for_spell(spell_id, aetheric_frame):
                     return spell_id
             return None
+
 
     def _check_all_spells(self) -> None:
         """
@@ -448,6 +449,39 @@ class Spellbook(ISpellbook):
 
 #endregion General Methods
 #region Contract API
+    def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: UUID) -> Optional[Spell]:
+        """
+        Internal
+
+        Retrieve a contracted spell using its spell_id from a specific conduit.
+
+        Args:
+            spell_id (str): The ID of the spell to find.
+            conduit_id (UUID): The conduit from which to retrieve the spell.
+
+        Returns:
+            Optional[Spell]: The spell if found, else None.
+        """
+        if conduit_id not in self._contracted_spells:
+            return None
+        return self._contracted_spells[conduit_id].get(spell_id)
+
+    def _find_contracted_spell(self, spell: ISpell, conduit_id: UUID, aetheric_frame= "default") -> Optional[Spell]:
+        """
+        Internal
+
+        Retrieve a contracted spell using a Spell object by inspecting its ID.
+
+        Args:
+            spell (ISpell): The spell object to find.
+            conduit_id (UUID): The conduit from which to retrieve the spell.
+
+        Returns:
+            Optional[Spell]: The spell if found, else None.
+        """
+        spell_id = self.inspect_spell(spell, aetheric_frame)
+        return self._find_contracted_spell_by_id(spell_id, conduit_id)
+
 
     def _create_link_contract(self, conduit_id: UUID):
         """

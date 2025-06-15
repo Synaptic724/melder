@@ -180,9 +180,10 @@ class ISpellbook(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def inspect_spell(self, spell: Any) -> Optional[str]:
+    def inspect_spell(self, spell: Any, aetheric_frame:str = "default") -> Optional[str]:
         """
         Inspects a spell to find its ID then checks if the spell exists in the Aether.
+        :param aetheric_frame:
         :param spell:
         :return:
         """
@@ -297,6 +298,9 @@ class ISpellbook(ISeal):
         pass
 
     def _sever_link_contract(self, _conduit_id):
+        pass
+
+    def _inspect_spell_using_aetheric_frame(self, spell, aetheric_frame):
         pass
 
 
