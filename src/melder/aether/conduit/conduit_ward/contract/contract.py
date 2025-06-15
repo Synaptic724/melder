@@ -130,6 +130,21 @@ class Contract(ISeal):
         if spell_id in detail_map:
             del detail_map[spell_id]
 
+    def _clear_contract(self):
+        """
+        Internal
+
+        Clear all spell details from both sides of the contract.
+        This is typically called when sealing the contract.
+        """
+        with self._lock:
+            for detail in self._details_a.values():
+                detail.seal()
+            for detail in self._details_b.values():
+                detail.seal()
+            self._details_a.clear()
+            self._details_b.clear()
+
     def _check_if_exists_and_permissions(self, ward: IConduitWard, spell_id: str, permission: Permissions) -> bool:
         """
         Internal
@@ -177,7 +192,6 @@ class Contract(ISeal):
             if self._sealed:
                 return
             self.clean_up()
-            self._ward_a._remove_contract(self._ward_a._conduit)
             self._ward_a = None
             self._ward_b = None
             self._sealed = True

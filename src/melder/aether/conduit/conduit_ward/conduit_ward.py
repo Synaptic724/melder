@@ -710,12 +710,16 @@ class ConduitWard(IConduitWard):
         # Check if contract exists for the conduit if not raise an error. Link must exist prior to spell contract initiation.
         if (contract := self._find_contract_by_id(conduit_id)) is not None:
             with contract._lock:
-                pass
-                # Remove all spells from the contract
+                # Clear all spells from the contract
+                contract._clear_contract()
+
+                # Remove all spells from each conduit spellbook
+                ward_a = contract._ward_a
+                ward_b = contract._ward_b
 
                 # Remove all spells from spellbook
-
-
+                ward_a._conduit._spellbook._clear_contracted_spells_for_conduit(conduit_id)
+                ward_b._conduit._spellbook._clear_contracted_spells_for_conduit(conduit_id)
         else:
             raise RuntimeError(f"No contract found for conduit ID {conduit_id}")
 

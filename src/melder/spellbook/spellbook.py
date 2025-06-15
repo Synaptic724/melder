@@ -571,6 +571,27 @@ class Spellbook(ISpellbook):
             spell_map.pop(spell_id, None)
             self._lookup_contracted_spells[conduit_id].pop(key, None)
 
+    def _clear_contracted_spells_for_conduit(self, conduit_id: UUID) -> None:
+        """
+        Internal
+
+        Clears all spells associated with a contracted conduit, but retains the
+        conduit’s contract structure for future use.
+
+        This is useful when resetting a conduit’s spell list without dissolving
+        the entire contract or affecting the other side.
+
+        Raises:
+            RuntimeError: If the conduit ID does not exist or the maps are inconsistent.
+        """
+        with self._lock:
+            if conduit_id not in self._contracted_spells or conduit_id not in self._lookup_contracted_spells:
+                raise RuntimeError(f"No contracted spell maps found for conduit ID {conduit_id}.")
+
+            # Clear spells and lookup entries, keeping the empty dicts intact
+            self._contracted_spells[conduit_id].clear()
+            self._lookup_contracted_spells[conduit_id].clear()
+
     def _sever_link_contract(self, conduit_id: UUID) -> None:
         """
         Internal
