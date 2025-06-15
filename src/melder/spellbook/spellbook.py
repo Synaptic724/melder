@@ -502,8 +502,9 @@ class Spellbook(ISpellbook):
             )
 
         if not a_exists and not b_exists:
-            self._contracted_spells[conduit_id] = ConcurrentDict()
-            self._lookup_contracted_spells[conduit_id] = ConcurrentDict()
+            with self._lock:
+                self._contracted_spells[conduit_id] = ConcurrentDict()
+                self._lookup_contracted_spells[conduit_id] = ConcurrentDict()
 
     def _remove_link_contract(self, conduit_id: UUID):
         """
@@ -524,8 +525,9 @@ class Spellbook(ISpellbook):
             )
 
         if a_exists and b_exists:
-            self._contracted_spells.pop(conduit_id)
-            self._lookup_contracted_spells.pop(conduit_id)
+            with self._lock:
+                self._contracted_spells.pop(conduit_id)
+                self._lookup_contracted_spells.pop(conduit_id)
 
     def _add_contracted_spell(self, spell: Spell, conduit_id: UUID) -> None:
         """

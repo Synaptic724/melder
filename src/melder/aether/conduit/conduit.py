@@ -782,7 +782,8 @@ class Conduit(IConduit):
         :return: bool
         """
         self._qualify_contracts()
-        pass
+        return self._conduit_ward._remove_spell_from_contract(spell=spell, spell_id=spell_id, conduit=conduit,
+                                                              conduit_id=conduit_id, aetheric_frame=aetheric_frame)
 
     def remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
                                      conduit_id: UUID = None, aetheric_frame = "default") -> dict:
@@ -793,7 +794,8 @@ class Conduit(IConduit):
         :return: bool
         """
         self._qualify_contracts()
-        pass
+        return self._conduit_ward._remove_spells_from_contract(spell_ids=spell_ids, conduit=conduit,
+                                                                conduit_id=conduit_id, aetheric_frame=aetheric_frame)
 
     def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
         """
@@ -803,7 +805,7 @@ class Conduit(IConduit):
         :return: bool
         """
         self._qualify_contracts()
-        pass
+        return self._conduit_ward._remove_all_spells_from_contract(conduit=conduit, conduit_id=conduit_id, aetheric_frame=aetheric_frame)
 
     def get_all_spells_in_contract(self) -> list | None:
         """

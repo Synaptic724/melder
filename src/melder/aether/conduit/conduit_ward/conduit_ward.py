@@ -691,7 +691,22 @@ class ConduitWard(IConduitWard):
         Removes all spell contracts associated with this conduit.
         :return: bool
         """
-        pass
+        # Check if conduit is provided, if not, resolve it from conduit_id
+        conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
+
+        # Check if contract exists for the conduit if not raise an error. Link must exist prior to spell contract initiation.
+        if (contract := self._find_contract_by_id(conduit_id)) is not None:
+            with contract._lock:
+                id_a = contract._ward_a._id
+                id_b = contract._ward_b._id
+                if id_a == conduit_id:
+                    contract._ward_a._conduit._spellbook._sever_link_contract(id_a)
+                    contract._ward_b._conduit._spellbook._sever_link_contract(id_b)
+                else:
+                    contract._ward_b._conduit._spellbook._sever_link_contract(id_b)
+                    contract._ward_a._conduit._spellbook._sever_link_contract(id_a)
+        else:
+            raise RuntimeError(f"No contract found for conduit ID {conduit_id}")
 
     def _get_all_spells_in_contracts(self) -> list | None:
         """
