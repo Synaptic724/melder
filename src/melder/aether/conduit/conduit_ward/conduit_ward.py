@@ -279,7 +279,8 @@ class ConduitWard(IConduitWard):
             with locks[1]:
                 if self._find_contract(target_conduit):
                     return self._remove_contract(target_conduit)
-                raise RuntimeError("No contract found to sever with the target conduit.")
+                else:
+                    raise RuntimeError("No contract found to sever with the target conduit.")
 
     def _remove_contract(self, target_conduit: IConduit) -> bool:
         """
@@ -290,15 +291,27 @@ class ConduitWard(IConduitWard):
         if self._sealed:
             raise RuntimeError("Cannot remove contracts in a sealed Conduit Ward.")
 
+        conduit_id, conduit = self._check_conduit_id_and_conduit(conduit=target_conduit)
+
         if (contract := self._find_contract(target_conduit)) is not None:
-            del self._contracts[contract._id]
-            del target_conduit._conduit_ward._contracts[contract._id]
+            with contract._lock:
+                id_a = contract._ward_a._id
+                id_b = contract._ward_b._id
+                if id_a == conduit_id:
+                    contract._ward_a._conduit._spellbook._sever_link_contract(id_a)
+                    contract._ward_b._conduit._spellbook._sever_link_contract(id_b)
+                else:
+                    contract._ward_b._conduit._spellbook._sever_link_contract(id_b)
+                    contract._ward_a._conduit._spellbook._sever_link_contract(id_a)
 
-            del self._initiated_index[target_conduit.__creation_context__._conduit_id]
-            del target_conduit._conduit_ward._received_index[self._id]
+                del self._contracts[contract._id]
+                del target_conduit._conduit_ward._contracts[contract._id]
 
-            target_conduit._spellbook._sever_link_contract(target_conduit.__creation_context__._conduit_id)
-            return True
+                del self._initiated_index[target_conduit.__creation_context__._conduit_id]
+                del target_conduit._conduit_ward._received_index[self._id]
+
+                contract.seal()
+                return True
         return False
 
     def _link_lesser_conduit(self, lesser_conduit: IConduit):
@@ -697,66 +710,91 @@ class ConduitWard(IConduitWard):
         # Check if contract exists for the conduit if not raise an error. Link must exist prior to spell contract initiation.
         if (contract := self._find_contract_by_id(conduit_id)) is not None:
             with contract._lock:
-                id_a = contract._ward_a._id
-                id_b = contract._ward_b._id
-                if id_a == conduit_id:
-                    contract._ward_a._conduit._spellbook._sever_link_contract(id_a)
-                    contract._ward_b._conduit._spellbook._sever_link_contract(id_b)
-                else:
-                    contract._ward_b._conduit._spellbook._sever_link_contract(id_b)
-                    contract._ward_a._conduit._spellbook._sever_link_contract(id_a)
+                pass
+                # Remove all spells from the contract
+
+                # Remove all spells from spellbook
+
+
         else:
             raise RuntimeError(f"No contract found for conduit ID {conduit_id}")
 
-    def _get_all_spells_in_contracts(self) -> list | None:
+    def _get_all_spells_in_contracts(self) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
         Internal
 
-        Retrieves all spell contracts associated with this conduit.
+        Retrieves all contracted spells across all active contracts involving this conduit.
 
-        :return: Dictionary of conduit ID and dictionary of spellID and permissions or None if not found.
+        This method walks all symmetric contracts and returns the spell ID and spell object
+        pairs available to this conduit from its peers. Useful for full introspection
+        into what powers have been granted from all linked conduits.
+
+        :return: A dictionary mapping conduit IDs to lists of (spell_id, ISpell) tuples.
+                 Returns None if no contracts are found.
         """
+
         pass
 
-    def _get_spell_in_contract(self, spell: Any, spell_id: str) -> Optional[Any]:
+    def _get_spell_in_contract(self, spell: Any, spell_id: str) -> Optional[tuple[str, ISpell]]:
         """
         Internal
 
-        Retrieves a specific spell contract by its spell or spell_id.
+        Attempts to retrieve a specific spell from the active contracts.
 
-        :param spell_id:
-        :return: tuple of spellID and permissions, or None if not found.
+        This will search through all known contracts, across both sides, to find
+        the spell either by direct object or by its ID.
+
+        :param spell: The spell object (optional, used to derive ID).
+        :param spell_id: The explicit spell ID to search for.
+        :return: A tuple of (spell_id, ISpell) if found, else None.
         """
+
         pass
 
-    def _get_spells_in_contract_by_conduit(self, conduit_id: UUID) -> list | None:
+    def _get_spells_in_contract_by_conduit(self, conduit_id: UUID) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
         Internal
 
-        Retrieves all spell contracts associated with a specific conduit by its ID.
+        Retrieves all spells exchanged with a specific conduit by its unique ID.
 
-        :param conduit_id:
-        :return: Dictionary of spellID and permissions or None if not found.
+        This includes both spells this conduit has been granted from the peer, and
+        spells this conduit has allowed the peer to use — depending on contract terms.
+
+        :param conduit_id: The UUID of the target conduit.
+        :return: A dictionary mapping spell IDs to (spell_id, ISpell) tuples.
+                 Returns None if no such conduit is linked.
         """
+
         pass
 
-    def _get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> list | None:
+    def _get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
         Internal
 
-        Retrieves all spell contracts associated with a specific conduit by its name.
-        :param conduit_name:
-        :return: Dictionary of spellID and permissions or None if not found.
+        Retrieves all spells exchanged with a specific conduit by its declared name.
+
+        Mirrors `_get_spells_in_contract_by_conduit` but uses a human-readable name
+        instead of UUID. Useful for introspection and debugging.
+
+        :param conduit_name: The name identifier of the target conduit.
+        :return: A dictionary of spell IDs to (spell_id, ISpell) tuples, or None if not found.
         """
+
         pass
 
-    def _get_contracted_conduits(self) -> list | None:
+    def _get_contracted_conduits(self) -> list[Tuple[str, IConduit]] | None:
         """
         Internal
 
-        Retrieves all conduits that have contracted spells with this conduit.
-        :return: Dictionary of conduits that have contracted spells with this conduit, UUID as key and list of conduit as value.
+        Returns all conduits that currently have active spell contracts with this conduit.
+
+        This includes all linked conduits regardless of whether they initiated the link,
+        as contracts are symmetrical. Useful for auditing relationships and walking the
+        dependency graph.
+
+        :return: A list of (conduit_id, IConduit) tuples. Returns None if no links exist.
         """
+
         pass
 
 # endregion Spellbinding API

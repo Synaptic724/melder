@@ -392,6 +392,9 @@ class IConduitWard(ISeal):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+    def _remove_contract(self, _conduit):
+        pass
+
 
 class IConduit(ISeal):
     """

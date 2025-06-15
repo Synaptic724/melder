@@ -177,9 +177,8 @@ class Contract(ISeal):
             if self._sealed:
                 return
             self.clean_up()
-            self._ward_a._contracts.pop(self._id, None)
+            self._ward_a._remove_contract(self._ward_a._conduit)
             self._ward_a = None
-            self._ward_b._contracts.pop(self._id, None)
             self._ward_b = None
             self._sealed = True
 
