@@ -611,8 +611,9 @@ class ConduitWard(IConduitWard):
         self._check_spell_if_eligible(spell, conduit, permissions)
 
         # Create Detail with the spell_id and permissions
-        detail = self._create_detail(spell_id, permissions)
-        contract._add(conduit._conduit_ward, detail)
+        with contract._lock:
+            detail = self._create_detail(spell_id, permissions)
+            contract._add(conduit._conduit_ward, detail)
 
         # Add spell to spellbook
         conduit._spellbook._add_contracted_spell(spell, conduit_id)
@@ -620,7 +621,7 @@ class ConduitWard(IConduitWard):
         return True
 
     def _add_spells_to_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None, conduit_id: UUID = None,
-                               permissions: str = "create", aetheric_frame = "default") -> dict:
+                               permissions: str = "create", aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
 
@@ -654,23 +655,34 @@ class ConduitWard(IConduitWard):
 
         # Check if contract exists for the conduit if not raise an error. Link must exist prior to spell contract initiation.
         if (contract := self._find_contract_by_id(conduit_id)) is not None:
-            return True
-
-        # Check if the spell exists in our contracted spells
-        if not contract._check_if_exists(conduit._conduit_ward, spell_id):
-            return True
-
+            with contract._lock:
+                if contract._check_if_exists(conduit._conduit_ward, spell_id):
+                    contract._remove(conduit._conduit_ward, spell_id)
+                    # Remove spell from spellbook
+                    conduit._spellbook._remove_contracted_spell(spell_id, conduit_id)
+                else:
+                    raise RuntimeError(f"Spell with ID '{spell_id}' does not exist in the contract for conduit ID {conduit_id}.")
+        else:
+            raise RuntimeError(f"No contract found for conduit ID {conduit_id}")
 
 
     def _remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
-                                     conduit_id: UUID = None, aetheric_frame = "default") -> dict:
+                                     conduit_id: UUID = None, aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
 
         Removes some spells from the contract associated with this conduit.
         :return: bool
         """
-        pass
+        report = {"success": [], "failed": {}}
+        for spell_id in spell_ids:
+            try:
+                self._remove_spell_from_contract(spell_id=spell_id, conduit=conduit, conduit_id=conduit_id,
+                                            aetheric_frame=aetheric_frame)
+                report["success"].append(spell_id)
+            except Exception as e:
+                report["failed"][spell_id] = str(e)
+        return report
 
     def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
         """

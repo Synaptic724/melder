@@ -303,6 +303,9 @@ class ISpellbook(ISeal):
     def _inspect_spell_using_aetheric_frame(self, spell, aetheric_frame):
         pass
 
+    def _remove_contracted_spell(self, spell_id, conduit_id):
+        pass
+
 
 class IBind:
     """
