@@ -801,6 +801,24 @@ class ConduitWard(IConduitWard):
 
         pass
 
+    def _describe_contract(self, conduit_id: UUID) -> dict:
+        """
+        Internal
+
+        Returns a detailed description of the contract, including spell counts,
+        permissions, and peer metadata.
+        """
+        pass
+
+    def _validate_contracts(self) -> dict[UUID, bool]:
+        """
+        Internal
+
+        Validates that each contract is symmetrical and spell maps are consistent.
+        Returns a dict of conduit_id to validation result.
+        """
+        pass
+
 # endregion Spellbinding API
 #region Cleanup
     def seal(self):
