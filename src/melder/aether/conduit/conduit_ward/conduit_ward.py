@@ -723,7 +723,7 @@ class ConduitWard(IConduitWard):
         else:
             raise RuntimeError(f"No contract found for conduit ID {conduit_id}")
 
-    def _get_all_spells_in_contracts(self) -> dict[str, list[tuple[str, ISpell]]] | None:
+    def _get_all_spells_in_contracts(self, validate: bool = True) -> Optional[dict[str, list[Tuple[str, 'ISpell']]]]:
         """
         Internal
 
@@ -733,11 +733,41 @@ class ConduitWard(IConduitWard):
         pairs available to this conduit from its peers. Useful for full introspection
         into what powers have been granted from all linked conduits.
 
+        :param validate: Whether to validate contract consistency before retrieval.
         :return: A dictionary mapping conduit IDs to lists of (spell_id, ISpell) tuples.
                  Returns None if no contracts are found.
         """
+        if validate:
+            validation = self._validate_contracts()
+            if not all(validation.values()):
+                raise RuntimeError(
+                    "One or more contracts are invalid. Please validate contracts before retrieving spells.")
 
-        pass
+        spells_in_contracts = {}
+
+        with self._lock:
+            for contract_id, contract in self._contracts.items():
+                try:
+                    peer_ward = contract._get_peer(self)
+                    peer_conduit = peer_ward._conduit
+                    detail_map = contract._get_detail_map(self)
+
+                    spells = []
+                    for spell_id, detail in detail_map.items():
+                        spell = peer_conduit._spellbook._find_contracted_spell(spell_id)
+                        if spell is None:
+                            if validate:
+                                raise RuntimeError(
+                                    f"Inconsistent state: Spell '{spell_id}' missing in peer's spellbook.")
+                            continue
+                        spells.append((spell_id, spell))
+
+                    spells_in_contracts[peer_ward._id] = spells
+                except Exception as e:
+                    if validate:
+                        raise RuntimeError(f"Failed to inspect contract {contract_id}: {e}")
+
+        return spells_in_contracts if spells_in_contracts else None
 
     def _get_spell_in_contract(self, spell: Any, spell_id: str) -> Optional[tuple[str, ISpell]]:
         """

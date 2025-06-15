@@ -1,9 +1,9 @@
-from typing import Optional
+from typing import Optional, Any
 from uuid import UUID, uuid4
 from threading import RLock
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.interfaces import ISeal, IConduitWard
+from melder.utilities.interfaces import ISeal, IConduitWard, ISpell
 
 
 class Detail(ISeal):
@@ -144,6 +144,7 @@ class Contract(ISeal):
                 detail.seal()
             self._details_a.clear()
             self._details_b.clear()
+
 
     def _check_if_exists_and_permissions(self, ward: IConduitWard, spell_id: str, permission: Permissions) -> bool:
         """

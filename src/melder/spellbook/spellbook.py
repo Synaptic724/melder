@@ -337,6 +337,17 @@ class Spellbook(ISpellbook):
         """
         return self._spells.get(spell_id)
 
+    def _find_contracted_spell(self, spell_id: str) -> Optional[Spell]:
+        """
+        Internal
+
+        method to locate a spell by its spell_id.
+        """
+        for contracted_spells in self._contracted_spells.values():
+            if spell_id in contracted_spells:
+                return contracted_spells[spell_id]
+        raise RuntimeError(f"Contracted spell with ID {spell_id} not found in the spellbook.")
+
     def _find_spell_count(self) -> int:
         """
         Internal
