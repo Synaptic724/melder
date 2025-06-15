@@ -348,6 +348,15 @@ class Conduit(IConduit):
             conduit = self.get_conduit_by_spell_id(spell_id, aetheric_frame_name)
             return conduit._spellbook._find_spell(spell_id) if conduit else None
 
+    def find_contracted_spell(self, spell_id: str) -> Optional[ISpell]:
+        """
+        Internal
+
+        method to locate a spell by its spell_id.
+        """
+        return self._spellbook._find_contracted_spell(spell_id)
+
+
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """
         Public API

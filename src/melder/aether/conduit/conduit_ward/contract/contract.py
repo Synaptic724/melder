@@ -166,6 +166,23 @@ class Contract(ISeal):
         detail_map = self._get_detail_map(ward)
         return spell_id in detail_map
 
+
+    def _find_spell_in_ward(self, spell_id: str) -> IConduitWard | None:
+        """
+        Internal
+
+        Check if a spell exists in the given ward's permission map.
+        """
+        detail_map_a = self._get_detail_map(self._ward_a)
+        detail_map_b = self._get_detail_map(self._ward_b)
+        if spell_id in detail_map_a:
+            return self._ward_a
+        elif spell_id in detail_map_b:
+            return self._ward_b
+        else:
+            return None
+
+
     def _grant(self, ward: IConduitWard, spell_ids: list[str], permission: Permissions):
         """
         Internal

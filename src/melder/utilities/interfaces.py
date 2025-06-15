@@ -309,6 +309,9 @@ class ISpellbook(ISeal):
     def _clear_contracted_spells_for_conduit(self, conduit_id):
         pass
 
+    def _find_contracted_spell(self, spell_id):
+        pass
+
 
 class IBind:
     """

@@ -603,6 +603,9 @@ class ConduitWard(IConduitWard):
         Creates a new spell contract for this conduit. This is used to create a contract
         :return: bool
         """
+        if self._sealed:
+            raise RuntimeError("Cannot validate contracts in a sealed Conduit Ward.")
+
         # Check if permissions are valid
         permissions = EnumHelpers.convert_enum_and_check(permissions, Permissions)
 
@@ -641,6 +644,9 @@ class ConduitWard(IConduitWard):
         Creates a new spell contracts for this conduit. This is used to create multiple contracts.
         :return: dict with success and failed spell IDs.
         """
+        if self._sealed:
+            raise RuntimeError("Cannot validate contracts in a sealed Conduit Ward.")
+
         report = {"success": [], "failed": {}}
         for spell_id in spell_ids:
             try:
@@ -660,6 +666,9 @@ class ConduitWard(IConduitWard):
         :param spell_id:
         :return: bool
         """
+        if self._sealed:
+            raise RuntimeError("Cannot validate contracts in a sealed Conduit Ward.")
+
         # Check if spell or spell_id is provided, if not, raise an error
         spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
 
@@ -687,6 +696,9 @@ class ConduitWard(IConduitWard):
         Removes some spells from the contract associated with this conduit.
         :return: bool
         """
+        if self._sealed:
+            raise RuntimeError("Cannot validate contracts in a sealed Conduit Ward.")
+
         report = {"success": [], "failed": {}}
         for spell_id in spell_ids:
             try:
@@ -704,6 +716,9 @@ class ConduitWard(IConduitWard):
         Removes all spell contracts associated with this conduit.
         :return: bool
         """
+        if self._sealed:
+            raise RuntimeError("Cannot validate contracts in a sealed Conduit Ward.")
+
         # Check if conduit is provided, if not, resolve it from conduit_id
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
 
@@ -737,8 +752,11 @@ class ConduitWard(IConduitWard):
         :return: A dictionary mapping conduit IDs to lists of (spell_id, ISpell) tuples.
                  Returns None if no contracts are found.
         """
+        if self._sealed:
+            raise RuntimeError("Cannot validate contracts in a sealed Conduit Ward.")
+
         if validate:
-            validation = self._validate_contracts()
+            validation = self._validate_contracts_and_define()
             if not all(validation.values()):
                 raise RuntimeError(
                     "One or more contracts are invalid. Please validate contracts before retrieving spells.")
@@ -769,7 +787,7 @@ class ConduitWard(IConduitWard):
 
         return spells_in_contracts if spells_in_contracts else None
 
-    def _get_spell_in_contract(self, spell: Any, spell_id: str) -> Optional[tuple[str, ISpell]]:
+    def _get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[UUID, ISpell]]:
         """
         Internal
 
@@ -778,12 +796,21 @@ class ConduitWard(IConduitWard):
         This will search through all known contracts, across both sides, to find
         the spell either by direct object or by its ID.
 
-        :param spell: The spell object (optional, used to derive ID).
         :param spell_id: The explicit spell ID to search for.
-        :return: A tuple of (spell_id, ISpell) if found, else None.
+        :return: Conduit ID and ISpell tuple if found, otherwise None.
         """
+        if self._sealed:
+            raise RuntimeError("Cannot retrieve contracted conduits from a sealed Conduit Ward.")
 
-        pass
+        with self._lock:
+            for contract in self._contracts.values():
+                ward = contract._find_spell_in_ward(spell_id)
+                if ward:
+                    spell = ward._conduit.find_contracted_spell(spell_id)
+                    if spell:
+                        return (ward._id, spell)
+
+        return None
 
     def _get_spells_in_contract_by_conduit(self, conduit_id: UUID) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
@@ -795,11 +822,39 @@ class ConduitWard(IConduitWard):
         spells this conduit has allowed the peer to use — depending on contract terms.
 
         :param conduit_id: The UUID of the target conduit.
-        :return: A dictionary mapping spell IDs to (spell_id, ISpell) tuples.
+        :return: A dictionary mapping roles ("inbound", "outbound") to lists of (spell_id, ISpell) tuples.
                  Returns None if no such conduit is linked.
         """
+        if self._sealed:
+            raise RuntimeError("Cannot retrieve contracted spells from a sealed Conduit Ward.")
 
-        pass
+        with self._lock:
+            contract = self._find_contract_by_id(conduit_id)
+            if not contract:
+                return None
+
+            spells_result = {
+                "inbound": [],  # spells we received from them
+                "outbound": []  # spells we granted to them
+            }
+
+            # Peer side
+            peer_ward = contract._get_peer(self)
+            peer_conduit = peer_ward._conduit
+            peer_map = contract._get_detail_map(self)
+            for spell_id, detail in peer_map.items():
+                spell = peer_conduit._spellbook._find_contracted_spell(spell_id)
+                if spell:
+                    spells_result["inbound"].append((spell_id, spell))
+
+            # Our side
+            our_map = contract._get_detail_map(peer_ward)
+            for spell_id, detail in our_map.items():
+                spell = self._conduit._spellbook._find_contracted_spell(spell_id)
+                if spell:
+                    spells_result["outbound"].append((spell_id, spell))
+
+            return spells_result if spells_result["inbound"] or spells_result["outbound"] else None
 
     def _get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
@@ -813,8 +868,19 @@ class ConduitWard(IConduitWard):
         :param conduit_name: The name identifier of the target conduit.
         :return: A dictionary of spell IDs to (spell_id, ISpell) tuples, or None if not found.
         """
+        if self._sealed:
+            raise RuntimeError("Cannot retrieve contracted spells from a sealed Conduit Ward.")
+        if not conduit_name or not isinstance(conduit_name, str):
+            raise ValueError("Conduit name must be a non-empty string.")
 
-        pass
+        with self._lock:
+            for contract in self._contracts.values():
+                peer_ward = contract._get_peer(self)
+                peer_conduit = peer_ward._conduit
+                if getattr(peer_conduit, "_name", None) == conduit_name:
+                    return self._get_spells_in_contract_by_conduit(peer_ward._id)
+
+        return None
 
     def _get_contracted_conduits(self) -> list[Tuple[str, IConduit]] | None:
         """
@@ -828,8 +894,17 @@ class ConduitWard(IConduitWard):
 
         :return: A list of (conduit_id, IConduit) tuples. Returns None if no links exist.
         """
+        if self._sealed:
+            raise RuntimeError("Cannot retrieve contracted conduits from a sealed Conduit Ward.")
 
-        pass
+        contracted_conduits = []
+        with self._lock:
+            for contract_id, contract in self._contracts.items():
+                peer_ward = contract._get_peer(self)
+                peer_conduit = peer_ward._conduit
+                contracted_conduits.append((peer_ward._id, peer_conduit))
+
+        return contracted_conduits if contracted_conduits else None
 
     def _describe_contract(self, conduit_id: UUID) -> dict:
         """
@@ -838,18 +913,84 @@ class ConduitWard(IConduitWard):
         Returns a detailed description of the contract, including spell counts,
         permissions, and peer metadata.
         """
-        pass
+        if self._sealed:
+            raise RuntimeError("Cannot describe contract from a sealed Conduit Ward.")
 
-    def _validate_contracts(self) -> dict[UUID, bool]:
+        with self._lock:
+            contract = self._contracts.get(conduit_id)
+            if not contract:
+                raise RuntimeError(f"No contract found with conduit ID: {conduit_id}")
+
+            peer_ward = contract._get_peer(self)
+            peer_conduit = peer_ward._conduit
+            detail_map = contract._get_detail_map(self)
+
+            return {
+                "contract_id": conduit_id,
+                "peer_conduit_name": getattr(peer_conduit, "_name", "Unknown"),
+                "spell_count": len(detail_map),
+                "spells": [
+                    {
+                        "spell_id": spell_id,
+                        "permissions": detail.permissions.name,
+                    }
+                    for spell_id, detail in detail_map.items()
+                ]
+            }
+
+    def _validate_contracts_and_define(self) -> dict[UUID, bool]:
         """
         Internal
 
-        Validates that each contract is symmetrical and spell maps are consistent.
-        Returns a dict of conduit_id to validation result.
+        Validates that each contract is symmetrical in terms of what was borrowed and ensures
+        all referenced spells exist in the respective peer spellbooks.
         """
-        pass
+        if self._sealed:
+            raise RuntimeError("Cannot validate contracts in a sealed Conduit Ward.")
 
-# endregion Spellbinding API
+        results = {}
+        with self._lock:
+            for contract_id, contract in self._contracts.items():
+                try:
+                    valid = True
+                    for ward in (contract._ward_a, contract._ward_b):
+                        peer = contract._get_peer(ward)
+                        peer_book = peer._conduit._spellbook
+                        detail_map = contract._get_detail_map(ward)
+
+                        for spell_id, detail in detail_map.items():
+                            spell = peer_book._find_contracted_spell_by_id(spell_id, ward._id)
+                            if spell is None or spell.permissions != detail.permissions:
+                                valid = False
+                                break
+
+                        if not valid:
+                            break
+
+                    results[contract_id] = valid
+
+                except Exception:
+                    results[contract_id] = False
+
+        return results
+
+
+    def _validate_received_contracts(self) -> bool:
+        """
+        Internal
+
+        Validates all contracts associated with this conduit ward.
+
+        This checks that each contract is symmetrical, spell maps are consistent,
+        and that no dangling references exist.
+
+        Returns:
+            bool: True if all contracts are valid, False otherwise.
+        """
+        results = self._validate_contracts_and_define()
+        return all(results.values()) if results else False
+
+#endregion Spellbinding API
 #region Cleanup
     def seal(self):
         """
