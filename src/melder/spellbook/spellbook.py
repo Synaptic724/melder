@@ -477,23 +477,6 @@ class Spellbook(ISpellbook):
             return None
         return self._contracted_spells[conduit_id].get(spell_id)
 
-    def _find_contracted_spell(self, spell: ISpell, conduit_id: UUID, aetheric_frame= "default") -> Optional[Spell]:
-        """
-        Internal
-
-        Retrieve a contracted spell using a Spell object by inspecting its ID.
-
-        Args:
-            spell (ISpell): The spell object to find.
-            conduit_id (UUID): The conduit from which to retrieve the spell.
-
-        Returns:
-            Optional[Spell]: The spell if found, else None.
-        """
-        spell_id = self.inspect_spell(spell, aetheric_frame)
-        return self._find_contracted_spell_by_id(spell_id, conduit_id)
-
-
     def _create_link_contract(self, conduit_id: UUID):
         """
         Internal

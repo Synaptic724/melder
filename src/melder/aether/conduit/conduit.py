@@ -399,7 +399,7 @@ class Conduit(IConduit):
         with self._lock:
             return self._spellbook.inspect_spell(spell, aetheric_frame)
 
-    def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
+    def bind(self, *, spell, existence: str, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
         """
         Bind a spell to the spellbook using the `Bind` system.
 

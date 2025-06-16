@@ -190,7 +190,7 @@ class ISpellbook(ISeal):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def bind(self, spell: Any, existence: 'Existence', whitelist: Optional[bool] = True, *, spellframe: Optional[Any] = None, name: Optional[str] = None, **kwargs) -> Optional[str]:
+    def bind(self, spell: Any, existence: str, whitelist: Optional[bool] = True, *, spellframe: Optional[Any] = None, name: Optional[str] = None, **kwargs) -> Optional[str]:
         """
         Bind a spell to the spellbook using the `Bind` system.
 
