@@ -356,7 +356,6 @@ class Conduit(IConduit):
         """
         return self._spellbook._find_contracted_spell(spell_id)
 
-
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """
         Public API
@@ -371,7 +370,6 @@ class Conduit(IConduit):
         if not spell_id:
             raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
         return spell_id
-
 
     def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
         """
@@ -474,7 +472,6 @@ class Conduit(IConduit):
             raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
 
 #endregion Spellbook Management API
-
 #region fakemeld
     def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
         """
