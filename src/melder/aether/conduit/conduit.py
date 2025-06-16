@@ -1,6 +1,6 @@
 import threading
 from logging import warning
-from typing import Optional, Type, Any
+from typing import Optional, Type, Any, Tuple
 from uuid import UUID
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.existence.existence import Existence
@@ -760,8 +760,21 @@ class Conduit(IConduit):
         """
         Public API
 
-        Creates a new spell contract for this conduit. This is used to create a contract
-        :return: bool
+        Establishes a single spell contract between this conduit and another target conduit.
+
+        This allows one conduit to borrow or grant a specific spell, identified either by object or ID,
+        to/from a peer conduit. The contract defines the permissions under which the spell can be used.
+
+        You may provide either a `spell` object or a `spell_id`. The target conduit may be specified directly
+        or resolved via its ID and aetheric frame.
+
+        :param spell: The spell object to contract (optional if spell_id is provided).
+        :param spell_id: The unique ID of the spell to contract (optional if spell is provided).
+        :param conduit: The target conduit to contract with.
+        :param conduit_id: The UUID of the target conduit (used if `conduit` is not provided).
+        :param permissions: The permission level granted for this spell (default is "create").
+        :param aetheric_frame: Optional frame override used to locate the target conduit.
+        :return: True if the contract was created, False otherwise.
         """
         self._qualify_contracts()
         return self._conduit_ward._add_spell_to_contract(spell=spell, spell_id=spell_id, conduit=conduit, conduit_id=conduit_id,
@@ -773,8 +786,18 @@ class Conduit(IConduit):
         """
         Public API
 
-        Creates a new spell contracts for this conduit. This is used to create multiple contracts.
-        :return: bool
+        Establishes multiple spell contracts with another conduit in a single operation.
+
+        Allows you to bulk-grant or bulk-borrow spells by specifying a list of spell IDs. Each spell
+        will be contracted using the same permission level. Useful when synchronizing multiple
+        behaviors between agents or systems.
+
+        :param spell_ids: List of spell IDs to contract.
+        :param conduit: The target conduit to contract with.
+        :param conduit_id: The UUID of the target conduit (used if `conduit` is not provided).
+        :param permissions: The permission level granted for all spells (default is "create").
+        :param aetheric_frame: Optional frame override used to locate the target conduit.
+        :return: Dictionary of spell_id -> success boolean for each attempted contract.
         """
         self._qualify_contracts()
         return self._conduit_ward._add_spells_to_contract(spell_ids=spell_ids,
@@ -786,9 +809,17 @@ class Conduit(IConduit):
         """
         Public API
 
-        Removes a specific spell contract by its spell or spell_id.
-        :param spell_id:
-        :return: bool
+        Removes a single spell contract between this conduit and another.
+
+        Either the `spell` or `spell_id` can be provided to specify the contract to dissolve.
+        Once removed, the spell is no longer accessible across the link.
+
+        :param spell: The spell object to remove (optional if `spell_id` is provided).
+        :param spell_id: The unique ID of the spell to remove.
+        :param conduit: The target conduit involved in the contract.
+        :param conduit_id: UUID of the target conduit (used if `conduit` not provided).
+        :param aetheric_frame: Optional frame override to resolve the target conduit.
+        :return: True if the spell was successfully removed from the contract, False otherwise.
         """
         self._qualify_contracts()
         return self._conduit_ward._remove_spell_from_contract(spell=spell, spell_id=spell_id, conduit=conduit,
@@ -799,8 +830,15 @@ class Conduit(IConduit):
         """
         Public API
 
-        Removes some spells from the contract associated with this conduit.
-        :return: bool
+        Removes multiple spells from an existing contract with a target conduit.
+
+        Useful for bulk cleanup or revocation when retiring behaviors or permissions.
+
+        :param spell_ids: List of spell IDs to remove.
+        :param conduit: Target conduit object.
+        :param conduit_id: UUID of target conduit (used if `conduit` is not provided).
+        :param aetheric_frame: Optional frame override.
+        :return: Dictionary of spell_id -> success boolean for each removal attempt.
         """
         self._qualify_contracts()
         return self._conduit_ward._remove_spells_from_contract(spell_ids=spell_ids, conduit=conduit,
@@ -810,89 +848,165 @@ class Conduit(IConduit):
         """
         Public API
 
-        Removes all spell contracts associated with this conduit.
-        :return: bool
+        Dissolves all spell contracts between this conduit and the specified target.
+
+        All borrowed and granted spells in the active contract will be severed, effectively
+        resetting the relationship between the two conduits.
+
+        :param conduit: Target conduit object.
+        :param conduit_id: UUID of target conduit (used if `conduit` is not provided).
+        :param aetheric_frame: Optional frame override.
+        :return: True if all spells were successfully removed, False otherwise.
         """
         self._qualify_contracts()
         return self._conduit_ward._remove_all_spells_from_contract(conduit=conduit, conduit_id=conduit_id, aetheric_frame=aetheric_frame)
 
-    def get_all_spells_in_contract(self) -> list | None:
+    def get_all_spells_in_contracts(self, validate: bool = True) -> Optional[dict[str, list[Tuple[str, 'ISpell']]]]:
         """
         Public API
 
-        Retrieves all spell contracts associated with this conduit.
+        Retrieves all active spells that this conduit has access to through its contracts.
 
-        :return: Dictionary of conduit ID and dictionary of spellID and permissions or None if not found.
+        Walks all current spell contracts and collects the spell IDs and objects that are currently
+        borrowed from other conduits. Optionally validates contracts before collecting data.
+
+        :param validate: If True, performs contract consistency validation before returning data.
+        :return: Dictionary mapping peer conduit UUIDs to lists of (spell_id, ISpell) tuples,
+                 or None if no contracts exist.
         """
         self._qualify_contracts()
-        pass
+        if not isinstance(validate, bool):
+            raise TypeError(f"Expected validate to be a boolean, got {type(validate).__name__}")
+        return self._conduit_ward._get_all_spells_in_contracts(validate=validate)
 
-    def get_spell_in_contract(self, spell: Any, spell_id: str) -> Optional[Any]:
+    def get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[UUID, ISpell]]:
         """
         Public API
 
-        Retrieves a specific spell contract by its spell or spell_id.
+        Searches all known contracts to find the origin of a specific spell.
 
-        :param spell_id:
-        :return: tuple of spellID and permissions, or None if not found.
+        Looks for a specific spell by ID and returns the UUID of the conduit it's contracted from
+        along with the spell object, if found.
+
+        :param spell_id: The unique ID of the spell.
+        :return: Tuple of (conduit_id, spell) if found, otherwise None.
         """
         self._qualify_contracts()
-        pass
+        if not isinstance(spell_id, str):
+            raise TypeError(f"Expected spell_id to be a string, got {type(spell_id).__name__}")
+        return self._conduit_ward._get_spell_in_contracts(spell_id)
 
-    def get_spells_in_contract_by_conduit(self, conduit_id: UUID) -> list | None:
+    def get_spells_in_contract_by_conduit(self, conduit_id: UUID) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
         Public API
 
-        Retrieves all spell contracts associated with a specific conduit by its ID.
+        Retrieves all spell contracts associated with a specific peer conduit, identified by UUID.
 
-        :param conduit_id:
-        :return: Dictionary of spellID and permissions or None if not found.
+        Returns a detailed list of all spells that this conduit currently accesses or has granted
+        through its relationship with the specified peer.
+
+        :param conduit_id: UUID of the target conduit.
+        :return: Dictionary of spell_id -> (spell_id, ISpell) tuples or None if not found.
         """
         self._qualify_contracts()
-        pass
+        if not isinstance(conduit_id, UUID):
+            raise TypeError(f"Expected conduit_id to be a UUID, got {type(conduit_id).__name__}")
+        return self._conduit_ward._get_spells_in_contract_by_conduit(conduit_id)
 
-    def get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> list | None:
+    def get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
         Public API
 
-        Retrieves all spell contracts associated with a specific conduit by its name.
-        :param conduit_name:
-        :return: Dictionary of spellID and permissions or None if not found.
+        Retrieves all spell contracts associated with a peer conduit identified by name.
+
+        Same as `get_spells_in_contract_by_conduit`, but performs resolution using a
+        human-readable name instead of UUID. Useful for logs, debugging, or UI.
+
+        :param conduit_name: Name of the peer conduit.
+        :return: Dictionary of spell_id -> (spell_id, ISpell) tuples or None if not found.
         """
         self._qualify_contracts()
-        pass
+        if not isinstance(conduit_name, str):
+            raise TypeError(f"Expected conduit_name to be a string, got {type(conduit_name).__name__}")
+        return self._conduit_ward._get_spells_in_contract_by_conduit_name(conduit_name)
 
-    def get_contracted_conduits(self) -> list | None:
+
+    def get_contracted_conduits(self) -> list[Tuple[str, IConduit]] | None:
         """
         Public API
 
-        Retrieves all conduits that have contracted spells with this conduit.
-        :return: Dictionary of conduits that have contracted spells with this conduit, UUID as key and list of conduit as value.
+        Lists all conduits that have an active spell contract with this conduit.
+
+        Each returned conduit represents a peer in the current dynamic spell network.
+        This is useful for visualizing the relationship graph or performing audits.
+
+        :return: List of (conduit_id, IConduit) tuples, or None if no contracts exist.
         """
         self._qualify_contracts()
-        pass
+        return self._conduit_ward._get_contracted_conduits()
 
     def _describe_contract(self, conduit_id: UUID) -> dict:
         """
-        Internal
+        Public API
 
-        Returns a detailed description of the contract, including spell counts,
-        permissions, and peer metadata.
+        Produces a detailed diagnostic summary of a contract established with a specific conduit.
+
+        This method inspects the contract associated with the provided `conduit_id` and returns metadata
+        including the peer conduit’s name, the number of active spells involved, and permission levels
+        granted for each spell. It is primarily used for debugging, introspection, and UI inspection tools.
+
+        Useful for tracing spell relationships, verifying proper link formation, or exposing data
+        for system monitoring.
+
+        :param conduit_id: UUID of the peer conduit whose contract you wish to examine.
+        :return: Dictionary containing:
+            - contract_id: UUID of the contract
+            - peer_conduit_name: Human-readable name of the peer conduit
+            - spell_count: Total number of spells in the contract
+            - spells: List of dictionaries with:
+                - spell_id: Unique spell identifier
+                - permissions: Permission level granted to this spell
         """
         self._qualify_contracts()
-        pass
+        return self._conduit_ward._describe_contract(conduit_id)
 
-
-    def _validate_contracts(self) -> dict[UUID, bool]:
+    def validate_contracts_and_define(self) -> dict[UUID, bool]:
         """
-        Internal
+        Public API
 
-        Validates that each contract is symmetrical and spell maps are consistent.
-        Returns a dict of conduit_id to validation result.
+        Validates all known contracts attached to this conduit and confirms mutual agreement and consistency.
+
+        This method performs a deep validation pass over each contract by ensuring:
+            - Both sides list the same spells in the contract
+            - Permission levels are symmetrical
+            - All referenced spells are valid and exist in the correct peer spellbook
+
+        Contracts that fail validation are marked as `False` in the returned dictionary.
+        This is critical for maintaining integrity across a distributed or multi-agent conduit network.
+
+        :return: Dictionary mapping contract UUIDs to validation results:
+                 - True: Contract is valid and consistent
+                 - False: Contract is malformed or inconsistent
         """
         self._qualify_contracts()
-        pass
+        return self._conduit_ward._validate_contracts_and_define()
 
+
+    def validate_received_contracts(self) -> bool:
+        """
+        Public API
+
+        Performs a high-level validation check across all contracts involving this conduit.
+
+        Internally calls `_validate_contracts_and_define` and aggregates the results to determine
+        whether every connected contract is structurally valid and symmetrical. This is typically used
+        during diagnostics, debugging, or safety checks before major state changes (e.g., disposing,
+        spell resolution, or spell reflection).
+
+        :return: True if all active contracts pass validation, False otherwise.
+        """
+        self._qualify_contracts()
+        return self._conduit_ward._validate_received_contracts()
 
 
 #endregion Spell Contracting API
