@@ -1,7 +1,14 @@
+#    Copyright [2025] [Mark Thomas Geleta]
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+
 from uuid import UUID
 import threading
 from typing import List, Optional, Any, Tuple
-
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.concurrent_dictionary import ConcurrentDict
