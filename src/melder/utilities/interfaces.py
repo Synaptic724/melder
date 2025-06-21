@@ -110,6 +110,9 @@ class ISpell(ISeal):
 
     def __init__(self):
         super().__init__()
+        self.post_hooks = None
+        self.activation_hooks = None
+        self.pre_hooks = None
         self._owner_conduit_id = None
         self._permissions = None
 
@@ -154,6 +157,9 @@ class ISpellbook(ISeal):
 
     def __init__(self):
         super().__init__()
+        self._lookup_contracted_spells = None
+        self._lookup_spells = None
+        self._contracted_spells = None
         self._spells = None
         self._bind = None
 
