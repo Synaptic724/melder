@@ -13,8 +13,6 @@ from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces import IConduit, ISpellbook, ISpell, IMeld
 from threading import RLock
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
-from enum import Enum, auto
-
 
 class Meld(IMeld):
     """
@@ -37,7 +35,7 @@ class Meld(IMeld):
         # Creation manager (conduit-local instantiation context)
         self._creations = creations
 
-    def meld(self, spell=None, *, spellframe=None, name=None, spell_override: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+    def meld(self, spell=None, *, spellframe=None, binding_name=None, spell_override: Optional[dict | list | tuple] = None) -> Optional[Any]:
         """
         Meld a spell with the conduit by resolving it from the spellbook,
         optionally overriding parameters.
@@ -45,7 +43,7 @@ class Meld(IMeld):
         Args:
             spell (Any): Optional UUID or resolution hint for the spell.
             spellframe (Optional[type]): Interface or grouping frame.
-            name (Optional[str]): Binding name (used for named/interfaced spells).
+            binding_name (Optional[str]): Binding name (used for named/interfaced spells).
             spell_override (Optional[dict]): Parameter overrides for the spell.
         """
         with self._lock:
@@ -54,10 +52,10 @@ class Meld(IMeld):
                 if not target_spell:
                     raise KeyError(f"[MELD] No spell found with UUID: {spell}")
             else:
-                lookup_key = (spellframe, name or "__default__")
+                lookup_key = (spellframe, binding_name or "__default__")
                 spell_id = self._owned_spells_lookup.get(lookup_key) or self._lookup_contracted_spells.get(lookup_key)
                 if not spell_id:
-                    raise KeyError(f"[MELD] No spell found for frame={spellframe}, name={name}")
+                    raise KeyError(f"[MELD] No spell found for frame={spellframe}, name={binding_name}")
                 target_spell = self._owned_spell.get(spell_id) or self._contracted.get(spell_id)
 
             # Apply spell override metadata (if any)
