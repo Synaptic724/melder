@@ -5,11 +5,9 @@ import sys
 import types
 import unittest
 from importlib.machinery import ModuleSpec
-from pathlib import Path
-from typing import List
 from unittest import mock
 
-from melder.spellbook.bind.graph_builder.inspector.spell_examiner import (
+from melder.aether.conduit.graph_builder.inspector.spell_examiner import (
     SpellExaminer,
     ClassInspector,
     MethodInspector,

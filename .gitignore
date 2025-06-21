@@ -178,3 +178,4 @@ cython_debug/
 #Pycharm
 .idea/
 /src/melder/testing_stuff/
+/src/melder/INFO/

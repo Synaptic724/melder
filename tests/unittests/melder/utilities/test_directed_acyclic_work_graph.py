@@ -1,6 +1,6 @@
 import unittest
 import time
-from melder.spellbook.bind.graph_builder.dag.directed_acyclic_work_graph import Node, Edge, DirectedAcyclicWorkGraph, StateObject, ExecutionContext
+from melder.aether.conduit.graph_builder.dag.directed_acyclic_work_graph import Node, Edge, DirectedAcyclicWorkGraph, StateObject, ExecutionContext
 import random
 
 # Assuming you have all your DAG code in a module named 'dag_module'

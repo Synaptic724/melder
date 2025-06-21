@@ -37,7 +37,7 @@ class Meld(IMeld):
         # Creation manager (conduit-local instantiation context)
         self._creations = creations
 
-    def meld(self, spell=None, *, spellframe=None, name=None, spell_override: Optional[Dict[str, Any]] = None) -> None:
+    def meld(self, spell=None, *, spellframe=None, name=None, spell_override: Optional[Dict[str, Any]] = None) -> Optional[Any]:
         """
         Meld a spell with the conduit by resolving it from the spellbook,
         optionally overriding parameters.
@@ -86,100 +86,3 @@ class Meld(IMeld):
             self._creations = None
             self._sealed = True
             print("[MELD] Conduit sealed. Resources released.")
-
-#PARAMETER INJECTION EXAMPLE
-#
-#meld(UserService, override={
-#    "db": meld(PostgresConnection, override={"dsn": "override_me"})
-#})
-
-
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# 📘 Spell Entry Matrix (User-facing fields)
-# Each row defines how a spell can be resolved logically.
-#
-# Columns:
-# spellname        — The name of the method or class
-# interface        — The spellframe (interface or grouping class), or None
-# binding_name     — Optional label provided by user to disambiguate multiple bindings
-#───────────────────────────────────────────────────────────────────────────────
-# SpellType                  | spellname         | interface           | binding_name
-#────────────────────────────|-------------------|----------------------|----------------
-#NORMAL                      | "MyService"       | None                 | None
-#NAMED                       | "MyService"       | None                 | "alpha"
-#NORMAL_INTERFACED           | "MyService"       | IMyService           | None
-#NAMED_INTERFACED            | "MyService"       | IMyService           | "v1"
-#EXISTING_CLASS              | "MyService"       | None                 | None
-#EXISTING_INTERFACED_CLASS   | "MyService"       | IMyService           | None
-#NORMAL_METHOD               | "process_data"    | None                 | None
-#NAMED_METHOD                | "process_data"    | None                 | "process"
-#NAMED_METHOD (interfaced)   | "process_data"    | IDataPipeline        | "process"
-#NAMED_LAMBDA_METHOD         | "<lambda>"        | IMathOps             | "scale"
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# 📘 Spell Entry Matrix (User-facing fields + bind/meld logic)
-#
-# Columns:
-# spellname        — The name of the method or class
-# interface        — The spellframe (interface or grouping class), or None
-# binding_name     — Optional label provided by user to disambiguate multiple bindings
-#
-# Also includes:
-# 🔧 bind(...) — How the spell is registered
-# 🧩 meld(...) — How the spell is resolved
-#───────────────────────────────────────────────────────────────────────────────
-# SpellType                  | spellname         | interface           | binding_name | bind(...)                                             | meld(...)
-#────────────────────────────|-------------------|----------------------|---------------|-------------------------------------------------------|-------------------------------
-#NORMAL                      | "MyService"       | None                 | None          | bind(MyService)                                              | meld(MyService)
-#NAMED                       | "MyService"       | None                 | "alpha"       | bind(MyService, name="alpha")                                | meld(MyService, name="alpha")  if already registered in normal interfaced do we throw??
-#NORMAL_INTERFACED           | "MyService"       | IMyService           | None          | bind(MyService, spellframe=IMyService)                       | meld(IMyService)
-#NAMED_INTERFACED            | "MyService"       | IMyService           | "v1"          | bind(MyService, spellframe=IMyService, name="v1")            | meld(IMyService, name="v1")    if already registered in normal interfaced do we throw??
-#EXISTING_CLASS              | "MyService"       | None                 | None          | bind(my_service_instance)                                    | meld(MyService)
-#EXISTING_INTERFACED_CLASS   | "MyService"       | IMyService           | None          | bind(my_service_instance, spellframe=IMyService)             | meld(IMyService)
-#NORMAL_METHOD               | "process_data"    | None                 | None          | bind(process_data)                                           | meld(process_data)
-#NAMED_METHOD                | "process_data"    | None                 | "process"     | bind(process_data, name="process")                           | meld("process")
-#NAMED_METHOD (interfaced)   | "process_data"    | IDataPipeline        | "process"     | bind(process_data, name="process", spellframe=IDataPipeline) | meld(IDataPipeline, name="process")
-#NAMED_LAMBDA_METHOD         | "<lambda>"        | IMathOps             | "scale"       | bind(lambda x: x+1, name="scale", spellframe=IMathOps)       | meld(IMathOps, name="scale")
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-
-## IMPORTANT FOR MELDER DEVELOPERS ##
-# This specific part of the file needs to be understood well because we will be using all three styles of spell resolution in Melder.
-# ─────────────────────────────────────────────────────────────────────────────
-# 📘 SpellFrame Usage in Melder
-#
-# Melder supports three interface styles for organizing and resolving spells:
-#
-# ┌────────────────────────────┬─────────────────────────────────────────────┐
-# │ Style                      │ Description                                 │
-# ├────────────────────────────┼─────────────────────────────────────────────┤
-# │ 1. Real Interfaces         │ Use `abc.ABC` or Protocols to define formal │
-# │                            │ contracts. Best for linter and IDE support. │
-# ├────────────────────────────┼─────────────────────────────────────────────┤
-# │ 2. SpellFrame Classes      │ Dynamically registered classes that act as  │
-# │                            │ AI-native interfaces. No need for strict    │
-# │                            │ inheritance. Registered via `SpellFrame`.   │
-# ├────────────────────────────┼─────────────────────────────────────────────┤
-# │ 3. String-based Categories │ Lightweight categorization for rapid dev.   │
-# │                            │ Allows using strings like `"IMathOps"` as   │
-# │                            │ categories during `bind()` or `meld()`.     │
-# └────────────────────────────┴─────────────────────────────────────────────┘
-#
-# ✅ All three methods are supported.
-# ✅ You can mix and match styles depending on the use case.
-# ✅ The system prioritizes flexibility — not rigid enforcement.
-#
-# 🔧 Example Bindings:
-#   bind(MyService, spellframe=IMyService)              # Real Interface
-#   bind(MyService, spellframe=MyDynamicFrame)          # SpellFrame class
-#   bind(MyService, spellframe="IDataPipeline")         # String category
-#
-# 🧙‍♂️ Melder is built for AI-native systems. Let your code evolve, self-organize,
-#      and resolve structure at runtime. Structure when you want it. Chaos when you need it.
-# ─────────────────────────────────────────────────────────────────────────────

@@ -7,11 +7,10 @@
 #        http://www.apache.org/licenses/LICENSE-2.0
 
 from types import MappingProxyType
-from uuid import uuid4, UUID
-from logging import warning
-from typing import Optional, List, Dict, Any, Type, Callable, Mapping
+from uuid import UUID
+from typing import Optional, List, Any, Callable, Mapping
 from melder.aether.aether import Aether
-from melder.spellbook.bind.graph_builder.inspector.spell_examiner import MethodProfile, ClassProfile
+from melder.aether.conduit.spell_crafter.inspector.spell_examiner import MethodProfile, ClassProfile
 from melder.utilities.interfaces import ISpellbook, ISpell
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
@@ -128,6 +127,8 @@ class Spell(ISpell):
         self.existence: Existence = existence
         self.profile: ClassProfile | MethodProfile = profile
         self.aetheric_frame: str = aetheric_frame
+        self.timeout: Optional[int] = None  # Optional timeout for spell execution
+        self.retries: int = 0  # Number of retries allowed for spell execution
 
         # Permissions
         self.permissions: Permissions = permissions
@@ -135,7 +136,6 @@ class Spell(ISpell):
         # Spell Metadata
         self.tags = args if args else []
         self.metadata = kwargs if kwargs else {}
-        self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
         # hooks
         self.pre_hooks: List[Callable] = []
@@ -144,11 +144,13 @@ class Spell(ISpell):
 
         # Created During validation
         self.dependency_graph = None
+        self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
         # Created after Conduit Made
         self._owner_conduit_id: UUID | None = None
         self._owner_conduit_name: str | None = None
         self.owned_spell = None
+        self._owner_creations: Any = None # Scope level creations for singletons
 
         # Key for the spell in the Spellbook
         self._key = (self.spellframe or type(self.spell).__name__, self.binding_name or "__default__")
@@ -161,7 +163,7 @@ class Spell(ISpell):
         )
 
 #region Configuration
-    def _add_owned_conduit(self, conduit_id: UUID, conduit_name: str = None):
+    def _add_owned_conduit(self, conduit_id: UUID, conduit_name: str = None, creations: Any = None):
         """
         Add the conduit ID that owns this spell.
         :param conduit_id: The ID of the conduit that owns this spell.
@@ -170,6 +172,7 @@ class Spell(ISpell):
             self._owner_conduit_id = conduit_id
             self._owner_conduit_name = conduit_name
             self.owned_spell = True
+            self._owner_creations = creations
 
     def _add_build_details(self, dag: Any, dependencies: List[str] = None):
         """
@@ -622,7 +625,7 @@ class Spellbook(ISpellbook):
     #endregion Contract API
     #region Binding API
 
-    def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, name=None, **kwargs) -> str:
+    def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, binding_name=None, **kwargs) -> str:
         """
         Bind a spell to the spellbook using the `Bind` system.
 
@@ -663,8 +666,8 @@ class Spellbook(ISpellbook):
             spellframe (str, optional):
                 Optional frame/grouping for organizational lookup.
 
-            name (str, optional):
-                Optional override for spell binding name.
+            binding_name (str, optional):
+                Optional override for spell binding name, its a key.
 
             **kwargs:
                 - pre_hooks: List[Callable] — Executed before casting.
@@ -681,7 +684,7 @@ class Spellbook(ISpellbook):
                 permissions=permissions,
                 spell=spell,
                 spellframe=spellframe,
-                name=name,
+                binding_name=binding_name,
                 existence=existence,
                 aetheric_frame=self._aetheric_frame,
             )
@@ -939,7 +942,6 @@ class Spellbook(ISpellbook):
             )
             self._conjured = True
             self._define_conduit_into_spells(conduit)
-            # TODO: Implement validation cycle to ensure all spells are valid
             return conduit
 
     def _check_system_state(self, policy: str) -> None:
@@ -963,8 +965,7 @@ class Spellbook(ISpellbook):
         """
         with self._lock:
             for spell in self._spells.values():
-                spell._add_owned_conduit(conduit.__creation_context__._conduit_id, conduit._name)
-                #spell._add_build_details(conduit.dependency_graph) # This is a placeholder for the actual DAG system
+                spell._add_owned_conduit(conduit.__creation_context__._conduit_id, conduit._name, conduit._creations)
 
     def _set_policy_state(self, policy: Policies) -> None:
         """

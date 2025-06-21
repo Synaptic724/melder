@@ -9,7 +9,7 @@
 import inspect
 import threading
 from typing import Any, Optional, Union
-from melder.spellbook.bind.graph_builder.inspector.spell_examiner import (
+from melder.aether.conduit.spell_crafter.inspector.spell_examiner import (
     SpellExaminer, ClassProfile, MethodProfile
 )
 from melder.spellbook.spell_types.spell_types import SpellType
@@ -25,15 +25,15 @@ class Bind(IBind):
         super().__init__()
         self._lock = threading.RLock()
 
-    def bind(self, permissions: Permissions, *, aetheric_frame: str, spell=None, spellframe=None, name=None, existence=Existence.unique) -> Union[Spell, Any]:
+    def bind(self, permissions: Permissions, *, aetheric_frame: str, spell=None, spellframe=None, binding_name=None, existence=Existence.unique) -> Union[Spell, Any]:
         if spell is None:
             # Decorator usage
             def decorator(obj):
-                return self._bind_logic(obj, spellframe, name, existence, permissions, aetheric_frame)
+                return self._bind_logic(obj, spellframe, binding_name, existence, permissions, aetheric_frame)
             return decorator
         else:
             # Direct usage
-            return self._bind_logic(spell, spellframe, name, existence, permissions, aetheric_frame)
+            return self._bind_logic(spell, spellframe, binding_name, existence, permissions, aetheric_frame)
 
     def _bind_logic(self, spell: Any, spellframe: Optional[Any], binding_name: Optional[str], existence: Existence, permissions: Permissions, aetheric_frame: str) -> Spell:
         with self._lock:
