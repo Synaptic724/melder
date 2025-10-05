@@ -12,7 +12,6 @@ from typing import List, Optional
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.interfaces import ISeal
-
 class Creations(ISeal):
     """
     Manages all instantiated objects within a Conduit.

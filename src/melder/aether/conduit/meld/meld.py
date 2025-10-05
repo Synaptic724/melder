@@ -7,13 +7,8 @@ from melder.utilities.general_helpers import SpellInputUtils
 from melder.utilities.interfaces import IConduit, ISpellbook, ISpell, IMeld
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
 
-#    Copyright [2025] [Mark Thomas Geleta]
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
+#TODO: ENSURE MELD SUPPORTS DEBUGGER ACTIONS SUCH AS ATTACHING ID INTO OBJECTS, with SLOTS ignore features
+
 
 class HookExecutionError(Exception):
     """
