@@ -2,11 +2,12 @@ from typing import Optional, Any
 from uuid import UUID, uuid4
 from threading import RLock
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.interfaces import ISeal, IConduitWard, ISpell
+from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.interfaces.interfaces import IConduitWard, ISpell
+from melder.utilities.general_base.sealable import Sealable
 
 
-class Detail(ISeal):
+class Detail(Sealable):
     """
     Represents a spell-level permission entry for a specific conduit
     within a contract. This defines what access the conduit has to a spell.
@@ -47,7 +48,7 @@ class Detail(ISeal):
             self.permissions = None
 
 
-class Contract(ISeal):
+class Contract(Sealable):
     """
     A symmetric contract between two conduit wards.
 

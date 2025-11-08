@@ -1,3 +1,5 @@
+import ulid
+
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.utilities.general_base.sealable import Sealable
@@ -31,7 +33,21 @@ class ConduitCloud(Sealable):
         self._lock = Lock()
         self._name = name
         self._registry = ConcurrentDict()
+        self._id: str = str(ulid.ULID())
 
+    def seal(self):
+        """
+        Seals the ConduitCloud, clearing its registry.
+
+        This operation is idempotent.
+        """
+        if self._sealed:
+            return
+        with self._lock:
+            if self._sealed:
+                return
+            self._registry.cleanup()
+            self._sealed = True
 
     def get_conduit(self, name: str) -> IConduit:
         """
@@ -70,15 +86,3 @@ class ConduitCloud(Sealable):
         if conduit.name in self._registry:
             raise ValueError(f"Conduit with name {conduit.name} already exists in the cloud. Please rename conduit to something unique.")
         self._registry[conduit.name] = conduit
-
-    def seal(self):
-        """
-        Seals the ConduitCloud, clearing its registry.
-
-        This operation is idempotent.
-        """
-        with self._lock:
-            if self._sealed:
-                return
-            self._registry.clear()
-            self._sealed = True

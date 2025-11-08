@@ -1,4 +1,7 @@
 import uuid
+
+import ulid
+
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
@@ -38,6 +41,7 @@ class AethericFrame(Sealable):
         """
         super().__init__()
         self.name = name
+        self._id: str = str(ulid.ULID())
         self._lock = RLock()
         # This retains all normal conduits i.e roots created by a spellbook
         self._conduits: ConcurrentDict[uuid.UUID, IConduit] = ConcurrentDict()
@@ -64,11 +68,14 @@ class AethericFrame(Sealable):
                 return
             # Seal all conduits and clear the registry
             for conduit in self._conduits.values():
-                conduit.seal()
+                try:
+                    conduit.seal()
+                except Exception:
+                    pass
 
-            self._conduits.clear()
-            self._spell_registry.clear()
-            self._conduit_clusters.clear()
+            self._conduits.cleanup()
+            self._spell_registry.cleanup()
+            self._conduit_clusters.cleanup()
             self._conduit_cloud.seal()
             self._sealed = True
 

@@ -2,21 +2,22 @@ import threading
 from logging import warning
 from typing import Optional, Type, Any, Tuple
 from uuid import UUID
+import ulid
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.concurrent_set import ConcurrentSet
-from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell
+from melder.utilities.data_structures.concurrent_set import ConcurrentSet
+from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
-from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from threading import RLock
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
 
 #region Conduit
-class Conduit(IConduit):
+class Conduit(Sealable, IConduit):
     """
     A Conduit is a modular graph node that behaves like a scope and a factory.
 
@@ -26,37 +27,42 @@ class Conduit(IConduit):
 
     _aether = Aether()
 
-    def __init__(self, spellbook: ISpellbook, configuration: Configuration, conduit_state: ConduitState, aetheric_frame: str, policy: Policies, name: Optional[str] = None):
+    def __init__(self, spellbook: ISpellbook, configuration: IConfiguration, conduit_state: ConduitState,
+                 aetheric_frame: str, policy: Policies, name: Optional[str] = None):
         """
         Public API
 
         Initializes a new Conduit.
 
         Args:
-            spellbook (Spellbook): The Spellbook governing this Conduit.
-            configuration (Configuration): The locked system configuration.
+            spellbook (ISpellbook): The Spellbook governing this Conduit.
+            configuration (IConfiguration): The locked system configuration.
             conduit_state (str): The role of this Conduit ('normal' or 'lesser').
             name (str, optional): An optional name for easier identification.
         """
         super().__init__()
         # General Init
         self._lock: threading.RLock = RLock()
-        self._name = name
-        self.__debugger_mode__ = False
-        self.__dynamic_environment__ = False
-        self._creation_context = ConduitCreationContext()
-        self._aetheric_frame = aetheric_frame
+        self._id: str = str(ulid.ULID())
+        self._name: str = name
+        self.__debugger_mode__: bool = False
+        self.__dynamic_environment__: bool = False
+        self._creation_context: ConduitCreationContext = ConduitCreationContext()
+        self._aetheric_frame: str = aetheric_frame
 
         # Special Configuration
-        self._configuration = configuration
-        self._conduit_state = conduit_state  # can be normal, lesser
-        self._creations = self._creations_configuration(configuration)
+        if not isinstance(configuration, IConfiguration):
+            raise TypeError(f"Expected IConfiguration instance, got {type(configuration).__name__}")
+
+        self._configuration: IConfiguration = configuration
+        self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
+        self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
         self._spellbook: ISpellbook = spellbook
-        self._meld = Meld(self._creations, self._spellbook) # instance melder which is used by the conduit to create objects
+        self._meld: Meld = Meld(self._creations, self._spellbook) # instance melder which is used by the conduit to create objects
 
         # Internal configuration
         self._apply_configuration_flags()
-        self._conduit_ward = ConduitWard(self, self.__dynamic_environment__, self._conduit_state, policy) # The conduit ward is responsible for maintaining the links between conduits and their behaviours.
+        self._conduit_ward: ConduitWard = ConduitWard(self, self.__dynamic_environment__, self._conduit_state, policy) # The conduit ward is responsible for maintaining the links between conduits and their behaviours.
 
         if self._conduit_state == ConduitState.normal:
             self._add_conduit_to_aether()
@@ -68,7 +74,44 @@ class Conduit(IConduit):
                 warning("Lesser conduits cannot have a name. self._name is now set to None.")
             self._name = None
 
-#region Utilities
+    #region Cleanup and Disposal
+    def seal(self):
+        """
+        Public API
+
+        Seals this Conduit and all its lesser Conduits.
+
+        Prevents further operation, releases internal references,
+        and unregisters from the Aether.
+        """
+        raise NotImplementedError("Sealing is not implemented yet.")
+        if self._sealed:
+            return
+        with self._lock:
+            if self._sealed:
+                return
+
+            # Phase 1: Cleanup and disposal
+            self._clean_up_lesser_conduits_links()
+            self._clean_up_links()
+            self._spellbook.seal()
+            self._creations.seal()
+
+            # Phase 2: De-reference internal structures
+            self._spellbook = None
+            self._creations = None
+            self._creation_context = None
+
+            # Phase 3: Deregister from the world
+            if Conduit._aether and not Conduit._aether.sealed:
+                Conduit._aether._remove_conduit(self, self._aetheric_frame)
+
+            self._conduit_state = ConduitState.sealed
+            self._sealed = True
+
+    #endregion Cleanup and Disposal
+
+    #region Utilities
     def __repr__(self):
         """
         Public API
@@ -81,9 +124,9 @@ class Conduit(IConduit):
             f"id={self._creation_context._conduit_id}>"
         )
 
-#endregion Utilities
+    #endregion Utilities
 
-#region Properties
+    #region Properties
     @property
     def name(self) -> str:
         """
@@ -100,7 +143,9 @@ class Conduit(IConduit):
         Public API
 
         Allows user to name conduit if available
-        :return:
+
+        Raises:
+            RuntimeError: If the Conduit name is already set.
         """
         if self._name is not None:
             raise RuntimeError("Conduit name is set.")
@@ -120,16 +165,22 @@ class Conduit(IConduit):
         - Internal resolver systems
         """
         return self._creation_context
-#endregion
-#region Conduit Configuration
+    #endregion
+    #region Conduit Configuration
     def register_conduit_cloud(self, conduit: IConduit):
         """
         Public API
 
         Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit in order
         to name it afterward and register it. You can only register it once.
-        :param conduit:
-        :return:
+
+        Args:
+            conduit (IConduit): The conduit instance to register.
+
+        Raises:
+            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If the conduit is a lesser conduit.
+            RuntimeError: If the Conduit name is not set.
         """
         if self.__dynamic_environment__ == False:
             raise RuntimeError("Dynamic environment is not enabled. Cannot register in the conduit cloud.")
@@ -161,19 +212,28 @@ class Conduit(IConduit):
 
         Adds the newly created Conduit into the shared Aether world.
 
-        Args:
-            conduit (Conduit): The Conduit instance to add.
+        Raises:
+            RuntimeError: If Aether is not initialized.
         """
         if Conduit._aether is None:
             raise RuntimeError("Aether is not initialized.")
         Conduit._aether._add_conduit(self, self._aetheric_frame)
 
 
-    def _creations_configuration(self, configuration: Configuration) -> Creations or LesserCreations:
+    def _creations_configuration(self, configuration: IConfiguration) -> Creations | LesserCreations:
         """
         Internal
 
         Returns the current creations configuration for this Conduit.
+
+        Args:
+            configuration (IConfiguration): The locked system configuration.
+
+        Returns:
+            Creations | LesserCreations: The appropriate creation manager based on conduit state.
+
+        Raises:
+            RuntimeError: If the Conduit state is unknown.
         """
         if self._conduit_state == ConduitState.lesser:
             return LesserCreations(configuration.get_property("disposal"), configuration.get_property("disposal_method_names"))
@@ -182,20 +242,27 @@ class Conduit(IConduit):
         else:
             raise RuntimeError("Conduit state is unknown")
 
-#endregion Conduit Configuration
-#region Conduit Management
+    #endregion Conduit Configuration
+    #region Conduit Management
     def upgrade_to_normal(self, name: Optional[str] = None) -> None:
         """
         Public API
 
-        Upgrades this Conduit to a normal state. This allows the conduit to create its own links
-        through the aether system. This will fork this conduit into a new tree and create new links with the parent.
-        This conduit and its children go with it, only a normal scope can access the spellbook to bind new spells.
+        Upgrades this Conduit from a lesser to a **normal** state.
 
-        This conduit will begin as a lesser_conduit policy conduit then change automatically after a single spell is registered and not just contracted.
+        This process allows the conduit to create its own links through the Aether system.
+        It effectively forks this conduit into a new tree, retaining its children and
+        creation data, and establishes new links with the parent. Only a normal conduit
+        can access the Spellbook to bind new spells.
 
         Please name the conduit if your intention is to add it to the Conduit Cloud.
-        :return:
+
+        Args:
+            name (str, optional): An optional name to assign to the upgraded conduit.
+
+        Raises:
+            RuntimeError: If the dynamic environment is not enabled.
+            RuntimeError: If the current conduit state is not 'lesser'.
         """
         with self._lock:
             if not self.__dynamic_environment__:
@@ -238,8 +305,12 @@ class Conduit(IConduit):
         Public API
 
         Sets a new policy for this Conduit. This is only allowed in dynamic mode.
-        :param policy: The new policy to set.
-        :return:
+
+        Args:
+            policy (str): The new policy to set, governing linking behavior.
+
+        Raises:
+            RuntimeError: If dynamic environment is not enabled.
         """
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot set new policy.")
@@ -250,14 +321,16 @@ class Conduit(IConduit):
         """
         Public API
 
-        Creates a lesser Conduit (child node) attached to this Conduit.
+        Creates a **lesser Conduit** (child node) attached to this Conduit.
 
-        Args:
-            spellbook (Spellbook): The Spellbook to govern the new Conduit.
-            name (str, optional): Optional name for the new Conduit.
+        The lesser conduit inherits the parent's Spellbook and Configuration but is restricted
+        in its ability to establish external links or register new spells.
 
         Returns:
-            Conduit: The newly created lesser Conduit.
+            IConduit: The newly created lesser Conduit instance.
+
+        Raises:
+            RuntimeError: If the parent Conduit is sealed.
         """
         if self._sealed:
             raise RuntimeError("Cannot create a lesser Conduit in a sealed Conduit.")
@@ -276,16 +349,16 @@ class Conduit(IConduit):
         return new_conduit
 
 
-#endregion Conduit Management
-#region Spellbook Management API
+    #endregion Conduit Management
+    #region Spellbook Management API
     def _add_spells_to_aether(self) -> None:
         """
         Internal
 
-        Adds the newly created Conduit into the shared Aether world.
+        Adds the newly created Conduit's initial spells into the shared Aether world's registry.
 
-        Args:
-            conduit (Conduit): The Conduit instance to add.
+        Raises:
+            RuntimeError: If Aether is not initialized.
         """
         if Conduit._aether is None:
             raise RuntimeError("Aether is not initialized.")
@@ -299,12 +372,17 @@ class Conduit(IConduit):
 
         Retrieves the conduit that has registered a spell with the given spell_id.
 
+        This method queries the Aether to find the original source conduit for a specific spell ID.
+
         Args:
             spell_id (str): The unique identifier of the spell.
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
             Optional[IConduit]: The conduit that registered the spell, or None if not found.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
         """
         if self._sealed:
             raise RuntimeError("Cannot get conduits in a sealed Conduit.")
@@ -315,14 +393,17 @@ class Conduit(IConduit):
         """
         Public API
 
-        Checks if a spell with the given spell_id exists in the spellbook.
+        Checks if a spell with the given spell_id exists within the global Aether registry.
 
         Args:
-            spell_id (str): The unique identifier of the spell.
-            aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
+            spell_id (str): The unique identifier of the spell to check.
+            aetheric_frame_name (str): The Aetheric Frame to search within. Defaults to "default".
 
         Returns:
-            bool: True if the spell exists, False otherwise.
+            bool: True if the Spell exists in the Aether, False otherwise.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
         """
         if self._sealed:
             raise RuntimeError("Cannot check spells in a sealed Conduit.")
@@ -333,7 +414,9 @@ class Conduit(IConduit):
         """
         Public API
 
-        Retrieves a spell by its unique identifier (spell_id) from the spellbook.
+        Retrieves a spell object by its unique identifier (spell_id) from the spellbook of its owner.
+
+        The method first finds the owning conduit via Aether and then fetches the spell from that conduit's spellbook.
 
         Args:
             spell_id (str): The unique identifier of the spell.
@@ -341,6 +424,9 @@ class Conduit(IConduit):
 
         Returns:
             Optional[Any]: The spell object if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
         """
         if self._sealed:
             raise RuntimeError("Cannot get spells in a sealed Conduit.")
@@ -352,7 +438,13 @@ class Conduit(IConduit):
         """
         Internal
 
-        method to locate a spell by its spell_id.
+        Method to locate a spell by its spell_id within this Conduit's **contracted** spells.
+
+        Args:
+            spell_id (str): The unique ID of the spell to find.
+
+        Returns:
+            Optional[ISpell]: The contracted spell instance, or None if not found.
         """
         return self._spellbook._find_contracted_spell(spell_id)
 
@@ -360,11 +452,18 @@ class Conduit(IConduit):
         """
         Public API
 
-        Find a spell by its frame, name, and binding name.
-        :param spellframe:
-        :param spell_name:
-        :param binding_name:
-        :return: SHA256 of the spell
+        Finds a spell's unique ID (SHA256) using its logical identifiers.
+
+        Args:
+            spellframe (str): The logical namespace or grouping label.
+            spell_name (str): The name of the spell class or function.
+            binding_name (str): The secondary key to distinguish the spell.
+
+        Returns:
+            Optional[str]: The unique SHA256 identifier of the spell.
+
+        Raises:
+            ValueError: If the spell is not found in the spellbook.
         """
         spell_id = self._spellbook.find_spell_id(spellframe, spell_name, binding_name)
         if not spell_id:
@@ -375,11 +474,20 @@ class Conduit(IConduit):
         """
         Public API
 
-        Find a spell by its frame, name, and binding name.
-        :param spellframe:
-        :param spell_name:
-        :param binding_name:
-        :return: spell's key
+        Finds a spell's primary lookup key using its logical identifiers.
+
+        The key is typically a tuple used for internal retrieval within the spellbook.
+
+        Args:
+            spellframe (str): The logical namespace or grouping label.
+            spell_name (str): The name of the spell class or function.
+            binding_name (str): The secondary key to distinguish the spell.
+
+        Returns:
+            Optional[tuple]: The spell's key (frame, name, binding_name) tuple.
+
+        Raises:
+            ValueError: If the spell is not found in the spellbook.
         """
         spell_key = self._spellbook.find_spell_key(spellframe, spell_name, binding_name)
         if not spell_key:
@@ -390,9 +498,16 @@ class Conduit(IConduit):
         """
         Public API
 
-        This method will inspect any object placed into it and check if it's
-        a valid spell in the Aether Registry. Returns the SHA256 if found, else None
-        :return:
+        Inspects any object to determine if it is a valid, registered spell in the Aether Registry.
+
+        This method uses the Spellbook's internal reflection to identify the spell.
+
+        Args:
+            spell (Any): The class, function, or object instance to inspect.
+            aetheric_frame (str): The Aetheric Frame to search within. Defaults to "default".
+
+        Returns:
+            Optional[str]: The SHA256 unique ID of the spell if found, otherwise None.
         """
         with self._lock:
             return self._spellbook.inspect_spell(spell, aetheric_frame)
@@ -458,21 +573,23 @@ class Conduit(IConduit):
             ⚠️ All hooks must be callables.
 
         ──────────────────────────────────────────────
-        Parameters:
+        Args:
             spell (Any): The class, function, or object to bind into the spellbook.
             existence (Existence): The lifecycle scope for this spell.
             permissions (str): Permission level exposed to other conduits ("read", "create", "block").
             spellframe (Optional[Any]): Logical interface or category for grouping.
             binding_name (Optional[str]): Name key to distinguish this spell among others in its frame.
             **kwargs:
-                - pre_hooks: Optional[List[Callable]]
-                - activation_hooks: Optional[List[Callable]]
-                - post_hooks: Optional[List[Callable]]
+                - pre_hooks (Optional[List[Callable]]): Hooks executed before casting.
+                - activation_hooks (Optional[List[Callable]]): Hooks executed during casting/construction.
+                - post_hooks (Optional[List[Callable]]): Hooks executed after casting/construction.
 
         Returns:
             str: The unique SHA256 `spell_id` associated with the bound spell.
 
         Raises:
+            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
             RuntimeError: If the spell is already bound in the registry.
             TypeError: If invalid hook types are provided.
         """
@@ -489,8 +606,17 @@ class Conduit(IConduit):
         Public API
 
         Get the permissions for a spell by its spell_id.
-        :param spell_id: SHA256 identifier of the spell.
-        :return: The permissions associated with the spell, or None if not found.
+
+        This returns the access level ("read", "create", "block") defined when the spell was bound.
+
+        Args:
+            spell_id (str): SHA256 identifier of the spell.
+
+        Returns:
+            Optional[str]: The permissions associated with the spell's binding.
+
+        Raises:
+            RuntimeError: If the spell with the given ID is not found in the spellbook.
         """
         spell = self._spellbook._find_spell(spell_id)
         if spell:
@@ -498,16 +624,23 @@ class Conduit(IConduit):
         else:
             raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
 
-#endregion Spellbook Management API
-#region fakemeld
+    #endregion Spellbook Management API
+    #region fakemeld
     def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
         """
         Public API
 
-        :param spell_name:
-        :param spell_type:
-        :param spellframe:
-        :return:
+        Placeholder for the service resolution/dependency injection mechanism.
+
+        Args:
+            spell_name (str): The name of the spell to resolve.
+            spell_type (str): The expected type ("class" or "method").
+            spellframe (Type, optional): An optional interface or type to validate against.
+
+        Raises:
+            NotImplementedError: As this method is not yet fully implemented.
+            ValueError: If no spell is registered for the given name/type.
+            TypeError: If the resolved instance does not comply with the required SpellFrame.
         """
         raise NotImplementedError("Not ready yet, not even using real class")
         if spell_type == "class":
@@ -532,18 +665,22 @@ class Conduit(IConduit):
 
         else:
             raise ValueError(f"Invalid spell type '{spell_type}'")
-#endregion
-#region Conduit Cloud
+    #endregion
+    #region Conduit Cloud
     def get_conduit_cloud(self) -> IConduitCloud:
         """
         Public API
 
-        Returns the conduit cloud. The conduit cloud is a registry of all conduits it behaves
-        like an abstractfactory object under the best circumstances. Users should separate their objects into
-        different conduits and use the conduit cloud to access them. This is a global registry of all conduits.
+        Returns the global Conduit Cloud, a registry of all normal conduits in the current Aetheric Frame.
 
-        This object is designed to be used in dynamic mode only. It mitigates the service locator pattern.
-        :return:
+        This object is designed to be used in dynamic mode only and serves as an Abstract Factory/Service Locator.
+
+        Returns:
+            IConduitCloud: The conduit cloud instance.
+
+        Raises:
+            RuntimeError: If the Conduit is a lesser conduit.
+            RuntimeError: If dynamic environment is not enabled.
         """
         if self._conduit_state == ConduitState.lesser:
             raise RuntimeError("Lesser conduits cannot access the conduit cloud.")
@@ -551,23 +688,27 @@ class Conduit(IConduit):
             raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
         return Conduit._aether._get_conduit_cloud(self._aetheric_frame)
 
-#endregion Conduit Cloud
-#region Aether API
+    #endregion Conduit Cloud
+    #region Aether API
     def get_conduit_by_id(self, conduit_id: UUID, aetheric_frame:str = "default") -> Optional[IConduit]:
         """
         Public API
 
-        Retrieves a conduit by its unique ID.
+        Retrieves a conduit by its unique ID from the Aether.
 
         Args:
             conduit_id (UUID): The unique identifier of the conduit.
-            aetheric_frame (str): The aetheric frame to check against. Defaults to "default".
+            aetheric_frame (str): The aetheric frame to check against. Defaults to this conduit's frame.
 
         Returns:
             Optional[IConduit]: The conduit instance if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
+            TypeError: If the `aetheric_frame` is not a string.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get conduits in a sealed Conduit.")
+        self.check_sealed()
+
         if not isinstance(aetheric_frame, str):
             raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
         if aetheric_frame == "default":
@@ -580,17 +721,20 @@ class Conduit(IConduit):
         """
         Public API
 
-        Retrieves a conduit by its name.
+        Retrieves a conduit by its name from the Aether.
 
         Args:
             name (str): The name of the conduit.
-            aetheric_frame (str): The aetheric frame to check against. Defaults to "default".
+            aetheric_frame (str): The aetheric frame to check against. Defaults to this conduit's frame.
 
         Returns:
             Optional[IConduit]: The conduit instance if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
+            TypeError: If the `aetheric_frame` is not a string.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get conduits in a sealed Conduit.")
+        self.check_sealed()
         if not isinstance(aetheric_frame, str):
             raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
         if aetheric_frame == "default":
@@ -598,24 +742,30 @@ class Conduit(IConduit):
         with self._lock:
             return Conduit._aether._get_conduit_by_name(name, aetheric_frame)
 
-#endregion Aether API
-#region Conduit Ward API
+    #endregion Aether API
+    #region Conduit Ward API
     def link(self, target_conduit: IConduit) -> bool:
         """
         Public API
 
-        Attempts to link this Conduit to another Conduit.
+        Attempts to establish a link between this Conduit and a `target_conduit`.
 
-        Linking is only allowed if the world is in dynamic mode.
+        Linking is only allowed if the world is in dynamic mode. This process initiates a contract
+        relationship between the two conduits based on the current policy.
 
         Args:
-            target_conduit (Conduit): The target Conduit to link to.
+            target_conduit (IConduit): The target Conduit to link to.
 
         Returns:
-            bool: True if linking succeeds (currently not implemented).
+            bool: True if the linking process succeeds.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If dynamic environment is not enabled.
+            TypeError: If `target_conduit` is not an `IConduit` instance.
+            RuntimeError: If the target conduit does not have a valid creation context.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot link to a sealed Conduit.")
+        self.check_sealed()
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         if not isinstance(target_conduit, IConduit):
@@ -629,13 +779,22 @@ class Conduit(IConduit):
         """
         Public API
 
-        Sever the link between this Conduit and its target Conduit. This will also validate if the link exists, if it can be severed, and
-        it will remove the link and contracted spells from the Conduit.
+        Sever the link and the corresponding spell contracts between this Conduit and its target Conduit.
 
-        This is meant for internal use please do not use this outside of the class.
+        This method validates the link's existence, ensures it can be severed according to policy,
+        and removes the link and all contracted spells. This is intended for public use to dissolve a relationship.
+
+        Args:
+            target_conduit (IConduit): The target Conduit whose link to sever.
+
+        Returns:
+            bool: True if the link was successfully severed.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If dynamic environment is not enabled.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot sever a link in a sealed Conduit.")
+        self.check_sealed()
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         with self._lock:
@@ -646,11 +805,18 @@ class Conduit(IConduit):
         """
         Public API
 
-        Returns a list of all links associated with this conduit. Excluding lesser conduits.
-        :return:
+        Returns a list of all active peer links associated with this conduit.
+
+        This list excludes links to lesser (child) conduits.
+
+        Returns:
+            list: A list of the linked conduit instances.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If dynamic environment is not enabled.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get links in a sealed Conduit.")
+        self.check_sealed()
         if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         with self._lock:
@@ -660,16 +826,18 @@ class Conduit(IConduit):
         """
         Internal
 
-        Returns a specific lesser conduit linked to this conduit by its ID.
+        Returns a specific lesser conduit (child) linked to this conduit by its ID.
 
         Args:
-            conduit_id (UUID): The ID of the conduit to retrieve.
+            conduit_id (UUID): The ID of the lesser conduit to retrieve.
 
         Returns:
-            Optional[IConduit]: The linked conduit if found, otherwise None.
+            Optional[IConduit]: The linked lesser conduit if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get lesser conduits from a sealed Conduit.")
+        self.check_sealed()
         with self._lock:
             return self._conduit_ward._get_lesser_conduit(conduit_id)
 
@@ -680,17 +848,19 @@ class Conduit(IConduit):
 
         Retrieves the conduit that this conduit has initiated a contract *toward*.
 
-        This method uses the `_initiated_index` to resolve an outbound connection,
-        where this conduit was the initiator of the contract.
+        This method uses the internal index to resolve an outbound connection,
+        where this conduit was the **initiator** of the contract.
 
         Args:
             conduit_id (UUID): The ID of the target conduit this conduit linked to.
 
         Returns:
             Optional[IConduit]: The target conduit if the link exists, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
+        self.check_sealed()
         with self._lock:
             return self._conduit_ward._get_initiated_conduit(conduit_id)
 
@@ -701,17 +871,19 @@ class Conduit(IConduit):
 
         Retrieves the conduit that initiated a contract *to this* conduit.
 
-        This method uses the `_received_index` to resolve an inbound connection,
-        where another conduit linked to this one as the contract provider.
+        This method uses the internal index to resolve an inbound connection,
+        where another conduit linked to this one as the **provider**.
 
         Args:
             conduit_id (UUID): The ID of the source conduit that linked to this one.
 
         Returns:
             Optional[IConduit]: The source conduit if the link exists, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
+        self.check_sealed()
         with self._lock:
             return self._conduit_ward._get_provider_conduit(conduit_id)
 
@@ -720,15 +892,17 @@ class Conduit(IConduit):
         """
         Public API
 
-        Returns a list of all conduits that this conduit has initiated contracts toward.
+        Returns a list of all conduits that this conduit has initiated contracts toward (outbound links).
 
-        This method retrieves all conduits that this conduit has linked to as the initiator.
+        This is useful for understanding the dependencies and relationships initiated by this conduit.
 
         Returns:
-            list[IConduit]: A list of conduits that this conduit has initiated contracts toward.
+            list[IConduit]: A list of conduits this conduit linked to.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
+        self.check_sealed()
         with self._lock:
             return self._conduit_ward._get_initiated_conduits()
 
@@ -736,15 +910,17 @@ class Conduit(IConduit):
         """
         Public API
 
-        Returns a list of all conduits that have linked to this conduit as the provider.
+        Returns a list of all conduits that have initiated contracts to this conduit (inbound links).
 
-        This method retrieves all conduits that have initiated contracts to this conduit.
+        These are the conduits that depend on this one for contracted spells.
 
         Returns:
             list[IConduit]: A list of conduits that have linked to this conduit as the provider.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get linked conduits from a sealed Conduit Ward.")
+        self.check_sealed()
         with self._lock:
             return self._conduit_ward._get_provider_conduits()
 
@@ -752,27 +928,31 @@ class Conduit(IConduit):
         """
         Public API
 
-        Seals all lesser conduits linked to this conduit.
-        This is used to prevent further operations on lesser conduits.
-        Generally used when upgrading a lesser conduit to a normal conduit.
+        Seals all lesser conduits (children) linked to this conduit.
 
-        This method is called when you seal a conduit, or you can call it manually to seal all lesser conduits.
+        This prevents further operations on lesser conduits and is typically used when the parent
+        is sealing or undergoing a major state change (e.g., upgrade).
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get linked conduits from a sealed Conduit.")
+        self.check_sealed()
         self._conduit_ward.seal_all_lesser_conduits()
 
-#endregion Conduit Ward API
-#region Spell Contracting API
+    #endregion Conduit Ward API
+    #region Spell Contracting API
     def _qualify_contracts(self):
         """
         Internal
 
-        This method is used to qualify the contracts for spellbinding.
-        :return:
+        Performs checks to ensure the conduit is in a state capable of managing spell contracts.
+
+        Raises:
+            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is not a 'normal' conduit.
+            RuntimeError: If dynamic environment is not enabled.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot interact with spell contracts in a sealed Conduit.")
+        self.check_sealed()
         if self._conduit_state != ConduitState.normal:
             raise RuntimeError("Only normal conduits can create spell contracts.")
         if not self.__dynamic_environment__:
@@ -780,7 +960,7 @@ class Conduit(IConduit):
 
 
     def add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: UUID = None,
-                               permissions: str = "create", aetheric_frame = "default") -> bool | None:
+                              permissions: str = "create", aetheric_frame = "default") -> bool | None:
         """
         Public API
 
@@ -789,20 +969,26 @@ class Conduit(IConduit):
         This allows one conduit to borrow or grant a specific spell, identified either by object or ID,
         to/from a peer conduit. The contract defines the permissions under which the spell can be used.
 
-        You may provide either a `spell` object or a `spell_id`. The target conduit may be specified directly
-        or resolved via its ID and aetheric frame.
+        You must provide either a `spell` object or a `spell_id`. The target conduit must be specified
+        either directly or resolved via its ID and aetheric frame.
 
-        :param spell: The spell object to contract (optional if spell_id is provided).
-        :param spell_id: The unique ID of the spell to contract (optional if spell is provided).
-        :param conduit: The target conduit to contract with.
-        :param conduit_id: The UUID of the target conduit (used if `conduit` is not provided).
-        :param permissions: The permission level granted for this spell (default is "create").
-        :param aetheric_frame: Optional frame override used to locate the target conduit.
-        :return: True if the contract was created, False otherwise.
+        Args:
+            spell (ISpell, optional): The spell object to contract.
+            spell_id (str, optional): The unique ID of the spell to contract.
+            conduit (IConduit, optional): The target conduit to contract with.
+            conduit_id (UUID, optional): The UUID of the target conduit (used if `conduit` is not provided).
+            permissions (str): The permission level granted for this spell (default is "create").
+            aetheric_frame (str): Optional frame override used to locate the target conduit.
+
+        Returns:
+            bool | None: True if the contract was created, False otherwise. None if an internal error occurs.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
         self._qualify_contracts()
         return self._conduit_ward._add_spell_to_contract(spell=spell, spell_id=spell_id, conduit=conduit, conduit_id=conduit_id,
-                                                          permissions=permissions, aetheric_frame=aetheric_frame)
+                                                         permissions=permissions, aetheric_frame=aetheric_frame)
 
 
     def add_spells_to_contract(self, spell_ids: list[str], conduit: IConduit = None, conduit_id: UUID = None,
@@ -813,15 +999,20 @@ class Conduit(IConduit):
         Establishes multiple spell contracts with another conduit in a single operation.
 
         Allows you to bulk-grant or bulk-borrow spells by specifying a list of spell IDs. Each spell
-        will be contracted using the same permission level. Useful when synchronizing multiple
-        behaviors between agents or systems.
+        will be contracted using the same permission level.
 
-        :param spell_ids: List of spell IDs to contract.
-        :param conduit: The target conduit to contract with.
-        :param conduit_id: The UUID of the target conduit (used if `conduit` is not provided).
-        :param permissions: The permission level granted for all spells (default is "create").
-        :param aetheric_frame: Optional frame override used to locate the target conduit.
-        :return: Dictionary of spell_id -> success boolean for each attempted contract.
+        Args:
+            spell_ids (list[str]): List of spell IDs to contract.
+            conduit (IConduit, optional): The target conduit to contract with.
+            conduit_id (UUID, optional): The UUID of the target conduit (used if `conduit` is not provided).
+            permissions (str): The permission level granted for all spells (default is "create").
+            aetheric_frame (str): Optional frame override used to locate the target conduit.
+
+        Returns:
+            dict: Dictionary of `spell_id` -> success boolean for each attempted contract.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
         self._qualify_contracts()
         return self._conduit_ward._add_spells_to_contract(spell_ids=spell_ids,
@@ -829,7 +1020,7 @@ class Conduit(IConduit):
                                                           permissions=permissions, aetheric_frame=aetheric_frame)
 
     def remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
-                                    conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
+                                   conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
         """
         Public API
 
@@ -838,19 +1029,25 @@ class Conduit(IConduit):
         Either the `spell` or `spell_id` can be provided to specify the contract to dissolve.
         Once removed, the spell is no longer accessible across the link.
 
-        :param spell: The spell object to remove (optional if `spell_id` is provided).
-        :param spell_id: The unique ID of the spell to remove.
-        :param conduit: The target conduit involved in the contract.
-        :param conduit_id: UUID of the target conduit (used if `conduit` not provided).
-        :param aetheric_frame: Optional frame override to resolve the target conduit.
-        :return: True if the spell was successfully removed from the contract, False otherwise.
+        Args:
+            spell (ISpell, optional): The spell object to remove.
+            spell_id (str, optional): The unique ID of the spell to remove.
+            conduit (IConduit, optional): The target conduit involved in the contract.
+            conduit_id (UUID, optional): UUID of the target conduit (used if `conduit` not provided).
+            aetheric_frame (str): Optional frame override to resolve the target conduit.
+
+        Returns:
+            bool | None: True if the spell was successfully removed from the contract, False otherwise. None if an internal error occurs.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
         self._qualify_contracts()
         return self._conduit_ward._remove_spell_from_contract(spell=spell, spell_id=spell_id, conduit=conduit,
                                                               conduit_id=conduit_id, aetheric_frame=aetheric_frame)
 
     def remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
-                                     conduit_id: UUID = None, aetheric_frame = "default") -> dict:
+                                    conduit_id: UUID = None, aetheric_frame = "default") -> dict:
         """
         Public API
 
@@ -858,29 +1055,41 @@ class Conduit(IConduit):
 
         Useful for bulk cleanup or revocation when retiring behaviors or permissions.
 
-        :param spell_ids: List of spell IDs to remove.
-        :param conduit: Target conduit object.
-        :param conduit_id: UUID of target conduit (used if `conduit` is not provided).
-        :param aetheric_frame: Optional frame override.
-        :return: Dictionary of spell_id -> success boolean for each removal attempt.
+        Args:
+            spell_ids (list[str], optional): List of spell IDs to remove.
+            conduit (IConduit, optional): Target conduit object.
+            conduit_id (UUID, optional): UUID of target conduit (used if `conduit` is not provided).
+            aetheric_frame (str): Optional frame override.
+
+        Returns:
+            dict: Dictionary of `spell_id` -> success boolean for each removal attempt.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
         self._qualify_contracts()
         return self._conduit_ward._remove_spells_from_contract(spell_ids=spell_ids, conduit=conduit,
-                                                                conduit_id=conduit_id, aetheric_frame=aetheric_frame)
+                                                               conduit_id=conduit_id, aetheric_frame=aetheric_frame)
 
     def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
         """
         Public API
 
-        Dissolves all spell contracts between this conduit and the specified target.
+        Dissolves **all** spell contracts between this conduit and the specified target.
 
         All borrowed and granted spells in the active contract will be severed, effectively
-        resetting the relationship between the two conduits.
+        resetting the spell relationship between the two conduits.
 
-        :param conduit: Target conduit object.
-        :param conduit_id: UUID of target conduit (used if `conduit` is not provided).
-        :param aetheric_frame: Optional frame override.
-        :return: True if all spells were successfully removed, False otherwise.
+        Args:
+            conduit (IConduit, optional): Target conduit object.
+            conduit_id (UUID, optional): UUID of target conduit (used if `conduit` is not provided).
+            aetheric_frame (str): Optional frame override.
+
+        Returns:
+            bool | None: True if all spells were successfully removed, False otherwise. None if an internal error occurs.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
         self._qualify_contracts()
         return self._conduit_ward._remove_all_spells_from_contract(conduit=conduit, conduit_id=conduit_id, aetheric_frame=aetheric_frame)
@@ -889,14 +1098,21 @@ class Conduit(IConduit):
         """
         Public API
 
-        Retrieves all active spells that this conduit has access to through its contracts.
+        Retrieves all active spells that this conduit has access to through its contracts (i.e., borrowed spells).
 
         Walks all current spell contracts and collects the spell IDs and objects that are currently
         borrowed from other conduits. Optionally validates contracts before collecting data.
 
-        :param validate: If True, performs contract consistency validation before returning data.
-        :return: Dictionary mapping peer conduit UUIDs to lists of (spell_id, ISpell) tuples,
-                 or None if no contracts exist.
+        Args:
+            validate (bool): If True, performs contract consistency validation before returning data.
+
+        Returns:
+            Optional[dict[str, list[Tuple[str, 'ISpell']]]]: Dictionary mapping peer conduit UUIDs to lists of (spell_id, ISpell) tuples,
+            or None if no contracts exist.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            TypeError: If `validate` is not a boolean.
         """
         self._qualify_contracts()
         if not isinstance(validate, bool):
@@ -907,13 +1123,20 @@ class Conduit(IConduit):
         """
         Public API
 
-        Searches all known contracts to find the origin of a specific spell.
+        Searches all known contracts to find the origin of a specific contracted spell.
 
         Looks for a specific spell by ID and returns the UUID of the conduit it's contracted from
         along with the spell object, if found.
 
-        :param spell_id: The unique ID of the spell.
-        :return: Tuple of (conduit_id, spell) if found, otherwise None.
+        Args:
+            spell_id (str): The unique ID of the spell.
+
+        Returns:
+            Optional[tuple[UUID, ISpell]]: Tuple of (`conduit_id`, `spell`) if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            TypeError: If `spell_id` is not a string.
         """
         self._qualify_contracts()
         if not isinstance(spell_id, str):
@@ -929,8 +1152,15 @@ class Conduit(IConduit):
         Returns a detailed list of all spells that this conduit currently accesses or has granted
         through its relationship with the specified peer.
 
-        :param conduit_id: UUID of the target conduit.
-        :return: Dictionary of spell_id -> (spell_id, ISpell) tuples or None if not found.
+        Args:
+            conduit_id (UUID): UUID of the target peer conduit.
+
+        Returns:
+            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            TypeError: If `conduit_id` is not a UUID.
         """
         self._qualify_contracts()
         if not isinstance(conduit_id, UUID):
@@ -943,11 +1173,17 @@ class Conduit(IConduit):
 
         Retrieves all spell contracts associated with a peer conduit identified by name.
 
-        Same as `get_spells_in_contract_by_conduit`, but performs resolution using a
-        human-readable name instead of UUID. Useful for logs, debugging, or UI.
+        Performs resolution using a human-readable name instead of UUID.
 
-        :param conduit_name: Name of the peer conduit.
-        :return: Dictionary of spell_id -> (spell_id, ISpell) tuples or None if not found.
+        Args:
+            conduit_name (str): Name of the peer conduit.
+
+        Returns:
+            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            TypeError: If `conduit_name` is not a string.
         """
         self._qualify_contracts()
         if not isinstance(conduit_name, str):
@@ -962,9 +1198,12 @@ class Conduit(IConduit):
         Lists all conduits that have an active spell contract with this conduit.
 
         Each returned conduit represents a peer in the current dynamic spell network.
-        This is useful for visualizing the relationship graph or performing audits.
 
-        :return: List of (conduit_id, IConduit) tuples, or None if no contracts exist.
+        Returns:
+            list[Tuple[str, IConduit]] | None: List of (`conduit_id`, `IConduit`) tuples, or None if no contracts exist.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
         self._qualify_contracts()
         return self._conduit_ward._get_contracted_conduits()
@@ -976,20 +1215,17 @@ class Conduit(IConduit):
         Produces a detailed diagnostic summary of a contract established with a specific conduit.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
-        including the peer conduit’s name, the number of active spells involved, and permission levels
-        granted for each spell. It is primarily used for debugging, introspection, and UI inspection tools.
+        including the peer conduit’s name, the number of active spells involved, and permission levels.
+        Primarily used for debugging, introspection, and UI inspection tools.
 
-        Useful for tracing spell relationships, verifying proper link formation, or exposing data
-        for system monitoring.
+        Args:
+            conduit_id (UUID): UUID of the peer conduit whose contract you wish to examine.
 
-        :param conduit_id: UUID of the peer conduit whose contract you wish to examine.
-        :return: Dictionary containing:
-            - contract_id: UUID of the contract
-            - peer_conduit_name: Human-readable name of the peer conduit
-            - spell_count: Total number of spells in the contract
-            - spells: List of dictionaries with:
-                - spell_id: Unique spell identifier
-                - permissions: Permission level granted to this spell
+        Returns:
+            dict: Dictionary containing contract metadata, including a list of spells and their permissions.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
         self._qualify_contracts()
         return self._conduit_ward._describe_contract(conduit_id)
@@ -1000,17 +1236,16 @@ class Conduit(IConduit):
 
         Validates all known contracts attached to this conduit and confirms mutual agreement and consistency.
 
-        This method performs a deep validation pass over each contract by ensuring:
-            - Both sides list the same spells in the contract
-            - Permission levels are symmetrical
-            - All referenced spells are valid and exist in the correct peer spellbook
+        This performs a deep validation pass, ensuring both sides list the same spells, permissions are symmetrical,
+        and all referenced spells are valid.
 
-        Contracts that fail validation are marked as `False` in the returned dictionary.
-        This is critical for maintaining integrity across a distributed or multi-agent conduit network.
-
-        :return: Dictionary mapping contract UUIDs to validation results:
+        Returns:
+            dict[UUID, bool]: Dictionary mapping contract UUIDs to validation results:
                  - True: Contract is valid and consistent
                  - False: Contract is malformed or inconsistent
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
         self._qualify_contracts()
         return self._conduit_ward._validate_contracts_and_define()
@@ -1022,53 +1257,18 @@ class Conduit(IConduit):
 
         Performs a high-level validation check across all contracts involving this conduit.
 
-        Internally calls `_validate_contracts_and_define` and aggregates the results to determine
-        whether every connected contract is structurally valid and symmetrical. This is typically used
-        during diagnostics, debugging, or safety checks before major state changes (e.g., disposing,
-        spell resolution, or spell reflection).
+        Aggregates the results of `_validate_contracts_and_define` to determine whether every connected
+        contract is structurally valid and symmetrical.
 
-        :return: True if all active contracts pass validation, False otherwise.
+        Returns:
+            bool: True if all active contracts pass validation, False otherwise.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
         self._qualify_contracts()
         return self._conduit_ward._validate_received_contracts()
 
 
 #endregion Spell Contracting API
-#region Cleanup and Disposal
-
-    def seal(self):
-        """
-        Public API
-
-        Seals this Conduit and all its lesser Conduits.
-
-        Prevents further operation, releases internal references,
-        and unregisters from the Aether.
-        """
-        raise NotImplementedError("Sealing is not implemented yet.")
-        if self._sealed:
-            return
-        with self._lock:
-            if self._sealed:
-                return
-
-            # Phase 1: Cleanup and disposal
-            self._clean_up_lesser_conduits_links()
-            self._clean_up_links()
-            self._spellbook.seal()
-            self._creations.seal()
-
-            # Phase 2: De-reference internal structures
-            self._spellbook = None
-            self._creations = None
-            self._creation_context = None
-
-            # Phase 3: Deregister from the world
-            if Conduit._aether and not Conduit._aether.sealed:
-                Conduit._aether._remove_conduit(self, self._aetheric_frame)
-
-            self._conduit_state = ConduitState.sealed
-            self._sealed = True
-
-#endregion Cleanup and Disposal
 #endregion Conduit

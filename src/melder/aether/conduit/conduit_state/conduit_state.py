@@ -15,7 +15,7 @@ class ConduitState(Enum):
         return self.name.lower()
 
     @staticmethod
-    def resolve(value: str | 'ConduitState' | None) -> 'ConduitState | None':
+    def resolve(value: str | Enum | None) -> 'ConduitState | None':
         """
         Resolve a string or ConduitState value into a valid ConduitState enum.
 

@@ -19,7 +19,7 @@ class ConcurrentList(Generic[_T], Cleanable):
     including slicing, in-place operators, and common utility methods.
     It is designed for Python 3.13+ No-GIL environments.
     """
-    __slots__ = Cleanable.__slots__ + ["_lock", "_list", "_freeze", "_agentic_mode", "_id"]
+    __slots__ = Cleanable.__slots__ + ["_lock", "_list", "_freeze","_id"]
     def __init__(self, initial: Optional[Iterable[_T]] = None) -> None:
         """
         Initialize the ConcurrentList.
@@ -63,16 +63,6 @@ class ConcurrentList(Generic[_T], Cleanable):
             str: The unique identifier.
         """
         return self._id
-
-    @property
-    def agentic_mode(self) -> bool:
-        """
-        Check if the ConcurrentList is in agentic mode.
-
-        Returns:
-            bool: True if agentic mode is enabled, False otherwise.
-        """
-        return self._agentic_mode
 
     def freeze(self) -> None:
         """

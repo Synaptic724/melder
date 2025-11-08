@@ -1,12 +1,10 @@
-
-
 from uuid import UUID, uuid4
 from threading import RLock
 from typing import List, Optional
-from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.concurrent_list import ConcurrentList
-from melder.utilities.interfaces import ISeal
-class Creations(ISeal):
+from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_list import ConcurrentList
+from melder.utilities.general_base.sealable import Sealable
+class Creations(Sealable):
     """
     Manages all instantiated objects within a Conduit.
 
@@ -270,7 +268,7 @@ class Creations(ISeal):
         return None
 
 
-class LesserCreations(ISeal):
+class LesserCreations(Sealable):
     """
     Manages all instantiated objects within a Conduit.
 

@@ -85,12 +85,7 @@ class ConcurrentDict(Generic[_K, _V], Cleanable):
             self._dict.clear()
             self._dict = None
 
-        if self._agentic_mode:
-            try:
-                self._lock.cleanup()
-            except Exception:
-                pass
-            self._lock = None
+        self._lock = None
 
     @property
     def id(self) -> str:
@@ -101,16 +96,6 @@ class ConcurrentDict(Generic[_K, _V], Cleanable):
             str: The unique identifier.
         """
         return self._id
-
-    @property
-    def agentic_mode(self) -> Optional[bool]:
-        """
-        Indicates whether the heap is operating in agentic mode.
-
-        Returns:
-            Optional[bool]: True if in agentic mode, False otherwise.
-        """
-        return self._agentic_mode
 
     def freeze(self) -> None:
         """

@@ -1,11 +1,17 @@
+import logging
 import uuid
+from threading import RLock
+from typing import Optional
+
+import ulid
+
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
-from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud
+from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger
 from melder.utilities.general_base.sealable import Sealable
 from melder.aether.aetheric_frame import AethericFrame
-from threading import RLock
+from melder.utilities.helpers.safe_logger import SafeLogger
 
 class Aether(Sealable):
     """
@@ -32,15 +38,21 @@ class Aether(Sealable):
                     cls._instance = super(Aether, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self, logger: IChannelLogger | logging.Logger | logging.Handler | None = None):
         """Initializes the Aether singleton, creating the 'default' frame."""
         if not Aether._initialized:
             super().__init__()
             Aether._initialized = True
+
+            self._id: str = str(ulid.ULID())
+            # --- Safe logger facade (ChannelLogger or std logger) ---
+            self._log = SafeLogger(logger)
+            self._log.debug("Aether initialized", "__init__")
+
+            # --- Frame setup ---
             self._aetheric_frames: ConcurrentDict[str, AethericFrame] = ConcurrentDict()
             self._aetheric_frames["default"] = AethericFrame("default")
-            self._default_frame = self._aetheric_frames["default"]
-
+            self._default_frame: AethericFrame = self._aetheric_frames["default"]
 
     def seal(self):
         """
@@ -50,41 +62,65 @@ class Aether(Sealable):
         This operation is idempotent.
         """
         if self._sealed:
+            self._log.debug("Aether already sealed; returning", "seal")
             return
+
         with self._lock:
             if self._sealed:
+                self._log.debug("Aether already sealed (post-lock); returning", "seal")
                 return
-            self.seal_aetheric_frames()
-            self._default_frame = None
-            self._aetheric_frames.cleanup()
-            self._sealed = True
 
+            self._log.debug("Sealing Aether...", "seal")
+            try:
+                self.seal_aetheric_frames()
+                self._default_frame = None
+                self._aetheric_frames.cleanup()
+                self._sealed = True
+                self._log.debug("Aether sealed successfully", "seal")
+            except Exception as e:
+                self._log.error(f"Error sealing Aether: {e}", "seal", exc_info=True)
+                raise
 
     def seal_aetheric_frames(self):
         """
         Signs all aetheric frames and their contents.
         """
-        for frame in self._aetheric_frames.values():
+        self._log.debug("Sealing all aetheric frames...", "seal_aetheric_frames")
+
+        for frame_name, frame in self._aetheric_frames.items():
             try:
+                self._log.debug(f"Sealing frame '{frame_name}'", "seal_aetheric_frames")
                 frame.seal()
-            except Exception:
-                pass
+            except Exception as e:
+                # Tolerant behavior: log and continue
+                self._log.error(f"Error sealing frame '{frame_name}': {e}", "seal_aetheric_frames", exc_info=True)
 
-    def _reset_for_testing(self):
+    # region Configuration
+
+    @property
+    def logger(self) -> IChannelLogger | logging.Logger | logging.Handler | None:
         """
-        Resets the Aether singleton to a clean state.
+        Gets the raw logger instance (IChannelLogger, Logger, or Handler)
+        that is currently wrapped by the internal SafeLogger.
 
-        WARNING: This is for testing purposes ONLY. Do not use in production.
+        Returns:
+            The raw logger object, or None if no logger is set.
         """
-        with self._lock:
-            self._default_frame._conduits.clear()
-            self._default_frame._conduit_clusters.clear()
-            self._default_frame._sealed = False
-            self._sealed = False
-            Aether._initialized = False
-            Aether._instance = None
+        return self._log._logger # Accesses the raw logger inside SafeLogger
 
-    #region Configuration
+    @logger.setter
+    def logger(self, value: IChannelLogger | logging.Logger | logging.Handler | None):
+        """
+        Sets or updates the logger for the Aether singleton.
+
+        The provided logger (or Handler) will be wrapped by the
+        internal SafeLogger for unified logging calls.
+
+        Args:
+            value: The IChannelLogger, Logger, Handler, or None to use.
+        """
+        self._log = SafeLogger(value)
+
 
     def _bind_configuration(self, configuration, aetheric_frame_name: str = "default") -> None:
         """
@@ -97,16 +133,21 @@ class Aether(Sealable):
         Raises:
             ValueError: If the specified frame does not exist.
         """
+        self._log.debug(f"Binding configuration to frame '{aetheric_frame_name}'", "_bind_configuration")
+
         with self._lock:
             if aetheric_frame_name != "default":
                 try:
                     self._aetheric_frames[aetheric_frame_name]._configuration = configuration
                 except KeyError:
+                    self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_bind_configuration", exc_info=True)
                     raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
             else:
                 self._default_frame._configuration = configuration
 
-    def _get_configuration(self, aetheric_frame_name: str = "default") -> 'Configuration' or None:
+        self._log.debug(f"Configuration bound to frame '{aetheric_frame_name}'", "_bind_configuration")
+
+    def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional['Configuration']:
         """
         Retrieves the configuration object from a specific Aetheric Frame.
 
@@ -121,14 +162,20 @@ class Aether(Sealable):
         """
         if aetheric_frame_name != "default":
             try:
-                return self._aetheric_frames[aetheric_frame_name]._configuration
+                cfg = self._aetheric_frames[aetheric_frame_name]._configuration
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_configuration", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
-            return self._default_frame._configuration
+            cfg = self._default_frame._configuration
 
-    #endregion Configuration
-    #region Conduit Management
+        self._log.debug(f"Retrieved configuration from frame '{aetheric_frame_name}'", "_get_configuration")
+        return cfg
+
+    # endregion Configuration
+
+    # region Conduit Management
+
     def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
         Registers a conduit with the ConduitCloud of a specific frame.
@@ -140,15 +187,19 @@ class Aether(Sealable):
         Raises:
             ValueError: If the specified frame does not exist.
         """
+        self._log.debug(f"Registering conduit with cloud in frame '{aetheric_frame_name}'", "_register_conduit_cloud")
+
         if aetheric_frame_name != "default":
             try:
-                conduit_cloud =  self._aetheric_frames[aetheric_frame_name]._conduit_cloud
+                conduit_cloud = self._aetheric_frames[aetheric_frame_name]._conduit_cloud
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_register_conduit_cloud", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             conduit_cloud = self._default_frame._conduit_cloud
 
         conduit_cloud._register_conduit(conduit)
+        self._log.debug(f"Conduit registered with cloud in frame '{aetheric_frame_name}'", "_register_conduit_cloud")
 
     def _get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
         """
@@ -165,11 +216,15 @@ class Aether(Sealable):
         """
         if aetheric_frame_name != "default":
             try:
-                return self._aetheric_frames[aetheric_frame_name]._conduit_cloud
+                cloud = self._aetheric_frames[aetheric_frame_name]._conduit_cloud
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_conduit_cloud", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
-            return self._default_frame._conduit_cloud
+            cloud = self._default_frame._conduit_cloud
+
+        self._log.debug(f"Retrieved conduit cloud for frame '{aetheric_frame_name}'", "_get_conduit_cloud")
+        return cloud
 
     def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
         """
@@ -189,16 +244,20 @@ class Aether(Sealable):
             try:
                 conduits = self._aetheric_frames[aetheric_frame_name]._conduits
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_conduit_by_name", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             conduits = self._default_frame._conduits
 
         for conduit in conduits.values():
             if conduit.name == name:
+                self._log.debug(f"Found conduit by name '{name}' in frame '{aetheric_frame_name}'", "_get_conduit_by_name")
                 return conduit
+
+        self._log.error(f"Conduit with name {name} not found.", "_get_conduit_by_name", exc_info=True)
         raise ValueError(f"Conduit with name {name} not found.")
 
-    def _get_conduit_by_id(self, signature: uuid.uuid4, aetheric_frame_name: str = "default") -> IConduit:
+    def _get_conduit_by_id(self, signature: uuid.UUID, aetheric_frame_name: str = "default") -> IConduit:
         """
         Finds a root conduit within a frame by its UUID.
 
@@ -216,12 +275,16 @@ class Aether(Sealable):
             try:
                 conduits = self._aetheric_frames[aetheric_frame_name]._conduits
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_conduit_by_id", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             conduits = self._default_frame._conduits
 
         if signature in conduits:
+            self._log.debug(f"Found conduit by id '{signature}' in frame '{aetheric_frame_name}'", "_get_conduit_by_id")
             return conduits[signature]
+
+        self._log.error(f"Conduit with signature {signature} not found.", "_get_conduit_by_id", exc_info=True)
         raise ValueError(f"Conduit with signature {signature} not found.")
 
     def _add_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
@@ -235,17 +298,24 @@ class Aether(Sealable):
         Raises:
             ValueError: If the frame does not exist or the conduit ID already exists.
         """
+        self._log.debug(f"Adding conduit to frame '{aetheric_frame_name}'", "_add_conduit")
+
         if aetheric_frame_name != "default":
             try:
                 conduits = self._aetheric_frames[aetheric_frame_name]._conduits
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_add_conduit", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             conduits = self._default_frame._conduits
 
-        if conduit.__creation_context__._conduit_id in conduits:
-            raise ValueError(f"Conduit with ID {conduit.__creation_context__._conduit_id} already exists.")
-        conduits[conduit.__creation_context__._conduit_id] = conduit
+        cid = conduit.__creation_context__._conduit_id
+        if cid in conduits:
+            self._log.error(f"Conduit with ID {cid} already exists.", "_add_conduit", exc_info=True)
+            raise ValueError(f"Conduit with ID {cid} already exists.")
+
+        conduits[cid] = conduit
+        self._log.debug(f"Conduit '{cid}' added to frame '{aetheric_frame_name}'", "_add_conduit")
 
     def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
@@ -258,10 +328,13 @@ class Aether(Sealable):
         Raises:
             ValueError: If the frame does not exist or the conduit is not found.
         """
+        self._log.debug(f"Removing conduit from frame '{aetheric_frame_name}'", "_remove_conduit")
+
         if aetheric_frame_name != "default":
             try:
                 conduits = self._aetheric_frames[aetheric_frame_name]._conduits
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_remove_conduit", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             conduits = self._default_frame._conduits
@@ -269,8 +342,10 @@ class Aether(Sealable):
         conduit_id = conduit.__creation_context__._conduit_id
         removed = conduits.pop(conduit_id, None)
         if removed is None:
+            self._log.error(f"Conduit with ID {conduit_id} does not exist.", "_remove_conduit", exc_info=True)
             raise ValueError(f"Conduit with ID {conduit_id} does not exist.")
 
+        self._log.debug(f"Conduit '{conduit_id}' removed from frame '{aetheric_frame_name}'", "_remove_conduit")
 
     def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = "default"):
         """
@@ -283,17 +358,23 @@ class Aether(Sealable):
         Raises:
             ValueError: If the frame does not exist or the cluster name is taken.
         """
+        self._log.debug(f"Creating cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_create_cluster")
+
         if aetheric_frame_name != "default":
             try:
                 conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_create_cluster", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             conduit_clusters = self._default_frame._conduit_clusters
 
         if cluster_name in conduit_clusters:
+            self._log.error(f"Cluster with name {cluster_name} already exists.", "_create_cluster", exc_info=True)
             raise ValueError(f"Cluster with name {cluster_name} already exists.")
+
         conduit_clusters[cluster_name] = ConcurrentList()
+        self._log.debug(f"Cluster '{cluster_name}' created in frame '{aetheric_frame_name}'", "_create_cluster")
 
     def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
@@ -307,17 +388,24 @@ class Aether(Sealable):
         Raises:
             ValueError: If the frame or cluster does not exist.
         """
+        self._log.debug(f"Adding conduit to cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_add_conduit_to_cluster")
+
         if aetheric_frame_name != "default":
             try:
                 conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_add_conduit_to_cluster", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             conduit_clusters = self._default_frame._conduit_clusters
 
         if cluster_name not in conduit_clusters:
+            self._log.error(f"Cluster with name {cluster_name} does not exist.", "_add_conduit_to_cluster", exc_info=True)
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
-        conduit_clusters[cluster_name].append(conduit.__creation_context__._conduit_id)
+
+        conduit_id = conduit.__creation_context__._conduit_id
+        conduit_clusters[cluster_name].append(conduit_id)
+        self._log.debug(f"Conduit '{conduit_id}' added to cluster '{cluster_name}'", "_add_conduit_to_cluster")
 
     def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
@@ -331,17 +419,29 @@ class Aether(Sealable):
         Raises:
             ValueError: If the frame or cluster does not exist.
         """
+        self._log.debug(f"Removing conduit from cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_remove_conduit_from_cluster")
+
         if aetheric_frame_name != "default":
             try:
                 conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_remove_conduit_from_cluster", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             conduit_clusters = self._default_frame._conduit_clusters
 
         if cluster_name not in conduit_clusters:
+            self._log.error(f"Cluster with name {cluster_name} does not exist.", "_remove_conduit_from_cluster", exc_info=True)
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
-        conduit_clusters[cluster_name].remove(conduit.__creation_context__._conduit_id)
+
+        conduit_id = conduit.__creation_context__._conduit_id
+        try:
+            conduit_clusters[cluster_name].remove(conduit_id)
+        except Exception as e:
+            self._log.error(f"Error removing conduit '{conduit_id}' from cluster '{cluster_name}': {e}", "_remove_conduit_from_cluster", exc_info=True)
+            raise
+
+        self._log.debug(f"Conduit '{conduit_id}' removed from cluster '{cluster_name}'", "_remove_conduit_from_cluster")
 
     def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> ConcurrentList[uuid.UUID]:
         """
@@ -361,12 +461,16 @@ class Aether(Sealable):
             try:
                 conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_conduits_in_cluster", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             conduit_clusters = self._default_frame._conduit_clusters
 
         if cluster_name not in conduit_clusters:
+            self._log.error(f"Cluster with name {cluster_name} does not exist.", "_get_conduits_in_cluster", exc_info=True)
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
+
+        self._log.debug(f"Retrieved conduits for cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_get_conduits_in_cluster")
         return conduit_clusters[cluster_name]
 
     def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
@@ -387,17 +491,22 @@ class Aether(Sealable):
             try:
                 spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_conduit_by_spell_id", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             spell_registry = self._default_frame._spell_registry
 
         for conduit_id, spell_set in spell_registry.items():
             if spell_id in spell_set:
+                self._log.debug(f"Found owner conduit for spell '{spell_id}' in frame '{aetheric_frame_name}'", "_get_conduit_by_spell_id")
                 return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
+
+        self._log.error(f"Spell ID {spell_id} not found in any conduit.", "_get_conduit_by_spell_id", exc_info=True)
         raise ValueError(f"Spell ID {spell_id} not found in any conduit.")
 
-    #endregion Conduit Management
-    #region Spell Management
+    # endregion Conduit Management
+
+    # region Spell Management
 
     def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
         """
@@ -417,14 +526,15 @@ class Aether(Sealable):
             try:
                 spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_check_for_spell", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             spell_registry = self._default_frame._spell_registry
 
-        for spell_set in spell_registry.values():
-            if spell_id in spell_set:
-                return True
-        return False
+        found = any(spell_id in spell_set for spell_set in spell_registry.values())
+
+        self._log.debug(f"Check for spell '{spell_id}' in frame '{aetheric_frame_name}': {found}", "_check_for_spell")
+        return found
 
     def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str], aetheric_frame_name: str = "default"):
         """
@@ -439,17 +549,22 @@ class Aether(Sealable):
             ValueError: If the frame does not exist or the conduit ID is
                 already registered.
         """
+        self._log.debug(f"Adding spells to aether for conduit '{conduit_id}' in frame '{aetheric_frame_name}'", "_add_spells_to_aether")
+
         if aetheric_frame_name != "default":
             try:
                 spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
             except KeyError:
+                self._log.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_add_spells_to_aether", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             spell_registry = self._default_frame._spell_registry
 
-        if conduit_id not in spell_registry:
-            spell_registry[conduit_id] = spell_set
-        else:
+        if conduit_id in spell_registry:
+            self._log.error(f"Spell registry already contains Conduit ID {conduit_id}.", "_add_spells_to_aether", exc_info=True)
             raise ValueError(f"Spell registry already contains Conduit ID {conduit_id}.")
 
-    #endregion Spell Management
+        spell_registry[conduit_id] = spell_set
+        self._log.debug(f"Registered {len(spell_set)} spells for conduit '{conduit_id}'", "_add_spells_to_aether")
+
+    # endregion Spell Management

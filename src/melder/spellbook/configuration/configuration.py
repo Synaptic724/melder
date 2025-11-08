@@ -1,10 +1,10 @@
 import threading
 from typing import Any, Dict, List, Type
-from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.interfaces import ISeal
+from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.general_base.sealable import Sealable
 from melder.spellbook.configuration.system_state import SystemState
 
-class Configuration(ISeal):
+class Configuration(Sealable):
     """
     Configuration governs the behavior of the system.
 

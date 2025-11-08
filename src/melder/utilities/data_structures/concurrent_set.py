@@ -96,12 +96,6 @@ class ConcurrentSet(Generic[_T], Cleanable):
             self._cleaned = True
             self._set.clear()
             self._set = None
-
-        if self._agentic_mode:
-            try:
-                self._lock.cleanup()
-            except Exception:
-                pass
         self._lock = None
 
 
@@ -114,16 +108,6 @@ class ConcurrentSet(Generic[_T], Cleanable):
             str: The unique identifier.
         """
         return self._id
-
-    @property
-    def agentic_mode(self) -> Optional[bool]:
-        """
-        Indicates whether the heap is operating in agentic mode.
-
-        Returns:
-            Optional[bool]: True if in agentic mode, False otherwise.
-        """
-        return self._agentic_mode
 
     # endregion
     # region Freeze control
