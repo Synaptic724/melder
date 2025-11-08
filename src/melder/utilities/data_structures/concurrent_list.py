@@ -1,14 +1,15 @@
 import functools
-from threading import RLock
+import threading
 import warnings
 from copy import deepcopy
 from typing import Any, Callable, Optional, List, TypeVar, Generic
 from collections.abc import Iterable, Iterator
-from melder.utilities.protocols import IDisposable
+import ulid
+from melder.utilities.general_base.cleanable import Cleanable
 
 _T = TypeVar('_T')
 
-class ConcurrentList(Generic[_T], IDisposable):
+class ConcurrentList(Generic[_T], Cleanable):
     """
     A thread-safe list implementation using an underlying Python list,
     a reentrant lock for synchronization, and an atomic counter for fast,
@@ -18,7 +19,7 @@ class ConcurrentList(Generic[_T], IDisposable):
     including slicing, in-place operators, and common utility methods.
     It is designed for Python 3.13+ No-GIL environments.
     """
-    __slots__ = IDisposable.__slots__ + ['_lock', '_list', '_freeze']
+    __slots__ = Cleanable.__slots__ + ["_lock", "_list", "_freeze", "_agentic_mode", "_id"]
     def __init__(self, initial: Optional[Iterable[_T]] = None) -> None:
         """
         Initialize the ConcurrentList.
@@ -27,15 +28,58 @@ class ConcurrentList(Generic[_T], IDisposable):
             initial (Iterable[_T], optional): An iterable to initialize the list.
         """
         super().__init__()
-        self._lock = RLock()
+        self._id: str = str(ulid.ULID())
+        self._lock: threading.RLock = threading.RLock()
+
         self._list: List[_T] = list(initial) if initial else []
         self._freeze = False
+
+    def cleanup(self) -> None:
+        """
+        Dispose (clear) this ConcurrentList, releasing its contents.
+
+        Once cleaned, `_cleaned` becomes True and the internal dict is cleared.
+        No further usage checks are enforced, so the user must avoid calling
+        other methods after cleanup.
+
+        This method is idempotent — multiple calls won't cause errors.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._list.clear()
+            self._list = None
+        self._lock = None
+
+    @property
+    def id(self) -> str:
+        """
+        Get the unique identifier of this ConcurrentList.
+
+        Returns:
+            str: The unique identifier.
+        """
+        return self._id
+
+    @property
+    def agentic_mode(self) -> bool:
+        """
+        Check if the ConcurrentList is in agentic mode.
+
+        Returns:
+            bool: True if agentic mode is enabled, False otherwise.
+        """
+        return self._agentic_mode
 
     def freeze(self) -> None:
         """
         Freeze the dictionary to prevent further modifications.
         This is useful for making the dictionary immutable after initialization.
         """
+        self.check_cleaned()
         with self._lock:
             self._freeze = True
 
@@ -47,6 +91,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             bool: True if the dictionary is frozen, False otherwise.
         """
+        self.check_cleaned()
         return self._freeze
 
     def unfreeze(self) -> None:
@@ -54,6 +99,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Unfreeze the dictionary to allow modifications.
         This is useful for making the dictionary mutable again after being frozen.
         """
+        self.check_cleaned()
         with self._lock:
             self._freeze = False
 
@@ -75,6 +121,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             IndexError: If the index is out of range.
         """
+        self.check_cleaned()
         if self._freeze:
             if isinstance(index, int):
                 try:
@@ -111,6 +158,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             IndexError: If the index is out of range.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -145,6 +193,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             IndexError: If the index is out of range (for int index).
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -166,6 +215,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Args:
             item (_T): The item to append.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -182,6 +232,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             TypeError: If items is not iterable (e.g., if it's None).
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -200,6 +251,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             IndexError: If the index is out of range (depending on desired behavior).
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -217,6 +269,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             ValueError: If the item is not found.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -239,6 +292,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             IndexError: If the list is empty or index is out of range.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -254,6 +308,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         """
         Remove all items from the list.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -267,6 +322,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             int: The current size of the list.
         """
+        self.check_cleaned()
         if self._freeze:
             return len(self._list)
         else:
@@ -277,6 +333,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         """
         Return an iterator over a shallow copy of the list.
         """
+        self.check_cleaned()
         if self._freeze:
             return iter(self._list)
         else:
@@ -293,6 +350,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             bool: True if the item is present, False otherwise.
         """
+        self.check_cleaned()
         if self._freeze:
             return item in self._list
         else:
@@ -303,6 +361,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         """
         Return the official string representation of the ConcurrentList.
         """
+        self.check_cleaned()
         if self._freeze:
             return f"{self.__class__.__name__}({self._list!r})"
         else:
@@ -313,6 +372,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         """
         Return the informal string representation of the ConcurrentList.
         """
+        self.check_cleaned()
         if self._freeze:
             return str(self._list)
         else:
@@ -329,6 +389,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             bool: True if equal, False otherwise.
         """
+        self.check_cleaned()
         if isinstance(other, ConcurrentList):
             # Acquire locks in a defined order to avoid deadlocks
             if id(self) < id(other):
@@ -346,18 +407,21 @@ class ConcurrentList(Generic[_T], IDisposable):
         """
         Check inequality with another ConcurrentList or a standard list.
         """
+        self.check_cleaned()
         return not self.__eq__(other)
 
     def __bool__(self) -> bool:
         """
         Return True if the list is non-empty.
         """
+        self.check_cleaned()
         return len(self._list) != 0
 
     def __reversed__(self) -> Iterable[_T]:
         """
         Return a reverse iterator over a copy of the list.
         """
+        self.check_cleaned()
         if self._freeze:
             return reversed(self._list)
         else:
@@ -374,6 +438,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             ConcurrentList[_T]: self
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -393,6 +458,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             TypeError: If n is not an integer.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -415,6 +481,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             TypeError: If n is not an integer.
         """
+        self.check_cleaned()
         if not isinstance(n, int):
             raise TypeError("can't multiply sequence by non-int of type '{}'".format(type(n).__name__))
 
@@ -428,6 +495,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         """
         Implements reverse multiplication.
         """
+        self.check_cleaned()
         return self.__mul__(n)
 
     def index(self, item: Any, start: int = 0, end: Optional[int] = None) -> int:
@@ -445,6 +513,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             ValueError: If the item is not present.
         """
+        self.check_cleaned()
         if self._freeze:
             return self._list.index(item, start, end if end is not None else len(self._list))
         else:
@@ -461,6 +530,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             int: The number of occurrences.
         """
+        self.check_cleaned()
         if self._freeze:
             return self._list.count(item)
         else:
@@ -472,6 +542,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Return a shallow copy of the ConcurrentList.
         This method is called by copy.copy().
         """
+        self.check_cleaned()
         if self._freeze:
             return ConcurrentList(initial=self._list.copy())
         else:
@@ -485,6 +556,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             ConcurrentList[_T]: A new ConcurrentList with copied items.
         """
+        self.check_cleaned()
         # Reusing the logic already present in __copy__
         return self.__copy__()
 
@@ -498,6 +570,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             ConcurrentList[_T]: A deep copy of this ConcurrentList.
         """
+        self.check_cleaned()
         if self._freeze:
             # If the list is frozen, we can safely deepcopy it
             return ConcurrentList(initial=deepcopy(self._list, memo))
@@ -513,6 +586,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             List[_T]: A copy of the list.
         """
+        self.check_cleaned()
         if self._freeze:
             # If the list is frozen, we can safely return a copy
             return list(self._list)
@@ -529,6 +603,7 @@ class ConcurrentList(Generic[_T], IDisposable):
             func (Callable[[List[_T]], None]): A function that accepts the internal list as its only argument.
                                                The function should perform all necessary mutations.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -543,6 +618,7 @@ class ConcurrentList(Generic[_T], IDisposable):
             key (Callable[[_T], Any], optional): A function used to extract a comparison key.
             reverse (bool, optional): If True, the list elements are sorted as if each comparison were reversed.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -553,6 +629,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         """
         Reverse the elements of the list in-place.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -569,6 +646,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             ConcurrentList[Any]: A new ConcurrentList with the function applied to each element.
         """
+        self.check_cleaned()
         if self._freeze:
             return ConcurrentList(initial=list(map(func, self._list.copy())))
         else:
@@ -585,6 +663,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Returns:
             ConcurrentList[_T]: A new ConcurrentList containing only elements where func(element) is True.
         """
+        self.check_cleaned()
         if self._freeze:
             return ConcurrentList(initial=list(filter(func, self._list.copy())))
         else:
@@ -605,6 +684,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Raises:
             TypeError: If the list is empty and no initial value is provided.
         """
+        self.check_cleaned()
         # Acquire lock only if not frozen
         snapshot = []
         if self._freeze:
@@ -631,6 +711,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         Args:
             other (Iterable[_T]): The iterable to update from.
         """
+        self.check_cleaned()
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentList")
         else:
@@ -638,7 +719,7 @@ class ConcurrentList(Generic[_T], IDisposable):
                 self._list.extend(other)
 
     # -----------------------------------------------------------------------------------
-    # Disposable Implementation
+    # Cleanable Implementation
     # -----------------------------------------------------------------------------------
     def __enter__(self):
         """
@@ -649,6 +730,7 @@ class ConcurrentList(Generic[_T], IDisposable):
         - WARNING: Using the context manager bypasses the thread-safe method interface.
                    You are now responsible for ensuring correct multithreaded behavior.
         """
+        self.check_cleaned()
         warnings.warn(
             "Direct access to the internals via the context manager bypasses "
             "the thread-safe interface. Use with extreme caution.",
@@ -663,15 +745,15 @@ class ConcurrentList(Generic[_T], IDisposable):
 
         Responsibilities:
           - Releases the internal lock acquired in `__enter__()`.
-          - Automatically calls `dispose()` to ensure the object is cleaned up.
-          - This pattern ensures the object is safely disposed even if an exception
+          - Automatically calls `cleanup()` to ensure the object is cleaned up.
+          - This pattern ensures the object is safely cleaned even if an exception
             occurs within the `with` block.
 
         Notes:
           - The object should be considered invalid after exiting the context.
-          - This design mimics resource safety patterns seen in systems like C#'s `IDisposable`
+          - This design mimics resource safety patterns seen in systems like C#'s `Cleanable`
             and C++ RAII.
-          - Users are free to manage `dispose()` manually if they choose not to use the
+          - Users are free to manage `cleanup()` manually if they choose not to use the
             context manager.
 
         Args:
@@ -680,24 +762,4 @@ class ConcurrentList(Generic[_T], IDisposable):
             exc_tb: Exception traceback (if raised).
         """
         self._lock.release()
-        self.dispose()
-
-    def dispose(self) -> None:
-        """
-        Dispose (clear) this ConcurrentList, releasing its contents.
-
-        Once disposed, `_disposed` becomes True and the internal dict is cleared.
-        No further usage checks are enforced, so the user must avoid calling
-        other methods after disposal.
-
-        This method is idempotent — multiple calls won't cause errors.
-        """
-        if not self._disposed:
-            with self._lock:
-                self._list.clear()
-            self._disposed = True
-        warnings.warn(
-            "Your ConcurrentList has been disposed and should not be used further. ",
-            UserWarning
-        )
-
+        self.cleanup()

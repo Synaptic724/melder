@@ -1,8 +1,4 @@
-
-
-import functools
-from threading import RLock
-import warnings
+import functools, threading, warnings
 from copy import deepcopy
 from typing import (
     Any,
@@ -18,15 +14,17 @@ from typing import (
     TypeVar,
     Union,
 )
-from melder.utilities.protocols import IDisposable
+import ulid
+from melder.utilities.general_base.cleanable import Cleanable
+
 _K = TypeVar("_K")
 _V = TypeVar("_V")
 
 
-# This class is copied from my other library ThreadFactory, I made my own implementation with freeze and updated the interface to IDisposable,
+# This class is copied from my other library ThreadFactory, I made my own implementation with freeze and updated the interface to Cleanable,
 # I also implemented tests for it to test freeze.
 
-class ConcurrentDict(Generic[_K, _V], IDisposable):
+class ConcurrentDict(Generic[_K, _V], Cleanable):
     """
     A thread-safe dictionary implementation using:
       - An underlying Python dict
@@ -39,10 +37,10 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
     The dictionary can be frozen to prevent further modifications unless
     internal contents of dictionary are objects that are mutable.
     """
-    __slots__ = IDisposable.__slots__ + ['_lock', '_dict', '_freeze']
+    __slots__ = Cleanable.__slots__ + ["_dict", "_lock", "_freeze", "_id"]
     def __init__(
-        self,
-        initial: Optional[Union[Mapping[_K, _V], Iterable[Tuple[_K, _V]]]] = None
+            self,
+            initial: Optional[Union[Mapping[_K, _V], Iterable[Tuple[_K, _V]]]] = None
     ) -> None:
         """
         Initialize the ConcurrentDict.
@@ -51,16 +49,68 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
             initial (Mapping[_K, _V] or Iterable of (_K, _V), optional):
                 Initial data for the dictionary. Can be another dictionary,
                 or an iterable of (key, value) pairs.
+            agentic_mode (bool, optional):
+                If True, uses an AgenticRLock for Hybrid (asyncio/sync) agentic operations.
+                Defaults to False, which uses a standard threading.RLock.
         """
         super().__init__()
         if initial is None:
             initial = {}
+
+        self._id: str = str(ulid.ULID())
+        self._lock: threading.RLock = threading.RLock()
+
         # Convert 'initial' to a dict:
         # - If it's already dict-like, dict(...) copies it.
         # - If it's an iterable of (key, value) pairs, dict(...) will handle that as well.
         self._dict: Dict[_K, _V] = dict(initial)
-        self._lock: RLock = RLock()
         self._freeze = False
+
+    def cleanup(self) -> None:
+        """
+        Dispose (clear) this ConcurrentDict, releasing its contents.
+
+        Once cleaned, `cleaned` becomes True and the internal dict is cleared.
+        No further usage checks are enforced, so the user must avoid calling
+        other methods after cleanup.
+
+        This method is idempotent — multiple calls won't cause errors.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._dict.clear()
+            self._dict = None
+
+        if self._agentic_mode:
+            try:
+                self._lock.cleanup()
+            except Exception:
+                pass
+            self._lock = None
+
+    @property
+    def id(self) -> str:
+        """
+        Get the unique identifier of this ConcurrentList.
+
+        Returns:
+            str: The unique identifier.
+        """
+        return self._id
+
+    @property
+    def agentic_mode(self) -> Optional[bool]:
+        """
+        Indicates whether the heap is operating in agentic mode.
+
+        Returns:
+            Optional[bool]: True if in agentic mode, False otherwise.
+        """
+        return self._agentic_mode
 
     def freeze(self) -> None:
         """
@@ -289,26 +339,11 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
         """
         Remove the specified key and return its value.
         If the key is not found, return default if given, otherwise raise KeyError.
-
-        Args:
-            key (_K): The key to pop.
-            default (_V, optional): The value to return if key is missing.
-
-        Returns:
-            _V: The popped value.
-
-        Raises:
-            KeyError: If the key is missing and no default was provided.
         """
         if self._freeze:
             raise TypeError("Cannot modify a frozen ConcurrentDict.")
         with self._lock:
-            try:
-                return self._dict.pop(key)
-            except KeyError:
-                if default is not None:
-                    return default
-                raise
+            return self._dict.pop(key, default)
 
     def popitem(self) -> Tuple[_K, _V]:
         """
@@ -350,9 +385,9 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
                 return self._dict.setdefault(key, default)
 
     def update(
-        self,
-        other: Optional[Union[Mapping[_K, _V], Iterable[Tuple[_K, _V]]]] = None,
-        **kwargs: _V
+            self,
+            other: Optional[Union[Mapping[_K, _V], Iterable[Tuple[_K, _V]]]] = None,
+            **kwargs: _V
     ) -> None:
         """
         Update the dict with the key/value pairs from other, overwriting existing keys.
@@ -552,9 +587,9 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
         return ConcurrentDict(initial=new_items)
 
     def reduce(
-        self,
-        func: Callable[[Any, Tuple[_K, _V]], Any],
-        initial: Optional[Any] = None
+            self,
+            func: Callable[[Any, Tuple[_K, _V]], Any],
+            initial: Optional[Any] = None
     ) -> Any:
         """
         Apply a function of two arguments cumulatively to the dict items
@@ -601,7 +636,7 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
 
 
     # -----------------------------------------------------------------------------------
-    # Disposable Implementation
+    # Cleanable Implementation
     # -----------------------------------------------------------------------------------
     def __enter__(self):
         """
@@ -626,15 +661,15 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
 
         Responsibilities:
           - Releases the internal lock acquired in `__enter__()`.
-          - Automatically calls `dispose()` to ensure the object is cleaned up.
-          - This pattern ensures the object is safely disposed even if an exception
+          - Automatically calls `cleanup()` to ensure the object is cleaned up.
+          - This pattern ensures the object is safely cleaned even if an exception
             occurs within the `with` block.
 
         Notes:
           - The object should be considered invalid after exiting the context.
-          - This design mimics resource safety patterns seen in systems like C#'s `IDisposable`
+          - This design mimics resource safety patterns seen in systems like C#'s `Cleanable`
             and C++ RAII.
-          - Users are free to manage `dispose()` manually if they choose not to use the
+          - Users are free to manage `cleanup()` manually if they choose not to use the
             context manager.
 
         Args:
@@ -643,24 +678,4 @@ class ConcurrentDict(Generic[_K, _V], IDisposable):
             exc_tb: Exception traceback (if raised).
         """
         self._lock.release()
-        self.dispose()
-
-    def dispose(self) -> None:
-        """
-        Dispose (clear) this ConcurrentDict, releasing its contents.
-
-        Once disposed, `_disposed` becomes True and the internal dict is cleared.
-        No further usage checks are enforced, so the user must avoid calling
-        other methods after disposal.
-
-        This method is idempotent — multiple calls won't cause errors.
-        """
-        if not self._disposed:
-            with self._lock:
-                self._dict.clear()
-            self._disposed = True
-        warnings.warn(
-            "Your ConcurrentDictionary has been disposed and should not be used further. ",
-            UserWarning
-        )
-
+        self.cleanup()
