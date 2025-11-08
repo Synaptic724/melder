@@ -1,0 +1,74 @@
+import uuid
+from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_list import ConcurrentList
+from melder.utilities.data_structures.concurrent_set import ConcurrentSet
+from melder.utilities.interfaces.interfaces import IConduit
+from melder.utilities.general_base.sealable import Sealable
+from melder.aether.conduit_cloud import ConduitCloud
+from threading import RLock, Lock
+
+class AethericFrame(Sealable):
+    """
+    Manages an isolated "universe" or "frame" within the Aether.
+
+    An AethericFrame holds all top-level conduits, spell registries, and
+    configurations for a specific, isolated domain. This allows multiple
+    systems (e.g., different plugins or applications) to use the same
+    Aether without interfering with each other's service registrations.
+
+    This object is thread-safe.
+
+    Attributes:
+        name (str): The unique name of this frame.
+        _lock (RLock): A reentrant lock ensuring thread-safe operations.
+        _conduits (ConcurrentDict): Stores all root conduits created within this frame.
+        _spell_registry (ConcurrentDict): Maps conduit UUIDs to the set of
+            spell IDs they own.
+        _conduit_clusters (ConcurrentDict): Organizes conduits into named groups.
+        _conduit_cloud (ConduitCloud): The abstract factory for named conduits
+            in dynamic mode.
+        _configuration (Configuration): The frozen configuration for this frame.
+    """
+    def __init__(self, name: str):
+        """
+        Initializes a new AethericFrame.
+
+        Args:
+            name (str): The unique, human-readable name for this frame.
+        """
+        super().__init__()
+        self.name = name
+        self._lock = RLock()
+        # This retains all normal conduits i.e roots created by a spellbook
+        self._conduits: ConcurrentDict[uuid.UUID, IConduit] = ConcurrentDict()
+        # Holds conduit UUIDs and their spell IDs (SHA256 hashes)
+        self._spell_registry: ConcurrentDict[uuid.UUID, ConcurrentSet[str]] = ConcurrentDict()
+        # Clusters only
+        self._conduit_clusters: ConcurrentDict[str, ConcurrentList[uuid.UUID]] = ConcurrentDict()
+        # This is the dynamic mode registry
+        self._conduit_cloud = ConduitCloud(name)
+        # This is the configuration for the Aetheric Frame
+        self._configuration = None
+
+    def seal(self):
+        """
+        Seals the Aetheric Frame, recursively sealing all its conduits
+        and clearing all internal registries.
+
+        Once sealed, the frame cannot be used. This operation is idempotent.
+        """
+        if self._sealed:
+            return
+        with self._lock:
+            if self._sealed:
+                return
+            # Seal all conduits and clear the registry
+            for conduit in self._conduits.values():
+                conduit.seal()
+
+            self._conduits.clear()
+            self._spell_registry.clear()
+            self._conduit_clusters.clear()
+            self._conduit_cloud.seal()
+            self._sealed = True
+

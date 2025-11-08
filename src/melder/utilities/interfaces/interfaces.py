@@ -1,5 +1,7 @@
 from typing import Type, Optional, Any, Dict, Protocol, Union
 from uuid import UUID
+import uuid
+from typing import Protocol, Optional, Any
 
 class ISealable(Protocol):
     """
@@ -594,25 +596,6 @@ class IConduit(ISealable, Protocol):
         ...
 
 
-class IConduitCloud(Protocol):
-    """
-    An Interface for the 'ConduitCloud', a global registry for accessing
-    named, top-level Conduits.
-    """
-
-    def get_conduit(self, name: str) -> "IConduit":
-        """
-        Retrieves a Conduit from the cloud by its registered name.
-
-        Args:
-            name (str): The unique name of the Conduit.
-
-        Returns:
-            IConduit: The Conduit instance.
-        """
-        ...
-
-
 class ILink(Protocol):
     """
     An Interface representing a live connection (contract) between two Conduits.
@@ -641,5 +624,302 @@ class IDetail(Protocol):
 
         Returns:
             bool: True if this detail grants or revokes spell access.
+        """
+        ...
+
+
+class IConduitCloud(ISealable, Protocol):
+    """
+    An Interface for an abstract factory for named conduits.
+
+    The ConduitCloud provides a central location to retrieve conduits by a
+    human-readable name, intended for top-level access in
+    highly dynamic systems.
+    """
+
+    def get_conduit(self, name: str) -> IConduit:
+        """
+        Retrieves a conduit by its registered name.
+
+        Args:
+            name (str): The unique name of the conduit.
+
+        Returns:
+            IConduit: The conduit instance.
+
+        Raises:
+            RuntimeError: If the ConduitCloud is sealed.
+            ValueError: If a conduit with that name is not found.
+        """
+        ...
+
+    def _register_conduit(self, conduit: IConduit):
+        """
+        Registers a named conduit into the cloud. (Internal use)
+
+        Args:
+            conduit (IConduit): The conduit instance to register.
+
+        Raises:
+            ValueError: If the conduit's name is None or already exists
+                in the registry.
+        """
+        ...
+
+
+class IAethericFrame(ISealable, Protocol):
+    """
+    An Interface for an isolated "universe" or "frame" within the Aether.
+
+    An AethericFrame holds all top-level conduits, spell registries, and
+    configurations for a specific, isolated domain.
+
+    Attributes:
+        name (str): The unique name of this frame.
+        _configuration (Optional[Any]): The frozen configuration for this frame.
+        _conduit_cloud (IConduitCloud): The abstract factory for named conduits.
+        _conduits (ConcurrentDict[uuid.UUID, IConduit]): Stores all root conduits.
+        _spell_registry (ConcurrentDict[uuid.UUID, ConcurrentSet[str]]): Maps
+            conduit UUIDs to their owned spell IDs.
+        _conduit_clusters (ConcurrentDict[str, ConcurrentList[uuid.UUID]]): Organizes
+            conduits into named groups.
+    """
+    name: str
+    _configuration: Optional[Any]  # Use 'Configuration' if it's a known type
+    _conduit_cloud: IConduitCloud
+    _conduits: 'ConcurrentDict[uuid.UUID, IConduit]'
+    _spell_registry: 'ConcurrentDict[uuid.UUID, ConcurrentSet[str]]'
+    _conduit_clusters: 'ConcurrentDict[str, ConcurrentList[uuid.UUID]]'
+
+
+class IAether(ISealable, Protocol):
+    """
+    An Interface for the global singleton that holds and manages all AethericFrames.
+
+    Aether is the top-level "universe" of the melder system and acts as the
+    central service provider for other internal components of the library.
+    """
+
+    def _bind_configuration(self, configuration: Any, aetheric_frame_name: str = "default") -> None:
+        """
+        Binds a configuration object to a specific Aetheric Frame.
+
+        Args:
+            configuration: The configuration object to bind.
+            aetheric_frame_name: The name of the frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        ...
+
+    def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional[Any]:
+        """
+        Retrieves the configuration object from a specific Aetheric Frame.
+
+        Args:
+            aetheric_frame_name: The name of the frame.
+
+        Returns:
+            The configuration object, or None if not set.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        ...
+
+    def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
+        """
+        Registers a conduit with the ConduitCloud of a specific frame.
+
+        Args:
+            conduit: The conduit to register.
+            aetheric_frame_name: The name of the frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        ...
+
+    def _get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
+        """
+        Retrieves the ConduitCloud instance from a specific frame.
+
+        Args:
+            aetheric_frame_name: The name of the frame.
+
+        Returns:
+            IConduitCloud: The ConduitCloud for that frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        ...
+
+    def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
+        """
+        Finds a root conduit within a frame by its name.
+
+        Args:
+            name (str): The name of the conduit.
+            aetheric_frame_name (str): The name of the frame to search in.
+
+        Returns:
+            IConduit: The found conduit.
+
+        Raises:
+            ValueError: If the frame does not exist or the conduit is not found.
+        """
+        ...
+
+    def _get_conduit_by_id(self, signature: uuid.UUID, aetheric_frame_name: str = "default") -> IConduit:
+        """
+        Finds a root conduit within a frame by its UUID.
+
+        Args:
+            signature (uuid.UUID): The UUID of the conduit.
+            aetheric_frame_name (str): The name of the frame to search in.
+
+        Returns:
+            IConduit: The found conduit.
+
+        Raises:
+            ValueError: If the frame does not exist or the conduit is not found.
+        """
+        ...
+
+    def _add_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
+        """
+        Adds a new root conduit to a frame. (Internal use)
+
+        Args:
+            conduit (IConduit): The conduit to add.
+            aetheric_frame_name (str): The name of the frame.
+
+        Raises:
+            ValueError: If the frame does not exist or the conduit ID already exists.
+        """
+        ...
+
+    def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
+        """
+        Removes a root conduit from a frame. (Internal use)
+
+        Args:
+            conduit (IConduit): The conduit to remove.
+            aetheric_frame_name (str): The name of the frame.
+
+        Raises:
+            ValueError: If the frame does not exist or the conduit is not found.
+        """
+        ...
+
+    def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = "default"):
+        """
+        Creates a new conduit cluster within a frame. (Internal use)
+
+        Args:
+            cluster_name (str): The name for the new cluster.
+            aetheric_frame_name (str): The name of the frame.
+
+        Raises:
+            ValueError: If the frame does not exist or the cluster name is taken.
+        """
+        ...
+
+    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
+        """
+        Adds a conduit's UUID to a cluster. (Internal use)
+
+        Args:
+            conduit (IConduit): The conduit to add.
+            cluster_name (str): The name of the cluster.
+            aetheric_frame_name (str): The name of the frame.
+
+        Raises:
+            ValueError: If the frame or cluster does not exist.
+        """
+        ...
+
+    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
+        """
+        Removes a conduit's UUID from a cluster. (Internal use)
+
+        Args:
+            conduit (IConduit): The conduit to remove.
+            cluster_name (str): The name of the cluster.
+            aetheric_frame_name (str): The name of the frame.
+
+        Raises:
+            ValueError: If the frame or cluster does not exist.
+        """
+        ...
+
+    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> 'ConcurrentList[uuid.UUID]':
+        """
+        Gets a list of all conduit UUIDs in a specific cluster.
+
+        Args:
+            cluster_name (str): The name of the cluster.
+            aetheric_frame_name (str): The name of the frame.
+
+        Returns:
+            ConcurrentList[uuid.UUID]: A list of conduit UUIDs.
+
+        Raises:
+            ValueError: If the frame or cluster does not exist.
+        """
+        ...
+
+    def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
+        """
+        Finds the conduit that owns a specific spell ID within a frame.
+
+        Args:
+            spell_id (str): The spell ID (SHA256 hash) to search for.
+            aetheric_frame_name (str): The name of the frame.
+
+        Returns:
+            IConduit: The conduit that owns the spell.
+
+        Raises:
+            ValueError: If the frame does not exist or the spell ID is not found.
+        """
+        ...
+
+    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
+        """
+        Checks if a spell ID is registered in any conduit within a frame.
+
+        Args:
+            spell_id (str): The spell ID to check.
+            aetheric_frame_name (str): The name of the frame.
+
+        Returns:
+            bool: True if the spell exists, False otherwise.
+
+        Raises:
+            ValueError: If the frame does not exist.
+        """
+        ...
+
+    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: 'ConcurrentSet[str]', aetheric_frame_name: str = "default"):
+        """
+        Registers a set of spell IDs as being owned by a specific conduit.
+
+        Args:
+            conduit_id (uuid.UUID): The UUID of the owning conduit.
+            spell_set (ConcurrentSet[str]): A set of spell IDs to register.
+            aetheric_frame_name (str): The name of the frame.
+
+        Raises:
+            ValueError: If the frame does not exist or the conduit ID is
+                already registered.
+        """
+        ...
+
+    def seal_aetheric_frames(self):
+        """
+        Seals all aetheric frames and their contents.
         """
         ...
