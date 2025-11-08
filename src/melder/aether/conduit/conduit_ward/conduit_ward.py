@@ -5,7 +5,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.general_helpers import EnumHelpers
-from melder.utilities.interfaces import IConduit, IConduitWard, ISpell
+from melder.utilities.protocols import IConduit, IConduitWard, ISpell
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 

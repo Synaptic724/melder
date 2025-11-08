@@ -2,7 +2,7 @@ import uuid
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_set import ConcurrentSet
-from melder.utilities.interfaces import ISeal, IConduit, IConduitCloud
+from melder.utilities.protocols import ISeal, IConduit, IConduitCloud
 from threading import RLock, Lock
 
 class AethericFrame(ISeal):

@@ -3,7 +3,7 @@ from uuid import UUID
 from typing import Optional, List, Any, Callable, Mapping
 from melder.aether.aether import Aether
 from melder.aether.conduit.spell_crafter.inspector.spell_examiner import MethodProfile, ClassProfile
-from melder.utilities.interfaces import ISpellbook, ISpell
+from melder.utilities.protocols import ISpellbook, ISpell
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit

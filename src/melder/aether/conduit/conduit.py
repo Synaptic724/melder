@@ -5,7 +5,7 @@ from uuid import UUID
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.concurrent_set import ConcurrentSet
-from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell
+from melder.utilities.protocols import IConduit, ISpellbook, IConduitCloud, ISpell
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext

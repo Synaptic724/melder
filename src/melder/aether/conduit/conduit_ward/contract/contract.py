@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 from threading import RLock
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.interfaces import ISeal, IConduitWard, ISpell
+from melder.utilities.protocols import ISeal, IConduitWard, ISpell
 
 
 class Detail(ISeal):

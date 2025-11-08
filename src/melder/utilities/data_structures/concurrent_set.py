@@ -1,10 +1,4 @@
-#    Copyright [2025] [Mark Thomas Geleta]
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
+
 
 import functools
 from threading import RLock
@@ -12,7 +6,7 @@ import warnings
 from copy import deepcopy
 from typing import Any, Callable, Generic, Iterable, Iterator, Optional, Set, TypeVar
 from melder.utilities.concurrent_list import ConcurrentList
-from melder.utilities.interfaces import IDisposable
+from melder.utilities.protocols import IDisposable
 
 # Type variable _T is used for generic type hinting. This allows the ConcurrentSet
 # to hold elements of any single type, maintaining type safety.

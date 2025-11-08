@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Dict, List, Type
 from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.interfaces import ISeal
+from melder.utilities.protocols import ISeal
 from melder.spellbook.configuration.system_state import SystemState
 
 class Configuration(ISeal):

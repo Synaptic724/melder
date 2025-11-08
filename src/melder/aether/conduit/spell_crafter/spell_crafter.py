@@ -1,5 +1,5 @@
 from typing import Any
-from melder.utilities.interfaces import ISpell
+from melder.utilities.protocols import ISpell
 
 class SpellCrafter:
     def __init__(self, spellbook: dict[str, ISpell]):
