@@ -1,10 +1,73 @@
-from typing import Type, Optional, Any, Dict, NamedTuple, Protocol, Union
+from typing import Type, Optional, Any, Dict, Protocol, Union
 from uuid import UUID
 
-
-class Spell(Protocol):
+class ISealable(Protocol):
     """
-    A Protocol defining the shape of a 'Spell', a unit of logic that can be cast.
+    ISealable
+    -----------
+    An Interface for all Sealable objects in the system.
+
+    Objects that manage runtime, memory, open resources, or registration
+    must implement this interface.
+
+    Supports context-manager usage:
+        with MyObject(...) as obj:
+            ...
+        # seal() is called automatically on exit.
+
+    Contract:
+    ---------
+    - `seal()` must be safe to call multiple times.
+    - All sealing must set `_sealed = True` when sealing completes.
+    """
+
+    @property
+    def sealed(self) -> bool:
+        """Returns True if the object has already been sealed."""
+        ...
+
+    @property
+    def is_sealed(self) -> bool:
+        """Alias for `sealed`."""
+        ...
+
+    def check_sealed(self):
+        """
+        Check if the object has been sealed.
+
+        Raises:
+            RuntimeError: If the object has already been sealed.
+        """
+        ...
+
+    def seal(self):
+        """
+        Seal must be implemented by subclasses.
+
+        Must:
+        -----
+        - Release all resources.
+        - Deregister or finalize any allocations.
+        - Be idempotent (safe to call multiple times).
+        """
+        ...
+
+    async def async_seal(self):
+        """
+        Seal must be implemented by subclasses.
+
+        Must:
+        -----
+        - Release all resources.
+        - Deregister or finalize any allocations.
+        - Be idempotent (safe to call multiple times).
+        """
+        ...
+
+
+class ISpell(Protocol):
+    """
+    An Interface defining the shape of a 'Spell', a unit of logic that can be cast.
 
     This represents the blueprint for a service, component, or function that
     can be managed by the melder system.
@@ -59,9 +122,9 @@ class Spell(Protocol):
         """
         ...
 
-class Spellbook(Protocol):
+class ISpellbook(ISealable, Protocol):
     """
-    A Protocol for a 'Spellbook', the central registry and configuration manager
+    An Interface for a 'Spellbook', the central registry and configuration manager
     for all spells within a Conduit.
 
     It behaves as the primary interface for binding, resolving, and configuring
@@ -80,12 +143,12 @@ class Spellbook(Protocol):
     _spells: Optional[Any]
     _bind: Optional[Any]
 
-    def _lesser_conduit_spellbook_copy(self) -> 'Spellbook':
+    def _lesser_conduit_spellbook_copy(self) -> 'ISpellbook':
         """
         Creates a copy of the spellbook for use in a new lesser (child) conduit.
 
         Returns:
-            Spellbook: A new spellbook instance configured for a lesser conduit.
+            ISpellbook: A new spellbook instance configured for a lesser conduit.
         """
         ...
 
@@ -221,12 +284,6 @@ class Spellbook(Protocol):
         """
         ...
 
-    def seal(self):
-        """
-        Seals the entire spellbook, releasing all resources.
-        """
-        ...
-
     def create_new_preset_spellbook(self):
         """
         Creates a new spellbook, typically for upgrading a lesser conduit.
@@ -309,14 +366,14 @@ class Spellbook(Protocol):
         ...
 
 
-class Bind(Protocol):
+class IBind(Protocol):
     """
-    A Protocol for a binding mechanism, responsible for profiling and
+    An Interface for a binding mechanism, responsible for profiling and
     registering a spell blueprint.
     """
 
     def bind(self, permissions: 'Permissions', *, aetheric_frame: str, spell=None, spellframe=None, name=None,
-             existence='Existence.unique') -> 'Union["Spell", Any]':
+             existence='Existence.unique') -> 'Union["ISpell", Any]':
         """
         Binds a spell, creating its blueprint and returning it.
 
@@ -329,14 +386,14 @@ class Bind(Protocol):
             existence (str, optional): The lifecycle policy.
 
         Returns:
-            Union[Spell, Any]: The newly created Spell blueprint.
+            Union[ISpell, Any]: The newly created ISpell blueprint.
         """
         ...
 
 
-class Meld(Protocol):
+class IMeld(Protocol):
     """
-    A Protocol for the object resolution (melding) process.
+    An Interface for the object resolution (melding) process.
 
     This is responsible for taking a spell request, resolving its dependencies,
     and "casting" it into a live object instance.
@@ -354,9 +411,9 @@ class Meld(Protocol):
         """
         ...
 
-class ConduitWard(Protocol):
+class IConduitWard(Protocol):
     """
-    A Protocol for a 'ConduitWard', managing links, policies, and contracts
+    An Interface for a 'ConduitWard', managing links, policies, and contracts
     between its Conduit and other Conduits.
 
     Attributes:
@@ -365,14 +422,14 @@ class ConduitWard(Protocol):
         _received_index (Optional[Any]): Index of incoming links.
         _policy (Optional[Any]): The active access policy.
         _id (Optional[UUID]): The UUID of the Conduit this ward protects.
-        _conduit (Optional['Conduit']): A reference to the Conduit itself.
+        _conduit (Optional['IConduit']): A reference to the Conduit itself.
     """
     _contracts: Optional[Any]
     _lock: Optional[Any]
     _received_index: Optional[Any]
     _policy: Optional[Any]
     _id: Optional[UUID]
-    _conduit: Optional['Conduit']
+    _conduit: Optional['IConduit']
 
     @property
     def policy(self) -> 'IPolicy':
@@ -432,9 +489,9 @@ class ConduitWard(Protocol):
         ...
 
 
-class Conduit(Protocol):
+class IConduit(ISealable, Protocol):
     """
-    A Protocol for a 'Conduit', the core execution scope and object factory.
+    An Interface for a 'Conduit', the core execution scope and object factory.
 
     It owns a Spellbook (its registry) and a ConduitWard (its security)
     and is responsible for "melding" (creating) objects.
@@ -442,13 +499,13 @@ class Conduit(Protocol):
     Attributes:
         _conduit_state (Optional[Any]): The current state (e.g., 'normal', 'lesser').
         __creation_context__ (Optional[Any]): Metadata about its creation.
-        _conduit_ward (ConduitWard): The ward managing its links and policies.
-        _spellbook (Spellbook): The registry of spells available to this conduit.
+        _conduit_ward (IConduitWard): The ward managing its links and policies.
+        _spellbook (ISpellbook): The registry of spells available to this conduit.
     """
     _conduit_state: Optional[Any]
     __creation_context__: Optional[Any]
-    _conduit_ward: "ConduitWard"
-    _spellbook: "Spellbook"
+    _conduit_ward: "IConduitWard"
+    _spellbook: "ISpellbook"
 
     @property
     def name(self) -> str:
@@ -464,12 +521,12 @@ class Conduit(Protocol):
         """
         ...
 
-    def link(self, target_conduit: 'Conduit') -> bool:
+    def link(self, target_conduit: 'IConduit') -> bool:
         """
         Establishes a contract link with another Conduit (in 'dynamic' mode).
 
         Args:
-            target_conduit (Conduit): The peer Conduit to link with.
+            target_conduit (IConduit): The peer Conduit to link with.
 
         Returns:
             bool: True if linking was successful.
@@ -492,7 +549,7 @@ class Conduit(Protocol):
         Creates a new, lightweight child scope (lesser conduit).
 
         Returns:
-            A new Conduit instance in the 'lesser' state.
+            A new IConduit instance in the 'lesser' state.
         """
         ...
 
@@ -537,13 +594,13 @@ class Conduit(Protocol):
         ...
 
 
-class ConduitCloud(Protocol):
+class IConduitCloud(Protocol):
     """
-    A Protocol for the 'ConduitCloud', a global registry for accessing
+    An Interface for the 'ConduitCloud', a global registry for accessing
     named, top-level Conduits.
     """
 
-    def get_conduit(self, name: str) -> "Conduit":
+    def get_conduit(self, name: str) -> "IConduit":
         """
         Retrieves a Conduit from the cloud by its registered name.
 
@@ -551,14 +608,14 @@ class ConduitCloud(Protocol):
             name (str): The unique name of the Conduit.
 
         Returns:
-            Conduit: The Conduit instance.
+            IConduit: The Conduit instance.
         """
         ...
 
 
-class Link(Protocol):
+class ILink(Protocol):
     """
-    A Protocol representing a live connection (contract) between two Conduits.
+    An Interface representing a live connection (contract) between two Conduits.
     """
     def sever(self):
         """
@@ -567,9 +624,9 @@ class Link(Protocol):
         ...
 
 
-class Detail(Protocol):
+class IDetail(Protocol):
     """
-    A Protocol for a 'Detail', a single permission or rule within a Contract.
+    An Interface for a 'Detail', a single permission or rule within a Contract.
     """
     @property
     def type(self) -> 'ContractTypes':

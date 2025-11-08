@@ -1,4 +1,4 @@
-from melder.utilities.protocols import IDisposable
+from melder.utilities.interfaces import IDisposable
 
 class StateObject(IDisposable):
     """

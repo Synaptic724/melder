@@ -4,7 +4,7 @@ import threading
 import uuid
 from typing import Optional, Type, Dict, Any
 from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.protocols import ISeal
+from melder.utilities.interfaces import ISeal
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TODO: Implement SpellFrame-based SpellMaps

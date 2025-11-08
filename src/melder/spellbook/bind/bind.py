@@ -7,7 +7,7 @@ from melder.aether.conduit.spell_crafter.inspector.spell_examiner import (
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spell
-from melder.utilities.protocols import IBind
+from melder.utilities.interfaces import IBind
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 import hashlib
 

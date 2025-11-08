@@ -2,7 +2,7 @@
 
 import inspect
 from typing import Callable, Any, Tuple, Type, Dict, Optional
-from melder.utilities.protocols import ISeal
+from melder.utilities.interfaces import ISeal
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 
 class OverloadDispatcher(ISeal):

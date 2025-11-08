@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any, NamedTuple, Callable, List, Union
 from melder.utilities.concurrent_list import ConcurrentList
 from melder.utilities.concurrent_dictionary import ConcurrentDict
 from melder.utilities.general_helpers import SpellInputUtils
-from melder.utilities.protocols import IConduit, ISpellbook, ISpell, IMeld
+from melder.utilities.interfaces import IConduit, ISpellbook, ISpell, IMeld
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
 
 #TODO: ENSURE MELD SUPPORTS DEBUGGER ACTIONS SUCH AS ATTACHING ID INTO OBJECTS, with SLOTS ignore features
