@@ -1,11 +1,13 @@
 import uuid
-from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.concurrent_list import ConcurrentList
-from melder.utilities.concurrent_set import ConcurrentSet
-from melder.utilities.protocols import ISeal, IConduit, IConduitCloud
+import uuid
+from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_list import ConcurrentList
+from melder.utilities.data_structures.concurrent_set import ConcurrentSet
+from melder.utilities.interfaces.interfaces import IConduit
+from melder.utilities.general_base.sealable import Sealable
 from threading import RLock, Lock
 
-class AethericFrame(ISeal):
+class AethericFrame(Sealable):
     """
     This object is used to hold the Aetheric Frame for the Aether. It isolates
     the Aetheric Frame from the Aether itself, allowing for a clean separation
@@ -45,7 +47,7 @@ class AethericFrame(ISeal):
 
 
 
-class ConduitCloud(IConduitCloud):
+class ConduitCloud(Sealable):
     """
     This object will only be active if dynamic mode is enabled.
     It will automatically register all named conduits into a specific location for retrieval and usage.
@@ -99,7 +101,7 @@ class ConduitCloud(IConduitCloud):
             self._registry.clear()
             self._sealed = True
 
-class Aether(ISeal):
+class Aether(Sealable):
     """
     Aether is a class that holds a reference to all conduit systems.
     Aether is also responsible for disposing of all conduits if required.
