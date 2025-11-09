@@ -6,7 +6,7 @@ import ulid
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
-from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger
+from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration
 from melder.utilities.general_base.sealable import Sealable
 from melder.aether.aetheric_frame import AethericFrame
 from melder.utilities.helpers.safe_logger import SafeLogger
@@ -146,7 +146,7 @@ class Aether(Sealable):
 
         self._logger.debug(f"Configuration bound to frame '{aetheric_frame_name}'", "_bind_configuration")
 
-    def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional['Configuration']:
+    def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional[IConfiguration]:
         """
         Retrieves the configuration object from a specific Aetheric Frame.
 

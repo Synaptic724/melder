@@ -252,24 +252,86 @@ class ISpellbook(ISealable, Protocol):
         """
         ...
 
-    def bind(self, spell: Any, existence: str, whitelist: Optional[bool] = True, *, spellframe: Optional[Any] = None, name: Optional[str] = None, **kwargs) -> Optional[str]:
+
+    def bind(self, spell, existence: 'Existence', *, permissions: str = "create", spellframe=None, binding_name=None,
+             **kwargs) -> str:
         """
-        Binds a new spell (blueprint) into this spellbook.
+        Binds a spell into the Spellbook for future instantiation and dependency injection.
 
-        This profiles the spell, generates its unique ID, and registers it
-        with the specified lifecycle (existence) and metadata.
+        The `bind()` method registers a class, function, or object into Melder’s system,
+        associating it with a lifecycle (`Existence`), a permission policy, and optional metadata.
+        Once bound, the spell becomes available for resolution and casting within its conduit
+        or across systems (depending on permissions).
 
-        Args:
-            spell (Any): The class, function, or object to bind.
-            existence (str): The lifecycle policy (e.g., "unique", "many").
-            whitelist (Optional[bool], optional): Legacy flag, recommend using permissions.
-            spellframe (Optional[Any], optional): The logical interface or group.
-            name (Optional[str], optional): A unique binding name to disambiguate.
-            **kwargs: Additional metadata, including lifecycle hooks
-                      (e.g., `pre_hooks`, `post_hooks`).
+        ──────────────────────────────────────────────
+        🧠 Binding Overview:
+            - Profiles the spell via reflection.
+            - Computes a unique SHA256 `spell_id`.
+            - Stores the spell into the internal spell registry.
+            - Assigns its lookup key via `(spellframe, binding_name)`.
+            - Applies lifecycle and permission policies.
+            - Optionally attaches lifecycle hooks.
+
+        ──────────────────────────────────────────────
+        🛡️ Permissions (access control to other conduits):
+            - `"read"`:
+                Allows other conduits to *use* the spell but not create new instances.
+                Useful for shared utilities or resources.
+
+            - `"create"` (default):
+                Allows other conduits to both use *and* create instances from this spell.
+
+            - `"block"`:
+                Completely blocks access to the spell from other conduits.
+                Only the owning conduit can use or instantiate it.
+
+        🔄 Existence (spell lifecycle):
+            Determines how the spell instance is managed (singleton, transient, etc.).
+            Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
+
+        📦 Spellframe (optional):
+            Logical namespace or grouping label.
+            Often corresponds to a shared interface, protocol, or feature group.
+
+        🔑 Binding Name (optional):
+            Secondary key used to distinguish different versions or roles of the same type.
+            Useful when multiple spells are bound under the same interface.
+
+        ──────────────────────────────────────────────
+        🪝 Lifecycle Hooks (optional `**kwargs`):
+
+            - `pre_hooks`: List[Callable]
+                Executed *before* the spell is constructed or cast.
+                Can be used for validation, preparation, or logging.
+
+            - `activation_hooks`: List[Callable]
+                Executed *during* spell construction. Useful for modifying dependencies
+                or adapting runtime context.
+
+            - `post_hooks`: List[Callable]
+                Executed *after* the spell has been cast. Often used for initialization,
+                analytics, or final injection steps.
+
+            ⚠️ All hooks must be callables.
+
+        ──────────────────────────────────────────────
+        Parameters:
+            spell (Any): The class, function, or object to bind into the spellbook.
+            existence (Existence): The lifecycle scope for this spell.
+            permissions (str): Permission level exposed to other conduits ("read", "create", "block").
+            spellframe (Optional[Any]): Logical interface or category for grouping.
+            binding_name (Optional[str]): Name key to distinguish this spell among others in its frame.
+            **kwargs:
+                - pre_hooks: Optional[List[Callable]]
+                - activation_hooks: Optional[List[Callable]]
+                - post_hooks: Optional[List[Callable]]
 
         Returns:
-            Optional[str]: The unique spell_id of the bound spell.
+            str: The unique SHA256 `spell_id` associated with the bound spell.
+
+        Raises:
+            RuntimeError: If the spell is already bound in the registry.
+            TypeError: If invalid hook types are provided.
         """
         ...
 
