@@ -4,7 +4,7 @@ import ulid
 from threading import RLock
 
 # Melder Imports
-from melder.aether.conduit.spell_crafter.inspector.spell_examiner import MethodProfile, ClassProfile
+from melder.spellbook.spell_crafter.inspector.spell_examiner import MethodProfile, ClassProfile
 from melder.utilities.interfaces.interfaces import ISpell
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence

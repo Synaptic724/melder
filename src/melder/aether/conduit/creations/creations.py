@@ -171,36 +171,29 @@ class Creations(Sealable):
         """
         Internal
 
-        Attempts to clean up an object based on configured disposal mechanisms.
+        Attempt to clean up an object strictly via a prioritized list of method names.
 
-        Disposal Priority:
-          1. **ISealable:** If the object implements `ISealable`, call its `seal()` method.
-          2. **Configured Methods:** If disposal is enabled, attempt user-defined cleanup methods (`disposal_method_names`).
+        Behavior:
+          - Returns None if `item` is None or disposal is disabled.
+          - Iterates `self._disposal_method_names` in order (e.g., ["seal", "cleanup", "close", "dispose"]).
+          - For the first attribute found on `item` that is callable, calls it.
+          - If the call succeeds, returns None.
+          - If the call raises, returns a RuntimeError wrapping the original exception.
+          - If no listed methods exist on the object, returns None (treated as no-op).
+
+        Notes:
+          - No Protocol/type checks are performed.
+          - Cleanup semantics are entirely defined by the configured method list.
 
         Args:
-            item (object): The object instance to dispose of.
+            item: The object instance to dispose.
 
         Returns:
-            Optional[Exception]: Returns a `RuntimeError` if cleanup failed during an attempt, else `None`.
+            Optional[Exception]: RuntimeError if a chosen cleanup method raised; otherwise None.
         """
         if item is None:
             return None
 
-        # Priority 1: ISealable interface
-        if isinstance(item, ISealable):
-            try:
-                item.seal()
-                return None
-            except Exception as ex:
-                return RuntimeError(f"Failed to seal ISeal object {item}: {ex}")
-        elif isinstance(item, ICleanable):
-            try:
-                item.cleanup()
-                return None
-            except Exception as ex:
-                return RuntimeError(f"Failed to clean ICleanable object {item}: {ex}")
-
-        # Priority 2: Disposal methods
         if not self._disposal_enabled:
             return None
 
@@ -210,12 +203,12 @@ class Creations(Sealable):
                 if callable(method):
                     try:
                         method()
-                        return None  # Cleanup successful
+                        return None
                     except Exception as ex:
                         return RuntimeError(f"Failed to dispose object {item} using method '{method_name}': {ex}")
 
-        # If no cleanup methods succeeded or were found, treat as no error
         return None
+
 
     #endregion Destructor
 

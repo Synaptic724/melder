@@ -4,7 +4,7 @@ import hashlib
 from typing import Any, Optional, Union
 
 # Melder Imports
-from melder.aether.conduit.spell_crafter.inspector.spell_examiner import (
+from melder.spellbook.spell_crafter.inspector.spell_examiner import (
     SpellExaminer, ClassProfile, MethodProfile
 )
 from melder.spellbook.spell_types.spell_types import SpellType

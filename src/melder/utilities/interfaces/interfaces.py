@@ -1,3 +1,4 @@
+from threading import RLock
 from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable
 from uuid import UUID
 import uuid
@@ -121,6 +122,314 @@ class ISealable(Protocol):
         - Be idempotent (safe to call multiple times).
         """
         ...
+
+
+
+@runtime_checkable
+class ICreations(ISealable, Protocol):
+    """
+    Manages all instantiated objects within a Conduit (Normal Scope).
+
+    This manager is responsible for tracking object instances based on their lifecycle
+    (`unique`, `unique_per_scope`, `many`, etc.) and enforcing resource disposal upon sealing.
+
+    **Key Responsibilities:**
+      * Storage and lifecycle management of created objects.
+      * Controlled resource disposal via `ISealable` or configured cleanup methods.
+    """
+
+    # -----------------
+    # Attributes
+    # -----------------
+    _lock: RLock
+    _unique: 'ConcurrentDict[UUID, object]'
+    _unique_per_scope: 'ConcurrentDict[UUID, object]'
+    _many: 'ConcurrentDict[UUID, ConcurrentList[object]]'
+    _unique_per_lineage: 'ConcurrentDict[UUID, object]'
+    _unique_per_cluster: 'ConcurrentDict[UUID, object]'
+    _disposal_enabled: bool
+    _disposal_method_names: List[str]
+
+    # -----------------
+    # Methods
+    # -----------------
+    def _seal_unique(self) -> List[Exception]:
+        """
+        Internal
+
+        Disposes of all objects registered under the `unique` existence scope.
+
+        Returns:
+            List[Exception]: List of any cleanup errors encountered.
+        """
+        ...
+
+    def _seal_unique_per_lineage(self) -> List[Exception]:
+        """
+        Internal
+
+        Disposes of all objects registered under the `unique_per_lineage` existence scope.
+
+        Returns:
+            List[Exception]: List of any cleanup errors encountered.
+        """
+        ...
+
+    def _seal_unique_per_cluster(self) -> List[Exception]:
+        """
+        Internal
+
+        Disposes of all objects registered under the `unique_per_cluster` existence scope.
+
+        Returns:
+            List[Exception]: List of any cleanup errors encountered.
+        """
+        ...
+
+    def _seal_unique_per_scope(self) -> List[Exception]:
+        """
+        Internal
+
+        Disposes of all objects registered under the `unique_per_scope` existence scope.
+
+        Returns:
+            List[Exception]: List of any cleanup errors encountered.
+        """
+        ...
+
+    def _seal_many(self) -> List[Exception]:
+        """
+        Internal
+
+        Disposes of all multi-instance objects registered under the `many` existence scope.
+
+        Returns:
+            List[Exception]: List of any cleanup errors encountered.
+        """
+        ...
+
+    def _attempt_cleanup(self, item: object) -> Optional[Exception]:
+        """
+        Internal
+
+        Attempt to clean up an object strictly via a prioritized list of method names.
+
+        Behavior:
+          - Returns None if `item` is None or disposal is disabled.
+          - Iterates `self._disposal_method_names` in order (e.g., ["seal", "cleanup", "close", "dispose"]).
+          - For the first attribute found on `item` that is callable, calls it.
+          - If the call succeeds, returns None.
+          - If the call raises, returns a RuntimeError wrapping the original exception.
+          - If no listed methods exist on the object, returns None (treated as no-op).
+
+        Notes:
+          - No Protocol/type checks are performed.
+          - Cleanup semantics are entirely defined by the configured method list.
+
+        Args:
+            item: The object instance to dispose.
+
+        Returns:
+            Optional[Exception]: RuntimeError if a chosen cleanup method raised; otherwise None.
+        """
+        ...
+
+    def _upgrade_from_lesser_conduit(self, **kwargs: Any) -> None:
+        """
+        Internal
+
+        Transfers creations data from a `LesserCreations` instance during a conduit upgrade.
+
+        Args:
+            **kwargs: Dictionary containing creation scopes (e.g., `unique_per_scope`, `many`).
+
+        Raises:
+            RuntimeError: If the `Creations` manager already contains objects before transfer.
+        """
+        ...
+
+    def add_unique(self, key: UUID, item: object) -> None:
+        """
+        Adds a singleton object instance to the `unique` scope.
+
+        Args:
+            key (UUID): Unique identifier (Spell ID).
+            item (object): Object instance to manage.
+
+        Raises:
+            RuntimeError: If the Creations manager is sealed.
+            ValueError: If the key already exists in the `unique` scope.
+        """
+        ...
+
+    def add_unique_per_lineage(self, key: UUID, item: object) -> None:
+        """
+        Adds a singleton object instance to the `unique_per_lineage` scope.
+
+        Args:
+            key (UUID): Unique identifier (Spell ID).
+            item (object): Object instance to manage.
+
+        Raises:
+            RuntimeError: If the Creations manager is sealed.
+            ValueError: If the key already exists in the `unique_per_lineage` scope.
+        """
+        ...
+
+    def add_unique_per_cluster(self, key: UUID, item: object) -> None:
+        """
+        Adds a singleton object instance to the `unique_per_cluster` scope.
+
+        Args:
+            key (UUID): Unique identifier (Spell ID).
+            item (object): Object instance to manage.
+
+        Raises:
+            RuntimeError: If the Creations manager is sealed.
+            ValueError: If the key already exists in the `unique_per_cluster` scope.
+        """
+        ...
+
+    def add_unique_per_scope(self, key: UUID, item: object) -> None:
+        """
+        Adds a singleton object instance to the `unique_per_scope` scope.
+
+        Args:
+            key (UUID): Unique identifier (Spell ID).
+            item (object): Object instance to manage.
+
+        Raises:
+            RuntimeError: If the Creations manager is sealed.
+            ValueError: If the key already exists in the `unique_per_scope` scope.
+        """
+        ...
+
+    def add_many(self, key: UUID, item: object) -> None:
+        """
+        Adds an object instance to a multi-instance collection under the `many` scope.
+
+        If the collection for the given key does not exist, it is created.
+
+        Args:
+            key (UUID): Collection identifier (Spell ID).
+            item (object): Object instance to add.
+
+        Raises:
+            RuntimeError: If the Creations manager is sealed.
+        """
+        ...
+
+
+@runtime_checkable
+class ILesserCreations(ISealable, Protocol):
+    """
+    Manages instantiated objects within a **Lesser Conduit** (Child Scope).
+
+    Lesser Creations is a reduced scope manager, only tracking objects with
+    `unique_per_scope` and `many` lifecycles, as other scopes (`unique`, etc.)
+    are delegated to the parent Conduit.
+
+    **Key Responsibilities:**
+      * Storage and disposal of local-scope objects.
+      * Providing a snapshot of local objects for transfer during an upgrade.
+    """
+
+    # -----------------
+    # Attributes
+    # -----------------
+    _unique_per_scope: 'ConcurrentDict[UUID, object]'
+    _many: 'ConcurrentDict[UUID, ConcurrentList[object]]'
+    _disposal_enabled: bool
+    _disposal_method_names: List[str]
+    _lock: RLock
+
+    # -----------------
+    # Methods
+    # -----------------
+    def _seal_unique_per_scope(self) -> List[Exception]:
+        """
+        Internal
+
+        Disposes of all objects registered under the `unique_per_scope` existence scope.
+
+        Returns:
+            List[Exception]: List of any cleanup errors encountered.
+        """
+        ...
+
+    def _seal_many(self) -> List[Exception]:
+        """
+        Internal
+
+        Disposes of all multi-instance objects registered under the `many` existence scope.
+
+        Returns:
+            List[Exception]: List of any cleanup errors encountered.
+        """
+        ...
+
+    def _attempt_cleanup(self, item: object) -> Optional[Exception]:
+        """
+        Internal
+
+        Attempt to clean up an object strictly via a prioritized list of method names.
+
+        Behavior:
+          - Returns None if `item` is None or disposal is disabled.
+          - Iterates `self._disposal_method_names` in order (e.g., ["seal", "cleanup", "close", "dispose"]).
+          - For the first attribute found on `item` that is callable, calls it.
+          - If the call succeeds, returns None.
+          - If the call raises, returns a RuntimeError wrapping the original exception.
+          - If no listed methods exist on the object, returns None (treated as no-op).
+
+        Args:
+            item: The object instance to dispose.
+
+        Returns:
+            Optional[Exception]: RuntimeError if a chosen cleanup method raised; otherwise None.
+        """
+        ...
+
+    def transfer_data_and_clear(self) -> Dict[str, Any]:
+        """
+        Creates a lightweight snapshot of the current creations, clears the internal state, and seals the manager.
+
+        This is used when a Lesser Conduit is upgraded to a Normal Conduit, transferring ownership of local creations.
+
+        Returns:
+            dict: A dictionary containing copies of the internal state (`unique_per_scope` and `many`).
+        """
+        ...
+
+    def add_unique_per_scope(self, key: UUID, item: object) -> None:
+        """
+        Adds a singleton object instance to the `unique_per_scope` scope.
+
+        Args:
+            key (UUID): Unique identifier (Spell ID).
+            item (object): Object instance to manage.
+
+        Raises:
+            RuntimeError: If the Creations manager is sealed.
+            ValueError: If the key already exists in the `unique_per_scope` scope.
+        """
+        ...
+
+    def add_many(self, key: UUID, item: object) -> None:
+        """
+        Adds an object instance to a multi-instance collection under the `many` scope.
+
+        If the collection for the given key does not exist, it is created.
+
+        Args:
+            key (UUID): Collection identifier (Spell ID).
+            item (object): Object instance to add.
+
+        Raises:
+            RuntimeError: If the Creations manager is sealed.
+        """
+        ...
+
 
 @runtime_checkable
 class ISpell(ISealable, Protocol):

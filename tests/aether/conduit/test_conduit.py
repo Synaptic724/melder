@@ -332,7 +332,7 @@ class FakeAether:
 # Patch Conduit’s collaborators, then import the real Conduit
 with patch("melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard", FakeConduitWard), \
         patch("melder.aether.conduit.creations.creations.Creations", FakeCreations), \
-        patch("melder.aether.conduit.creations.creations.LesserCreations", FakeLesserCreations):
+        patch("melder.aether.conduit.creations.lesser_creations.LesserCreations", FakeLesserCreations):
     from melder.aether.conduit.conduit import Conduit, ConduitState, Policies
 
 # Replace the class-level Aether singleton with our fake

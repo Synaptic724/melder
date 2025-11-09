@@ -3,8 +3,7 @@ from threading import RLock
 from typing import Optional, Dict, Any, NamedTuple, Callable, List, Union
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, ISpell, IMeld
-from melder.aether.conduit.creations.creations import Creations, LesserCreations
+from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, ISpell, IMeld, ILesserCreations, ICreations
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 
 #TODO: ENSURE MELD SUPPORTS DEBUGGER ACTIONS SUCH AS ATTACHING ID INTO OBJECTS, with SLOTS ignore features
@@ -15,7 +14,7 @@ class Meld(IMeld):
     It provides methods to create, manage, and interact with spells and their configurations.
     """
 
-    def __init__(self, creations: LesserCreations | Creations, spellbook: ISpellbook):
+    def __init__(self, creations: ILesserCreations | ICreations, spellbook: ISpellbook):
         super().__init__()
         self._lock = RLock()
 

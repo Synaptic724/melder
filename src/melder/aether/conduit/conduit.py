@@ -14,7 +14,9 @@ from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContex
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from threading import RLock
-from melder.aether.conduit.creations.creations import Creations, LesserCreations
+from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.creations.lesser_creations import LesserCreations
+
 
 #region Conduit
 class Conduit(Sealable, IConduit):

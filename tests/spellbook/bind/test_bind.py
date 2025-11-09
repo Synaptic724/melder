@@ -1,6 +1,6 @@
 # tests/spellbook/test_bind.py
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import types
 
 # SUT
@@ -11,7 +11,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.spellbook.spell_types.spell_types import SpellType
 
 # Profiles used by Bind.sha256_profile / type checks
-from melder.aether.conduit.spell_crafter.inspector.spell_examiner import (
+from melder.spellbook.spell_crafter.inspector.spell_examiner import (
     SpellExaminer, ClassProfile, MethodProfile
 )
 
