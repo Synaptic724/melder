@@ -5,25 +5,9 @@ from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDic
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, ISpell, IMeld
 from melder.aether.conduit.creations.creations import Creations, LesserCreations
+from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 
 #TODO: ENSURE MELD SUPPORTS DEBUGGER ACTIONS SUCH AS ATTACHING ID INTO OBJECTS, with SLOTS ignore features
-
-
-class HookExecutionError(Exception):
-    """
-    Raised when a lifecycle hook fails during spell melding.
-
-    Attributes:
-        phase (str): The hook phase (e.g., 'pre_cast', 'activation', 'post_cast').
-        hook_name (str): The name or representation of the hook that failed.
-        original_exception (Exception): The original exception that was raised.
-    """
-    def __init__(self, phase: str, hook_name: str, original_exception: Exception):
-        self.phase = phase
-        self.hook_name = hook_name
-        self.original_exception = original_exception
-        super().__init__(f"[HOOK][{phase}] Hook '{hook_name}' failed: {type(original_exception).__name__}: {original_exception}")
-
 
 class Meld(IMeld):
     """
@@ -44,6 +28,26 @@ class Meld(IMeld):
 
         # Conduit-local instantiation manager
         self._creations = creations
+
+    def seal(self) -> None:
+        """
+        Seal the conduit to prevent further modifications.
+
+        Once sealed, all internal references are cleared, and no new spells can be melded.
+        """
+        if self._sealed:
+            return
+        with self._lock:
+            if self._sealed:
+                return
+            self._sealed = True
+            self._owned_spells = None
+            self._contracted_spells = None
+            self._lookup_owned_spells = None
+            self._lookup_contracted_spells = None
+            self._creations = None
+
+
 
     def meld(
             self,
@@ -143,20 +147,3 @@ class Meld(IMeld):
         """
         # TODO: Return the constructed or proxied instance in future
         return None
-
-    def seal(self) -> None:
-        """
-        Seal the conduit to prevent further modifications.
-
-        Once sealed, all internal references are cleared, and no new spells can be melded.
-        """
-        with self._lock:
-            if self._sealed:
-                return
-
-            self._owned_spells = None
-            self._contracted_spells = None
-            self._lookup_owned_spells = None
-            self._lookup_contracted_spells = None
-            self._creations = None
-            self._sealed = True

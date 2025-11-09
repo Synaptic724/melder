@@ -1,4 +1,6 @@
 from enum import Enum, auto
+from typing import Optional
+
 
 class ConduitState(Enum):
     """
@@ -15,7 +17,7 @@ class ConduitState(Enum):
         return self.name.lower()
 
     @staticmethod
-    def resolve(value: str | Enum | None) -> 'ConduitState | None':
+    def resolve(value: str | Enum | None) -> Optional['ConduitState']:
         """
         Resolve a string or ConduitState value into a valid ConduitState enum.
 

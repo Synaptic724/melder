@@ -1,52 +1,12 @@
 from typing import Optional, Any
 from uuid import UUID, uuid4
 from threading import RLock
+# Melder imports
+from melder.aether.conduit.conduit_ward.contract.details import Detail
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
-from melder.utilities.interfaces.interfaces import IConduitWard, ISpell
+from melder.utilities.interfaces.interfaces import IConduitWard
 from melder.utilities.general_base.sealable import Sealable
-
-
-class Detail(Sealable):
-    """
-    Represents a spell-level permission entry for a specific conduit
-    within a contract. This defines what access the conduit has to a spell.
-
-    Fields:
-    - spell_id: The identifier of the spell this permission applies to.
-    - permissions: Permissions enum (read, create, block).
-
-    Once sealed, the Detail becomes immutable and clears internal state.
-    """
-
-    def __init__(self, spell_id: str, permissions: Permissions):
-        super().__init__()
-        self._lock = RLock()
-
-        if not isinstance(permissions, Permissions):
-            raise TypeError(
-                f"permissions must be an instance of Permissions enum, got {type(permissions).__name__}"
-            )
-
-        with self._lock:
-            self.spell_id = spell_id
-            self.permissions = permissions
-
-    def seal(self):
-        """
-        Internal
-
-        Seal this detail, nullifying sensitive data and marking it immutable.
-        """
-        if self._sealed:
-            return
-        with self._lock:
-            if self._sealed:
-                return
-            self._sealed = True
-            self.spell_id = None
-            self.permissions = None
-
 
 class Contract(Sealable):
     """

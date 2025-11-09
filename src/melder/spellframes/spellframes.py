@@ -3,8 +3,8 @@
 import threading
 import uuid
 from typing import Optional, Type, Dict, Any
-from melder.utilities.concurrent_dictionary import ConcurrentDict
-from melder.utilities.interfaces import ISeal
+from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.general_base.sealable import Sealable
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TODO: Implement SpellFrame-based SpellMaps
@@ -33,7 +33,7 @@ from melder.utilities.interfaces import ISeal
 #   - Clean introspection of spellframe capabilities
 # ─────────────────────────────────────────────────────────────────────────────
 
-class SpellFrame(ISeal):
+class SpellFrame(Sealable):
     """
     SpellFrame: A singleton interface registry for AI-generated or dynamically composed class interfaces.
 
@@ -85,6 +85,20 @@ class SpellFrame(ISeal):
             super().__init__()
             self._frame_map: ConcurrentDict[str, Dict[str, Any]] = ConcurrentDict()
             SpellFrame._initialized = True
+
+
+    def seal(self):
+        """
+        Seals the registry and clears all entries.
+        """
+        if self._sealed:
+            return
+        with self._lock:
+            if self._sealed:
+                return
+            self._sealed = True
+            self._frame_map.cleanup()
+
 
     def bind(self, frame_type: Type, extra_metadata: Optional[Dict[str, Any]] = None):
         """
@@ -159,13 +173,3 @@ class SpellFrame(ISeal):
             self._sealed = False
             SpellFrame._initialized = False
             SpellFrame._instance = None
-
-    def seal(self):
-        """
-        Seals the registry and clears all entries.
-        """
-        with self._lock:
-            if self._sealed:
-                return
-            self._frame_map.clear()
-            self._sealed = True
