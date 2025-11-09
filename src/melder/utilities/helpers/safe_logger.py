@@ -18,7 +18,7 @@ class SafeLogger:
         self._is_channel = isinstance(logger, IChannelLogger)
 
     def debug(self, msg: str, method_name: str):
-        if not self._logger:
+        if self._logger is None:
             return
         if self._is_channel:
             self._logger.debug(msg, _manual_stack=True, _method_name=method_name)
@@ -26,7 +26,7 @@ class SafeLogger:
             self._logger.debug(msg)
 
     def info(self, msg: str, method_name: str):
-        if not self._logger:
+        if self._logger is None:
             return
         if self._is_channel:
             self._logger.info(msg, _manual_stack=True, _method_name=method_name)
@@ -34,7 +34,7 @@ class SafeLogger:
             self._logger.info(msg)
 
     def warning(self, msg: str, method_name: str):
-        if not self._logger:
+        if self._logger is None:
             return
         if self._is_channel:
             self._logger.warning(msg, _manual_stack=True, _method_name=method_name)
@@ -42,7 +42,7 @@ class SafeLogger:
             self._logger.warning(msg)
 
     def error(self, msg: str, method_name: str, *, exc_info: bool = True):
-        if not self._logger:
+        if self._logger is None:
             return
         if self._is_channel:
             self._logger.error(msg, exc_info=exc_info, _manual_stack=True, _method_name=method_name)

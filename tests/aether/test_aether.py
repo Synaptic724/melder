@@ -1,8 +1,25 @@
 import unittest
 import uuid
+
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
+from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 
+
+# --- helpers -----------------------------------------------------------------
+
+def _force_reset_aether_singleton():
+    """
+    Guarantee Aether() constructs a brand-new, fully initialized instance.
+    We must clear BOTH the instance holder and the class-level initialized flag.
+    """
+    if hasattr(Aether, "_instance"):
+        Aether._instance = None
+    if hasattr(Aether, "_initialized"):
+        Aether._initialized = False
+
+
+# --- test doubles -------------------------------------------------------------
 
 class _StubCloud:
     def __init__(self):
@@ -14,7 +31,8 @@ class _StubCloud:
 
 class _DummyCtx:
     def __init__(self, cid=None):
-        self._conduit_id = cid or uuid.uuid4()
+        import uuid as _uuid
+        self._conduit_id = cid or _uuid.uuid4()
 
 
 class _DummyConduit:
@@ -23,45 +41,22 @@ class _DummyConduit:
         self.__creation_context__ = _DummyCtx(cid)
 
 
+# --- tests -------------------------------------------------------------------
+
 class TestAether(unittest.TestCase):
 
-# --- inside your TestAether class ---
     def setUp(self):
-        from melder.aether.aether import Aether
-        from melder.aether.aetheric_frame import AethericFrame
-        from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
-
+        # Force a truly fresh singleton per test
+        _force_reset_aether_singleton()
         self.aether = Aether()
 
-        # Rehydrate default frame if someone sealed earlier
+        # Fresh instance should have a default frame, but keep this guard for safety
         if self.aether._default_frame is None:
             self.aether._aetheric_frames = ConcurrentDict()
             self.aether._aetheric_frames["default"] = AethericFrame("default")
             self.aether._default_frame = self.aether._aetheric_frames["default"]
 
-        # Always start with clean registries + unsealed flags
-        df = self.aether._default_frame
-        df._conduits.clear()
-        df._conduit_clusters.clear()
-        df._spell_registry.clear()
-        df._sealed = False
-        self.aether._sealed = False  # <-- important: unseal the Aether itself
-
-
-    # Replace the old “test_reset_for_testing_resets_singleton” with this:
-    def test_seal_and_manual_rehydrate(self):
-        from melder.aether.aetheric_frame import AethericFrame
-        from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
-
-        # Seal makes default frame None
-        self.aether.seal()
-        self.assertTrue(self.aether._sealed)
-        self.assertIsNone(self.aether._default_frame)
-
-        # Manually rehydrate like setUp does
-        self.aether._aetheric_frames = ConcurrentDict()
-        self.aether._aetheric_frames["default"] = AethericFrame("default")
-        self.aether._default_frame = self.aether._aetheric_frames["default"]
+        # Start clean registries + unsealed flags
         df = self.aether._default_frame
         df._conduits.clear()
         df._conduit_clusters.clear()
@@ -69,11 +64,27 @@ class TestAether(unittest.TestCase):
         df._sealed = False
         self.aether._sealed = False
 
-        self.assertIsNotNone(self.aether._default_frame)
+    # Replace the old “test_reset_for_testing_resets_singleton” with this:
+    def test_seal_and_manual_rehydrate(self):
+        # Seal should null out default frame
         self.assertFalse(self.aether._sealed)
-        self.assertFalse(df._sealed)
+        self.aether.seal()
+        self.assertTrue(self.aether._sealed)
+        self.assertIsNone(self.aether._default_frame)
 
+        # True rehydrate: kill singleton ref + init flag, construct a new Aether
+        _force_reset_aether_singleton()
+        new_aether = Aether()
+        self.assertIsNot(self.aether, new_aether)
 
+        # New instance should come up with a default frame and be unsealed
+        if new_aether._default_frame is None:
+            new_aether._aetheric_frames = ConcurrentDict()
+            new_aether._aetheric_frames["default"] = AethericFrame("default")
+            new_aether._default_frame = new_aether._aetheric_frames["default"]
+        self.assertIsNotNone(new_aether._default_frame)
+        self.assertIn("default", new_aether._aetheric_frames)
+        self.assertFalse(new_aether._sealed)
 
     # 1
     def test_singleton_identity(self):

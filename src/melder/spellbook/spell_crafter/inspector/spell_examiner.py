@@ -45,6 +45,40 @@ class InspectorUtility:
         spec = getattr(module, "__spec__", None)
         origin = getattr(spec, "origin", None)
         return bool(origin and origin.lower().endswith((".so", ".pyd", ".dylib")))
+
+    # Robust unwrapping for decorator cases without functools.wraps
+    @staticmethod
+    def unwrap_callable(obj: Any) -> Any:
+        """
+        Return the most 'original' callable we can find.
+
+        Strategy:
+          1) Try inspect.unwrap to follow __wrapped__ chains.
+          2) If unchanged and it's a closure-based decorator (no wraps),
+             walk closure cells for a captured function and recurse.
+        """
+        try:
+            unwrapped = inspect.unwrap(obj)
+        except Exception:
+            unwrapped = obj
+
+        if unwrapped is not obj:
+            return unwrapped
+
+        # Closure-based unwrapping (handles decorators that didn't use functools.wraps)
+        try:
+            if inspect.isfunction(obj) and obj.__closure__:
+                for cell in obj.__closure__:
+                    try:
+                        captured = cell.cell_contents
+                    except Exception:
+                        continue
+                    if inspect.isfunction(captured) and captured is not obj:
+                        return InspectorUtility.unwrap_callable(captured)
+        except Exception:
+            pass
+
+        return obj
 #endregion
 #region ClassInspector
 class ClassInspector:
@@ -56,12 +90,12 @@ class ClassInspector:
     """
     utility = InspectorUtility
     def __init__(
-        self,
-        cls: Type, # The class object to inspect
-        *,
-        show_dunders: bool = False, # Whether to include dunder methods/attributes
-        # Removed 'include_gc' parameter
-        max_repr: int = 120,       # Max length for repr strings in the output
+            self,
+            cls: Type, # The class object to inspect
+            *,
+            show_dunders: bool = False, # Whether to include dunder methods/attributes
+            # Removed 'include_gc' parameter
+            max_repr: int = 120,       # Max length for repr strings in the output
     ):
         """
         Initializes the ClassInspector.
@@ -164,9 +198,14 @@ class ClassInspector:
                 for n, o in inspect.getmembers(self.cls)
             ]
 
+        # Include __init__ for dataclasses even when dunders are hidden
+        is_dc = hasattr(self.cls, "__dataclass_fields__")
+
         for name, kind, obj in classified:
+            # keep dunder filter but allow dataclass __init__
             if not self.dunders and name.startswith("__") and name.endswith("__"):
-                continue
+                if not (is_dc and name == "__init__"):
+                    continue
 
             owner = None
             if name not in cls_dict:
@@ -190,7 +229,10 @@ class ClassInspector:
 
             if callable(obj):
                 try:
-                    sig = inspect.signature(obj)
+                    # Use the member as-is for signature (primary view == wrapper if any)
+                    target = obj
+                    # Keep wrapper; do not unwrap here for primary signature
+                    sig = inspect.signature(target if not isinstance(target, (staticmethod, classmethod)) else target.__func__)
                     info["signature"] = str(sig)
                     info["parameters"] = [
                         {
@@ -198,10 +240,32 @@ class ClassInspector:
                             "kind": p.kind.name,
                             "default": None if p.default is Parameter.empty else self.utility.safe_repr(p.default, self.max_repr),
                             "annotation": None if p.annotation is Parameter.empty else self.utility.safe_repr(p.annotation,
-                                                                                                 self.max_repr),
+                                                                                                              self.max_repr),
                         }
                         for p in sig.parameters.values()
                     ]
+
+                    # Also record original/unwrapped signature when it differs
+                    u_target = target.__func__ if isinstance(target, (staticmethod, classmethod)) else target
+                    u_target = self.utility.unwrap_callable(u_target)
+                    if u_target is not (target.__func__ if isinstance(target, (staticmethod, classmethod)) else target):
+                        try:
+                            u_sig = inspect.signature(u_target)
+                            info["original_signature"] = str(u_sig)
+                            info["original_parameters"] = [
+                                {
+                                    "name": p.name,
+                                    "kind": p.kind.name,
+                                    "default": None if p.default is Parameter.empty else self.utility.safe_repr(p.default, self.max_repr),
+                                    "annotation": None if p.annotation is Parameter.empty else self.utility.safe_repr(p.annotation, self.max_repr),
+                                }
+                                for p in u_sig.parameters.values()
+                            ]
+                            info["original_name"] = getattr(u_target, "__name__", None)
+                            info["original_qualname"] = getattr(u_target, "__qualname__", None)
+                        except Exception:
+                            pass
+
                 except (ValueError, TypeError):
                     pass
                 try:
@@ -314,48 +378,86 @@ class MethodInspector:
         self.max_repr = max_repr
         self.data: Dict[str, Any] = {}
 
+    def _resolve_target(self) -> Callable:
+        """
+        Returns the preferred callable for inspection.
+
+        We prefer the original (unwrapped) callable so the reported name/signature
+        reflect the user-defined function (e.g., 'nowrapped' with '(x, y=2)').
+        Wrapper details are still exposed via 'decorated' and 'wrapped_repr'.
+        """
+        f = self.fn
+        try:
+            return self.utility.unwrap_callable(f)
+        except Exception:
+            # If unwrapping fails for any reason, fall back to the provided callable
+            return f
     def inspect(self) -> Dict[str, Any]:
         """
         Performs the inspection of the callable.
 
-        Gathers metadata, source info, signature, callable traits,
-        closure details, and decoration status.
-
-        Returns:
-            A dictionary containing the inspection results.
+        Orchestrates small helpers:
+          - resolve original vs wrapper
+          - header/meta
+          - source info
+          - signature/parameters
+          - callable traits
+          - closure preview
+          - decoration flags
         """
         f = self.fn
-        module = inspect.getmodule(f)
-        qualname = getattr(f, "__qualname__", None)
-        name = getattr(f, "__name__", None)
+        f_eff = self._resolve_target()  # prefer original for primary view
+
+        self._fill_header(f_eff)
+        self._fill_source(f_eff)
+        self._fill_signature(f_eff)
+        self._fill_traits(f_eff)
+        self._fill_closure(f_eff)
+        self._fill_decoration(f_eff, f)
+
+        return self.data
+    def _fill_header(self, f_eff: Callable) -> None:
+        """
+        Populate high-level metadata fields for the callable.
+        """
+        module = inspect.getmodule(f_eff)
+        qualname = getattr(f_eff, "__qualname__", None)
+        name = getattr(f_eff, "__name__", None)
 
         self.data.update(
             {
                 "name": name,
                 "qualname": qualname,
-                "module": getattr(f, "__module__", None),
-                "id": id(f),
-                "type": type(f).__name__,
-                "repr": self.utility.safe_repr(f, self.max_repr),
+                "module": getattr(f_eff, "__module__", None),
+                "id": id(f_eff),
+                "type": type(f_eff).__name__,
+                "repr": self.utility.safe_repr(f_eff, self.max_repr),
                 "builtin_mod": bool(module and inspect.isbuiltin(module)),
                 "extension_mod": self.utility.is_extension_module(module),
             }
         )
-
+    def _fill_source(self, f_eff: Callable) -> None:
+        """
+        Best-effort population of file path, preview, and source offset.
+        """
         try:
-            self.data["file"] = inspect.getfile(f)
+            self.data["file"] = inspect.getfile(f_eff)
         except Exception:
             self.data["file"] = None
+
         try:
-            lines, off = inspect.getsourcelines(f)
+            lines, off = inspect.getsourcelines(f_eff)
             self.data["preview"] = "".join(lines[:5]).strip()
             self.data["src_offset"] = off
         except Exception:
             self.data["preview"] = None
             self.data["src_offset"] = None
-
+    def _fill_signature(self, f_eff: Callable) -> None:
+        """
+        Extract the signature and normalized parameter list.
+        """
         try:
-            sig = inspect.signature(f)
+            sig = inspect.signature(f_eff)
             self.data["signature"] = str(sig)
             self.data["parameters"] = [
                 {
@@ -363,7 +465,6 @@ class MethodInspector:
                     "kind": p.kind.name,
                     "default": None if p.default is Parameter.empty else self.utility.safe_repr(p.default, self.max_repr),
                     "annotation": None if p.annotation is Parameter.empty else self.utility.safe_repr(p.annotation, self.max_repr),
-
                 }
                 for p in sig.parameters.values()
             ]
@@ -371,20 +472,28 @@ class MethodInspector:
             self.data["uninspectable"] = True
         else:
             self.data["uninspectable"] = False
+    def _fill_traits(self, f_eff: Callable) -> None:
+        """
+        Populate callable trait flags (is function/method, async/gen, etc.).
+        """
+        module = inspect.getmodule(f_eff)
+        qualname = getattr(f_eff, "__qualname__", None)
+        name = getattr(f_eff, "__name__", None)
 
-        is_method = inspect.ismethod(f)
-        is_function = inspect.isfunction(f)
-        bound_self = getattr(f, "__self__", None)
+        is_method = inspect.ismethod(f_eff)
+        is_function = inspect.isfunction(f_eff)
+        bound_self = getattr(f_eff, "__self__", None)
 
+        # Detect staticmethod by walking back to the class dict if possible.
         static_check = False
-        if qualname and module and name and '.' in qualname:
-            class_name = qualname.rsplit('.', 1)[0]
-            container_name = class_name.split('.')[0]
+        if qualname and module and name and "." in qualname:
+            class_name = qualname.rsplit(".", 1)[0]
+            container_name = class_name.split(".")[0]
             container = getattr(module, container_name, None)
             cls_obj = container
-            if container and '.' in class_name:
+            if container and "." in class_name:
                 try:
-                    for part in class_name.split('.')[1:]:
+                    for part in class_name.split(".")[1:]:
                         cls_obj = getattr(cls_obj, part)
                 except AttributeError:
                     cls_obj = None
@@ -396,42 +505,48 @@ class MethodInspector:
             {
                 "func": is_function,
                 "method": is_method,
-                "builtin": inspect.isbuiltin(f),
+                "builtin": inspect.isbuiltin(f_eff),
                 "classmethod": is_method and isinstance(bound_self, type),
                 "staticmethod": static_check,
-                "generator": inspect.isgeneratorfunction(f),
-                "async_gen": inspect.isasyncgenfunction(f),
-                "coroutine": inspect.iscoroutinefunction(f),
+                "generator": inspect.isgeneratorfunction(f_eff),
+                "async_gen": inspect.isasyncgenfunction(f_eff),
+                "coroutine": inspect.iscoroutinefunction(f_eff),
                 "lambda_fn": is_function and name == "<lambda>",
-                "abstract": inspect.isabstract(f),
+                "abstract": inspect.isabstract(f_eff),
             }
         )
-
+    def _fill_closure(self, f_eff: Callable) -> None:
+        """
+        Capture a safe preview of closure cell contents (if any).
+        """
         try:
             self.data["closure"] = None
-            closure = getattr(f, "__closure__", None)
+            closure = getattr(f_eff, "__closure__", None)
             if closure:
-                self.data["closure"] = [self.utility.safe_repr(c.cell_contents, self.max_repr) for c in closure]
+                self.data["closure"] = [
+                    self.utility.safe_repr(c.cell_contents, self.max_repr) for c in closure
+                ]
         except Exception:
             self.data["closure"] = "<error>"
 
+    def _fill_decoration(self, f_eff: Callable, f_wrapped: Callable) -> None:
+        """
+        Record decoration status:
+          - 'decorated' is True when f_eff differs from the provided callable.
+          - 'wrapped_repr' points at the wrapper so the chain is visible.
+        """
         try:
-            unwrapped = inspect.unwrap(f, stop=None)
-            if unwrapped is not f:
-                self.data["decorated"] = True
-                self.data["wrapped_repr"] = self.utility.safe_repr(unwrapped, self.max_repr)
-            else:
-                self.data["decorated"] = False
+            self.data["decorated"] = (f_eff is not f_wrapped)
+            self.data["wrapped_repr"] = None if (f_eff is f_wrapped) else self.utility.safe_repr(f_wrapped, self.max_repr)
         except Exception:
             self.data["decorated"] = "<error>"
 
-        return self.data
 #endregion
 
 #region Profiles
 @dataclass
 class MethodProfile:
-    """Structured, IDE‑friendly representation of MethodInspector output."""
+    """Structured, IDE-friendly representation of MethodInspector output."""
     # Required fields
     name: str
     qualname: Optional[str]
@@ -469,7 +584,7 @@ class MethodProfile:
 
 @dataclass
 class ClassProfile:
-    """Structured, IDE‑friendly representation of ClassInspector output."""
+    """Structured, IDE-friendly representation of ClassInspector output."""
     # Required (no defaults)
     name: str
     qualname: str
@@ -496,11 +611,11 @@ class ClassProfile:
 class SpellExaminer:
     utility = InspectorUtility
     def __init__(
-        self,
-        obj: Any,
-        *,
-        show_dunders: bool = False,
-        max_repr: int = 120,
+            self,
+            obj: Any,
+            *,
+            show_dunders: bool = False,
+            max_repr: int = 120,
     ):
         self.obj = obj
         self.dunders = show_dunders

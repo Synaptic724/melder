@@ -66,6 +66,7 @@ class AethericFrame(Sealable):
         with self._lock:
             if self._sealed:
                 return
+            self._sealed = True
             # Seal all conduits and clear the registry
             for conduit in self._conduits.values():
                 try:
@@ -77,5 +78,8 @@ class AethericFrame(Sealable):
             self._spell_registry.cleanup()
             self._conduit_clusters.cleanup()
             self._conduit_cloud.seal()
-            self._sealed = True
+            self._conduits = None
+            self._spell_registry = None
+            self._conduit_clusters = None
+            self._conduit_cloud = None
 

@@ -2,14 +2,14 @@
 
 import inspect
 from typing import Callable, Any, Tuple, Type, Dict, Optional
-from melder.utilities.interfaces import ISeal
-from melder.utilities.concurrent_dictionary import ConcurrentDict
+from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 
-class OverloadDispatcher(ISeal):
+class OverloadDispatcher(Sealable):
     """
     A simple overload dispatcher that allows for function overloading based on argument types.
     """
-    __slots__ = ISeal.__slots__ + ['_registry']
+    __slots__ = Sealable.__slots__ + ['_registry']
     def __init__(self):
         super().__init__()
         self._registry = ConcurrentDict()
