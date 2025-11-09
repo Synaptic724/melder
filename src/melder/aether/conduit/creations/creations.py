@@ -5,7 +5,8 @@ from typing import List, Optional
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.general_base.sealable import Sealable
-from melder.utilities.interfaces.interfaces import ISealable
+from melder.utilities.interfaces.interfaces import ISealable, ICleanable
+
 
 class Creations(Sealable):
     """
@@ -192,6 +193,12 @@ class Creations(Sealable):
                 return None
             except Exception as ex:
                 return RuntimeError(f"Failed to seal ISeal object {item}: {ex}")
+        elif isinstance(item, ICleanable):
+            try:
+                item.cleanup()
+                return None
+            except Exception as ex:
+                return RuntimeError(f"Failed to clean ICleanable object {item}: {ex}")
 
         # Priority 2: Disposal methods
         if not self._disposal_enabled:
@@ -242,8 +249,7 @@ class Creations(Sealable):
             RuntimeError: If the Creations manager is sealed.
             ValueError: If the key already exists in the `unique` scope.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot add to sealed Creations.")
+        self.check_sealed()
         if key in self._unique:
             raise ValueError(f"Key {key} already exists in unique objects.")
         self._unique[key] = item
@@ -260,8 +266,7 @@ class Creations(Sealable):
             RuntimeError: If the Creations manager is sealed.
             ValueError: If the key already exists in the `unique_per_lineage` scope.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot add to sealed Creations.")
+        self.check_sealed()
         if key in self._unique_per_lineage:
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
         self._unique_per_lineage[key] = item
@@ -278,8 +283,7 @@ class Creations(Sealable):
             RuntimeError: If the Creations manager is sealed.
             ValueError: If the key already exists in the `unique_per_cluster` scope.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot add to sealed Creations.")
+        self.check_sealed()
         if key in self._unique_per_cluster:
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
         self._unique_per_cluster[key] = item
@@ -296,8 +300,7 @@ class Creations(Sealable):
             RuntimeError: If the Creations manager is sealed.
             ValueError: If the key already exists in the `unique_per_scope` scope.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot add to sealed Creations.")
+        self.check_sealed()
         if key in self._unique_per_scope:
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = item
@@ -315,8 +318,7 @@ class Creations(Sealable):
         Raises:
             RuntimeError: If the Creations manager is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot add to sealed Creations.")
+        self.check_sealed()
         if key not in self._many:
             self._many[key] = ConcurrentList()
         self._many[key].append(item)
