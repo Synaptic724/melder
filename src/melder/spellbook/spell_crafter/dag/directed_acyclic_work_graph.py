@@ -1,6 +1,6 @@
-from melder.utilities.interfaces import IDisposable
+from melder.utilities.general_base.cleanable import Cleanable
 
-class StateObject(IDisposable):
+class StateObject(Cleanable):
     """
     Thread-safe state object that references a Directed Acyclic Graph (DAG)
     for dynamic modifications during execution.
@@ -21,6 +21,22 @@ class StateObject(IDisposable):
         super().__init__()  # Initialize the Disposable base class
         self._dag = dag  # Store a reference to the DAG
         self._execution_data = {}  # Dictionary to store the execution status of each node (node_id: status)
+
+
+    def cleanup(self):
+        """
+        Disposes of the StateObject, releasing any held resources.
+
+        This method is part of the 'Disposable' pattern and is called to clean up
+        the object when it is no longer needed. It clears the execution data and
+        removes the reference to the DAG to prevent memory leaks.
+        """
+        if self._cleaned:  # Prevent double disposal
+            return
+        self._execution_data.clear()  # Clear the dictionary of execution statuses
+        self._dag = None  # Remove the reference to the DAG
+        self._cleaned = True  # Mark the object as cleaned
+
 
     def register_node_result(self, node_id, success=True):
         """
@@ -91,23 +107,7 @@ class StateObject(IDisposable):
         """
         return dict(self._execution_data)  # Return a copy of the status dictionary
 
-    def dispose(self):
-        """
-        Disposes of the StateObject, releasing any held resources.
-
-        This method is part of the 'Disposable' pattern and is called to clean up
-        the object when it is no longer needed. It clears the execution data and
-        removes the reference to the DAG to prevent memory leaks.
-        """
-        if self._disposed:  # Prevent double disposal
-            return
-        self._execution_data.clear()  # Clear the dictionary of execution statuses
-        self._dag = None  # Remove the reference to the DAG
-        self._disposed = True  # Mark the object as disposed
-
-
-
-class ExecutionContext(IDisposable):
+class ExecutionContext(Cleanable):
     """
     Abstract base class for defining the 'work to be done' within a Node.
 
@@ -138,16 +138,17 @@ class ExecutionContext(IDisposable):
         """
         raise NotImplementedError("Subclasses must override the execute() method.")
 
-    def dispose(self):
+    def cleanup(self):
         """
-        Safely disposes of the ExecutionContext, releasing resources.
+        Safely cleans the ExecutionContext, releasing resources.
 
         This method ensures that the disposal logic is executed only once and
         that the reference to the StateObject is cleared.
         """
-        if not self._disposed:  # Check if already disposed
-            self.state = None  # Remove the reference to the StateObject
-            self._disposed = True  # Mark as disposed
+        if self._cleaned:
+            return
+        self._cleaned = True  # Mark as cleaned
+        self.state = None  # Remove the reference to the StateObject
 
     def __enter__(self):
         """
@@ -158,10 +159,10 @@ class ExecutionContext(IDisposable):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
-        Context manager exit method. Calls the dispose method when exiting the context,
+        Context manager exit method. Calls the cleanup method when exiting the context,
         ensuring resources are cleaned up.
         """
-        self.dispose()
+        self.cleanup()
 
     def __del__(self):
         """
@@ -170,10 +171,10 @@ class ExecutionContext(IDisposable):
         In Python, __del__ is not guaranteed to be called reliably, but it's included
         for completeness as a last resort for resource cleanup.
         """
-        self.dispose()
+        self.cleanup()
 
 
-class Node(IDisposable):
+class Node(Cleanable):
     """
     Represents a node in the Directed Acyclic Graph (DAG).
 
@@ -199,6 +200,24 @@ class Node(IDisposable):
         self._outgoing_edges = []  # List of Edge objects originating from this node
         self._tasks = []  # List of callable objects (tasks) to be executed by this node
         self._execution_context = None  # Optional ExecutionContext for more complex logic
+
+
+    def cleanup(self):
+        """
+        Disposes of the Node, releasing references to edges, tasks, and the
+        execution context.
+        """
+        if self._cleaned:  # Prevent double disposal
+            return
+        self._cleaned = True
+
+        self._incoming_edges.clear()  # Clear the list of incoming edges
+        self._outgoing_edges.clear()  # Clear the list of outgoing edges
+        self._tasks.clear()  # Clear the list of tasks
+        if self._execution_context is not None:
+            self._execution_context.cleanup()  # Dispose of the execution context if it exists
+        self._execution_context = None  # Remove the reference to the execution context
+
 
     def set_execution_context(self, context: ExecutionContext):
         """
@@ -351,21 +370,7 @@ class Node(IDisposable):
                 return edge.to_node
         return None
 
-    def dispose(self):
-        """
-        Disposes of the Node, releasing references to edges, tasks, and the
-        execution context.
-        """
-        self._incoming_edges.clear()  # Clear the list of incoming edges
-        self._outgoing_edges.clear()  # Clear the list of outgoing edges
-        self._tasks.clear()  # Clear the list of tasks
-        if self._execution_context is not None:
-            self._execution_context.dispose()  # Dispose of the execution context if it exists
-        self._execution_context = None  # Remove the reference to the execution context
-        self._disposed = True  # Mark the node as disposed
-
-
-class Edge(IDisposable):
+class Edge(Cleanable):
     """
     Represents a directed edge in the DAG, connecting two nodes.
 
@@ -384,17 +389,17 @@ class Edge(IDisposable):
         self.from_node = from_node  # The source node of the edge
         self.to_node = to_node  # The destination node of the edge
 
-    def dispose(self):
+    def cleanup(self):
         """
         Disposes of the Edge, releasing references to the connected nodes.
         """
-        if self._disposed:  # Prevent double disposal (typo in original code, should be self._disposed)
+        if self._cleaned:
             return
-        self._disposed = True  # Mark the edge as disposed
+        self._cleaned = True
         self.from_node = None  # Remove the reference to the source node
         self.to_node = None  # Remove the reference to the destination node
 
-class DirectedAcyclicWorkGraph(IDisposable):
+class DirectedAcyclicWorkGraph(Cleanable):
     """
     Represents a Directed Acyclic Graph (DAG) composed of nodes and edges.
 
@@ -412,6 +417,21 @@ class DirectedAcyclicWorkGraph(IDisposable):
         # Data structures to store nodes and edges
         self._nodes = {}  # Dictionary to store nodes (node_id: Node object)
         self._edges = []  # List to store Edge objects
+
+    def cleanup(self):
+        """
+        Disposes of all nodes and edges in the DAG, releasing their resources.
+        """
+        if self._cleaned:  # Prevent double disposal
+            return
+        self._cleaned = True  # Mark the DAG as cleaned
+        for node in self._nodes.values():
+            node.cleanup()  # Dispose of each node
+        self._nodes.clear()  # Clear the dictionary of nodes
+
+        for edge in self._edges:
+            edge.cleanup()  # Dispose of each edge
+        self._edges.clear()  # Clear the list of edges
 
     def add_node(self, node):
         """
@@ -599,22 +619,6 @@ class DirectedAcyclicWorkGraph(IDisposable):
             for edge in edges_copy:
                 writer.write(f'    "{edge.from_node.id}" -> "{edge.to_node.id}";\n')  # Write an edge definition
             writer.write("}\n")  # End of the .dot file content
-
-    def dispose(self):
-        """
-        Disposes of all nodes and edges in the DAG, releasing their resources.
-        """
-        if self._disposed:  # Prevent double disposal
-            return
-        for node in self._nodes.values():
-            node.dispose()  # Dispose of each node
-        self._nodes.clear()  # Clear the dictionary of nodes
-
-        for edge in self._edges:
-            edge.dispose()  # Dispose of each edge
-        self._edges.clear()  # Clear the list of edges
-
-        self._disposed = True  # Mark the DAG as disposed
 
 
 # # Assume Node, Edge, ExecutionContext, etc. are defined

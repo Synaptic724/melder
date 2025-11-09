@@ -155,7 +155,7 @@ class PosOnlyThing:
     def h(self, a, /, b): return a + b
 
 class AnnoWeird:
-    def f(self, a: "int|str", b: 'OuterThing'|None) -> "dict[str,int]": return {}
+    def f(self, a: "int|str", b: Optional['OuterThing']) -> "dict[str,int]": return {}
 
 # ---------------------------------------------------------------------
 # TESTS (40)
