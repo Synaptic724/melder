@@ -1,10 +1,14 @@
-import inspect, ulid, types
+from __future__ import annotations
+import inspect
+import types
 from functools import update_wrapper
 from threading import RLock
+from types import SimpleNamespace
+import ulid
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
-from typing import Callable, Generic, ParamSpec, TypeVar, Iterable, Union, Optional, Collection, Dict, Tuple, Any
+from typing import Callable, Generic, ParamSpec, TypeVar, Iterable, Union, Optional, Collection, overload, Dict, Tuple, Any
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -94,7 +98,7 @@ class Package(Cleanable, Generic[P, R]):
         self._func: Callable[..., R] = update_wrapper(lambda *a, **kw: normalized(*a, **kw), normalized)
         self._args: ConcurrentList = ConcurrentList(initial=args)
         self._kwargs: ConcurrentDict = ConcurrentDict(initial=kwargs)
-        self._signature_cache: types.SimpleNamespace | None = None
+        self._signature_cache: SimpleNamespace | None = None
         self._frozen: bool = False
 
     def cleanup(self) -> None:
