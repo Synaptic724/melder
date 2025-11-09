@@ -9,7 +9,7 @@ from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration
 from melder.utilities.general_base.sealable import Sealable
 from melder.aether.aetheric_frame import AethericFrame
-from melder.utilities.helpers.safe_logger import SafeLogger
+from melder.utilities.helpers.init_helpers import InitHelpers
 
 class Aether(Sealable):
     """
@@ -44,7 +44,7 @@ class Aether(Sealable):
 
             self._id: str = str(ulid.ULID())
             # --- Safe logger facade (ChannelLogger or std logger) ---
-            self._logger = SafeLogger(logger)
+            self._logger = InitHelpers.resolve_safe_logger(logger)
             self._logger.debug("Aether initialized", "__init__")
 
             # --- Frame setup ---
@@ -119,7 +119,7 @@ class Aether(Sealable):
         Args:
             value: The IChannelLogger, Logger, Handler, or None to use.
         """
-        self._logger = SafeLogger(value)
+        self._logger = InitHelpers.resolve_safe_logger(value)
 
 
     def _bind_configuration(self, configuration, aetheric_frame_name: str = "default") -> None:

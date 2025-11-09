@@ -30,7 +30,6 @@ class ConcurrentList(Generic[_T], Cleanable):
         super().__init__()
         self._id: str = str(ulid.ULID())
         self._lock: threading.RLock = threading.RLock()
-
         self._list: List[_T] = list(initial) if initial else []
         self._freeze = False
 

@@ -1,7 +1,8 @@
 import logging
 from melder.utilities.interfaces.interfaces import IChannelLogger
+from melder.utilities.general_base.cleanable import Cleanable
 
-class SafeLogger:
+class SafeLogger(Cleanable):
     """
     A unified, low-overhead logger adapter that transparently handles both
     IChannelLogger-compatible objects and standard Python loggers.
@@ -11,11 +12,17 @@ class SafeLogger:
     - Standard loggers drop those extra kwargs.
     - No getattr, no reflection, zero overhead when logger is None.
     """
-    __slots__ = ("_logger", "_is_channel")
+    __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel"]
 
     def __init__(self, logger: logging.Logger | IChannelLogger | None):
+        super().__init__()
         self._logger = logger
         self._is_channel = isinstance(logger, IChannelLogger)
+
+    def cleanup(self):
+        if hasattr(self._logger, "cleanup"):
+            self._logger.cleanup()
+        self._logger = None
 
     def debug(self, msg: str, method_name: str):
         if self._logger is None:
