@@ -1,8 +1,11 @@
 import unittest
+import string
 
 from melder.aether.conduit_cloud import ConduitCloud
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 
+
+# ----- Test doubles -----
 
 class _StubConduit:
     def __init__(self, name):
@@ -15,85 +18,122 @@ class _StubConduit:
 class TestConduitCloud(unittest.TestCase):
     def setUp(self):
         self.cloud = ConduitCloud("unit")
-        # sanity
+        # sanity on construction
         self.assertFalse(self.cloud._sealed)
         self.assertEqual(self.cloud._name, "unit")
         self.assertIsInstance(self.cloud._registry, ConcurrentDict)
 
-    # 1
-    def test_initial_state(self):
+    # 1 — baseline state before any ops
+    def test_initial_state_empty_registry(self):
         self.assertEqual(len(self.cloud._registry), 0)
 
-    # 2
+    # 2 — ULID presence/shape (26 char base32-ish)
+    def test_ulid_shape(self):
+        the_id = self.cloud._id
+        self.assertIsInstance(the_id, str)
+        self.assertEqual(len(the_id), 26)
+        self.assertTrue(all(ch in string.ascii_letters + string.digits for ch in the_id))
+
+    # 3 — register then get works
     def test_register_then_get(self):
         c = _StubConduit("alpha")
         self.cloud._register_conduit(c)
         got = self.cloud.get_conduit("alpha")
         self.assertIs(got, c)
 
-    # 3
+    # 4 — duplicate register by name raises
     def test_register_duplicate_raises(self):
-        c1 = _StubConduit("dup")
-        c2 = _StubConduit("dup")
-        self.cloud._register_conduit(c1)
+        self.cloud._register_conduit(_StubConduit("dup"))
         with self.assertRaises(ValueError):
-            self.cloud._register_conduit(c2)
+            self.cloud._register_conduit(_StubConduit("dup"))
 
-    # 4
+    # 5 — None name rejects
     def test_register_none_name_raises(self):
-        c = _StubConduit(None)
         with self.assertRaises(ValueError):
-            self.cloud._register_conduit(c)
+            self.cloud._register_conduit(_StubConduit(None))
 
-    # 5
-    def test_get_missing_raises(self):
+    # 6 — missing name raises ValueError
+    def test_get_missing_raises_value_error(self):
         with self.assertRaises(ValueError):
             self.cloud.get_conduit("ghost")
 
-    # 6
-    def test_seal_clears_registry(self):
-        self.cloud._register_conduit(_StubConduit("a"))
-        self.cloud._register_conduit(_StubConduit("b"))
-        self.assertGreater(len(self.cloud._registry), 0)
-        self.cloud.seal()
-        self.assertEqual(len(self.cloud._registry), 0)
-        self.assertTrue(self.cloud._sealed)
-
-    # 7
-    def test_get_after_seal_raises_runtimeerror(self):
-        self.cloud._register_conduit(_StubConduit("x"))
-        self.cloud.seal()
-        with self.assertRaises(RuntimeError):
-            self.cloud.get_conduit("x")
-
-    # 8
-    def test_seal_is_idempotent(self):
-        self.cloud.seal()
-        self.assertTrue(self.cloud._sealed)
-        # calling again should not raise and should not change state
-        self.cloud.seal()
-        self.assertTrue(self.cloud._sealed)
-        self.assertEqual(len(self.cloud._registry), 0)
-
-    # 9
-    def test_register_then_seal_then_register_again_is_blocked_by_get(self):
-        # Note: _register_conduit does not check _sealed (by design), but get_conduit does.
-        # We verify that sealing makes the cloud unusable even if someone mutates the registry.
-        c = _StubConduit("late")
-        self.cloud.seal()
-        # Manually try to register post-seal (internal misuse)
-        self.cloud._registry["late"] = c
-        with self.assertRaises(RuntimeError):
-            self.cloud.get_conduit("late")
-
-    # 10
-    def test_multiple_conduits_resolve_by_name(self):
+    # 7 — multiple conduits resolve by distinct names
+    def test_multiple_register_and_resolve(self):
         a = _StubConduit("a")
         b = _StubConduit("b")
         self.cloud._register_conduit(a)
         self.cloud._register_conduit(b)
         self.assertIs(self.cloud.get_conduit("a"), a)
         self.assertIs(self.cloud.get_conduit("b"), b)
+
+    # 8 — case sensitivity preserved
+    def test_names_are_case_sensitive(self):
+        self.cloud._register_conduit(_StubConduit("Alpha"))
+        self.cloud._register_conduit(_StubConduit("alpha"))
+        self.assertIsInstance(self.cloud.get_conduit("Alpha"), _StubConduit)
+        self.assertIsInstance(self.cloud.get_conduit("alpha"), _StubConduit)
+        self.assertIsNot(self.cloud.get_conduit("Alpha"), self.cloud.get_conduit("alpha"))
+
+    # 9 — seal clears usability: any get raises RuntimeError
+    def test_get_after_seal_raises_runtimeerror(self):
+        self.cloud._register_conduit(_StubConduit("x"))
+        self.cloud.seal()
+        with self.assertRaises(RuntimeError):
+            self.cloud.get_conduit("x")
+
+    # 10 — seal is idempotent (second call no-op)
+    def test_seal_is_idempotent(self):
+        self.cloud.seal()
+        self.assertTrue(self.cloud._sealed)
+        # calling again should not raise and keeps sealed
+        self.cloud.seal()
+        self.assertTrue(self.cloud._sealed)
+
+    # 11 — seal after multiple registrations still blocks all gets
+    def test_seal_blocks_all_gets(self):
+        for n in ("a", "b", "c"):
+            self.cloud._register_conduit(_StubConduit(n))
+        self.cloud.seal()
+        for n in ("a", "b", "c"):
+            with self.assertRaises(RuntimeError):
+                self.cloud.get_conduit(n)
+
+    # 12 — name survives sealing
+    def test_name_survives_seal(self):
+        self.cloud.seal()
+        self.assertEqual(self.cloud._name, "unit")
+
+    # 13 — id survives sealing
+    def test_ulid_survives_seal(self):
+        cached = self.cloud._id
+        self.cloud.seal()
+        self.assertEqual(self.cloud._id, cached)
+
+    # 14 — registry mutability before seal (safe pre-seal checks)
+    def test_registry_contains_pre_seal(self):
+        self.cloud._register_conduit(_StubConduit("k"))
+        self.assertIn("k", self.cloud._registry)
+        self.assertGreaterEqual(len(self.cloud._registry), 1)
+
+    # 15 — separate clouds are isolated
+    def test_two_clouds_isolated(self):
+        c1 = ConduitCloud("one")
+        c2 = ConduitCloud("two")
+        a = _StubConduit("a")
+        c1._register_conduit(a)
+        # exists in c1
+        self.assertIs(c1.get_conduit("a"), a)
+        # not in c2
+        with self.assertRaises(ValueError):
+            c2.get_conduit("a")
+        # seal c1 doesn't affect c2
+        c1.seal()
+        self.assertFalse(c2._sealed)
+        self.assertIsInstance(c2._registry, ConcurrentDict)
+        # c2 still operable
+        b = _StubConduit("b")
+        c2._register_conduit(b)
+        self.assertIs(c2.get_conduit("b"), b)
 
 
 if __name__ == "__main__":

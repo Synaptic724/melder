@@ -1,7 +1,4 @@
-
-
 import inspect
-from typing import Callable, Any, Tuple, Type, Dict, Optional
 from melder.utilities.general_base.sealable import Sealable
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 
@@ -13,6 +10,16 @@ class OverloadDispatcher(Sealable):
     def __init__(self):
         super().__init__()
         self._registry = ConcurrentDict()
+
+    def seal(self):
+        """
+        Seal the dispatcher to prevent further modifications.
+        """
+        if self._sealed:
+            return
+        self._sealed = True
+        self._registry.cleanup()
+        self._registry = None
 
     def register(self, func):
         sig = inspect.signature(func)
@@ -27,12 +34,3 @@ class OverloadDispatcher(Sealable):
             if all(pt == at or pt == inspect._empty or isinstance(at(), pt) for pt, at in zip(param_types, call_types)):
                 return func(*args, **kwargs)
         raise TypeError(f"No matching overload for args: {call_types}")
-
-    def seal(self):
-        """
-        Seal the dispatcher to prevent further modifications.
-        """
-        if self._sealed:
-            return
-        self._sealed = True
-        self._registry.clear()
