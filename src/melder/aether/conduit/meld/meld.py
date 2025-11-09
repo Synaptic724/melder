@@ -1,7 +1,6 @@
 import uuid
 from threading import RLock
 from typing import Optional, Dict, Any, NamedTuple, Callable, List, Union
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, ISpell, IMeld

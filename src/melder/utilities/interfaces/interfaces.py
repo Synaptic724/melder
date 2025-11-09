@@ -565,20 +565,6 @@ class IConduit(ISealable, Protocol):
     _spellbook: "ISpellbook"
     _aetheric_frame : str
 
-    @property
-    def name(self) -> str:
-        """
-        The human-readable name of this Conduit.
-        """
-        ...
-
-    @name.setter
-    def name(self, value: str):
-        """
-        Sets the human-readable name of this Conduit.
-        """
-        ...
-
     def link(self, target_conduit: 'IConduit') -> bool:
         """
         Establishes a contract link with another Conduit (in 'dynamic' mode).
