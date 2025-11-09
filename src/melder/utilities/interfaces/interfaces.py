@@ -77,6 +77,8 @@ class ISealable(Protocol):
     - All sealing must set `_sealed = True` when sealing completes.
     """
 
+    _sealed: bool
+
     @property
     def sealed(self) -> bool:
         """Returns True if the object has already been sealed."""
@@ -121,7 +123,7 @@ class ISealable(Protocol):
         ...
 
 @runtime_checkable
-class ISpell(Protocol):
+class ISpell(ISealable, Protocol):
     """
     An Interface defining the shape of a 'Spell', a unit of logic that can be cast.
 
@@ -423,7 +425,7 @@ class ISpellbook(ISealable, Protocol):
         ...
 
 @runtime_checkable
-class IBind(Protocol):
+class IBind(ISealable, Protocol):
     """
     An Interface for a binding mechanism, responsible for profiling and
     registering a spell blueprint.
@@ -448,7 +450,7 @@ class IBind(Protocol):
         ...
 
 @runtime_checkable
-class IMeld(Protocol):
+class IMeld(ISealable, Protocol):
     """
     An Interface for the object resolution (melding) process.
 
@@ -468,7 +470,7 @@ class IMeld(Protocol):
         """
         ...
 @runtime_checkable
-class IConduitWard(Protocol):
+class IConduitWard(ISealable, Protocol):
     """
     An Interface for a 'ConduitWard', managing links, policies, and contracts
     between its Conduit and other Conduits.
@@ -487,6 +489,7 @@ class IConduitWard(Protocol):
     _policy: Optional[Any]
     _id: Optional[UUID]
     _conduit: Optional['IConduit']
+
 
     @property
     def policy(self) -> 'IPolicy':
@@ -565,6 +568,20 @@ class IConduit(ISealable, Protocol):
     _spellbook: "ISpellbook"
     _aetheric_frame : str
 
+    @property
+    def name(self) -> Optional[str]:
+        """
+        The human-readable name of the Conduit this ward protects.
+        """
+        ...
+
+    @name.setter
+    def name(self, value: str) -> None:
+        """
+        Sets the human-readable name of the Conduit this ward protects.
+        """
+        ...
+
     def link(self, target_conduit: 'IConduit') -> bool:
         """
         Establishes a contract link with another Conduit (in 'dynamic' mode).
@@ -638,7 +655,7 @@ class IConduit(ISealable, Protocol):
         ...
 
 
-class ILink(Protocol):
+class ILink(ISealable, Protocol):
     """
     An Interface representing a live connection (contract) between two Conduits.
     """
@@ -649,7 +666,7 @@ class ILink(Protocol):
         ...
 
 
-class IDetail(Protocol):
+class IDetail(ISealable, Protocol):
     """
     An Interface for a 'Detail', a single permission or rule within a Contract.
     """

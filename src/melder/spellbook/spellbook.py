@@ -3,8 +3,8 @@ from uuid import UUID
 from typing import Optional, List, Any, Callable, Mapping
 from melder.aether.aether import Aether
 from melder.aether.conduit.spell_crafter.inspector.spell_examiner import MethodProfile, ClassProfile
-from melder.utilities.interfaces import Spellbook, Spell
-from melder.utilities.concurrent_dictionary import ConcurrentDict
+from melder.utilities.interfaces.interfaces import ISpellbook,ISpell
+from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
@@ -13,7 +13,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from threading import RLock
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.utilities.general_helpers import EnumHelpers
+from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 
 #region Spell
@@ -110,7 +110,7 @@ class Spell(ISpell):
 
         # Spell Data
         self.spell = spell #Object reference
-        self.spell_id: spell_id = spell_id
+        self.spell_id: str = spell_id
         self.spellframe: Optional[Any] = spellframe
         self.spell_type: SpellType = spell_type
         self.user_created_object: object = existing_object

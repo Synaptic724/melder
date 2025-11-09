@@ -24,7 +24,6 @@ class Conduit(Sealable, IConduit):
     It can spawn lesser Conduits, link to other Conduits if dynamic mode is enabled,
     and manage the lifecycle of services registered inside itself.
     """
-
     _aether = Aether()
 
     def __init__(self, spellbook: ISpellbook, configuration: IConfiguration, conduit_state: ConduitState,
@@ -128,7 +127,7 @@ class Conduit(Sealable, IConduit):
 
     #region Properties
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         """
         Public API
 
@@ -138,7 +137,7 @@ class Conduit(Sealable, IConduit):
 
 
     @name.setter
-    def name(self, name: str):
+    def name(self, name: str) -> None:
         """
         Public API
 

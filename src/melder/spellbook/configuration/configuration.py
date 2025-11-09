@@ -37,6 +37,19 @@ class Configuration(Sealable):
         # Properties that must remain immutable after conjure (idempotent laws of the system).
         self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
 
+    def seal(self) -> None:
+        """
+        Seal the properties, preventing any further modifications.
+
+        This is called automatically during Aether conjure.
+        """
+        with self._lock:
+            if self._sealed:
+                return
+            self._properties.cleanup()
+            self._sealed = True
+            self._frozen = True
+
     def set_property(self, key: str, value: Any) -> None:
         """
         Define or overwrite a property.
@@ -196,16 +209,3 @@ class Configuration(Sealable):
             "disposal": False,
             "disposal_method_names": [],
         }))
-
-    def seal(self) -> None:
-        """
-        Seal the properties, preventing any further modifications.
-
-        This is called automatically during Aether conjure.
-        """
-        with self._lock:
-            if self._sealed:
-                return
-            self._properties.dispose()
-            self._sealed = True
-            self._frozen = True

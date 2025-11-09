@@ -73,7 +73,7 @@ class ConduitWard(IConduitWard):
         with self._lock:
             if not self._dynamic:
                 raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
-            if self._parent_conduit is not None and self._conduit_type == ConduitState.lesser and self._lesser_conduits is None:
+            if self._parent_conduit is not None and self._conduit_type == ConduitState.lesser and len(self._lesser_conduits) == 0:
                 self._parent_conduit = None
                 self._conduit_type = ConduitState.normal #policy stays as delegate until the user adds a spell then it goes to dynamic
                 self._policy = Policies.dynamic #Sets default to dynamic policy
