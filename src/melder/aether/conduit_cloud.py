@@ -47,6 +47,7 @@ class ConduitCloud(Sealable):
             if self._sealed:
                 return
             self._registry.cleanup()
+            self._registry = None
             self._sealed = True
 
     def get_conduit(self, name: str) -> IConduit:
@@ -63,8 +64,7 @@ class ConduitCloud(Sealable):
             RuntimeError: If the ConduitCloud is sealed.
             ValueError: If a conduit with that name is not found.
         """
-        if self._sealed:
-            raise RuntimeError("ConduitCloud is sealed and cannot be used.")
+        self.check_sealed()
         if name in self._registry:
             return self._registry[name]
         raise ValueError(f"Conduit with name {name} not found.")

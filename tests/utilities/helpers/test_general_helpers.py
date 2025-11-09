@@ -4,7 +4,7 @@ import unittest
 from enum import Enum
 
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
-from melder.spellbook.spell_crafter.inspector.spell_examiner import InspectorUtility  # sanity import
+from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import InspectorUtility  # sanity import
 from melder.utilities.helpers.general_helpers import EnumHelpers, SpellInputUtils
 
 

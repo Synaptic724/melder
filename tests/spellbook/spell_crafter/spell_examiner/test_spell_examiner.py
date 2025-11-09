@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional, Dict, List, Callable
 from uuid import uuid4
 from abc import ABC, abstractmethod
-from melder.spellbook.spell_crafter.inspector.spell_examiner import (
+from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
     InspectorUtility, ClassInspector, MethodInspector, SpellExaminer,
     MethodProfile, ClassProfile
 )

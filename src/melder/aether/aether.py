@@ -70,6 +70,7 @@ class Aether(Sealable):
                 self.seal_aetheric_frames()
                 self._default_frame = None
                 self._aetheric_frames.cleanup()
+                self._aetheric_frames = None
                 self._logger.debug("Aether sealed successfully", "seal")
             except Exception as e:
                 self._logger.error(f"Error sealing Aether: {e}", "seal", exc_info=True)

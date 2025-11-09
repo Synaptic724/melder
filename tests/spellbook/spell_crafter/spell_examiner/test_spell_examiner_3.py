@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional, Annotated, Callable, TypeVar, Generic
 from abc import ABC, abstractmethod
 
-from melder.spellbook.spell_crafter.inspector.spell_examiner import (
+from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
     SpellExaminer, ClassInspector, MethodInspector,
     ClassProfile, MethodProfile, InspectorUtility
 )
