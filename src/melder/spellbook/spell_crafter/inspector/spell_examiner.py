@@ -182,7 +182,7 @@ class ClassInspector:
                 "type": type(obj).__name__,
                 "callable": callable(obj),
                 "property": isinstance(obj, property),
-                "abstract": inspect.isabstract(obj) if callable(obj) else False,
+                "abstract": bool(getattr(obj, "__isabstractmethod__", False)) if callable(obj) else False,
                 "repr": self.utility.safe_repr(obj, self.max_repr),
                 "signature": None,
                 "src_line": None,

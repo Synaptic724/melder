@@ -10,7 +10,7 @@ T = TypeVar("T", bound=Enum)
 
 class EnumHelpers:
     @staticmethod
-    @lru_cache(maxsize=256)
+    @lru_cache(maxsize=8)
     def convert_enum_and_check(value: str | Enum, enum: Type[T]) -> T:
         """
         Converts a string input into the correct Enum member.
@@ -73,7 +73,7 @@ class SpellInputUtils:
 
 
     @staticmethod
-    @lru_cache(maxsize=256)
+    @lru_cache(maxsize=16)
     def normalize_spellframe(spellframe: Any) -> str:
         """
         Normalize a spellframe into a consistent string identifier.
@@ -114,7 +114,7 @@ class SpellInputUtils:
         return frame_key, name_key
 
     @staticmethod
-    @lru_cache(maxsize=256)
+    @lru_cache(maxsize=64)
     def _normalize_frame_cached(spellframe: Any) -> str:
         """
         Cached normalization of the spellframe for consistent lookup keys.
@@ -133,7 +133,7 @@ class SpellInputUtils:
         return str(spellframe)
 
     @staticmethod
-    @lru_cache(maxsize=256)
+    @lru_cache(maxsize=64)
     def _normalize_binding_name(name: Optional[str]) -> str:
         """
         Cached normalization for binding names (defaults to '__default__').
