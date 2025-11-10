@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator
+from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator, Callable
 from uuid import UUID
 import uuid
 
@@ -1990,8 +1990,8 @@ class IConfiguration(ISealable, Protocol):
 
     # --- Attributes (surface expectations only) ---
     _frozen: bool
-    available_properties: Dict[str, Type]
-
+    available_properties: 'ConcurrentDict[str, Type]'
+    _logger_factory: 'Pack[[object], Any] | None'
     # --- Lifecycle ---
 
     def seal(self) -> None:
@@ -2003,6 +2003,34 @@ class IConfiguration(ISealable, Protocol):
         ...
 
     # --- Core property API ---
+
+    def set_logger_factory(self, factory: Callable[[object], Any]) -> None:
+        """
+        Set the logger factory used to produce per-object loggers.
+
+        Contract:
+            factory(obj: object) -> Any  (Iris logger, SafeLogger, stdlib logger, or None)
+
+        Rules:
+            - Must be set BEFORE freeze().
+        """
+        ...
+
+    def get_logger_for(self, obj: object) -> Any | None:
+        """
+        Resolve a logger-like for 'obj' using the current logger factory.
+
+        Returns:
+            Any | None: Whatever the factory returns, or None if no factory is set.
+        """
+        ...
+
+    def has_logger_factory(self) -> bool:
+        """
+        Returns:
+            bool: True if a logger factory has been set; False otherwise.
+        """
+        ...
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -2131,6 +2159,21 @@ class IConfiguration(ISealable, Protocol):
     # ---------------------------
     # Fluent / Builder-style API
     # ---------------------------
+
+    def clear_logger_factory(self) -> 'IConfiguration':
+        """
+        Clear the logger factory (pre-freeze only) and return `self`.
+        """
+        ...
+
+    def with_logger_factory(self, factory: Callable[[object], Any]) -> 'IConfiguration':
+        """
+        Fluent
+
+        Set the logger factory (factory(obj) -> Any) and return `self`.
+        Must be called before freeze().
+        """
+        ...
 
     def with_defaults(self) -> 'IConfiguration':
         """

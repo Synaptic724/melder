@@ -6,6 +6,7 @@ from melder.utilities.general_base.sealable import Sealable
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import IConfiguration
+from melder.utilities.helpers.package import Pack
 
 class Configuration(Sealable, IConfiguration):
     """
@@ -34,8 +35,7 @@ class Configuration(Sealable, IConfiguration):
         self._sealed = False
         self._frozen = False
 
-        self._logger_factory: Callable[[object], Any] | None = None
-        self._logger_factory_set = False  # tracks if user changed it
+        self._logger_factory: Pack[[object], Any] | None = None # Pack is used for management of callables
 
         # Private dictionary storing all properties.
         self._properties: ConcurrentDict = ConcurrentDict()
@@ -44,11 +44,10 @@ class Configuration(Sealable, IConfiguration):
             "debugging": bool,
             "disposal": bool,
             "disposal_method_names": list,
-            "propagate_logger_factory": bool,
         })
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
-        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names", "propagate_logger_factory"}
+        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
 
     def seal(self) -> None:
         """
@@ -71,7 +70,6 @@ class Configuration(Sealable, IConfiguration):
                 if hasattr(self._logger_factory, "cleanup"):
                     self._logger_factory.cleanup()
                 self._logger_factory = None
-            self._logger_factory_set = False
 
             self._properties.cleanup()
             self._properties = None
@@ -150,7 +148,7 @@ class Configuration(Sealable, IConfiguration):
         if not callable(factory):
             raise TypeError("logger_factory must be callable(obj) -> Any")
         with self._lock:
-            self._logger_factory = factory
+            self._logger_factory = Pack.bundle(factory)
             self._logger_factory_set = True
 
 
@@ -161,6 +159,7 @@ class Configuration(Sealable, IConfiguration):
         Returns:
             Any: Whatever the factory returns (Iris logger, SafeLogger, stdlib logger, or None).
         """
+        self.check_sealed()
         with self._lock:
             factory = self._logger_factory
         if factory is None:
@@ -336,26 +335,17 @@ class Configuration(Sealable, IConfiguration):
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
-            "propagate_logger_factory": False,
         }))
 
     def has_logger_factory(self) -> bool:
         """Return True if a logger factory has been set."""
+        self.check_sealed()
         with self._lock:
             return self._logger_factory is not None
 
     # ---------------------------
     # Fluent / Builder-style API
     # ---------------------------
-
-    def with_logger_propagation(self, enabled: bool = True) -> IConfiguration:
-        """
-        Fluent
-
-        Enable/disable logger factory propagation behavior for this frame and return `self`.
-        """
-        self.set_property("propagate_logger_factory", enabled)
-        return self
 
     def clear_logger_factory(self) -> IConfiguration:
         """
