@@ -509,9 +509,12 @@ class TestConjureAPI(unittest.TestCase):
         self.assertTrue(self.sb.is_configuration_locked())
 
     def test_check_system_state_automatic_rejects_dynamic(self):
-        self.sb._configuration.set_property("system_state", "automatic")
+        # Use the real enum, not a string
+        from melder.spellbook.configuration.system_state import SystemState
+        self.sb._configuration.set_property("system_state", SystemState.automatic)
         with self.assertRaises(RuntimeError):
             self.sb._check_system_state(policy=Policies.dynamic)
+
 
     def test_check_system_state_dynamic_allows_dynamic(self):
         self.sb._configuration.set_property("system_state", "dynamic")

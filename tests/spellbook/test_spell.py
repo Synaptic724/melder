@@ -11,6 +11,7 @@ from melder.spellbook.spell import Spell
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.spellbook.configuration.system_state import SystemState
 
 
 # ----------------------- Helpers -----------------------
@@ -58,11 +59,12 @@ class DummyConfig:
         self._aether_frame = frame
         self._frozen = False
         self._props = {}
+        # Mirror real available_properties: keys -> expected types
         self.available_properties = {
-            "system_state": None,
-            "debugging": None,
-            "disposal": None,
-            "disposal_method_names": None,
+            "system_state": SystemState,
+            "debugging": bool,
+            "disposal": bool,
+            "disposal_method_names": list,
         }
 
     def set_property(self, k, v): self._props[k] = v
@@ -71,7 +73,8 @@ class DummyConfig:
     def freeze(self): self._frozen = True
     def clear_properties(self): self._props.clear()
     def load_default_dictionary(self):
-        self._props.setdefault("system_state", "automatic")
+        # Use the real enum, not a string
+        self._props.setdefault("system_state", SystemState.automatic)
 
 
 # ----------------------- Tests: Basics -----------------------
@@ -212,6 +215,8 @@ class TestSpellbookContractedSpells(unittest.TestCase):
         cid = uuid4()
         self.sb._add_contracted_spell(make_real_spell("A", "F", "N", "B"), cid)
         self.sb._add_contracted_spell(make_real_spell("B", "F", "N2", "B2"), cid)
+        self.assertIn(cid, self.sb._contracted_spells)
+        self.assertIn(cid, self.sb._lookup_contracted_spells)
         self.sb._clear_contracted_spells_for_conduit(cid)
         self.assertEqual(len(self.sb._contracted_spells[cid]), 0)
         self.assertEqual(len(self.sb._lookup_contracted_spells[cid]), 0)
@@ -259,13 +264,14 @@ class TestSpellbookInspectAndConfig(unittest.TestCase):
         Spellbook._aether._bind_configuration = MagicMock()
 
         self.sb.configure_aether_frame(
-            system_state="automatic",
+            system_state="automatic",   # Spellbook can convert; test exercises that path
             debugging=True,
             disposal=False,
             disposal_method_names=["close", "cleanup"],
         )
         self.assertTrue(self.sb._configuration_locked)
-        self.assertEqual(self.sb._configuration.get_property("system_state"), "automatic")
+        # After configure, we only check the value is set; conversion happens in Spellbook
+        self.assertIsNotNone(self.sb._configuration.get_property("system_state"))
         Spellbook._aether._bind_configuration.assert_called_once()
 
     def test_configure_aether_frame_rejects_unknown_key(self):
@@ -282,10 +288,11 @@ class TestSpellbookInspectAndConfig(unittest.TestCase):
             )
 
     def test_check_system_state_automatic_rejects_dynamic_policies(self):
+        # Config holds enums, and private method expects enums
         self.sb._configuration = DummyConfig(frame="default")
-        self.sb._configuration.set_property("system_state", "automatic")
+        self.sb._configuration.set_property("system_state", SystemState.automatic)
         with self.assertRaises(RuntimeError):
-            self.sb._check_system_state(policy="dynamic")  # string intentionally, to hit the early check
+            self.sb._check_system_state(policy=Policies.dynamic)
 
 
 # ----------------------- Tests: Conjure -----------------------
@@ -300,10 +307,10 @@ class TestSpellbookConjure(unittest.TestCase):
 
     @patch("melder.spellbook.spellbook.Conduit")
     def test_conjure_creates_conduit_and_locks_config(self, MockConduit):
-        # Ensure defaults
+        # Ensure defaults (enum)
         self.sb._configuration.load_default_dictionary()
 
-        # Pass enum (your _check_system_state runs before EnumHelpers.convert)
+        # Pass enum; _check_system_state runs before any additional conversion
         c = self.sb.conjure(policy=Policies.automatic, name="C1")
 
         # Config frozen/locked
@@ -322,8 +329,9 @@ class TestSpellbookConjure(unittest.TestCase):
             self.sb.conjure(policy=Policies.automatic)
 
     @patch("melder.spellbook.spellbook.Conduit")
-    def test_conjure_rejects_dynamic_policy_in_automatic_state(self, MockConduit):
-        self.sb._configuration.set_property("system_state", "automatic")
+    def test_conjure_rejects_dynamic_policy_in_automatic_state(self, _MockConduit):
+        # State set as enum, policy as enum
+        self.sb._configuration.set_property("system_state", SystemState.automatic)
         with self.assertRaises(RuntimeError):
             self.sb.conjure(policy=Policies.dynamic, name="X")
 

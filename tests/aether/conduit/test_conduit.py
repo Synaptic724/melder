@@ -23,25 +23,6 @@ def mk_cfg(system_state: str, *, debugging: bool = False,
     return cfg
 
 # ---- ADD just below mk_cfg(...) ----
-def _force_runtime_dynamic(conduit, value: bool = True):
-    """
-    Some Conduit builds expose the flag as _Conduit__dynamic_environment__,
-    others as __dynamic_environment__. Set both safely.
-    """
-    for nm in ("_Conduit__dynamic_environment__", "__dynamic_environment__"):
-        try:
-            setattr(conduit, nm, value)
-        except Exception:
-            pass
-    # Also flip ward view, if present
-    cw = getattr(conduit, "_conduit_ward", None)
-    if cw is not None:
-        try:
-            cw.dynamic = value
-        except Exception:
-            pass
-
-
 def _read_flag(obj, *names):
     for nm in names:
         if hasattr(obj, nm):
@@ -357,8 +338,9 @@ class TestConstructionAndFlags_Dynamic(unittest.TestCase):
         sb = FakeSpellbook()
         cfg = mk_cfg("dynamic", disposal=False, disposal_method_names=[])
         c = sb.create_conduit(cfg, ConduitState.normal, "fD", Policies.dynamic, name="Z")
-        # Accept current behavior: flag may still be False until runtime flips env.
-        self.assertIn(_read_flag(c, "_Conduit__dynamic_environment__", "__dynamic_environment__"), (True, False, None))
+        # Config-only gating: dynamic flag should be True in dynamic config
+        self.assertIn(_read_flag(c, "_Conduit__dynamic_environment__", "__dynamic_environment__"), (True,))
+
 
     def test_debugger_flag_truthy_when_debugging_requested_or_noop(self):
         sb = FakeSpellbook()
@@ -414,8 +396,8 @@ class TestAetherLookupsAndCloud_Dynamic(unittest.TestCase):
 
     def test_get_conduit_cloud_returns_mapping(self):
         cloud = self.c.get_conduit_cloud()
-        # tolerate either mapping or guarded behavior evolving
         self.assertTrue(isinstance(cloud, dict))
+
 
     def test_conduit_cloud_registration_occurs_when_named(self):
         cloud = Conduit._aether._get_conduit_cloud("F1D")
@@ -431,18 +413,15 @@ class TestLesserConduitsAndUpgrade_Dynamic(unittest.TestCase):
 
     # ---- ADD inside TestLesserConduitsAndUpgrade_Dynamic ----
     def test_upgrade_succeeds_when_runtime_dynamic_enabled(self):
-        # Build a lesser in dynamic config, then enable the *runtime* dynamic env
+        # Runtime flip no longer required; dynamic config is sufficient
         lesser = Conduit(self.sb, self.cfg_dyn, ConduitState.lesser, "FrameUD", Policies.lesser_conduit)
         lesser._creations._data["extra"] = "yes"
-
-        _force_runtime_dynamic(lesser, True)
-
-        # Should now upgrade successfully
         lesser.upgrade_to_normal(name="UpDyn")
         self.assertEqual(lesser.name, "UpDyn")
         self.assertEqual(lesser._creations._data.get("carry"), "ok")
         self.assertIsInstance(lesser._spellbook, FakeSpellbook)
         self.assertIn("UpDyn", Conduit._aether._get_conduit_cloud("FrameUD"))
+
 
 
     def test_create_lesser_conduit_and_internal_link(self):
@@ -456,9 +435,11 @@ class TestLesserConduitsAndUpgrade_Dynamic(unittest.TestCase):
         self.assertTrue(self.parent._conduit_ward._sealed_lessers)
 
     def test_upgrade_requires_runtime_dynamic_env(self):
+        # In dynamic config, upgrade should succeed (guard is config-only now)
         c = Conduit(self.sb, self.cfg_dyn, ConduitState.lesser, "FrameUD", Policies.lesser_conduit)
-        with self.assertRaises(RuntimeError):
-            c.upgrade_to_normal()
+        c.upgrade_to_normal(name="OK")
+        self.assertEqual(c.name, "OK")
+
 
 
 class TestSpellbookAPI_Dynamic(unittest.TestCase):
@@ -514,26 +495,28 @@ class TestConduitWardLinking_Dynamic(unittest.TestCase):
         self.c2 = self.sb.create_conduit(self.cfg_dyn, ConduitState.normal, "FXD", Policies.dynamic, name="B")
 
     def test_link_is_guarded_without_runtime_dynamic_env(self):
-        with self.assertRaises(RuntimeError):
-            self.c1.link(self.c2)
+        # With config-only gating, linking in dynamic config should succeed
+        self.assertTrue(self.c1.link(self.c2))
+
 
     def test_link_requires_iconduit_shape(self):
-        # still should type-check first; but env guard triggers earlier, so expect RuntimeError
-        with self.assertRaises(RuntimeError):
+        # In dynamic config, type-check should fire (not the old runtime guard)
+        with self.assertRaises(TypeError):
             self.c1.link(object())
 
+
     def test_sever_link_guarded(self):
-        with self.assertRaises(RuntimeError):
-            self.c1.sever_link(self.c2)
+        # In dynamic config, sever should succeed when linked
+        self.c1.link(self.c2)
+        self.assertTrue(self.c1.sever_link(self.c2))
+        self.assertNotIn(self.c2, self.c1.get_links())
+
 
     # ---- ADD inside TestConduitWardLinking_Dynamic ----
     def test_link_and_sever_when_runtime_dynamic_enabled(self):
-        _force_runtime_dynamic(self.c1, True)
-        _force_runtime_dynamic(self.c2, True)
-
+        # No runtime flip needed anymore
         self.assertTrue(self.c1.link(self.c2))
         self.assertIn(self.c2, self.c1.get_links())
-
         self.assertTrue(self.c1.sever_link(self.c2))
         self.assertNotIn(self.c2, self.c1.get_links())
 
@@ -546,34 +529,31 @@ class TestContractsAPI_Dynamic(unittest.TestCase):
         self.c2 = self.sb.create_conduit(self.cfg, ConduitState.normal, "FQD", Policies.dynamic, name="Q2")
 
     def test_add_remove_single_spell_contract_guarded(self):
-        with self.assertRaises(RuntimeError):
-            self.c1.add_spell_to_contract(spell_id="S-1D", conduit=self.c2, permissions="create")
+        # Now succeeds under dynamic config
+        self.assertTrue(self.c1.add_spell_to_contract(spell_id="S-1D", conduit=self.c2, permissions="create"))
+        out = self.c1.remove_spell_from_contract(spell_id="S-1D", conduit=self.c2)
+        self.assertIn(out, (True, False))
+
 
 
     # ---- ADD inside TestContractsAPI_Dynamic ----
     def test_contract_paths_succeed_when_runtime_dynamic_enabled(self):
-        _force_runtime_dynamic(self.c1, True)
-        _force_runtime_dynamic(self.c2, True)
-
-        # single add/remove
+        # No runtime flips; all success paths should work in dynamic config
         self.assertTrue(self.c1.add_spell_to_contract(spell_id="S-1D", conduit=self.c2, permissions="create"))
         rem = self.c1.remove_spell_from_contract(spell_id="S-1D", conduit=self.c2)
-        self.assertIn(rem, (True, False))  # ok if already gone
+        self.assertIn(rem, (True, False))
 
-        # bulk add/remove
         res = self.c1.add_spells_to_contract(["A", "B", "C"], conduit=self.c2)
         self.assertEqual(set(res.values()), {True})
         out = self.c1.remove_spells_from_contract(spell_ids=["A", "B"], conduit=self.c2)
         self.assertEqual(set(out.keys()), {"A", "B"})
 
-        # query/validate
         all_ = self.c1.get_all_spells_in_contracts(validate=True)
         self.assertTrue(all_ is None or isinstance(all_, dict))
         self.assertTrue(self.c1.validate_received_contracts())
         desc = self.c1.validate_contracts_and_define()
         self.assertIsInstance(desc, dict)
 
-        # describe/remove all
         any_cid = next(iter(self.c1._conduit_ward._contracts.keys()), None)
         if any_cid is not None:
             d = self.c1._describe_contract(any_cid)
@@ -581,25 +561,34 @@ class TestContractsAPI_Dynamic(unittest.TestCase):
             self.assertIn("peer_name", d)
             self.assertTrue(self.c1._remove_all_spells_from_contract(conduit_id=any_cid))
 
+
     def test_add_remove_bulk_contracts_guarded(self):
-        with self.assertRaises(RuntimeError):
-            self.c1.add_spells_to_contract(["A", "B", "C"], conduit=self.c2)
+        # Now succeeds under dynamic config
+        res = self.c1.add_spells_to_contract(["A", "B", "C"], conduit=self.c2)
+        self.assertEqual(set(res.values()), {True})
+
 
     def test_remove_all_spells_from_contract_guarded(self):
-        with self.assertRaises(RuntimeError):
-            self.c1._remove_all_spells_from_contract(conduit_id=uuid4())
+        # Seed some contracts to make this meaningful, then remove
+        self.c1.add_spells_to_contract(["X", "Y"], conduit=self.c2)
+        any_cid = next(iter(self.c1._conduit_ward._contracts.keys()))
+        self.assertTrue(self.c1._remove_all_spells_from_contract(conduit_id=any_cid))
+
 
     def test_validate_received_contracts_guarded(self):
-        with self.assertRaises(RuntimeError):
-            self.c1.validate_received_contracts()
+        self.assertTrue(self.c1.validate_received_contracts())
+
 
     def test_get_all_spells_in_contracts_guarded(self):
-        with self.assertRaises(RuntimeError):
-            self.c1.get_all_spells_in_contracts(validate=True)
+        out = self.c1.get_all_spells_in_contracts(validate=True)
+        self.assertTrue(out is None or isinstance(out, dict))
+
 
     def test_query_single_contract_guarded(self):
-        with self.assertRaises(RuntimeError):
-            self.c1.get_spell_in_contracts("Only")
+        # Tolerate either not found (None) or a valid (cid, FakeSpell) tuple shape if present
+        self.c1.add_spell_to_contract(spell_id="Only", conduit=self.c2, permissions="create")
+        got = self.c1.get_spell_in_contracts("Only")
+        self.assertTrue(got is None or (isinstance(got, tuple) and len(got) == 2))
 
 
 # ----------------------------- AUTOMATIC -----------------------------

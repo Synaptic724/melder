@@ -106,8 +106,9 @@ class TestFreezeAndSeal(unittest.TestCase):
         cfg = Configuration()
         cfg.load_default_dictionary()
         cfg.freeze()
-        self.assertTrue(cfg._sealed)
+        # freeze => immutable, NOT disposed; only assert _frozen
         self.assertTrue(cfg._frozen)
+        # _sealed is disposal-only; do NOT assert it here
         with self.assertRaises(RuntimeError):
             cfg.set_property("debugging", True)
         with self.assertRaises(RuntimeError):
@@ -191,8 +192,10 @@ class TestLoadDefaultsAndThenFreeze(unittest.TestCase):
         cfg.load_default_dictionary()
         self.assertTrue(cfg.validate())
         cfg.freeze()
-        self.assertTrue(cfg._sealed)
+        # freeze => immutable, NOT disposed; only assert _frozen
         self.assertTrue(cfg._frozen)
+        # Do not assert _sealed here; seal is for cleanup/disposal semantics
+
 
     def test_load_defaults_idempotent_overwrite_blocked(self):
         cfg = Configuration()

@@ -347,7 +347,8 @@ class TestConjureMore(unittest.TestCase):
         self.sb._check_system_state(Policies.automatic)
 
     def test_check_system_state_rejects_non_automatic_in_automatic(self):
-        self.sb._configuration.set_property("system_state", "automatic")
+        from melder.spellbook.configuration.system_state import SystemState
+        self.sb._configuration.set_property("system_state", SystemState.automatic)
         with self.assertRaises(RuntimeError):
             self.sb._check_system_state(Policies.dynamic)
 

@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable
+from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator
 from uuid import UUID
 import uuid
 
@@ -1972,106 +1972,294 @@ class IChannelLogger(ICleanable, Protocol):
     refresh_props = refresh_properties
 
 
+
+
 @runtime_checkable
 class IConfiguration(ISealable, Protocol):
     """
-    Configuration governs the behavior of the system.
+    Configuration governs the behavior of the entire system.
 
     It acts as the configuration core for:
-      - How Conduits manage their services
-      - How Scopes and dynamic behaviors function
-      - System-wide flags such as debugging mode, dynamic expansion, and policies
+    * **Conduit Management:** How Conduits handle service lifecycles.
+    * **Dynamic Behavior:** Flags controlling dynamic linking, expansion, and policies.
+    * **System Flags:** Global settings like debugging mode and resource disposal.
 
-    This object should only be configured once and then frozen to prevent any further changes.
-    Thread-safe operations are ensured with RLock.
+    This object should only be configured once and then frozen to prevent any further changes,
+    enforcing idempotent laws across the system. Thread-safe operations are ensured with RLock.
     """
 
-    # --- Attributes ---
-    # _sealed is inherited from ISealable
+    # --- Attributes (surface expectations only) ---
+    _frozen: bool
+    available_properties: Dict[str, Type]
 
-    _frozen: "bool"
-    available_properties: "Dict[str, Type]"
+    # --- Lifecycle ---
 
-    # --- Methods ---
-
-    def set_property(self, key: "str", value: "Any") -> "None":
+    def seal(self) -> None:
         """
-        Define or overwrite a property.
+        Seals the configuration, preventing any further modifications and cleaning up resources.
 
-        - Idempotent properties (like 'conduit_state', 'debugging', etc.)
-          can only be set once. Attempts to overwrite will raise an error,
-          even before the configuration is frozen.
-
-        - Non-idempotent properties can be freely modified before freeze.
+        This method sets both the `sealed` and `frozen` flags.
         """
         ...
 
-    def clear_properties(self) -> "None":
-        """
-        Clear all properties in the configuration.
+    # --- Core property API ---
 
-        This method is useful for resetting the configuration to its initial state.
+    def set_property(self, key: str, value: Any) -> None:
         """
-        ...
+        Defines or overwrites a property in the configuration.
 
-    def freeze(self) -> "None":
-        """
-        Freeze the property system, sealing all idempotent properties.
+        - **Idempotent properties** (e.g., 'system_state') can only be set *once* before the configuration is sealed.
+        - **Non-idempotent properties** can be freely modified before the configuration is frozen.
 
-        Once frozen:
-          - Critical properties like 'dynamic' and 'debugging' can no longer be modified.
-          - Non-idempotent properties can still be adjusted if needed (depending on design choice).
-
-        This is called automatically during Aether conjure.
-        """
-        ...
-
-    def validate(self) -> "bool":
-        """
-        Validate that all required configuration properties exist and match expected types.
+        Args:
+            key (str): The name of the property to set.
+            value (Any): The value for the property.
 
         Raises:
-            ValueError: If any property is missing or has the wrong type.
+            RuntimeError: If the configuration is sealed or frozen.
+            RuntimeError: If attempting to modify an idempotent property that is already set.
+            TypeError: If `key` is not a string.
+            ValueError: If an enum conversion fails.
         """
         ...
 
-    def validate_enums(self) -> "bool":
+    def clear_properties(self) -> None:
         """
-        Validate that all enum properties are set to valid values.
-        :return:
-        """
-        ...
+        Clears all properties in the configuration.
 
-    def get_property(self, key: "str") -> "Any":
-        """
-        Retrieve the value of a property.
-
-        :param key: The name of the property.
-        :return: The stored value (str, int, or bool).
+        This method is useful for resetting the configuration to its initial state before it is frozen.
 
         Raises:
-            KeyError if the property does not exist.
+            RuntimeError: If the configuration is sealed or frozen.
         """
         ...
 
-    def has_property(self, key: "str") -> "bool":
+    def freeze(self) -> None:
         """
-        Check if a property is defined.
+        Freezes the configuration property system.
 
-        :param key: The property name to check.
-        :return: True if the property exists, False otherwise.
+        Once frozen, no properties, including non-idempotent ones, can be modified.
+        Validation is performed automatically upon freezing.
+
+        Raises:
+            RuntimeError: If the configuration is sealed.
+            ValueError: If configuration validation fails prior to freezing (e.g., missing required properties).
         """
         ...
 
-    def __iter__(self):
+    def validate(self) -> bool:
         """
-        Allow iteration over the properties.
-        :return: Property names (keys) in the configuration.
+        Validates that all required configuration properties exist and match expected types.
+
+        Performs both presence/type checks and enum-specific validation.
+
+        Returns:
+            bool: True if all validation checks pass.
+
+        Raises:
+            RuntimeError: If the configuration is sealed.
+            ValueError: If any property is missing or has the wrong type/value.
         """
         ...
 
-    def load_default_dictionary(self) -> "None":
+    def validate_enums(self) -> bool:
         """
-        Load and apply the default dictionary of properties atomically.
+        Internal
+
+        Validates that all properties intended to be Enums (like `SystemState`) are indeed set to a valid Enum instance.
+
+        Returns:
+            bool: True if all enum values are valid.
+
+        Raises:
+            RuntimeError: If the configuration is sealed.
+            ValueError: If a known enum property is set to an invalid type.
+        """
+        ...
+
+    def get_property(self, key: str) -> Any:
+        """
+        Retrieves the value of a configuration property.
+
+        Args:
+            key (str): The name of the property.
+
+        Returns:
+            Any: The stored value (str, int, bool, Enum, etc.).
+
+        Raises:
+            RuntimeError: If the configuration is sealed.
+            KeyError: If the property does not exist in the configuration.
+        """
+        ...
+
+    def has_property(self, key: str) -> bool:
+        """
+        Checks if a configuration property is defined.
+
+        Args:
+            key (str): The property name to check.
+
+        Returns:
+            bool: True if the property exists, False otherwise.
+
+        Raises:
+            RuntimeError: If the configuration is sealed.
+        """
+        ...
+
+    def __iter__(self) -> Iterator[str]:
+        """
+        Allows iteration over the configuration properties (keys).
+
+        Returns:
+            Iterator: Property names (keys) in the configuration.
+        """
+        ...
+
+    def load_default_dictionary(self) -> None:
+        """
+        Loads and applies a default set of properties atomically.
+
+        This method sets sensible defaults for core properties like `system_state`, `debugging`, and `disposal`.
+
+        Raises:
+            RuntimeError: If the configuration is sealed.
+        """
+        ...
+
+    # ---------------------------
+    # Fluent / Builder-style API
+    # ---------------------------
+
+    def with_defaults(self) -> 'IConfiguration':
+        """
+        Fluent
+
+        Load Melder’s standard defaults into this configuration and return `self`
+        so you can keep chaining.
+
+        Behavior:
+        - Sets: system_state="automatic", debugging=False, disposal=False,
+          disposal_method_names=[].
+        - Respects idempotency and immutability rules (raises if frozen or sealed).
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        ...
+
+    def with_system_state(self, state: 'SystemState | str') -> 'IConfiguration':
+        """
+        Fluent
+
+        Set the system state ("automatic" or "dynamic") and return `self`.
+
+        Notes:
+        - Accepts either SystemState or a case-insensitive string.
+        - Idempotent: can be set only once before freeze; attempting to overwrite raises.
+
+        Args:
+            state: Desired system state (SystemState or "automatic"|"dynamic").
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        ...
+
+    def with_debugging(self, enabled: bool = True) -> 'IConfiguration':
+        """
+        Fluent
+
+        Enable or disable debugging and return `self`.
+
+        Args:
+            enabled: True to enable debugging; False to disable.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        ...
+
+    def with_disposal(self, enabled: bool = True) -> 'IConfiguration':
+        """
+        Fluent
+
+        Enable or disable disposal features and return `self`.
+
+        Args:
+            enabled: True to enable disposal semantics; False to disable.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        ...
+
+    def with_disposal_method_names(self, names: list[str]) -> 'IConfiguration':
+        """
+        Fluent
+
+        Replace the entire list of disposal method names and return `self`.
+
+        Example:
+            cfg.with_disposal_method_names(["close", "cleanup"])
+
+        Args:
+            names: Full replacement list of method names (strings).
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        ...
+
+    def add_disposal_methods(self, *names: str) -> 'IConfiguration':
+        """
+        Fluent
+
+        Append one or more disposal method names (deduplicated, order-preserving)
+        and return `self`.
+
+        Behavior:
+        - Initializes the list to [] if unset.
+        - Preserves existing order; adds new names at the end if not already present.
+
+        Args:
+            *names: One or more method names to add.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        ...
+
+    def finalize(self) -> 'IConfiguration':
+        """
+        Fluent
+
+        Validate and freeze, returning `self`.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        ...
+
+    def build(self) -> 'IConfiguration':
+        """
+        Fluent alias for finalize().
+        """
+        ...
+
+    def dynamic_defaults(self) -> 'IConfiguration':
+        """
+        Fluent
+
+        Load defaults and set dynamic state, returning `self`.
+        """
+        ...
+
+    def automatic_defaults(self) -> 'IConfiguration':
+        """
+        Fluent
+
+        Load defaults and set automatic state, returning `self`.
         """
         ...

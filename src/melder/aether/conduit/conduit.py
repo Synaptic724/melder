@@ -687,7 +687,7 @@ class Conduit(Sealable, IConduit):
         """
         if self._conduit_state == ConduitState.lesser:
             raise RuntimeError("Lesser conduits cannot access the conduit cloud.")
-        if self.__dynamic_environment__:
+        if not self.__dynamic_environment__:
             raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
         return Conduit._aether._get_conduit_cloud(self._aetheric_frame)
 

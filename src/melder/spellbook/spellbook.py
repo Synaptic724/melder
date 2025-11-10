@@ -64,7 +64,7 @@ class Spellbook(Sealable, ISpellbook):
         * If configuration is already shared via an Aether frame, it will be reused.
     """
     _aether = Aether()
-    def __init__(self, aetheric_frame: str = "default", configuration: Optional[Configuration] = None):
+    def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None):
         super().__init__()
         self._lock = RLock()
         self._id: str = str(ulid.ULID()) # Unique internal ID for tracking
@@ -77,7 +77,7 @@ class Spellbook(Sealable, ISpellbook):
 
         # Configuration state
         self._configuration_locked: bool = False
-        self._configuration = configuration
+        self._configuration: IConfiguration = configuration
 
         # Core spell storage (SHA256-keyed)
         self._spells: ConcurrentDict[str, ISpell] = ConcurrentDict()
@@ -726,7 +726,7 @@ class Spellbook(Sealable, ISpellbook):
         except Exception:
             raise
 
-    def get_configuration(self) -> Configuration:
+    def get_configuration(self) -> IConfiguration:
         """
         Public API
 
@@ -828,7 +828,8 @@ class Spellbook(Sealable, ISpellbook):
         Raises:
             RuntimeError: If a dynamic policy is requested while `system_state` is set to "automatic".
         """
-        if self._configuration.get_property("system_state") == SystemState.automatic and policy != Policies.automatic.name:
+        if (self._configuration.get_property("system_state") == SystemState.automatic and
+                EnumHelpers.convert_enum_and_check(policy, Policies) != Policies.automatic):
             raise RuntimeError(
                 "Cannot use dynamic policies in automatic mode. "
                 "Please set system_state to 'dynamic' in the configuration."

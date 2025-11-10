@@ -5,8 +5,9 @@ from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDic
 from melder.utilities.general_base.sealable import Sealable
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
+from melder.utilities.interfaces.interfaces import IConfiguration
 
-class Configuration(Sealable):
+class Configuration(Sealable, IConfiguration):
     """
     Configuration governs the behavior of the entire system.
 
@@ -35,12 +36,12 @@ class Configuration(Sealable):
 
         # Private dictionary storing all properties.
         self._properties: ConcurrentDict = ConcurrentDict()
-        self.available_properties: Dict[str, Type] = {
+        self.available_properties: ConcurrentDict[str, Type] = ConcurrentDict({
             "system_state": SystemState,
             "debugging": bool,
             "disposal": bool,
             "disposal_method_names": list
-        }
+        })
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
         self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
@@ -63,7 +64,7 @@ class Configuration(Sealable):
             self._frozen = True
             self._properties.cleanup()
             self._properties = None
-            self.available_properties.clear()
+            self.available_properties.cleanup()
             self.available_properties = None
 
     def set_property(self, key: str, value: Any) -> None:
@@ -84,6 +85,9 @@ class Configuration(Sealable):
             ValueError: If an enum conversion fails.
         """
         self.check_sealed()
+        if self._frozen:
+            raise RuntimeError("Cannot modify configuration after it is frozen.")
+
         if not isinstance(key, str):
             raise TypeError("Key must be a string.")
 
@@ -124,8 +128,9 @@ class Configuration(Sealable):
             ValueError: If configuration validation fails prior to freezing (e.g., missing required properties).
         """
         self.check_sealed()
+        if self._frozen:
+            return
         if not self.validate():
-            # Note: validate() itself raises ValueError with a specific message.
             raise ValueError("Configuration validation failed. Cannot freeze.")
         self._properties.freeze()
         with self._lock:
@@ -212,10 +217,13 @@ class Configuration(Sealable):
             "system_state": SystemState,
         }
 
-        if not key in enum_map.keys:
-            raise ValueError(f"Unknown configuration key '{key}' for enum conversion.")
+        enum_type = enum_map.get(key)
+        if enum_type is None:
+            # No conversion rule for this key; keep the original value (per docstring).
+            return value
 
-        return EnumHelpers.convert_enum_and_check(value=value, enum=enum_map[key])
+        # Normalize via shared helper: accepts str|Enum, raises on None/invalid.
+        return EnumHelpers.convert_enum_and_check(value, enum_type)
 
     def get_property(self, key: str) -> Any:
         """
@@ -278,3 +286,160 @@ class Configuration(Sealable):
             "disposal": False,
             "disposal_method_names": [],
         }))
+
+
+    # ---------------------------
+    # Fluent / Builder-style API
+    # ---------------------------
+
+    def with_defaults(self) -> IConfiguration:
+        """
+        Fluent
+
+        Load Melder’s standard defaults into this configuration and return `self`
+        so you can keep chaining.
+
+        Behavior:
+        - Sets: system_state="automatic", debugging=False, disposal=False,
+          disposal_method_names=[].
+        - Respects idempotency and immutability rules (raises if frozen or sealed).
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        self.load_default_dictionary()
+        return self
+
+    def with_system_state(self, state: SystemState | str) -> IConfiguration:
+        """
+        Fluent
+
+        Set the system state ("automatic" or "dynamic") and return `self`.
+
+        Notes:
+        - Accepts either SystemState or a case-insensitive string.
+        - Idempotent: can be set only once before freeze; attempting to overwrite raises.
+
+        Args:
+            state: Desired system state (SystemState or "automatic"|"dynamic").
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        self.set_property("system_state", state)
+        return self
+
+    def with_debugging(self, enabled: bool = True) -> IConfiguration:
+        """
+        Fluent
+
+        Enable or disable debugging and return `self`.
+
+        Args:
+            enabled: True to enable debugging; False to disable.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        self.set_property("debugging", enabled)
+        return self
+
+    def with_disposal(self, enabled: bool = True) -> IConfiguration:
+        """
+        Fluent
+
+        Enable or disable disposal features and return `self`.
+
+        Args:
+            enabled: True to enable disposal semantics; False to disable.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        self.set_property("disposal", enabled)
+        return self
+
+    def with_disposal_method_names(self, names: list[str]) -> IConfiguration:
+        """
+        Fluent
+
+        Replace the entire list of disposal method names and return `self`.
+
+        Example:
+            cfg.with_disposal_method_names(["close", "cleanup"])
+
+        Args:
+            names: Full replacement list of method names (strings).
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        if not isinstance(names, list):
+            raise TypeError("disposal_method_names must be a list[str].")
+        self.set_property("disposal_method_names", names)
+        return self
+
+    def add_disposal_methods(self, *names: str) -> IConfiguration:
+        """
+        Fluent
+
+        Append one or more disposal method names (deduplicated, order-preserving)
+        and return `self`.
+
+        Behavior:
+        - Initializes the list to [] if unset.
+        - Preserves existing order; adds new names at the end if not already present.
+
+        Args:
+            *names: One or more method names to add.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        current = self._properties.get("disposal_method_names", [])
+        if not isinstance(current, list):
+            raise ValueError("Internal error: 'disposal_method_names' is not a list.")
+        seen = set(current)
+        extended: list[str] = list(current)
+        for nm in names:
+            if not isinstance(nm, str):
+                raise TypeError("All disposal method names must be strings.")
+            if nm not in seen:
+                extended.append(nm)
+                seen.add(nm)
+        self.set_property("disposal_method_names", extended)
+        return self
+
+    def finalize(self) -> IConfiguration:
+        """
+        Fluent
+
+        Validate and freeze, returning `self`.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        self.freeze()
+        return self
+
+    def build(self) -> IConfiguration:
+        """
+        Fluent alias for finalize().
+        """
+        return self.finalize()
+
+    def dynamic_defaults(self) -> IConfiguration:
+        """
+        Fluent
+
+        Load defaults and set dynamic state, returning `self`.
+        """
+        return self.with_defaults().with_system_state("dynamic")
+
+    def automatic_defaults(self) -> IConfiguration:
+        """
+        Fluent
+
+        Load defaults and set automatic state, returning `self`.
+        """
+        return self.with_defaults().with_system_state("automatic")
