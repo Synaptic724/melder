@@ -6,6 +6,7 @@ from threading import RLock
 
 # Melder Imports
 from melder.aether.aether import Aether
+from melder.utilities.general_base.sealable import Sealable
 from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
@@ -18,7 +19,7 @@ from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 
 #region Spellbook
-class Spellbook(ISpellbook):
+class Spellbook(Sealable, ISpellbook):
     """
     Public API
 
@@ -865,5 +866,4 @@ class Spellbook(ISpellbook):
                 self._whitelist_all_spells = False
 
 #endregion Conduit API
-
 #endregion

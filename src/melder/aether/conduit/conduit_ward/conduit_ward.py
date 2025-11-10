@@ -394,8 +394,7 @@ class ConduitWard(Sealable, IConduitWard):
             RuntimeError: If the Conduit is sealed.
         """
         self.check_sealed()
-
-        conduit_id, conduit = self._check_conduit_id_and_conduit(conduit=target_conduit)
+        self._check_conduit_id_and_conduit(conduit=target_conduit)
 
         if (contract := self._find_contract(target_conduit)) is not None:
             with contract._lock:
