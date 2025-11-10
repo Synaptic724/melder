@@ -16,6 +16,11 @@ class SafeLogger(Cleanable):
 
     def __init__(self, logger: logging.Logger | IChannelLogger | None):
         super().__init__()
+        if logger is not None and not isinstance(logger, (logging.Logger, IChannelLogger)):
+            raise TypeError(
+                f"SafeLogger expects a logging.Logger or IChannelLogger instance or None, "
+                f"got {type(logger).__name__} instead."
+            )
         self._logger = logger
         self._is_channel = isinstance(logger, IChannelLogger)
 

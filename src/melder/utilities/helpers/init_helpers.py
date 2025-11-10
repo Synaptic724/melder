@@ -29,4 +29,8 @@ class InitHelpers:
         Returns:
             SafeLogger: The resolved, ready-to-use SafeLogger instance.
         """
+        if not isinstance(logger, IChannelLogger | logging.Logger):
+            raise TypeError(
+                "Expected logger to be an IChannelLogger, logging.Logger, or None."
+            )
         return SafeLogger(logger)

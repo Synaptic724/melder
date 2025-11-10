@@ -1,4 +1,5 @@
 import logging
+from melder.utilities.logger.safe_logger import SafeLogger
 
 class StdLoggerFactory:
     """
@@ -13,7 +14,7 @@ class StdLoggerFactory:
         - Else fall back to the object's memory identity via `id(obj)`
     """
 
-    def __call__(self, obj) -> logging.Logger:
+    def __call__(self, obj) -> SafeLogger:
         try:
             ident = str(obj._id)
         except AttributeError:
@@ -22,4 +23,4 @@ class StdLoggerFactory:
             )
 
         name = f"{obj.__class__.__name__}[{ident}]"
-        return logging.getLogger(name)
+        return SafeLogger(logging.getLogger(name))

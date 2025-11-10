@@ -1,5 +1,6 @@
 from typing import Any, Dict, Iterable, Optional, Union, Callable
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.logger.safe_logger import SafeLogger
 
 class IrisLoggerFactory(Cleanable):
     """
@@ -73,10 +74,10 @@ class IrisLoggerFactory(Cleanable):
             - Any exceptions raised by `resolve_fn` will propagate unless your resolver
               handles them internally.
         """
-        return self._resolve_fn(
+        return SafeLogger(self._resolve_fn(
             registrant=registrant,
             groups=groups,
             system_groups=system_groups,
             props=props,
             channels=channels,
-        )
+        ))
