@@ -43,12 +43,17 @@ class Configuration(Sealable):
 
         This is called automatically during Aether conjure.
         """
+        if self._sealed:
+            return
         with self._lock:
             if self._sealed:
                 return
-            self._properties.cleanup()
             self._sealed = True
             self._frozen = True
+            self._properties.cleanup()
+            self._properties = None
+            self.available_properties.clear()
+            self.available_properties = None
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -60,6 +65,7 @@ class Configuration(Sealable):
 
         - Non-idempotent properties can be freely modified before freeze.
         """
+        self.check_sealed()
         if not isinstance(key, str):
             raise TypeError("Key must be a string.")
 
@@ -79,16 +85,15 @@ class Configuration(Sealable):
 
         This method is useful for resetting the configuration to its initial state.
         """
+        self.check_sealed()
         with self._lock:
             if self._frozen:
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
-            elif self._sealed:
-                raise RuntimeError("Cannot clear properties after configuration is sealed")
             self._properties.clear()
 
     def freeze(self) -> None:
         """
-        Freeze the property system, sealing all idempotent properties.
+        Freeze the property system.
 
         Once frozen:
           - Critical properties like 'dynamic' and 'debugging' can no longer be modified.
@@ -96,11 +101,11 @@ class Configuration(Sealable):
 
         This is called automatically during Aether conjure.
         """
+        self.check_sealed()
         if not self.validate():
             raise ValueError("Configuration validation failed. Cannot freeze.")
         self._properties.freeze()
         with self._lock:
-            self._sealed = True
             self._frozen = True
 
     def validate(self) -> bool:
@@ -110,6 +115,7 @@ class Configuration(Sealable):
         Raises:
             ValueError: If any property is missing or has the wrong type.
         """
+        self.check_sealed()
         for key, expected_type in self.available_properties.items():
             if key not in self._properties:
                 raise ValueError(f"Missing required configuration property: '{key}'.")
@@ -132,6 +138,7 @@ class Configuration(Sealable):
         Validate that all enum properties are set to valid values.
         :return:
         """
+        self.check_sealed()
         # Additional validation for specific properties
         if "system_state" in self._properties:
             system_state = self._properties["system_state"]
@@ -178,6 +185,7 @@ class Configuration(Sealable):
         Raises:
             KeyError if the property does not exist.
         """
+        self.check_sealed()
         try:
             return self._properties[key]
         except KeyError:
@@ -190,6 +198,7 @@ class Configuration(Sealable):
         :param key: The property name to check.
         :return: True if the property exists, False otherwise.
         """
+        self.check_sealed()
         return key in self._properties
 
     def __iter__(self):
@@ -203,6 +212,7 @@ class Configuration(Sealable):
         """
         Load and apply the default dictionary of properties atomically.
         """
+        self.check_sealed()
         self._properties.batch_update(lambda d: d.update({
             "system_state": self._convert_enum_if_needed("system_state", "automatic"),
             "debugging": False,
