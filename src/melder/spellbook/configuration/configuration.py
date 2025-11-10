@@ -1,8 +1,10 @@
 import threading
+from enum import Enum
 from typing import Any, Dict, List, Type
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.general_base.sealable import Sealable
 from melder.spellbook.configuration.system_state import SystemState
+from melder.utilities.helpers.general_helpers import EnumHelpers
 
 class Configuration(Sealable):
     """
@@ -206,26 +208,14 @@ class Configuration(Sealable):
         Raises:
             ValueError: If the string value is not a valid enum member or if the input type is incorrect.
         """
-        enum_map: Dict[str, Type] = {
+        enum_map: Dict[str, Type[Enum]] = {
             "system_state": SystemState,
         }
 
-        if key in enum_map:
-            enum_type = enum_map[key]
-            if isinstance(value, str):
-                try:
-                    return enum_type[value.lower()]  # Requires enum keys to be lowercase
-                except KeyError:
-                    valid_options = [e.name for e in enum_type]
-                    raise ValueError(
-                        f"Invalid value '{value}' for '{key}'. "
-                        f"Expected one of: {valid_options}."
-                    )
-            elif not isinstance(value, enum_type):
-                raise ValueError(
-                    f"Invalid type for '{key}': expected {enum_type.__name__}, got {type(value).__name__}."
-                )
-        return value
+        if not key in enum_map.keys:
+            raise ValueError(f"Unknown configuration key '{key}' for enum conversion.")
+
+        return EnumHelpers.convert_enum_and_check(value=value, enum=enum_map[key])
 
     def get_property(self, key: str) -> Any:
         """

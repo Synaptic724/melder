@@ -860,8 +860,6 @@ class IConduitWard(ISealable, Protocol):
     _policy: Optional[Any]
     _id: Optional[UUID]
     _conduit: Optional['IConduit']
-
-
     @property
     def policy(self) -> 'IPolicy':
         """

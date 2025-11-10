@@ -1,5 +1,6 @@
 from enum import Enum, auto
 from typing import Optional
+from melder.utilities.helpers.general_helpers import EnumHelpers
 
 
 class ConduitState(Enum):
@@ -30,15 +31,4 @@ class ConduitState(Enum):
         Raises:
             ValueError: If the string does not match any ConduitState member.
         """
-        if isinstance(value, ConduitState):
-            return value
-        elif isinstance(value, str):
-            try:
-                return ConduitState[value.lower()]
-            except KeyError:
-                valid = [s.name.lower() for s in ConduitState]
-                raise ValueError(f"Invalid ConduitState '{value}'. Expected one of: {valid}")
-        elif value is None:
-            return None
-        else:
-            raise TypeError(f"Expected str, ConduitState, or None — got {type(value).__name__}.")
+        EnumHelpers.convert_enum_and_check(value=value, enum=ConduitState)

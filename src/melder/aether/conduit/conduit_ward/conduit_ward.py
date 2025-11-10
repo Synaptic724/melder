@@ -156,7 +156,7 @@ class ConduitWard(Sealable, IConduitWard):
         # Ensure only valid enum instances are passed
         if not policy is None:
             if not isinstance(policy, Policies):
-                raise TypeError(f"permissions must be an instance of Permissions enum, got {type(policy).__name__}")
+                raise TypeError(f"Expected Policies enum instance, got {type(policy).__name__}")
             self._policy_set = True
             return policy
 

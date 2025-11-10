@@ -4,6 +4,7 @@ from typing import Optional, Type, Any, Tuple
 from uuid import UUID
 import ulid
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.sealable import Sealable
@@ -166,6 +167,7 @@ class Conduit(Sealable, IConduit):
         - Internal resolver systems
         """
         return self._creation_context
+
     #endregion
     #region Conduit Configuration
     def register_conduit_cloud(self, conduit: IConduit):
@@ -199,9 +201,9 @@ class Conduit(Sealable, IConduit):
         Sets the environment mode and debugging mode for this Conduit
         based on the configuration instance passed.
         """
-        if self._configuration.get_property("system_state") == "automatic":
+        if self._configuration.get_property("system_state") == SystemState.automatic:
             self.__dynamic_environment__ = False
-        elif self._configuration.get_property("system_state") == "dynamic":
+        elif self._configuration.get_property("system_state") == SystemState.dynamic:
             self.__dynamic_environment__ = True
 
         if self._configuration.get_property("debugging"):
