@@ -464,7 +464,7 @@ class ISpell(ISealable, Protocol):
         """
         ...
 
-    def _add_owned_conduit(self, conduit_id: UUID, conduit_name: str = None ):
+    def _add_owned_conduit(self, conduit_id: UUID, conduit_name: str = None, creations: Any = None):
         """
         Assigns ownership of this spell to a specific Conduit.
 

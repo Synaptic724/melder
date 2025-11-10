@@ -84,13 +84,15 @@ class Configuration(Sealable):
         self.check_sealed()
         if not isinstance(key, str):
             raise TypeError("Key must be a string.")
+
         with self._lock:
             if key in self._idempotent_keys and key in self._properties:
                 raise RuntimeError(f"Cannot modify idempotent property '{key}' once set.")
+
             if self._frozen:
                 raise RuntimeError("Cannot modify configuration after it is frozen.")
-            if key == "system_state" and not isinstance(value, SystemState):
-                raise ValueError("system_state must be a SystemState enum.")
+
+            value = self._convert_enum_if_needed(key, value)
             self._properties[key] = value
 
     def clear_properties(self) -> None:
@@ -281,7 +283,7 @@ class Configuration(Sealable):
         """
         self.check_sealed()
         self._properties.batch_update(lambda d: d.update({
-            "system_state": SystemState.automatic,
+            "system_state": self._convert_enum_if_needed("system_state", "automatic"),
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],

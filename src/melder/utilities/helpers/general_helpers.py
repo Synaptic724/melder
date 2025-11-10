@@ -18,6 +18,9 @@ class EnumHelpers:
 
         If value is already an Enum member of the correct type, it is returned as-is.
         """
+        if value is None:
+            raise ValueError("Enum value cannot be None.")
+
         if isinstance(value, enum):
             return value
 

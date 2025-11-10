@@ -6,6 +6,7 @@ from threading import RLock
 
 # Melder Imports
 from melder.aether.aether import Aether
+from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.sealable import Sealable
 from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
@@ -739,7 +740,7 @@ class Spellbook(Sealable, ISpellbook):
     #endregion Configuration API
     #region Conduit API
 
-    def create_new_preset_spellbook(self) -> 'Spellbook':
+    def create_new_preset_spellbook(self) -> ISpellbook:
         """
         Internal
 
@@ -827,7 +828,7 @@ class Spellbook(Sealable, ISpellbook):
         Raises:
             RuntimeError: If a dynamic policy is requested while `system_state` is set to "automatic".
         """
-        if self._configuration.get_property("system_state") == "automatic" and policy != Policies.automatic:
+        if self._configuration.get_property("system_state") == SystemState.automatic and policy != Policies.automatic.name:
             raise RuntimeError(
                 "Cannot use dynamic policies in automatic mode. "
                 "Please set system_state to 'dynamic' in the configuration."
