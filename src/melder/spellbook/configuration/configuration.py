@@ -5,7 +5,7 @@ from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDic
 from melder.utilities.general_base.sealable import Sealable
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.interfaces.interfaces import IConfiguration
+from melder.utilities.interfaces.interfaces import IConfiguration, IAethericFrame
 from melder.utilities.helpers.package import Pack
 
 class Configuration(Sealable, IConfiguration):
@@ -31,7 +31,7 @@ class Configuration(Sealable, IConfiguration):
         # Thread-safe lock for concurrent access
         super().__init__()
         self._lock = threading.RLock()
-        self._aether_frame = aether_frame
+        self._aether_frame: str = aether_frame
         self._sealed = False
         self._frozen = False
 
@@ -44,10 +44,11 @@ class Configuration(Sealable, IConfiguration):
             "debugging": bool,
             "disposal": bool,
             "disposal_method_names": list,
+            "propagate_factory_logger": bool,
         })
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
-        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
+        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names", "propagate_factory_logger"}
 
     def seal(self) -> None:
         """
@@ -143,12 +144,19 @@ class Configuration(Sealable, IConfiguration):
             TypeError: If 'factory' is not callable.
         """
         self.check_sealed()
+        if factory is None:
+            raise TypeError("logger_factory cannot be None; must be callable(obj) -> Any")
         if self._frozen:
             raise RuntimeError("Cannot modify logger factory after configuration is frozen.")
         if not callable(factory):
             raise TypeError("logger_factory must be callable(obj) -> Any")
+
+        packed_callable = Pack.bundle(factory)
+        if packed_callable.is_async:
+            raise TypeError("logger_factory must be a synchronous callable.")
+
         with self._lock:
-            self._logger_factory = Pack.bundle(factory)
+            self._logger_factory = packed_callable
             self._logger_factory_set = True
 
 
@@ -335,6 +343,7 @@ class Configuration(Sealable, IConfiguration):
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
+            "propagate_factory_logger": True,
         }))
 
     def has_logger_factory(self) -> bool:

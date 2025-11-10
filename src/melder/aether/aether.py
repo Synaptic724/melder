@@ -1,7 +1,7 @@
 import logging
 import uuid
 from threading import RLock
-from typing import Optional
+from typing import Optional, Any
 import ulid
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
@@ -36,7 +36,7 @@ class Aether(Sealable):
                     cls._instance = super(Aether, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, logger: IChannelLogger | logging.Logger | logging.Handler | None = None):
+    def __init__(self, logger: Any | None = None):
         """Initializes the Aether singleton, creating the 'default' frame."""
         if not Aether._initialized:
             super().__init__()

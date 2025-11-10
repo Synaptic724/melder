@@ -1992,6 +1992,7 @@ class IConfiguration(ISealable, Protocol):
     _frozen: bool
     available_properties: 'ConcurrentDict[str, Type]'
     _logger_factory: 'Pack[[object], Any] | None'
+    _aether_frame: str
     # --- Lifecycle ---
 
     def seal(self) -> None:

@@ -18,6 +18,7 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.utilities.helpers.init_helpers import InitHelpers
 
 #region Spellbook
 class Spellbook(Sealable, ISpellbook):
@@ -64,7 +65,7 @@ class Spellbook(Sealable, ISpellbook):
         * If configuration is already shared via an Aether frame, it will be reused.
     """
     _aether = Aether()
-    def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None):
+    def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None, logger: Any | None = None):
         super().__init__()
         self._lock = RLock()
         self._id: str = str(ulid.ULID()) # Unique internal ID for tracking
@@ -72,12 +73,24 @@ class Spellbook(Sealable, ISpellbook):
         # Internal state
         self._conjured = False
         self._aetheric_frame = aetheric_frame
-        if not isinstance(self._aetheric_frame, str):
-            raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
 
         # Configuration state
         self._configuration_locked: bool = False
         self._configuration: IConfiguration = configuration
+        self._initialize_configuration()
+
+        if logger is not None:
+            self._logger = InitHelpers.resolve_safe_logger(logger)
+        else:
+            if configuration._logger_factory is not None:
+                self._logger = configuration.get_logger_for(self)
+            else:
+                self._logger = InitHelpers.resolve_safe_logger(None)
+
+
+        if not isinstance(self._aetheric_frame, str):
+            raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
+
 
         # Core spell storage (SHA256-keyed)
         self._spells: ConcurrentDict[str, ISpell] = ConcurrentDict()
@@ -88,7 +101,7 @@ class Spellbook(Sealable, ISpellbook):
         self._contracted_spells: ConcurrentDict[UUID, ConcurrentDict[str, ISpell]] = ConcurrentDict(ConcurrentDict())
         self._lookup_contracted_spells: ConcurrentDict[UUID, ConcurrentDict[tuple, str]]  = ConcurrentDict(ConcurrentDict())
 
-        self._initialize_configuration()
+
 
         # Binding system
         self._bind = Bind()
@@ -622,22 +635,34 @@ class Spellbook(Sealable, ISpellbook):
         """
         Internal
 
-        Initializes the configuration for the Spellbook by attempting to retrieve an existing
-        `Configuration` from the Aether based on the `aetheric_frame`. If none exists, a new
-        default configuration is created.
-
-        Raises:
-            RuntimeError: If an existing configuration's frame does not match the Spellbook's frame.
+        Initialize configuration with the following rules:
+          - If Aether already has a config for this frame:
+              * If a config was passed in and it's not the same object, throw.
+              * Otherwise, adopt the Aether config and mark as locked.
+          - If Aether has no config:
+              * If a config was passed in, verify its frame matches and keep it (unlocked).
+              * Otherwise create a fresh Configuration for this frame (unlocked).
         """
-        self._configuration: Any = self._get_configuration_from_aether()
+        aether_config: Optional[IConfiguration] = self._get_configuration_from_aether()
 
-        if self._configuration:
+        if aether_config is not None:
+            if self._configuration is not None and aether_config is not self._configuration:
+                raise RuntimeError("Aether configuration does not match the provided configuration.")
+            self._configuration = aether_config
+            self._configuration_locked = True
+            return
+
+        # No config in Aether
+        if self._configuration is not None:
             if self._configuration._aether_frame != self._aetheric_frame:
                 raise RuntimeError("Configuration name does not match the aetheric frame.")
-            self._configuration_locked = True
-        else:
-            self._configuration = Configuration(self._aetheric_frame)
             self._configuration_locked = False
+            return
+
+        # Create a new local configuration for this frame
+        self._configuration = Configuration(self._aetheric_frame)
+        self._configuration_locked = False
+
 
     def _get_configuration_from_aether(self) -> IConfiguration | None:
         """
@@ -666,7 +691,7 @@ class Spellbook(Sealable, ISpellbook):
                                system_state: Optional[str],
                                debugging: Optional[bool],
                                disposal: Optional[bool],
-                               disposal_method_names: Optional[List[str]]) -> None:
+                               disposal_method_names: Optional[List[str]],) -> None:
         """
         Public API
 
