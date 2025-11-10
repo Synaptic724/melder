@@ -1,6 +1,6 @@
 import threading
 from enum import Enum
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, Callable
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.general_base.sealable import Sealable
 from melder.spellbook.configuration.system_state import SystemState
@@ -34,17 +34,21 @@ class Configuration(Sealable, IConfiguration):
         self._sealed = False
         self._frozen = False
 
+        self._logger_factory: Callable[[object], Any] | None = None
+        self._logger_factory_set = False  # tracks if user changed it
+
         # Private dictionary storing all properties.
         self._properties: ConcurrentDict = ConcurrentDict()
         self.available_properties: ConcurrentDict[str, Type] = ConcurrentDict({
             "system_state": SystemState,
             "debugging": bool,
             "disposal": bool,
-            "disposal_method_names": list
+            "disposal_method_names": list,
+            "propagate_logger_factory": bool,
         })
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
-        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
+        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names", "propagate_logger_factory"}
 
     def seal(self) -> None:
         """
@@ -62,6 +66,13 @@ class Configuration(Sealable, IConfiguration):
                 return
             self._sealed = True
             self._frozen = True
+
+            if self._logger_factory is not None:
+                if hasattr(self._logger_factory, "cleanup"):
+                    self._logger_factory.cleanup()
+                self._logger_factory = None
+            self._logger_factory_set = False
+
             self._properties.cleanup()
             self._properties = None
             self.available_properties.cleanup()
@@ -115,6 +126,46 @@ class Configuration(Sealable, IConfiguration):
             if self._frozen:
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
             self._properties.clear()
+
+    def set_logger_factory(self, factory: Callable[[object], Any]) -> None:
+        """
+        Set the logger factory used by this configuration to produce per-object loggers.
+
+        Contract:
+            factory(obj: object) -> Any
+            (e.g., Iris ChannelLogger, SafeLogger, stdlib logger, or None)
+
+        Rules:
+            - Must be set BEFORE freeze().
+            - Not part of the idempotent properties.
+            - Thread-safe replacement.
+
+        Raises:
+            RuntimeError: If the configuration is sealed or frozen.
+            TypeError: If 'factory' is not callable.
+        """
+        self.check_sealed()
+        if self._frozen:
+            raise RuntimeError("Cannot modify logger factory after configuration is frozen.")
+        if not callable(factory):
+            raise TypeError("logger_factory must be callable(obj) -> Any")
+        with self._lock:
+            self._logger_factory = factory
+            self._logger_factory_set = True
+
+
+    def get_logger_for(self, obj: object) -> Any | None:
+        """
+        Resolve a logger-like for 'obj' using the current logger factory.
+
+        Returns:
+            Any: Whatever the factory returns (Iris logger, SafeLogger, stdlib logger, or None).
+        """
+        with self._lock:
+            factory = self._logger_factory
+        if factory is None:
+            return None
+        return factory(obj)
 
     def freeze(self) -> None:
         """
@@ -285,12 +336,49 @@ class Configuration(Sealable, IConfiguration):
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
+            "propagate_logger_factory": False,
         }))
 
+    def has_logger_factory(self) -> bool:
+        """Return True if a logger factory has been set."""
+        with self._lock:
+            return self._logger_factory is not None
 
     # ---------------------------
     # Fluent / Builder-style API
     # ---------------------------
+
+    def with_logger_propagation(self, enabled: bool = True) -> IConfiguration:
+        """
+        Fluent
+
+        Enable/disable logger factory propagation behavior for this frame and return `self`.
+        """
+        self.set_property("propagate_logger_factory", enabled)
+        return self
+
+    def clear_logger_factory(self) -> IConfiguration:
+        """
+        Clear the logger factory (pre-freeze only) and return `self`.
+        """
+        self.check_sealed()
+        if self._frozen:
+            raise RuntimeError("Cannot modify logger factory after configuration is frozen.")
+        with self._lock:
+            self._logger_factory = None
+            self._logger_factory_set = False
+        return self
+
+    def with_logger_factory(self, factory: Callable[[object], Any]) -> IConfiguration:
+        """
+        Fluent
+
+        Set the logger factory (factory(obj) -> Any) and return `self`.
+        Must be called before freeze().
+        """
+        self.set_logger_factory(factory)
+        return self
+
 
     def with_defaults(self) -> IConfiguration:
         """
