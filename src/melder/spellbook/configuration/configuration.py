@@ -6,18 +6,24 @@ from melder.spellbook.configuration.system_state import SystemState
 
 class Configuration(Sealable):
     """
-    Configuration governs the behavior of the system.
+    Configuration governs the behavior of the entire system.
 
     It acts as the configuration core for:
-      - How Conduits manage their services
-      - How Scopes and dynamic behaviors function
-      - System-wide flags such as debugging mode, dynamic expansion, and policies
+    * **Conduit Management:** How Conduits handle service lifecycles.
+    * **Dynamic Behavior:** Flags controlling dynamic linking, expansion, and policies.
+    * **System Flags:** Global settings like debugging mode and resource disposal.
 
-    This object should only be configured once and then frozen to prevent any further changes.
-    Thread-safe operations are ensured with RLock.
+    This object should only be configured once and then frozen to prevent any further changes,
+    enforcing idempotent laws across the system. Thread-safe operations are ensured with RLock.
     """
 
     def __init__(self, aether_frame: str = "default"):
+        """
+        Initializes a new Configuration manager.
+
+        Args:
+            aether_frame (str): The name of the Aether frame this configuration is associated with (defaults to "default").
+        """
         # Thread-safe lock for concurrent access
         super().__init__()
         self._lock = threading.RLock()
@@ -39,9 +45,12 @@ class Configuration(Sealable):
 
     def seal(self) -> None:
         """
-        Seal the properties, preventing any further modifications.
+        Seals the configuration, preventing any further modifications and cleaning up resources.
 
-        This is called automatically during Aether conjure.
+        This method sets both the `sealed` and `frozen` flags.
+
+        Raises:
+            RuntimeError: If the configuration is already sealed.
         """
         if self._sealed:
             return
@@ -57,13 +66,20 @@ class Configuration(Sealable):
 
     def set_property(self, key: str, value: Any) -> None:
         """
-        Define or overwrite a property.
+        Defines or overwrites a property in the configuration.
 
-        - Idempotent properties (like 'conduit_state', 'debugging', etc.)
-          can only be set once. Attempts to overwrite will raise an error,
-          even before the configuration is frozen.
+        - **Idempotent properties** (e.g., 'system_state') can only be set *once* before the configuration is sealed.
+        - **Non-idempotent properties** can be freely modified before the configuration is frozen.
 
-        - Non-idempotent properties can be freely modified before freeze.
+        Args:
+            key (str): The name of the property to set.
+            value (Any): The value for the property.
+
+        Raises:
+            RuntimeError: If the configuration is sealed or frozen.
+            RuntimeError: If attempting to modify an idempotent property that is already set.
+            TypeError: If `key` is not a string.
+            ValueError: If an enum conversion fails.
         """
         self.check_sealed()
         if not isinstance(key, str):
@@ -81,9 +97,12 @@ class Configuration(Sealable):
 
     def clear_properties(self) -> None:
         """
-        Clear all properties in the configuration.
+        Clears all properties in the configuration.
 
-        This method is useful for resetting the configuration to its initial state.
+        This method is useful for resetting the configuration to its initial state before it is frozen.
+
+        Raises:
+            RuntimeError: If the configuration is sealed or frozen.
         """
         self.check_sealed()
         with self._lock:
@@ -93,16 +112,18 @@ class Configuration(Sealable):
 
     def freeze(self) -> None:
         """
-        Freeze the property system.
+        Freezes the configuration property system.
 
-        Once frozen:
-          - Critical properties like 'dynamic' and 'debugging' can no longer be modified.
-          - Non-idempotent properties can still be adjusted if needed (depending on design choice).
+        Once frozen, no properties, including non-idempotent ones, can be modified.
+        Validation is performed automatically upon freezing.
 
-        This is called automatically during Aether conjure.
+        Raises:
+            RuntimeError: If the configuration is sealed.
+            ValueError: If configuration validation fails prior to freezing (e.g., missing required properties).
         """
         self.check_sealed()
         if not self.validate():
+            # Note: validate() itself raises ValueError with a specific message.
             raise ValueError("Configuration validation failed. Cannot freeze.")
         self._properties.freeze()
         with self._lock:
@@ -110,10 +131,16 @@ class Configuration(Sealable):
 
     def validate(self) -> bool:
         """
-        Validate that all required configuration properties exist and match expected types.
+        Validates that all required configuration properties exist and match expected types.
+
+        Performs both presence/type checks and enum-specific validation.
+
+        Returns:
+            bool: True if all validation checks pass.
 
         Raises:
-            ValueError: If any property is missing or has the wrong type.
+            RuntimeError: If the configuration is sealed.
+            ValueError: If any property is missing or has the wrong type/value.
         """
         self.check_sealed()
         for key, expected_type in self.available_properties.items():
@@ -121,22 +148,36 @@ class Configuration(Sealable):
                 raise ValueError(f"Missing required configuration property: '{key}'.")
 
             value = self._properties[key]
-            if not isinstance(value, expected_type if isinstance(expected_type, tuple) else (expected_type,)):
+            # Handle tuple of expected types
+            if not isinstance(expected_type, tuple):
+                expected_type = (expected_type,)
+
+            if not isinstance(value, expected_type):
+                expected_names = [t.__name__ for t in expected_type]
                 raise ValueError(
                     f"Invalid type for property '{key}': "
-                    f"expected {expected_type.__name__}, got {type(value).__name__}."
+                    f"expected {', '.join(expected_names)}, got {type(value).__name__}."
                 )
 
         # Additional validation for specific properties
         if self.validate_enums():
             return True
         else:
+            # Should be caught by validate_enums internal ValueError, but included for safety.
             raise ValueError("Enum validation failed. Invalid enum values found in properties.")
 
     def validate_enums(self) -> bool:
         """
-        Validate that all enum properties are set to valid values.
-        :return:
+        Internal
+
+        Validates that all properties intended to be Enums (like `SystemState`) are indeed set to a valid Enum instance.
+
+        Returns:
+            bool: True if all enum values are valid.
+
+        Raises:
+            RuntimeError: If the configuration is sealed.
+            ValueError: If a known enum property is set to an invalid type.
         """
         self.check_sealed()
         # Additional validation for specific properties
@@ -151,10 +192,21 @@ class Configuration(Sealable):
 
     def _convert_enum_if_needed(self, key: str, value: Any) -> Any:
         """
+        Internal
+
         Converts string inputs into the correct enum types for known keys.
-        Raises ValueError if the conversion fails.
+
+        Args:
+            key (str): The property key.
+            value (Any): The value to check/convert.
+
+        Returns:
+            Any: The converted Enum value or the original value if no conversion is needed.
+
+        Raises:
+            ValueError: If the string value is not a valid enum member or if the input type is incorrect.
         """
-        enum_map = {
+        enum_map: Dict[str, Type] = {
             "system_state": SystemState,
         }
 
@@ -177,13 +229,17 @@ class Configuration(Sealable):
 
     def get_property(self, key: str) -> Any:
         """
-        Retrieve the value of a property.
+        Retrieves the value of a configuration property.
 
-        :param key: The name of the property.
-        :return: The stored value (str, int, or bool).
+        Args:
+            key (str): The name of the property.
+
+        Returns:
+            Any: The stored value (str, int, bool, Enum, etc.).
 
         Raises:
-            KeyError if the property does not exist.
+            RuntimeError: If the configuration is sealed.
+            KeyError: If the property does not exist in the configuration.
         """
         self.check_sealed()
         try:
@@ -193,24 +249,37 @@ class Configuration(Sealable):
 
     def has_property(self, key: str) -> bool:
         """
-        Check if a property is defined.
+        Checks if a configuration property is defined.
 
-        :param key: The property name to check.
-        :return: True if the property exists, False otherwise.
+        Args:
+            key (str): The property name to check.
+
+        Returns:
+            bool: True if the property exists, False otherwise.
+
+        Raises:
+            RuntimeError: If the configuration is sealed.
         """
         self.check_sealed()
         return key in self._properties
 
     def __iter__(self):
         """
-        Allow iteration over the properties.
-        :return: Property names (keys) in the configuration.
+        Allows iteration over the configuration properties (keys).
+
+        Returns:
+            Iterator: Property names (keys) in the configuration.
         """
         return iter(self._properties)
 
     def load_default_dictionary(self) -> None:
         """
-        Load and apply the default dictionary of properties atomically.
+        Loads and applies a default set of properties atomically.
+
+        This method sets sensible defaults for core properties like `system_state`, `debugging`, and `disposal`.
+
+        Raises:
+            RuntimeError: If the configuration is sealed.
         """
         self.check_sealed()
         self._properties.batch_update(lambda d: d.update({
