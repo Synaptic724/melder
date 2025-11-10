@@ -3,6 +3,9 @@ from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dic
 from uuid import UUID
 import uuid
 
+from melder.utilities.logger.std_logger_factory import StdLoggerFactory
+
+
 @runtime_checkable
 class ICleanable(Protocol):
     """
@@ -2005,12 +2008,17 @@ class IConfiguration(ISealable, Protocol):
 
     # --- Core property API ---
 
-    def set_logger_factory(self, factory: Callable[[object], Any]) -> None:
+    def set_logger_factory(self, factory: Callable[[object], Any] = None) -> None:
         """
         Set the logger factory used to produce per-object loggers.
 
         Contract:
-            factory(obj: object) -> Any  (Iris logger, SafeLogger, stdlib logger, or None)
+            factory(obj: object) -> Any   # e.g., Iris ChannelLogger, SafeLogger, stdlib Logger, or None
+
+        Usage:
+            - Call with no arguments to install the implementation's default factory
+              (the concrete Configuration uses StdLoggerFactory()).
+            - Or pass a specific factory to override the default.
 
         Rules:
             - Must be set BEFORE freeze().

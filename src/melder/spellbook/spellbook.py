@@ -1,6 +1,6 @@
 from types import MappingProxyType
 from uuid import UUID
-from typing import Optional, List, Any, Mapping
+from typing import Optional, List, Any, Mapping, Callable
 import ulid
 from threading import RLock
 
@@ -65,32 +65,25 @@ class Spellbook(Sealable, ISpellbook):
         * If configuration is already shared via an Aether frame, it will be reused.
     """
     _aether = Aether()
-    def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None, logger: Any | None = None):
+    def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None,
+                 logger: Any | None = None):
         super().__init__()
-        self._lock = RLock()
-        self._id: str = str(ulid.ULID()) # Unique internal ID for tracking
 
         # Internal state
+        self._lock = RLock()
+        self._id: str = str(ulid.ULID()) # Unique internal ID for tracking
         self._conjured = False
         self._aetheric_frame = aetheric_frame
+        if not isinstance(self._aetheric_frame, str):
+            raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
 
         # Configuration state
         self._configuration_locked: bool = False
         self._configuration: IConfiguration = configuration
         self._initialize_configuration()
 
-        if logger is not None:
-            self._logger = InitHelpers.resolve_safe_logger(logger)
-        else:
-            if configuration._logger_factory is not None:
-                self._logger = configuration.get_logger_for(self)
-            else:
-                self._logger = InitHelpers.resolve_safe_logger(None)
-
-
-        if not isinstance(self._aetheric_frame, str):
-            raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
-
+        # Logger setup
+        self._initialize_logging(logger)
 
         # Core spell storage (SHA256-keyed)
         self._spells: ConcurrentDict[str, ISpell] = ConcurrentDict()
@@ -100,8 +93,6 @@ class Spellbook(Sealable, ISpellbook):
         # This stores spells borrowed from other conduits (keyed by peer Conduit UUID)
         self._contracted_spells: ConcurrentDict[UUID, ConcurrentDict[str, ISpell]] = ConcurrentDict(ConcurrentDict())
         self._lookup_contracted_spells: ConcurrentDict[UUID, ConcurrentDict[tuple, str]]  = ConcurrentDict(ConcurrentDict())
-
-
 
         # Binding system
         self._bind = Bind()
@@ -119,6 +110,68 @@ class Spellbook(Sealable, ISpellbook):
         raise NotImplementedError("Sealing is not implemented yet.")
 
     #endregion Disposal
+
+    #region Logging
+    # --- add these methods to Spellbook ---
+
+    def _initialize_logging(self, logger: Any | None) -> None:
+        """
+        Internal
+
+        Establish the Spellbook logger, then ensure Aether has a real logger if a
+        configuration-backed factory exists.
+
+        Priority:
+            1) Explicit logger arg
+            2) Configuration's logger factory
+            3) Silent no-op logger
+
+        Side-effect:
+            If Aether is still on a null logger and a factory exists, upgrade Aether
+            to a real logger exactly once.
+        """
+        cfg = self._configuration
+
+        # 1) Explicit logger wins
+        if logger is not None:
+            self._logger = InitHelpers.resolve_safe_logger(logger)
+        # 2) Config factory
+        elif cfg is not None and cfg.has_logger_factory():
+            self._logger = InitHelpers.resolve_safe_logger(cfg.get_logger_for(self))
+        # 3) Silent
+        else:
+            self._logger = InitHelpers.resolve_safe_logger(None)
+
+        # After we have cfg (post _initialize_configuration), upgrade Aether if possible.
+        self._upgrade_aether_logger_if_possible()
+
+    def _upgrade_aether_logger_if_possible(self) -> None:
+        """
+        Internal
+
+        If a Configuration-backed logger factory exists, and the Aether singleton
+        is still using a null/no-op SafeLogger, upgrade Aether to a real logger.
+
+        This runs at Spellbook construction time when a Configuration finally exists.
+        """
+        cfg = self._configuration
+        if cfg is None or not cfg.has_logger_factory():
+            return
+
+        aether = Spellbook._aether
+
+        # Detect null SafeLogger by checking its underlying sink is None.
+        # (We own SafeLogger, so this direct attribute check is acceptable.)
+        try:
+            if aether._logger is not None and aether._logger._logger is None:
+                aether_logger = cfg.get_logger_for(aether)
+                aether._logger = InitHelpers.resolve_safe_logger(aether_logger)
+        except AttributeError:
+            # If Aether didn't have a SafeLogger yet (unlikely), just adopt one now.
+            aether_logger = cfg.get_logger_for(aether)
+            aether._logger = InitHelpers.resolve_safe_logger(aether_logger)
+
+    #endregion Logging
     #region Properties
 
     @property
@@ -684,18 +737,27 @@ class Spellbook(Sealable, ISpellbook):
         """
         return self._configuration_locked
 
-    def configure_aether_frame(self,
-                               *,
-                               system_state: Optional[str],
-                               debugging: Optional[bool],
-                               disposal: Optional[bool],
-                               disposal_method_names: Optional[List[str]],) -> None:
+    def configure_aether_frame(
+            self,
+            *,
+            system_state: Optional[str],
+            debugging: Optional[bool],
+            disposal: Optional[bool],
+            disposal_method_names: Optional[List[str]],
+            logger_factory: Optional[Callable[[object], Any]] = None,
+            use_default_std_logger: bool = False,
+    ) -> None:
         """
         Public API
 
-        Configures the systems operational state and access control behavior before the configuration is sealed.
+        Consolidated setup for this Spellbook's Aether frame:
+          1) (Optional) Install a logger factory on the configuration.
+          2) Apply provided configuration properties.
+          3) Validate + freeze configuration.
+          4) Bind the configuration to the Aether.
+          5) Upgrade Aether's logger exactly once if a factory exists.
 
-        Once sealed during `conjure()`, the configuration becomes immutable.
+        Once frozen during this call, the configuration becomes immutable.
 
         Args:
             system_state (str, optional):
@@ -705,49 +767,141 @@ class Spellbook(Sealable, ISpellbook):
             disposal (bool, optional):
                 Enables automatic resource disposal upon conduit sealing.
             disposal_method_names (List[str], optional):
-                A list of method names to invoke on created objects during disposal.
+                Method names to invoke on created objects during disposal.
+            logger_factory (Callable[[object], Any], optional):
+                Specific logger factory to install prior to freezing. If provided,
+                it overrides `use_default_std_logger`.
+            use_default_std_logger (bool):
+                If True and `logger_factory` not provided, installs the default
+                StdLoggerFactory() via `set_logger_factory()`.
 
         Raises:
             RuntimeError: If the configuration has already been locked/sealed.
             KeyError: If an unknown configuration key is provided.
-            ValueError: If the provided configuration fails validation (e.g., invalid system state value).
+            ValueError: If the provided configuration fails validation.
+            TypeError: If the provided logger factory is invalid.
         """
         if self._configuration_locked:
             raise RuntimeError("Configuration is locked. Cannot modify conduit state.")
+
+        # 1) Logger factory (optional, must be pre-freeze)
+        self._maybe_install_logger_factory(logger_factory, use_default_std_logger)
+
+        # 2) Properties (only those explicitly provided)
+        self._apply_configuration_properties(
+            system_state=system_state,
+            debugging=debugging,
+            disposal=disposal,
+            disposal_method_names=disposal_method_names,
+        )
+
+        # 3) Validate & freeze
+        self._validate_and_freeze_configuration()
+
+        # 4) Bind to Aether
+        self._bind_configuration_to_aether()
+
+        # 5) Last: upgrade Aether logger if we now have a factory
+        self._upgrade_aether_logger_if_possible()
+
+
+    # --- ADD these helpers to Spellbook ---
+
+    def _maybe_install_logger_factory(
+            self,
+            logger_factory: Optional[Callable[[object], Any]],
+            use_default_std_logger: bool,
+    ) -> None:
+        """
+        Internal
+
+        Installs a logger factory onto the configuration (pre-freeze) if requested.
+
+        Priority:
+          - If `logger_factory` provided, use it.
+          - Else, if `use_default_std_logger` is True, call `set_logger_factory()`
+            which uses the StdLoggerFactory() default from the Configuration API.
+          - Else, do nothing (silent logging).
+        """
+        cfg = self._configuration
+        if logger_factory is not None:
+            cfg.set_logger_factory(logger_factory)
+        elif use_default_std_logger:
+            cfg.set_logger_factory()  # uses StdLoggerFactory() by default
+
+
+    def _apply_configuration_properties(
+            self,
+            *,
+            system_state: Optional[str],
+            debugging: Optional[bool],
+            disposal: Optional[bool],
+            disposal_method_names: Optional[List[str]],
+    ) -> None:
+        """
+        Internal
+
+        Applies only the provided properties to the configuration (pre-freeze).
+        Enforces allowed keys using the configuration's `available_properties`.
+        """
+        cfg = self._configuration
 
         kwargs = {
             k: v for k, v in {
                 "system_state": system_state,
                 "debugging": debugging,
                 "disposal": disposal,
-                "disposal_method_names": disposal_method_names
+                "disposal_method_names": disposal_method_names,
             }.items() if v is not None
         }
 
         try:
             for key, value in kwargs.items():
-                if key not in self._configuration.available_properties:
+                if key not in cfg.available_properties:
                     raise KeyError(
                         f"Unknown configuration key '{key}'. "
-                        f"Allowed keys are: {list(self._configuration.available_properties.keys())}"
+                        f"Allowed keys are: {list(cfg.available_properties.keys())}"
                     )
-
-                self._configuration.set_property(key, value)
-
-            if not self._configuration.validate():
-                raise ValueError("Invalid configuration. Please check your settings.")
-
-            self._configuration.freeze()
-            self._configuration_locked = True
-            Spellbook._aether._bind_configuration(
-                self._configuration, self._aetheric_frame
-            )
-        except (KeyError, ValueError) as e:
-            # If validation or key setting fails, revert the changes
-            self._configuration.clear_properties()
-            raise e
+                cfg.set_property(key, value)
         except Exception:
+            # No partial freeze here—let caller handle clear/failure if needed
             raise
+
+
+    def _validate_and_freeze_configuration(self) -> None:
+        """
+        Internal
+
+        Validates configuration, then freezes it (no further mutation allowed).
+        Sets `_configuration_locked` upon success.
+
+        Raises:
+            ValueError: If validation fails.
+        """
+        cfg = self._configuration
+        try:
+            if not cfg.validate():
+                raise ValueError("Invalid configuration. Please check your settings.")
+            cfg.freeze()
+            self._configuration_locked = True
+        except Exception:
+            # Roll back property changes to avoid leaving a broken state around
+            try:
+                cfg.clear_properties()
+            except Exception:
+                # best-effort; if this fails, let original error surface
+                pass
+            raise
+
+
+    def _bind_configuration_to_aether(self) -> None:
+        """
+        Internal
+
+        Binds the now-frozen configuration to the Aether for this Spellbook's frame.
+        """
+        Spellbook._aether._bind_configuration(self._configuration, self._aetheric_frame)
+
 
     def get_configuration(self) -> IConfiguration:
         """

@@ -131,26 +131,24 @@ class Configuration(Sealable, IConfiguration):
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
             self._properties.clear()
 
-    def set_logger_factory(self, factory: Callable[[object], Any] = StdLoggerFactory()) -> None:
+    def set_logger_factory(self, factory: Callable[[object], Any] = None) -> None:
         """
-        Set the logger factory used by this configuration to produce per-object loggers.
+        Set the logger factory used to produce per-object loggers.
 
         Contract:
-            factory(obj: object) -> Any
-            (e.g., Iris ChannelLogger, SafeLogger, stdlib logger, or None)
+            factory(obj: object) -> Any   # e.g., Iris ChannelLogger, SafeLogger, stdlib Logger, or None
+
+        Usage:
+            - Call with no arguments to install the implementation's default factory
+              (the concrete Configuration uses StdLoggerFactory()).
+            - Or pass a specific factory to override the default.
 
         Rules:
             - Must be set BEFORE freeze().
-            - Not part of the idempotent properties.
-            - Thread-safe replacement.
-
-        Raises:
-            RuntimeError: If the configuration is sealed or frozen.
-            TypeError: If 'factory' is not callable.
         """
         self.check_sealed()
         if factory is None:
-            raise TypeError("logger_factory cannot be None; must be callable(obj) -> Any")
+            factory = StdLoggerFactory()
         if self._frozen:
             raise RuntimeError("Cannot modify logger factory after configuration is frozen.")
         if not callable(factory):
