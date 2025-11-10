@@ -34,7 +34,7 @@ class Configuration(Sealable):
         # Private dictionary storing all properties.
         self._properties: ConcurrentDict = ConcurrentDict()
         self.available_properties: Dict[str, Type] = {
-            "system_state": (str, SystemState),
+            "system_state": SystemState,
             "debugging": bool,
             "disposal": bool,
             "disposal_method_names": list
@@ -84,15 +84,13 @@ class Configuration(Sealable):
         self.check_sealed()
         if not isinstance(key, str):
             raise TypeError("Key must be a string.")
-
         with self._lock:
             if key in self._idempotent_keys and key in self._properties:
                 raise RuntimeError(f"Cannot modify idempotent property '{key}' once set.")
-
             if self._frozen:
                 raise RuntimeError("Cannot modify configuration after it is frozen.")
-
-            value = self._convert_enum_if_needed(key, value)
+            if key == "system_state" and not isinstance(value, SystemState):
+                raise ValueError("system_state must be a SystemState enum.")
             self._properties[key] = value
 
     def clear_properties(self) -> None:
@@ -283,7 +281,7 @@ class Configuration(Sealable):
         """
         self.check_sealed()
         self._properties.batch_update(lambda d: d.update({
-            "system_state": self._convert_enum_if_needed("system_state", "automatic"),
+            "system_state": SystemState.automatic,
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
