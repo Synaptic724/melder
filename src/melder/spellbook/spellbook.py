@@ -119,8 +119,6 @@ class Spellbook(Sealable, ISpellbook):
         raise NotImplementedError("Sealing is not implemented yet.")
 
     #endregion Disposal
-
-
     #region Properties
 
     @property

@@ -126,6 +126,29 @@ class Configuration(Sealable, IConfiguration):
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
             self._properties.clear()
 
+    def should_propagate(self) -> bool:
+        """
+        Internal
+
+        Return True if a logger factory is present AND propagation is enabled.
+        """
+        self.check_sealed()
+        with self._lock:
+            factory_present = self._logger_factory is not None
+            enabled = bool(self._properties.get("propagate_factory_logger", False))
+        return factory_present and enabled
+
+
+    def is_logger_propagation_enabled(self) -> bool:
+        """
+        Public API
+
+        Return the raw propagation flag (does not check for a factory).
+        """
+        self.check_sealed()
+        with self._lock:
+            return bool(self._properties.get("propagate_factory_logger", False))
+
     def set_logger_factory(self, factory: Callable[[object], Any]) -> None:
         """
         Set the logger factory used by this configuration to produce per-object loggers.
@@ -495,6 +518,22 @@ class Configuration(Sealable, IConfiguration):
                 extended.append(nm)
                 seen.add(nm)
         self.set_property("disposal_method_names", extended)
+        return self
+
+    def with_logger_propagation(self, enabled: bool = True) -> 'IConfiguration':
+        """
+        Fluent
+
+        Enable/disable propagation of the logger factory to Aether/Spellbook/Conduits
+        and return self.
+
+        Args:
+            enabled: True to enable propagation, False to disable.
+
+        Returns:
+            IConfiguration: this instance.
+        """
+        self.set_property("propagate_factory_logger", bool(enabled))
         return self
 
     def finalize(self) -> IConfiguration:

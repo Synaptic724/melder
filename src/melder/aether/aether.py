@@ -98,7 +98,7 @@ class Aether(Sealable):
     # region Configuration
 
     @property
-    def logger(self) -> IChannelLogger | logging.Logger | logging.Handler | None:
+    def logger(self) -> IChannelLogger | logging.Logger | None:
         """
         Gets the raw logger instance (IChannelLogger, Logger, or Handler)
         that is currently wrapped by the internal SafeLogger.
@@ -109,7 +109,7 @@ class Aether(Sealable):
         return self._logger._logger # Accesses the raw logger inside SafeLogger
 
     @logger.setter
-    def logger(self, value: IChannelLogger | logging.Logger | logging.Handler | None):
+    def logger(self, value: IChannelLogger | logging.Logger | None):
         """
         Sets or updates the logger for the Aether singleton.
 
