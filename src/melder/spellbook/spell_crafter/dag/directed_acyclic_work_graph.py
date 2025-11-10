@@ -66,10 +66,10 @@ class StateObject(Cleanable):
         Args:
             node_id: The unique identifier of the node to remove.
         """
-        node = self._dag.find_node_by_id(node_id)  # Find the node object in the DAG
+        node = self._dag.find_node_by_id(node_id)
         if node:
-            self._dag.remove_node(node)  # Remove the node from the DAG
-            print(f"[StateObject] Removed node {node_id} and its edges from the DAG.")
+            self._dag.remove_node(node)
+
 
     def recalc_topological_order(self):
         """
@@ -451,12 +451,16 @@ class DirectedAcyclicWorkGraph(Cleanable):
             node: The Node object to remove.
         """
         if node.id in self._nodes:
-            # Remove edges connected to this node by filtering the edges list
-            self._edges = [
-                e for e in self._edges
-                if e.from_node != node and e.to_node != node
-            ]
+            # Remove all edges connected to this node properly
+            for edge in list(node.get_incoming_edges()):
+                self.remove_edge(edge)
+            for edge in list(node.get_outgoing_edges()):
+                self.remove_edge(edge)
+
+            # Cleanup node resources before deletion
+            node.cleanup()
             del self._nodes[node.id]
+
 
     def add_edge(self, edge):
         """
@@ -481,8 +485,16 @@ class DirectedAcyclicWorkGraph(Cleanable):
         """
         if edge in self._edges:
             self._edges.remove(edge)
-        edge.from_node.remove_outgoing_edge(edge)  # Update the outgoing edges of the source node
-        edge.to_node.remove_incoming_edge(edge)    # Update the incoming edges of the destination node
+
+        # Detach from connected nodes explicitly
+        if edge.from_node is not None:
+            edge.from_node.remove_outgoing_edge(edge)
+        if edge.to_node is not None:
+            edge.to_node.remove_incoming_edge(edge)
+
+        # Clean up the edge object itself
+        edge.cleanup()
+
 
     def get_nodes(self):
         """

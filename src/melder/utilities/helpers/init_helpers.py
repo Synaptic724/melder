@@ -1,5 +1,5 @@
 import logging
-from melder.utilities.helpers.safe_logger import SafeLogger
+from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.interfaces.interfaces import IChannelLogger
 
 

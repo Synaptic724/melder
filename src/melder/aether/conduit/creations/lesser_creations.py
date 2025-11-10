@@ -1,11 +1,11 @@
 from uuid import UUID, uuid4
 from threading import RLock
 from typing import List, Optional
+import ulid
 # Melder imports
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.general_base.sealable import Sealable
-from melder.utilities.interfaces.interfaces import ISealable, ICleanable
 
 
 class LesserCreations(Sealable):
@@ -33,14 +33,13 @@ class LesserCreations(Sealable):
         indexed by the spell's unique ID (`UUID`).
         """
         super().__init__()
+        self._id: str = str(ulid.ULID())
+        self._lock = RLock()
         self._unique_per_scope: ConcurrentDict[UUID, object] = ConcurrentDict()
         self._many: ConcurrentDict[UUID, ConcurrentList[object]] = ConcurrentDict()
 
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
-
-        self._sealed = False
-        self._lock = RLock()
 
     #region Destructor
 

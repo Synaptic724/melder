@@ -1,10 +1,13 @@
 from uuid import UUID, uuid4
 from threading import RLock
 from typing import List, Optional
+import ulid
 # Melder imports
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.general_base.sealable import Sealable
+
+#TODO: Create a creations object to encapsulate the objects under my control.
 
 class Creations(Sealable):
     """
@@ -30,6 +33,7 @@ class Creations(Sealable):
         indexed by the spell's unique ID (`UUID`).
         """
         super().__init__()
+        self._id: str = str(ulid.ULID())
         self._lock = RLock()
         self._unique: ConcurrentDict[UUID, object] = ConcurrentDict()
         self._unique_per_scope: ConcurrentDict[UUID, object] = ConcurrentDict()
