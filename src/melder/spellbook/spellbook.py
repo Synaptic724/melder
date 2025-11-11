@@ -215,7 +215,6 @@ class Spellbook(Sealable, ISpellbook):
     #endregion Disposal
 
     #region Logging
-    # --- add these methods to Spellbook ---
 
     def _initialize_logging(self, logger: Any | None) -> None:
         """
@@ -809,26 +808,20 @@ class Spellbook(Sealable, ISpellbook):
             aether_config: Optional[IConfiguration] = self._get_configuration_from_aether()
             if aether_config is not None:
                 if self._configuration is not None and aether_config is not self._configuration:
-                    self._logger.error("Aether configuration does not match provided configuration", "_initialize_configuration", exc_info=True)
                     raise RuntimeError("Aether configuration does not match the provided configuration.")
                 self._configuration = aether_config
                 self._configuration_locked = True
-                self._logger.debug("Adopted configuration from Aether (locked=True)", "_initialize_configuration")
                 return
 
             if self._configuration is not None:
                 if self._configuration._aether_frame != self._aetheric_frame:
-                    self._logger.error("Configuration name does not match the aetheric frame", "_initialize_configuration", exc_info=True)
                     raise RuntimeError("Configuration name does not match the aetheric frame.")
                 self._configuration_locked = False
-                self._logger.debug("Using provided configuration (locked=False)", "_initialize_configuration")
                 return
 
             self._configuration = Configuration(self._aetheric_frame)
             self._configuration_locked = False
-            self._logger.debug("Created new Configuration (locked=False)", "_initialize_configuration")
         except Exception as e:
-            self._logger.error(f"Failed to initialize configuration: {e}", "_initialize_configuration", exc_info=True)
             raise
 
 

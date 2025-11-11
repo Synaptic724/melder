@@ -3,18 +3,20 @@ from logging import warning
 from typing import Optional, Type, Any, Tuple
 from uuid import UUID
 import ulid
+
+# Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
-from threading import RLock
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
 
@@ -44,7 +46,7 @@ class Conduit(Sealable, IConduit):
         """
         super().__init__()
         # General Init
-        self._lock: threading.RLock = RLock()
+        self._lock: threading.RLock = threading.RLock()
         self._id: str = str(ulid.ULID())
         self._name: str = name
         self.__debugger_mode__: bool = False
@@ -57,24 +59,59 @@ class Conduit(Sealable, IConduit):
             raise TypeError(f"Expected IConfiguration instance, got {type(configuration).__name__}")
 
         self._configuration: IConfiguration = configuration
-        self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
-        self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
-        self._spellbook: ISpellbook = spellbook
-        self._meld: Meld = Meld(self._creations, self._spellbook) # instance melder which is used by the conduit to create objects
+        self._logger = self._resolve_logger_from_config(configuration)
+        self._logger.debug(f"Conduit __init__ starting (frame='{aetheric_frame}', state={conduit_state.name}, name={name})", "__init__")
 
-        # Internal configuration
-        self._apply_configuration_flags()
-        self._conduit_ward: ConduitWard = ConduitWard(self, self.__dynamic_environment__, self._conduit_state, policy) # The conduit ward is responsible for maintaining the links between conduits and their behaviours.
+        self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
+        try:
+            self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
+        except Exception as e:
+            self._logger.error(f"_creations_configuration failed: {e}", "__init__", exc_info=True)
+            raise
+
+        self._spellbook: ISpellbook = spellbook
+        self._meld: Meld = Meld(self._creations, self._spellbook)
+
+        try:
+            self._apply_configuration_flags()
+            self._logger.debug(
+                f"Flags applied (dynamic={self.__dynamic_environment__}, debug={self.__debugger_mode__})",
+                "__init__"
+            )
+        except Exception as e:
+            self._logger.error(f"_apply_configuration_flags failed: {e}", "__init__", exc_info=True)
+            raise
+
+        try:
+            self._conduit_ward: ConduitWard = ConduitWard(self, self.__dynamic_environment__, self._conduit_state, policy)
+            self._logger.debug(
+                f"ConduitWard initialized (state={self._conduit_state.name}, policy={policy.name})",
+                "__init__"
+            )
+        except Exception as e:
+            self._logger.error(f"ConduitWard init failed: {e}", "__init__", exc_info=True)
+            raise
 
         if self._conduit_state == ConduitState.normal:
-            self._add_conduit_to_aether()
-            self._add_spells_to_aether()
-            if self.__dynamic_environment__ and self._name is not None:
-                Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
+            try:
+                self._logger.debug("Registering normal conduit into Aether", "__init__")
+                self._add_conduit_to_aether()
+                self._add_spells_to_aether()
+                if self.__dynamic_environment__ and self._name is not None:
+                    self._logger.debug(f"Registering conduit in cloud as '{self._name}'", "__init__")
+                    Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
+            except Exception as e:
+                self._logger.error(f"Normal conduit registration failed: {e}", "__init__", exc_info=True)
+                raise
         elif self._conduit_state == ConduitState.lesser:
             if self._name is not None:
-                warning("Lesser conduits cannot have a name. self._name is now set to None.")
+                self._logger.warning("Lesser conduits cannot have a name. Overriding to None.", "__init__")
             self._name = None
+
+        self._logger.debug(
+            f"Conduit initialized (id={self._creation_context._conduit_id}, frame='{self._aetheric_frame}')",
+            "__init__"
+        )
 
     #region Cleanup and Disposal
     def seal(self):
@@ -112,7 +149,22 @@ class Conduit(Sealable, IConduit):
             self._sealed = True
 
     #endregion Cleanup and Disposal
+    #region Logger
+    def _resolve_logger_from_config(self, configuration: IConfiguration) -> 'SafeLogger':
+        """
+        This internal method resolves the logger for this Conduit based on the provided configuration.
 
+        Args:
+            configuration (IConfiguration): The locked system configuration.
+
+        Returns:
+            SafeLogger: The resolved SafeLogger instance.
+        """
+        if configuration.has_logger_factory():
+            return InitHelpers.resolve_safe_logger(configuration.get_logger_for(self))
+        return InitHelpers.resolve_safe_logger(None)
+
+    #endregion Logger
     #region Utilities
     def __repr__(self):
         """
@@ -150,7 +202,9 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit name is already set.
         """
         if self._name is not None:
+            self._logger.error("Attempt to rename conduit after name set", "name")
             raise RuntimeError("Conduit name is set.")
+        self._logger.debug(f"Conduit named '{name}'", "name")
         self._name = name
 
     @property
@@ -186,13 +240,16 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit name is not set.
         """
         if self.__dynamic_environment__ == False:
+            self._logger.error("register_conduit_cloud in non-dynamic env", "register_conduit_cloud")
             raise RuntimeError("Dynamic environment is not enabled. Cannot register in the conduit cloud.")
         if self._conduit_state == ConduitState.lesser:
+            self._logger.error("register_conduit_cloud called on lesser conduit", "register_conduit_cloud")
             raise RuntimeError("Lesser conduits cannot register in the conduit cloud.")
         if self._name is None:
+            self._logger.error("register_conduit_cloud called without conduit name", "register_conduit_cloud")
             raise RuntimeError("Conduit name is not set. Please set a name before registering in the conduit cloud.")
-        if self.__dynamic_environment__:
-            Conduit._aether._register_conduit_cloud(conduit, self._aetheric_frame)
+        self._logger.debug(f"Registering '{self._name}' into conduit cloud", "register_conduit_cloud")
+        Conduit._aether._register_conduit_cloud(conduit, self._aetheric_frame)
 
     def _apply_configuration_flags(self):
         """
@@ -201,13 +258,13 @@ class Conduit(Sealable, IConduit):
         Sets the environment mode and debugging mode for this Conduit
         based on the configuration instance passed.
         """
-        if self._configuration.get_property("system_state") == SystemState.automatic:
-            self.__dynamic_environment__ = False
-        elif self._configuration.get_property("system_state") == SystemState.dynamic:
-            self.__dynamic_environment__ = True
-
-        if self._configuration.get_property("debugging"):
-            self.__debugger_mode__ = True
+        state = self._configuration.get_property("system_state")
+        self.__dynamic_environment__ = (state == SystemState.dynamic)
+        self.__debugger_mode__ = bool(self._configuration.get_property("debugging"))
+        self._logger.debug(
+            f"_apply_configuration_flags: system_state={state.name}, dynamic={self.__dynamic_environment__}, debugging={self.__debugger_mode__}",
+            "_apply_configuration_flags"
+        )
 
     def _add_conduit_to_aether(self) -> None:
         """
@@ -219,7 +276,9 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If Aether is not initialized.
         """
         if Conduit._aether is None:
+            self._logger.error("Aether is not initialized", "_add_conduit_to_aether")
             raise RuntimeError("Aether is not initialized.")
+        self._logger.debug("Adding conduit to Aether", "_add_conduit_to_aether")
         Conduit._aether._add_conduit(self, self._aetheric_frame)
 
 
@@ -239,11 +298,15 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit state is unknown.
         """
         if self._conduit_state == ConduitState.lesser:
-            return LesserCreations(configuration.get_property("disposal"), configuration.get_property("disposal_method_names"))
-        elif self._conduit_state == ConduitState.normal:
-            return Creations(configuration.get_property("disposal"), configuration.get_property("disposal_method_names"))
-        else:
-            raise RuntimeError("Conduit state is unknown")
+            self._logger.debug("Selecting LesserCreations", "_creations_configuration")
+            return LesserCreations(configuration.get_property("disposal"),
+                                   configuration.get_property("disposal_method_names"))
+        if self._conduit_state == ConduitState.normal:
+            self._logger.debug("Selecting Creations", "_creations_configuration")
+            return Creations(configuration.get_property("disposal"),
+                             configuration.get_property("disposal_method_names"))
+        self._logger.error("Unknown Conduit state", "_creations_configuration")
+        raise RuntimeError("Conduit state is unknown")
 
     #endregion Conduit Configuration
     #region Conduit Management
@@ -268,39 +331,47 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the current conduit state is not 'lesser'.
         """
         with self._lock:
+            self._logger.debug("upgrade_to_normal start", "upgrade_to_normal")
             if not self.__dynamic_environment__:
+                self._logger.error("upgrade_to_normal in non-dynamic env", "upgrade_to_normal")
                 raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
-
             if self._conduit_state != ConduitState.lesser:
+                self._logger.error("upgrade_to_normal called when not lesser", "upgrade_to_normal")
                 raise RuntimeError("Only lesser conduits can be upgraded.")
 
-            # Step 1: Change state
-            self._conduit_state = ConduitState.normal
-            self._name = name
+            try:
+                # Step 1: Change state
+                self._conduit_state = ConduitState.normal
+                self._name = name
 
-            # Step 2: Transfer creation data
-            creations_data = self._creations.transfer_data_and_clear()
+                # Step 2: Transfer creation data
+                creations_data = self._creations.transfer_data_and_clear()
 
-            # Step 3: Create new Creations and inject data
-            new_creations = Creations(
-                disposal_enabled=self._configuration.get_property("disposal"),
-                disposal_method_names=self._configuration.get_property("disposal_method_names")
-            )
-            new_creations._upgrade_from_lesser_conduit(**creations_data)
+                # Step 3: Create new Creations and inject data
+                new_creations = Creations(
+                    disposal_enabled=self._configuration.get_property("disposal"),
+                    disposal_method_names=self._configuration.get_property("disposal_method_names")
+                )
+                new_creations._upgrade_from_lesser_conduit(**creations_data)
 
-            # Step 4: Replace the old creations
-            self._creations = new_creations
+                # Step 4: Replace the old creations
+                self._creations = new_creations
 
-            # Step 5: Reconfigure the conduit ward
-            self._conduit_ward._convert_to_normal_conduit()
+                # Step 5: Reconfigure the conduit ward
+                self._conduit_ward._convert_to_normal_conduit()
 
-            # Step 6: Reconfigure the spellbook
-            self._spellbook.create_new_preset_spellbook()
+                # Step 6: Reconfigure the spellbook
+                self._spellbook.create_new_preset_spellbook()
 
-            # Step 7: Register as a full Conduit in Aether
-            Conduit._add_conduit_to_aether(self)
-            if self.__dynamic_environment__ and self._name is not None:
-                Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
+                # Step 7: Register as a full Conduit in Aether
+                Conduit._add_conduit_to_aether(self)
+                if self.__dynamic_environment__ and self._name is not None:
+                    Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
+
+            except Exception as e:
+                self._logger.error(f"upgrade_to_normal failed: {e}", "upgrade_to_normal", exc_info=True)
+                raise
+        self._logger.debug("upgrade_to_normal complete", "upgrade_to_normal")
 
 
     def set_new_policy(self, policy: str) -> None:
@@ -315,8 +386,11 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If dynamic environment is not enabled.
         """
+        self.check_sealed()
         if not self.__dynamic_environment__:
+            self._logger.error("set_new_policy in non-dynamic env", "set_new_policy")
             raise RuntimeError("Dynamic environment is not enabled. Cannot set new policy.")
+        self._logger.debug(f"set_new_policy -> {policy}", "set_new_policy")
         with self._lock:
             self._conduit_ward._set_new_policy(policy)
 
@@ -335,9 +409,9 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the parent Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot create a lesser Conduit in a sealed Conduit.")
+        self.check_sealed()
 
+        self._logger.debug("Creating lesser conduit", "create_lesser_conduit")
         with self._lock:
             new_conduit = Conduit(
                 spellbook=self._spellbook,
@@ -346,9 +420,8 @@ class Conduit(Sealable, IConduit):
                 aetheric_frame=self._aetheric_frame,
                 policy=Policies.lesser_conduit
             )
-
         self._conduit_ward._link_lesser_conduit(new_conduit)
-
+        self._logger.debug("Lesser conduit created and linked", "create_lesser_conduit")
         return new_conduit
 
 
@@ -364,10 +437,13 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If Aether is not initialized.
         """
         if Conduit._aether is None:
+            self._logger.error("Aether is not initialized", "_add_spells_to_aether")
             raise RuntimeError("Aether is not initialized.")
-
-        spell_set= ConcurrentSet(self._spellbook._spells.keys())
+        spell_ids = list(self._spellbook._spells.keys())
+        self._logger.debug(f"Registering {len(spell_ids)} local spells into Aether", "_add_spells_to_aether")
+        spell_set = ConcurrentSet(spell_ids)
         Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set, self._aetheric_frame)
+
 
     def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[IConduit]:
         """
@@ -387,8 +463,8 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get conduits in a sealed Conduit.")
+        self.check_sealed()
+        self._logger.debug(f"Resolve owner for spell_id={spell_id}", "get_conduit_by_spell_id")
         with self._lock:
             return Conduit._aether._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
 
@@ -408,10 +484,11 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot check spells in a sealed Conduit.")
+        self.check_sealed()
         with self._lock:
-            return Conduit._aether._check_for_spell(spell_id, aetheric_frame_name)
+            found = Conduit._aether._check_for_spell(spell_id, aetheric_frame_name)
+        self._logger.debug(f"check_spell_id spell_id={spell_id} -> {found}", "check_spell_id")
+        return found
 
     def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Any]:
         """
@@ -431,11 +508,12 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit is sealed.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot get spells in a sealed Conduit.")
+        self.check_sealed()
         with self._lock:
             conduit = self.get_conduit_by_spell_id(spell_id, aetheric_frame_name)
-            return conduit._spellbook._find_spell(spell_id) if conduit else None
+            result = conduit._spellbook._find_spell(spell_id) if conduit else None
+        self._logger.debug(f"get_spell_by_id spell_id={spell_id} -> {'hit' if result else 'miss'}", "get_spell_by_id")
+        return result
 
     def find_contracted_spell(self, spell_id: str) -> Optional[ISpell]:
         """
@@ -449,6 +527,7 @@ class Conduit(Sealable, IConduit):
         Returns:
             Optional[ISpell]: The contracted spell instance, or None if not found.
         """
+        self.check_sealed()
         return self._spellbook._find_contracted_spell(spell_id)
 
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
@@ -468,8 +547,11 @@ class Conduit(Sealable, IConduit):
         Raises:
             ValueError: If the spell is not found in the spellbook.
         """
+        self.check_sealed()
+        self._logger.debug(f"find_spell_id(frame={spellframe}, name={spell_name}, binding={binding_name})", "find_spell_id")
         spell_id = self._spellbook.find_spell_id(spellframe, spell_name, binding_name)
         if not spell_id:
+            self._logger.error(f"Spell '{spell_name}' not found", "find_spell_id")
             raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
         return spell_id
 
@@ -492,8 +574,11 @@ class Conduit(Sealable, IConduit):
         Raises:
             ValueError: If the spell is not found in the spellbook.
         """
+        self.check_sealed()
+        self._logger.debug(f"find_spell_key(frame={spellframe}, name={spell_name}, binding={binding_name})", "find_spell_key")
         spell_key = self._spellbook.find_spell_key(spellframe, spell_name, binding_name)
         if not spell_key:
+            self._logger.error(f"Spell key for '{spell_name}' not found", "find_spell_key")
             raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
         return spell_key
 
@@ -512,6 +597,7 @@ class Conduit(Sealable, IConduit):
         Returns:
             Optional[str]: The SHA256 unique ID of the spell if found, otherwise None.
         """
+        self.check_sealed()
         with self._lock:
             return self._spellbook.inspect_spell(spell, aetheric_frame)
 
@@ -596,13 +682,17 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the spell is already bound in the registry.
             TypeError: If invalid hook types are provided.
         """
-        if self._sealed:
-            raise RuntimeError("Cannot bind spells in a sealed Conduit.")
+        self.check_sealed()
         if not self._conduit_state == ConduitState.normal:
+            self._logger.error("bind called when conduit not normal", "bind")
             raise RuntimeError("Only normal conduits can bind spells.")
-
+        self._logger.debug(
+            f"bind(spell={getattr(spell, '__name__', type(spell).__name__)}, existence={existence}, permissions={permissions}, frame={spellframe}, binding={binding_name})",
+            "bind"
+        )
         with self._lock:
             return self._spellbook.bind(spell=spell, existence=existence, spellframe=spellframe, binding_name=binding_name, permissions=permissions, **kwargs)
+
 
     def get_spell_permissions(self, spell_id: str) -> Optional[str]:
         """
@@ -621,11 +711,15 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the spell with the given ID is not found in the spellbook.
         """
+        self.check_sealed()
         spell = self._spellbook._find_spell(spell_id)
         if spell:
-            return spell.permissions.name
-        else:
-            raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
+            perms = spell.permissions.name
+            self._logger.debug(f"get_spell_permissions spell_id={spell_id} -> {perms}", "get_spell_permissions")
+            return perms
+        self._logger.error(f"Spell with ID {spell_id} not found", "get_spell_permissions")
+        raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
+
 
     #endregion Spellbook Management API
     #region fakemeld
@@ -645,6 +739,7 @@ class Conduit(Sealable, IConduit):
             ValueError: If no spell is registered for the given name/type.
             TypeError: If the resolved instance does not comply with the required SpellFrame.
         """
+        self.check_sealed()
         raise NotImplementedError("Not ready yet, not even using real class")
         if spell_type == "class":
             class_spell = self._spellbook.get(spell_name)
@@ -685,10 +780,14 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit is a lesser conduit.
             RuntimeError: If dynamic environment is not enabled.
         """
+        self.check_sealed()
         if self._conduit_state == ConduitState.lesser:
+            self._logger.error("get_conduit_cloud on lesser conduit", "get_conduit_cloud")
             raise RuntimeError("Lesser conduits cannot access the conduit cloud.")
         if not self.__dynamic_environment__:
+            self._logger.error("get_conduit_cloud in non-dynamic env", "get_conduit_cloud")
             raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
+        self._logger.debug("get_conduit_cloud", "get_conduit_cloud")
         return Conduit._aether._get_conduit_cloud(self._aetheric_frame)
 
     #endregion Conduit Cloud
@@ -713,10 +812,11 @@ class Conduit(Sealable, IConduit):
         self.check_sealed()
 
         if not isinstance(aetheric_frame, str):
+            self._logger.error("aetheric_frame must be str", "get_conduit_by_id")
             raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
         if aetheric_frame == "default":
             aetheric_frame = self._aetheric_frame
-
+        self._logger.debug(f"get_conduit_by_id id={conduit_id}", "get_conduit_by_id")
         with self._lock:
             return Conduit._aether._get_conduit_by_id(conduit_id, aetheric_frame)
 
@@ -739,12 +839,13 @@ class Conduit(Sealable, IConduit):
         """
         self.check_sealed()
         if not isinstance(aetheric_frame, str):
+            self._logger.error("aetheric_frame must be str", "get_conduit_by_name")
             raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
         if aetheric_frame == "default":
             aetheric_frame = self._aetheric_frame
+        self._logger.debug(f"get_conduit_by_name name='{name}'", "get_conduit_by_name")
         with self._lock:
             return Conduit._aether._get_conduit_by_name(name, aetheric_frame)
-
     #endregion Aether API
     #region Conduit Ward API
     def link(self, target_conduit: IConduit) -> bool:
@@ -770,11 +871,15 @@ class Conduit(Sealable, IConduit):
         """
         self.check_sealed()
         if not self.__dynamic_environment__:
+            self._logger.error("link in non-dynamic env", "link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         if not isinstance(target_conduit, IConduit):
+            self._logger.error("link target not IConduit", "link")
             raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
         if not target_conduit.__creation_context__._conduit_id:
+            self._logger.error("link target has no valid creation context", "link")
             raise RuntimeError("Target conduit does not have a valid creation context.")
+        self._logger.debug(f"link -> target={target_conduit.__creation_context__._conduit_id}", "link")
         with self._lock:
             return self._conduit_ward._link(target_conduit)
 
@@ -799,7 +904,9 @@ class Conduit(Sealable, IConduit):
         """
         self.check_sealed()
         if not self.__dynamic_environment__:
+            self._logger.error("sever_link in non-dynamic env", "sever_link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
+        self._logger.debug(f"sever_link target={target_conduit.__creation_context__._conduit_id}", "sever_link")
         with self._lock:
             return self._conduit_ward._sever_link(target_conduit)
 
@@ -821,7 +928,9 @@ class Conduit(Sealable, IConduit):
         """
         self.check_sealed()
         if not self.__dynamic_environment__:
+            self._logger.error("get_links in non-dynamic env", "get_links")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
+        self._logger.debug("get_links", "get_links")
         with self._lock:
             return self._conduit_ward._get_links()
 
@@ -841,6 +950,7 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit is sealed.
         """
         self.check_sealed()
+        self._logger.debug(f"get_lesser_conduit id={conduit_id}", "get_lesser_conduit")
         with self._lock:
             return self._conduit_ward._get_lesser_conduit(conduit_id)
 
@@ -864,6 +974,7 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit is sealed.
         """
         self.check_sealed()
+        self._logger.debug(f"get_initiated_conduit id={conduit_id}", "get_initiated_conduit")
         with self._lock:
             return self._conduit_ward._get_initiated_conduit(conduit_id)
 
@@ -887,6 +998,7 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit is sealed.
         """
         self.check_sealed()
+        self._logger.debug(f"get_provider_conduit id={conduit_id}", "get_provider_conduit")
         with self._lock:
             return self._conduit_ward._get_provider_conduit(conduit_id)
 
@@ -906,6 +1018,7 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit is sealed.
         """
         self.check_sealed()
+        self._logger.debug("get_initiated_conduits", "get_initiated_conduits")
         with self._lock:
             return self._conduit_ward._get_initiated_conduits()
 
@@ -924,6 +1037,7 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit is sealed.
         """
         self.check_sealed()
+        self._logger.debug("get_provider_conduits", "get_provider_conduits")
         with self._lock:
             return self._conduit_ward._get_provider_conduits()
 
@@ -940,6 +1054,7 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit is sealed.
         """
         self.check_sealed()
+        self._logger.debug("seal_lesser_conduits", "seal_lesser_conduits")
         self._conduit_ward.seal_all_lesser_conduits()
 
     #endregion Conduit Ward API
@@ -957,9 +1072,12 @@ class Conduit(Sealable, IConduit):
         """
         self.check_sealed()
         if self._conduit_state != ConduitState.normal:
+            self._logger.error("_qualify_contracts: not normal state", "_qualify_contracts")
             raise RuntimeError("Only normal conduits can create spell contracts.")
         if not self.__dynamic_environment__:
+            self._logger.error("_qualify_contracts: non-dynamic env", "_qualify_contracts")
             raise RuntimeError("Dynamic environment is not enabled. Cannot interact with spell contracts.")
+
 
 
     def add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: UUID = None,
@@ -989,9 +1107,11 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
+        self._logger.debug(f"add_spell_to_contract(spell_id={spell_id}, conduit_id={conduit_id}, perms={permissions})", "add_spell_to_contract")
         self._qualify_contracts()
         return self._conduit_ward._add_spell_to_contract(spell=spell, spell_id=spell_id, conduit=conduit, conduit_id=conduit_id,
                                                          permissions=permissions, aetheric_frame=aetheric_frame)
+
 
 
     def add_spells_to_contract(self, spell_ids: list[str], conduit: IConduit = None, conduit_id: UUID = None,
@@ -1017,10 +1137,12 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
+        self._logger.debug(f"add_spells_to_contract(count={len(spell_ids)}, conduit_id={conduit_id}, perms={permissions})", "add_spells_to_contract")
         self._qualify_contracts()
         return self._conduit_ward._add_spells_to_contract(spell_ids=spell_ids,
                                                           conduit=conduit, conduit_id=conduit_id,
                                                           permissions=permissions, aetheric_frame=aetheric_frame)
+
 
     def remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
                                    conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
@@ -1045,6 +1167,7 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
+        self._logger.debug(f"remove_spell_from_contract(spell_id={spell_id}, conduit_id={conduit_id})", "remove_spell_from_contract")
         self._qualify_contracts()
         return self._conduit_ward._remove_spell_from_contract(spell=spell, spell_id=spell_id, conduit=conduit,
                                                               conduit_id=conduit_id, aetheric_frame=aetheric_frame)
@@ -1070,9 +1193,11 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
+        self._logger.debug(f"remove_spells_from_contract(count={0 if spell_ids is None else len(spell_ids)}, conduit_id={conduit_id})", "remove_spells_from_contract")
         self._qualify_contracts()
         return self._conduit_ward._remove_spells_from_contract(spell_ids=spell_ids, conduit=conduit,
                                                                conduit_id=conduit_id, aetheric_frame=aetheric_frame)
+
 
     def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
         """
@@ -1094,8 +1219,10 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
+        self._logger.debug(f"_remove_all_spells_from_contract(conduit_id={conduit_id})", "_remove_all_spells_from_contract")
         self._qualify_contracts()
         return self._conduit_ward._remove_all_spells_from_contract(conduit=conduit, conduit_id=conduit_id, aetheric_frame=aetheric_frame)
+
 
     def get_all_spells_in_contracts(self, validate: bool = True) -> Optional[dict[str, list[Tuple[str, 'ISpell']]]]:
         """
@@ -1117,8 +1244,10 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
             TypeError: If `validate` is not a boolean.
         """
+        self._logger.debug(f"get_all_spells_in_contracts(validate={validate})", "get_all_spells_in_contracts")
         self._qualify_contracts()
         if not isinstance(validate, bool):
+            self._logger.error("validate must be bool", "get_all_spells_in_contracts")
             raise TypeError(f"Expected validate to be a boolean, got {type(validate).__name__}")
         return self._conduit_ward._get_all_spells_in_contracts(validate=validate)
 
@@ -1141,8 +1270,10 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
             TypeError: If `spell_id` is not a string.
         """
+        self._logger.debug(f"get_spell_in_contracts(spell_id={spell_id})", "get_spell_in_contracts")
         self._qualify_contracts()
         if not isinstance(spell_id, str):
+            self._logger.error("spell_id must be str", "get_spell_in_contracts")
             raise TypeError(f"Expected spell_id to be a string, got {type(spell_id).__name__}")
         return self._conduit_ward._get_spell_in_contracts(spell_id)
 
@@ -1165,8 +1296,10 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
             TypeError: If `conduit_id` is not a UUID.
         """
+        self._logger.debug(f"get_spells_in_contract_by_conduit(conduit_id={conduit_id})", "get_spells_in_contract_by_conduit")
         self._qualify_contracts()
         if not isinstance(conduit_id, UUID):
+            self._logger.error("conduit_id must be UUID", "get_spells_in_contract_by_conduit")
             raise TypeError(f"Expected conduit_id to be a UUID, got {type(conduit_id).__name__}")
         return self._conduit_ward._get_spells_in_contract_by_conduit(conduit_id)
 
@@ -1188,8 +1321,10 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
             TypeError: If `conduit_name` is not a string.
         """
+        self._logger.debug(f"get_spells_in_contract_by_conduit_name(name='{conduit_name}')", "get_spells_in_contract_by_conduit_name")
         self._qualify_contracts()
         if not isinstance(conduit_name, str):
+            self._logger.error("conduit_name must be str", "get_spells_in_contract_by_conduit_name")
             raise TypeError(f"Expected conduit_name to be a string, got {type(conduit_name).__name__}")
         return self._conduit_ward._get_spells_in_contract_by_conduit_name(conduit_name)
 
@@ -1208,6 +1343,7 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
+        self._logger.debug("get_contracted_conduits", "get_contracted_conduits")
         self._qualify_contracts()
         return self._conduit_ward._get_contracted_conduits()
 
@@ -1230,6 +1366,7 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
+        self._logger.debug(f"_describe_contract(conduit_id={conduit_id})", "_describe_contract")
         self._qualify_contracts()
         return self._conduit_ward._describe_contract(conduit_id)
 
@@ -1250,6 +1387,7 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
+        self._logger.debug("validate_contracts_and_define", "validate_contracts_and_define")
         self._qualify_contracts()
         return self._conduit_ward._validate_contracts_and_define()
 
@@ -1269,6 +1407,7 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
         """
+        self._logger.debug("validate_received_contracts", "validate_received_contracts")
         self._qualify_contracts()
         return self._conduit_ward._validate_received_contracts()
 
