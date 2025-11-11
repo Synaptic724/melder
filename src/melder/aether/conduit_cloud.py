@@ -1,10 +1,9 @@
 import ulid
-from threading import Lock
-# Melder Imports
+
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.utilities.general_base.sealable import Sealable
-
+from threading import Lock
 
 
 class ConduitCloud(Sealable):
@@ -31,10 +30,10 @@ class ConduitCloud(Sealable):
             name (str): The name of the AethericFrame this cloud serves.
         """
         super().__init__()
-        self._id: str = str(ulid.ULID())
         self._lock = Lock()
         self._name = name
         self._registry = ConcurrentDict()
+        self._id: str = str(ulid.ULID())
 
     def seal(self):
         """
