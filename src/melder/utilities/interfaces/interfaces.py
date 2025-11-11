@@ -1,6 +1,5 @@
 from threading import RLock
 from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator, Callable
-from uuid import UUID
 import uuid
 
 
@@ -143,11 +142,11 @@ class ICreations(ISealable, Protocol):
     # Attributes
     # -----------------
     _lock: RLock
-    _unique: 'ConcurrentDict[UUID, object]'
-    _unique_per_scope: 'ConcurrentDict[UUID, object]'
-    _many: 'ConcurrentDict[UUID, ConcurrentList[object]]'
-    _unique_per_lineage: 'ConcurrentDict[UUID, object]'
-    _unique_per_cluster: 'ConcurrentDict[UUID, object]'
+    _unique: 'ConcurrentDict[str, object]'
+    _unique_per_scope: 'ConcurrentDict[str, object]'
+    _many: 'ConcurrentDict[str, ConcurrentList[object]]'
+    _unique_per_lineage: 'ConcurrentDict[str, object]'
+    _unique_per_cluster: 'ConcurrentDict[str, object]'
     _disposal_enabled: bool
     _disposal_method_names: List[str]
     _id: str
@@ -250,12 +249,12 @@ class ICreations(ISealable, Protocol):
         """
         ...
 
-    def add_unique(self, key: UUID, item: object) -> None:
+    def add_unique(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique` scope.
 
         Args:
-            key (UUID): Unique identifier (Spell ID).
+            key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
 
         Raises:
@@ -264,12 +263,12 @@ class ICreations(ISealable, Protocol):
         """
         ...
 
-    def add_unique_per_lineage(self, key: UUID, item: object) -> None:
+    def add_unique_per_lineage(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_lineage` scope.
 
         Args:
-            key (UUID): Unique identifier (Spell ID).
+            key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
 
         Raises:
@@ -278,12 +277,12 @@ class ICreations(ISealable, Protocol):
         """
         ...
 
-    def add_unique_per_cluster(self, key: UUID, item: object) -> None:
+    def add_unique_per_cluster(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_cluster` scope.
 
         Args:
-            key (UUID): Unique identifier (Spell ID).
+            key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
 
         Raises:
@@ -292,12 +291,12 @@ class ICreations(ISealable, Protocol):
         """
         ...
 
-    def add_unique_per_scope(self, key: UUID, item: object) -> None:
+    def add_unique_per_scope(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
         Args:
-            key (UUID): Unique identifier (Spell ID).
+            key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
 
         Raises:
@@ -306,14 +305,14 @@ class ICreations(ISealable, Protocol):
         """
         ...
 
-    def add_many(self, key: UUID, item: object) -> None:
+    def add_many(self, key: str, item: object) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 
         If the collection for the given key does not exist, it is created.
 
         Args:
-            key (UUID): Collection identifier (Spell ID).
+            key (str): Collection identifier (Spell ID).
             item (object): Object instance to add.
 
         Raises:
@@ -339,8 +338,8 @@ class ILesserCreations(ISealable, Protocol):
     # -----------------
     # Attributes
     # -----------------
-    _unique_per_scope: 'ConcurrentDict[UUID, object]'
-    _many: 'ConcurrentDict[UUID, ConcurrentList[object]]'
+    _unique_per_scope: 'ConcurrentDict[str, object]'
+    _many: 'ConcurrentDict[str, ConcurrentList[object]]'
     _disposal_enabled: bool
     _disposal_method_names: List[str]
     _lock: RLock
@@ -404,12 +403,12 @@ class ILesserCreations(ISealable, Protocol):
         """
         ...
 
-    def add_unique_per_scope(self, key: UUID, item: object) -> None:
+    def add_unique_per_scope(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
         Args:
-            key (UUID): Unique identifier (Spell ID).
+            key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
 
         Raises:
@@ -418,14 +417,14 @@ class ILesserCreations(ISealable, Protocol):
         """
         ...
 
-    def add_many(self, key: UUID, item: object) -> None:
+    def add_many(self, key: str, item: object) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 
         If the collection for the given key does not exist, it is created.
 
         Args:
-            key (UUID): Collection identifier (Spell ID).
+            key (str): Collection identifier (Spell ID).
             item (object): Object instance to add.
 
         Raises:
@@ -446,14 +445,14 @@ class ISpell(ISealable, Protocol):
         post_hooks (Optional[Any]): A list of callables to run after the spell is cast.
         activation_hooks (Optional[Any]): A list of callables to run during casting.
         pre_hooks (Optional[Any]): A list of callables to run before casting.
-        _owner_conduit_id (Optional[UUID]): The UUID of the Conduit that owns this spell.
+        _owner_conduit_id (Optional[str]): The id of the Conduit that owns this spell.
         _permissions (Optional[Any]): The permissions object governing this spell's
             accessibility.
     """
     post_hooks: Optional[Any]
     activation_hooks: Optional[Any]
     pre_hooks: Optional[Any]
-    _owner_conduit_id: Optional[UUID]
+    _owner_conduit_id: Optional[str]
     _permissions: Optional[Any]
     _id: str
 
@@ -468,12 +467,12 @@ class ISpell(ISealable, Protocol):
         """
         ...
 
-    def _add_owned_conduit(self, conduit_id: UUID, conduit_name: str = None, creations: Any = None):
+    def _add_owned_conduit(self, conduit_id: str, conduit_name: str = None, creations: Any = None):
         """
         Assigns ownership of this spell to a specific Conduit.
 
         Args:
-            conduit_id (UUID): The unique ID of the owning Conduit.
+            conduit_id (str): The unique ID of the owning Conduit.
             conduit_name (str, optional): The human-readable name of the owning Conduit.
         """
         ...
@@ -740,7 +739,7 @@ class ISpellbook(ISealable, Protocol):
 
         Args:
             spell (Any): The spell object.
-            conduit_id (UUID): The ID of the Conduit providing the spell.
+            conduit_id (str): The ID of the Conduit providing the spell.
         """
         ...
 
@@ -749,7 +748,7 @@ class ISpellbook(ISealable, Protocol):
         Internal: Initializes the storage for a new contract.
 
         Args:
-            _id (UUID): The ID of the peer conduit.
+            _id (str): The ID of the peer conduit.
         """
         ...
 
@@ -758,7 +757,7 @@ class ISpellbook(ISealable, Protocol):
         Internal: Removes a contract and all associated borrowed spells.
 
         Args:
-            _conduit_id (UUID): The ID of the peer conduit to sever ties with.
+            _conduit_id (str): The ID of the peer conduit to sever ties with.
         """
         ...
 
@@ -778,7 +777,7 @@ class ISpellbook(ISealable, Protocol):
 
         Args:
             spell_id (str): The ID of the spell to remove.
-            conduit_id (UUID): The ID of the peer conduit.
+            conduit_id (str): The ID of the peer conduit.
         """
         ...
 
@@ -787,7 +786,7 @@ class ISpellbook(ISealable, Protocol):
         Internal: Clears all borrowed spells from a specific peer conduit.
 
         Args:
-            conduit_id (UUID): The ID of the peer conduit.
+            conduit_id (str): The ID of the peer conduit.
         """
         ...
 
@@ -857,7 +856,7 @@ class IConduitWard(ISealable, Protocol):
         _lock (Optional[Any]): The concurrency lock.
         _received_index (Optional[Any]): Index of incoming links.
         _policy (Optional[Any]): The active access policy.
-        _id (Optional[UUID]): The UUID of the Conduit this ward protects.
+        _id (Optional[str]): The ID of the Conduit this ward protects.
         _conduit (Optional['IConduit']): A reference to the Conduit itself.
     """
     _contracts: Optional[Any]
@@ -1025,7 +1024,7 @@ class IConduit(ISealable, Protocol):
         Retrieves a peer Conduit by its ID from a given frame.
 
         Args:
-            conduit_id (UUID): The unique ID of the Conduit.
+            conduit_id (str): The unique ID of the Conduit.
             aetheric_frame (str): The frame to search within.
         """
         ...
@@ -1116,19 +1115,19 @@ class IAethericFrame(ISealable, Protocol):
         name (str): The unique name of this frame.
         _configuration (Optional[Any]): The frozen configuration for this frame.
         _conduit_cloud (IConduitCloud): The abstract factory for named conduits.
-        _conduits (ConcurrentDict[uuid.UUID, IConduit]): Stores all root conduits.
-        _spell_registry (ConcurrentDict[uuid.UUID, ConcurrentSet[str]]): Maps
-            conduit UUIDs to their owned spell IDs.
-        _conduit_clusters (ConcurrentDict[str, ConcurrentList[uuid.UUID]]): Organizes
+        _conduits (ConcurrentDict[str, IConduit]): Stores all root conduits.
+        _spell_registry (ConcurrentDict[str, ConcurrentSet[str]]): Maps
+            conduit ids to their owned spell IDs.
+        _conduit_clusters (ConcurrentDict[str, ConcurrentList[str]]): Organizes
             conduits into named groups.
     """
     name: str
     _id: str
     _configuration: Optional[Any]  # Use 'Configuration' if it's a known type
     _conduit_cloud: IConduitCloud
-    _conduits: 'ConcurrentDict[uuid.UUID, IConduit]'
-    _spell_registry: 'ConcurrentDict[uuid.UUID, ConcurrentSet[str]]'
-    _conduit_clusters: 'ConcurrentDict[str, ConcurrentList[uuid.UUID]]'
+    _conduits: 'ConcurrentDict[str, IConduit]'
+    _spell_registry: 'ConcurrentDict[str, ConcurrentSet[str]]'
+    _conduit_clusters: 'ConcurrentDict[str, ConcurrentList[str]]'
 
 
 class IAether(ISealable, Protocol):
@@ -1211,12 +1210,12 @@ class IAether(ISealable, Protocol):
         """
         ...
 
-    def _get_conduit_by_id(self, signature: uuid.UUID, aetheric_frame_name: str = "default") -> IConduit:
+    def _get_conduit_by_id(self, signature: str, aetheric_frame_name: str = "default") -> IConduit:
         """
-        Finds a root conduit within a frame by its UUID.
+        Finds a root conduit within a frame by its id.
 
         Args:
-            signature (uuid.UUID): The UUID of the conduit.
+            signature (str): The id of the conduit.
             aetheric_frame_name (str): The name of the frame to search in.
 
         Returns:
@@ -1268,7 +1267,7 @@ class IAether(ISealable, Protocol):
 
     def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
-        Adds a conduit's UUID to a cluster. (Internal use)
+        Adds a conduit's str to a cluster. (Internal use)
 
         Args:
             conduit (IConduit): The conduit to add.
@@ -1282,7 +1281,7 @@ class IAether(ISealable, Protocol):
 
     def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
-        Removes a conduit's UUID from a cluster. (Internal use)
+        Removes a conduit's str from a cluster. (Internal use)
 
         Args:
             conduit (IConduit): The conduit to remove.
@@ -1294,16 +1293,16 @@ class IAether(ISealable, Protocol):
         """
         ...
 
-    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> 'ConcurrentList[uuid.UUID]':
+    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> 'ConcurrentList[str]':
         """
-        Gets a list of all conduit UUIDs in a specific cluster.
+        Gets a list of all conduit id in a specific cluster.
 
         Args:
             cluster_name (str): The name of the cluster.
             aetheric_frame_name (str): The name of the frame.
 
         Returns:
-            ConcurrentList[uuid.UUID]: A list of conduit UUIDs.
+            ConcurrentList[str]: A list of conduit ids.
 
         Raises:
             ValueError: If the frame or cluster does not exist.
@@ -1342,12 +1341,12 @@ class IAether(ISealable, Protocol):
         """
         ...
 
-    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: 'ConcurrentSet[str]', aetheric_frame_name: str = "default"):
+    def _add_spells_to_aether(self, conduit_id: str, spell_set: 'ConcurrentSet[str]', aetheric_frame_name: str = "default"):
         """
         Registers a set of spell IDs as being owned by a specific conduit.
 
         Args:
-            conduit_id (uuid.UUID): The UUID of the owning conduit.
+            conduit_id (str): The id of the owning conduit.
             spell_set (ConcurrentSet[str]): A set of spell IDs to register.
             aetheric_frame_name (str): The name of the frame.
 
@@ -2354,4 +2353,123 @@ class ISafeLogger(ICleanable, Protocol):
         ...
 
     def exception(self, msg: str, method_name: str) -> None:
+        ...
+
+
+@runtime_checkable
+class IContract(ISealable, Protocol):
+    """
+    A symmetric contract between two conduit wards.
+
+    Each contract maintains permission details for both sides independently.
+    There is no directional bias (no initiator or provider); both parties
+    may define what spells they allow the other to use.
+
+    Fields:
+    - _ward_a / _ward_b: The two conduit ward participants in this contract.
+    - _details_a / _details_b: Spell permission maps for each ward's view.
+    - _id: Unique identifier for this contract instance.
+    """
+
+    _id: str
+    _ward_a: IConduitWard
+    _ward_b: IConduitWard
+    _details_a: 'ConcurrentDict[str, IDetail]'
+    _details_b: 'ConcurrentDict[str, IDetail]'
+
+    def _clean_up(self) -> None:
+        """
+        Internal
+
+        Seal and clear all spell details from both sides.
+        """
+        ...
+
+    def _get_peer(self, ward: IConduitWard) -> IConduitWard:
+        """
+        Internal
+
+        Return the opposite conduit in this contract.
+        """
+        ...
+
+    def _get_opposite_conduit(self, contract: 'IContract', known_id: str) -> Optional[IConduit]:
+        """
+        Internal
+
+        Helper to find the opposite conduit in a contract based on a known conduit ID.
+        :param contract:
+        :param known_id:
+        :return:
+        """
+        ...
+
+    def _get_detail_map(self, ward: IConduitWard) -> 'ConcurrentDict[str, IDetail]':
+        """
+        Internal
+
+        Helper to return the permission map associated with a given ward.
+        """
+        ...
+
+    def _add(self, ward: IConduitWard, contract_detail: IDetail) -> None:
+        """
+        Internal
+
+        Add a spell-level permission detail to the contract on behalf of the given ward.
+        """
+        ...
+
+    def _remove(self, ward: IConduitWard, spell_id: str) -> None:
+        """
+        Internal
+
+        Remove a spell-level permission detail from the given ward's view.
+        """
+        ...
+
+    def _clear_contract(self) -> None:
+        """
+        Internal
+
+        Clear all spell details from both sides of the contract.
+        This is typically called when sealing the contract.
+        """
+        ...
+
+    def _check_if_exists_and_permissions(self, ward: IConduitWard, spell_id: str, permission: 'Permissions') -> bool:
+        """
+        Internal
+
+        Check if the given ward has permission for the specified spell.
+        """
+        ...
+
+    def _check_if_exists(self, ward: IConduitWard, spell_id: str) -> bool:
+        """
+        Internal
+
+        Check if a spell exists in the given ward's permission map.
+        """
+        ...
+
+    def _find_spell_in_ward(self, spell_id: str) -> IConduitWard | None:
+        """
+        Internal
+
+        Check if a spell exists in the given ward's permission map.
+        """
+        ...
+
+    def _grant(self, ward: IConduitWard, spell_ids: list[str], permission: 'Permissions') -> None:
+        """
+        Internal
+
+        Grant a list of spells with a single permission type for the specified ward.
+
+        Args:
+            ward (IConduitWard): The ward granting access.
+            spell_ids (list[str]): List of spell IDs to grant.
+            permission (Permissions): The permission level to assign.
+        """
         ...

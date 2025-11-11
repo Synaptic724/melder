@@ -1,6 +1,7 @@
 import inspect
 import json
 from typing import Any, Dict
+# Melder imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.class_inspector import ClassInspector
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.method_inspector import MethodInspector

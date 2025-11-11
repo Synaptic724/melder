@@ -1,5 +1,4 @@
 from types import MappingProxyType
-from uuid import UUID
 from typing import Optional, List, Any, Mapping, Callable
 import ulid
 from threading import RLock
@@ -91,9 +90,9 @@ class Spellbook(Sealable, ISpellbook):
         self._lookup_spells: ConcurrentDict[tuple, str]  = ConcurrentDict()
 
         # Networked/remote spell support
-        # This stores spells borrowed from other conduits (keyed by peer Conduit UUID)
-        self._contracted_spells: ConcurrentDict[UUID, ConcurrentDict[str, ISpell]] = ConcurrentDict(ConcurrentDict())
-        self._lookup_contracted_spells: ConcurrentDict[UUID, ConcurrentDict[tuple, str]]  = ConcurrentDict(ConcurrentDict())
+        # This stores spells borrowed from other conduits (keyed by peer Conduit id)
+        self._contracted_spells: ConcurrentDict[str, ConcurrentDict[str, ISpell]] = ConcurrentDict(ConcurrentDict())
+        self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]]  = ConcurrentDict(ConcurrentDict())
 
         # Binding system
         self._bind: Bind = Bind()
@@ -287,7 +286,7 @@ class Spellbook(Sealable, ISpellbook):
         return MappingProxyType(self._spells)
 
     @property
-    def contracted_spells(self) -> Mapping[UUID, Mapping[str, ISpell]]:
+    def contracted_spells(self) -> Mapping[str, Mapping[str, ISpell]]:
         """
         Public API
 
@@ -295,7 +294,7 @@ class Spellbook(Sealable, ISpellbook):
         Each conduit ID maps to its own immutable spell dict.
 
         Returns:
-            Mapping[UUID, Mapping[str, ISpell]]: An immutable map of peer Conduit ID to an immutable map of borrowed spells.
+            Mapping[str, Mapping[str, ISpell]]: An immutable map of peer Conduit ID to an immutable map of borrowed spells.
         """
         return MappingProxyType({
             conduit_id: MappingProxyType(dict(spells))  # Make inner dict immutable too
@@ -518,7 +517,7 @@ class Spellbook(Sealable, ISpellbook):
 
     #endregion General Methods
     #region Contract API
-    def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: UUID) -> Optional[ISpell]:
+    def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: str) -> Optional[ISpell]:
         """
         Internal
 
@@ -526,7 +525,7 @@ class Spellbook(Sealable, ISpellbook):
 
         Args:
             spell_id (str): The ID of the spell to find.
-            conduit_id (UUID): The peer conduit whose contract holds the spell.
+            conduit_id (str): The peer conduit whose contract holds the spell.
 
         Returns:
             Optional[ISpell]: The spell if found under that conduit's contract, else None.
@@ -536,7 +535,7 @@ class Spellbook(Sealable, ISpellbook):
             return None
         return self._contracted_spells[conduit_id].get(spell_id)
 
-    def _create_link_contract(self, conduit_id: UUID):
+    def _create_link_contract(self, conduit_id: str):
         """
         Internal
 
@@ -546,7 +545,7 @@ class Spellbook(Sealable, ISpellbook):
         are initialized atomically to maintain consistent state.
 
         Args:
-            conduit_id (UUID): The ID of the peer conduit to create the contract structure for.
+            conduit_id (str): The ID of the peer conduit to create the contract structure for.
 
         Raises:
             RuntimeError: If the contract structure is found in one map but not the other (inconsistent state).
@@ -565,7 +564,7 @@ class Spellbook(Sealable, ISpellbook):
                 self._contracted_spells[conduit_id] = ConcurrentDict()
                 self._lookup_contracted_spells[conduit_id] = ConcurrentDict()
 
-    def _remove_link_contract(self, conduit_id: UUID):
+    def _remove_link_contract(self, conduit_id: str):
         """
         Internal
 
@@ -574,7 +573,7 @@ class Spellbook(Sealable, ISpellbook):
         This ensures both maps are removed atomically and consistently.
 
         Args:
-            conduit_id (UUID): The ID of the peer conduit whose contract structure should be removed.
+            conduit_id (str): The ID of the peer conduit whose contract structure should be removed.
 
         Raises:
             RuntimeError: If the contract structure is found in one map but not the other (inconsistent cleanup).
@@ -593,7 +592,7 @@ class Spellbook(Sealable, ISpellbook):
                 self._contracted_spells.pop(conduit_id, None)
                 self._lookup_contracted_spells.pop(conduit_id, None)
 
-    def _add_contracted_spell(self, spell: ISpell, conduit_id: UUID) -> None:
+    def _add_contracted_spell(self, spell: ISpell, conduit_id: str) -> None:
         """
         Internal
 
@@ -601,7 +600,7 @@ class Spellbook(Sealable, ISpellbook):
 
         Args:
             spell (ISpell): The spell object being contracted.
-            conduit_id (UUID): The ID of the peer conduit providing the spell.
+            conduit_id (str): The ID of the peer conduit providing the spell.
         """
         self._logger.debug(f"_add_contracted_spell(spell_id={spell.spell_id}, conduit_id={conduit_id})", "_add_contracted_spell")
         with self._lock:
@@ -611,7 +610,7 @@ class Spellbook(Sealable, ISpellbook):
             self._contracted_spells[conduit_id][spell.spell_id] = spell
             self._lookup_contracted_spells[conduit_id][spell_key] = spell.spell_id
 
-    def _remove_contracted_spell(self, spell_id: str, conduit_id: UUID) -> None:
+    def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
         """
         Internal
 
@@ -619,7 +618,7 @@ class Spellbook(Sealable, ISpellbook):
 
         Args:
             spell_id (str): The ID of the spell to remove.
-            conduit_id (UUID): The ID of the peer conduit the spell was contracted from.
+            conduit_id (str): The ID of the peer conduit the spell was contracted from.
 
         Raises:
             RuntimeError: If the conduit ID or spell ID/key is not found in the contracted maps.
@@ -641,7 +640,7 @@ class Spellbook(Sealable, ISpellbook):
             spell_map.pop(spell_id, None)
             self._lookup_contracted_spells[conduit_id].pop(key, None)
 
-    def _clear_contracted_spells_for_conduit(self, conduit_id: UUID) -> None:
+    def _clear_contracted_spells_for_conduit(self, conduit_id: str) -> None:
         """
         Internal
 
@@ -650,7 +649,7 @@ class Spellbook(Sealable, ISpellbook):
         This operation removes all borrowed spells from a peer without dissolving the core contract link.
 
         Args:
-            conduit_id (UUID): The ID of the peer conduit.
+            conduit_id (str): The ID of the peer conduit.
 
         Raises:
             RuntimeError: If the conduit ID does not exist or the maps are inconsistent.
@@ -663,14 +662,14 @@ class Spellbook(Sealable, ISpellbook):
             self._contracted_spells[conduit_id].clear()
             self._lookup_contracted_spells[conduit_id].clear()
 
-    def _sever_link_contract(self, conduit_id: UUID) -> None:
+    def _sever_link_contract(self, conduit_id: str) -> None:
         """
         Internal
 
         Sever the link contract for a given conduit ID by removing all contracted spells and the contract structure itself.
 
         Args:
-            conduit_id (UUID): The ID of the peer conduit.
+            conduit_id (str): The ID of the peer conduit.
 
         Raises:
             RuntimeError: If only one of the maps contains the conduit ID (inconsistent state).
@@ -889,7 +888,7 @@ class Spellbook(Sealable, ISpellbook):
             system_state (str, optional):
                 Defines the system mode ("automatic" or "dynamic").
             debugging (bool, optional):
-                Enables internal UUID tagging for object tracking.
+                Enables internal id tagging for object tracking.
             disposal (bool, optional):
                 Enables automatic resource disposal upon conduit sealing.
             disposal_method_names (List[str], optional):

@@ -1,4 +1,3 @@
-from uuid import UUID
 from typing import Optional, List, Any, Callable
 import ulid
 from threading import RLock
@@ -134,7 +133,7 @@ class Spell(ISpell):
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
         # Created after Conduit Made
-        self._owner_conduit_id: UUID | None = None
+        self._owner_conduit_id: str | None = None
         self._owner_conduit_name: str | None = None
         self.owned_spell = None
         self._owner_creations: Any = None # Scope level creations for singletons
@@ -164,7 +163,7 @@ class Spell(ISpell):
         )
 
     #region Configuration
-    def _add_owned_conduit(self, conduit_id: UUID, conduit_name: str = None, creations: Any = None):
+    def _add_owned_conduit(self, conduit_id: str, conduit_name: str = None, creations: Any = None):
         """
         Add the conduit ID that owns this spell.
         :param conduit_id: The ID of the conduit that owns this spell.

@@ -2,6 +2,8 @@ from threading import RLock
 # Melder imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.helpers.id_builder import IDBuilder
+
 
 class Detail(Sealable):
     """
@@ -18,7 +20,7 @@ class Detail(Sealable):
     def __init__(self, spell_id: str, permissions: Permissions):
         super().__init__()
         self._lock = RLock()
-
+        self._id: str = IDBuilder.create_id()
         if not isinstance(permissions, Permissions):
             raise TypeError(
                 f"permissions must be an instance of Permissions enum, got {type(permissions).__name__}"

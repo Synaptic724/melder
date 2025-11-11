@@ -1,4 +1,5 @@
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 
 class StateObject(Cleanable):
     """
@@ -19,6 +20,7 @@ class StateObject(Cleanable):
             dag: An instance of the DAG class that this StateObject will manage.
         """
         super().__init__()  # Initialize the Disposable base class
+        self._id = IDBuilder.create_id()
         self._dag = dag  # Store a reference to the DAG
         self._execution_data = {}  # Dictionary to store the execution status of each node (node_id: status)
 
@@ -36,6 +38,16 @@ class StateObject(Cleanable):
         self._execution_data.clear()  # Clear the dictionary of execution statuses
         self._dag = None  # Remove the reference to the DAG
         self._cleaned = True  # Mark the object as cleaned
+
+    @property
+    def id(self):
+        """
+        Retrieves the unique identifier of this StateObject.
+
+        Returns:
+            The unique ID string of the StateObject.
+        """
+        return self._id
 
 
     def register_node_result(self, node_id, success=True):
@@ -128,15 +140,8 @@ class ExecutionContext(Cleanable):
             state: The shared StateObject instance.
         """
         super().__init__()
+        self._id = IDBuilder.create_id()
         self.state = state  # Store a reference to the shared state object
-
-    def execute(self):
-        """
-        Abstract method that must be implemented by subclasses.
-
-        This method contains the core logic of the task associated with a node.
-        """
-        raise NotImplementedError("Subclasses must override the execute() method.")
 
     def cleanup(self):
         """
@@ -149,6 +154,25 @@ class ExecutionContext(Cleanable):
             return
         self._cleaned = True  # Mark as cleaned
         self.state = None  # Remove the reference to the StateObject
+
+
+    @property
+    def id(self):
+        """
+        Retrieves the unique identifier of this ExecutionContext.
+
+        Returns:
+            The unique ID string of the ExecutionContext.
+        """
+        return self._id
+
+    def execute(self):
+        """
+        Abstract method that must be implemented by subclasses.
+
+        This method contains the core logic of the task associated with a node.
+        """
+        raise NotImplementedError("Subclasses must override the execute() method.")
 
     def __enter__(self):
         """
@@ -185,7 +209,7 @@ class Node(Cleanable):
 
     This class is thread-safe using a reentrant lock to protect its internal state.
     """
-    def __init__(self, node_id):
+    def __init__(self, node_id=None):
         """
         Initializes a Node with a unique identifier.
 
@@ -193,7 +217,7 @@ class Node(Cleanable):
             node_id: The unique identifier for this node (e.g., a string).
         """
         super().__init__()  # Initialize the Disposable base class
-        self.id = node_id  # Unique identifier of the node
+        self._id = IDBuilder.create_id() if node_id is None else node_id
 
         # Data structures to manage connections and tasks
         self._incoming_edges = []  # List of Edge objects pointing to this node
@@ -217,6 +241,16 @@ class Node(Cleanable):
         if self._execution_context is not None:
             self._execution_context.cleanup()  # Dispose of the execution context if it exists
         self._execution_context = None  # Remove the reference to the execution context
+
+    @property
+    def id(self):
+        """
+        Retrieves the unique identifier of this node.
+
+        Returns:
+            The unique ID string of the node.
+        """
+        return self._id
 
 
     def set_execution_context(self, context: ExecutionContext):
@@ -386,6 +420,7 @@ class Edge(Cleanable):
             to_node: The Node object where the edge points to.
         """
         super().__init__()  # Initialize the Disposable base class
+        self._id = IDBuilder.create_id() # Unique identifier for the edge
         self.from_node = from_node  # The source node of the edge
         self.to_node = to_node  # The destination node of the edge
 
@@ -398,6 +433,17 @@ class Edge(Cleanable):
         self._cleaned = True
         self.from_node = None  # Remove the reference to the source node
         self.to_node = None  # Remove the reference to the destination node
+
+
+    @property
+    def id(self):
+        """
+        Retrieves the unique identifier of this edge.
+
+        Returns:
+            The unique ID string of the edge.
+        """
+        return self._id
 
 class DirectedAcyclicWorkGraph(Cleanable):
     """
@@ -414,6 +460,7 @@ class DirectedAcyclicWorkGraph(Cleanable):
         Initializes an empty DAG.
         """
         super().__init__()  # Initialize the Disposable base class
+        self._id = IDBuilder.create_id()
         # Data structures to store nodes and edges
         self._nodes = {}  # Dictionary to store nodes (node_id: Node object)
         self._edges = []  # List to store Edge objects
@@ -432,6 +479,16 @@ class DirectedAcyclicWorkGraph(Cleanable):
         for edge in self._edges:
             edge.cleanup()  # Dispose of each edge
         self._edges.clear()  # Clear the list of edges
+
+    @property
+    def id(self):
+        """
+        Retrieves the unique identifier of this DAG.
+
+        Returns:
+            The unique ID string of the DAG.
+        """
+        return self._id
 
     def add_node(self, node):
         """

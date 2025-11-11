@@ -1,6 +1,7 @@
 import inspect
 from inspect import Parameter
 from typing import Any, Dict, Callable
+# Melder imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
 
 #region MethodInspector

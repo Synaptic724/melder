@@ -1,11 +1,11 @@
 from typing import Optional, Any
-from uuid import UUID, uuid4
 from threading import RLock
 # Melder imports
 from melder.aether.conduit.conduit_ward.contract.details import Detail
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
-from melder.utilities.interfaces.interfaces import IConduitWard
+from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.interfaces import IConduitWard, IConduit, IContract
 from melder.utilities.general_base.sealable import Sealable
 
 class Contract(Sealable):
@@ -25,7 +25,7 @@ class Contract(Sealable):
     def __init__(self, ward_a: IConduitWard, ward_b: IConduitWard):
         super().__init__()
         self._lock = RLock()
-        self._id: UUID = uuid4()
+        self._id: str = IDBuilder.create_id()
 
         self._ward_a: IConduitWard = ward_a
         self._ward_b: IConduitWard = ward_b
@@ -33,6 +33,37 @@ class Contract(Sealable):
         # Each side stores its own view of spell permissions.
         self._details_a: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit b
         self._details_b: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit a
+
+
+    def seal(self):
+        """
+        Internal
+
+        Seal the contract, clearing its wards and internal details.
+        """
+        if self._sealed:
+            return
+        with self._lock:
+            if self._sealed:
+                return
+            self._clean_up()
+            self._ward_a = None
+            self._ward_b = None
+            self._sealed = True
+
+    def _clean_up(self):
+        """
+        Internal
+
+        Seal and clear all spell details from both sides.
+        """
+        for detail in self._details_a.values():
+            detail.seal()
+        self._details_a.clear()
+
+        for detail in self._details_b.values():
+            detail.seal()
+        self._details_b.clear()
 
     def _get_peer(self, ward: IConduitWard) -> IConduitWard:
         """
@@ -46,7 +77,7 @@ class Contract(Sealable):
             return self._ward_a
         raise ValueError("Ward is not a member of this contract.")
 
-    def _get_opposite_conduit(self, contract: 'Contract', known_id: UUID) -> Optional['IConduit']:
+    def _get_opposite_conduit(self, contract: IContract, known_id: str) -> Optional[IConduit]:
         """
         Internal
 
@@ -158,33 +189,3 @@ class Contract(Sealable):
         detail_map = self._get_detail_map(ward)
         for spell_id in spell_ids:
             detail_map[spell_id] = Detail(spell_id, permission)
-
-    def seal(self):
-        """
-        Internal
-
-        Seal the contract, clearing its wards and internal details.
-        """
-        if self._sealed:
-            return
-        with self._lock:
-            if self._sealed:
-                return
-            self.clean_up()
-            self._ward_a = None
-            self._ward_b = None
-            self._sealed = True
-
-    def clean_up(self):
-        """
-        Internal
-
-        Seal and clear all spell details from both sides.
-        """
-        for detail in self._details_a.values():
-            detail.seal()
-        self._details_a.clear()
-
-        for detail in self._details_b.values():
-            detail.seal()
-        self._details_b.clear()

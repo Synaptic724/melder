@@ -1,4 +1,3 @@
-from uuid import UUID, uuid4
 from threading import RLock
 from typing import List, Optional
 import ulid
@@ -30,13 +29,13 @@ class LesserCreations(Sealable):
             disposal_method_names (List[str]): List of method names to attempt during cleanup.
 
         The internal dictionaries hold references to the locally created objects,
-        indexed by the spell's unique ID (`UUID`).
+        indexed by the spell's unique ID (str).
         """
         super().__init__()
         self._id: str = str(ulid.ULID())
         self._lock = RLock()
-        self._unique_per_scope: ConcurrentDict[UUID, object] = ConcurrentDict()
-        self._many: ConcurrentDict[UUID, ConcurrentList[object]] = ConcurrentDict()
+        self._unique_per_scope: ConcurrentDict[str, object] = ConcurrentDict()
+        self._many: ConcurrentDict[str, ConcurrentList[object]] = ConcurrentDict()
 
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
@@ -174,12 +173,12 @@ class LesserCreations(Sealable):
         return data
 
 
-    def add_unique_per_scope(self, key: UUID, item: object) -> None:
+    def add_unique_per_scope(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
         Args:
-            key (UUID): Unique identifier (Spell ID).
+            key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
 
         Raises:
@@ -191,7 +190,7 @@ class LesserCreations(Sealable):
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = item
 
-    def add_many(self, key: UUID, item: object) -> None:
+    def add_many(self, key: str, item: object) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 

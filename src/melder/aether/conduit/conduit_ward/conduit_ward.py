@@ -1,4 +1,3 @@
-from uuid import UUID
 import threading
 from typing import List, Optional, Any, Tuple
 
@@ -49,14 +48,14 @@ class ConduitWard(Sealable, IConduitWard):
         self._policy: Policies = self._set_initial_policy(policy)
 
         # Contracts between conduits
-        self._initiated_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # [Target ConduitID] -> [ContractID]
-        self._received_index: ConcurrentDict[UUID, UUID] = ConcurrentDict()  # [Source ConduitID] -> [ContractID]
+        self._initiated_index: ConcurrentDict[str, str] = ConcurrentDict()  # [Target ConduitID] -> [ContractID]
+        self._received_index: ConcurrentDict[str, str] = ConcurrentDict()  # [Source ConduitID] -> [ContractID]
 
-        self._contracts: ConcurrentDict[UUID, Contract] = ConcurrentDict() # [ContractID] -> Contract
+        self._contracts: ConcurrentDict[str, Contract] = ConcurrentDict() # [ContractID] -> Contract
 
         # Lineage Links
         self._parent_conduit: IConduit | None = None
-        self._lesser_conduits: ConcurrentDict[UUID, IConduit] = ConcurrentDict() # [Lesser ConduitID] -> Lesser Conduit
+        self._lesser_conduits: ConcurrentDict[str, IConduit] = ConcurrentDict() # [Lesser ConduitID] -> Lesser Conduit
 
     #region Cleanup
     def seal(self):
@@ -282,7 +281,7 @@ class ConduitWard(Sealable, IConduitWard):
 
                 return True
 
-    def _find_contract_id(self, target_conduit: IConduit) -> Optional[UUID]:
+    def _find_contract_id(self, target_conduit: IConduit) -> Optional[str]:
         """
         Internal
 
@@ -292,7 +291,7 @@ class ConduitWard(Sealable, IConduitWard):
             target_conduit (IConduit): The target conduit to find the contract for.
 
         Returns:
-            Optional[UUID]: The ID of the found contract or None if not found.
+            Optional[str]: The ID of the found contract or None if not found.
 
         Raises:
             RuntimeError: If the Conduit is sealed.
@@ -332,14 +331,14 @@ class ConduitWard(Sealable, IConduitWard):
         contract_id = self._initiated_index.get(peer_id) or self._received_index.get(peer_id)
         return self._contracts.get(contract_id)
 
-    def _find_contract_by_id(self, conduit_id: UUID) -> Optional[Contract]:
+    def _find_contract_by_id(self, conduit_id: str) -> Optional[Contract]:
         """
         Internal
 
         Finds a contract by the peer's Conduit ID.
 
         Args:
-            conduit_id (UUID): The ID of the peer conduit in the contract.
+            conduit_id (str): The ID of the peer conduit in the contract.
 
         Returns:
             Optional[Contract]: The found contract object or None if not found.
@@ -441,14 +440,14 @@ class ConduitWard(Sealable, IConduitWard):
             self._lesser_conduits[lesser_conduit.__creation_context__._conduit_id] = lesser_conduit
             lesser_conduit._parent_conduit = self._conduit
 
-    def _get_lesser_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+    def _get_lesser_conduit(self, conduit_id: str) -> Optional[IConduit]:
         """
         Internal
 
         Recursively searches for a lesser conduit with the given ID within this conduit's hierarchy.
 
         Args:
-            conduit_id (UUID): The ID of the conduit to retrieve.
+            conduit_id (str): The ID of the conduit to retrieve.
 
         Returns:
             Optional[IConduit]: The matched conduit if found, else None.
@@ -524,14 +523,14 @@ class ConduitWard(Sealable, IConduitWard):
             if (conduit := self._get_provider_conduit(conduit_id)) is not None
         ]
 
-    def _get_initiated_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+    def _get_initiated_conduit(self, conduit_id: str) -> Optional[IConduit]:
         """
         Internal
 
         Retrieves the conduit that this conduit has initiated a contract *toward*.
 
         Args:
-            conduit_id (UUID): The ID of the target conduit this conduit linked to.
+            conduit_id (str): The ID of the target conduit this conduit linked to.
 
         Returns:
             Optional[IConduit]: The target conduit if the link exists, otherwise None.
@@ -547,14 +546,14 @@ class ConduitWard(Sealable, IConduitWard):
                 return contract._ward_b._conduit if conduit_id == contract._ward_b._id else contract._ward_a._conduit
         return None
 
-    def _get_provider_conduit(self, conduit_id: UUID) -> Optional[IConduit]:
+    def _get_provider_conduit(self, conduit_id: str) -> Optional[IConduit]:
         """
         Internal
 
         Retrieves the conduit that initiated a contract *to this* conduit.
 
         Args:
-            conduit_id (UUID): The ID of the source conduit that linked to this one.
+            conduit_id (str): The ID of the source conduit that linked to this one.
 
         Returns:
             Optional[IConduit]: The source conduit if the link exists, otherwise None.
@@ -655,7 +654,7 @@ class ConduitWard(Sealable, IConduitWard):
 
     def _check_conduit_id_and_conduit(self,
                                       conduit: IConduit = None,
-                                      conduit_id: UUID = None, aetheric_frame = "default") -> Tuple[UUID, IConduit]:
+                                      conduit_id: str = None, aetheric_frame = "default") -> Tuple[str, IConduit]:
         """
         Internal
 
@@ -663,11 +662,11 @@ class ConduitWard(Sealable, IConduitWard):
 
         Args:
             conduit (IConduit, optional): The target conduit object.
-            conduit_id (UUID, optional): The unique ID of the target conduit.
+            conduit_id (str, optional): The unique ID of the target conduit.
             aetheric_frame (str): The Aetheric Frame to search within.
 
         Returns:
-            Tuple[UUID, IConduit]: The resolved (conduit_id, conduit) pair.
+            Tuple[str, IConduit]: The resolved (conduit_id, conduit) pair.
 
         Raises:
             ValueError: If neither `conduit` nor `conduit_id` is provided.
@@ -679,8 +678,8 @@ class ConduitWard(Sealable, IConduitWard):
 
         # Resolve conduit from conduit_id
         if conduit is None:
-            if not isinstance(conduit_id, UUID):
-                raise TypeError(f"Expected conduit_id as UUID, got {type(conduit_id).__name__}")
+            if not isinstance(conduit_id, str):
+                raise TypeError(f"Expected conduit_id as str, got {type(conduit_id).__name__}")
             conduit = self._conduit.get_conduit_by_id(conduit_id, aetheric_frame)
             if conduit is None:
                 raise RuntimeError(f"Could not resolve conduit for conduit_id '{conduit_id}'.")
@@ -749,7 +748,7 @@ class ConduitWard(Sealable, IConduitWard):
         if spell._owner_conduit_id != conduit.__creation_context__._conduit_id:
             raise RuntimeError(f"Spell '{spell.__name__}' is not owned by this conduit, cannot contract it.")
 
-    def _add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: UUID = None,
+    def _add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: str = None,
                                permissions: str = "create", aetheric_frame = "default") -> bool | None:
         """
         Internal
@@ -760,7 +759,7 @@ class ConduitWard(Sealable, IConduitWard):
             spell (ISpell, optional): The spell object to contract.
             spell_id (str, optional): The unique ID of the spell.
             conduit (IConduit, optional): The target peer conduit.
-            conduit_id (UUID, optional): The UUID of the target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
             permissions (str): The permission level granted for this spell (default is "create").
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
@@ -805,7 +804,7 @@ class ConduitWard(Sealable, IConduitWard):
 
         return True
 
-    def _add_spells_to_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None, conduit_id: UUID = None,
+    def _add_spells_to_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None, conduit_id: str = None,
                                 permissions: str = "create", aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
@@ -815,7 +814,7 @@ class ConduitWard(Sealable, IConduitWard):
         Args:
             spell_ids (list[str], optional): List of spell IDs to contract.
             conduit (IConduit, optional): The target peer conduit.
-            conduit_id (UUID, optional): The UUID of the target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
             permissions (str): The permission level to apply to all spells (default is "create").
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
@@ -838,7 +837,7 @@ class ConduitWard(Sealable, IConduitWard):
         return report
 
     def _remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
-                                    conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
+                                    conduit_id: str = None, aetheric_frame = "default") -> bool | None:
         """
         Internal
 
@@ -848,7 +847,7 @@ class ConduitWard(Sealable, IConduitWard):
             spell (ISpell, optional): The spell object to remove.
             spell_id (str, optional): The unique ID of the spell to remove.
             conduit (IConduit, optional): The target peer conduit.
-            conduit_id (UUID, optional): The UUID of the target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:
@@ -882,7 +881,7 @@ class ConduitWard(Sealable, IConduitWard):
 
 
     def _remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
-                                     conduit_id: UUID = None, aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
+                                     conduit_id: str = None, aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
 
@@ -891,7 +890,7 @@ class ConduitWard(Sealable, IConduitWard):
         Args:
             spell_ids (list[str], optional): List of spell IDs to remove.
             conduit (IConduit, optional): The target peer conduit.
-            conduit_id (UUID, optional): The UUID of the target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:
@@ -912,7 +911,7 @@ class ConduitWard(Sealable, IConduitWard):
                 report["failed"][spell_id] = str(e)
         return report
 
-    def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: UUID = None, aetheric_frame = "default") -> bool | None:
+    def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: str = None, aetheric_frame = "default") -> bool | None:
         """
         Internal
 
@@ -920,7 +919,7 @@ class ConduitWard(Sealable, IConduitWard):
 
         Args:
             conduit (IConduit, optional): The target peer conduit.
-            conduit_id (UUID, optional): The UUID of the target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:
@@ -953,7 +952,7 @@ class ConduitWard(Sealable, IConduitWard):
         else:
             raise RuntimeError(f"No contract found for conduit ID {conduit_id}")
 
-    def _get_all_spells_in_contracts(self, validate: bool = True) -> Optional[dict[str, list[Tuple[str, 'ISpell']]]]:
+    def _get_all_spells_in_contracts(self, validate: bool = True) -> Optional[dict[str, list[Tuple[str, ISpell]]]]:
         """
         Internal
 
@@ -966,7 +965,7 @@ class ConduitWard(Sealable, IConduitWard):
             validate (bool): Whether to validate contract consistency before retrieval.
 
         Returns:
-            Optional[dict[str, list[Tuple[str, 'ISpell']]]]: A dictionary mapping peer conduit IDs (UUID) to lists of (spell_id, ISpell) tuples.
+            Optional[dict[str, list[Tuple[str, ISpell]]]]: A dictionary mapping peer conduit IDs (str) to lists of (spell_id, ISpell) tuples.
             Returns None if no contracts are found.
 
         Raises:
@@ -1010,7 +1009,7 @@ class ConduitWard(Sealable, IConduitWard):
 
         return spells_in_contracts if spells_in_contracts else None
 
-    def _get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[UUID, ISpell]]:
+    def _get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, ISpell]]:
         """
         Internal
 
@@ -1022,7 +1021,7 @@ class ConduitWard(Sealable, IConduitWard):
             spell_id (str): The explicit spell ID to search for.
 
         Returns:
-            Optional[tuple[UUID, ISpell]]: Tuple of (`Conduit ID`, `ISpell`) if found, otherwise None.
+            Optional[tuple[str, ISpell]]: Tuple of (`Conduit ID`, `ISpell`) if found, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is sealed.
@@ -1042,7 +1041,7 @@ class ConduitWard(Sealable, IConduitWard):
 
         return None
 
-    def _get_spells_in_contract_by_conduit(self, conduit_id: UUID) -> dict[str, list[tuple[str, ISpell]]] | None:
+    def _get_spells_in_contract_by_conduit(self, conduit_id: str) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
         Internal
 
@@ -1051,7 +1050,7 @@ class ConduitWard(Sealable, IConduitWard):
         Returns details on both inbound (received) and outbound (granted) contracted spells.
 
         Args:
-            conduit_id (UUID): The UUID of the target conduit.
+            conduit_id (str): The id of the target conduit.
 
         Returns:
             dict[str, list[tuple[str, ISpell]]] | None: A dictionary mapping roles ("inbound", "outbound") to lists of (spell_id, ISpell) tuples.
@@ -1150,14 +1149,14 @@ class ConduitWard(Sealable, IConduitWard):
 
         return contracted_conduits if contracted_conduits else None
 
-    def _describe_contract(self, conduit_id: UUID) -> dict:
+    def _describe_contract(self, conduit_id: str) -> dict:
         """
         Internal
 
         Returns a detailed diagnostic summary of a contract established with a specific peer conduit ID.
 
         Args:
-            conduit_id (UUID): UUID of the peer conduit whose contract you wish to examine.
+            conduit_id (str): id of the peer conduit whose contract you wish to examine.
 
         Returns:
             dict: Dictionary containing contract metadata, including spell list and permissions.
@@ -1192,7 +1191,7 @@ class ConduitWard(Sealable, IConduitWard):
                 ]
             }
 
-    def _validate_contracts_and_define(self) -> dict[UUID, bool]:
+    def _validate_contracts_and_define(self) -> dict[str, bool]:
         """
         Internal
 
@@ -1205,7 +1204,7 @@ class ConduitWard(Sealable, IConduitWard):
             None
 
         Returns:
-            dict[UUID, bool]: Dictionary mapping contract UUIDs to validation results (True/False).
+            dict[str, bool]: Dictionary mapping contract id to validation results (True/False).
 
         Raises:
             RuntimeError: If the Conduit is sealed.

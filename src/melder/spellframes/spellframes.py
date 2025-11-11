@@ -1,8 +1,10 @@
 
 
 import threading
-import uuid
 from typing import Optional, Type, Dict, Any
+
+import ulid
+
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.general_base.sealable import Sealable
 
@@ -126,7 +128,7 @@ class SpellFrame(Sealable):
             raise ValueError(f"SpellFrame '{name}' is already registered.")
 
         metadata = {
-            "uuid": str(uuid.uuid4()),
+            "uuid": str(ulid.ULID()),
             "name": name,
             "module": frame_type.__module__,
             "qualname": frame_type.__qualname__,

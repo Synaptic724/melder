@@ -1,5 +1,4 @@
 import logging
-import uuid
 from threading import RLock
 from typing import Optional, Any
 import ulid
@@ -257,12 +256,12 @@ class Aether(Sealable):
         self._logger.error(f"Conduit with name {name} not found.", "_get_conduit_by_name", exc_info=True)
         raise ValueError(f"Conduit with name {name} not found.")
 
-    def _get_conduit_by_id(self, signature: uuid.UUID, aetheric_frame_name: str = "default") -> IConduit:
+    def _get_conduit_by_id(self, signature: str, aetheric_frame_name: str = "default") -> IConduit:
         """
-        Finds a root conduit within a frame by its UUID.
+        Finds a root conduit within a frame by its id.
 
         Args:
-            signature (uuid.uuid4): The UUID of the conduit.
+            signature (str): The id of the conduit.
             aetheric_frame_name (str): The name of the frame to search in.
 
         Returns:
@@ -378,7 +377,7 @@ class Aether(Sealable):
 
     def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
-        Adds a conduit's UUID to a cluster. (Internal use)
+        Adds a conduit's id to a cluster. (Internal use)
 
         Args:
             conduit (IConduit): The conduit to add.
@@ -409,7 +408,7 @@ class Aether(Sealable):
 
     def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
-        Removes a conduit's UUID from a cluster. (Internal use)
+        Removes a conduit's id from a cluster. (Internal use)
 
         Args:
             conduit (IConduit): The conduit to remove.
@@ -443,16 +442,16 @@ class Aether(Sealable):
 
         self._logger.debug(f"Conduit '{conduit_id}' removed from cluster '{cluster_name}'", "_remove_conduit_from_cluster")
 
-    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> ConcurrentList[uuid.UUID]:
+    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> ConcurrentList[str]:
         """
-        Gets a list of all conduit UUIDs in a specific cluster.
+        Gets a list of all conduit ids in a specific cluster.
 
         Args:
             cluster_name (str): The name of the cluster.
             aetheric_frame_name (str): The name of the frame.
 
         Returns:
-            ConcurrentList[uuid.UUID]: A list of conduit UUIDs.
+            ConcurrentList[str]: A list of conduit ids.
 
         Raises:
             ValueError: If the frame or cluster does not exist.
@@ -536,12 +535,12 @@ class Aether(Sealable):
         self._logger.debug(f"Check for spell '{spell_id}' in frame '{aetheric_frame_name}': {found}", "_check_for_spell")
         return found
 
-    def _add_spells_to_aether(self, conduit_id: uuid.UUID, spell_set: ConcurrentSet[str], aetheric_frame_name: str = "default"):
+    def _add_spells_to_aether(self, conduit_id: str, spell_set: ConcurrentSet[str], aetheric_frame_name: str = "default"):
         """
         Registers a set of spell IDs as being owned by a specific conduit.
 
         Args:
-            conduit_id (uuid.UUID): The UUID of the owning conduit.
+            conduit_id (str): The id of the owning conduit.
             spell_set (ConcurrentSet[str]): A set of spell IDs to register.
             aetheric_frame_name (str): The name of the frame.
 

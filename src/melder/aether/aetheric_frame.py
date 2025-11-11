@@ -1,7 +1,4 @@
-import uuid
-
 import ulid
-
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
@@ -25,7 +22,7 @@ class AethericFrame(Sealable):
         name (str): The unique name of this frame.
         _lock (RLock): A reentrant lock ensuring thread-safe operations.
         _conduits (ConcurrentDict): Stores all root conduits created within this frame.
-        _spell_registry (ConcurrentDict): Maps conduit UUIDs to the set of
+        _spell_registry (ConcurrentDict): Maps conduit ids to the set of
             spell IDs they own.
         _conduit_clusters (ConcurrentDict): Organizes conduits into named groups.
         _conduit_cloud (ConduitCloud): The abstract factory for named conduits
@@ -44,11 +41,11 @@ class AethericFrame(Sealable):
         self._id: str = str(ulid.ULID())
         self._lock = RLock()
         # This retains all normal conduits i.e roots created by a spellbook
-        self._conduits: ConcurrentDict[uuid.UUID, IConduit] = ConcurrentDict()
-        # Holds conduit UUIDs and their spell IDs (SHA256 hashes)
-        self._spell_registry: ConcurrentDict[uuid.UUID, ConcurrentSet[str]] = ConcurrentDict()
+        self._conduits: ConcurrentDict[str, IConduit] = ConcurrentDict()
+        # Holds conduit ids and their spell IDs (SHA256 hashes)
+        self._spell_registry: ConcurrentDict[str, ConcurrentSet[str]] = ConcurrentDict()
         # Clusters only
-        self._conduit_clusters: ConcurrentDict[str, ConcurrentList[uuid.UUID]] = ConcurrentDict()
+        self._conduit_clusters: ConcurrentDict[str, ConcurrentList[str]] = ConcurrentDict()
         # This is the dynamic mode registry
         self._conduit_cloud = ConduitCloud(name)
         # This is the configuration for the Aetheric Frame

@@ -1,4 +1,3 @@
-from uuid import UUID, uuid4
 from threading import RLock
 from typing import List, Optional
 import ulid
@@ -30,16 +29,16 @@ class Creations(Sealable):
             disposal_method_names (List[str]): List of method names to attempt during cleanup.
 
         The internal dictionaries hold references to the objects created by the conduit,
-        indexed by the spell's unique ID (`UUID`).
+        indexed by the spell's unique ID (`str`).
         """
         super().__init__()
         self._id: str = str(ulid.ULID())
         self._lock = RLock()
-        self._unique: ConcurrentDict[UUID, object] = ConcurrentDict()
-        self._unique_per_scope: ConcurrentDict[UUID, object] = ConcurrentDict()
-        self._many: ConcurrentDict[UUID, ConcurrentList[object]] = ConcurrentDict()
-        self._unique_per_lineage: ConcurrentDict[UUID, object] = ConcurrentDict()
-        self._unique_per_cluster: ConcurrentDict[UUID, object] = ConcurrentDict()
+        self._unique: ConcurrentDict[str, object] = ConcurrentDict()
+        self._unique_per_scope: ConcurrentDict[str, object] = ConcurrentDict()
+        self._many: ConcurrentDict[str, ConcurrentList[object]] = ConcurrentDict()
+        self._unique_per_lineage: ConcurrentDict[str, object] = ConcurrentDict()
+        self._unique_per_cluster: ConcurrentDict[str, object] = ConcurrentDict()
 
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
@@ -232,7 +231,7 @@ class Creations(Sealable):
         self._unique_per_scope = kwargs.get("unique_per_scope")
         self._many = kwargs.get("many")
 
-    def add_unique(self, key: UUID, item: object) -> None:
+    def add_unique(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique` scope.
 
@@ -249,12 +248,12 @@ class Creations(Sealable):
             raise ValueError(f"Key {key} already exists in unique objects.")
         self._unique[key] = item
 
-    def add_unique_per_lineage(self, key: UUID, item: object) -> None:
+    def add_unique_per_lineage(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_lineage` scope.
 
         Args:
-            key (UUID): Unique identifier (Spell ID).
+            key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
 
         Raises:
@@ -266,7 +265,7 @@ class Creations(Sealable):
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
         self._unique_per_lineage[key] = item
 
-    def add_unique_per_cluster(self, key: UUID, item: object) -> None:
+    def add_unique_per_cluster(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_cluster` scope.
 
@@ -283,12 +282,12 @@ class Creations(Sealable):
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
         self._unique_per_cluster[key] = item
 
-    def add_unique_per_scope(self, key: UUID, item: object) -> None:
+    def add_unique_per_scope(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
         Args:
-            key (UUID): Unique identifier (Spell ID).
+            key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
 
         Raises:
@@ -300,7 +299,7 @@ class Creations(Sealable):
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = item
 
-    def add_many(self, key: UUID, item: object) -> None:
+    def add_many(self, key: str, item: object) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 
