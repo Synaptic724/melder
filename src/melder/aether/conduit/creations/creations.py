@@ -1,26 +1,28 @@
 from threading import RLock
 from typing import List, Optional
-import ulid
+
 # Melder imports
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import IConduit
+
 
 #TODO: Create a creations object to encapsulate the objects under my control.
 
-class Creations(Sealable):
+class Creations(Cleanable):
     """
     Manages all instantiated objects within a Conduit (Normal Scope).
 
     This manager is responsible for tracking object instances based on their lifecycle
-    (`unique`, `unique_per_scope`, `many`, etc.) and enforcing resource disposal upon sealing.
+    (`unique`, `unique_per_scope`, `many`, etc.) and enforcing resource disposal upon cleaning.
 
     **Key Responsibilities:**
       * Storage and lifecycle management of created objects.
-      * Controlled resource disposal via `ISealable` or configured cleanup methods.
+      * Controlled resource disposal via `ICleanable` or configured cleanup methods.
     """
 
-    def __init__(self, disposal_enabled: bool, disposal_method_names: List[str]):
+    def __init__(self, disposal_enabled: bool, disposal_method_names: List[str], conduit: IConduit):
         """
         Initialize a new Creations manager.
 
@@ -32,51 +34,56 @@ class Creations(Sealable):
         indexed by the spell's unique ID (`str`).
         """
         super().__init__()
-        self._id: str = str(ulid.ULID())
+        self._conduit: IConduit = conduit
+        self._id: str = conduit._id
         self._lock = RLock()
+
+        # Internal storage for created objects by lifecycle scope
         self._unique: ConcurrentDict[str, object] = ConcurrentDict()
         self._unique_per_scope: ConcurrentDict[str, object] = ConcurrentDict()
         self._many: ConcurrentDict[str, ConcurrentList[object]] = ConcurrentDict()
         self._unique_per_lineage: ConcurrentDict[str, object] = ConcurrentDict()
         self._unique_per_cluster: ConcurrentDict[str, object] = ConcurrentDict()
 
+        # Disposal configuration
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
 
     #region Destructor
-    def seal(self) -> None:
+    def cleanup(self) -> None:
         """
-        Seal the creations manager, disposing of all managed objects across all existence types.
+        Cleans the creations manager, disposing of all managed objects across all existence types.
 
-        Once sealed, no further modifications are allowed. If any disposal method fails,
+        Once cleaned, no further modifications are allowed. If any disposal method fails,
         an `ExceptionGroup` containing all errors is raised.
 
         Raises:
             ExceptionGroup: Contains a list of all exceptions encountered during cleanup.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
-            self._sealed = True
+            self._cleaned = True
             errors = []
 
-            errors.extend(self._seal_unique())
-            errors.extend(self._seal_unique_per_scope())
-            errors.extend(self._seal_many())
-            errors.extend(self._seal_unique_per_lineage())
-            errors.extend(self._seal_unique_per_cluster())
+            errors.extend(self._cleanup_unique())
+            errors.extend(self._cleanup_unique_per_scope())
+            errors.extend(self._cleanup_many())
+            errors.extend(self._cleanup_unique_per_lineage())
+            errors.extend(self._cleanup_unique_per_cluster())
 
             self._unique = None
             self._unique_per_scope = None
             self._many = None
+            self._conduit = None
             self._disposal_method_names = None
 
             if errors:
-                raise ExceptionGroup("Errors occurred during sealing", errors)
+                raise ExceptionGroup("Errors occurred during cleaning", errors)
 
-    def _seal_unique(self) -> List[Exception]:
+    def _cleanup_unique(self) -> List[Exception]:
         """
         Internal
 
@@ -94,7 +101,7 @@ class Creations(Sealable):
         self._unique.cleanup()
         return errors
 
-    def _seal_unique_per_lineage(self) -> List[Exception]:
+    def _cleanup_unique_per_lineage(self) -> List[Exception]:
         """
         Internal
 
@@ -112,7 +119,7 @@ class Creations(Sealable):
         self._unique_per_lineage.cleanup()
         return errors
 
-    def _seal_unique_per_cluster(self) -> List[Exception]:
+    def _cleanup_unique_per_cluster(self) -> List[Exception]:
         """
         Internal
 
@@ -130,7 +137,7 @@ class Creations(Sealable):
         self._unique_per_cluster.cleanup()
         return errors
 
-    def _seal_unique_per_scope(self) -> List[Exception]:
+    def _cleanup_unique_per_scope(self) -> List[Exception]:
         """
         Internal
 
@@ -148,7 +155,7 @@ class Creations(Sealable):
         self._unique_per_scope.cleanup()
         return errors
 
-    def _seal_many(self) -> List[Exception]:
+    def _cleanup_many(self) -> List[Exception]:
         """
         Internal
 
@@ -176,7 +183,7 @@ class Creations(Sealable):
 
         Behavior:
           - Returns None if `item` is None or disposal is disabled.
-          - Iterates `self._disposal_method_names` in order (e.g., ["seal", "cleanup", "close", "dispose"]).
+          - Iterates `self._disposal_method_names` in order (e.g., ["cleanup", "cleanup", "close", "dispose"]).
           - For the first attribute found on `item` that is callable, calls it.
           - If the call succeeds, returns None.
           - If the call raises, returns a RuntimeError wrapping the original exception.
@@ -240,10 +247,10 @@ class Creations(Sealable):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique` scope.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if key in self._unique:
             raise ValueError(f"Key {key} already exists in unique objects.")
         self._unique[key] = item
@@ -257,10 +264,10 @@ class Creations(Sealable):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique_per_lineage` scope.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if key in self._unique_per_lineage:
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
         self._unique_per_lineage[key] = item
@@ -274,10 +281,10 @@ class Creations(Sealable):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique_per_cluster` scope.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if key in self._unique_per_cluster:
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
         self._unique_per_cluster[key] = item
@@ -291,10 +298,10 @@ class Creations(Sealable):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique_per_scope` scope.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if key in self._unique_per_scope:
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = item
@@ -310,9 +317,9 @@ class Creations(Sealable):
             item (object): Object instance to add.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if key not in self._many:
             self._many[key] = ConcurrentList()
         self._many[key].append(item)

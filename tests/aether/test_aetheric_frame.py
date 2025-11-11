@@ -13,17 +13,17 @@ from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 
 class _StubConduit:
     def __init__(self, tag=None):
-        self.sealed = False
+        self._cleaned = False
         self.count = 0
         self.tag = tag
 
-    def seal(self):
-        self.sealed = True
+    def cleanup(self):
+        self._cleaned = True
         self.count += 1
 
 
 class _BoomConduit:
-    def seal(self):
+    def cleanup(self):
         raise RuntimeError("boom")
 
 
@@ -31,7 +31,7 @@ class TestAethericFrame(unittest.TestCase):
 
     def setUp(self):
         self.frame = AethericFrame("unit")
-        self.assertFalse(self.frame._sealed)
+        self.assertFalse(self.frame._cleaned)
         self.assertEqual(self.frame.name, "unit")
 
     # 1 — baseline construction + types
@@ -50,8 +50,8 @@ class TestAethericFrame(unittest.TestCase):
         self.assertEqual(len(_id), 26)
         self.assertTrue(all(ch in string.ascii_uppercase + string.ascii_lowercase + string.digits for ch in _id))
 
-    # 3 — add conduits then seal: each conduit gets sealed
-    def test_conduits_get_sealed_before_cleanup(self):
+    # 3 — add conduits then cleanup: each conduit gets cleaned
+    def test_conduits_get_cleaned_before_cleanup(self):
         c1 = _StubConduit("a")
         c2 = _StubConduit("b")
         id1 = uuid.uuid4()
@@ -59,32 +59,32 @@ class TestAethericFrame(unittest.TestCase):
         self.frame._conduits[id1] = c1
         self.frame._conduits[id2] = c2
 
-        self.frame.seal()
+        self.frame.cleanup()
 
-        self.assertTrue(c1.sealed)
-        self.assertTrue(c2.sealed)
-        self.assertTrue(self.frame._sealed)
+        self.assertTrue(c1._cleaned)
+        self.assertTrue(c2._cleaned)
+        self.assertTrue(self.frame._cleaned)
 
-    # 4 — cloud is sealed (capture ref before null)
-    def test_cloud_is_sealed_before_nulling(self):
+    # 4 — cloud is cleaned (capture ref before null)
+    def test_cloud_is_cleaned_before_nulling(self):
         cloud_ref = self.frame._conduit_cloud
-        self.assertFalse(cloud_ref._sealed)
-        self.frame.seal()
-        self.assertTrue(cloud_ref._sealed)
+        self.assertFalse(cloud_ref._cleaned)
+        self.frame.cleanup()
+        self.assertTrue(cloud_ref._cleaned)
 
-    # 5 — after seal, containers are None
-    def test_containers_are_set_to_none_after_seal(self):
-        self.frame.seal()
+    # 5 — after cleanup, containers are None
+    def test_containers_are_set_to_none_after_cleanup(self):
+        self.frame.cleanup()
         self.assertIsNone(self.frame._conduits)
         self.assertIsNone(self.frame._spell_registry)
         self.assertIsNone(self.frame._conduit_clusters)
         self.assertIsNone(self.frame._conduit_cloud)
 
-    # 6 — idempotent seal
-    def test_seal_is_idempotent(self):
-        self.frame.seal()
-        self.frame.seal()  # must not raise
-        self.assertTrue(self.frame._sealed)
+    # 6 — idempotent cleanup
+    def test_cleanup_is_idempotent(self):
+        self.frame.cleanup()
+        self.frame.cleanup()  # must not raise
+        self.assertTrue(self.frame._cleaned)
         self.assertIsNone(self.frame._conduits)
 
     # 7 — boom conduit exceptions are swallowed
@@ -92,18 +92,18 @@ class TestAethericFrame(unittest.TestCase):
         cid = uuid.uuid4()
         self.frame._conduits[cid] = _BoomConduit()
         # should NOT raise
-        self.frame.seal()
-        self.assertTrue(self.frame._sealed)
+        self.frame.cleanup()
+        self.assertTrue(self.frame._cleaned)
 
-    # 8 — name / configuration survive sealing
-    def test_name_and_configuration_survive_seal(self):
+    # 8 — name / configuration survive cleanuping
+    def test_name_and_configuration_survive_cleanup(self):
         self.frame._configuration = {"x": 1}
-        self.frame.seal()
+        self.frame.cleanup()
         self.assertEqual(self.frame.name, "unit")
         self.assertEqual(self.frame._configuration, {"x": 1})
 
-    # 9 — cluster bookkeeping pre-seal
-    def test_cluster_bookkeeping_pre_seal(self):
+    # 9 — cluster bookkeeping pre-cleanup
+    def test_cluster_bookkeeping_pre_cleanup(self):
         cid1 = uuid.uuid4()
         cid2 = uuid.uuid4()
         self.frame._conduits[cid1] = _StubConduit()
@@ -116,7 +116,7 @@ class TestAethericFrame(unittest.TestCase):
         self.assertIn("G", self.frame._conduit_clusters)
         self.assertEqual(list(self.frame._conduit_clusters["G"]), [cid1, cid2])
 
-    # 10 — spell registry pre-seal uniqueness
+    # 10 — spell registry pre-cleanup uniqueness
     def test_spell_registry_concurrent_set_uniqueness(self):
         cid = uuid.uuid4()
         s = ConcurrentSet()
@@ -127,8 +127,8 @@ class TestAethericFrame(unittest.TestCase):
         self.assertIn(cid, self.frame._spell_registry)
         self.assertEqual(len(self.frame._spell_registry[cid]), 1)
 
-    # 11 — multiple clusters + contents pre-seal
-    def test_multiple_clusters_pre_seal(self):
+    # 11 — multiple clusters + contents pre-cleanup
+    def test_multiple_clusters_pre_cleanup(self):
         a = uuid.uuid4()
         b = uuid.uuid4()
         c = uuid.uuid4()
@@ -146,28 +146,28 @@ class TestAethericFrame(unittest.TestCase):
             self.frame._conduits[i] = _StubConduit()
         self.assertEqual(set(self.frame._conduits.keys()), set(ids))
 
-    # 13 — conduit.seal is called exactly once per conduit even if frame.seal called twice
-    def test_conduit_seal_called_once_each(self):
+    # 13 — conduit.cleanup is called exactly once per conduit even if frame.cleanup called twice
+    def test_conduit_cleanup_called_once_each(self):
         c1 = _StubConduit()
         c2 = _StubConduit()
         self.frame._conduits[uuid.uuid4()] = c1
         self.frame._conduits[uuid.uuid4()] = c2
 
-        self.frame.seal()
-        self.frame.seal()  # no-op
+        self.frame.cleanup()
+        self.frame.cleanup()  # no-op
 
         self.assertEqual(c1.count, 1)
         self.assertEqual(c2.count, 1)
 
-    # 14 — cannot (and do not) access containers after seal; we only check None
-    def test_no_container_access_after_seal(self):
-        self.frame.seal()
+    # 14 — cannot (and do not) access containers after cleanup; we only check None
+    def test_no_container_access_after_cleanup(self):
+        self.frame.cleanup()
         self.assertIsNone(self.frame._conduits)
         self.assertIsNone(self.frame._spell_registry)
         self.assertIsNone(self.frame._conduit_clusters)
 
-    # 15 — pre-seal: removing from cluster list behaves
-    def test_cluster_remove_pre_seal(self):
+    # 15 — pre-cleanup: removing from cluster list behaves
+    def test_cluster_remove_pre_cleanup(self):
         cid1 = uuid.uuid4()
         cid2 = uuid.uuid4()
         lst = ConcurrentList([cid1, cid2])
@@ -175,7 +175,7 @@ class TestAethericFrame(unittest.TestCase):
         lst.remove(cid1)
         self.assertEqual(list(self.frame._conduit_clusters["Z"]), [cid2])
 
-    # 16 — pre-seal: spell registry can hold multiple IDs for a single conduit
+    # 16 — pre-cleanup: spell registry can hold multiple IDs for a single conduit
     def test_spell_registry_multiple_ids(self):
         cid = uuid.uuid4()
         s = ConcurrentSet()
@@ -193,22 +193,22 @@ class TestAethericFrame(unittest.TestCase):
         f2 = AethericFrame("unit2")
         self.assertNotEqual(self.frame._id, f2._id)
 
-    # 19 — sealing with no conduits / no registries still works
-    def test_seal_with_empty_state(self):
-        self.frame.seal()
-        self.assertTrue(self.frame._sealed)
+    # 19 — cleanuping with no conduits / no registries still works
+    def test_cleanup_with_empty_state(self):
+        self.frame.cleanup()
+        self.assertTrue(self.frame._cleaned)
         self.assertIsNone(self.frame._conduits)
 
-    # 20 — order hint: all conduits sealed when present, then containers nulled
-    def test_all_conduits_sealed_then_nulled(self):
+    # 20 — order hint: all conduits cleaned when present, then containers nulled
+    def test_all_conduits_cleaned_then_nulled(self):
         c = [_StubConduit(i) for i in range(5)]
         ids = [uuid.uuid4() for _ in range(5)]
         for i, cid in enumerate(ids):
             self.frame._conduits[cid] = c[i]
 
-        self.frame.seal()
+        self.frame.cleanup()
 
-        self.assertTrue(all(ci.sealed for ci in c))
+        self.assertTrue(all(ci._cleaned for ci in c))
         self.assertIsNone(self.frame._conduits)
 
 

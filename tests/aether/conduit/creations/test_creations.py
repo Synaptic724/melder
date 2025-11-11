@@ -39,26 +39,20 @@ class DisposeBoom:
         self.calls += 1
         raise RuntimeError("dispose-boom")
 
-class SealLike:
-    def __init__(self):
-        self.sealed = False
-    def seal(self):
-        self.sealed = True
-
 class CleanupLike:
     def __init__(self):
-        self.cleaned = False
+        self._cleaned = False
     def cleanup(self):
-        self.cleaned = True
+        self._cleaned = True
 
 class BothCloseAndDispose(CloseOk, DisposeOk):
     def __init__(self):
         CloseOk.__init__(self)
         DisposeOk.__init__(self)
 
-class BothSealAndCleanup(SealLike, CleanupLike):
+class BothCleanup(CleanupLike, CleanupLike):
     def __init__(self):
-        SealLike.__init__(self)
+        CleanupLike.__init__(self)
         CleanupLike.__init__(self)
 
 
@@ -125,9 +119,9 @@ class TestCreationsBasics(unittest.TestCase):
         c.add_many(k, 1)
         c.add_many(k, 2)  # append path, no raise
 
-    def test_add_after_seal_raises_for_all_buckets(self):
+    def test_add_after_cleanup_raises_for_all_buckets(self):
         c = new_creations()
-        c.seal()
+        c.cleanup()
         with self.assertRaises(RuntimeError):
             c.add_unique(uuid4(), object())
         with self.assertRaises(RuntimeError):
@@ -139,10 +133,10 @@ class TestCreationsBasics(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             c.add_many(uuid4(), object())
 
-    def test_seal_is_idempotent(self):
+    def test_cleanup_is_idempotent(self):
         c = new_creations()
-        c.seal()
-        c.seal()  # no raise
+        c.cleanup()
+        c.cleanup()  # no raise
 
 
 class TestCreationsMethodDisposal(unittest.TestCase):
@@ -151,7 +145,7 @@ class TestCreationsMethodDisposal(unittest.TestCase):
         k = uuid4()
         o = CloseOk()
         c.add_unique(k, o)
-        c.seal()
+        c.cleanup()
         self.assertTrue(o.closed)
 
     def test_method_order_respected_first_hits(self):
@@ -159,7 +153,7 @@ class TestCreationsMethodDisposal(unittest.TestCase):
         k = uuid4()
         o = BothCloseAndDispose()
         c.add_unique_per_scope(k, o)
-        c.seal()
+        c.cleanup()
         self.assertTrue(o.closed)
         self.assertFalse(o.disposed)
 
@@ -168,23 +162,23 @@ class TestCreationsMethodDisposal(unittest.TestCase):
         k = uuid4()
         o = CloseOk()
         c.add_unique_per_cluster(k, o)
-        c.seal()
+        c.cleanup()
         self.assertFalse(o.closed)
-
-    def test_seal_like_method_runs_if_registered(self):
-        c = new_creations(disposal_enabled=True, methods=("seal",))
-        k = uuid4()
-        o = SealLike()
-        c.add_unique(k, o)
-        c.seal()
-        self.assertTrue(o.sealed)
 
     def test_cleanup_like_method_runs_if_registered(self):
         c = new_creations(disposal_enabled=True, methods=("cleanup",))
         k = uuid4()
         o = CleanupLike()
         c.add_unique(k, o)
-        c.seal()
+        c.cleanup()
+        self.assertTrue(o._cleaned)
+
+    def test_cleanup_like_method_runs_if_registered(self):
+        c = new_creations(disposal_enabled=True, methods=("cleanup",))
+        k = uuid4()
+        o = CleanupLike()
+        c.add_unique(k, o)
+        c.cleanup()
         self.assertTrue(o.cleaned)
 
 
@@ -194,7 +188,7 @@ class TestCreationsErrorAggregation(unittest.TestCase):
         c.add_unique(uuid4(), CloseBoom())         # close-boom
         c.add_unique_per_scope(uuid4(), DisposeBoom())  # dispose-boom (close not present; dispose will raise)
         with self.assertRaises(ExceptionGroup) as ctx:
-            c.seal()
+            c.cleanup()
         msgs = [str(e) for e in ctx.exception.exceptions]
         self.assertTrue(any("close-boom" in m for m in msgs))
         self.assertTrue(any("dispose-boom" in m for m in msgs))
@@ -203,7 +197,7 @@ class TestCreationsErrorAggregation(unittest.TestCase):
         c = new_creations(disposal_enabled=True, methods=("close",))
         c.add_unique(uuid4(), CloseBoom())
         with self.assertRaises(ExceptionGroup) as ctx:
-            c.seal()
+            c.cleanup()
         self.assertTrue(any("close-boom" in str(e) for e in ctx.exception.exceptions))
 
 
@@ -215,7 +209,7 @@ class TestCreationsManyBucket(unittest.TestCase):
         b = DisposeOk()
         c.add_many(k, a)
         c.add_many(k, b)
-        c.seal()
+        c.cleanup()
         self.assertTrue(a.disposed)
         self.assertTrue(b.disposed)
 
@@ -237,21 +231,21 @@ class TestCreationsUpgradeFromLesser(unittest.TestCase):
     def test_upgrade_transfers_references_with_valid_types(self):
         """
         Pass actual ConcurrentDict/ConcurrentList so later .cleanup() calls exist.
-        Leave them empty to avoid disposal noise; just ensure seal() completes.
+        Leave them empty to avoid disposal noise; just ensure cleanup() completes.
         """
         c = new_creations()
         uniq_scope = ConcurrentDict()
         many = ConcurrentDict()
         # (empty but correct container types)
         c._upgrade_from_lesser_conduit(unique_per_scope=uniq_scope, many=many)
-        c.seal()  # should not raise
+        c.cleanup()  # should not raise
 
 
-class TestCreationsSealSideEffects(unittest.TestCase):
-    def test_maps_cleared_to_none_after_seal(self):
+class TestCreationsCleanupSideEffects(unittest.TestCase):
+    def test_maps_cleared_to_none_after_cleanup(self):
         c = new_creations()
         c.add_unique(uuid4(), object())
-        c.seal()
+        c.cleanup()
         self.assertIsNone(c._unique)
         self.assertIsNone(c._unique_per_scope)
         self.assertIsNone(c._many)

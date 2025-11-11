@@ -10,16 +10,16 @@ from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDic
 class _StubConduit:
     def __init__(self, name):
         self.name = name
-        self.sealed = False
-    def seal(self):
-        self.sealed = True
+        self._cleaned = False
+    def cleanup(self):
+        self._cleaned = True
 
 
 class TestConduitCloud(unittest.TestCase):
     def setUp(self):
         self.cloud = ConduitCloud("unit")
         # sanity on construction
-        self.assertFalse(self.cloud._sealed)
+        self.assertFalse(self.cloud._cleaned)
         self.assertEqual(self.cloud._name, "unit")
         self.assertIsInstance(self.cloud._registry, ConcurrentDict)
 
@@ -74,43 +74,43 @@ class TestConduitCloud(unittest.TestCase):
         self.assertIsInstance(self.cloud.get_conduit("alpha"), _StubConduit)
         self.assertIsNot(self.cloud.get_conduit("Alpha"), self.cloud.get_conduit("alpha"))
 
-    # 9 — seal clears usability: any get raises RuntimeError
-    def test_get_after_seal_raises_runtimeerror(self):
+    # 9 — cleanup clears usability: any get raises RuntimeError
+    def test_get_after_cleanup_raises_runtimeerror(self):
         self.cloud._register_conduit(_StubConduit("x"))
-        self.cloud.seal()
+        self.cloud.cleanup()
         with self.assertRaises(RuntimeError):
             self.cloud.get_conduit("x")
 
-    # 10 — seal is idempotent (second call no-op)
-    def test_seal_is_idempotent(self):
-        self.cloud.seal()
-        self.assertTrue(self.cloud._sealed)
-        # calling again should not raise and keeps sealed
-        self.cloud.seal()
-        self.assertTrue(self.cloud._sealed)
+    # 10 — cleanup is idempotent (second call no-op)
+    def test_cleanup_is_idempotent(self):
+        self.cloud.cleanup()
+        self.assertTrue(self.cloud._cleaned)
+        # calling again should not raise and keeps cleaned
+        self.cloud.cleanup()
+        self.assertTrue(self.cloud._cleaned)
 
-    # 11 — seal after multiple registrations still blocks all gets
-    def test_seal_blocks_all_gets(self):
+    # 11 — cleanup after multiple registrations still blocks all gets
+    def test_cleanup_blocks_all_gets(self):
         for n in ("a", "b", "c"):
             self.cloud._register_conduit(_StubConduit(n))
-        self.cloud.seal()
+        self.cloud.cleanup()
         for n in ("a", "b", "c"):
             with self.assertRaises(RuntimeError):
                 self.cloud.get_conduit(n)
 
-    # 12 — name survives sealing
-    def test_name_survives_seal(self):
-        self.cloud.seal()
+    # 12 — name survives cleaning
+    def test_name_survives_cleanup(self):
+        self.cloud.cleanup()
         self.assertEqual(self.cloud._name, "unit")
 
-    # 13 — id survives sealing
-    def test_ulid_survives_seal(self):
+    # 13 — id survives cleaning
+    def test_ulid_survives_cleanup(self):
         cached = self.cloud._id
-        self.cloud.seal()
+        self.cloud.cleanup()
         self.assertEqual(self.cloud._id, cached)
 
-    # 14 — registry mutability before seal (safe pre-seal checks)
-    def test_registry_contains_pre_seal(self):
+    # 14 — registry mutability before cleanup (safe pre-cleanup checks)
+    def test_registry_contains_pre_cleanup(self):
         self.cloud._register_conduit(_StubConduit("k"))
         self.assertIn("k", self.cloud._registry)
         self.assertGreaterEqual(len(self.cloud._registry), 1)
@@ -126,9 +126,9 @@ class TestConduitCloud(unittest.TestCase):
         # not in c2
         with self.assertRaises(ValueError):
             c2.get_conduit("a")
-        # seal c1 doesn't affect c2
-        c1.seal()
-        self.assertFalse(c2._sealed)
+        # cleanup c1 doesn't affect c2
+        c1.cleanup()
+        self.assertFalse(c2._cleaned)
         self.assertIsInstance(c2._registry, ConcurrentDict)
         # c2 still operable
         b = _StubConduit("b")

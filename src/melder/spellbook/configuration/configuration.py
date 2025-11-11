@@ -5,7 +5,7 @@ import ulid
 
 # Melder imports
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import IConfiguration
@@ -13,7 +13,7 @@ from melder.utilities.helpers.package import Pack
 from melder.utilities.logger.std_logger_factory import StdLoggerFactory
 
 
-class Configuration(Sealable, IConfiguration):
+class Configuration(Cleanable, IConfiguration):
     """
     Configuration governs the behavior of the entire system.
 
@@ -38,7 +38,6 @@ class Configuration(Sealable, IConfiguration):
         self._id = str(ulid.ULID())
         self._lock = threading.RLock()
         self._aether_frame: str = aether_frame
-        self._sealed = False
         self._frozen = False
 
         self._logger_factory: Pack[[object], Any] | None = None # Pack is used for management of callables
@@ -55,21 +54,21 @@ class Configuration(Sealable, IConfiguration):
         # Properties that must remain immutable after conjure (idempotent laws of the system).
         self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
 
-    def seal(self) -> None:
+    def cleanup(self) -> None:
         """
-        Seals the configuration, preventing any further modifications and cleaning up resources.
+        Cleans up the configuration, preventing any further modifications and cleaning up resources.
 
-        This method sets both the `sealed` and `frozen` flags.
+        This method sets both the `cleaned` and `frozen` flags.
 
         Raises:
-            RuntimeError: If the configuration is already sealed.
+            RuntimeError: If the configuration is already cleaned.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
-            self._sealed = True
+            self._cleaned = True
             self._frozen = True
 
             if self._logger_factory is not None:
@@ -86,7 +85,7 @@ class Configuration(Sealable, IConfiguration):
         """
         Defines or overwrites a property in the configuration.
 
-        - **Idempotent properties** (e.g., 'system_state') can only be set *once* before the configuration is sealed.
+        - **Idempotent properties** (e.g., 'system_state') can only be set *once* before the configuration is cleaned.
         - **Non-idempotent properties** can be freely modified before the configuration is frozen.
 
         Args:
@@ -94,12 +93,12 @@ class Configuration(Sealable, IConfiguration):
             value (Any): The value for the property.
 
         Raises:
-            RuntimeError: If the configuration is sealed or frozen.
+            RuntimeError: If the configuration is cleaned or frozen.
             RuntimeError: If attempting to modify an idempotent property that is already set.
             TypeError: If `key` is not a string.
             ValueError: If an enum conversion fails.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if self._frozen:
             raise RuntimeError("Cannot modify configuration after it is frozen.")
 
@@ -123,9 +122,9 @@ class Configuration(Sealable, IConfiguration):
         This method is useful for resetting the configuration to its initial state before it is frozen.
 
         Raises:
-            RuntimeError: If the configuration is sealed or frozen.
+            RuntimeError: If the configuration is cleaned or frozen.
         """
-        self.check_sealed()
+        self.check_cleaned()
         with self._lock:
             if self._frozen:
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
@@ -146,7 +145,7 @@ class Configuration(Sealable, IConfiguration):
         Rules:
             - Must be set BEFORE freeze().
         """
-        self.check_sealed()
+        self.check_cleaned()
         if factory is None:
             factory = StdLoggerFactory()
         if self._frozen:
@@ -169,7 +168,7 @@ class Configuration(Sealable, IConfiguration):
         Returns:
             Any: Whatever the factory returns (Iris logger, SafeLogger, stdlib logger, or None).
         """
-        self.check_sealed()
+        self.check_cleaned()
         with self._lock:
             factory = self._logger_factory
         if factory is None:
@@ -184,10 +183,10 @@ class Configuration(Sealable, IConfiguration):
         Validation is performed automatically upon freezing.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
             ValueError: If configuration validation fails prior to freezing (e.g., missing required properties).
         """
-        self.check_sealed()
+        self.check_cleaned()
         if self._frozen:
             return
         if not self.validate():
@@ -206,10 +205,10 @@ class Configuration(Sealable, IConfiguration):
             bool: True if all validation checks pass.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
             ValueError: If any property is missing or has the wrong type/value.
         """
-        self.check_sealed()
+        self.check_cleaned()
         for key, expected_type in self.available_properties.items():
             if key not in self._properties:
                 raise ValueError(f"Missing required configuration property: '{key}'.")
@@ -243,10 +242,10 @@ class Configuration(Sealable, IConfiguration):
             bool: True if all enum values are valid.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
             ValueError: If a known enum property is set to an invalid type.
         """
-        self.check_sealed()
+        self.check_cleaned()
         # Additional validation for specific properties
         if "system_state" in self._properties:
             system_state = self._properties["system_state"]
@@ -296,10 +295,10 @@ class Configuration(Sealable, IConfiguration):
             Any: The stored value (str, int, bool, Enum, etc.).
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
             KeyError: If the property does not exist in the configuration.
         """
-        self.check_sealed()
+        self.check_cleaned()
         try:
             return self._properties[key]
         except KeyError:
@@ -316,9 +315,9 @@ class Configuration(Sealable, IConfiguration):
             bool: True if the property exists, False otherwise.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         return key in self._properties
 
     def __iter__(self):
@@ -337,9 +336,9 @@ class Configuration(Sealable, IConfiguration):
         This method sets sensible defaults for core properties like `system_state`, `debugging`, and `disposal`.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._properties.batch_update(lambda d: d.update({
             "system_state": self._convert_enum_if_needed("system_state", "automatic"),
             "debugging": False,
@@ -349,7 +348,7 @@ class Configuration(Sealable, IConfiguration):
 
     def has_logger_factory(self) -> bool:
         """Return True if a logger factory has been set."""
-        self.check_sealed()
+        self.check_cleaned()
         with self._lock:
             return self._logger_factory is not None
 
@@ -361,7 +360,7 @@ class Configuration(Sealable, IConfiguration):
         """
         Clear the logger factory (pre-freeze only) and return `self`.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if self._frozen:
             raise RuntimeError("Cannot modify logger factory after configuration is frozen.")
         with self._lock:
@@ -389,7 +388,7 @@ class Configuration(Sealable, IConfiguration):
         Behavior:
         - Sets: system_state="automatic", debugging=False, disposal=False,
           disposal_method_names=[].
-        - Respects idempotency and immutability rules (raises if frozen or sealed).
+        - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).

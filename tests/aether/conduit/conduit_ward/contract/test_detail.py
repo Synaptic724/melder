@@ -40,41 +40,41 @@ class TestDetail(unittest.TestCase):
         d = Detail(weird, Permissions.read)
         self.assertEqual(d.spell_id, weird)
 
-    # ---------- Sealing semantics ----------
+    # ---------- Cleaning semantics ----------
 
-    def test_seal_nulls_fields(self):
+    def test_cleanup_nulls_fields(self):
         d = Detail("SID2", Permissions.create)
-        d.seal()
+        d.cleanup()
         self.assertIsNone(d.spell_id)
         self.assertIsNone(d.permissions)
 
-    def test_seal_is_idempotent(self):
+    def test_cleanup_is_idempotent(self):
         d = Detail("SID3", Permissions.read)
-        d.seal()
+        d.cleanup()
         # Call again; should not raise and should remain None
-        d.seal()
+        d.cleanup()
         self.assertIsNone(d.spell_id)
         self.assertIsNone(d.permissions)
 
     def test_multiple_instances_independent(self):
         d1 = Detail("A", Permissions.create)
         d2 = Detail("B", Permissions.read)
-        d1.seal()
+        d1.cleanup()
         self.assertIsNone(d1.spell_id)
         self.assertEqual(d2.spell_id, "B")
         self.assertIs(d2.permissions, Permissions.read)
 
     # ---------- Concurrency / thread-safety ----------
 
-    def test_concurrent_seal_calls_do_not_raise(self):
+    def test_concurrent_cleanup_calls_do_not_raise(self):
         d = Detail("SID-CONC", Permissions.read)
 
         errors = []
         def worker():
             try:
-                # hammer seal a few times
+                # hammer cleanup a few times
                 for _ in range(50):
-                    d.seal()
+                    d.cleanup()
             except Exception as e:
                 errors.append(e)
 
@@ -90,24 +90,24 @@ class TestDetail(unittest.TestCase):
 
     # ---------- Sanity checks around state transitions ----------
 
-    def test_values_visible_before_seal(self):
+    def test_values_visible_before_cleanup(self):
         d = Detail("PRE", Permissions.create)
         self.assertEqual(d.spell_id, "PRE")
         self.assertIs(d.permissions, Permissions.create)
 
-    def test_values_cleared_after_seal(self):
+    def test_values_cleared_after_cleanup(self):
         d = Detail("POST", Permissions.block)
-        d.seal()
-        # Access after seal: attributes are still present but set to None
+        d.cleanup()
+        # Access after cleanup: attributes are still present but set to None
         self.assertIsNone(d.spell_id)
         self.assertIsNone(d.permissions)
 
-    def test_reseal_after_short_delay(self):
-        d = Detail("RESEAL", Permissions.read)
-        d.seal()
+    def test_recleanup_after_short_delay(self):
+        d = Detail("REcleanup", Permissions.read)
+        d.cleanup()
         time.sleep(0.001)
         # Should remain harmless
-        d.seal()
+        d.cleanup()
         self.assertIsNone(d.spell_id)
         self.assertIsNone(d.permissions)
 
@@ -125,7 +125,7 @@ class TestDetail(unittest.TestCase):
         big_id = "S" * 10_000
         d = Detail(big_id, Permissions.create)
         self.assertEqual(d.spell_id, big_id)
-        d.seal()
+        d.cleanup()
         self.assertIsNone(d.spell_id)
 
 

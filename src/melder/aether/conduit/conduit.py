@@ -6,7 +6,7 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration, ISafeLogger
@@ -19,7 +19,7 @@ from melder.aether.conduit.creations.lesser_creations import LesserCreations
 
 
 #region Conduit
-class Conduit(Sealable, IConduit):
+class Conduit(Cleanable, IConduit):
     """
     A Conduit is a modular graph node that behaves like a scope and a factory.
 
@@ -114,38 +114,38 @@ class Conduit(Sealable, IConduit):
                 self._name = None
 
     #region Cleanup and Disposal
-    def seal(self):
+    def cleanup(self):
         """
         Public API
 
-        Seals this Conduit and all its lesser Conduits.
+        Cleans up this Conduit and all its lesser Conduits.
 
         Prevents further operation, releases internal references,
         and unregisters from the Aether.
         """
-        raise NotImplementedError("Sealing is not implemented yet.")
-        if self._sealed:
+        raise NotImplementedError("Cleanup is not implemented yet.")
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
 
             # Phase 1: Cleanup and disposal
             self._clean_up_lesser_conduits_links()
             self._clean_up_links()
-            self._spellbook.seal()
-            self._creations.seal()
+            self._spellbook.cleanup()
+            self._creations.cleanup()
 
             # Phase 2: De-reference internal structures
             self._spellbook = None
             self._creations = None
 
             # Phase 3: Deregister from the world
-            if Conduit._aether and not Conduit._aether.sealed:
+            if Conduit._aether and not Conduit._aether._cleaned:
                 Conduit._aether._remove_conduit(self, self._aetheric_frame)
 
-            self._conduit_state = ConduitState.sealed
-            self._sealed = True
+            self._conduit_state = ConduitState.cleaned
+            self._cleaned = True
 
     #endregion Cleanup and Disposal
     #region Context Management
@@ -173,7 +173,7 @@ class Conduit(Sealable, IConduit):
             traceback: The traceback object, if any.
         """
         self._logger.debug("Exiting Conduit context", "__exit__")
-        self.seal()
+        self.cleanup()
 
     #endregion Context Management
     #region Logger
@@ -328,12 +328,12 @@ class Conduit(Sealable, IConduit):
         """
         if self._conduit_state == ConduitState.lesser:
             self._logger.debug("Selecting LesserCreations", "_creations_configuration")
-            return LesserCreations(configuration.get_property("disposal"),
-                                   configuration.get_property("disposal_method_names"))
+            return LesserCreations(disposal_enabled=configuration.get_property("disposal"),
+                                   disposal_method_names=configuration.get_property("disposal_method_names"), conduit_id=self._id)
         if self._conduit_state == ConduitState.normal:
             self._logger.debug("Selecting Creations", "_creations_configuration")
-            return Creations(configuration.get_property("disposal"),
-                             configuration.get_property("disposal_method_names"))
+            return Creations(disposal_enabled=configuration.get_property("disposal"),
+                             disposal_method_names=configuration.get_property("disposal_method_names"), conduit_id=self._id)
         self._logger.error("Unknown Conduit state", "_creations_configuration")
         raise RuntimeError("Conduit state is unknown")
 
@@ -415,7 +415,7 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If dynamic environment is not enabled.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if not self.__dynamic_environment__:
             self._logger.error("set_new_policy in non-dynamic env", "set_new_policy")
             raise RuntimeError("Dynamic environment is not enabled. Cannot set new policy.")
@@ -436,9 +436,9 @@ class Conduit(Sealable, IConduit):
             IConduit: The newly created lesser Conduit instance.
 
         Raises:
-            RuntimeError: If the parent Conduit is sealed.
+            RuntimeError: If the parent Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         self._logger.debug("Creating lesser conduit", "create_lesser_conduit")
         with self._lock:
@@ -491,9 +491,9 @@ class Conduit(Sealable, IConduit):
             Optional[IConduit]: The conduit that registered the spell, or None if not found.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._logger.debug(f"Resolve owner for spell_id={spell_id}", "get_conduit_by_spell_id")
         with self._lock:
             return Conduit._aether._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
@@ -512,9 +512,9 @@ class Conduit(Sealable, IConduit):
             bool: True if the Spell exists in the Aether, False otherwise.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         with self._lock:
             found = Conduit._aether._check_for_spell(spell_id, aetheric_frame_name)
         self._logger.debug(f"check_spell_id spell_id={spell_id} -> {found}", "check_spell_id")
@@ -536,9 +536,9 @@ class Conduit(Sealable, IConduit):
             Optional[Any]: The spell object if found, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         with self._lock:
             conduit = self.get_conduit_by_spell_id(spell_id, aetheric_frame_name)
             result = conduit._spellbook._find_spell(spell_id) if conduit else None
@@ -557,7 +557,7 @@ class Conduit(Sealable, IConduit):
         Returns:
             Optional[ISpell]: The contracted spell instance, or None if not found.
         """
-        self.check_sealed()
+        self.check_cleaned()
         return self._spellbook._find_contracted_spell(spell_id)
 
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
@@ -577,7 +577,7 @@ class Conduit(Sealable, IConduit):
         Raises:
             ValueError: If the spell is not found in the spellbook.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._logger.debug(f"find_spell_id(frame={spellframe}, name={spell_name}, binding={binding_name})", "find_spell_id")
         spell_id = self._spellbook.find_spell_id(spellframe, spell_name, binding_name)
         if not spell_id:
@@ -604,7 +604,7 @@ class Conduit(Sealable, IConduit):
         Raises:
             ValueError: If the spell is not found in the spellbook.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._logger.debug(f"find_spell_key(frame={spellframe}, name={spell_name}, binding={binding_name})", "find_spell_key")
         spell_key = self._spellbook.find_spell_key(spellframe, spell_name, binding_name)
         if not spell_key:
@@ -627,7 +627,7 @@ class Conduit(Sealable, IConduit):
         Returns:
             Optional[str]: The SHA256 unique ID of the spell if found, otherwise None.
         """
-        self.check_sealed()
+        self.check_cleaned()
         with self._lock:
             return self._spellbook.inspect_spell(spell, aetheric_frame)
 
@@ -707,12 +707,12 @@ class Conduit(Sealable, IConduit):
             str: The unique SHA256 `spell_id` associated with the bound spell.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
             RuntimeError: If the spell is already bound in the registry.
             TypeError: If invalid hook types are provided.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if not self._conduit_state == ConduitState.normal:
             self._logger.error("bind called when conduit not normal", "bind")
             raise RuntimeError("Only normal conduits can bind spells.")
@@ -741,7 +741,7 @@ class Conduit(Sealable, IConduit):
         Raises:
             RuntimeError: If the spell with the given ID is not found in the spellbook.
         """
-        self.check_sealed()
+        self.check_cleaned()
         spell = self._spellbook._find_spell(spell_id)
         if spell:
             perms = spell.permissions.name
@@ -769,7 +769,7 @@ class Conduit(Sealable, IConduit):
             ValueError: If no spell is registered for the given name/type.
             TypeError: If the resolved instance does not comply with the required SpellFrame.
         """
-        self.check_sealed()
+        self.check_cleaned()
         raise NotImplementedError("Not ready yet, not even using real class")
         if spell_type == "class":
             class_spell = self._spellbook.get(spell_name)
@@ -810,7 +810,7 @@ class Conduit(Sealable, IConduit):
             RuntimeError: If the Conduit is a lesser conduit.
             RuntimeError: If dynamic environment is not enabled.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if self._conduit_state == ConduitState.lesser:
             self._logger.error("get_conduit_cloud on lesser conduit", "get_conduit_cloud")
             raise RuntimeError("Lesser conduits cannot access the conduit cloud.")
@@ -836,10 +836,10 @@ class Conduit(Sealable, IConduit):
             Optional[IConduit]: The conduit instance if found, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             TypeError: If the `aetheric_frame` is not a string.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         if not isinstance(aetheric_frame, str):
             self._logger.error("aetheric_frame must be str", "get_conduit_by_id")
@@ -864,10 +864,10 @@ class Conduit(Sealable, IConduit):
             Optional[IConduit]: The conduit instance if found, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             TypeError: If the `aetheric_frame` is not a string.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if not isinstance(aetheric_frame, str):
             self._logger.error("aetheric_frame must be str", "get_conduit_by_name")
             raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
@@ -894,12 +894,12 @@ class Conduit(Sealable, IConduit):
             bool: True if the linking process succeeds.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If dynamic environment is not enabled.
             TypeError: If `target_conduit` is not an `IConduit` instance.
             RuntimeError: If the target conduit does not have a valid creation context.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if not self.__dynamic_environment__:
             self._logger.error("link in non-dynamic env", "link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
@@ -929,10 +929,10 @@ class Conduit(Sealable, IConduit):
             bool: True if the link was successfully severed.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If dynamic environment is not enabled.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if not self.__dynamic_environment__:
             self._logger.error("sever_link in non-dynamic env", "sever_link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
@@ -953,10 +953,10 @@ class Conduit(Sealable, IConduit):
             list: A list of the linked conduit instances.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If dynamic environment is not enabled.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if not self.__dynamic_environment__:
             self._logger.error("get_links in non-dynamic env", "get_links")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
@@ -977,9 +977,9 @@ class Conduit(Sealable, IConduit):
             Optional[IConduit]: The linked lesser conduit if found, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._logger.debug(f"get_lesser_conduit id={conduit_id}", "get_lesser_conduit")
         with self._lock:
             return self._conduit_ward._get_lesser_conduit(conduit_id)
@@ -1001,9 +1001,9 @@ class Conduit(Sealable, IConduit):
             Optional[IConduit]: The target conduit if the link exists, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._logger.debug(f"get_initiated_conduit id={conduit_id}", "get_initiated_conduit")
         with self._lock:
             return self._conduit_ward._get_initiated_conduit(conduit_id)
@@ -1025,9 +1025,9 @@ class Conduit(Sealable, IConduit):
             Optional[IConduit]: The source conduit if the link exists, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._logger.debug(f"get_provider_conduit id={conduit_id}", "get_provider_conduit")
         with self._lock:
             return self._conduit_ward._get_provider_conduit(conduit_id)
@@ -1045,9 +1045,9 @@ class Conduit(Sealable, IConduit):
             list[IConduit]: A list of conduits this conduit linked to.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._logger.debug("get_initiated_conduits", "get_initiated_conduits")
         with self._lock:
             return self._conduit_ward._get_initiated_conduits()
@@ -1064,28 +1064,28 @@ class Conduit(Sealable, IConduit):
             list[IConduit]: A list of conduits that have linked to this conduit as the provider.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._logger.debug("get_provider_conduits", "get_provider_conduits")
         with self._lock:
             return self._conduit_ward._get_provider_conduits()
 
-    def seal_lesser_conduits(self):
+    def cleanup_lesser_conduits(self):
         """
         Public API
 
-        Seals all lesser conduits (children) linked to this conduit.
+        Cleans up all lesser conduits (children) linked to this conduit.
 
         This prevents further operations on lesser conduits and is typically used when the parent
-        is sealing or undergoing a major state change (e.g., upgrade).
+        is cleaning or undergoing a major state change (e.g., upgrade).
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
-        self._logger.debug("seal_lesser_conduits", "seal_lesser_conduits")
-        self._conduit_ward.seal_all_lesser_conduits()
+        self.check_cleaned()
+        self._logger.debug("cleanup_lesser_conduits", "cleanup_lesser_conduits")
+        self._conduit_ward.cleanup_all_lesser_conduits()
 
     #endregion Conduit Ward API
     #region Spell Contracting API
@@ -1096,11 +1096,11 @@ class Conduit(Sealable, IConduit):
         Performs checks to ensure the conduit is in a state capable of managing spell contracts.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If the Conduit is not a 'normal' conduit.
             RuntimeError: If dynamic environment is not enabled.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if self._conduit_state != ConduitState.normal:
             self._logger.error("_qualify_contracts: not normal state", "_qualify_contracts")
             raise RuntimeError("Only normal conduits can create spell contracts.")
@@ -1135,7 +1135,7 @@ class Conduit(Sealable, IConduit):
             bool | None: True if the contract was created, False otherwise. None if an internal error occurs.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         self._logger.debug(f"add_spell_to_contract(spell_id={spell_id}, conduit_id={conduit_id}, perms={permissions})", "add_spell_to_contract")
         self._qualify_contracts()
@@ -1165,7 +1165,7 @@ class Conduit(Sealable, IConduit):
             dict: Dictionary of `spell_id` -> success boolean for each attempted contract.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         self._logger.debug(f"add_spells_to_contract(count={len(spell_ids)}, conduit_id={conduit_id}, perms={permissions})", "add_spells_to_contract")
         self._qualify_contracts()
@@ -1195,7 +1195,7 @@ class Conduit(Sealable, IConduit):
             bool | None: True if the spell was successfully removed from the contract, False otherwise. None if an internal error occurs.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         self._logger.debug(f"remove_spell_from_contract(spell_id={spell_id}, conduit_id={conduit_id})", "remove_spell_from_contract")
         self._qualify_contracts()
@@ -1221,7 +1221,7 @@ class Conduit(Sealable, IConduit):
             dict: Dictionary of `spell_id` -> success boolean for each removal attempt.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         self._logger.debug(f"remove_spells_from_contract(count={0 if spell_ids is None else len(spell_ids)}, conduit_id={conduit_id})", "remove_spells_from_contract")
         self._qualify_contracts()
@@ -1247,7 +1247,7 @@ class Conduit(Sealable, IConduit):
             bool | None: True if all spells were successfully removed, False otherwise. None if an internal error occurs.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         self._logger.debug(f"_remove_all_spells_from_contract(conduit_id={conduit_id})", "_remove_all_spells_from_contract")
         self._qualify_contracts()
@@ -1271,7 +1271,7 @@ class Conduit(Sealable, IConduit):
             or None if no contracts exist.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `validate` is not a boolean.
         """
         self._logger.debug(f"get_all_spells_in_contracts(validate={validate})", "get_all_spells_in_contracts")
@@ -1297,7 +1297,7 @@ class Conduit(Sealable, IConduit):
             Optional[tuple[str, ISpell]]: Tuple of (`conduit_id`, `spell`) if found, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `spell_id` is not a string.
         """
         self._logger.debug(f"get_spell_in_contracts(spell_id={spell_id})", "get_spell_in_contracts")
@@ -1323,7 +1323,7 @@ class Conduit(Sealable, IConduit):
             dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `conduit_id` is not a str.
         """
         self._logger.debug(f"get_spells_in_contract_by_conduit(conduit_id={conduit_id})", "get_spells_in_contract_by_conduit")
@@ -1348,7 +1348,7 @@ class Conduit(Sealable, IConduit):
             dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `conduit_name` is not a string.
         """
         self._logger.debug(f"get_spells_in_contract_by_conduit_name(name='{conduit_name}')", "get_spells_in_contract_by_conduit_name")
@@ -1371,7 +1371,7 @@ class Conduit(Sealable, IConduit):
             list[Tuple[str, IConduit]] | None: List of (`conduit_id`, `IConduit`) tuples, or None if no contracts exist.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         self._logger.debug("get_contracted_conduits", "get_contracted_conduits")
         self._qualify_contracts()
@@ -1394,7 +1394,7 @@ class Conduit(Sealable, IConduit):
             dict: Dictionary containing contract metadata, including a list of spells and their permissions.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         self._logger.debug(f"_describe_contract(conduit_id={conduit_id})", "_describe_contract")
         self._qualify_contracts()
@@ -1415,7 +1415,7 @@ class Conduit(Sealable, IConduit):
                  - False: Contract is malformed or inconsistent
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         self._logger.debug("validate_contracts_and_define", "validate_contracts_and_define")
         self._qualify_contracts()
@@ -1435,7 +1435,7 @@ class Conduit(Sealable, IConduit):
             bool: True if all active contracts pass validation, False otherwise.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (sealed, not normal, not dynamic).
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         self._logger.debug("validate_received_contracts", "validate_received_contracts")
         self._qualify_contracts()

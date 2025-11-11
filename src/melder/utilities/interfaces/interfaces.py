@@ -56,85 +56,19 @@ class ICleanable(Protocol):
         """
         ...
 
-@runtime_checkable
-class ISealable(Protocol):
-    """
-    ISealable
-    -----------
-    An Interface for all Sealable objects in the system.
-
-    Objects that manage runtime, memory, open resources, or registration
-    must implement this interface.
-
-    Supports context-manager usage:
-        with MyObject(...) as obj:
-            ...
-        # seal() is called automatically on exit.
-
-    Contract:
-    ---------
-    - `seal()` must be safe to call multiple times.
-    - All sealing must set `_sealed = True` when sealing completes.
-    """
-
-    _sealed: bool
-
-    @property
-    def sealed(self) -> bool:
-        """Returns True if the object has already been sealed."""
-        ...
-
-    @property
-    def is_sealed(self) -> bool:
-        """Alias for `sealed`."""
-        ...
-
-    def check_sealed(self):
-        """
-        Check if the object has been sealed.
-
-        Raises:
-            RuntimeError: If the object has already been sealed.
-        """
-        ...
-
-    def seal(self):
-        """
-        Seal must be implemented by subclasses.
-
-        Must:
-        -----
-        - Release all resources.
-        - Deregister or finalize any allocations.
-        - Be idempotent (safe to call multiple times).
-        """
-        ...
-
-    async def async_seal(self):
-        """
-        Seal must be implemented by subclasses.
-
-        Must:
-        -----
-        - Release all resources.
-        - Deregister or finalize any allocations.
-        - Be idempotent (safe to call multiple times).
-        """
-        ...
-
 
 
 @runtime_checkable
-class ICreations(ISealable, Protocol):
+class ICreations(ICleanable, Protocol):
     """
     Manages all instantiated objects within a Conduit (Normal Scope).
 
     This manager is responsible for tracking object instances based on their lifecycle
-    (`unique`, `unique_per_scope`, `many`, etc.) and enforcing resource disposal upon sealing.
+    (`unique`, `unique_per_scope`, `many`, etc.) and enforcing resource disposal upon cleaning.
 
     **Key Responsibilities:**
       * Storage and lifecycle management of created objects.
-      * Controlled resource disposal via `ISealable` or configured cleanup methods.
+      * Controlled resource disposal via `ICleanable` or configured cleanup methods.
     """
 
     # -----------------
@@ -153,7 +87,7 @@ class ICreations(ISealable, Protocol):
     # -----------------
     # Methods
     # -----------------
-    def _seal_unique(self) -> List[Exception]:
+    def _cleanup_unique(self) -> List[Exception]:
         """
         Internal
 
@@ -164,7 +98,7 @@ class ICreations(ISealable, Protocol):
         """
         ...
 
-    def _seal_unique_per_lineage(self) -> List[Exception]:
+    def _cleanup_unique_per_lineage(self) -> List[Exception]:
         """
         Internal
 
@@ -175,7 +109,7 @@ class ICreations(ISealable, Protocol):
         """
         ...
 
-    def _seal_unique_per_cluster(self) -> List[Exception]:
+    def _cleanup_unique_per_cluster(self) -> List[Exception]:
         """
         Internal
 
@@ -186,7 +120,7 @@ class ICreations(ISealable, Protocol):
         """
         ...
 
-    def _seal_unique_per_scope(self) -> List[Exception]:
+    def _cleanup_unique_per_scope(self) -> List[Exception]:
         """
         Internal
 
@@ -197,7 +131,7 @@ class ICreations(ISealable, Protocol):
         """
         ...
 
-    def _seal_many(self) -> List[Exception]:
+    def _cleanup_many(self) -> List[Exception]:
         """
         Internal
 
@@ -216,7 +150,7 @@ class ICreations(ISealable, Protocol):
 
         Behavior:
           - Returns None if `item` is None or disposal is disabled.
-          - Iterates `self._disposal_method_names` in order (e.g., ["seal", "cleanup", "close", "dispose"]).
+          - Iterates `self._disposal_method_names` in order (e.g., ["cleanup", "close", "dispose"]).
           - For the first attribute found on `item` that is callable, calls it.
           - If the call succeeds, returns None.
           - If the call raises, returns a RuntimeError wrapping the original exception.
@@ -257,7 +191,7 @@ class ICreations(ISealable, Protocol):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique` scope.
         """
         ...
@@ -271,7 +205,7 @@ class ICreations(ISealable, Protocol):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique_per_lineage` scope.
         """
         ...
@@ -285,7 +219,7 @@ class ICreations(ISealable, Protocol):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique_per_cluster` scope.
         """
         ...
@@ -299,7 +233,7 @@ class ICreations(ISealable, Protocol):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique_per_scope` scope.
         """
         ...
@@ -315,13 +249,13 @@ class ICreations(ISealable, Protocol):
             item (object): Object instance to add.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
         """
         ...
 
 
 @runtime_checkable
-class ILesserCreations(ISealable, Protocol):
+class ILesserCreations(ICleanable, Protocol):
     """
     Manages instantiated objects within a **Lesser Conduit** (Child Scope).
 
@@ -347,7 +281,7 @@ class ILesserCreations(ISealable, Protocol):
     # -----------------
     # Methods
     # -----------------
-    def _seal_unique_per_scope(self) -> List[Exception]:
+    def _cleanup_unique_per_scope(self) -> List[Exception]:
         """
         Internal
 
@@ -358,7 +292,7 @@ class ILesserCreations(ISealable, Protocol):
         """
         ...
 
-    def _seal_many(self) -> List[Exception]:
+    def _cleanup_many(self) -> List[Exception]:
         """
         Internal
 
@@ -377,7 +311,7 @@ class ILesserCreations(ISealable, Protocol):
 
         Behavior:
           - Returns None if `item` is None or disposal is disabled.
-          - Iterates `self._disposal_method_names` in order (e.g., ["seal", "cleanup", "close", "dispose"]).
+          - Iterates `self._disposal_method_names` in order (e.g., ["cleanup", "close", "dispose"]).
           - For the first attribute found on `item` that is callable, calls it.
           - If the call succeeds, returns None.
           - If the call raises, returns a RuntimeError wrapping the original exception.
@@ -393,7 +327,7 @@ class ILesserCreations(ISealable, Protocol):
 
     def transfer_data_and_clear(self) -> Dict[str, Any]:
         """
-        Creates a lightweight snapshot of the current creations, clears the internal state, and seals the manager.
+        Creates a lightweight snapshot of the current creations, clears the internal state, and cleans the manager.
 
         This is used when a Lesser Conduit is upgraded to a Normal Conduit, transferring ownership of local creations.
 
@@ -411,7 +345,7 @@ class ILesserCreations(ISealable, Protocol):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique_per_scope` scope.
         """
         ...
@@ -427,13 +361,13 @@ class ILesserCreations(ISealable, Protocol):
             item (object): Object instance to add.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
         """
         ...
 
 
 @runtime_checkable
-class ISpell(ISealable, Protocol):
+class ISpell(ICleanable, Protocol):
     """
     An Interface defining the shape of a 'Spell', a unit of logic that can be cast.
 
@@ -492,7 +426,7 @@ class ISpell(ISealable, Protocol):
         ...
 
 @runtime_checkable
-class ISpellbook(ISealable, Protocol):
+class ISpellbook(ICleanable, Protocol):
     """
     An Interface for a 'Spellbook', the central registry and configuration manager
     for all spells within a Conduit.
@@ -799,7 +733,7 @@ class ISpellbook(ISealable, Protocol):
         ...
 
 @runtime_checkable
-class IBind(ISealable, Protocol):
+class IBind(ICleanable, Protocol):
     """
     An Interface for a binding mechanism, responsible for profiling and
     registering a spell blueprint.
@@ -824,7 +758,7 @@ class IBind(ISealable, Protocol):
         ...
 
 @runtime_checkable
-class IMeld(ISealable, Protocol):
+class IMeld(ICleanable, Protocol):
     """
     An Interface for the object resolution (melding) process.
 
@@ -845,7 +779,7 @@ class IMeld(ISealable, Protocol):
         """
         ...
 @runtime_checkable
-class IConduitWard(ISealable, Protocol):
+class IConduitWard(ICleanable, Protocol):
     """
     An Interface for a 'ConduitWard', managing links, policies, and contracts
     between its Conduit and other Conduits.
@@ -922,7 +856,7 @@ class IConduitWard(ISealable, Protocol):
         ...
 
 @runtime_checkable
-class IConduit(ISealable, Protocol):
+class IConduit(ICleanable, Protocol):
     """
     An Interface for a 'Conduit', the core execution scope and object factory.
 
@@ -1027,7 +961,7 @@ class IConduit(ISealable, Protocol):
         ...
 
 
-class ILink(ISealable, Protocol):
+class ILink(ICleanable, Protocol):
     """
     An Interface representing a live connection (contract) between two Conduits.
     """
@@ -1039,7 +973,7 @@ class ILink(ISealable, Protocol):
         ...
 
 
-class IDetail(ISealable, Protocol):
+class IDetail(ICleanable, Protocol):
     """
     An Interface for a 'Detail', a single permission or rule within a Contract.
     """
@@ -1061,7 +995,7 @@ class IDetail(ISealable, Protocol):
         ...
 
 
-class IConduitCloud(ISealable, Protocol):
+class IConduitCloud(ICleanable, Protocol):
     """
     An Interface for an abstract factory for named conduits.
 
@@ -1082,7 +1016,7 @@ class IConduitCloud(ISealable, Protocol):
             IConduit: The conduit instance.
 
         Raises:
-            RuntimeError: If the ConduitCloud is sealed.
+            RuntimeError: If the ConduitCloud is cleaned.
             ValueError: If a conduit with that name is not found.
         """
         ...
@@ -1101,7 +1035,7 @@ class IConduitCloud(ISealable, Protocol):
         ...
 
 
-class IAethericFrame(ISealable, Protocol):
+class IAethericFrame(ICleanable, Protocol):
     """
     An Interface for an isolated "universe" or "frame" within the Aether.
 
@@ -1127,7 +1061,7 @@ class IAethericFrame(ISealable, Protocol):
     _conduit_clusters: 'ConcurrentDict[str, ConcurrentList[str]]'
 
 @runtime_checkable
-class IAether(ISealable, Protocol):
+class IAether(ICleanable, Protocol):
     """
     An Interface for the global singleton that holds and manages all AethericFrames.
 
@@ -1353,9 +1287,9 @@ class IAether(ISealable, Protocol):
         """
         ...
 
-    def seal_aetheric_frames(self):
+    def cleanup_aetheric_frames(self):
         """
-        Seals all aetheric frames and their contents.
+        Cleans all aetheric frames and their contents.
         """
         ...
 
@@ -1983,7 +1917,7 @@ class IChannelLogger(ICleanable, Protocol):
 
 
 @runtime_checkable
-class IConfiguration(ISealable, Protocol):
+class IConfiguration(ICleanable, Protocol):
     """
     Configuration governs the behavior of the entire system.
 
@@ -2005,11 +1939,11 @@ class IConfiguration(ISealable, Protocol):
 
     # --- Lifecycle ---
 
-    def seal(self) -> None:
+    def cleanup(self) -> None:
         """
-        Seals the configuration, preventing any further modifications and cleaning up resources.
+        Cleans the configuration, preventing any further modifications and cleaning up resources.
 
-        This method sets both the `sealed` and `frozen` flags.
+        This method sets both the `cleaned` and `frozen` flags.
         """
         ...
 
@@ -2052,7 +1986,7 @@ class IConfiguration(ISealable, Protocol):
         """
         Defines or overwrites a property in the configuration.
 
-        - **Idempotent properties** (e.g., 'system_state') can only be set *once* before the configuration is sealed.
+        - **Idempotent properties** (e.g., 'system_state') can only be set *once* before the configuration is cleaned.
         - **Non-idempotent properties** can be freely modified before the configuration is frozen.
 
         Args:
@@ -2060,7 +1994,7 @@ class IConfiguration(ISealable, Protocol):
             value (Any): The value for the property.
 
         Raises:
-            RuntimeError: If the configuration is sealed or frozen.
+            RuntimeError: If the configuration is cleaned or frozen.
             RuntimeError: If attempting to modify an idempotent property that is already set.
             TypeError: If `key` is not a string.
             ValueError: If an enum conversion fails.
@@ -2074,7 +2008,7 @@ class IConfiguration(ISealable, Protocol):
         This method is useful for resetting the configuration to its initial state before it is frozen.
 
         Raises:
-            RuntimeError: If the configuration is sealed or frozen.
+            RuntimeError: If the configuration is cleaned or frozen.
         """
         ...
 
@@ -2086,7 +2020,7 @@ class IConfiguration(ISealable, Protocol):
         Validation is performed automatically upon freezing.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
             ValueError: If configuration validation fails prior to freezing (e.g., missing required properties).
         """
         ...
@@ -2101,7 +2035,7 @@ class IConfiguration(ISealable, Protocol):
             bool: True if all validation checks pass.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
             ValueError: If any property is missing or has the wrong type/value.
         """
         ...
@@ -2116,7 +2050,7 @@ class IConfiguration(ISealable, Protocol):
             bool: True if all enum values are valid.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
             ValueError: If a known enum property is set to an invalid type.
         """
         ...
@@ -2132,7 +2066,7 @@ class IConfiguration(ISealable, Protocol):
             Any: The stored value (str, int, bool, Enum, etc.).
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
             KeyError: If the property does not exist in the configuration.
         """
         ...
@@ -2148,7 +2082,7 @@ class IConfiguration(ISealable, Protocol):
             bool: True if the property exists, False otherwise.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
         """
         ...
 
@@ -2168,7 +2102,7 @@ class IConfiguration(ISealable, Protocol):
         This method sets sensible defaults for core properties like `system_state`, `debugging`, and `disposal`.
 
         Raises:
-            RuntimeError: If the configuration is sealed.
+            RuntimeError: If the configuration is cleaned.
         """
         ...
 
@@ -2201,7 +2135,7 @@ class IConfiguration(ISealable, Protocol):
         Behavior:
         - Sets: system_state="automatic", debugging=False, disposal=False,
           disposal_method_names=[].
-        - Respects idempotency and immutability rules (raises if frozen or sealed).
+        - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
@@ -2433,7 +2367,7 @@ class ISafeLogger(ICleanable, Protocol):
 
 
 @runtime_checkable
-class IContract(ISealable, Protocol):
+class IContract(ICleanable, Protocol):
     """
     A symmetric contract between two conduit wards.
 
@@ -2457,7 +2391,7 @@ class IContract(ISealable, Protocol):
         """
         Internal
 
-        Seal and clear all spell details from both sides.
+        Cleanup and clear all spell details from both sides.
         """
         ...
 
@@ -2509,7 +2443,7 @@ class IContract(ISealable, Protocol):
         Internal
 
         Clear all spell details from both sides of the contract.
-        This is typically called when sealing the contract.
+        This is typically called when cleaning the contract.
         """
         ...
 

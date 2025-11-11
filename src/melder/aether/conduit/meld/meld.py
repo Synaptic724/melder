@@ -27,18 +27,18 @@ class Meld(IMeld):
         # Conduit-local instantiation manager
         self._creations = creations
 
-    def seal(self) -> None:
+    def cleanup(self) -> None:
         """
-        Seal the conduit to prevent further modifications.
+        Cleanup the conduit to prevent further modifications.
 
-        Once sealed, all internal references are cleared, and no new spells can be melded.
+        Once cleaned, all internal references are cleared, and no new spells can be melded.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
-            self._sealed = True
+            self._cleaned = True
             self._owned_spells = None
             self._contracted_spells = None
             self._lookup_owned_spells = None

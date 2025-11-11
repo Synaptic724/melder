@@ -369,7 +369,7 @@ class TestConjureMore(unittest.TestCase):
 
 
 # ================================================================
-# 6) Misc: inspect, set_policy_state, locks, seal placeholder (4 tests)
+# 6) Misc: inspect, set_policy_state, locks, cleanup placeholder (4 tests)
 # ================================================================
 
 class TestMisc(unittest.TestCase):
@@ -401,9 +401,9 @@ class TestMisc(unittest.TestCase):
             k = self.sb._make_spell_key("F", "N", "B")
             self.assertEqual(k, ("F", "B"))
 
-    def test_seal_not_implemented(self):
+    def test_cleanup_not_implemented(self):
         with self.assertRaises(NotImplementedError):
-            self.sb.seal()
+            self.sb.cleanup()
 
 
 # -----------------------

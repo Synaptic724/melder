@@ -6,7 +6,7 @@ from threading import RLock
 # Melder Imports
 from melder.aether.aether import Aether
 from melder.spellbook.configuration.system_state import SystemState
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
@@ -21,7 +21,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.helpers.init_helpers import InitHelpers
 
 #region Spellbook
-class Spellbook(Sealable, ISpellbook):
+class Spellbook(Cleanable, ISpellbook):
     """
     Public API
 
@@ -99,89 +99,89 @@ class Spellbook(Sealable, ISpellbook):
 
     #region Disposal
 
-    def seal(self) -> None:
-        self._logger.debug("Sealing Spellbook", "seal")
+    def cleanup(self) -> None:
+        self._logger.debug("Cleaning Spellbook", "cleanup")
 
-        if self._sealed:
+        if self._cleaned:
             return
 
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
-            self._sealed = True
-            self._seal_components()
+            self._cleaned = True
+            self._cleanup_components()
 
-        self._seal_core()
+        self._cleanup_core()
 
 
     # -------------------------
     # Phase 1: Components (under lock)
     # -------------------------
 
-    def _seal_components(self) -> None:
+    def _cleanup_components(self) -> None:
         # 1) Clean ONLY local spells (not contracted)
-        self._seal_spells()
+        self._cleanup_spells()
 
         # 2) Clean lookup/contracted maps and local maps
         if self._lookup_spells is not None:
             try:
                 self._lookup_spells.cleanup()
             except Exception as e:
-                self._logger.error(f"Error sealing _lookup_spells: {e}", "_seal_components", exc_info=True)
+                self._logger.error(f"Error cleaning _lookup_spells: {e}", "_cleanup_components", exc_info=True)
             self._lookup_spells = None
 
         if self._contracted_spells is not None:
             try:
                 self._contracted_spells.cleanup()
             except Exception as e:
-                self._logger.error(f"Error sealing _contracted_spells: {e}", "_seal_components", exc_info=True)
+                self._logger.error(f"Error cleaning _contracted_spells: {e}", "_cleanup_components", exc_info=True)
             self._contracted_spells = None
 
         if self._lookup_contracted_spells is not None:
             try:
                 self._lookup_contracted_spells.cleanup()
             except Exception as e:
-                self._logger.error(f"Error sealing _lookup_contracted_spells: {e}", "_seal_components", exc_info=True)
+                self._logger.error(f"Error cleaning _lookup_contracted_spells: {e}", "_cleanup_components", exc_info=True)
             self._lookup_contracted_spells = None
 
         if self._spells is not None:
             try:
                 self._spells.cleanup()
             except Exception as e:
-                self._logger.error(f"Error sealing _spells: {e}", "_seal_components", exc_info=True)
+                self._logger.error(f"Error cleaning _spells: {e}", "_cleanup_components", exc_info=True)
             self._spells = None
 
-        # 3) Seal/cleanup configuration
+        # 3) cleanup configuration
         if self._configuration is not None:
-            self._logger.debug("Sealing configuration", "_seal_components")
+            self._logger.debug("Cleaning configuration", "_cleanup_components")
             try:
-                self._configuration.seal()
+                self._configuration.cleanup()
             except Exception as e:
-                self._logger.error(f"Error sealing configuration: {e}", "_seal_components", exc_info=True)
+                self._logger.error(f"Error cleaning configuration: {e}", "_cleanup_components", exc_info=True)
             self._configuration = None
 
-        self._logger.debug("Spellbook component seal complete", "_seal_components")
+        self._logger.debug("Spellbook component cleanup complete", "_cleanup_components")
 
 
-    def _seal_spells(self) -> None:
+    def _cleanup_spells(self) -> None:
         if self._spells is None:
             return
 
         items = list(self._spells.items())
         for spell_id, spell in items:
-            self._logger.debug(f"Sealing local spell '{spell_id}'", "_seal_spells")
+            self._logger.debug(f"Cleaning local spell '{spell_id}'", "_cleanup_spells")
             try:
-                spell.seal()
+                spell.cleanup()
             except Exception as e:
-                self._logger.error(f"Error sealing spell '{spell_id}': {e}", "_seal_spells", exc_info=True)
+                self._logger.error(f"Error cleaning spell '{spell_id}': {e}", "_cleanup_spells", exc_info=True)
 
 
     # -------------------------
     # Phase 2: Core teardown (after lock)
     # -------------------------
 
-    def _seal_core(self) -> None:
-        self._logger.debug("Final teardown: nullifying references and disposing logger", "_seal_core")
+    def _cleanup_core(self) -> None:
+        self._logger.debug("Final teardown: nullifying references and disposing logger", "_cleanup_core")
 
         # Nullify high-level refs (no try/catch for simple None assignments)
         self._bind = None
@@ -196,17 +196,15 @@ class Spellbook(Sealable, ISpellbook):
         # Destroy logger LAST
         if self._logger is not None:
             try:
-                self._logger.debug("Sealing logger", "_seal_core")
+                self._logger.debug("Cleaning logger", "_cleanup_core")
             except Exception:
                 pass  # if logger is already busted, skip the debug
             try:
                 if hasattr(self._logger, "cleanup"):
                     self._logger.cleanup()
-                elif hasattr(self._logger, "seal"):
-                    self._logger.seal()
             except Exception as e:
                 try:
-                    self._logger.error(f"Error during logger cleanup: {e}", "_seal_core", exc_info=True)
+                    self._logger.error(f"Error during logger cleanup: {e}", "_cleanup_core", exc_info=True)
                 except Exception:
                     pass
             self._logger = None
@@ -890,7 +888,7 @@ class Spellbook(Sealable, ISpellbook):
             debugging (bool, optional):
                 Enables internal id tagging for object tracking.
             disposal (bool, optional):
-                Enables automatic resource disposal upon conduit sealing.
+                Enables automatic resource disposal upon conduit cleaning.
             disposal_method_names (List[str], optional):
                 Method names to invoke on created objects during disposal.
             logger_factory (Callable[[object], Any], optional):
@@ -901,7 +899,7 @@ class Spellbook(Sealable, ISpellbook):
                 StdLoggerFactory() via `set_logger_factory()`.
 
         Raises:
-            RuntimeError: If the configuration has already been locked/sealed.
+            RuntimeError: If the configuration has already been locked/cleaned.
             KeyError: If an unknown configuration key is provided.
             ValueError: If the provided configuration fails validation.
             TypeError: If the provided logger factory is invalid.

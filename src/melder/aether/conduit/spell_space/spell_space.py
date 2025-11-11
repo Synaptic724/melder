@@ -18,7 +18,7 @@ class SpellSpace:
     1. `create()`: Start a new spellspace.
     2. `cast(spell)`: Meld spells using this isolated scope.
     3. `reset()`: Clear all spellspace-bound objects.
-    4. `close()`: Final disposal; spellspace becomes sealed.
+    4. `close()`: Final disposal; spellspace becomes cleaned.
 
     🔁 Ownership:
     - All spellspace objects belong *only* to the SpellSpace, not to the Conduit.
@@ -38,7 +38,7 @@ class SpellSpace:
         spellspace.cast(MySpell)
         spellspace.cast(AnotherSpell)
         spellspace.reset()  # Reset the spellspace without closing it
-        spellspace.close()  # Fully dispose and seal the spellspace
+        spellspace.close()  # Fully dispose and cleanup the spellspace
 
     This system enables fast, scoped object casting with guaranteed cleanup — ideal for high-frequency or time-bound tasks.
 

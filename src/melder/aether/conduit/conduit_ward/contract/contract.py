@@ -6,9 +6,9 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IConduitWard, IConduit, IContract
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
 
-class Contract(Sealable):
+class Contract(Cleanable):
     """
     A symmetric contract between two conduit wards.
 
@@ -35,34 +35,34 @@ class Contract(Sealable):
         self._details_b: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit a
 
 
-    def seal(self):
+    def cleanup(self):
         """
         Internal
 
-        Seal the contract, clearing its wards and internal details.
+        Cleanup the contract, clearing its wards and internal details.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
             self._clean_up()
             self._ward_a = None
             self._ward_b = None
-            self._sealed = True
+            self._cleaned = True
 
     def _clean_up(self):
         """
         Internal
 
-        Seal and clear all spell details from both sides.
+        Cleanup and clear all spell details from both sides.
         """
         for detail in self._details_a.values():
-            detail.seal()
+            detail.cleanup()
         self._details_a.clear()
 
         for detail in self._details_b.values():
-            detail.seal()
+            detail.cleanup()
         self._details_b.clear()
 
     def _get_peer(self, ward: IConduitWard) -> IConduitWard:
@@ -127,13 +127,13 @@ class Contract(Sealable):
         Internal
 
         Clear all spell details from both sides of the contract.
-        This is typically called when sealing the contract.
+        This is typically called when cleaning the contract.
         """
         with self._lock:
             for detail in self._details_a.values():
-                detail.seal()
+                detail.cleanup()
             for detail in self._details_b.values():
-                detail.seal()
+                detail.cleanup()
             self._details_a.clear()
             self._details_b.clear()
 

@@ -2,12 +2,12 @@ import threading
 from typing import List, Optional, Any, Tuple
 
 # Melder Imports
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell
+from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 
@@ -20,7 +20,7 @@ from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contrac
 
 
 #region ConduitWard
-class ConduitWard(Sealable, IConduitWard):
+class ConduitWard(Cleanable, IConduitWard):
     """
     ConduitWard manages the dynamic linking, lineage, and permission policy
     for a single conduit within the Melder framework.
@@ -40,6 +40,7 @@ class ConduitWard(Sealable, IConduitWard):
 
         ## Conduit Ward properties
         self._conduit: IConduit = conduit
+        self._logger: ISafeLogger = conduit._logger
         self._dynamic: bool = dynamic
         self._conduit_type: ConduitState = conduit_type
         self._id = conduit._id
@@ -58,14 +59,14 @@ class ConduitWard(Sealable, IConduitWard):
         self._lesser_conduits: ConcurrentDict[str, IConduit] = ConcurrentDict() # [Lesser ConduitID] -> Lesser Conduit
 
     #region Cleanup
-    def seal(self):
+    def cleanup(self):
         """
         Public API
 
-        Seals the conduit ward, preventing any further modifications or operations.
+        Cleanups the conduit ward, preventing any further modifications or operations.
         """
-        raise NotImplementedError("Sealing is not implemented yet.")
-        if self._sealed:
+        raise NotImplementedError("Cleaning is not implemented yet.")
+        if self._cleaned:
             return
         with self._lock:
             self._clean_up_links()
@@ -73,34 +74,54 @@ class ConduitWard(Sealable, IConduitWard):
             self._conduit = None
             self._dynamic = None
             self.sever_link(self._parent_conduit_link)
-            self._conduit_type = self._conduit_type.sealed
+            self._conduit_type = self._conduit_type.cleaned
             self._policy = None
-            self._sealed = True
+            self._cleaned = True
 
 
     def _clean_up_lesser_conduits_links(self):
         """
         Internal
 
-        Recursively seals and removes all linked lesser conduits (children).
+        Recursively cleans up and removes all linked lesser conduits (children).
         """
         raise NotImplementedError("is not implemented yet.")
         if self._lesser_conduits_links:
             for lesser_conduit in self._lesser_conduits_links:
-                lesser_conduit.seal()
+                lesser_conduit.cleanup()
             self._lesser_conduits_links.dispose()
 
     def _clean_up_links(self):
         """
         Internal
 
-        Seals and disposes of all active external contracts and links.
+        cleans and disposes of all active external contracts and links.
         """
         raise NotImplementedError("is not implemented yet.")
         if self._conduit_links:
             for link in self._conduit_links:
-                link.seal()
+                link.cleanup()
             self._conduit_links.dispose()
+
+
+    def cleanup_all_lesser_conduits(self) -> None:
+        """
+        Public API
+
+        Cleans up all lesser conduits (children) linked to this conduit.
+
+        This is typically used when the parent conduit is undergoing a state change,
+        like an upgrade to a normal state, or as part of a controlled shutdown.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            for conduit in self._lesser_conduits.values():
+                conduit.cleanup()
+            self._lesser_conduits.clear()
+
     #endregion Cleanup
 
     #region Properties
@@ -121,7 +142,7 @@ class ConduitWard(Sealable, IConduitWard):
             RuntimeError: If dynamic environment is not enabled.
             RuntimeError: If no parent conduit link is found (unknown error state).
         """
-        self.check_sealed()
+        self.check_cleaned()
         if self._conduit_type != ConduitState.lesser:
             raise RuntimeError("Conduit is not a lesser conduit.")
         with self._lock:
@@ -150,7 +171,7 @@ class ConduitWard(Sealable, IConduitWard):
             TypeError: If `policy` is not an instance of the `Policies` enum.
             RuntimeError: If the policy has already been set.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         # Ensure only valid enum instances are passed
         if not policy is None:
@@ -177,14 +198,14 @@ class ConduitWard(Sealable, IConduitWard):
             policy (str | Policies): The new policy to set.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If dynamic environment is not enabled.
             RuntimeError: If the Conduit is a lesser Conduit.
             RuntimeError: If attempting to set to `automatic` in dynamic mode.
             RuntimeError: If attempting to set to `lesser_conduit` on a non-lesser Conduit.
             RuntimeError: If attempting to set to `block_all` or `whitelist_all` while contracts exist.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if not self._dynamic:
             raise RuntimeError("Dynamic environment is not enabled. Cannot set policy.")
         if self._conduit_type == ConduitState.lesser:
@@ -217,12 +238,12 @@ class ConduitWard(Sealable, IConduitWard):
             bool: True if the contract was established or already exists.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If attempting to link to a lesser conduit.
             RuntimeError: If attempting to link a conduit to itself.
             RuntimeError: If dynamic environment is not enabled.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if target_conduit._conduit_state == ConduitState.lesser:
             raise RuntimeError("Cannot link to a lesser conduit. Use _link_lesser_conduit instead.")
         if target_conduit._id == self._id:
@@ -294,10 +315,10 @@ class ConduitWard(Sealable, IConduitWard):
             Optional[str]: The ID of the found contract or None if not found.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             TypeError: If `target_conduit` is not an `IConduit` instance.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if not isinstance(target_conduit, IConduit):
             raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
 
@@ -320,10 +341,10 @@ class ConduitWard(Sealable, IConduitWard):
             Optional[Contract]: The contract object if it exists, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             TypeError: If `target_conduit` is not an `IConduit` instance.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if not isinstance(target_conduit, IConduit):
             raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
 
@@ -344,9 +365,9 @@ class ConduitWard(Sealable, IConduitWard):
             Optional[Contract]: The found contract object or None if not found.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         # Look up the contract ID using the peer's conduit ID
         check_id = self._initiated_index.get(conduit_id) or self._received_index.get(conduit_id)
         return self._contracts.get(check_id)
@@ -364,10 +385,10 @@ class ConduitWard(Sealable, IConduitWard):
             bool: True if the link was successfully severed.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If no contract is found to sever.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         locks = sorted([self._lock, target_conduit._conduit_ward._lock], key=id)
         with locks[0]:
@@ -390,9 +411,9 @@ class ConduitWard(Sealable, IConduitWard):
             bool: True if the contract was removed successfully.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         self._check_conduit_id_and_conduit(conduit=target_conduit)
 
         if (contract := self._find_contract(target_conduit)) is not None:
@@ -417,7 +438,7 @@ class ConduitWard(Sealable, IConduitWard):
                     del self._received_index[target_conduit._id]
                     del target_conduit._conduit_ward._initiated_index[self._id]
 
-                contract.seal()
+                contract.cleanup()
                 return True
         return False
 
@@ -433,9 +454,9 @@ class ConduitWard(Sealable, IConduitWard):
             lesser_conduit (IConduit): The lesser conduit to link.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         with self._lock:
             self._lesser_conduits[lesser_conduit._id] = lesser_conduit
             lesser_conduit._parent_conduit = self._conduit
@@ -453,9 +474,9 @@ class ConduitWard(Sealable, IConduitWard):
             Optional[IConduit]: The matched conduit if found, else None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         # Search immediate children
         for conduit in self._lesser_conduits.values():
@@ -496,9 +517,9 @@ class ConduitWard(Sealable, IConduitWard):
             List[IConduit]: A list of conduits that this conduit has initiated contracts with.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         return [
             conduit for conduit_id in self._initiated_index.keys()
             if (conduit := self._get_initiated_conduit(conduit_id)) is not None
@@ -515,9 +536,9 @@ class ConduitWard(Sealable, IConduitWard):
             List[IConduit]: A list of conduits that have linked to this conduit as a provider.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         return [
             conduit for conduit_id in self._received_index.keys()
             if (conduit := self._get_provider_conduit(conduit_id)) is not None
@@ -536,9 +557,9 @@ class ConduitWard(Sealable, IConduitWard):
             Optional[IConduit]: The target conduit if the link exists, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if conduit_id in self._initiated_index:
             contract_id = self._initiated_index[conduit_id]
             if (contract := self._contracts.get(contract_id, None)) is not None:
@@ -559,9 +580,9 @@ class ConduitWard(Sealable, IConduitWard):
             Optional[IConduit]: The source conduit if the link exists, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if conduit_id in self._received_index:
             contract_id = self._received_index[conduit_id]
             if (contract := self._contracts.get(contract_id, None)) is not None:
@@ -569,32 +590,13 @@ class ConduitWard(Sealable, IConduitWard):
                 return contract._ward_b._conduit if conduit_id == contract._ward_b._id else contract._ward_a._conduit
         return None
 
-
-    def seal_all_lesser_conduits(self) -> None:
-        """
-        Public API
-
-        Seals all lesser conduits (children) linked to this conduit.
-
-        This is typically used when the parent conduit is undergoing a state change,
-        like an upgrade to a normal state, or as part of a controlled shutdown.
-
-        Raises:
-            RuntimeError: If the Conduit is sealed.
-        """
-        self.check_sealed()
-        with self._lock:
-            for conduit in self._lesser_conduits.values():
-                conduit.seal()
-            self._lesser_conduits.clear()
-
     def _sever_all_linked_conduits(self) -> None:
         """
         Internal
 
         Severs all active peer links (contracts) to conduits. Excludes lesser conduits.
         """
-        self.check_sealed()
+        self.check_cleaned()
         with self._lock:
             raise NotImplementedError("Severing all links is not implemented yet.")
 
@@ -767,12 +769,12 @@ class ConduitWard(Sealable, IConduitWard):
             bool: True if the contract was successfully updated.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If no contract exists with the target conduit (link required first).
             RuntimeError: If the spell is already contracted with the same permissions.
             ValueError/TypeError/RuntimeError: From internal helper checks.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         # Check if permissions are valid
         permissions = EnumHelpers.convert_enum_and_check(permissions, Permissions)
@@ -822,9 +824,9 @@ class ConduitWard(Sealable, IConduitWard):
             dict: A dictionary containing a list of "success" spell IDs and a dictionary of "failed" spell IDs mapped to error messages.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         report = {"success": [], "failed": {}}
         for spell_id in spell_ids:
@@ -854,12 +856,12 @@ class ConduitWard(Sealable, IConduitWard):
             bool: True if the spell was successfully removed.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If no contract is found.
             RuntimeError: If the spell ID is not found in the contract.
             ValueError/TypeError/RuntimeError: From internal helper checks.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         # Check if spell or spell_id is provided, if not, raise an error
         spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
@@ -897,9 +899,9 @@ class ConduitWard(Sealable, IConduitWard):
             dict: A dictionary containing a list of "success" spell IDs and a dictionary of "failed" spell IDs mapped to error messages.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         report = {"success": [], "failed": {}}
         for spell_id in spell_ids:
@@ -926,11 +928,11 @@ class ConduitWard(Sealable, IConduitWard):
             bool: True if all spells were successfully removed and cleanup performed.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If no contract is found.
             ValueError/TypeError/RuntimeError: From internal helper checks.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         # Check if conduit is provided, if not, resolve it from conduit_id
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
@@ -969,10 +971,10 @@ class ConduitWard(Sealable, IConduitWard):
             Returns None if no contracts are found.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If contract validation fails and `validate` is True.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         if validate:
             validation = self._validate_contracts_and_define()
@@ -1024,9 +1026,9 @@ class ConduitWard(Sealable, IConduitWard):
             Optional[tuple[str, ISpell]]: Tuple of (`Conduit ID`, `ISpell`) if found, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         with self._lock:
             for contract in self._contracts.values():
@@ -1057,9 +1059,9 @@ class ConduitWard(Sealable, IConduitWard):
             Returns None if no such conduit is linked.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         with self._lock:
             contract = self._find_contract_by_id(conduit_id)
@@ -1105,10 +1107,10 @@ class ConduitWard(Sealable, IConduitWard):
             dict[str, list[tuple[str, ISpell]]] | None: A dictionary of spells exchanged (inbound/outbound), or None if not found.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             ValueError: If `conduit_name` is empty or not a string.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         if not conduit_name or not isinstance(conduit_name, str):
             raise ValueError("Conduit name must be a non-empty string.")
@@ -1135,9 +1137,9 @@ class ConduitWard(Sealable, IConduitWard):
             list[Tuple[str, IConduit]] | None: A list of (`conduit_id`, `IConduit`) tuples. Returns None if no links exist.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         contracted_conduits = []
         with self._lock:
@@ -1162,10 +1164,10 @@ class ConduitWard(Sealable, IConduitWard):
             dict: Dictionary containing contract metadata, including spell list and permissions.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
             RuntimeError: If no contract is found with the given conduit ID.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         with self._lock:
             # Need to find the contract using the peer's conduit_id
@@ -1207,9 +1209,9 @@ class ConduitWard(Sealable, IConduitWard):
             dict[str, bool]: Dictionary mapping contract id to validation results (True/False).
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
 
         results = {}
         with self._lock:
@@ -1258,9 +1260,9 @@ class ConduitWard(Sealable, IConduitWard):
             bool: True if all active contracts pass validation, False otherwise.
 
         Raises:
-            RuntimeError: If the Conduit is sealed.
+            RuntimeError: If the Conduit is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         results = self._validate_contracts_and_define()
         return all(results.values()) if results else False
 

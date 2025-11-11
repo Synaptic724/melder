@@ -184,7 +184,7 @@ class _PatchedContract:
             return self._ward_b
         return None
 
-    def seal(self):
+    def cleanup(self):
         pass
 
 
@@ -511,8 +511,8 @@ class TestConduitWard(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.w1._find_contract_id("not-a-conduit")  # type: ignore
 
-    def test_sealed_blocks_mutations_and_queries_where_applicable(self):
-        self.w1._sealed = True
+    def test_cleaned_blocks_mutations_and_queries_where_applicable(self):
+        self.w1._cleaned = True
         with self.assertRaises(RuntimeError): self.w1._link(self.c2)
         with self.assertRaises(RuntimeError): self.w1._find_contract_id(self.c2)
         with self.assertRaises(RuntimeError): self.w1._add_spell_to_contract(spell=self.sp1, conduit=self.c2)

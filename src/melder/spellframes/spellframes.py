@@ -6,7 +6,7 @@ from typing import Optional, Type, Dict, Any
 import ulid
 
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TODO: Implement SpellFrame-based SpellMaps
@@ -35,7 +35,7 @@ from melder.utilities.general_base.sealable import Sealable
 #   - Clean introspection of spellframe capabilities
 # ─────────────────────────────────────────────────────────────────────────────
 
-class SpellFrame(Sealable):
+class SpellFrame(Cleanable):
     """
     SpellFrame: A singleton interface registry for AI-generated or dynamically composed class interfaces.
 
@@ -63,7 +63,7 @@ class SpellFrame(Sealable):
         - Generates and stores UUIDs for each frame
         - Inspects and tracks public methods and properties
         - Supports metadata injection for downstream introspection or serialization
-        - Can be sealed to disable further registrations (for safety or immutability)
+        - Can be cleaned up to disable further registrations (for safety or immutability)
 
     ⚠️ Developers working on typical business applications, libraries, or team-based codebases should NOT
        rely on SpellFrame for interface management. Prefer static interfaces, `abc.ABC`, or formal DI frameworks instead.
@@ -89,16 +89,16 @@ class SpellFrame(Sealable):
             SpellFrame._initialized = True
 
 
-    def seal(self):
+    def cleanup(self):
         """
-        Seals the registry and clears all entries.
+        Cleans the registry and clears all entries.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
-            self._sealed = True
+            self._cleaned = True
             self._frame_map.cleanup()
 
 
@@ -114,8 +114,7 @@ class SpellFrame(Sealable):
             TypeError: If frame_type is not a class.
             ValueError: If already registered or disabled.
         """
-        if self._sealed:
-            raise RuntimeError("SpellFrame registry is sealed and cannot be modified.")
+        self.check_cleaned()
 
         if not isinstance(frame_type, type):
             raise TypeError("Only class types can be registered as SpellFrames.")
@@ -172,6 +171,6 @@ class SpellFrame(Sealable):
     def _reset_for_testing(self):
         with self._lock:
             self._frame_map.clear()
-            self._sealed = False
+            self._cleaned = False
             SpellFrame._initialized = False
             SpellFrame._instance = None

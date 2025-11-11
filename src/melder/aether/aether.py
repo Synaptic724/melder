@@ -6,11 +6,11 @@ from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDic
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame import AethericFrame
 from melder.utilities.helpers.init_helpers import InitHelpers
 
-class Aether(Sealable):
+class Aether(Cleanable):
     """
     The global singleton that holds and manages all AethericFrames.
 
@@ -51,28 +51,28 @@ class Aether(Sealable):
             self._aetheric_frames["default"] = AethericFrame("default")
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
 
-    def seal(self):
+    def cleanup(self):
         """
-        Seals the entire Aether, recursively sealing all frames and conduits.
+        Cleans up the entire Aether, recursively cleaning all frames and conduits.
 
         Clears all registries and renders the Aether unusable.
         This operation is idempotent.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
             try:
-                self._sealed = True
-                self._logger.debug("Sealing Aether...", "seal")
-                self.seal_aetheric_frames()
+                self._cleaned = True
+                self._logger.debug("Cleaning up Aether...", "cleanup")
+                self.cleanup_aetheric_frames() # This will clean each individual frame
                 self._default_frame = None
-                self._aetheric_frames.cleanup()
+                self._aetheric_frames.cleanup() # This cleans the ConcurrentDictionary
                 self._aetheric_frames = None
-                self._logger.debug("Aether sealed successfully", "seal")
+                self._logger.debug("Aether cleanup successful", "cleanup")
             except Exception as e:
-                self._logger.error(f"Error sealing Aether: {e}", "seal", exc_info=True)
+                self._logger.error(f"Error cleaning up Aether: {e}", "cleanup", exc_info=True)
                 raise
 
         if self._logger is not None:
@@ -80,19 +80,19 @@ class Aether(Sealable):
                 self._logger.cleanup()
             self._logger = None
 
-    def seal_aetheric_frames(self):
+    def cleanup_aetheric_frames(self):
         """
         Signs all aetheric frames and their contents.
         """
-        self._logger.debug("Sealing all aetheric frames...", "seal_aetheric_frames")
+        self._logger.debug("Cleaning all aetheric frames...", "cleanup_aetheric_frames")
 
         for frame_name, frame in self._aetheric_frames.items():
             try:
-                self._logger.debug(f"Sealing frame '{frame_name}'", "seal_aetheric_frames")
-                frame.seal()
+                self._logger.debug(f"Cleaning frame '{frame_name}'", "cleanup_aetheric_frames")
+                frame.cleanup()
             except Exception as e:
                 # Tolerant behavior: log and continue
-                self._logger.error(f"Error sealing frame '{frame_name}': {e}", "seal_aetheric_frames", exc_info=True)
+                self._logger.error(f"Error cleaning frame '{frame_name}': {e}", "cleanup_aetheric_frames", exc_info=True)
 
     # region Configuration
 

@@ -19,5 +19,5 @@ class SpellCrafter:
         ...
 
     def validate(self, creations: Any):
-        # Contract checks, cross-conduit guards, sealing validation
+        # Contract checks, cross-conduit guards, cleaning validation
         ...

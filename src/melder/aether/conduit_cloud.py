@@ -3,11 +3,11 @@ from threading import Lock
 # Melder imports
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.interfaces.interfaces import IConduit
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
 
 
 
-class ConduitCloud(Sealable):
+class ConduitCloud(Cleanable):
     """
     An abstract factory for named conduits, active only in "dynamic" mode.
 
@@ -36,20 +36,20 @@ class ConduitCloud(Sealable):
         self._registry = ConcurrentDict()
         self._id: str = str(ulid.ULID())
 
-    def seal(self):
+    def cleanup(self):
         """
-        Seals the ConduitCloud, clearing its registry.
+        Cleans up the ConduitCloud, clearing its registry.
 
         This operation is idempotent.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
             self._registry.cleanup()
             self._registry = None
-            self._sealed = True
+            self._cleaned = True
 
     def get_conduit(self, name: str) -> IConduit:
         """
@@ -62,10 +62,10 @@ class ConduitCloud(Sealable):
             IConduit: The conduit instance.
 
         Raises:
-            RuntimeError: If the ConduitCloud is sealed.
+            RuntimeError: If the ConduitCloud is cleaned.
             ValueError: If a conduit with that name is not found.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if name in self._registry:
             return self._registry[name]
         raise ValueError(f"Conduit with name {name} not found.")

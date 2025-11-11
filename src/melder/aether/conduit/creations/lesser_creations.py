@@ -1,13 +1,14 @@
 from threading import RLock
 from typing import List, Optional
-import ulid
+
 # Melder imports
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import IConduit
 
 
-class LesserCreations(Sealable):
+class LesserCreations(Cleanable):
     """
     Manages instantiated objects within a **Lesser Conduit** (Child Scope).
 
@@ -20,7 +21,7 @@ class LesserCreations(Sealable):
       * Providing a snapshot of local objects for transfer during an upgrade.
     """
 
-    def __init__(self, disposal_enabled: bool, disposal_method_names: List[str]):
+    def __init__(self, disposal_enabled: bool, disposal_method_names: List[str], conduit: IConduit):
         """
         Initialize a new LesserCreations manager.
 
@@ -32,45 +33,50 @@ class LesserCreations(Sealable):
         indexed by the spell's unique ID (str).
         """
         super().__init__()
-        self._id: str = str(ulid.ULID())
+        self._conduit: IConduit = conduit
+        self._id: str = conduit._id
         self._lock = RLock()
+
+        # Internal storage for managed objects
         self._unique_per_scope: ConcurrentDict[str, object] = ConcurrentDict()
         self._many: ConcurrentDict[str, ConcurrentList[object]] = ConcurrentDict()
 
+        # Disposal configuration
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
 
     #region Destructor
 
-    def seal(self) -> None:
+    def cleanup(self) -> None:
         """
-        Seal the creations manager, disposing of all managed objects.
+        Cleanup the creations manager, disposing of all managed objects.
 
-        Once sealed, no further modifications are allowed. If any disposal method fails,
+        Once cleaned, no further modifications are allowed. If any disposal method fails,
         an `ExceptionGroup` containing all errors is raised.
 
         Raises:
             ExceptionGroup: Contains a list of all exceptions encountered during cleanup.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
-            self._sealed = True
+            self._cleaned = True
             errors = []
 
-            errors.extend(self._seal_unique_per_scope())
-            errors.extend(self._seal_many())
+            errors.extend(self._cleanup_unique_per_scope())
+            errors.extend(self._cleanup_many())
 
             self._unique_per_scope = None
             self._many = None
+            self._conduit = None
             self._disposal_method_names = None
 
             if errors:
-                raise ExceptionGroup("Errors occurred during sealing", errors)
+                raise ExceptionGroup("Errors occurred during cleanup", errors)
 
-    def _seal_unique_per_scope(self) -> List[Exception]:
+    def _cleanup_unique_per_scope(self) -> List[Exception]:
         """
         Internal
 
@@ -88,7 +94,7 @@ class LesserCreations(Sealable):
         self._unique_per_scope.cleanup()
         return errors
 
-    def _seal_many(self) -> List[Exception]:
+    def _cleanup_many(self) -> List[Exception]:
         """
         Internal
 
@@ -116,7 +122,7 @@ class LesserCreations(Sealable):
 
         Behavior:
           - Returns None if `item` is None or disposal is disabled.
-          - Iterates `self._disposal_method_names` in order (e.g., ["seal", "cleanup", "close", "dispose"]).
+          - Iterates `self._disposal_method_names` in order (e.g., ["cleanup", "close", "dispose"]).
           - For the first attribute found on `item` that is callable, calls it.
           - If the call succeeds, returns None.
           - If the call raises, returns a RuntimeError wrapping the original exception.
@@ -152,14 +158,14 @@ class LesserCreations(Sealable):
 
     def transfer_data_and_clear(self) -> dict:
         """
-        Creates a lightweight snapshot of the current creations, clears the internal state, and seals the manager.
+        Creates a lightweight snapshot of the current creations, clears the internal state, and cleans the manager.
 
         This is used when a Lesser Conduit is upgraded to a Normal Conduit, transferring ownership of local creations.
 
         Returns:
             dict: A dictionary containing copies of the internal state (`unique_per_scope` and `many`).
         """
-        self.check_sealed()
+        self.check_cleaned()
         try:
             data = {
                 "unique_per_scope": self._unique_per_scope.copy(),
@@ -168,7 +174,7 @@ class LesserCreations(Sealable):
         finally:
             self._unique_per_scope.clear()
             self._many.clear()
-            self.seal()
+            self.cleanup()
 
         return data
 
@@ -182,10 +188,10 @@ class LesserCreations(Sealable):
             item (object): Object instance to manage.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
             ValueError: If the key already exists in the `unique_per_scope` scope.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if key in self._unique_per_scope:
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = item
@@ -201,9 +207,9 @@ class LesserCreations(Sealable):
             item (object): Object instance to add.
 
         Raises:
-            RuntimeError: If the Creations manager is sealed.
+            RuntimeError: If the Creations manager is cleaned.
         """
-        self.check_sealed()
+        self.check_cleaned()
         if key not in self._many:
             self._many[key] = ConcurrentList()
         self._many[key].append(item)

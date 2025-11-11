@@ -55,7 +55,7 @@ class FakeSpellbook:
         - _contracted_spells: dict of id -> object (FakeSpell)   (read by _find_contracted_spell)
       METHODS used by Conduit paths in tests:
         - bind/_find_spell/_find_contracted_spell/find_spell_id/find_spell_key
-        - inspect_spell/seal/create_new_preset_spellbook
+        - inspect_spell/cleanup/create_new_preset_spellbook
         - create_conduit(...)  # factory to construct conduits the "right" way
     """
     def __init__(self, initial=None, find_id=None, find_key=None):
@@ -64,7 +64,7 @@ class FakeSpellbook:
         self._lookup_spells = {}
         self._lookup_contracted_spells = {}
         self._lookup_owned_spells = self._lookup_spells
-        self._sealed = False
+        self._cleaned = False
         self._find_id = find_id or {}
         self._find_key = find_key or {}
 
@@ -99,8 +99,8 @@ class FakeSpellbook:
     def inspect_spell(self, spell, aetheric_frame="default"):
         return f"id::{getattr(spell, '__name__', getattr(spell, '__class__', type(spell)).__name__)}::{aetheric_frame}"
 
-    def seal(self):
-        self._sealed = True
+    def cleanup(self):
+        self._cleaned = True
 
     def create_new_preset_spellbook(self):
         new_sb = FakeSpellbook()
@@ -115,7 +115,7 @@ class FakeSpellbook:
 class FakeCreations:
     def __init__(self, disposal_enabled=False, disposal_method_names=None):
         self._data = {"carry": "ok"}
-        self._sealed = False
+        self._cleaned = False
 
     def transfer_data_and_clear(self):
         d = dict(self._data)
@@ -125,8 +125,8 @@ class FakeCreations:
     def _upgrade_from_lesser_conduit(self, **kw):
         self._data.update(kw)
 
-    def seal(self):
-        self._sealed = True
+    def cleanup(self):
+        self._cleaned = True
 
 
 class FakeLesserCreations(FakeCreations):
@@ -141,7 +141,7 @@ class FakeConduitWard:
         self.policy = policy
         self._lessers = {}
         self._links = []
-        self._sealed_lessers = False
+        self._cleaned = False
         self._contracts = {}
 
     def _convert_to_normal_conduit(self):
@@ -186,8 +186,8 @@ class FakeConduitWard:
     def _get_provider_conduits(self):
         return []
 
-    def seal_all_lesser_conduits(self):
-        self._sealed_lessers = True
+    def cleanup_all_lesser_conduits(self):
+        self._cleaned = True
 
     # ---- contracts ----
     def _add_spell_to_contract(self, **kwargs):
@@ -267,7 +267,7 @@ class FakeAether:
     def __init__(self):
         self._conduits = {}
         self._cloud = {}
-        self.sealed = False
+        self._cleaned = False
         self._spell_map = {}  # conduit_id -> set(spell_ids)
 
     def _add_conduit(self, conduit, frame):
@@ -429,10 +429,10 @@ class TestLesserConduitsAndUpgrade_Dynamic(unittest.TestCase):
         self.assertIsNone(lesser.name)
         self.assertTrue(len(self.parent._conduit_ward._lessers) >= 1)
 
-    def test_seal_lesser_conduits_calls_ward(self):
+    def test_cleanup_lesser_conduits_calls_ward(self):
         self.parent.create_lesser_conduit()
-        self.parent.seal_lesser_conduits()
-        self.assertTrue(self.parent._conduit_ward._sealed_lessers)
+        self.parent.cleanup_lesser_conduits()
+        self.assertTrue(self.parent._conduit_ward._cleaned)
 
     def test_upgrade_requires_runtime_dynamic_env(self):
         # In dynamic config, upgrade should succeed (guard is config-only now)
@@ -453,8 +453,8 @@ class TestSpellbookAPI_Dynamic(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             lesser.bind(spell=FakeSpell(), existence="unique")
 
-    def test_bind_rejects_when_conduit_sealed(self):
-        self.c._sealed = True
+    def test_bind_rejects_when_conduit_cleaned(self):
+        self.c._cleaned = True
         with self.assertRaises(RuntimeError):
             self.c.bind(spell=FakeSpell(), existence="unique")
 
@@ -683,10 +683,10 @@ class TestLesserConduitsAndUpgrade_Automatic(unittest.TestCase):
         self.assertIsNone(lesser.name)
         self.assertTrue(len(self.parent._conduit_ward._lessers) >= 1)
 
-    def test_seal_lesser_conduits_calls_ward(self):
+    def test_cleanup_lesser_conduits_calls_ward(self):
         self.parent.create_lesser_conduit()
-        self.parent.seal_lesser_conduits()
-        self.assertTrue(self.parent._conduit_ward._sealed_lessers)
+        self.parent.cleanup_lesser_conduits()
+        self.assertTrue(self.parent._conduit_ward._cleaned)
 
     def test_upgrade_requires_dynamic_mode(self):
         c = Conduit(self.sb, self.cfg_auto, ConduitState.lesser, "FrameUA", Policies.lesser_conduit)
@@ -705,8 +705,8 @@ class TestSpellbookAPI_Automatic(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             lesser.bind(spell=FakeSpell(), existence="unique")
 
-    def test_bind_rejects_when_conduit_sealed(self):
-        self.c._sealed = True
+    def test_bind_rejects_when_conduit_cleaned(self):
+        self.c._cleaned = True
         with self.assertRaises(RuntimeError):
             self.c.bind(spell=FakeSpell(), existence="unique")
 

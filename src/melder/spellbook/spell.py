@@ -37,7 +37,7 @@ class Spell(ISpell):
     🎯 Key Concepts:
         - Each spell has a unique SHA256 `spell_id`, generated from its signature and metadata.
         - `spellframe` distinguishes the context it was declared in (e.g., class name).
-        - Spells may be sealed (`seal()`), after which modification is disallowed.
+        - Spells may be cleaned (`cleanup()`), after which modification is disallowed.
         - Supports dependency-based object generation via a DAG executor.
         - Permissions are enforced during conduit contract evaluation.
 
@@ -78,7 +78,7 @@ class Spell(ISpell):
     Notes:
         - This class is never used directly by users. It is created during `bind()` and
           registered into the Spellbook and Aether.
-        - Internal mutation after sealing is disallowed.
+        - Internal mutation after cleaning is disallowed.
         - Dependency graphs and hooks must be defined prior to casting.
     """
 
@@ -142,17 +142,17 @@ class Spell(ISpell):
         self._key = (self.spellframe or type(self.spell).__name__, self.binding_name or "__default__")
 
     #region Disposal
-    def seal(self):
+    def cleanup(self):
         """
-        Seals the spell, preventing any further modifications.
+        Cleans up the spell, preventing any further modifications.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
             self.dependency_graph.dispose()
-            self._sealed = True
+            self._cleaned = True
     #endregion Disposal
 
     def __repr__(self):
@@ -196,8 +196,8 @@ class Spell(ISpell):
         """
         raise NotImplementedError("Not implemented.")
         with self._lock:
-            if self._sealed:
-                raise RuntimeError("Spell is sealed and cannot be cast.")
+            if self._cleaned:
+                raise RuntimeError("Spell is cleaned and cannot be cast.")
             # Implement the actual casting logic here
             if self.user_created_object:
                 # If an existing object is provided, use it

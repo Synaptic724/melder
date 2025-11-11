@@ -9,7 +9,7 @@ class ConduitState(Enum):
     """
     normal = auto()
     lesser = auto()
-    sealed = auto()
+    cleaned = auto()
 
     def __str__(self):
         """

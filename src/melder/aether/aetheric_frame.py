@@ -3,11 +3,11 @@ from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDic
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces.interfaces import IConduit
-from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit_cloud import ConduitCloud
 from threading import RLock, Lock
 
-class AethericFrame(Sealable):
+class AethericFrame(Cleanable):
     """
     Manages an isolated "universe" or "frame" within the Aether.
 
@@ -51,30 +51,30 @@ class AethericFrame(Sealable):
         # This is the configuration for the Aetheric Frame
         self._configuration = None
 
-    def seal(self):
+    def cleanup(self):
         """
-        Seals the Aetheric Frame, recursively sealing all its conduits
+        Cleans up the Aetheric Frame, recursively cleaning all its conduits
         and clearing all internal registries.
 
-        Once sealed, the frame cannot be used. This operation is idempotent.
+        Once cleaned, the frame cannot be used. This operation is idempotent.
         """
-        if self._sealed:
+        if self._cleaned:
             return
         with self._lock:
-            if self._sealed:
+            if self._cleaned:
                 return
-            self._sealed = True
-            # Seal all conduits and clear the registry
+            self._cleaned = True
+            # Cleanup all conduits and clear the registry
             for conduit in self._conduits.values():
                 try:
-                    conduit.seal()
+                    conduit.cleanup()
                 except Exception:
                     pass
 
             self._conduits.cleanup()
             self._spell_registry.cleanup()
             self._conduit_clusters.cleanup()
-            self._conduit_cloud.seal()
+            self._conduit_cloud.cleanup()
             self._conduits = None
             self._spell_registry = None
             self._conduit_clusters = None

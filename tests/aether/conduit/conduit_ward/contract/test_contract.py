@@ -109,19 +109,19 @@ class TestContractBasics(unittest.TestCase):
             self.assertIn(sid, self.contract._details_a)
             self.assertEqual(self.contract._details_a[sid].permissions, Permissions.read)
 
-    def test_clear_contract_seals_and_clears_both_maps(self):
+    def test_clear_contract_cleanup_and_clears_both_maps(self):
         # Populate both sides
         self.contract._add(self.wa, Detail("A", Permissions.read))
         self.contract._add(self.wb, Detail("B", Permissions.create))
-        # Keep references to test sealed state after clearing
+        # Keep references to test cleaned state after clearing
         da = self.contract._details_a["A"]
         db = self.contract._details_b["B"]
         self.contract._clear_contract()
         self.assertEqual(len(self.contract._details_a), 0)
         self.assertEqual(len(self.contract._details_b), 0)
-        # Detail objects should be sealed
-        self.assertTrue(getattr(da, "_sealed", True))
-        self.assertTrue(getattr(db, "_sealed", True))
+        # Detail objects should be cleaned
+        self.assertTrue(getattr(da, "_cleaned", True))
+        self.assertTrue(getattr(db, "_cleaned", True))
 
     def test_get_opposite_conduit_resolves_by_known_id(self):
         # Ward A knows its own id; we should get B's conduit back
@@ -135,13 +135,13 @@ class TestContractBasics(unittest.TestCase):
         self.assertIsNone(self.contract._get_opposite_conduit(self.contract, random_id))
 
 
-class TestContractSealAndCleanup(unittest.TestCase):
+class TestContractCleanup(unittest.TestCase):
     def setUp(self):
         self.wa = FakeWard("A")
         self.wb = FakeWard("B")
         self.contract = Contract(self.wa, self.wb)
 
-    def test_clean_up_seals_details_and_empties(self):
+    def test_clean_up_cleanup_details_and_empties(self):
         self.contract._add(self.wa, Detail("X", Permissions.read))
         self.contract._add(self.wb, Detail("Y", Permissions.create))
         d1 = self.contract._details_a["X"]
@@ -149,35 +149,35 @@ class TestContractSealAndCleanup(unittest.TestCase):
         self.contract.clean_up()
         self.assertEqual(len(self.contract._details_a), 0)
         self.assertEqual(len(self.contract._details_b), 0)
-        self.assertTrue(getattr(d1, "_sealed", True))
-        self.assertTrue(getattr(d2, "_sealed", True))
+        self.assertTrue(getattr(d1, "_cleaned", True))
+        self.assertTrue(getattr(d2, "_cleaned", True))
 
-    def test_seal_is_idempotent_and_nulls_wards(self):
+    def test_cleanup_is_idempotent_and_nulls_wards(self):
         # Seed some data
         self.contract._add(self.wa, Detail("X", Permissions.read))
         self.contract._add(self.wb, Detail("Y", Permissions.create))
 
-        # First seal
-        self.contract.seal()
-        self.assertTrue(getattr(self.contract, "_sealed", False))
+        # First cleanup
+        self.contract.cleanup()
+        self.assertTrue(getattr(self.contract, "_cleaned", False))
         self.assertIsNone(self.contract._ward_a)
         self.assertIsNone(self.contract._ward_b)
         self.assertEqual(len(self.contract._details_a), 0)
         self.assertEqual(len(self.contract._details_b), 0)
 
-        # Second seal should be a no-op (idempotent)
-        self.contract.seal()
-        self.assertTrue(getattr(self.contract, "_sealed", False))
+        # Second cleanup should be a no-op (idempotent)
+        self.contract.cleanup()
+        self.assertTrue(getattr(self.contract, "_cleaned", False))
 
-    def test_methods_behave_with_empty_maps_after_seal(self):
-        # Seal first
-        self.contract.seal()
+    def test_methods_behave_with_empty_maps_after_cleanup(self):
+        # cleanup first
+        self.contract.cleanup()
 
         # _clear_contract should still be safe to call (it locks and clears empty maps)
-        # It should not raise even if already sealed and maps are empty.
+        # It should not raise even if already cleaned and maps are empty.
         self.contract._clear_contract()
 
-        # Any ward-dependent operation after seal should raise because wards are nulled.
+        # Any ward-dependent operation after cleanup should raise because wards are nulled.
         with self.assertRaises(ValueError):
             # Using the original FakeWard (not a member anymore) should be invalid.
             self.contract._remove(self.wa, "ZZ")

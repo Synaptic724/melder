@@ -12,7 +12,7 @@ class TestConfigurationBasics(unittest.TestCase):
     def test_init_defaults(self):
         cfg = Configuration(aether_frame="alpha")
         self.assertEqual(cfg._aether_frame, "alpha")
-        self.assertFalse(cfg._sealed)
+        self.assertFalse(cfg._cleaned)
         self.assertFalse(cfg._frozen)
         self.assertIn("system_state", cfg.available_properties)
         self.assertIn("debugging", cfg.available_properties)
@@ -101,14 +101,14 @@ class TestSetPropertyAndIdempotency(unittest.TestCase):
             cfg.validate()
 
 
-class TestFreezeAndSeal(unittest.TestCase):
+class TestFreezeAndcleanup(unittest.TestCase):
     def test_freeze_sets_flags_and_blocks_changes(self):
         cfg = Configuration()
         cfg.load_default_dictionary()
         cfg.freeze()
         # freeze => immutable, NOT disposed; only assert _frozen
         self.assertTrue(cfg._frozen)
-        # _sealed is disposal-only; do NOT assert it here
+        # _cleaned is disposal-only; do NOT assert it here
         with self.assertRaises(RuntimeError):
             cfg.set_property("debugging", True)
         with self.assertRaises(RuntimeError):
@@ -124,15 +124,15 @@ class TestFreezeAndSeal(unittest.TestCase):
         with self.assertRaises(ValueError):
             cfg.freeze()
 
-    def test_seal_idempotent(self):
+    def test_cleanup_idempotent(self):
         cfg = Configuration()
         cfg.load_default_dictionary()
-        cfg.seal()
-        self.assertTrue(cfg._sealed)
+        cfg.cleanup()
+        self.assertTrue(cfg._cleaned)
         self.assertTrue(cfg._frozen)
         # second call should not throw
-        cfg.seal()
-        # After sealed, clearing should fail (frozen check runs first)
+        cfg.cleanup()
+        # After cleaned, clearing should fail (frozen check runs first)
         with self.assertRaises(RuntimeError):
             cfg.clear_properties()
 
@@ -141,7 +141,7 @@ class TestFreezeAndSeal(unittest.TestCase):
         cfg.load_default_dictionary()
         # Unfreeze path: clear should work
         cfg._frozen = False
-        cfg._sealed = False
+        cfg._cleaned = False
         cfg.clear_properties()
         self.assertFalse(cfg.has_property("system_state"))
         self.assertFalse(cfg.has_property("debugging"))
@@ -194,7 +194,7 @@ class TestLoadDefaultsAndThenFreeze(unittest.TestCase):
         cfg.freeze()
         # freeze => immutable, NOT disposed; only assert _frozen
         self.assertTrue(cfg._frozen)
-        # Do not assert _sealed here; seal is for cleanup/disposal semantics
+        # Do not assert _cleaned here; cleanup is for cleanup/disposal semantics
 
 
     def test_load_defaults_idempotent_overwrite_blocked(self):
@@ -222,16 +222,16 @@ class TestEdgeCases(unittest.TestCase):
         with self.assertRaises(ValueError):
             cfg.validate()
 
-    def test_cannot_clear_when_frozen_or_sealed(self):
+    def test_cannot_clear_when_frozen_or_cleaned(self):
         cfg = Configuration()
         cfg.load_default_dictionary()
         cfg.freeze()
         with self.assertRaises(RuntimeError):
             cfg.clear_properties()
-        # Also when sealed separately
+        # Also when cleaned separately
         cfg2 = Configuration()
         cfg2.load_default_dictionary()
-        cfg2.seal()
+        cfg2.cleanup()
         with self.assertRaises(RuntimeError):
             cfg2.clear_properties()
 

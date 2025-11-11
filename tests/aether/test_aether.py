@@ -56,20 +56,20 @@ class TestAether(unittest.TestCase):
             self.aether._aetheric_frames["default"] = AethericFrame("default")
             self.aether._default_frame = self.aether._aetheric_frames["default"]
 
-        # Start clean registries + unsealed flags
+        # Start clean registries + uncleaned flags
         df = self.aether._default_frame
         df._conduits.clear()
         df._conduit_clusters.clear()
         df._spell_registry.clear()
-        df._sealed = False
-        self.aether._sealed = False
+        df._cleaned = False
+        self.aether._cleaned = False
 
     # Replace the old “test_reset_for_testing_resets_singleton” with this:
-    def test_seal_and_manual_rehydrate(self):
-        # Seal should null out default frame
-        self.assertFalse(self.aether._sealed)
-        self.aether.seal()
-        self.assertTrue(self.aether._sealed)
+    def test_cleanup_and_manual_rehydrate(self):
+        # cleanup should null out default frame
+        self.assertFalse(self.aether._cleaned)
+        self.aether.cleanup()
+        self.assertTrue(self.aether._cleaned)
         self.assertIsNone(self.aether._default_frame)
 
         # True rehydrate: kill singleton ref + init flag, construct a new Aether
@@ -77,14 +77,14 @@ class TestAether(unittest.TestCase):
         new_aether = Aether()
         self.assertIsNot(self.aether, new_aether)
 
-        # New instance should come up with a default frame and be unsealed
+        # New instance should come up with a default frame and be uncleaned
         if new_aether._default_frame is None:
             new_aether._aetheric_frames = ConcurrentDict()
             new_aether._aetheric_frames["default"] = AethericFrame("default")
             new_aether._default_frame = new_aether._aetheric_frames["default"]
         self.assertIsNotNone(new_aether._default_frame)
         self.assertIn("default", new_aether._aetheric_frames)
-        self.assertFalse(new_aether._sealed)
+        self.assertFalse(new_aether._cleaned)
 
     # 1
     def test_singleton_identity(self):
@@ -98,25 +98,25 @@ class TestAether(unittest.TestCase):
         self.assertIs(self.aether._default_frame, self.aether._aetheric_frames["default"])
 
     # 3
-    def test_seal_idempotent_and_flags(self):
-        self.assertFalse(self.aether._sealed)
-        self.aether.seal()
-        self.assertTrue(self.aether._sealed)
+    def test_cleanup_idempotent_and_flags(self):
+        self.assertFalse(self.aether._cleaned)
+        self.aether.cleanup()
+        self.assertTrue(self.aether._cleaned)
         self.assertIsNone(self.aether._default_frame)
-        # second seal should not raise or change anything
-        self.aether.seal()
-        self.assertTrue(self.aether._sealed)
+        # second cleanup should not raise or change anything
+        self.aether.cleanup()
+        self.assertTrue(self.aether._cleaned)
 
     # 4
-    def test_seal_calls_frame_seal_even_on_exception(self):
+    def test_cleanup_calls_frame_cleanup_even_on_exception(self):
         class _BadFrame(AethericFrame):
-            def seal(self):
+            def cleanup(self):
                 raise RuntimeError("boom")
 
         # Inject a bad frame next to default
         self.aether._aetheric_frames["bad"] = _BadFrame("bad")
         # Should not raise
-        self.aether.seal()
+        self.aether.cleanup()
 
     # 6
     def test_bind_and_get_configuration_default(self):

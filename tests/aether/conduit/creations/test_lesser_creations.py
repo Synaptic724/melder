@@ -34,11 +34,6 @@ class DisposeBoom:
     def dispose(self):
         raise RuntimeError("dispose-boom")
 
-class SealLike:
-    def __init__(self):
-        self.sealed = False
-    def seal(self):
-        self.sealed = True
 
 class CleanupLike:
     def __init__(self):
@@ -50,11 +45,6 @@ class BothCloseAndDispose(CloseOk, DisposeOk):
     def __init__(self):
         CloseOk.__init__(self)
         DisposeOk.__init__(self)
-
-class BothSealAndCleanup(SealLike, CleanupLike):
-    def __init__(self):
-        SealLike.__init__(self)
-        CleanupLike.__init__(self)
 
 
 def new_lesser(disposal_enabled=True, methods=("close", "dispose")) -> LesserCreations:
@@ -84,18 +74,18 @@ class TestLesserBasics(unittest.TestCase):
         lc.add_many(k, 2)
         self.assertEqual(list(lc._many[k]), [1, 2])
 
-    def test_add_after_seal_raises(self):
+    def test_add_after_cleanup_raises(self):
         lc = new_lesser()
-        lc.seal()
+        lc.cleanup()
         with self.assertRaises(RuntimeError):
             lc.add_unique_per_scope(uuid4(), object())
         with self.assertRaises(RuntimeError):
             lc.add_many(uuid4(), object())
 
-    def test_seal_is_idempotent(self):
+    def test_cleanup_is_idempotent(self):
         lc = new_lesser()
-        lc.seal()
-        lc.seal()  # no raise
+        lc.cleanup()
+        lc.cleanup()  # no raise
 
 
 class TestMethodDisposal(unittest.TestCase):
@@ -103,14 +93,14 @@ class TestMethodDisposal(unittest.TestCase):
         obj = CloseOk()
         lc = new_lesser(disposal_enabled=True, methods=("close",))
         lc.add_unique_per_scope(uuid4(), obj)
-        lc.seal()
+        lc.cleanup()
         self.assertTrue(obj.closed)
 
     def test_custom_methods_respect_order_first_hits(self):
         obj = BothCloseAndDispose()
         lc = new_lesser(disposal_enabled=True, methods=("close", "dispose"))
         lc.add_unique_per_scope(uuid4(), obj)
-        lc.seal()
+        lc.cleanup()
         self.assertTrue(obj.closed)
         self.assertFalse(obj.disposed)  # first applicable should short-circuit
 
@@ -118,21 +108,21 @@ class TestMethodDisposal(unittest.TestCase):
         obj = CloseOk()
         lc = new_lesser(disposal_enabled=False, methods=("close",))
         lc.add_unique_per_scope(uuid4(), obj)
-        lc.seal()
+        lc.cleanup()
         self.assertFalse(obj.closed)
-
-    def test_seal_like_method_supported_if_registered(self):
-        obj = SealLike()
-        lc = new_lesser(disposal_enabled=True, methods=("seal",))
-        lc.add_unique_per_scope(uuid4(), obj)
-        lc.seal()
-        self.assertTrue(obj.sealed)
 
     def test_cleanup_like_method_supported_if_registered(self):
         obj = CleanupLike()
         lc = new_lesser(disposal_enabled=True, methods=("cleanup",))
         lc.add_unique_per_scope(uuid4(), obj)
-        lc.seal()
+        lc.cleanup()
+        self.assertTrue(obj._cleaned)
+
+    def test_cleanup_like_method_supported_if_registered(self):
+        obj = CleanupLike()
+        lc = new_lesser(disposal_enabled=True, methods=("cleanup",))
+        lc.add_unique_per_scope(uuid4(), obj)
+        lc.cleanup()
         self.assertTrue(obj.cleaned)
 
 
@@ -141,7 +131,7 @@ class TestErrorCollection(unittest.TestCase):
         lc = new_lesser(disposal_enabled=True, methods=("close",))
         lc.add_unique_per_scope(uuid4(), CloseBoom())
         with self.assertRaises(ExceptionGroup) as ctx:
-            lc.seal()
+            lc.cleanup()
         self.assertTrue(any("close-boom" in str(e) for e in ctx.exception.exceptions))
 
     def test_method_error_is_collected_across_many(self):
@@ -150,11 +140,11 @@ class TestErrorCollection(unittest.TestCase):
         lc.add_many(k, DisposeOk())
         lc.add_many(k, DisposeBoom())
         with self.assertRaises(ExceptionGroup) as ctx:
-            lc.seal()
+            lc.cleanup()
         msgs = [str(e) for e in ctx.exception.exceptions]
         self.assertTrue(any("dispose-boom" in m for m in msgs))
         # first item should still have been disposed successfully
-        # (we can’t assert flag here post-seal reliably, but no crash means path executed)
+        # (we can’t assert flag here post-cleanup reliably, but no crash means path executed)
 
 
 class TestManyBucket(unittest.TestCase):
@@ -164,7 +154,7 @@ class TestManyBucket(unittest.TestCase):
         lc = new_lesser(disposal_enabled=True, methods=("dispose",))
         lc.add_many(k, a)
         lc.add_many(k, b)
-        lc.seal()
+        lc.cleanup()
         self.assertTrue(a.disposed)
         self.assertTrue(b.disposed)
 
@@ -181,8 +171,8 @@ class TestTransferDataAndClear(unittest.TestCase):
 
         snap = lc.transfer_data_and_clear()
 
-        # manager sealed and cleared
-        self.assertTrue(lc._sealed)
+        # manager cleaned and cleared
+        self.assertTrue(lc._cleaned)
         self.assertIsNone(lc._unique_per_scope)
         self.assertIsNone(lc._many)
 
@@ -215,9 +205,9 @@ class TestTransferDataAndClear(unittest.TestCase):
             many=snap["many"]
         )
         try:
-            c.seal()
+            c.cleanup()
         except AttributeError as ex:
-            self.fail(f"Creations.seal raised due to incompatible snapshot types: {ex}")
+            self.fail(f"Creations.cleanup raised due to incompatible snapshot types: {ex}")
 
     @unittest.expectedFailure
     def test_transfer_is_idempotent_in_effect(self):
@@ -228,13 +218,13 @@ class TestTransferDataAndClear(unittest.TestCase):
         self.assertIsInstance(snap2, dict)
 
 
-class TestSealSideEffects(unittest.TestCase):
-    def test_maps_cleared_to_none_after_seal(self):
+class TestCleanupSideEffects(unittest.TestCase):
+    def test_maps_cleared_to_none_after_cleanup(self):
         lc = new_lesser()
         lc.add_unique_per_scope(uuid4(), object())
         lc.add_many(uuid4(), object())
         try:
-            lc.seal()
+            lc.cleanup()
         except ExceptionGroup:
             pass
         self.assertIsNone(lc._unique_per_scope)
