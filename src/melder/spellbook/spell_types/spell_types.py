@@ -5,17 +5,17 @@ class SpellType(Enum):
     Enum for different types of spells.
     """
     #Classes
-    NORMAL = auto()
-    NORMAL_INTERFACED = auto()
-    NAMED = auto()
-    NAMED_INTERFACED = auto()
-    EXISTING_CLASS = auto()
-    EXISTING_INTERFACED_CLASS = auto()
+    normal = auto()
+    normal_with_protocol = auto()
+    named = auto()
+    named_with_protocol = auto()
+    created = auto()
+    created_with_protocol = auto()
 
     #Methods
-    NORMAL_METHOD = auto()
-    NAMED_METHOD = auto()
-    NAMED_LAMBDA_METHOD = auto()
+    normal_method = auto()
+    named_method = auto()
+    named_lambda_method = auto()
 
     def __str__(self):
         return self.name
