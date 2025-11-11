@@ -264,25 +264,25 @@ class Bind(IBind):
         """
         if isinstance(profile, ClassProfile):
             if name and spellframe:
-                return SpellType.named_with_protocol
+                return SpellType.NAMED_INTERFACED
             elif spellframe:
-                return SpellType.normal_with_protocol
+                return SpellType.NORMAL_INTERFACED
             elif name:
-                return SpellType.named
+                return SpellType.NAMED
             elif is_instance:
-                return SpellType.created
+                return SpellType.EXISTING_CLASS
             else:
-                return SpellType.normal
+                return SpellType.NORMAL
 
         elif isinstance(profile, MethodProfile):
             if name and profile.lambda_fn:
-                return SpellType.named_lambda_method
+                return SpellType.NAMED_LAMBDA_METHOD
             elif name:
-                return SpellType.named_method
+                return SpellType.NAMED_METHOD
             else:
-                return SpellType.normal_method
+                return SpellType.NORMAL_METHOD
         else:
             # Fallback for unexpected profile types (should align with is_instance check)
-            return SpellType.created if is_instance else SpellType.normal
+            return SpellType.EXISTING_CLASS if is_instance else SpellType.NORMAL
 #endregion Spell Inspector Helpers
 #endregion Bind
