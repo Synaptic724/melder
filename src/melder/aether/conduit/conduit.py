@@ -12,7 +12,6 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration, ISafeLogger
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
-from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
@@ -49,7 +48,6 @@ class Conduit(Sealable, IConduit):
         self._name: str = name
         self.__debugger_mode__: bool = False
         self.__dynamic_environment__: bool = False
-        self._creation_context: ConduitCreationContext = ConduitCreationContext()
         self._aetheric_frame: str = aetheric_frame
 
         # Special Configuration
@@ -69,7 +67,7 @@ class Conduit(Sealable, IConduit):
         self._conduit_ward: ConduitWard = ConduitWard(self, self.__dynamic_environment__, self._conduit_state, policy)
         self._configure_conduit_state()
         self._logger.debug(
-            f"Conduit initialized (id={self._creation_context._conduit_id}, frame='{self._aetheric_frame}')",
+            f"Conduit initialized (id={self._id}, frame='{self._aetheric_frame}')",
             "__init__"
         )
 
@@ -141,7 +139,6 @@ class Conduit(Sealable, IConduit):
             # Phase 2: De-reference internal structures
             self._spellbook = None
             self._creations = None
-            self._creation_context = None
 
             # Phase 3: Deregister from the world
             if Conduit._aether and not Conduit._aether.sealed:
@@ -152,7 +149,7 @@ class Conduit(Sealable, IConduit):
 
     #endregion Cleanup and Disposal
     #region Logger
-    def _resolve_logger_from_config(self, configuration: IConfiguration) -> 'SafeLogger':
+    def _resolve_logger_from_config(self, configuration: IConfiguration) -> ISafeLogger:
         """
         This internal method resolves the logger for this Conduit based on the provided configuration.
 
@@ -177,12 +174,21 @@ class Conduit(Sealable, IConduit):
         """
         return (
             f"<Conduit name={self.name} "
-            f"id={self._creation_context._conduit_id}>"
+            f"id={self._id}>"
         )
 
     #endregion Utilities
 
     #region Properties
+    @property
+    def id(self):
+        """
+        Public API
+
+        Returns the unique identifier of this Conduit.
+        """
+        return self._id
+
     @property
     def name(self) -> Optional[str]:
         """
@@ -208,21 +214,6 @@ class Conduit(Sealable, IConduit):
             raise RuntimeError("Conduit name is set.")
         self._logger.debug(f"Conduit named '{name}'", "name")
         self._name = name
-
-    @property
-    def __creation_context__(self) -> ConduitCreationContext:
-        """
-        Public API
-
-        This property exposes the internal creation metadata for this conduit,
-        including unique ID, creation path, and lifecycle configuration context.
-
-        Intended for:
-        - Advanced diagnostics
-        - Contract validation systems
-        - Internal resolver systems
-        """
-        return self._creation_context
 
     #endregion
     #region Conduit Configuration
@@ -449,7 +440,7 @@ class Conduit(Sealable, IConduit):
         spell_ids = list(self._spellbook._spells.keys())
         self._logger.debug(f"Registering {len(spell_ids)} local spells into Aether", "_add_spells_to_aether")
         spell_set = ConcurrentSet(spell_ids)
-        Conduit._aether._add_spells_to_aether(self.__creation_context__._conduit_id, spell_set, self._aetheric_frame)
+        Conduit._aether._add_spells_to_aether(self._id, spell_set, self._aetheric_frame)
 
 
     def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[IConduit]:
@@ -883,10 +874,10 @@ class Conduit(Sealable, IConduit):
         if not isinstance(target_conduit, IConduit):
             self._logger.error("link target not IConduit", "link")
             raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
-        if not target_conduit.__creation_context__._conduit_id:
+        if not target_conduit._id:
             self._logger.error("link target has no valid creation context", "link")
             raise RuntimeError("Target conduit does not have a valid creation context.")
-        self._logger.debug(f"link -> target={target_conduit.__creation_context__._conduit_id}", "link")
+        self._logger.debug(f"link -> target={target_conduit._id}", "link")
         with self._lock:
             return self._conduit_ward._link(target_conduit)
 
@@ -913,7 +904,7 @@ class Conduit(Sealable, IConduit):
         if not self.__dynamic_environment__:
             self._logger.error("sever_link in non-dynamic env", "sever_link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
-        self._logger.debug(f"sever_link target={target_conduit.__creation_context__._conduit_id}", "sever_link")
+        self._logger.debug(f"sever_link target={target_conduit._id}", "sever_link")
         with self._lock:
             return self._conduit_ward._sever_link(target_conduit)
 

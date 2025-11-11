@@ -42,7 +42,7 @@ class ConduitWard(Sealable, IConduitWard):
         self._conduit: IConduit = conduit
         self._dynamic: bool = dynamic
         self._conduit_type: ConduitState = conduit_type
-        self._id = conduit.__creation_context__._conduit_id
+        self._id = conduit._id
 
         self._policy_set: bool = False
         self._policy: Policies = self._set_initial_policy(policy)
@@ -225,7 +225,7 @@ class ConduitWard(Sealable, IConduitWard):
         self.check_sealed()
         if target_conduit._conduit_state == ConduitState.lesser:
             raise RuntimeError("Cannot link to a lesser conduit. Use _link_lesser_conduit instead.")
-        if target_conduit.__creation_context__._conduit_id == self._id:
+        if target_conduit._id == self._id:
             raise RuntimeError("Cannot link a conduit to itself.")
         if not self._dynamic:
             raise RuntimeError("Dynamic environment is not enabled. Cannot link conduits.")
@@ -260,7 +260,7 @@ class ConduitWard(Sealable, IConduitWard):
         locks = sorted([ward_a._lock, ward_b._lock], key=id)
         with locks[0]:
             with locks[1]:
-                target_id = target_conduit.__creation_context__._conduit_id
+                target_id = target_conduit._id
 
                 # Double-check in case of race
                 if self._find_contract(target_conduit):
@@ -410,11 +410,11 @@ class ConduitWard(Sealable, IConduitWard):
 
                 # Remove index entries
                 # We need to check which index to delete from since the link can be initiated or received
-                if target_conduit.__creation_context__._conduit_id in self._initiated_index:
-                    del self._initiated_index[target_conduit.__creation_context__._conduit_id]
+                if target_conduit._id in self._initiated_index:
+                    del self._initiated_index[target_conduit._id]
                     del target_conduit._conduit_ward._received_index[self._id]
-                elif target_conduit.__creation_context__._conduit_id in self._received_index:
-                    del self._received_index[target_conduit.__creation_context__._conduit_id]
+                elif target_conduit._id in self._received_index:
+                    del self._received_index[target_conduit._id]
                     del target_conduit._conduit_ward._initiated_index[self._id]
 
                 contract.seal()
@@ -437,7 +437,7 @@ class ConduitWard(Sealable, IConduitWard):
         """
         self.check_sealed()
         with self._lock:
-            self._lesser_conduits[lesser_conduit.__creation_context__._conduit_id] = lesser_conduit
+            self._lesser_conduits[lesser_conduit._id] = lesser_conduit
             lesser_conduit._parent_conduit = self._conduit
 
     def _get_lesser_conduit(self, conduit_id: str) -> Optional[IConduit]:
@@ -459,7 +459,7 @@ class ConduitWard(Sealable, IConduitWard):
 
         # Search immediate children
         for conduit in self._lesser_conduits.values():
-            if conduit.__creation_context__._conduit_id == conduit_id:
+            if conduit._id == conduit_id:
                 return conduit
 
             # Recurse into the child's ward if it has one
@@ -688,11 +688,11 @@ class ConduitWard(Sealable, IConduitWard):
         if conduit_id is None:
             if not isinstance(conduit, IConduit):
                 raise TypeError(f"Expected IConduit instance, got {type(conduit).__name__}")
-            conduit_id = conduit.__creation_context__._conduit_id
+            conduit_id = conduit._id
             if conduit_id is None:
                 raise RuntimeError("Could not determine conduit_id from conduit.")
 
-        inspected_id = conduit.__creation_context__._conduit_id
+        inspected_id = conduit._id
         if conduit_id != inspected_id:
             raise RuntimeError(
                 f"Provided conduit_id '{conduit_id}' does not match conduit internal ID '{inspected_id}'.")
@@ -745,7 +745,7 @@ class ConduitWard(Sealable, IConduitWard):
             raise RuntimeError(f"Spell '{spell.__name__}' does not have read permissions, cannot contract with read permissions.")
         if spell._permissions == Permissions.block and conduit._conduit_ward._policy != Policies.whitelist_all:
             raise RuntimeError("Cannot contract spells with block permissions.")
-        if spell._owner_conduit_id != conduit.__creation_context__._conduit_id:
+        if spell._owner_conduit_id != conduit._id:
             raise RuntimeError(f"Spell '{spell.__name__}' is not owned by this conduit, cannot contract it.")
 
     def _add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: str = None,

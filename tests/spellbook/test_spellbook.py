@@ -466,10 +466,8 @@ class TestConjureAPI(unittest.TestCase):
 
     def _stub_conduit(self):
         """Return a Conduit stub with attributes Spellbook expects to use."""
-        ctx = type("Ctx", (), {})()
-        setattr(ctx, "_conduit_id", uuid4())
         conduit = type("FakeConduit", (), {})()
-        conduit.__creation_context__ = ctx
+        conduit._id = uuid4()
         conduit._name = "C-Name"
         conduit._creations = {"x": 1}
         return conduit

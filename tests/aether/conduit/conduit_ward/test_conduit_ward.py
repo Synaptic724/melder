@@ -96,7 +96,7 @@ class FakeConduit(IConduit):
     ):
         self._name = name
         self._conduit_state = state
-        self.__creation_context__ = _FakeCreationContext(cid)
+        self._id = _FakeCreationContext(cid)
         self._conduit_ward = None  # set by tests
         self._spellbook = _FakeSpellbook(self)
         self._parent_conduit = None
@@ -106,7 +106,7 @@ class FakeConduit(IConduit):
         self._contracted_spells: dict[str, FakeSpell] = {}
 
         # Peers
-        self._conduits_by_id: dict[UUID, "FakeConduit"] = {}
+        self._conduits_by_id: dict[str, "FakeConduit"] = {}
 
     # Ward calls:
     def get_spell_by_id(self, spell_id: str, aetheric_frame: str = "default"):
@@ -115,7 +115,7 @@ class FakeConduit(IConduit):
     def inspect_spell(self, spell: ISpell, aetheric_frame: str = "default") -> str | None:
         return getattr(spell, "spell_id", None)
 
-    def get_conduit_by_id(self, conduit_id: UUID, aetheric_frame: str = "default"):
+    def get_conduit_by_id(self, conduit_id: str, aetheric_frame: str = "default"):
         return self._conduits_by_id.get(conduit_id)
 
     def find_contracted_spell(self, spell_id: str):
@@ -124,7 +124,7 @@ class FakeConduit(IConduit):
 
     # helpers for tests
     def register_peer(self, other: "FakeConduit"):
-        self._conduits_by_id[other.__creation_context__._conduit_id] = other
+        self._conduits_by_id[other._id] = other
 
 
 # -----------------------------
@@ -215,7 +215,7 @@ class TestConduitWard(unittest.TestCase):
         self.sp1 = FakeSpell(
             "SID1",
             name="Foo",
-            owner_id=self.c2.__creation_context__._conduit_id,  # owner == grantee (c2)
+            owner_id=self.c2._id,  # owner == grantee (c2)
             perm=Permissions.create,
         )
         # OWNED spells live in the owner's OWNED map
@@ -227,8 +227,8 @@ class TestConduitWard(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(len(self.w1._contracts), 1)
         self.assertEqual(len(self.w2._contracts), 1)
-        c2id = self.c2.__creation_context__._conduit_id
-        c1id = self.c1.__creation_context__._conduit_id
+        c2id = self.c2._id
+        c1id = self.c1._id
         self.assertIn(c2id, self.w1._initiated_index)
         self.assertIn(c1id, self.w2._received_index)
         self.assertEqual(self.c2._spellbook._created_link_contracts, [c2id])
@@ -251,8 +251,8 @@ class TestConduitWard(unittest.TestCase):
         self.assertTrue(self.w1._sever_link(self.c2))
         self.assertEqual(len(self.w1._contracts), 0)
         self.assertEqual(len(self.w2._contracts), 0)
-        c2id = self.c2.__creation_context__._conduit_id
-        c1id = self.c1.__creation_context__._conduit_id
+        c2id = self.c2._id
+        c1id = self.c1._id
         self.assertNotIn(c2id, self.w1._initiated_index)
         self.assertNotIn(c1id, self.w2._received_index)
         self.assertIn(c1id, self.c2._spellbook._severed_link_contracts)
@@ -277,7 +277,7 @@ class TestConduitWard(unittest.TestCase):
         lesser._conduit_ward = ConduitWard(lesser, dynamic=True, conduit_type=ConduitState.lesser, policy=Policies.lesser_conduit)
 
         self.w1._link_lesser_conduit(lesser)
-        got = self.w1._get_lesser_conduit(lesser.__creation_context__._conduit_id)
+        got = self.w1._get_lesser_conduit(lesser._id)
         self.assertIs(got, lesser)
 
         # allow lesser to upgrade (no children, has parent)
@@ -301,7 +301,7 @@ class TestConduitWard(unittest.TestCase):
         sp_read = FakeSpell(
             "SID2",
             name="RO",
-            owner_id=self.c2.__creation_context__._conduit_id,  # owner == grantee (c2)
+            owner_id=self.c2._id,  # owner == grantee (c2)
             perm=Permissions.read,
         )
         self.c2._owned_spells[sp_read.spell_id] = sp_read
@@ -318,7 +318,7 @@ class TestConduitWard(unittest.TestCase):
 
     def test_add_spells_to_contract_reports_success_and_failures(self):
         self.w1._link(self.c2)
-        sp2 = FakeSpell("SID2", owner_id=self.c2.__creation_context__._conduit_id, perm=Permissions.create)
+        sp2 = FakeSpell("SID2", owner_id=self.c2._id, perm=Permissions.create)
         # OWNED by c2
         self.c2._owned_spells[sp2.spell_id] = sp2
         # IMPORTANT: bulk path resolves by *self._conduit* (c1), so make c1 able to resolve IDs
@@ -342,7 +342,7 @@ class TestConduitWard(unittest.TestCase):
 
     def test_remove_all_spells_from_contract(self):
         self.w1._link(self.c2)
-        sp2 = FakeSpell("SID2", owner_id=self.c2.__creation_context__._conduit_id, perm=Permissions.create)
+        sp2 = FakeSpell("SID2", owner_id=self.c2._id, perm=Permissions.create)
         self.c2._owned_spells[sp2.spell_id] = sp2
         self.w1._add_spell_to_contract(spell=self.sp1, conduit=self.c2)
         self.w1._add_spell_to_contract(spell=sp2, conduit=self.c2)
@@ -362,7 +362,7 @@ class TestConduitWard(unittest.TestCase):
         self.assertIsInstance(all_spells, dict)
         self.assertEqual(len(list(all_spells.values())[0]), 1)
 
-        peer_id = self.c1.__creation_context__._conduit_id  # from c2's POV, the peer is c1
+        peer_id = self.c1._id  # from c2's POV, the peer is c1
         by_peer = self.w2._get_spells_in_contract_by_conduit(peer_id)
         self.assertIn(("SID1", self.c1.find_contracted_spell("SID1")), by_peer["inbound"])
 
@@ -449,7 +449,7 @@ class TestConduitWard(unittest.TestCase):
 
     def test_add_spell_permissions_case_insensitive(self):
         self.w1._link(self.c2)
-        spx = FakeSpell("SIDX", owner_id=self.c2.__creation_context__._conduit_id, perm=Permissions.create)
+        spx = FakeSpell("SIDX", owner_id=self.c2._id, perm=Permissions.create)
         self.c2._owned_spells[spx.spell_id] = spx
         ok = self.w1._add_spell_to_contract(spell=spx, conduit=self.c2, permissions="CrEaTe")
         self.assertTrue(ok)
@@ -519,7 +519,7 @@ class TestConduitWard(unittest.TestCase):
         with self.assertRaises(RuntimeError): self.w1._remove_spell_from_contract(spell_id="SID1", conduit=self.c2)
         with self.assertRaises(RuntimeError): self.w1._remove_all_spells_from_contract(conduit=self.c2)
         with self.assertRaises(RuntimeError): self.w1._get_all_spells_in_contracts()
-        with self.assertRaises(RuntimeError): self.w1._get_spells_in_contract_by_conduit(self.c2.__creation_context__._conduit_id)
+        with self.assertRaises(RuntimeError): self.w1._get_spells_in_contract_by_conduit(self.c2._id)
 
     def test_check_helpers_resolution_errors(self):
         with self.assertRaises(RuntimeError):

@@ -38,7 +38,7 @@ class _DummyCtx:
 class _DummyConduit:
     def __init__(self, name="c", cid=None):
         self.name = name
-        self.__creation_context__ = _DummyCtx(cid)
+        self._id = _DummyCtx(cid)
 
 
 # --- tests -------------------------------------------------------------------
@@ -155,7 +155,7 @@ class TestAether(unittest.TestCase):
         c = _DummyConduit("alpha")
         self.aether._default_frame._conduits.clear()
         self.aether._add_conduit(c)
-        cid = c.__creation_context__._conduit_id
+        cid = c._id
         self.assertIn(cid, self.aether._default_frame._conduits)
         self.assertIs(self.aether._default_frame._conduits[cid], c)
 
@@ -163,7 +163,7 @@ class TestAether(unittest.TestCase):
     def test_add_conduit_duplicate_raises(self):
         c = _DummyConduit("dup", cid=uuid.uuid4())
         self.aether._default_frame._conduits.clear()
-        self.aether._default_frame._conduits[c.__creation_context__._conduit_id] = c
+        self.aether._default_frame._conduits[c._id] = c
         with self.assertRaises(ValueError):
             self.aether._add_conduit(c)
 
@@ -171,9 +171,9 @@ class TestAether(unittest.TestCase):
     def test_remove_conduit_success(self):
         c = _DummyConduit("gone", cid=uuid.uuid4())
         self.aether._default_frame._conduits.clear()
-        self.aether._default_frame._conduits[c.__creation_context__._conduit_id] = c
+        self.aether._default_frame._conduits[c._id] = c
         self.aether._remove_conduit(c)
-        self.assertNotIn(c.__creation_context__._conduit_id, self.aether._default_frame._conduits)
+        self.assertNotIn(c._id, self.aether._default_frame._conduits)
 
     # 14
     def test_remove_conduit_missing_raises(self):
@@ -187,8 +187,8 @@ class TestAether(unittest.TestCase):
         c1 = _DummyConduit("alpha", cid=uuid.uuid4())
         c2 = _DummyConduit("beta", cid=uuid.uuid4())
         self.aether._default_frame._conduits.clear()
-        self.aether._default_frame._conduits[c1.__creation_context__._conduit_id] = c1
-        self.aether._default_frame._conduits[c2.__creation_context__._conduit_id] = c2
+        self.aether._default_frame._conduits[c1._id] = c1
+        self.aether._default_frame._conduits[c2._id] = c2
         self.assertIs(self.aether._get_conduit_by_name("beta"), c2)
 
     # 16
@@ -201,8 +201,8 @@ class TestAether(unittest.TestCase):
     def test_get_conduit_by_id(self):
         c = _DummyConduit("x", cid=uuid.uuid4())
         self.aether._default_frame._conduits.clear()
-        self.aether._default_frame._conduits[c.__creation_context__._conduit_id] = c
-        got = self.aether._get_conduit_by_id(c.__creation_context__._conduit_id)
+        self.aether._default_frame._conduits[c._id] = c
+        got = self.aether._get_conduit_by_id(c._id)
         self.assertIs(got, c)
 
     # 18
@@ -229,13 +229,13 @@ class TestAether(unittest.TestCase):
         # Prepare conduits
         frame._conduits.clear()
         c = _DummyConduit("z", cid=uuid.uuid4())
-        frame._conduits[c.__creation_context__._conduit_id] = c
+        frame._conduits[c._id] = c
         # Add/remove in cluster
         self.aether._add_conduit_to_cluster(c, "g")
         ids = self.aether._get_conduits_in_cluster("g")
-        self.assertIn(c.__creation_context__._conduit_id, ids)
+        self.assertIn(c._id, ids)
         self.aether._remove_conduit_from_cluster(c, "g")
-        self.assertNotIn(c.__creation_context__._conduit_id, ids)
+        self.assertNotIn(c._id, ids)
         # Spell registry checks
         frame._spell_registry.clear()
         spell_id = "deadbeef" * 8  # 64 hex chars like sha256
@@ -243,7 +243,7 @@ class TestAether(unittest.TestCase):
         # Register set and resolve owner by spell
         frame._spell_registry.clear()
         spell_set = set([spell_id])
-        self.aether._add_spells_to_aether(c.__creation_context__._conduit_id, spell_set)
+        self.aether._add_spells_to_aether(c._id, spell_set)
         self.assertTrue(self.aether._check_for_spell(spell_id))
         owner = self.aether._get_conduit_by_spell_id(spell_id)
         self.assertIs(owner, c)

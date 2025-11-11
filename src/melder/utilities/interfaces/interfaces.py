@@ -1,6 +1,5 @@
 from threading import RLock
 from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator, Callable
-import uuid
 
 
 @runtime_checkable
@@ -932,12 +931,10 @@ class IConduit(ISealable, Protocol):
 
     Attributes:
         _conduit_state (Optional[Any]): The current state (e.g., 'normal', 'lesser').
-        __creation_context__ (Optional[Any]): Metadata about its creation.
         _conduit_ward (IConduitWard): The ward managing its links and policies.
         _spellbook (ISpellbook): The registry of spells available to this conduit.
     """
     _conduit_state: Optional[Any]
-    __creation_context__: Optional[Any]
     _conduit_ward: IConduitWard
     _spellbook: ISpellbook
     _aetheric_frame : str

@@ -12,7 +12,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 class FakeConduit:
     def __init__(self, name: str):
         self._name = name
-        self.__creation_context__ = type("Ctx", (), {"_conduit_id": uuid4()})()
+        self._id = type("Ctx", (), {"_conduit_id": uuid4()})()
 
 
 class FakeWard:
@@ -23,7 +23,7 @@ class FakeWard:
     """
     def __init__(self, name: str):
         self._conduit = FakeConduit(name)
-        self._id: UUID = self._conduit.__creation_context__._conduit_id
+        self._id: str = self._id
 
     def __repr__(self):
         return f"<FakeWard {self._conduit._name} id={self._id}>"

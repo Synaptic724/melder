@@ -1,8 +1,9 @@
 import logging
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import IChannelLogger
+from melder.utilities.interfaces.interfaces import IChannelLogger, ISafeLogger
 
-class SafeLogger(Cleanable):
+
+class SafeLogger(Cleanable, ISafeLogger):
     """
     A unified, low-overhead logger adapter that transparently handles both
     IChannelLogger-compatible objects and standard Python loggers.

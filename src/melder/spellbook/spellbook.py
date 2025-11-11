@@ -1126,7 +1126,7 @@ class Spellbook(Sealable, ISpellbook):
             )
             self._conjured = True
             self._define_conduit_into_spells(conduit)
-            self._logger.debug(f"Conduit created => id={conduit.__creation_context__._conduit_id}, name={conduit._name}", "conjure")
+            self._logger.debug(f"Conduit created => id={conduit._id}, name={conduit._name}", "conjure")
             return conduit
 
     def _check_system_state(self, policy: str) -> None:
@@ -1163,7 +1163,7 @@ class Spellbook(Sealable, ISpellbook):
         with self._lock:
             for spell in self._spells.values():
                 try:
-                    spell._add_owned_conduit(conduit.__creation_context__._conduit_id, conduit._name, conduit._creations)
+                    spell._add_owned_conduit(conduit._id, conduit._name, conduit._creations)
                 except Exception as e:
                     self._logger.error(f"Failed to define conduit into spell: {e}", "_define_conduit_into_spells", exc_info=True)
 

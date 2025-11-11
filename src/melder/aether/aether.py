@@ -308,7 +308,7 @@ class Aether(Sealable):
         else:
             conduits = self._default_frame._conduits
 
-        cid = conduit.__creation_context__._conduit_id
+        cid = conduit._id
         if cid in conduits:
             self._logger.error(f"Conduit with ID {cid} already exists.", "_add_conduit", exc_info=True)
             raise ValueError(f"Conduit with ID {cid} already exists.")
@@ -338,7 +338,7 @@ class Aether(Sealable):
         else:
             conduits = self._default_frame._conduits
 
-        conduit_id = conduit.__creation_context__._conduit_id
+        conduit_id = conduit._id
         removed = conduits.pop(conduit_id, None)
         if removed is None:
             self._logger.error(f"Conduit with ID {conduit_id} does not exist.", "_remove_conduit", exc_info=True)
@@ -402,7 +402,7 @@ class Aether(Sealable):
             self._logger.error(f"Cluster with name {cluster_name} does not exist.", "_add_conduit_to_cluster", exc_info=True)
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
 
-        conduit_id = conduit.__creation_context__._conduit_id
+        conduit_id = conduit._id
         conduit_clusters[cluster_name].append(conduit_id)
         self._logger.debug(f"Conduit '{conduit_id}' added to cluster '{cluster_name}'", "_add_conduit_to_cluster")
 
@@ -433,7 +433,7 @@ class Aether(Sealable):
             self._logger.error(f"Cluster with name {cluster_name} does not exist.", "_remove_conduit_from_cluster", exc_info=True)
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
 
-        conduit_id = conduit.__creation_context__._conduit_id
+        conduit_id = conduit._id
         try:
             conduit_clusters[cluster_name].remove(conduit_id)
         except Exception as e:

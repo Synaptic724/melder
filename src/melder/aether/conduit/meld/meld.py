@@ -1,4 +1,3 @@
-import uuid
 from threading import RLock
 from typing import Optional, Dict, Any, NamedTuple, Callable, List, Union
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
@@ -80,7 +79,7 @@ class Meld(IMeld):
         Normalize the spell key and resolve the actual spell from the registry.
         Supports UUID or (frame, name) based lookup.
         """
-        if isinstance(spell, uuid.UUID):
+        if isinstance(spell, str):
             result = self._owned_spells.get(spell) or self._contracted_spells.get(spell)
             if not result:
                 raise KeyError(f"[MELD] No spell found with UUID: {spell}")

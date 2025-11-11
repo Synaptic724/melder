@@ -151,7 +151,7 @@ class FakeConduitWard:
         self.policy = policy
 
     def _link_lesser_conduit(self, lesser):
-        cid = getattr(lesser.__creation_context__, "_conduit_id", uuid4())
+        cid = getattr(lesser, "_id", uuid4())
         self._lessers[cid] = lesser
 
     def _link(self, target):
@@ -173,7 +173,7 @@ class FakeConduitWard:
 
     def _get_initiated_conduit(self, cid):
         for c in self._links:
-            if getattr(c.__creation_context__, "_conduit_id", None) == cid:
+            if getattr(c, "_id", None) == cid:
                 return c
         return None
 
@@ -192,12 +192,12 @@ class FakeConduitWard:
     # ---- contracts ----
     def _add_spell_to_contract(self, **kwargs):
         sid = kwargs.get("spell_id") or "obj"
-        cid = getattr(kwargs.get("conduit"), "__creation_context__", MagicMock())._conduit_id if kwargs.get("conduit") else (kwargs.get("conduit_id") or uuid4())
+        cid = uuid4()
         self._contracts.setdefault(cid, set()).add(sid)
         return True
 
     def _add_spells_to_contract(self, spell_ids, **kwargs):
-        cid = getattr(kwargs.get("conduit"), "__creation_context__", MagicMock())._conduit_id if kwargs.get("conduit") else (kwargs.get("conduit_id") or uuid4())
+        cid = uuid4()
         out = {}
         for sid in spell_ids or []:
             self._contracts.setdefault(cid, set()).add(sid)
@@ -206,14 +206,14 @@ class FakeConduitWard:
 
     def _remove_spell_from_contract(self, **kwargs):
         sid = kwargs.get("spell_id") or "obj"
-        cid = getattr(kwargs.get("conduit"), "__creation_context__", MagicMock())._conduit_id if kwargs.get("conduit") else kwargs.get("conduit_id")
+        cid = kwargs.get("_id")
         if cid in self._contracts and sid in self._contracts[cid]:
             self._contracts[cid].remove(sid)
             return True
         return False
 
     def _remove_spells_from_contract(self, spell_ids=None, **kwargs):
-        cid = getattr(kwargs.get("conduit"), "__creation_context__", MagicMock())._conduit_id if kwargs.get("conduit") else kwargs.get("conduit_id")
+        cid = kwargs.get("_id")
         out = {}
         for sid in spell_ids or []:
             ok = cid in self._contracts and sid in self._contracts[cid]
@@ -302,7 +302,7 @@ class FakeAether:
 
     def _get_conduit_by_id(self, conduit_id, frame):
         for c in self._conduits.get(frame, set()):
-            if getattr(c.__creation_context__, "_conduit_id", None) == conduit_id:
+            if getattr(c, "_id", None) == conduit_id:
                 return c
         return None
 
@@ -374,24 +374,24 @@ class TestAetherLookupsAndCloud_Dynamic(unittest.TestCase):
         self.assertIsNotNone(got)
 
     def test_get_conduit_by_id_requires_str_frame(self):
-        cid = self.c.__creation_context__._conduit_id
+        cid = self.c._id
         with self.assertRaises(TypeError):
             self.c.get_conduit_by_id(cid, aetheric_frame=123)
 
     def test_get_conduit_by_id_default_alias(self):
-        cid = self.c.__creation_context__._conduit_id
+        cid = self.c._id
         got = self.c.get_conduit_by_id(cid, aetheric_frame="default")
         self.assertIsNotNone(got)  # current impl resolves
 
     def test_get_conduit_by_spell_id_path(self):
         sid = "S::A::D"
-        Conduit._aether._add_spells_to_aether(self.c.__creation_context__._conduit_id, {sid}, "F1D")
+        Conduit._aether._add_spells_to_aether(self.c._id, {sid}, "F1D")
         got = self.c.get_conduit_by_spell_id(sid, aetheric_frame_name="F1D")
         self.assertIsNotNone(got)
 
     def test_check_spell_id_true_when_registered(self):
         sid = "S::B::D"
-        Conduit._aether._add_spells_to_aether(self.c.__creation_context__._conduit_id, {sid}, "F1D")
+        Conduit._aether._add_spells_to_aether(self.c._id, {sid}, "F1D")
         self.assertTrue(self.c.check_spell_id(sid, "F1D"))
 
     def test_get_conduit_cloud_returns_mapping(self):
@@ -467,7 +467,7 @@ class TestSpellbookAPI_Dynamic(unittest.TestCase):
         self.assertTrue(sid.startswith("id::"))
 
     def test_get_spell_by_id_roundtrip_tolerant(self):
-        owner_cid = self.c.__creation_context__._conduit_id
+        owner_cid = self.c._id
         sid = "K1D"
         Conduit._aether._add_spells_to_aether(owner_cid, {sid}, "FD")
         self.sb._spells[sid] = FakeSpell()
@@ -638,24 +638,24 @@ class TestAetherLookupsAndCloud_Automatic(unittest.TestCase):
         self.assertIsNotNone(got)
 
     def test_get_conduit_by_id_requires_str_frame(self):
-        cid = self.c.__creation_context__._conduit_id
+        cid = self.c._id
         with self.assertRaises(TypeError):
             self.c.get_conduit_by_id(cid, aetheric_frame=123)
 
     def test_get_conduit_by_id_default_alias(self):
-        cid = self.c.__creation_context__._conduit_id
+        cid = self.c._id
         got = self.c.get_conduit_by_id(cid, aetheric_frame="default")
         self.assertIsNotNone(got)
 
     def test_get_conduit_by_spell_id_path(self):
         sid = "S::A::A"
-        Conduit._aether._add_spells_to_aether(self.c.__creation_context__._conduit_id, {sid}, "F1A")
+        Conduit._aether._add_spells_to_aether(self.c._id, {sid}, "F1A")
         got = self.c.get_conduit_by_spell_id(sid, aetheric_frame_name="F1A")
         self.assertIsNotNone(got)
 
     def test_check_spell_id_true_when_registered(self):
         sid = "S::B::A"
-        Conduit._aether._add_spells_to_aether(self.c.__creation_context__._conduit_id, {sid}, "F1A")
+        Conduit._aether._add_spells_to_aether(self.c._id, {sid}, "F1A")
         self.assertTrue(self.c.check_spell_id(sid, "F1A"))
 
     def test_get_conduit_cloud_returns_mapping_or_raises(self):
@@ -719,7 +719,7 @@ class TestSpellbookAPI_Automatic(unittest.TestCase):
         self.assertTrue(sid.startswith("id::"))
 
     def test_get_spell_by_id_roundtrip_tolerant(self):
-        owner_cid = self.c.__creation_context__._conduit_id
+        owner_cid = self.c._id
         sid = "K1A"
         Conduit._aether._add_spells_to_aether(owner_cid, {sid}, "FA")
         self.sb._spells[sid] = FakeSpell()
