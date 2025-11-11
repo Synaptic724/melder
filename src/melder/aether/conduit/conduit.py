@@ -47,7 +47,7 @@ class Conduit(Sealable, IConduit):
         super().__init__()
         # General Init
         self._lock: threading.RLock = threading.RLock()
-        self._id: str = IDBuilder.conduit_id(spellbook, self)
+        self._id: str = IDBuilder.create_id()
         self._name: str = name
         self.__debugger_mode__: bool = False
         self.__dynamic_environment__: bool = False
