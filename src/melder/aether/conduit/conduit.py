@@ -84,9 +84,9 @@ class Conduit(Sealable, IConduit):
             SafeLogger: The configured SafeLogger instance.
         """
         if logger is not None:
-            self._logger = InitHelpers.resolve_safe_logger(logger)
+            return InitHelpers.resolve_safe_logger(logger)
         else:
-            self._logger = self._resolve_logger_from_config(configuration)
+            return self._resolve_logger_from_config(configuration)
 
     def _configure_conduit_state(self):
         """
@@ -148,6 +148,34 @@ class Conduit(Sealable, IConduit):
             self._sealed = True
 
     #endregion Cleanup and Disposal
+    #region Context Management
+    def __enter__(self):
+        """
+        Public API
+
+        Enters the context of this Conduit.
+
+        Returns:
+            Conduit: The current Conduit instance.
+        """
+        self._logger.debug("Entering Conduit context", "__enter__")
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Public API
+
+        Exits the context of this Conduit.
+
+        Args:
+            exc_type: The exception type, if any.
+            exc_value: The exception value, if any.
+            traceback: The traceback object, if any.
+        """
+        self._logger.debug("Exiting Conduit context", "__exit__")
+        self.seal()
+
+    #endregion Context Management
     #region Logger
     def _resolve_logger_from_config(self, configuration: IConfiguration) -> ISafeLogger:
         """
@@ -216,6 +244,9 @@ class Conduit(Sealable, IConduit):
         self._name = name
 
     #endregion
+
+
+
     #region Conduit Configuration
     def register_conduit_cloud(self, conduit: IConduit):
         """
@@ -392,7 +423,7 @@ class Conduit(Sealable, IConduit):
         with self._lock:
             self._conduit_ward._set_new_policy(policy)
 
-    def create_lesser_conduit(self) -> IConduit:
+    def create_lesser_conduit(self, logger: Any | None = None) -> IConduit:
         """
         Public API
 
@@ -416,7 +447,8 @@ class Conduit(Sealable, IConduit):
                 configuration=self._configuration,
                 conduit_state=ConduitState.lesser,
                 aetheric_frame=self._aetheric_frame,
-                policy=Policies.lesser_conduit
+                policy=Policies.lesser_conduit,
+                logger=logger
             )
         self._conduit_ward._link_lesser_conduit(new_conduit)
         self._logger.debug("Lesser conduit created and linked", "create_lesser_conduit")

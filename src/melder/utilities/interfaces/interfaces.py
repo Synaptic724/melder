@@ -1126,7 +1126,7 @@ class IAethericFrame(ISealable, Protocol):
     _spell_registry: 'ConcurrentDict[str, ConcurrentSet[str]]'
     _conduit_clusters: 'ConcurrentDict[str, ConcurrentList[str]]'
 
-
+@runtime_checkable
 class IAether(ISealable, Protocol):
     """
     An Interface for the global singleton that holds and manages all AethericFrames.
@@ -2328,29 +2328,108 @@ class ISafeLogger(ICleanable, Protocol):
     """
     Structural contract for SafeLogger-like objects.
 
+    Masking (optional; default False):
+      - When `mask=True` and the underlying logger is a ChannelLogger, the call routes
+        to ChannelLogger.mask_log(...) using the provided identity & tags.
+      - When wrapping a standard logging.Logger, masking params are ignored (no-op).
+
     Notes:
-    - Mirrors SafeLogger's public methods and their signatures.
-    - Does not expose internals (_logger, _is_channel, slots, etc.).
-    - Keep `exception()` as an explicit method (alias of error(..., exc_info=True)).
-    - `cleanup()` required to align with Cleanable semantics.
+      - Signatures mirror SafeLogger's public API (including mask options).
+      - `exception()` is an explicit helper (equivalent to error(..., exc_info=True)).
+      - `cleanup()` aligns with Cleanable semantics.
     """
-    _id: str
 
+    # Optional: some implementations surface an identifier
+    _id: str  # runtime presence not enforced by Protocol, but allowed for duck-typing
 
-    def debug(self, msg: str, method_name: str) -> None:
-        ...
+    # ---- Core API --------------------------------------------------------------
 
-    def info(self, msg: str, method_name: str) -> None:
-        ...
+    def debug(
+            self,
+            msg: str,
+            method_name: str,
+            *,
+            mask: bool = False,
+            owner: object = None,
+            owner_id: Optional[str] = None,
+            owner_display: Optional[str] = None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            properties: Optional[Dict[str, Any]] = None,
+    ) -> None: ...
 
-    def warning(self, msg: str, method_name: str) -> None:
-        ...
+    def info(
+            self,
+            msg: str,
+            method_name: str,
+            *,
+            mask: bool = False,
+            owner: object = None,
+            owner_id: Optional[str] = None,
+            owner_display: Optional[str] = None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            properties: Optional[Dict[str, Any]] = None,
+    ) -> None: ...
 
-    def error(self, msg: str, method_name: str, *, exc_info: bool = True) -> None:
-        ...
+    def warning(
+            self,
+            msg: str,
+            method_name: str,
+            *,
+            mask: bool = False,
+            owner: object = None,
+            owner_id: Optional[str] = None,
+            owner_display: Optional[str] = None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            properties: Optional[Dict[str, Any]] = None,
+    ) -> None: ...
 
-    def exception(self, msg: str, method_name: str) -> None:
-        ...
+    def error(
+            self,
+            msg: str,
+            method_name: str,
+            *,
+            exc_info: Union[None, bool, BaseException] = True,
+            mask: bool = False,
+            owner: object = None,
+            owner_id: Optional[str] = None,
+            owner_display: Optional[str] = None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            properties: Optional[Dict[str, Any]] = None,
+    ) -> None: ...
+
+    def exception(
+            self,
+            msg: str,
+            method_name: str,
+            *,
+            mask: bool = False,
+            owner: object = None,
+            owner_id: Optional[str] = None,
+            owner_display: Optional[str] = None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            properties: Optional[Dict[str, Any]] = None,
+    ) -> None: ...
+
+    def critical(
+            self,
+            msg: str,
+            method_name: str,
+            *,
+            mask: bool = False,
+            owner: object = None,
+            owner_id: Optional[str] = None,
+            owner_display: Optional[str] = None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            properties: Optional[Dict[str, Any]] = None,
+    ) -> None: ...
+
+    # ---- Lifecycle ------------------------------------------------------------
 
 
 @runtime_checkable
