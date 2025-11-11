@@ -5,7 +5,8 @@ from melder.utilities.logger.safe_logger import SafeLogger
 class IrisLoggerFactory(Cleanable):
     """
     Minimal adapter that exposes the **same call shape** as your `resolve_channel_logger`
-    which is from the InitHelpers module in Commandops.
+    which is from the InitHelpers module in Commandops. You are required to have built IRIS
+    before hand in order to use this logger factory.
 
     Purpose:
         - Let you pass a resolver function (e.g., `resolve_channel_logger`) into places

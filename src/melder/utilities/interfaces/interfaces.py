@@ -3,8 +3,6 @@ from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dic
 from uuid import UUID
 import uuid
 
-from melder.utilities.logger.std_logger_factory import StdLoggerFactory
-
 
 @runtime_checkable
 class ICleanable(Protocol):
@@ -152,6 +150,7 @@ class ICreations(ISealable, Protocol):
     _unique_per_cluster: 'ConcurrentDict[UUID, object]'
     _disposal_enabled: bool
     _disposal_method_names: List[str]
+    _id: str
 
     # -----------------
     # Methods
@@ -345,6 +344,7 @@ class ILesserCreations(ISealable, Protocol):
     _disposal_enabled: bool
     _disposal_method_names: List[str]
     _lock: RLock
+    _id: str
 
     # -----------------
     # Methods
@@ -455,6 +455,7 @@ class ISpell(ISealable, Protocol):
     pre_hooks: Optional[Any]
     _owner_conduit_id: Optional[UUID]
     _permissions: Optional[Any]
+    _id: str
 
     def add_spell_details(self, *args, **kwargs):
         """
@@ -513,6 +514,7 @@ class ISpellbook(ISealable, Protocol):
     _contracted_spells: Optional[Any]
     _spells: Optional[Any]
     _bind: Optional[Any]
+    _id: str
 
     def _lesser_conduit_spellbook_copy(self) -> 'ISpellbook':
         """
@@ -804,7 +806,7 @@ class IBind(ISealable, Protocol):
     An Interface for a binding mechanism, responsible for profiling and
     registering a spell blueprint.
     """
-
+    _id: str
     def bind(self, permissions: 'Permissions', *, aetheric_frame: str, spell=None, spellframe=None, name=None,
              existence='Existence.unique') -> 'Union["ISpell", Any]':
         """
@@ -831,6 +833,7 @@ class IMeld(ISealable, Protocol):
     This is responsible for taking a spell request, resolving its dependencies,
     and "casting" it into a live object instance.
     """
+    _id: str
     def meld(self, spell, *, spellframe=None, name=None, spell_override: Optional[Dict[str, Any]] = None):
         """
         Resolves and creates an instance of a spell.
@@ -861,7 +864,7 @@ class IConduitWard(ISealable, Protocol):
     _lock: Optional[Any]
     _received_index: Optional[Any]
     _policy: Optional[Any]
-    _id: Optional[UUID]
+    _id: str
     _conduit: Optional['IConduit']
     @property
     def policy(self) -> 'IPolicy':
@@ -936,9 +939,10 @@ class IConduit(ISealable, Protocol):
     """
     _conduit_state: Optional[Any]
     __creation_context__: Optional[Any]
-    _conduit_ward: "IConduitWard"
-    _spellbook: "ISpellbook"
+    _conduit_ward: IConduitWard
+    _spellbook: ISpellbook
     _aetheric_frame : str
+    _id: str
 
     @property
     def name(self) -> Optional[str]:
@@ -1031,6 +1035,7 @@ class ILink(ISealable, Protocol):
     """
     An Interface representing a live connection (contract) between two Conduits.
     """
+    _id: str
     def sever(self):
         """
         Severs the link, dissolving the contract between the two Conduits.
@@ -1042,6 +1047,7 @@ class IDetail(ISealable, Protocol):
     """
     An Interface for a 'Detail', a single permission or rule within a Contract.
     """
+    _id: str
     @property
     def type(self) -> 'ContractTypes':
         """
@@ -1067,6 +1073,7 @@ class IConduitCloud(ISealable, Protocol):
     human-readable name, intended for top-level access in
     highly dynamic systems.
     """
+    _id: str
 
     def get_conduit(self, name: str) -> IConduit:
         """
@@ -1116,6 +1123,7 @@ class IAethericFrame(ISealable, Protocol):
             conduits into named groups.
     """
     name: str
+    _id: str
     _configuration: Optional[Any]  # Use 'Configuration' if it's a known type
     _conduit_cloud: IConduitCloud
     _conduits: 'ConcurrentDict[uuid.UUID, IConduit]'
@@ -1386,6 +1394,7 @@ class IChannelLogger(ICleanable, Protocol):
       attaches those snapshots to the `LogRecord`. Mutations after that do not
       affect the already-created record.
     """
+    _id: str
     @property
     def id(self) -> str:
         """
@@ -1996,6 +2005,8 @@ class IConfiguration(ISealable, Protocol):
     available_properties: 'ConcurrentDict[str, Type]'
     _logger_factory: 'Pack[[object], Any] | None'
     _aether_frame: str
+    _id: str
+
     # --- Lifecycle ---
 
     def seal(self) -> None:
@@ -2314,4 +2325,33 @@ class IConfiguration(ISealable, Protocol):
 
         Load defaults and set automatic state, returning `self`.
         """
+        ...
+
+@runtime_checkable
+class ISafeLogger(ICleanable, Protocol):
+    """
+    Structural contract for SafeLogger-like objects.
+
+    Notes:
+    - Mirrors SafeLogger's public methods and their signatures.
+    - Does not expose internals (_logger, _is_channel, slots, etc.).
+    - Keep `exception()` as an explicit method (alias of error(..., exc_info=True)).
+    - `cleanup()` required to align with Cleanable semantics.
+    """
+    _id: str
+
+
+    def debug(self, msg: str, method_name: str) -> None:
+        ...
+
+    def info(self, msg: str, method_name: str) -> None:
+        ...
+
+    def warning(self, msg: str, method_name: str) -> None:
+        ...
+
+    def error(self, msg: str, method_name: str, *, exc_info: bool = True) -> None:
+        ...
+
+    def exception(self, msg: str, method_name: str) -> None:
         ...

@@ -9,8 +9,9 @@ from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration
+from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration, ISafeLogger
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.debugging.debugging import ConduitCreationContext
@@ -31,7 +32,7 @@ class Conduit(Sealable, IConduit):
     _aether = Aether()
 
     def __init__(self, spellbook: ISpellbook, configuration: IConfiguration, conduit_state: ConduitState,
-                 aetheric_frame: str, policy: Policies, name: Optional[str] = None):
+                 aetheric_frame: str, policy: Policies, name: Optional[str] = None, logger: Any | None = None):
         """
         Public API
 
@@ -46,7 +47,7 @@ class Conduit(Sealable, IConduit):
         super().__init__()
         # General Init
         self._lock: threading.RLock = threading.RLock()
-        self._id: str = str(ulid.ULID())
+        self._id: str = IDBuilder.conduit_id(spellbook, self)
         self._name: str = name
         self.__debugger_mode__: bool = False
         self.__dynamic_environment__: bool = False
@@ -58,39 +59,48 @@ class Conduit(Sealable, IConduit):
             raise TypeError(f"Expected IConfiguration instance, got {type(configuration).__name__}")
 
         self._configuration: IConfiguration = configuration
-        self._logger = self._resolve_logger_from_config(configuration)
+        self._logger: ISafeLogger = self._configure_logger(logger, configuration)
         self._logger.debug(f"Conduit __init__ starting (frame='{aetheric_frame}', state={conduit_state.name}, name={name})", "__init__")
 
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
-        try:
-            self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
-        except Exception as e:
-            self._logger.error(f"_creations_configuration failed: {e}", "__init__", exc_info=True)
-            raise
-
+        self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
         self._spellbook: ISpellbook = spellbook
         self._meld: Meld = Meld(self._creations, self._spellbook)
+        self._apply_configuration_flags()
 
-        try:
-            self._apply_configuration_flags()
-            self._logger.debug(
-                f"Flags applied (dynamic={self.__dynamic_environment__}, debug={self.__debugger_mode__})",
-                "__init__"
-            )
-        except Exception as e:
-            self._logger.error(f"_apply_configuration_flags failed: {e}", "__init__", exc_info=True)
-            raise
+        self._conduit_ward: ConduitWard = ConduitWard(self, self.__dynamic_environment__, self._conduit_state, policy)
+        self._configure_conduit_state()
+        self._logger.debug(
+            f"Conduit initialized (id={self._creation_context._conduit_id}, frame='{self._aetheric_frame}')",
+            "__init__"
+        )
 
-        try:
-            self._conduit_ward: ConduitWard = ConduitWard(self, self.__dynamic_environment__, self._conduit_state, policy)
-            self._logger.debug(
-                f"ConduitWard initialized (state={self._conduit_state.name}, policy={policy.name})",
-                "__init__"
-            )
-        except Exception as e:
-            self._logger.error(f"ConduitWard init failed: {e}", "__init__", exc_info=True)
-            raise
 
+    def _configure_logger(self, logger: Any, configuration: IConfiguration) -> Any:
+        """
+        Internal
+
+        Configures the logger for this Conduit.
+
+        Args:
+            logger (Any): The logger instance or configuration.
+        Returns:
+            SafeLogger: The configured SafeLogger instance.
+        """
+        if logger is not None:
+            self._logger = InitHelpers.resolve_safe_logger(logger)
+        else:
+            self._logger = self._resolve_logger_from_config(configuration)
+
+    def _configure_conduit_state(self):
+        """
+        Internal
+
+        Configures the conduit state based on the provided configuration.
+
+        Raises:
+            RuntimeError: If normal conduit registration fails.
+        """
         if self._conduit_state == ConduitState.normal:
             try:
                 self._logger.debug("Registering normal conduit into Aether", "__init__")
@@ -105,12 +115,7 @@ class Conduit(Sealable, IConduit):
         elif self._conduit_state == ConduitState.lesser:
             if self._name is not None:
                 self._logger.warning("Lesser conduits cannot have a name. Overriding to None.", "__init__")
-            self._name = None
-
-        self._logger.debug(
-            f"Conduit initialized (id={self._creation_context._conduit_id}, frame='{self._aetheric_frame}')",
-            "__init__"
-        )
+                self._name = None
 
     #region Cleanup and Disposal
     def seal(self):
@@ -257,28 +262,33 @@ class Conduit(Sealable, IConduit):
         Sets the environment mode and debugging mode for this Conduit
         based on the configuration instance passed.
         """
-        state = self._configuration.get_property("system_state")
-        self.__dynamic_environment__ = (state == SystemState.dynamic)
-        self.__debugger_mode__ = bool(self._configuration.get_property("debugging"))
-        self._logger.debug(
-            f"_apply_configuration_flags: system_state={state.name}, dynamic={self.__dynamic_environment__}, debugging={self.__debugger_mode__}",
-            "_apply_configuration_flags"
-        )
+        try:
+            state = self._configuration.get_property("system_state")
+            self.__dynamic_environment__ = (state == SystemState.dynamic)
+            self.__debugger_mode__ = bool(self._configuration.get_property("debugging"))
+            self._logger.debug(
+                f"_apply_configuration_flags: system_state={state.name}, dynamic={self.__dynamic_environment__}, debugging={self.__debugger_mode__}",
+                "_apply_configuration_flags"
+            )
+        except Exception as e:
+            self._logger.error(f"_apply_configuration_flags failed: {e}", "__init__", exc_info=True)
+            raise
+
 
     def _add_conduit_to_aether(self) -> None:
-        """
-        Internal
+            """
+            Internal
 
-        Adds the newly created Conduit into the shared Aether world.
+            Adds the newly created Conduit into the shared Aether world.
 
-        Raises:
-            RuntimeError: If Aether is not initialized.
-        """
-        if Conduit._aether is None:
-            self._logger.error("Aether is not initialized", "_add_conduit_to_aether")
-            raise RuntimeError("Aether is not initialized.")
-        self._logger.debug("Adding conduit to Aether", "_add_conduit_to_aether")
-        Conduit._aether._add_conduit(self, self._aetheric_frame)
+            Raises:
+                RuntimeError: If Aether is not initialized.
+            """
+            if Conduit._aether is None:
+                self._logger.error("Aether is not initialized", "_add_conduit_to_aether")
+                raise RuntimeError("Aether is not initialized.")
+            self._logger.debug("Adding conduit to Aether", "_add_conduit_to_aether")
+            Conduit._aether._add_conduit(self, self._aetheric_frame)
 
 
     def _creations_configuration(self, configuration: IConfiguration) -> Creations | LesserCreations:

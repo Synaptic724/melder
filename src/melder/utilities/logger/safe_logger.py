@@ -1,5 +1,6 @@
 import logging
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import IChannelLogger
 
 class SafeLogger(Cleanable):
     """
@@ -13,7 +14,7 @@ class SafeLogger(Cleanable):
     """
     __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel"]
 
-    def __init__(self, logger: 'logging.Logger | IChannelLogger | None'):
+    def __init__(self, logger: logging.Logger | IChannelLogger | None):
         super().__init__()
         from melder.utilities.interfaces.interfaces import IChannelLogger
         if logger is not None and not isinstance(logger, (logging.Logger, IChannelLogger)):

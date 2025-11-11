@@ -4,9 +4,10 @@ from typing import Dict, Iterable, Optional
 
 # Melder Imports
 from melder.utilities.logger.safe_logger import SafeLogger
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-class StdLoggerFactory:
+class StdLoggerFactory(Cleanable):
     """
     Stdlib-backed logger factory that returns a SafeLogger for a given object.
 
@@ -45,6 +46,7 @@ class StdLoggerFactory:
             handlers (Optional[Iterable[logging.Handler]]): Optional iterable of handlers to attach to all loggers created by this factory.
             sync_root_with_global_level (bool): If True, calls to `set_global_level` will also set the level of the standard library's root logger for global consistency.
         """
+        super().__init__()
         self._lock = threading.RLock()
         self._global_level: int = int(default_level)
         self._propagate: bool = bool(propagate)
@@ -53,6 +55,66 @@ class StdLoggerFactory:
 
         # Registry of SafeLogger by name
         self._loggers: Dict[str, SafeLogger] = {}
+
+    def cleanup(self) -> None:
+        """
+        Idempotent teardown of the logger factory.
+
+        Order:
+          1) Detach factory-managed handlers from every managed logger.
+          2) Attempt to cleanup SafeLogger instances (if they expose cleanup()).
+          3) Flush/close factory-managed handlers.
+          4) Clear registries and null heavy references.
+
+        Notes:
+          - Does NOT modify the stdlib root logger or third-party loggers.
+          - Safe to call multiple times.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+
+            # 1) Detach our handlers from every logger we manage
+            if self._loggers:
+                for safelogger in list(self._loggers.values()):
+                    logger = safelogger._logger  # SafeLogger should expose the underlying stdlib logger
+                    # Remove factory-managed handlers (avoid double-logs / handler leaks)
+                    for h in list(self._handlers):
+                        try:
+                            logger.removeHandler(h)
+                        except Exception:
+                            pass
+
+                    # 2) Best-effort cleanup for SafeLogger (optional API)
+                    if hasattr(safelogger, "cleanup"):
+                        try:
+                            safelogger.cleanup()
+                        except Exception:
+                            pass
+
+            # 3) Flush/close our handlers (we own them if users passed them to the factory)
+            for h in list(self._handlers):
+                try:
+                    h.flush()
+                except Exception:
+                    pass
+                try:
+                    h.close()
+                except Exception:
+                    pass
+
+            # 4) Clear registries and null heavy refs
+            self._loggers.clear()
+            self._handlers.clear()
+
+            # Replace with fresh containers to drop references deterministically
+            self._loggers = None
+            self._handlers = None
+
+
 
     # ----------------------------
     # Public API
@@ -96,6 +158,7 @@ class StdLoggerFactory:
         Returns:
             SafeLogger: The requested or newly created logger instance.
         """
+        self.check_cleaned()
         name = f"{class_name}[{ident}]"
         return self._get_or_create(name)
 
@@ -110,6 +173,7 @@ class StdLoggerFactory:
         Args:
             level (int): The new universal log level (e.g., `logging.DEBUG`).
         """
+        self.check_cleaned()
         with self._lock:
             self._global_level = int(level)
             for safe_logger in self._loggers.values():
@@ -127,6 +191,7 @@ class StdLoggerFactory:
         Returns:
             int: The current global log level.
         """
+        self.check_cleaned()
         with self._lock:
             return self._global_level
 
@@ -139,6 +204,7 @@ class StdLoggerFactory:
         Args:
             propagate (bool): True to enable propagation, False to disable.
         """
+        self.check_cleaned()
         with self._lock:
             self._propagate = bool(propagate)
             for safe_logger in self._loggers.values():
@@ -153,6 +219,7 @@ class StdLoggerFactory:
         Args:
             handler (logging.Handler): The handler instance to add.
         """
+        self.check_cleaned()
         if handler is None:
             return
         with self._lock:
@@ -171,6 +238,7 @@ class StdLoggerFactory:
         Args:
             handler (logging.Handler): The handler instance to remove.
         """
+        self.check_cleaned()
         if handler is None:
             return
         with self._lock:
@@ -193,6 +261,7 @@ class StdLoggerFactory:
         Args:
             formatter (logging.Formatter): The formatter instance to apply.
         """
+        self.check_cleaned()
         if formatter is None:
             return
         with self._lock:
@@ -216,6 +285,7 @@ class StdLoggerFactory:
         Returns:
             Optional[SafeLogger]: The managed logger instance, or None if not found in the registry.
         """
+        self.check_cleaned()
         with self._lock:
             return self._loggers.get(name)
 
@@ -228,6 +298,7 @@ class StdLoggerFactory:
         Returns:
             list[str]: A list of all managed logger names.
         """
+        self.check_cleaned()
         with self._lock:
             return list(self._loggers.keys())
 
@@ -240,6 +311,7 @@ class StdLoggerFactory:
         This does **not** disable or remove the underlying loggers from the standard library's global logger tree;
         it only stops this factory from tracking them. Useful for tests or memory cleanup.
         """
+        self.check_cleaned()
         with self._lock:
             self._loggers.clear()
 
@@ -259,6 +331,7 @@ class StdLoggerFactory:
         Returns:
             SafeLogger: The managed logger instance.
         """
+        self.check_cleaned()
         with self._lock:
             existing = self._loggers.get(name)
             if existing is not None:

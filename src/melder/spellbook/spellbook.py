@@ -8,6 +8,7 @@ from threading import RLock
 from melder.aether.aether import Aether
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.sealable import Sealable
+from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration
 from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
@@ -71,7 +72,7 @@ class Spellbook(Sealable, ISpellbook):
 
         # Internal state
         self._lock: 'Rlock' = RLock()
-        self._id: str = str(ulid.ULID()) # Unique internal ID for tracking
+        self._id: str = IDBuilder.create_id()
         self._conjured = False
         self._aetheric_frame = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
@@ -928,8 +929,6 @@ class Spellbook(Sealable, ISpellbook):
             raise
 
 
-    # --- ADD these helpers to Spellbook ---
-
     def _maybe_install_logger_factory(
             self,
             logger_factory: Optional[Callable[[object], Any]],
@@ -1063,7 +1062,7 @@ class Spellbook(Sealable, ISpellbook):
         return Spellbook(self._aetheric_frame, self._configuration)
 
 
-    def conjure(self, policy: Optional[str] = "automatic", name: str = None) -> Conduit:
+    def conjure(self, policy: Optional[str] = "automatic", name: str = None, conduit_logger: Any | None = None) -> Conduit:
         """
         Public API
 
@@ -1077,6 +1076,8 @@ class Spellbook(Sealable, ISpellbook):
                 Defaults to "automatic".
             name (str, optional):
                 An optional name for the conduit.
+            conduit_logger (Any, optional):
+                An optional logger instance to attach to the conduit for logging purposes.
 
         Returns:
             Conduit: The newly created Conduit instance.
@@ -1114,7 +1115,8 @@ class Spellbook(Sealable, ISpellbook):
                 conduit_state=ConduitState.normal,
                 configuration=self._configuration,
                 aetheric_frame=self._aetheric_frame,
-                policy=policy_enum
+                policy=policy_enum,
+                logger=conduit_logger,
             )
             self._conjured = True
             self._define_conduit_into_spells(conduit)
