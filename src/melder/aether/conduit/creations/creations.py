@@ -37,6 +37,10 @@ class Creations(Cleanable):
         self._conduit: IConduit = conduit
         self._id: str = conduit._id
         self._lock = RLock()
+        self._display_name: str = self.__class__.__name__
+        self._log_groups = ["creation_management", "creations"]
+        self._log_sysgroups = ["conduit"]
+        self._logger = conduit._logger
 
         # Internal storage for created objects by lifecycle scope
         self._unique: ConcurrentDict[str, object] = ConcurrentDict()
@@ -48,6 +52,13 @@ class Creations(Cleanable):
         # Disposal configuration
         self._disposal_enabled = disposal_enabled
         self._disposal_method_names = disposal_method_names or []
+
+        self._logger.debug(
+            f"__init__: disposal_enabled={disposal_enabled}, methods={self._disposal_method_names}",
+            method_name="__init__", mask=True,
+            owner_id=self._id, owner_display=self._display_name,
+            groups=self._log_groups, system_groups=self._log_sysgroups,
+        )
 
     #region Destructor
     def cleanup(self) -> None:
@@ -65,23 +76,66 @@ class Creations(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
+            self._logger.debug("cleanup: begin", method_name="cleanup", mask=True,
+                               owner_id=self._id, owner_display=self._display_name,
+                               groups=self._log_groups, system_groups=self._log_sysgroups)
             self._cleaned = True
-            errors = []
+            errors: List[Exception] = []
 
-            errors.extend(self._cleanup_unique())
-            errors.extend(self._cleanup_unique_per_scope())
-            errors.extend(self._cleanup_many())
-            errors.extend(self._cleanup_unique_per_lineage())
-            errors.extend(self._cleanup_unique_per_cluster())
+            # Single try/except around the whole sequence (per request)
+            try:
+                self._logger.debug("_cleanup_unique()", method_name="cleanup", mask=True,
+                                   owner_id=self._id, owner_display=self._display_name,
+                                   groups=self._log_groups, system_groups=self._log_sysgroups)
+                errors.extend(self._cleanup_unique())
 
+                self._logger.debug("_cleanup_unique_per_scope()", method_name="cleanup", mask=True,
+                                   owner_id=self._id, owner_display=self._display_name,
+                                   groups=self._log_groups, system_groups=self._log_sysgroups)
+                errors.extend(self._cleanup_unique_per_scope())
+
+                self._logger.debug("_cleanup_many()", method_name="cleanup", mask=True,
+                                   owner_id=self._id, owner_display=self._display_name,
+                                   groups=self._log_groups, system_groups=self._log_sysgroups)
+                errors.extend(self._cleanup_many())
+
+                self._logger.debug("_cleanup_unique_per_lineage()", method_name="cleanup", mask=True,
+                                   owner_id=self._id, owner_display=self._display_name,
+                                   groups=self._log_groups, system_groups=self._log_sysgroups)
+                errors.extend(self._cleanup_unique_per_lineage())
+
+                self._logger.debug("_cleanup_unique_per_cluster()", method_name="cleanup", mask=True,
+                                   owner_id=self._id, owner_display=self._display_name,
+                                   groups=self._log_groups, system_groups=self._log_sysgroups)
+                errors.extend(self._cleanup_unique_per_cluster())
+            except Exception as e:
+                # Fatal exception in the sequence (unexpected); record and continue teardown
+                self._logger.error(f"cleanup: fatal error during sequence: {e}", method_name="cleanup",
+                                   mask=True, owner_id=self._id, owner_display=self._display_name,
+                                   groups=self._log_groups, system_groups=self._log_sysgroups, exc_info=True)
+                errors.append(e)
+
+            # Null internal refs last
             self._unique = None
             self._unique_per_scope = None
             self._many = None
+            self._unique_per_lineage = None
+            self._unique_per_cluster = None
             self._conduit = None
             self._disposal_method_names = None
 
             if errors:
+                self._logger.error(
+                    f"cleanup: completed with {len(errors)} error(s); raising ExceptionGroup",
+                    method_name="cleanup", mask=True,
+                    owner_id=self._id, owner_display=self._display_name,
+                    groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
                 raise ExceptionGroup("Errors occurred during cleaning", errors)
+
+            self._logger.debug("cleanup: complete", method_name="cleanup", mask=True,
+                               owner_id=self._id, owner_display=self._display_name,
+                               groups=self._log_groups, system_groups=self._log_sysgroups)
 
     def _cleanup_unique(self) -> List[Exception]:
         """
@@ -92,13 +146,16 @@ class Creations(Cleanable):
         Returns:
             List[Exception]: List of any cleanup errors encountered.
         """
-        errors = []
+        errors: List[Exception] = []
         for _, item in self._unique.items():
             if item is not None:
                 maybe_error = self._attempt_cleanup(item)
                 if maybe_error:
                     errors.append(maybe_error)
         self._unique.cleanup()
+        self._logger.debug(f"_cleanup_unique: errors={len(errors)}", method_name="_cleanup_unique", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         return errors
 
     def _cleanup_unique_per_lineage(self) -> List[Exception]:
@@ -110,13 +167,17 @@ class Creations(Cleanable):
         Returns:
             List[Exception]: List of any cleanup errors encountered.
         """
-        errors = []
+        errors: List[Exception] = []
         for _, item in self._unique_per_lineage.items():
             if item is not None:
                 maybe_error = self._attempt_cleanup(item)
                 if maybe_error:
                     errors.append(maybe_error)
         self._unique_per_lineage.cleanup()
+        self._logger.debug(f"_cleanup_unique_per_lineage: errors={len(errors)}",
+                           method_name="_cleanup_unique_per_lineage", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         return errors
 
     def _cleanup_unique_per_cluster(self) -> List[Exception]:
@@ -128,13 +189,17 @@ class Creations(Cleanable):
         Returns:
             List[Exception]: List of any cleanup errors encountered.
         """
-        errors = []
+        errors: List[Exception] = []
         for _, item in self._unique_per_cluster.items():
             if item is not None:
                 maybe_error = self._attempt_cleanup(item)
                 if maybe_error:
                     errors.append(maybe_error)
         self._unique_per_cluster.cleanup()
+        self._logger.debug(f"_cleanup_unique_per_cluster: errors={len(errors)}",
+                           method_name="_cleanup_unique_per_cluster", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         return errors
 
     def _cleanup_unique_per_scope(self) -> List[Exception]:
@@ -146,13 +211,17 @@ class Creations(Cleanable):
         Returns:
             List[Exception]: List of any cleanup errors encountered.
         """
-        errors = []
+        errors: List[Exception] = []
         for _, item in self._unique_per_scope.items():
             if item is not None:
                 maybe_error = self._attempt_cleanup(item)
                 if maybe_error:
                     errors.append(maybe_error)
         self._unique_per_scope.cleanup()
+        self._logger.debug(f"_cleanup_unique_per_scope: errors={len(errors)}",
+                           method_name="_cleanup_unique_per_scope", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         return errors
 
     def _cleanup_many(self) -> List[Exception]:
@@ -164,7 +233,7 @@ class Creations(Cleanable):
         Returns:
             List[Exception]: List of any cleanup errors encountered.
         """
-        errors = []
+        errors: List[Exception] = []
         for _, items in self._many.items():
             for item in items:
                 if item is not None:
@@ -173,6 +242,10 @@ class Creations(Cleanable):
                         errors.append(maybe_error)
             items.cleanup()
         self._many.cleanup()
+        self._logger.debug(f"_cleanup_many: errors={len(errors)}",
+                           method_name="_cleanup_many", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         return errors
 
     def _attempt_cleanup(self, item: object) -> Optional[Exception]:
@@ -201,20 +274,43 @@ class Creations(Cleanable):
         """
         if item is None:
             return None
-
         if not self._disposal_enabled:
+            self._logger.debug(
+                "_attempt_cleanup: disposal disabled; skipping",
+                method_name="_attempt_cleanup", mask=True,
+                owner_id=self._id, owner_display=self._display_name,
+                groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
             return None
 
         for method_name in self._disposal_method_names:
             if hasattr(item, method_name):
-                method = getattr(item, method_name)
-                if callable(method):
+                meth = getattr(item, method_name, None)
+                if callable(meth):
+                    self._logger.debug(
+                        f"_attempt_cleanup: calling '{method_name}' on {type(item).__name__}",
+                        method_name="_attempt_cleanup", mask=True,
+                        owner_id=self._id, owner_display=self._display_name,
+                        groups=self._log_groups, system_groups=self._log_sysgroups,
+                    )
                     try:
-                        method()
+                        meth()
                         return None
                     except Exception as ex:
+                        self._logger.error(
+                            f"_attempt_cleanup: '{method_name}' failed on {type(item).__name__}: {ex}",
+                            method_name="_attempt_cleanup", mask=True, exc_info=True,
+                            owner_id=self._id, owner_display=self._display_name,
+                            groups=self._log_groups, system_groups=self._log_sysgroups,
+                        )
                         return RuntimeError(f"Failed to dispose object {item} using method '{method_name}': {ex}")
 
+        self._logger.debug(
+            "_attempt_cleanup: no disposal method matched; noop",
+            method_name="_attempt_cleanup", mask=True,
+            owner_id=self._id, owner_display=self._display_name,
+            groups=self._log_groups, system_groups=self._log_sysgroups,
+        )
         return None
 
 
@@ -232,11 +328,31 @@ class Creations(Cleanable):
         Raises:
             RuntimeError: If the `Creations` manager already contains objects before transfer.
         """
+        self._logger.debug(
+            "_upgrade_from_lesser_conduit: begin",
+            method_name="_upgrade_from_lesser_conduit", mask=True,
+            owner_id=self._id, owner_display=self._display_name,
+            groups=self._log_groups, system_groups=self._log_sysgroups,
+        )
+
         if not len(self._unique_per_scope) == 0 and not len(self._many) == 0:
+            self._logger.error(
+                "_upgrade_from_lesser_conduit: target already has objects",
+                method_name="_upgrade_from_lesser_conduit", mask=True,
+                owner_id=self._id, owner_display=self._display_name,
+                groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
             raise RuntimeError("Objects already exist in conduit, cannot transfer data.")
 
         self._unique_per_scope = kwargs.get("unique_per_scope")
         self._many = kwargs.get("many")
+
+        self._logger.debug(
+            "_upgrade_from_lesser_conduit: complete",
+            method_name="_upgrade_from_lesser_conduit", mask=True,
+            owner_id=self._id, owner_display=self._display_name,
+            groups=self._log_groups, system_groups=self._log_sysgroups,
+        )
 
     def add_unique(self, key: str, item: object) -> None:
         """
@@ -251,7 +367,13 @@ class Creations(Cleanable):
             ValueError: If the key already exists in the `unique` scope.
         """
         self.check_cleaned()
+        self._logger.debug(f"add_unique: key={key}", method_name="add_unique", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         if key in self._unique:
+            self._logger.error(f"add_unique: duplicate key={key}", method_name="add_unique", mask=True,
+                               owner_id=self._id, owner_display=self._display_name,
+                               groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique objects.")
         self._unique[key] = item
 
@@ -268,7 +390,13 @@ class Creations(Cleanable):
             ValueError: If the key already exists in the `unique_per_lineage` scope.
         """
         self.check_cleaned()
+        self._logger.debug(f"add_unique_per_lineage: key={key}", method_name="add_unique_per_lineage", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         if key in self._unique_per_lineage:
+            self._logger.error(f"add_unique_per_lineage: duplicate key={key}", method_name="add_unique_per_lineage", mask=True,
+                               owner_id=self._id, owner_display=self._display_name,
+                               groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
         self._unique_per_lineage[key] = item
 
@@ -285,7 +413,13 @@ class Creations(Cleanable):
             ValueError: If the key already exists in the `unique_per_cluster` scope.
         """
         self.check_cleaned()
+        self._logger.debug(f"add_unique_per_cluster: key={key}", method_name="add_unique_per_cluster", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         if key in self._unique_per_cluster:
+            self._logger.error(f"add_unique_per_cluster: duplicate key={key}", method_name="add_unique_per_cluster", mask=True,
+                               owner_id=self._id, owner_display=self._display_name,
+                               groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
         self._unique_per_cluster[key] = item
 
@@ -302,7 +436,13 @@ class Creations(Cleanable):
             ValueError: If the key already exists in the `unique_per_scope` scope.
         """
         self.check_cleaned()
+        self._logger.debug(f"add_unique_per_scope: key={key}", method_name="add_unique_per_scope", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         if key in self._unique_per_scope:
+            self._logger.error(f"add_unique_per_scope: duplicate key={key}", method_name="add_unique_per_scope", mask=True,
+                               owner_id=self._id, owner_display=self._display_name,
+                               groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = item
 
@@ -320,6 +460,9 @@ class Creations(Cleanable):
             RuntimeError: If the Creations manager is cleaned.
         """
         self.check_cleaned()
+        self._logger.debug(f"add_many: key={key}", method_name="add_many", mask=True,
+                           owner_id=self._id, owner_display=self._display_name,
+                           groups=self._log_groups, system_groups=self._log_sysgroups)
         if key not in self._many:
             self._many[key] = ConcurrentList()
         self._many[key].append(item)
