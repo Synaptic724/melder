@@ -16,9 +16,16 @@ class SafeLogger(Cleanable, ISafeLogger):
     - Standard loggers drop channel-only kwargs and ignore masking.
     - No getattr on our own classes.
     """
-    __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel", "_id"]
-
-    def __init__(self, logger: logging.Logger | IChannelLogger | None):
+    __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel", "_id", "_level"]
+    _LEVELS: Dict[str, int] = {
+        "notset": logging.NOTSET,
+        "debug": logging.DEBUG,
+        "info": logging.INFO,
+        "warning": logging.WARNING,
+        "error": logging.ERROR,
+        "critical": logging.CRITICAL,
+    }
+    def __init__(self, logger: logging.Logger | IChannelLogger | None, level_name: str = "INFO"):
         super().__init__()
         self._id = IDBuilder.create_id()
         from melder.utilities.interfaces.interfaces import IChannelLogger as _IChannelLogger
@@ -29,6 +36,13 @@ class SafeLogger(Cleanable, ISafeLogger):
             )
         self._logger = logger
         self._is_channel = isinstance(logger, _IChannelLogger)
+        normalized = level_name.lower()
+        if normalized not in self._LEVELS:
+            raise ValueError(f"Invalid log level name '{level_name}'. Expected one of: {list(self._LEVELS)}")
+        self._level_name = normalized
+        self._level = self._LEVELS[normalized]
+        if logger is not None:
+            logger.setLevel(self._level)
 
     def cleanup(self):
         # Allow external polymorphic cleanup; std loggers won't have it.
@@ -38,6 +52,28 @@ class SafeLogger(Cleanable, ISafeLogger):
             except Exception:
                 pass
         self._logger = None
+
+    def set_level_by_name(self, level_name: str):
+        """
+        Set the log level by symbolic name (debug, info, warning, error, critical).
+        """
+        normalized = level_name.lower()
+        if normalized not in self._LEVELS:
+            raise ValueError(f"Invalid log level name '{level_name}'. Expected one of: {list(self._LEVELS)}")
+        self._level_name = normalized
+        self._level = self._LEVELS[normalized]
+        if self._logger is not None:
+            self._logger.setLevel(self._level)
+
+    def set_level(self, level: int):
+        """
+        Direct numeric setter (kept for parity).
+        """
+        if level not in self._LEVELS.values():
+            raise ValueError(f"Invalid numeric log level: {level}")
+        self._level = level
+        if self._logger is not None:
+            self._logger.setLevel(level)
 
     # ---- Internal unified emitter -------------------------------------------------
 
@@ -62,6 +98,8 @@ class SafeLogger(Cleanable, ISafeLogger):
         - Std logger path ignores masking entirely (as requested).
         """
         if self._logger is None:
+            return
+        if level < self._level:
             return
 
         if self._is_channel:
