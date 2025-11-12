@@ -3,6 +3,7 @@ from typing import Optional, Iterable, Dict, Any, Union
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IChannelLogger, ISafeLogger
+from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class SafeLogger(Cleanable, ISafeLogger):
@@ -15,10 +16,11 @@ class SafeLogger(Cleanable, ISafeLogger):
     - Standard loggers drop channel-only kwargs and ignore masking.
     - No getattr on our own classes.
     """
-    __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel"]
+    __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel", "_id"]
 
     def __init__(self, logger: logging.Logger | IChannelLogger | None):
         super().__init__()
+        self._id = IDBuilder.create_id()
         from melder.utilities.interfaces.interfaces import IChannelLogger as _IChannelLogger
         if logger is not None and not isinstance(logger, (logging.Logger, _IChannelLogger)):
             raise TypeError(

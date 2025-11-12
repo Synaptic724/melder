@@ -873,6 +873,7 @@ class IConduit(ICleanable, Protocol):
     _spellbook: ISpellbook
     _aetheric_frame : str
     _id: str
+    _logger: 'ISafeLogger'
 
     @property
     def name(self) -> Optional[str]:
@@ -2362,8 +2363,6 @@ class ISafeLogger(ICleanable, Protocol):
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
     ) -> None: ...
-
-    # ---- Lifecycle ------------------------------------------------------------
 
 
 @runtime_checkable

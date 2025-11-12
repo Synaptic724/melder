@@ -329,11 +329,11 @@ class Conduit(Cleanable, IConduit):
         if self._conduit_state == ConduitState.lesser:
             self._logger.debug("Selecting LesserCreations", "_creations_configuration")
             return LesserCreations(disposal_enabled=configuration.get_property("disposal"),
-                                   disposal_method_names=configuration.get_property("disposal_method_names"), conduit_id=self._id)
+                                   disposal_method_names=configuration.get_property("disposal_method_names"), conduit=self)
         if self._conduit_state == ConduitState.normal:
             self._logger.debug("Selecting Creations", "_creations_configuration")
             return Creations(disposal_enabled=configuration.get_property("disposal"),
-                             disposal_method_names=configuration.get_property("disposal_method_names"), conduit_id=self._id)
+                             disposal_method_names=configuration.get_property("disposal_method_names"), conduit=self)
         self._logger.error("Unknown Conduit state", "_creations_configuration")
         raise RuntimeError("Conduit state is unknown")
 
