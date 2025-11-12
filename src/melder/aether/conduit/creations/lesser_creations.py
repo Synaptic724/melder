@@ -129,6 +129,14 @@ class LesserCreations(Cleanable):
                 groups=self._log_groups, system_groups=self._log_sysgroups,
             )
 
+            if self._logger is not None:
+                self._display_name: str = ""
+                self._log_groups.clear()
+                self._log_groups = None
+                self._log_sysgroups.clear()
+                self._log_sysgroups = None
+                self._logger = None
+
     def _cleanup_unique_per_scope(self) -> List[Exception]:
         """
         Internal
