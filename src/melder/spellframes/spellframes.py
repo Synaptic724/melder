@@ -1,5 +1,3 @@
-
-
 import threading
 from typing import Optional, Type, Dict, Any
 
@@ -37,10 +35,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 class SpellFrame(Cleanable):
     """
-    SpellFrame: A singleton interface registry for AI-generated or dynamically composed class interfaces.
-
-    ⚠️ Not intended for traditional, static interface development.
-
     SpellFrame is a runtime-only registry used to bind, track, and validate AI-generated or
     dynamically resolved interface classes. It supports storing metadata like UUIDs, method/property maps,
     and module information, enabling runtime introspection, dependency injection, or agentic behavior modeling.
@@ -70,24 +64,10 @@ class SpellFrame(Cleanable):
 
     SpellFrame is built for the future — for AI-native runtimes that change and grow.
     """
-
-    _instance = None
-    _lock = threading.Lock()
-    _initialized = False
-
-    def __new__(cls):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(SpellFrame, cls).__new__(cls)
-        return cls._instance
-
     def __init__(self):
-        if not SpellFrame._initialized:
-            super().__init__()
-            self._frame_map: ConcurrentDict[str, Dict[str, Any]] = ConcurrentDict()
-            SpellFrame._initialized = True
-
+        super().__init__()
+        self._frame_map: ConcurrentDict[str, Dict[str, Any]] = ConcurrentDict()
+        self._lock = threading.RLock()
 
     def cleanup(self):
         """
@@ -167,10 +147,3 @@ class SpellFrame(Cleanable):
             Metadata dict or None if not found.
         """
         return self._frame_map.get(frame_type.__name__)
-
-    def _reset_for_testing(self):
-        with self._lock:
-            self._frame_map.clear()
-            self._cleaned = False
-            SpellFrame._initialized = False
-            SpellFrame._instance = None

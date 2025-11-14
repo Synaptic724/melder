@@ -1,7 +1,6 @@
 from types import MappingProxyType
 from typing import Optional, List, Any, Mapping, Callable
-import ulid
-from threading import RLock
+import threading
 
 # Melder Imports
 from melder.aether.aether import Aether
@@ -70,7 +69,7 @@ class Spellbook(Cleanable, ISpellbook):
         super().__init__()
 
         # Internal state
-        self._lock: 'Rlock' = RLock()
+        self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
         self._conjured = False
         self._aetheric_frame = aetheric_frame
