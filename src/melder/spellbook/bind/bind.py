@@ -186,7 +186,7 @@ class Bind(IBind):
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
     @staticmethod
-    def _validate_binding(profile, is_instance, binding_name, existence):
+    def _validate_binding(profile: ClassProfile | MethodProfile, is_instance: bool, binding_name: Optional[str], existence: Existence):
         """
         Performs structural and policy checks on the binding parameters prior to registration.
 
