@@ -88,7 +88,7 @@ class Bind(IBind):
         with self._lock:
             # Get the class or method profile
             profile = SpellExaminer(spell).inspect()
-            fingerprint = Bind.sha256_profile(profile)
+            fingerprint: str = Bind.sha256_profile(profile)
 
             # Check if spell is an instance (not a class/function)
             is_instance = not inspect.isclass(spell) and not inspect.isfunction(spell)

@@ -6,7 +6,6 @@ from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDic
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IConduit
-from melder.utilities.synchronization.sync_string import SyncString
 from melder.aether.conduit.creations.creation import Creation
 
 class LesserCreations(Cleanable):
@@ -43,8 +42,8 @@ class LesserCreations(Cleanable):
         self._lock = RLock()
 
         # Internal storage for managed objects
-        self._unique_per_scope: ConcurrentDict[SyncString, Creation] = ConcurrentDict()
-        self._many: ConcurrentDict[SyncString, ConcurrentList[Creation]] = ConcurrentDict()
+        self._unique_per_scope: ConcurrentDict[str, Creation] = ConcurrentDict()
+        self._many: ConcurrentDict[str, ConcurrentList[Creation]] = ConcurrentDict()
 
         # Disposal configuration
         self._disposal_enabled = disposal_enabled
@@ -299,12 +298,12 @@ class LesserCreations(Cleanable):
         return data
 
 
-    def add_unique_per_scope(self, key: SyncString, item: object) -> None:
+    def add_unique_per_scope(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
         Args:
-            key (SyncString): Unique identifier (Spell ID).
+            key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
 
         Raises:
@@ -328,14 +327,14 @@ class LesserCreations(Cleanable):
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = Creation(item)
 
-    def add_many(self, key: SyncString, item: object) -> None:
+    def add_many(self, key: str, item: object) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 
         If the collection for the given key does not exist, it is created.
 
         Args:
-            key (SyncString): Collection identifier (Spell ID).
+            key (str): Collection identifier (Spell ID).
             item (object): Object instance to add.
 
         Raises:

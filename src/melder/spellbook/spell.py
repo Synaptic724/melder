@@ -9,6 +9,7 @@ from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 
+
 #region Spell
 class Spell(ISpell):
     """

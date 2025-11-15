@@ -19,6 +19,7 @@ from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.helpers.init_helpers import InitHelpers
 
+
 #region Spellbook
 class Spellbook(Cleanable, ISpellbook):
     """

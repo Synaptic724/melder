@@ -6,7 +6,6 @@ from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDic
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IConduit
-from melder.utilities.synchronization.sync_string import SyncString
 from melder.aether.conduit.creations.creation import Creation
 
 
@@ -45,11 +44,11 @@ class Creations(Cleanable):
         self._logger = conduit._logger
 
         # Internal storage for created objects by lifecycle scope
-        self._unique: ConcurrentDict[SyncString, Creation] = ConcurrentDict()
-        self._unique_per_scope: ConcurrentDict[SyncString, Creation] = ConcurrentDict()
-        self._many: ConcurrentDict[SyncString, ConcurrentList[Creation]] = ConcurrentDict()
-        self._unique_per_lineage: ConcurrentDict[SyncString, Creation] = ConcurrentDict()
-        self._unique_per_cluster: ConcurrentDict[SyncString, Creation] = ConcurrentDict()
+        self._unique: ConcurrentDict[str, Creation] = ConcurrentDict()
+        self._unique_per_scope: ConcurrentDict[str, Creation] = ConcurrentDict()
+        self._many: ConcurrentDict[str, ConcurrentList[Creation]] = ConcurrentDict()
+        self._unique_per_lineage: ConcurrentDict[str, Creation] = ConcurrentDict()
+        self._unique_per_cluster: ConcurrentDict[str, Creation] = ConcurrentDict()
 
         # Disposal configuration
         self._disposal_enabled = disposal_enabled
@@ -369,7 +368,7 @@ class Creations(Cleanable):
             groups=self._log_groups, system_groups=self._log_sysgroups,
         )
 
-    def add_unique(self, key: SyncString, item: object) -> None:
+    def add_unique(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique` scope.
 
@@ -392,7 +391,7 @@ class Creations(Cleanable):
             raise ValueError(f"Key {key} already exists in unique objects.")
         self._unique[key] = Creation(item)
 
-    def add_unique_per_lineage(self, key: SyncString, item: object) -> None:
+    def add_unique_per_lineage(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_lineage` scope.
 
@@ -415,7 +414,7 @@ class Creations(Cleanable):
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
         self._unique_per_lineage[key] = Creation(item)
 
-    def add_unique_per_cluster(self, key: SyncString, item: object) -> None:
+    def add_unique_per_cluster(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_cluster` scope.
 
@@ -438,7 +437,7 @@ class Creations(Cleanable):
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
         self._unique_per_cluster[key] = Creation(item)
 
-    def add_unique_per_scope(self, key: SyncString, item: object) -> None:
+    def add_unique_per_scope(self, key: str, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
@@ -461,7 +460,7 @@ class Creations(Cleanable):
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
         self._unique_per_scope[key] = Creation(item)
 
-    def add_many(self, key: SyncString, item: object) -> None:
+    def add_many(self, key: str, item: object) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 
