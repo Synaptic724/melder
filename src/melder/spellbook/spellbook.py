@@ -4,6 +4,7 @@ import threading
 
 # Melder Imports
 from melder.aether.aether import Aether
+from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -85,14 +86,14 @@ class Spellbook(Cleanable, ISpellbook):
         # Logger setup
         self._initialize_logging(logger)
 
-        # Core spell storage (SHA256-keyed)
-        self._spells: ConcurrentDict[str, ISpell] = ConcurrentDict()
-        self._lookup_spells: ConcurrentDict[tuple, str]  = ConcurrentDict()
+        # Core spell storage (SpellIndex Maps)
+        self._spells: ConcurrentDict[SpellIndex, ISpell] = ConcurrentDict()
+        self._lookup_spells: ConcurrentDict[tuple, SpellIndex]  = ConcurrentDict()
 
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
-        self._contracted_spells: ConcurrentDict[str, ConcurrentDict[str, ISpell]] = ConcurrentDict(ConcurrentDict())
-        self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, str]]  = ConcurrentDict(ConcurrentDict())
+        self._contracted_spells: ConcurrentDict[str, ConcurrentDict[SpellIndex, ISpell]] = ConcurrentDict(ConcurrentDict())
+        self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, SpellIndex]]  = ConcurrentDict(ConcurrentDict())
 
         # Binding system
         self._bind: Bind = Bind()
@@ -325,30 +326,30 @@ class Spellbook(Cleanable, ISpellbook):
         self._logger.error(f"Spell with ID {spell_id} not found in the spellbook.", "get_spell_permissions", exc_info=True)
         raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
 
-    def _find_spell(self, spell_id: str) -> Optional[ISpell]:
+    def _find_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
         """
         Internal
 
         Locates a locally registered spell by its unique ID.
 
         Args:
-            spell_id (str): The ID of the spell to find.
+            spell_index (SpellIndex): The ID of the spell to find.
 
         Returns:
             Optional[ISpell]: The spell object if found, otherwise None.
         """
-        spell = self._spells.get(spell_id)
-        self._logger.debug(f"_find_spell({spell_id}) -> {spell is not None}", "_find_spell")
+        spell = self._spells.get(spell_index)
+        self._logger.debug(f"_find_spell({spell_index}) -> {spell is not None}", "_find_spell")
         return spell
 
-    def _find_contracted_spell(self, spell_id: str) -> Optional[ISpell]:
+    def _find_contracted_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
         """
         Internal
 
         Locates a contracted spell by its unique ID by searching across all peer contracts.
 
         Args:
-            spell_id (str): The ID of the contracted spell to find.
+            spell_index (SpellIndex): The ID of the contracted spell to find.
 
         Returns:
             Optional[ISpell]: The spell object if found.
@@ -356,12 +357,12 @@ class Spellbook(Cleanable, ISpellbook):
         Raises:
             RuntimeError: If the contracted spell with the given ID is not found.
         """
-        self._logger.debug(f"_find_contracted_spell({spell_id})", "_find_contracted_spell")
+        self._logger.debug(f"_find_contracted_spell({spell_index})", "_find_contracted_spell")
         for contracted_spells in self._contracted_spells.values():
-            if spell_id in contracted_spells:
-                return contracted_spells[spell_id]
-        self._logger.error(f"Contracted spell with ID {spell_id} not found.", "_find_contracted_spell", exc_info=True)
-        raise RuntimeError(f"Contracted spell with ID {spell_id} not found in the spellbook.")
+            if spell_index in contracted_spells:
+                return contracted_spells[spell_index]
+        self._logger.error(f"Contracted spell with ID {spell_index} not found.", "_find_contracted_spell", exc_info=True)
+        raise RuntimeError(f"Contracted spell with ID {spell_index} not found in the spellbook.")
 
     def _find_spell_count(self) -> int:
         """
@@ -392,7 +393,7 @@ class Spellbook(Cleanable, ISpellbook):
         return count
 
 
-    def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
+    def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[SpellIndex]:
         """
         Public API
 

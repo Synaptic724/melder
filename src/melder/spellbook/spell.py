@@ -8,6 +8,7 @@ from melder.utilities.interfaces.interfaces import ISpell
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.spellbook.bind.spell_index import SpellIndex
 
 
 #region Spell
@@ -49,6 +50,9 @@ class Spell(ISpell):
         spellframe (Optional[Any]):
             Frame context (usually a class or module) to scope the spell's identity.
 
+        spellkey (SpellKey):
+            The unique key representing this spell in the Spellbook.
+
         binding_name (str):
             The logical name this spell is bound to (e.g., "database", "engine").
 
@@ -86,6 +90,7 @@ class Spell(ISpell):
     def __init__(
             self,
             spell: Any,
+            spell_index: SpellIndex,
             spellframe: Optional[Any],
             binding_name: str,
             spell_name: str,
@@ -104,8 +109,9 @@ class Spell(ISpell):
         self._id: str = str(ulid.ULID()) # Unique internal ID for tracking
 
         # Spell Data
+        self.spell_index: SpellIndex = spell_index
         self.spell = spell #Object reference
-        self.spell_id: str = spell_id
+        self.spell_id: str = spell_id # SHA256 unique identifier
         self.spellframe: Optional[Any] = spellframe
         self.spell_type: SpellType = spell_type
         self.user_created_object: object = existing_object

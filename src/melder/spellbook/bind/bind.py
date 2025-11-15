@@ -12,6 +12,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.interfaces import IBind
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.spell import Spell
+from melder.spellbook.bind.spell_index import SpellIndex
 
 
 #region Bind
@@ -89,6 +90,7 @@ class Bind(IBind):
             # Get the class or method profile
             profile = SpellExaminer(spell).inspect()
             fingerprint: str = Bind.sha256_profile(profile)
+            spell_index = SpellIndex(initial_id=fingerprint)
 
             # Check if spell is an instance (not a class/function)
             is_instance = not inspect.isclass(spell) and not inspect.isfunction(spell)
@@ -110,6 +112,7 @@ class Bind(IBind):
             # Create the Spell instance, attach profile
             new_spell = Spell(
                 spell=spell,
+                spell_index=spell_index,
                 spellframe=spellframe,
                 binding_name=binding_name,
                 spell_name=spell_name,
