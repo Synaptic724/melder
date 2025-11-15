@@ -6,6 +6,8 @@ from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDic
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IConduit
+from melder.utilities.synchronization.sync_string import SyncString
+from melder.aether.conduit.creations.creation import Creation
 
 
 #TODO: Create a creations object to encapsulate the objects under my control.
@@ -43,11 +45,11 @@ class Creations(Cleanable):
         self._logger = conduit._logger
 
         # Internal storage for created objects by lifecycle scope
-        self._unique: ConcurrentDict[str, object] = ConcurrentDict()
-        self._unique_per_scope: ConcurrentDict[str, object] = ConcurrentDict()
-        self._many: ConcurrentDict[str, ConcurrentList[object]] = ConcurrentDict()
-        self._unique_per_lineage: ConcurrentDict[str, object] = ConcurrentDict()
-        self._unique_per_cluster: ConcurrentDict[str, object] = ConcurrentDict()
+        self._unique: ConcurrentDict[SyncString, Creation] = ConcurrentDict()
+        self._unique_per_scope: ConcurrentDict[SyncString, Creation] = ConcurrentDict()
+        self._many: ConcurrentDict[SyncString, ConcurrentList[Creation]] = ConcurrentDict()
+        self._unique_per_lineage: ConcurrentDict[SyncString, Creation] = ConcurrentDict()
+        self._unique_per_cluster: ConcurrentDict[SyncString, Creation] = ConcurrentDict()
 
         # Disposal configuration
         self._disposal_enabled = disposal_enabled
@@ -157,9 +159,10 @@ class Creations(Cleanable):
         errors: List[Exception] = []
         for _, item in self._unique.items():
             if item is not None:
-                maybe_error = self._attempt_cleanup(item)
+                maybe_error = self._attempt_cleanup(item.value)
                 if maybe_error:
                     errors.append(maybe_error)
+                item.cleanup()
         self._unique.cleanup()
         self._logger.debug(f"_cleanup_unique: errors={len(errors)}", method_name="_cleanup_unique", mask=True,
                            owner_id=self._id, owner_display=self._display_name,
@@ -176,11 +179,12 @@ class Creations(Cleanable):
             List[Exception]: List of any cleanup errors encountered.
         """
         errors: List[Exception] = []
-        for _, item in self._unique_per_lineage.items():
+        for key, item in self._unique_per_lineage.items():
             if item is not None:
-                maybe_error = self._attempt_cleanup(item)
+                maybe_error = self._attempt_cleanup(item.value)
                 if maybe_error:
                     errors.append(maybe_error)
+                item.cleanup()
         self._unique_per_lineage.cleanup()
         self._logger.debug(f"_cleanup_unique_per_lineage: errors={len(errors)}",
                            method_name="_cleanup_unique_per_lineage", mask=True,
@@ -200,9 +204,10 @@ class Creations(Cleanable):
         errors: List[Exception] = []
         for _, item in self._unique_per_cluster.items():
             if item is not None:
-                maybe_error = self._attempt_cleanup(item)
+                maybe_error = self._attempt_cleanup(item.value)
                 if maybe_error:
                     errors.append(maybe_error)
+                item.cleanup()
         self._unique_per_cluster.cleanup()
         self._logger.debug(f"_cleanup_unique_per_cluster: errors={len(errors)}",
                            method_name="_cleanup_unique_per_cluster", mask=True,
@@ -222,9 +227,10 @@ class Creations(Cleanable):
         errors: List[Exception] = []
         for _, item in self._unique_per_scope.items():
             if item is not None:
-                maybe_error = self._attempt_cleanup(item)
+                maybe_error = self._attempt_cleanup(item.value)
                 if maybe_error:
                     errors.append(maybe_error)
+                item.cleanup()
         self._unique_per_scope.cleanup()
         self._logger.debug(f"_cleanup_unique_per_scope: errors={len(errors)}",
                            method_name="_cleanup_unique_per_scope", mask=True,
@@ -248,6 +254,7 @@ class Creations(Cleanable):
                     maybe_error = self._attempt_cleanup(item)
                     if maybe_error:
                         errors.append(maybe_error)
+                    item.cleanup()
             items.cleanup()
         self._many.cleanup()
         self._logger.debug(f"_cleanup_many: errors={len(errors)}",
@@ -362,7 +369,7 @@ class Creations(Cleanable):
             groups=self._log_groups, system_groups=self._log_sysgroups,
         )
 
-    def add_unique(self, key: str, item: object) -> None:
+    def add_unique(self, key: SyncString, item: object) -> None:
         """
         Adds a singleton object instance to the `unique` scope.
 
@@ -383,9 +390,9 @@ class Creations(Cleanable):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique objects.")
-        self._unique[key] = item
+        self._unique[key] = Creation(item)
 
-    def add_unique_per_lineage(self, key: str, item: object) -> None:
+    def add_unique_per_lineage(self, key: SyncString, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_lineage` scope.
 
@@ -406,9 +413,9 @@ class Creations(Cleanable):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
-        self._unique_per_lineage[key] = item
+        self._unique_per_lineage[key] = Creation(item)
 
-    def add_unique_per_cluster(self, key: str, item: object) -> None:
+    def add_unique_per_cluster(self, key: SyncString, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_cluster` scope.
 
@@ -429,9 +436,9 @@ class Creations(Cleanable):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
-        self._unique_per_cluster[key] = item
+        self._unique_per_cluster[key] = Creation(item)
 
-    def add_unique_per_scope(self, key: str, item: object) -> None:
+    def add_unique_per_scope(self, key: SyncString, item: object) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
@@ -452,9 +459,9 @@ class Creations(Cleanable):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
-        self._unique_per_scope[key] = item
+        self._unique_per_scope[key] = Creation(item)
 
-    def add_many(self, key: str, item: object) -> None:
+    def add_many(self, key: SyncString, item: object) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 
@@ -473,4 +480,4 @@ class Creations(Cleanable):
                            groups=self._log_groups, system_groups=self._log_sysgroups)
         if key not in self._many:
             self._many[key] = ConcurrentList()
-        self._many[key].append(item)
+        self._many[key].append(Creation(item))

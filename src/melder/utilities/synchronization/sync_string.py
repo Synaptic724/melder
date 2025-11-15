@@ -5,8 +5,9 @@ import ulid
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.general_base.isync import ISync
+from melder.utilities.interfaces.interfaces import ISyncString
 
-class SyncString(Cleanable, ISync):
+class SyncString(Cleanable, ISync, ISyncString):
     """
     SyncString(initial='') -> SyncString
 
