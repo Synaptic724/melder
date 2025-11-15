@@ -37,12 +37,10 @@ class SpellIndex(Cleanable):
         super().__init__()
         # The permanent, hashable identity for this key.
         self._id: str = str(ulid.ULID())
-
+        self._lock: threading.RLock = threading.RLock()
         # The dynamic pointer to the version, which can be updated.
         self._current_id: str = initial_id
         self._versions: set = set(initial_id)  # Optional: Track all versions seen.
-
-        self._lock = threading.RLock()
 
     # ------------------------------------------------------------
     # Cleanup
@@ -59,6 +57,8 @@ class SpellIndex(Cleanable):
             # Nullify the pointer and release the lock object.
             self._cleaned = True
             self._current_id = None
+            self._versions.clear()
+            self._versions = None
         self._lock = None
 
     # ------------------------------------------------------------
