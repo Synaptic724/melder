@@ -9,7 +9,7 @@ from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind

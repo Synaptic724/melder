@@ -5,7 +5,7 @@ from uuid import uuid4
 from melder.aether.conduit.creations.creations import Creations
 
 # Infra types to build valid kwargs for _upgrade_from_lesser_conduit
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 
 

@@ -4,7 +4,7 @@ from typing import Any, Dict, Type, Callable
 import ulid
 
 # Melder imports
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers

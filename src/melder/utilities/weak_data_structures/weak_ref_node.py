@@ -4,9 +4,9 @@ import ulid
 import weakref
 from typing import Generic, TypeVar, Optional, Callable, List, Any
 
-# CommandOps Imports
-from command_ops.utilities.exceptions.dead_reference_error import DeadReferenceError
-from command_ops.utilities.interfaces.cleanable import Cleanable
+# Melder Imports
+from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
+from melder.utilities.general_base.cleanable import Cleanable
 
 _T = TypeVar("_T")
 _OnCollect = Callable[["WeakRefNode[_T]"], None]

@@ -3,7 +3,7 @@ from typing import Optional, Type, Dict, Any
 
 import ulid
 
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.general_base.cleanable import Cleanable
 
 # ─────────────────────────────────────────────────────────────────────────────

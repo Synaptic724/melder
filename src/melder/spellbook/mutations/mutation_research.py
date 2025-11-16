@@ -8,7 +8,7 @@ import weakref
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.spellbook.spell_index.spell_index import SpellIndex  # TODO: adjust import path if needed
 
 

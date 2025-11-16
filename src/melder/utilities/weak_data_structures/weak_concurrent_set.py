@@ -16,12 +16,11 @@ from typing import (
 
 import ulid
 
-# CommandOps imports
-from command_ops.concurrency.data_structures.concurrent_list import ConcurrentList
-from command_ops.concurrency.weak_data_structures.weak_ref_node import WeakRefNode
-from command_ops.utilities.exceptions.dead_reference_error import DeadReferenceError
-from command_ops.utilities.general_helpers.init_helpers import InitHelpers
-from command_ops.utilities.interfaces.cleanable import Cleanable
+# Melder Imports
+from melder.utilities.data_structures.concurrent_list import ConcurrentList
+from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.weak_data_structures.weak_ref_node import WeakRefNode
 
 _T = TypeVar("_T")
 
@@ -65,13 +64,11 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
       - Idempotent.
       - Fires any node callbacks via `node.fire_callbacks()`.
       - Calls `node.cleanup()` on all nodes.
-      - Clears internal set and releases lock (and `AgenticRLock.cleanup()` if
-        applicable).
     """
 
     __slots__ = (
             Cleanable.__slots__
-            + ["_lock", "_set", "_freeze", "_agentic_mode", "_id", "_auto_prune"]
+            + ["_lock", "_set", "_freeze", "_id", "_auto_prune"]
     )
 
     # -------------------------------------------------------------------------
@@ -80,7 +77,6 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
     def __init__(
             self,
             initial: Optional[Iterable[_T]] = None,
-            agentic_mode: Optional[bool] = None,
             auto_prune: bool = False,
     ) -> None:
         """
@@ -91,10 +87,6 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 Optional iterable of initial objects to weak-reference and insert
                 into the set. Each element must be weak-referenceable and
                 hashable (see notes below).
-            agentic_mode:
-                If True, use an `AgenticRLock` for synchronization (supports
-                hybrid sync/async usage). If False, use `threading.RLock`.
-                If None, resolved via `InitHelpers.resolve_agentic_mode()`.
             auto_prune:
                 If True, the set will try to automatically remove dead nodes:
                     * From GC callbacks via `_on_node_collected`.
@@ -109,20 +101,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         super().__init__()
 
         self._id: str = str(ulid.ULID())
-        self._agentic_mode: Optional[bool] = InitHelpers.resolve_agentic_mode(
-            agentic_mode
-        )
         self._freeze: bool = False
         self._auto_prune: bool = bool(auto_prune)
-
-        if self._agentic_mode:
-            from command_ops.synchronization.primitives.agentic_rlock import (
-                AgenticRLock,
-            )
-
-            self._lock: Union["AgenticRLock", threading.RLock] = AgenticRLock()
-        else:
-            self._lock = threading.RLock()
+        self._lock: threading.RLock = threading.RLock()
 
         self._set: Set[WeakRefNode[_T]] = set()
 
@@ -244,13 +225,6 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                     node.cleanup()
             self._set.clear()
             self._set = None  # type: ignore[assignment]
-
-        if self._agentic_mode:
-            try:
-                self._lock.cleanup()  # type: ignore[attr-defined]
-            except Exception:
-                pass
-
         self._lock = None  # type: ignore[assignment]
 
     # -------------------------------------------------------------------------
@@ -265,19 +239,6 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             str: The unique ULID-based identifier.
         """
         return self._id
-
-    @property
-    def agentic_mode(self) -> Optional[bool]:
-        """
-        Indicates whether this set uses an AgenticRLock.
-
-        Returns:
-            Optional[bool]:
-                True if AgenticRLock is used,
-                False if a standard RLock is used,
-                None if resolved by configuration and not explicitly set.
-        """
-        return self._agentic_mode
 
     @property
     def auto_prune(self) -> bool:
@@ -722,7 +683,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         """
         self.check_cleaned()
         values = {func(v) for v in self}
-        return WeakConcurrentSet(initial=values, agentic_mode=self._agentic_mode)
+        return WeakConcurrentSet(initial=values)
 
     def filter(self, func: Callable[[_T], bool]) -> "WeakConcurrentSet[_T]":
         """
@@ -744,7 +705,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         """
         self.check_cleaned()
         values = {v for v in self if func(v)}
-        return WeakConcurrentSet(initial=values, agentic_mode=self._agentic_mode)
+        return WeakConcurrentSet(initial=values)
 
     def reduce(
             self,
@@ -843,7 +804,6 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         values = self.to_set()
         return WeakConcurrentSet(
             initial=values,
-            agentic_mode=self._agentic_mode,
             auto_prune=self._auto_prune,
         )
 
@@ -863,7 +823,6 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         values = deepcopy(self.to_set(), memo)
         return WeakConcurrentSet(
             initial=values,
-            agentic_mode=self._agentic_mode,
             auto_prune=self._auto_prune,
         )
 
@@ -912,44 +871,4 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             self._lock.release()
         except RuntimeError:
             # In case it's already released or cleaned.
-            pass
-
-    async def __aenter__(self) -> "WeakConcurrentSet[_T]":
-        """
-        Asynchronous context manager entry.
-
-        If using an AgenticRLock that supports `acquire_async()`, the async
-        acquisition path is used. Otherwise, falls back to synchronous acquire.
-
-        Returns:
-            WeakConcurrentSet[_T]: This instance.
-
-        Raises:
-            RuntimeError:
-                If the set has already been cleaned.
-        """
-        self.check_cleaned()
-        if hasattr(self._lock, "acquire_async"):
-            await self._lock.async_acquire()  # type: ignore[attr-defined]
-        else:
-            self._lock.acquire()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """
-        Asynchronous context manager exit.
-
-        Releases the internal lock acquired in `__aenter__`.
-
-        Args:
-            exc_type:
-                Exception type, if any.
-            exc_val:
-                Exception instance, if any.
-            exc_tb:
-                Traceback object, if any.
-        """
-        try:
-            self._lock.release()
-        except RuntimeError:
             pass

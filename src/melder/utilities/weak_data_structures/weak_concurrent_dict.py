@@ -20,11 +20,10 @@ from typing import (
 
 import ulid
 
-# CommandOps imports
-from command_ops.concurrency.weak_data_structures.weak_ref_node import WeakRefNode
-from command_ops.utilities.exceptions.dead_reference_error import DeadReferenceError
-from command_ops.utilities.general_helpers.init_helpers import InitHelpers
-from command_ops.utilities.interfaces.cleanable import Cleanable
+# Melder Imports
+from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.weak_data_structures.weak_ref_node import WeakRefNode
 
 _K = TypeVar("_K")
 _V = TypeVar("_V")
@@ -52,7 +51,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     Concurrency
     -----------
-    * A per-instance lock (`threading.RLock` or `AgenticRLock`) protects
+    * A per-instance lock (`threading.RLock`) protects
       structural mutations and, in non-frozen mode, read paths that snapshot
       internal state.
     * `freeze()` / `unfreeze()`:
@@ -79,12 +78,11 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
       - Idempotent.
       - Calls `node.fire_callbacks()` and then `node.cleanup()` for all nodes.
       - Clears the internal dict and releases the lock.
-      - If using `AgenticRLock`, its `cleanup()` is invoked best-effort.
     """
 
     __slots__ = (
             Cleanable.__slots__
-            + ["_dict", "_lock", "_freeze", "_agentic_mode", "_id", "_auto_prune"]
+            + ["_dict", "_lock", "_freeze", "_id", "_auto_prune"]
     )
 
     # -------------------------------------------------------------------------
@@ -93,7 +91,6 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
     def __init__(
             self,
             initial: Optional[Union[Mapping[_K, _V], Iterable[Tuple[_K, _V]]]] = None,
-            agentic_mode: Optional[bool] = None,
             auto_prune: bool = False,
     ) -> None:
         """
@@ -104,10 +101,6 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 Optional mapping or iterable of ``(key, value)`` pairs to seed
                 the dictionary. Values will be wrapped in `WeakRefNode` and
                 held weakly.
-            agentic_mode:
-                If True, use an `AgenticRLock` for synchronization (supports
-                hybrid sync/async usage). If False, use `threading.RLock`.
-                If None, resolved via `InitHelpers.resolve_agentic_mode()`.
             auto_prune:
                 If True, the dict will try to automatically remove dead nodes:
                     * From GC callbacks via `_on_node_collected`.
@@ -121,20 +114,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         super().__init__()
 
         self._id: str = str(ulid.ULID())
-        self._agentic_mode: Optional[bool] = InitHelpers.resolve_agentic_mode(
-            agentic_mode
-        )
         self._freeze: bool = False
         self._auto_prune: bool = bool(auto_prune)
-
-        if self._agentic_mode:
-            from command_ops.synchronization.primitives.agentic_rlock import (
-                AgenticRLock,
-            )
-
-            self._lock: Union["AgenticRLock", threading.RLock, None] = AgenticRLock()
-        else:
-            self._lock = threading.RLock()
+        self._lock: threading.RLock = threading.RLock()
 
         # Materialize initial as a simple dict of strong values.
         raw: Dict[_K, _V] = {}
@@ -271,12 +253,6 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 self._dict.clear()
                 self._dict = None
 
-        if self._agentic_mode and self._lock is not None:
-            try:
-                self._lock.cleanup()
-            except Exception:
-                pass
-
         self._lock = None
 
     # -------------------------------------------------------------------------
@@ -291,19 +267,6 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             str: The unique ULID-based identifier.
         """
         return self._id
-
-    @property
-    def agentic_mode(self) -> Optional[bool]:
-        """
-        Indicates whether this dict uses an AgenticRLock.
-
-        Returns:
-            Optional[bool]:
-                True if AgenticRLock is used,
-                False if a standard RLock is used,
-                None if resolved by configuration and not explicitly set.
-        """
-        return self._agentic_mode
 
     @property
     def auto_prune(self) -> bool:
@@ -1032,7 +995,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         new_items: List[Tuple[_K, _V]] = []
         for k, v in items:
             new_items.append(func(k, v))
-        return WeakConcurrentDict(initial=new_items, agentic_mode=self._agentic_mode)
+        return WeakConcurrentDict(initial=new_items)
 
     def filter(
             self, func: Callable[[_K, _V], bool]
@@ -1061,7 +1024,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         for k, v in items:
             if func(k, v):
                 new_items.append((k, v))
-        return WeakConcurrentDict(initial=new_items, agentic_mode=self._agentic_mode)
+        return WeakConcurrentDict(initial=new_items)
 
     def reduce(
             self,
@@ -1169,7 +1132,6 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self.check_cleaned()
         return WeakConcurrentDict(
             initial=self.items(),  # re-wrap values
-            agentic_mode=self._agentic_mode,
             auto_prune=self._auto_prune,
         )
 
@@ -1202,7 +1164,6 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             deep_items.append((deepcopy(k, memo), deepcopy(v, memo)))
         return WeakConcurrentDict(
             initial=deep_items,
-            agentic_mode=self._agentic_mode,
             auto_prune=self._auto_prune,
         )
 
@@ -1318,51 +1279,4 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             lock.release()
         except RuntimeError:
             # In case it's already released or cleaned.
-            pass
-
-    async def __aenter__(self) -> "WeakConcurrentDict[_K, _V]":
-        """
-        Asynchronous context manager entry.
-
-        If using an AgenticRLock that supports `acquire_async()`, the async
-        acquisition path is used. Otherwise, falls back to synchronous acquire.
-
-        Returns:
-            WeakConcurrentDict[_K, _V]: This instance.
-
-        Raises:
-            RuntimeError:
-                If the dict has already been cleaned.
-        """
-        self.check_cleaned()
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-
-        if hasattr(lock, "acquire_async"):
-            await lock.async_acquire()
-        else:
-            lock.acquire()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """
-        Asynchronous context manager exit.
-
-        Releases the internal lock acquired in `__aenter__`.
-
-        Args:
-            exc_type:
-                Exception type, if any.
-            exc_val:
-                Exception instance, if any.
-            exc_tb:
-                Traceback object, if any.
-        """
-        lock = self._lock
-        if lock is None:
-            return
-        try:
-            lock.release()
-        except RuntimeError:
             pass

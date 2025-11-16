@@ -6,7 +6,7 @@ from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.aether.conduit.creations.creations import Creations
 
 # Infra containers (compat checks for snapshot types)
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 
 

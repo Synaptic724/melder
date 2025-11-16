@@ -5,7 +5,7 @@ from typing import List, Optional, Any, Tuple
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState

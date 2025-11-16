@@ -5,11 +5,10 @@ import ulid
 from typing import Any, Callable, Optional, List, TypeVar, Generic, Union
 from collections.abc import Iterable, Iterator
 
-# CommandOps Imports
-from command_ops.utilities.general_helpers.init_helpers import InitHelpers
-from command_ops.utilities.interfaces.cleanable import Cleanable
-from command_ops.concurrency.weak_data_structures.weak_ref_node import WeakRefNode
-from command_ops.utilities.exceptions.dead_reference_error import DeadReferenceError
+# Melder Imports
+from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.weak_data_structures.weak_ref_node import WeakRefNode
 
 
 _T = TypeVar("_T")
@@ -38,13 +37,12 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
     __slots__ = (
             Cleanable.__slots__
-            + ["_lock", "_list", "_freeze", "_agentic_mode", "_id", "_auto_prune"]
+            + ["_lock", "_list", "_freeze", "_id", "_auto_prune"]
     )
 
     def __init__(
             self,
             initial: Optional[Iterable[_T]] = None,
-            agentic_mode: Optional[bool] = None,
             auto_prune: bool = False,
     ) -> None:
         """
@@ -53,22 +51,12 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         Args:
             initial (Iterable[_T], optional):
                 Initial iterable of objects to weak-reference and store. Defaults to None.
-            agentic_mode (bool, optional):
-                If True, uses `AgenticRLock` for hybrid sync/async usage. If None, resolved via system helpers. Defaults to None.
             auto_prune (bool, optional):
                 If True, enables GC callbacks to attempt to prune dead nodes immediately. Defaults to False.
         """
         super().__init__()
         self._id: str = str(ulid.ULID())
-        self._agentic_mode: Optional[bool] = InitHelpers.resolve_agentic_mode(
-            agentic_mode
-        )
-
-        if self._agentic_mode:
-            from command_ops.synchronization.primitives.agentic_rlock import AgenticRLock
-            self._lock: Union["AgenticRLock", threading.RLock] = AgenticRLock()
-        else:
-            self._lock = threading.RLock()
+        self._lock: threading.RLock = threading.RLock()
 
         self._list: List[WeakRefNode[_T]] = []
         self._freeze: bool = False
@@ -171,12 +159,6 @@ class WeakConcurrentList(Generic[_T], Cleanable):
                     node.cleanup()
             self._list.clear()
             self._list = None
-
-        if self._agentic_mode:
-            try:
-                self._lock.cleanup()
-            except Exception:
-                pass
         self._lock = None
 
     # -------------------------------------------------------------------------
@@ -192,16 +174,6 @@ class WeakConcurrentList(Generic[_T], Cleanable):
             str: The ULID identifier.
         """
         return self._id
-
-    @property
-    def agentic_mode(self) -> bool:
-        """
-        Returns whether this list uses `AgenticRLock` for asynchronous compatibility.
-
-        Returns:
-            bool: True if using `AgenticRLock`, False otherwise.
-        """
-        return self._agentic_mode
 
     @property
     def auto_prune(self) -> bool:
@@ -759,32 +731,6 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def __exit__(self, exc_type, exc_value, traceback):
         """
         Exits the synchronization context, releasing the internal lock.
-        """
-        try:
-            self._lock.release()
-        except RuntimeError:
-            pass
-
-    async def __aenter__(self):
-        """
-        Asynchronous context manager entry, acquiring the internal lock (asynchronously if using `AgenticRLock`).
-
-        Returns:
-            WeakConcurrentList[_T]: The list instance.
-
-        Raises:
-            RuntimeError: If the list has been cleaned.
-        """
-        self.check_cleaned()
-        if hasattr(self._lock, "acquire_async"):
-            await self._lock.async_acquire()
-        else:
-            self._lock.acquire()
-        return self
-
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        """
-        Asynchronous context manager exit, releasing the internal lock.
         """
         try:
             self._lock.release()

@@ -939,9 +939,6 @@ class ConcurrentSet(Generic[_T], Cleanable):
         """
         # Release the internal lock, allowing other threads to acquire it.
         self._lock.release()
-        # Call the dispose method to clean up the set's internal state.
-        # Note that cleanup() itself is idempotent and thread-safe.
-        self.cleanup()
 
 #endregion
 #endregion

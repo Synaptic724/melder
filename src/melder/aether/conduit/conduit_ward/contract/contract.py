@@ -3,7 +3,7 @@ from threading import RLock
 # Melder imports
 from melder.aether.conduit.conduit_ward.contract.details import Detail
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IConduitWard, IConduit, IContract
 from melder.utilities.general_base.cleanable import Cleanable

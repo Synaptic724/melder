@@ -652,8 +652,6 @@ class ConcurrentDict(Generic[_K, _V], Cleanable):
 
         Notes:
           - The object should be considered invalid after exiting the context.
-          - This design mimics resource safety patterns seen in systems like C#'s `Cleanable`
-            and C++ RAII.
           - Users are free to manage `cleanup()` manually if they choose not to use the
             context manager.
 
@@ -663,4 +661,3 @@ class ConcurrentDict(Generic[_K, _V], Cleanable):
             exc_tb: Exception traceback (if raised).
         """
         self._lock.release()
-        self.cleanup()

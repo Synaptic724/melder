@@ -3,7 +3,7 @@ import uuid
 
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 
 
 # --- helpers -----------------------------------------------------------------

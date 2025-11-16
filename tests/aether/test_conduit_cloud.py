@@ -2,7 +2,7 @@ import unittest
 import string
 
 from melder.aether.conduit_cloud import ConduitCloud
-from melder.utilities.data_structures.concurrent_dictionary import ConcurrentDict
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 
 
 # ----- Test doubles -----
