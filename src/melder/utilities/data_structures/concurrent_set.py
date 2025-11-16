@@ -55,27 +55,38 @@ class ConcurrentSet(Generic[_T], Cleanable):
                      from the iterable are added to the internal set during initialization
                      before any other operations can occur, so thread safety isn't a
                      concern within the `__init__` method itself.
-            agentic_mode: If `True`, the set will use an `AgenticRLock` instead of a
-                          standard `threading.RLock`. This is useful for systems that
-                          require more advanced concurrency control mechanisms, such as
-                          agent-based systems. Defaults to `False`, using a standard RLock.
         """
         # Call the parent class constructor if applicable (e.g., Cleanable)
         super().__init__()
 
         self._id: str = str(ulid.ULID())
-        self._lock: Union['AgenticRLock', threading.RLock] = threading.RLock()
-
-        # Attempt to create the internal set from the initial iterable. If `initial`
-        try:
-            self._set: Set[_T] = set(initial) if initial is not None else set()
-        except TypeError as e:
-            raise TypeError(f"ConcurrentSet can only store hashable elements. {e}")
-
-        # Initialize the freeze flag. When `True`, the set is considered immutable
-        # for external operations (mutating methods will raise TypeError), and
-        # read operations can skip locking.
+        self._lock: threading.RLock = threading.RLock()
         self._freeze: bool = False
+        # Case 1: No initial data
+        if initial is None:
+            self._set: Set[_T] = set()
+            return
+
+        # Case 2: Strings/Bytes are NOT allowed (too ambiguous)
+        if isinstance(initial, (str, bytes, bytearray)):
+            raise TypeError(
+                f"ConcurrentSet does not allow strings/bytes as iterables for initialization: {initial!r}"
+            )
+
+        # Case 3: Check if it's iterable
+        try:
+            iterator = iter(initial)
+        except TypeError:
+            raise TypeError(
+                f"ConcurrentSet expected an iterable or None, got {type(initial).__name__}"
+            )
+
+        # Case 4: It's a valid iterable → construct the internal set
+        try:
+            self._set: Set[_T] = set(iterator)
+        except TypeError as e:
+            # Element inside the iterable is not hashable
+            raise TypeError(f"ConcurrentSet can only store hashable elements. {e}")
 
     def cleanup(self) -> None:
         """Clear internal data and mark the ConcurrentSet as cleaned.

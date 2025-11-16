@@ -5,7 +5,8 @@ from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit_cloud import ConduitCloud
-from threading import RLock, Lock
+from melder.spellbook.bind.spell_index import SpellIndex
+from threading import RLock
 
 class AethericFrame(Cleanable):
     """
@@ -41,10 +42,12 @@ class AethericFrame(Cleanable):
         self._id: str = str(ulid.ULID())
         self._lock = RLock()
         # This retains all normal conduits i.e roots created by a spellbook
+        # _conduits maps conduit IDs to IConduit instances
         self._conduits: ConcurrentDict[str, IConduit] = ConcurrentDict()
         # Holds conduit ids and their spell IDs (SHA256 hashes)
-        self._spell_registry: ConcurrentDict[str, ConcurrentSet[str]] = ConcurrentDict()
-        # Clusters only
+        self._spell_registry: ConcurrentDict[str, ConcurrentSet[SpellIndex]] = ConcurrentDict()
+        self._version_registry: ConcurrentDict[str, ConcurrentSet[str]] = ConcurrentDict()
+        # Clusters only hold conduit IDs for grouping
         self._conduit_clusters: ConcurrentDict[str, ConcurrentList[str]] = ConcurrentDict()
         # This is the dynamic mode registry
         self._conduit_cloud = ConduitCloud(name)
@@ -75,6 +78,7 @@ class AethericFrame(Cleanable):
             self._spell_registry.cleanup()
             self._conduit_clusters.cleanup()
             self._conduit_cloud.cleanup()
+            self._version_registry.cleanup()
             self._conduits = None
             self._spell_registry = None
             self._conduit_clusters = None

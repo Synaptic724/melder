@@ -40,7 +40,7 @@ class SpellIndex(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         # The dynamic pointer to the version, which can be updated.
         self._current_id: str = initial_id
-        self._versions: set = set(initial_id)  # Optional: Track all versions seen.
+        self._versions: set = {initial_id}  # Optional: Track all versions seen.
 
     # ------------------------------------------------------------
     # Cleanup
