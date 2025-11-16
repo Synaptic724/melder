@@ -34,7 +34,7 @@ class Contract(Cleanable):
         self._details_a: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit b
         self._details_b: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit a
 
-
+    #region Cleanup
     def cleanup(self):
         """
         Internal
@@ -64,6 +64,24 @@ class Contract(Cleanable):
         for detail in self._details_b.values():
             detail.cleanup()
         self._details_b.clear()
+    #endregion Cleanup
+
+
+    #region Context Manager
+    def __enter__(self):
+        """
+        Enters the context manager for Aether.
+        """
+        self._lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Exits the context manager for Aether.
+        """
+        self._lock.release()
+
+    #endregion Context Manager
 
     def _get_peer(self, ward: IConduitWard) -> IConduitWard:
         """

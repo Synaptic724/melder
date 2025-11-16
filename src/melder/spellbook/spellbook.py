@@ -215,6 +215,24 @@ class Spellbook(Cleanable, ISpellbook):
 
     #endregion Disposal
 
+
+    #region Context Manager
+    def __enter__(self):
+        """
+        Enters the context manager for Aether.
+        """
+        self._lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Exits the context manager for Aether.
+        """
+        self._lock.release()
+
+    #endregion Context Manager
+
+
     #region Logging
     # --- add these methods to Spellbook ---
 

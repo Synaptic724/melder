@@ -159,6 +159,7 @@ class Conduit(Cleanable, IConduit):
             Conduit: The current Conduit instance.
         """
         self._logger.debug("Entering Conduit context", "__enter__")
+        self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -173,7 +174,7 @@ class Conduit(Cleanable, IConduit):
             traceback: The traceback object, if any.
         """
         self._logger.debug("Exiting Conduit context", "__exit__")
-        self.cleanup()
+        self._lock.release()
 
     #endregion Context Management
     #region Logger

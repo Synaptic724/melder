@@ -1,3 +1,5 @@
+import threading
+
 import ulid
 from threading import Lock
 # Melder imports
@@ -31,9 +33,9 @@ class ConduitCloud(Cleanable):
             name (str): The name of the AethericFrame this cloud serves.
         """
         super().__init__()
-        self._lock = Lock()
-        self._name = name
-        self._registry = ConcurrentDict()
+        self._lock: threading.RLock = threading.RLock()
+        self._name: str = name
+        self._registry: ConcurrentDict = ConcurrentDict()
         self._id: str = str(ulid.ULID())
 
     def cleanup(self):
@@ -50,6 +52,25 @@ class ConduitCloud(Cleanable):
             self._registry.cleanup()
             self._registry = None
             self._cleaned = True
+        self._lock = None
+
+
+    #region Context Manager
+    def __enter__(self):
+        """
+        Enters the context manager for Aether.
+        """
+        self._lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Exits the context manager for Aether.
+        """
+        self._lock.release()
+
+    #endregion Context Manager
+
 
     def get_conduit(self, name: str) -> IConduit:
         """

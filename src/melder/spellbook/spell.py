@@ -162,6 +162,23 @@ class Spell(ISpell):
             self._cleaned = True
     #endregion Disposal
 
+
+    #region Context Manager
+    def __enter__(self):
+        """
+        Enters the context manager for Aether.
+        """
+        self._lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Exits the context manager for Aether.
+        """
+        self._lock.release()
+
+    #endregion Context Manager
+
     def __repr__(self):
         frame = self.spellframe.__name__ if self.spellframe else type(self.spell).__name__
         return (
