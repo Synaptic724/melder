@@ -1449,6 +1449,10 @@ class Conduit(Cleanable, IConduit):
 
         Returns the MutationResearch manager for this Conduit's Aetheric Frame.
 
+        Mutation Research is a specialized system that allows AI agents to study and mutate spells and creations.
+        If you are a human using this API directly, be aware that Mutation Research is primarily designed for AI-driven
+        experimentation and may not be suitable for manual use.
+
         This method is only available when:
           - The Conduit is a NORMAL conduit.
           - The system is in DYNAMIC mode.
