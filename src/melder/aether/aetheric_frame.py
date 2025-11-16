@@ -44,8 +44,9 @@ class AethericFrame(Cleanable):
         # This retains all normal conduits i.e roots created by a spellbook
         # _conduits maps conduit IDs to IConduit instances
         self._conduits: ConcurrentDict[str, IConduit] = ConcurrentDict()
-        # Holds conduit ids and their spell IDs (SHA256 hashes)
+        # Holds conduit ids and their spell indices
         self._spell_registry: ConcurrentDict[str, ConcurrentSet[SpellIndex]] = ConcurrentDict()
+        # Holds conduit ids and their spell IDs (SHA256 hashes)
         self._version_registry: ConcurrentDict[str, ConcurrentSet[str]] = ConcurrentDict()
         # Clusters only hold conduit IDs for grouping
         self._conduit_clusters: ConcurrentDict[str, ConcurrentList[str]] = ConcurrentDict()

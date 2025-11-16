@@ -175,7 +175,6 @@ class Aether(Cleanable):
         return cfg
 
     # endregion Configuration
-
     # region Conduit Management
 
     def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
@@ -654,5 +653,37 @@ class Aether(Cleanable):
             spell_registry[conduit_id].remove(spell_index)
         except KeyError:
             pass
+
+    def refresh_versions(self, aetheric_frame_name: str = "default") -> None:
+        """
+        Rebuild the version registry for a specific AethericFrame.
+
+        Collects all known SpellIndex objects from the frame._spell_registry
+        and reconstructs a map of:
+            conduit_id -> all SHA256 versions (strings)
+
+        This provides O(1) lookup for version-based queries.
+
+        NOTE:
+            - This does NOT modify SpellIndex.
+            - This does NOT modify spell ownership.
+            - This is intended to be called manually after mutation-research
+              creates new spell versions.
+
+        Args:
+            aetheric_frame_name (str): The name of the frame.
+        """
+        frame = self._aetheric_frames[aetheric_frame_name]
+
+        new_registry = ConcurrentDict()
+
+        for conduit_id, spellindex_list in frame._spell_registry.items():
+            version_set = ConcurrentSet()
+            for index in spellindex_list:
+                for version in index.get_all_versions():
+                    version_set.add(version)
+            new_registry[conduit_id] = version_set
+
+        frame._version_registry = new_registry
 
     # endregion Spell Management

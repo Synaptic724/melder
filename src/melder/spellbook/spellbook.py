@@ -508,10 +508,11 @@ class Spellbook(Cleanable, ISpellbook):
         """
         self._logger.debug("Verifying local spells are not already in Aether", "_check_all_spells")
         with self._lock:
-            for spell_id in self._spells.keys():
-                if Spellbook._aether._check_for_spell(spell_id, self._aetheric_frame):
-                    self._logger.error(f"Spell with ID {spell_id} already exists in the registry.", "_check_all_spells", exc_info=True)
-                    raise RuntimeError(f"Spell with ID {spell_id} already exists in the registry.")
+            for spell_index in self._spells.keys():
+                for spell_version_id in spell_index._versions:
+                    if Spellbook._aether._check_for_spell(spell_version_id, self._aetheric_frame):
+                        self._logger.error(f"Spell with ID {spell_version_id} already exists in the registry.", "_check_all_spells", exc_info=True)
+                        raise RuntimeError(f"Spell with ID {spell_version_id} already exists in the registry.")
 
 
     #endregion General Methods
