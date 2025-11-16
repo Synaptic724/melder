@@ -525,19 +525,24 @@ class Aether(Cleanable):
 
     def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
         """
-        Checks if a SHA256 spell_id exists in ANY SpellIndex._versions within a frame.
+        Checks if a SHA256 spell_id exists in ANY SpellIndex within a frame,
+        using the frame's _version_registry cache.
+
+        NOTE:
+            Call `_refresh_version_registry(...)` after mutation/research
+            changes so this remains accurate.
 
         Args:
-            spell_id (str): The SHA256 version ID to check.
+            spell_id (str): The SHA256 spell ID to check.
             aetheric_frame_name (str): The name of the frame.
 
         Returns:
-            bool: True if the version exists anywhere, False otherwise.
+            bool: True if the spell ID exists in the frame, False otherwise.
         """
-        # Select correct frame
+        # Pick frame
         if aetheric_frame_name != "default":
             try:
-                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+                frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 self._logger.error(
                     f"Aetheric frame '{aetheric_frame_name}' does not exist.",
@@ -546,24 +551,17 @@ class Aether(Cleanable):
                 )
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
-            spell_registry = self._default_frame._spell_registry
+            frame = self._default_frame
 
-        # 🔥 CORE LOGIC: search SHA256 inside each SpellIndex._versions
-        for spell_set in spell_registry.values():           # each conduit’s SpellIndex set
-            for spell_index in spell_set:                  # each SpellIndex
-                if spell_index.has_version(spell_id):      # does it contain this SHA256 version?
-                    self._logger.debug(
-                        f"Spell version '{spell_id}' found under SpellIndex '{spell_index.id}' "
-                        f"in frame '{aetheric_frame_name}'",
-                        "_check_for_spell"
-                    )
-                    return True
+        # Fast O(1-ish) lookup via cached version_registry
+        found = frame.has_version(spell_id)
 
         self._logger.debug(
-            f"Spell version '{spell_id}' not found in frame '{aetheric_frame_name}'",
+            f"Check for spell version '{spell_id}' in frame '{aetheric_frame_name}': {found}",
             "_check_for_spell"
         )
-        return False
+        return found
+
 
     def _add_spells_to_aether(self, conduit_id: str, spell_set: ConcurrentSet[SpellIndex], aetheric_frame_name: str = "default"):
         """
@@ -654,36 +652,59 @@ class Aether(Cleanable):
         except KeyError:
             pass
 
-    def refresh_versions(self, aetheric_frame_name: str = "default") -> None:
+    def _refresh_version_registry(self, aetheric_frame_name: str = "default") -> None:
         """
-        Rebuild the version registry for a specific AethericFrame.
+        Rebuilds the version registry for the given frame from its SpellIndexes.
 
-        Collects all known SpellIndex objects from the frame._spell_registry
-        and reconstructs a map of:
-            conduit_id -> all SHA256 versions (strings)
-
-        This provides O(1) lookup for version-based queries.
-
-        NOTE:
-            - This does NOT modify SpellIndex.
-            - This does NOT modify spell ownership.
-            - This is intended to be called manually after mutation-research
-              creates new spell versions.
-
-        Args:
-            aetheric_frame_name (str): The name of the frame.
+        Call this manually after research/mutation updates so that SHA256-based
+        lookups stay accurate and O(1) over the cached sets.
         """
-        frame = self._aetheric_frames[aetheric_frame_name]
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_refresh_version_registry",
+                    exc_info=True
+                )
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._default_frame
 
-        new_registry = ConcurrentDict()
+        frame.refresh_version_registry()
+        self._logger.debug(
+            f"Refreshed version registry for frame '{aetheric_frame_name}'",
+            "_refresh_version_registry"
+        )
 
-        for conduit_id, spellindex_list in frame._spell_registry.items():
-            version_set = ConcurrentSet()
-            for index in spellindex_list:
-                for version in index.get_all_versions():
-                    version_set.add(version)
-            new_registry[conduit_id] = version_set
+    def _get_all_spell_versions(self, aetheric_frame_name: str = "default") -> set[str]:
+        """
+        Returns a flat set of all SHA256 versions for a given frame,
+        using the frame's _version_registry.
 
-        frame._version_registry = new_registry
+        Call `_refresh_version_registry` first if you need the latest state.
+        """
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_all_spell_versions",
+                    exc_info=True
+                )
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._default_frame
+
+        versions = frame.get_all_versions()
+        self._logger.debug(
+            f"Collected {len(versions)} spell versions from frame '{aetheric_frame_name}'",
+            "_get_all_spell_versions"
+        )
+        return versions
+
+
 
     # endregion Spell Management

@@ -85,3 +85,62 @@ class AethericFrame(Cleanable):
             self._conduit_clusters = None
             self._conduit_cloud = None
 
+
+    # -----------------------------
+    # Version Registry Maintenance
+    # -----------------------------
+
+    def refresh_version_registry(self) -> None:
+        """
+        Rebuilds the version registry from the current SpellIndex registry.
+
+        After this runs:
+          - _version_registry[conduit_id] will contain all SHA256 versions
+            for every SpellIndex owned by that conduit.
+        """
+        with self._lock:
+            # Start fresh
+            self._version_registry = ConcurrentDict()
+
+            for conduit_id, spell_set in self._spell_registry.items():
+                version_set = ConcurrentSet()
+
+                for spell_index in spell_set:
+                    # SpellIndex.get_all_versions() returns set[str]
+                    versions = spell_index.get_all_versions()
+                    for version_id in versions:
+                        version_set.add(version_id)
+
+                self._version_registry[conduit_id] = version_set
+
+    def has_version(self, version_id: str) -> bool:
+        """
+        Checks if the given SHA256 version_id exists in this frame,
+        using the prebuilt _version_registry.
+
+        Args:
+            version_id (str): The SHA256 version ID to check.
+
+        Returns:
+            bool: True if the version ID exists in this frame, False otherwise.
+        """
+        with self._lock:
+            for version_set in self._version_registry.values():
+                if version_id in version_set:
+                    return True
+        return False
+
+    def get_all_versions(self) -> set[str]:
+        """
+        Returns a flat set of ALL SHA256 version IDs in this frame,
+        using the prebuilt _version_registry.
+
+        Returns:
+            set[str]: A set of all version IDs in this frame.
+        """
+        result: set[str] = set()
+        with self._lock:
+            for version_set in self._version_registry.values():
+                for version_id in version_set:
+                    result.add(version_id)
+        return result
