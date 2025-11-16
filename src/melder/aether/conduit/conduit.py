@@ -158,7 +158,6 @@ class Conduit(Cleanable, IConduit):
         Returns:
             Conduit: The current Conduit instance.
         """
-        self._logger.debug("Entering Conduit context", "__enter__")
         self._lock.acquire()
         return self
 
@@ -173,7 +172,6 @@ class Conduit(Cleanable, IConduit):
             exc_value: The exception value, if any.
             traceback: The traceback object, if any.
         """
-        self._logger.debug("Exiting Conduit context", "__exit__")
         self._lock.release()
 
     #endregion Context Management
@@ -1444,4 +1442,39 @@ class Conduit(Cleanable, IConduit):
 
 
 #endregion Spell Contracting API
+#region Mutation Research
+    def get_mutation_research(self):
+        """
+        Public API
+
+        Returns the MutationResearch manager for this Conduit's Aetheric Frame.
+
+        This method is only available when:
+          - The Conduit is a NORMAL conduit.
+          - The system is in DYNAMIC mode.
+
+        Returns:
+            MutationResearch: The mutation research manager for this Conduit's frame.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If the Conduit is a lesser conduit.
+            RuntimeError: If dynamic environment is not enabled.
+        """
+        self.check_cleaned()
+
+        # Validate state: must be normal + dynamic
+        if self._conduit_state != ConduitState.normal:
+            self._logger.error("get_mutation_research on non-normal conduit", "get_mutation_research")
+            raise RuntimeError("Only normal conduits can access MutationResearch.")
+
+        if not self.__dynamic_environment__:
+            self._logger.error("get_mutation_research in non-dynamic env", "get_mutation_research")
+            raise RuntimeError("Dynamic environment is not enabled. MutationResearch is unavailable.")
+
+        # Pull from Aether
+        self._logger.debug("Fetching MutationResearch for this conduit/frame", "get_mutation_research")
+        return Conduit._aether._get_mutation_research(self._aetheric_frame)
+
+#endregion Mutation Research
 #endregion Conduit

@@ -7,6 +7,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit_cloud import ConduitCloud
 from melder.spellbook.bind.spell_index import SpellIndex
 from threading import RLock
+from melder.spellbook.mutations.mutation_research import MutationResearch
 
 class AethericFrame(Cleanable):
     """
@@ -52,6 +53,8 @@ class AethericFrame(Cleanable):
         self._conduit_clusters: ConcurrentDict[str, ConcurrentList[str]] = ConcurrentDict()
         # This is the dynamic mode registry
         self._conduit_cloud = ConduitCloud(name)
+        # Holds the mutation research for this frame
+        self.mutation_research = MutationResearch(self)
         # This is the configuration for the Aetheric Frame
         self._configuration = None
 

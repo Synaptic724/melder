@@ -742,3 +742,46 @@ class Aether(Cleanable):
         return versions
 
     # endregion Spell Management
+
+    #region Mutation Research
+
+    def _get_mutation_research(self, aetheric_frame_name: str = "default") -> "MutationResearch":
+        """
+        Retrieves the MutationResearch manager associated with a specific Aetheric Frame.
+
+        Internal use only.
+
+        Args:
+            aetheric_frame_name (str): The name of the frame whose MutationResearch
+                object should be retrieved. Defaults to "default".
+
+        Returns:
+            MutationResearch: The MutationResearch instance for the target frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+            RuntimeError: If the Aether or target frame has been cleaned.
+        """
+        # Select frame
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_mutation_research",
+                    exc_info=True
+                )
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._default_frame
+
+        # Validate frame
+        if frame is None or frame._cleaned:
+            raise RuntimeError(
+                f"The AethericFrame '{aetheric_frame_name}' has been cleaned or is unavailable."
+            )
+
+        return frame.mutation_research
+
+    #endregion Mutation Research

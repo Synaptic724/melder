@@ -8,6 +8,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.mutations.research.research import Research
+from melder.utilities.interfaces.interfaces import IAethericFrame
 
 
 class MutationResearch(Cleanable):
@@ -18,13 +19,14 @@ class MutationResearch(Cleanable):
     - **Entrypoints:** Provides convenience methods to start new mutation flows for spells or creations.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, aetheric_frame: IAethericFrame) -> None:
         """
         Initializes the MutationResearch manager.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: RLock = RLock()
+        self._aetheric_frame = aetheric_frame
 
         # Keyed by SpellIndex id (ULID string)
         self._sessions_by_index: ConcurrentDict[str, Research] = ConcurrentDict()
@@ -52,6 +54,7 @@ class MutationResearch(Cleanable):
                 except Exception:
                     pass
                 self._sessions_by_index = None
+            self._aetheric_frame = None
 
         self._lock = None
 
