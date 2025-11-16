@@ -88,11 +88,13 @@ class Spellbook(Cleanable, ISpellbook):
 
         # Core spell storage (SpellIndex Maps)
         self._spells: ConcurrentDict[SpellIndex, ISpell] = ConcurrentDict()
+        self._spell_versions: ConcurrentDict[str, SpellIndex] = ConcurrentDict()
         self._lookup_spells: ConcurrentDict[tuple, SpellIndex]  = ConcurrentDict()
 
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
         self._contracted_spells: ConcurrentDict[str, ConcurrentDict[SpellIndex, ISpell]] = ConcurrentDict(ConcurrentDict())
+        self._contracted_versions: ConcurrentDict[str, ConcurrentDict[str, SpellIndex]] = ConcurrentDict(ConcurrentDict())
         self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, SpellIndex]]  = ConcurrentDict(ConcurrentDict())
 
         # Binding system
@@ -607,8 +609,8 @@ class Spellbook(Cleanable, ISpellbook):
             if conduit_id not in self._contracted_spells:
                 self._create_link_contract(conduit_id)
             spell_key = self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
-            self._contracted_spells[conduit_id][spell.spell_id] = spell
-            self._lookup_contracted_spells[conduit_id][spell_key] = spell.spell_id
+            self._contracted_spells[conduit_id][spell.spell_index] = spell
+            self._lookup_contracted_spells[conduit_id][spell_key] = spell.spell_index
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
         """
@@ -745,8 +747,8 @@ class Spellbook(Cleanable, ISpellbook):
                 self._logger.error(f"Spell with ID {new_spell.spell_id} already exists in the registry.", "bind", exc_info=True)
                 raise RuntimeError(f"Spell with ID {new_spell.spell_id} already exists in the registry.")
             self._add_hooks_to_spell(new_spell, **kwargs)
-            self._lookup_spells[new_spell._key] = new_spell.spell_id
-            self._spells[new_spell.spell_id] = new_spell
+            self._lookup_spells[new_spell._key] = new_spell.spell_index
+            self._spells[new_spell.spell_index] = new_spell
             self._logger.debug(f"Binding spell => id={new_spell.spell_id}, key={new_spell._key}", "bind")
             return new_spell.spell_id
         except Exception as e:

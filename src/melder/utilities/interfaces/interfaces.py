@@ -389,6 +389,23 @@ class ISpell(ICleanable, Protocol):
     _owner_conduit_id: Optional[str]
     _permissions: Optional[Any]
     _id: str
+    spell_index: 'SpellIndex'
+    spell: Any
+    spell_id: str
+    spellframe: Optional[Any]
+    spell_type: 'SpellType'
+    user_created_object: object
+    binding_name: str
+    spell_name: str
+    existence: 'Existence'
+    profile: 'ClassProfile | MethodProfile'
+    aetheric_frame: str
+    timeout: Optional[int]
+    retries: int
+    tags: list
+    metadata: dict
+    dependency_graph: Any
+    dependencies: List[str]
 
     def add_spell_details(self, *args, **kwargs):
         """

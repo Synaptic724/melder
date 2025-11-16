@@ -563,43 +563,48 @@ class Aether(Cleanable):
         return found
 
 
-    def _add_spells_to_aether(self, conduit_id: str, spell_set: ConcurrentSet[SpellIndex], aetheric_frame_name: str = "default"):
+    def _add_spells_to_aether(self, conduit_id: str, spell_set: ConcurrentSet[SpellIndex],
+                              aetheric_frame_name: str = "default") -> None:
         """
-        Registers a set of spell IDs as being owned by a specific conduit.
+        Registers a set of SpellIndex objects for a conduit and refreshes version registry.
 
         Args:
             conduit_id (str): The id of the owning conduit.
-            spell_set (ConcurrentSet[str]): A set of spell IDs to register.
+            spell_set (ConcurrentSet[SpellIndex]): The set of SpellIndex objects to register.
             aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame does not exist or the conduit ID is
-                already registered.
         """
-        self._logger.debug(f"Adding spells to aether for conduit '{conduit_id}' in frame '{aetheric_frame_name}'", "_add_spells_to_aether")
+
+        # Validate spell_set contents
         for item in spell_set:
             if not isinstance(item, SpellIndex):
                 raise TypeError("spell_set must contain only SpellIndex instances")
+
+        # Pick frame
         if aetheric_frame_name != "default":
             try:
-                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+                frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
-                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_add_spells_to_aether", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
-            spell_registry = self._default_frame._spell_registry
+            frame = self._default_frame
 
+        spell_registry = frame._spell_registry
+
+        # Prevent duplicate conduit registration
         if conduit_id in spell_registry:
-            self._logger.error(f"Spell registry already contains Conduit ID {conduit_id}.", "_add_spells_to_aether", exc_info=True)
             raise ValueError(f"Spell registry already contains Conduit ID {conduit_id}.")
 
+        # Add spell set
         spell_registry[conduit_id] = spell_set
-        self._logger.debug(f"Registered {len(spell_set)} spells for conduit '{conduit_id}'", "_add_spells_to_aether")
+
+        # Critical: update SHA256 version registry
+        frame.refresh_version_registry()
+
 
     def _register_single_spell_index(self, conduit_id: str, spell_index: SpellIndex,
                                      aetheric_frame_name: str = "default") -> None:
         """
-        Registers a single SpellIndex under a conduit.
+        Registers a single SpellIndex under a conduit and refreshes version registry.
 
         Args:
             conduit_id (str): The id of the owning conduit.
@@ -610,23 +615,31 @@ class Aether(Cleanable):
             ValueError: If the specified frame does not exist.
         """
 
+        # Pick frame registry
         if aetheric_frame_name != "default":
             try:
-                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+                frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
-            spell_registry = self._default_frame._spell_registry
+            frame = self._default_frame
 
+        spell_registry = frame._spell_registry
+
+        # Ensure there is a spell set for this conduit
         if conduit_id not in spell_registry:
             spell_registry[conduit_id] = ConcurrentSet()
 
+        # Add SpellIndex
         spell_registry[conduit_id].add(spell_index)
+
+        # 🔥 Critical: keep version registry in sync
+        frame.refresh_version_registry()
 
     def _remove_single_spell_index(self, conduit_id: str, spell_index: SpellIndex,
                                    aetheric_frame_name: str = "default"):
         """
-        Removes a single SpellIndex from a conduit.
+        Removes a SpellIndex and refreshes version registry so SHA256 ancestry collapses correctly.
 
         Args:
             conduit_id (str): The id of the owning conduit.
@@ -636,21 +649,31 @@ class Aether(Cleanable):
         Raises:
             ValueError: If the specified frame does not exist.
         """
+
+        # Pick frame
         if aetheric_frame_name != "default":
             try:
-                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+                frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
-            spell_registry = self._default_frame._spell_registry
+            frame = self._default_frame
 
+        spell_registry = frame._spell_registry
+
+        # Nothing to remove
         if conduit_id not in spell_registry:
             return
 
+        # Remove SpellIndex safely
         try:
             spell_registry[conduit_id].remove(spell_index)
         except KeyError:
             pass
+
+        # Critical: remove stale versions from registry
+        frame.refresh_version_registry()
+
 
     def _refresh_version_registry(self, aetheric_frame_name: str = "default") -> None:
         """
@@ -704,7 +727,5 @@ class Aether(Cleanable):
             "_get_all_spell_versions"
         )
         return versions
-
-
 
     # endregion Spell Management
