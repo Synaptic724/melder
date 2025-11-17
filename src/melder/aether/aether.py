@@ -536,7 +536,7 @@ class Aether(Cleanable):
 
     # region Spell Management
 
-    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
+    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> SpellIndex | None:
         """
         Checks if a SHA256 spell_id exists in ANY SpellIndex within a frame,
         using the frame's _version_registry cache.
@@ -550,7 +550,7 @@ class Aether(Cleanable):
             aetheric_frame_name (str): The name of the frame.
 
         Returns:
-            bool: True if the spell ID exists in the frame, False otherwise.
+            SpellIndex | None: The SpellIndex containing the spell ID, or None if not found.
         """
         # Pick frame
         if aetheric_frame_name != "default":
@@ -568,13 +568,18 @@ class Aether(Cleanable):
 
         # Fast O(1-ish) lookup via cached version_registry
         found = frame.has_version(spell_id)
-
-        self._logger.debug(
-            f"Check for spell version '{spell_id}' in frame '{aetheric_frame_name}': {found}",
-            "_check_for_spell"
-        )
-        return found
-
+        if found is True:
+            self._logger.debug(
+                f"Check for spell version '{spell_id}' in frame '{aetheric_frame_name}': {found}",
+                "_check_for_spell"
+            )
+            return frame.find_and_return_spell_index(spell_id)
+        else:
+            self._logger.debug(
+                f"Check for spell version '{spell_id}' in frame '{aetheric_frame_name}': {found}",
+                "_check_for_spell"
+            )
+            return None
 
     def _add_spells_to_aether(self, conduit_id: str, spell_set: ConcurrentSet[SpellIndex],
                               aetheric_frame_name: str = "default") -> None:

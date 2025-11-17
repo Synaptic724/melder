@@ -292,7 +292,7 @@ class Spellbook(Cleanable, ISpellbook):
     #region Properties
 
     @property
-    def spells(self) -> Mapping[str, ISpell]:
+    def spells(self) -> Mapping[SpellIndex, ISpell]:
         """
         Public API
 
@@ -305,18 +305,19 @@ class Spellbook(Cleanable, ISpellbook):
         return MappingProxyType(self._spells)
 
     @property
-    def contracted_spells(self) -> Mapping[str, Mapping[str, ISpell]]:
+    def contracted_spells(self) -> Mapping[str, Mapping[SpellIndex, ISpell]]:
         """
         Public API
 
         Returns a per-conduit read-only view of all **borrowed** spells.
-        Each conduit ID maps to its own immutable spell dict.
+        Each conduit ID maps to its own immutable SpellIndex→Spell map.
 
         Returns:
-            Mapping[str, Mapping[str, ISpell]]: An immutable map of peer Conduit ID to an immutable map of borrowed spells.
+            Mapping[str, Mapping[SpellIndex, ISpell]]:
+                Immutable map of peer Conduit ID to immutable map of borrowed spells.
         """
         return MappingProxyType({
-            conduit_id: MappingProxyType(dict(spells))  # Make inner dict immutable too
+            conduit_id: MappingProxyType(dict(spells))
             for conduit_id, spells in self._contracted_spells.items()
         })
 
@@ -324,27 +325,34 @@ class Spellbook(Cleanable, ISpellbook):
 
     #region Core Methods
     #region General Methods
-    def get_spell_permissions(self, spell_id: str) -> Optional[str]:
+    def get_spell_permissions(self, spell_index: SpellIndex) -> Optional[str]:
         """
         Public API
 
         Retrieves the access permissions for a locally registered spell.
 
         Args:
-            spell_id (str): The unique identifier of the spell.
+            spell_index (SpellIndex): The SpellIndex (lineage) of the spell.
 
         Returns:
             Optional[str]: The permissions ("read", "create", or "block") associated with the spell.
 
         Raises:
-            RuntimeError: If the spell with the given ID is not found in the spellbook.
+            RuntimeError: If the spell with the given index is not found in the spellbook.
         """
-        self._logger.debug(f"get_spell_permissions(spell_id={spell_id})", "get_spell_permissions")
-        spell = self._find_spell(spell_id)
+        self._logger.debug(
+            f"get_spell_permissions(spell_index={spell_index})",
+            "get_spell_permissions",
+        )
+        spell = self._find_spell(spell_index)
         if spell:
             return spell.permissions.name
-        self._logger.error(f"Spell with ID {spell_id} not found in the spellbook.", "get_spell_permissions", exc_info=True)
-        raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
+        self._logger.error(
+            f"Spell with index {spell_index} not found in the spellbook.",
+            "get_spell_permissions",
+            exc_info=True,
+        )
+        raise RuntimeError(f"Spell with index {spell_index} not found in the spellbook.")
 
     def _find_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
         """
@@ -413,11 +421,11 @@ class Spellbook(Cleanable, ISpellbook):
         return count
 
 
-    def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[SpellIndex]:
+    def find_spell_index(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[SpellIndex]:
         """
         Public API
 
-        Finds a spell's unique ID (SHA256) using its logical identifiers.
+        Finds a spell's SpellIndex (lineage identifier) using its logical identifiers.
 
         The search checks local spells first, then contracted spells.
 
@@ -427,13 +435,16 @@ class Spellbook(Cleanable, ISpellbook):
             binding_name (str): The secondary key to distinguish the spell.
 
         Returns:
-            Optional[str]: The unique SHA256 identifier of the spell.
+            Optional[SpellIndex]: The SpellIndex representing this spell's lineage.
 
         Raises:
             RuntimeError: If the spell is not found in the spellbook (local or contracted).
         """
         key = self._make_spell_key(spellframe, spell_name, binding_name)
-        self._logger.debug(f"find_spell_id(frame={spellframe}, name={spell_name}, bind={binding_name})", "find_spell_id")
+        self._logger.debug(
+            f"find_spell_id(frame={spellframe}, name={spell_name}, bind={binding_name})",
+            "find_spell_id",
+        )
         if key in self._lookup_spells:
             return self._lookup_spells[key]
         for contracted_spells in self._lookup_contracted_spells.values():

@@ -159,3 +159,23 @@ class AethericFrame(Cleanable):
                 for version_id in version_set:
                     result.add(version_id)
         return result
+
+
+    def find_and_return_spell_index(self, version_id: str) -> SpellIndex | None:
+        """
+        Searches for and returns the SpellIndex that contains the given
+        SHA256 version ID.
+
+        Args:
+            version_id (str): The SHA256 version ID to search for.
+
+        Returns:
+            SpellIndex | None: The SpellIndex containing the version ID,
+            or None if not found.
+        """
+        with self._lock:
+            for spell_set in self._spell_registry.values():
+                for spell_index in spell_set:
+                    if version_id in spell_index.get_all_versions():
+                        return spell_index
+        return None
