@@ -4,6 +4,7 @@ from threading import RLock
 
 # Melder Imports
 from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import MethodProfile, ClassProfile
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
@@ -12,7 +13,7 @@ from melder.spellbook.bind.spell_index import SpellIndex
 
 
 #region Spell
-class Spell(ISpell):
+class Spell(ISpell, Cleanable):
     """
     Internal
 

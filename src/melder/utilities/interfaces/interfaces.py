@@ -367,82 +367,185 @@ class ILesserCreations(ICleanable, Protocol):
         """
         ...
 
-
 @runtime_checkable
 class ISpell(ICleanable, Protocol):
     """
-    An Interface defining the shape of a 'Spell', a unit of logic that can be cast.
+    Internal Protocol
 
-    This represents the blueprint for a service, component, or function that
-    can be managed by the melder system.
+    Represents a **registered spell** inside the Melder system.
 
-    Attributes:
-        post_hooks (Optional[Any]): A list of callables to run after the spell is cast.
-        activation_hooks (Optional[Any]): A list of callables to run during casting.
-        pre_hooks (Optional[Any]): A list of callables to run before casting.
-        _owner_conduit_id (Optional[str]): The id of the Conduit that owns this spell.
-        _permissions (Optional[Any]): The permissions object governing this spell's
-            accessibility.
+    A spell is the concrete, runtime blueprint that the `Spellbook` binds and a
+    `Conduit` later casts. It wraps:
+      - The underlying callable / type (`spell`)
+      - Its lineage handle (`spell_index`)
+      - Identity and metadata (`spell_id`, `spellframe`, `binding_name`, `spell_name`)
+      - Lifecycle policy (`existence`)
+      - Structural profile (`ClassProfile` / `MethodProfile`)
+      - Access control (`permissions`)
+      - Dependency information (`dependency_graph`, `dependencies`)
+      - Conduit ownership metadata
+      - Hook-based lifecycle behavior (pre / activation / post)
+
+    It is **never** user-facing directly; users call into higher-level APIs
+    (Spellbook / Conduit). This protocol describes the shape used internally
+    across Melder for type-checking and contracts.
     """
-    post_hooks: Optional[Any]
-    activation_hooks: Optional[Any]
-    pre_hooks: Optional[Any]
-    _owner_conduit_id: Optional[str]
-    _permissions: Optional[Any]
+
+    # ------------------------------------------------------------------
+    # Core identity and locking
+    # ------------------------------------------------------------------
     _id: str
-    spell_index: 'SpellIndex'
+    _lock: Any
+
+    # ------------------------------------------------------------------
+    # Spell metadata / structure
+    # ------------------------------------------------------------------
+    spell_index: "SpellIndex"
     spell: Any
     spell_id: str
     spellframe: Optional[Any]
-    spell_type: 'SpellType'
-    user_created_object: object
+    spell_type: "SpellType"
+    user_created_object: Optional[object]
     binding_name: str
     spell_name: str
-    existence: 'Existence'
-    profile: 'ClassProfile | MethodProfile'
+    existence: "Existence"
+    profile: "ClassProfile | MethodProfile"
     aetheric_frame: str
+
+    # Execution policy
     timeout: Optional[int]
     retries: int
+
+    # Permissions
+    permissions: "Permissions"
+
+    # Arbitrary metadata
     tags: list
     metadata: dict
+
+    # Dependency graph + requirements
     dependency_graph: Any
     dependencies: List[str]
 
-    def add_spell_details(self, *args, **kwargs):
+    # Ownership (filled after Conduit creation)
+    _owner_conduit_id: Optional[str]
+    _owner_conduit_name: Optional[str]
+    owned_spell: Optional[bool]
+    _owner_creations: Any
+
+    # Lifecycle hooks
+    pre_hooks: List[Callable[..., Any]]
+    activation_hooks: List[Callable[..., Any]]
+    post_hooks: List[Callable[..., Any]]
+
+    # ------------------------------------------------------------------
+    # Ownership / configuration API
+    # ------------------------------------------------------------------
+    def _add_owned_conduit(
+            self,
+            conduit_id: str,
+            conduit_name: Optional[str] = None,
+            creations: Any = None,
+    ) -> None:
         """
-        Attaches detailed configuration or metadata to the spell.
+        Internal
+
+        Declares that this spell is owned by a specific Conduit and attaches
+        the Conduit's creation scope.
+
+        Typical responsibilities:
+          - Set `_owner_conduit_id` and `_owner_conduit_name`.
+          - Mark `owned_spell` as True.
+          - Store the `creations` container for singleton / scoped existence.
 
         Args:
-            *args: Positional arguments for configuration.
-            **kwargs: Keyword arguments, often used for specific details like
-                      'dependency_graph' or 'existing_object'.
+            conduit_id:
+                Unique ID of the owning Conduit.
+            conduit_name:
+                Optional human-readable name of the Conduit.
+            creations:
+                The Conduit's creations registry used for existence management.
         """
         ...
 
-    def _add_owned_conduit(self, conduit_id: str, conduit_name: str = None, creations: Any = None):
+    def _add_build_details(
+            self,
+            dag: Any,
+            dependencies: Optional[List[str]] = None,
+    ) -> None:
         """
-        Assigns ownership of this spell to a specific Conduit.
+        Internal
+
+        Attaches the dependency graph and explicit dependency list for this spell.
+
+        The dependency graph is responsible for constructing / resolving the
+        spell at cast-time. The dependency list captures upstream spell IDs
+        (typically SHA256 version IDs) required for this spell to function.
 
         Args:
-            conduit_id (str): The unique ID of the owning Conduit.
-            conduit_name (str, optional): The human-readable name of the owning Conduit.
+            dag:
+                A resolved dependency graph object which knows how to
+                construct / execute the spell.
+            dependencies:
+                List of spell IDs this spell depends on. Must not be None in
+                concrete implementations.
         """
         ...
 
-    def _add_dag(self, dag: Any):
+    # ------------------------------------------------------------------
+    # Casting API
+    # ------------------------------------------------------------------
+    def cast(self) -> object:
         """
-        Attaches the resolved dependency graph (DAG) to the spell.
+        Public API
 
-        Args:
-            dag (Any): The dependency graph object required to cast this spell.
+        Casts the spell and returns the resulting object or value.
+
+        Typical implementation outline:
+          1. Acquire internal lock.
+          2. Validate that the spell has not been cleaned.
+          3. Run `pre_hooks`.
+          4. Execute the dependency graph (building or reusing instances
+             according to `existence` and `user_created_object`).
+          5. Run `activation_hooks` during construction.
+          6. Run `post_hooks` after construction.
+          7. Return the resulting object.
+
+        Returns:
+            object:
+                The constructed or resolved object produced by this spell.
+
+        Raises:
+            RuntimeError:
+                If the spell has been cleaned or cannot be cast.
+            Exception:
+                Any error encountered during dependency resolution or hooks.
         """
         ...
 
-    def cast(self):
+    # ------------------------------------------------------------------
+    # Context manager
+    # ------------------------------------------------------------------
+    def __enter__(self) -> "ISpell":
         """
-        Executes the spell's logic and returns the resulting object or value.
+        Context manager entry.
+
+        Typical behavior:
+          - Acquire the internal re-entrant lock.
+          - Return ``self`` for scoped manipulation.
         """
         ...
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        """
+        Context manager exit.
+
+        Typical behavior:
+          - Release the internal lock, regardless of whether an exception
+            occurred within the context.
+        """
+        ...
+
 
 @runtime_checkable
 class ISpellIndex(ICleanable, Protocol):
@@ -1362,10 +1465,6 @@ class IConduitWard(ICleanable, Protocol):
     _lesser_conduits: 'ConcurrentDict[str, IConduit]'
     _lock: Any
 
-    def __init__(self, conduit: 'IConduit', dynamic: bool,
-                 conduit_type: 'ConduitState', policy: 'Policies') -> None:
-        ...
-
     # ------------------------------------------------------------------
     # Cleanup
     # ------------------------------------------------------------------
@@ -2169,32 +2268,6 @@ class IConduit(ICleanable, Protocol):
     _meld: 'Meld'
 
     _conduit_ward: 'ConduitWard'
-
-    # ------------------------------------------------------------------
-    # __init__
-    # ------------------------------------------------------------------
-    def __init__(
-            self,
-            spellbook: 'ISpellbook',
-            configuration: 'IConfiguration',
-            conduit_state: 'ConduitState',
-            aetheric_frame: str,
-            policy: 'Policies',
-            name: Optional[str] = None,
-            logger: Any | None = None,
-    ) -> None:
-        """
-        Public API
-
-        Initializes a new Conduit.
-
-        Args:
-            spellbook (ISpellbook): The Spellbook governing this Conduit.
-            configuration (IConfiguration): The locked system configuration.
-            conduit_state (str): The role of this Conduit ('normal' or 'lesser').
-            name (str, optional): An optional name for easier identification.
-        """
-        ...
 
     # ------------------------------------------------------------------
     # Logger configuration
