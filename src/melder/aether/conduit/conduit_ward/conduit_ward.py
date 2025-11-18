@@ -514,7 +514,9 @@ class ConduitWard(Cleanable, IConduitWard):
                 ward_b._received_index[self._id] = contract._id
 
                 try:
-                    ward_b._conduit._spellbook._create_link_contract(target_id)
+                    # Each side needs a contracted-spell bucket keyed by its peer's conduit id.
+                    self._conduit._spellbook._create_link_contract(target_id)
+                    ward_b._conduit._spellbook._create_link_contract(self._id)
                 except Exception as e:
                     self._logger.error(
                         f"spellbook link create failed: {e}",
@@ -531,6 +533,7 @@ class ConduitWard(Cleanable, IConduitWard):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 return True
+
 
     def _find_contract_id(self, target_conduit: IConduit) -> Optional[str]:
         """
@@ -1534,21 +1537,21 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         Internal
 
-        Retrieves all contracted spells across all active contracts involving this conduit.
+        Retrieves all spells that **this conduit can use** via active contracts.
 
-        This method walks all contracts and returns the spell ID and spell object
-        pairs available to this conduit from its peers (spells granted *to* this conduit).
+        For each peer conduit, this returns the list of (spell_id, ISpell) pairs
+        that the peer has granted to this conduit.
 
         Args:
             validate (bool): Whether to validate contract consistency before retrieval.
 
         Returns:
-            Optional[dict[str, list[Tuple[str, ISpell]]]]: A dictionary mapping peer conduit IDs (str) to lists of (spell_id, ISpell) tuples.
-            Returns None if no contracts are found.
+            Optional[dict[str, list[Tuple[str, ISpell]]]]: A dictionary mapping
+            peer conduit IDs to lists of (spell_id, ISpell) tuples, or None if no
+            contracts exist.
 
         Raises:
-            RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If contract validation fails and `validate` is True.
+            RuntimeError: If validation is enabled and any contract is invalid.
         """
         self.check_cleaned()
         if validate:
@@ -1562,22 +1565,31 @@ class ConduitWard(Cleanable, IConduitWard):
                 )
                 raise RuntimeError("One or more contracts are invalid. Please validate contracts before retrieving spells.")
 
-        spells_in_contracts = {}
+        spells_in_contracts: dict[str, list[Tuple[str, ISpell]]] = {}
         with self._lock:
             for contract_id, contract in self._contracts.items():
                 try:
                     peer_ward = contract._get_peer(self)
-                    peer_conduit = peer_ward._conduit
-                    detail_map = contract._get_detail_map(self)
-                    spells = []
+
+                    # Spells granted by the peer to this conduit live in the peer's detail map.
+                    detail_map = contract._get_detail_map(peer_ward)
+                    if not detail_map:
+                        continue
+
+                    spells: list[Tuple[str, ISpell]] = []
                     for sid, detail in detail_map.items():
-                        spell = peer_conduit.find_contracted_spell(sid)
+                        # Resolve from *this* conduit’s contracted spells (SpellIndex-aware via Spellbook).
+                        spell = self._conduit.find_contracted_spell(sid)
                         if spell is None:
                             if validate:
-                                raise RuntimeError(f"Inconsistent state: Spell '{sid}' missing in peer's spellbook.")
+                                raise RuntimeError(
+                                    f"Inconsistent state: Spell '{sid}' missing in this conduit’s contracted spells."
+                                )
                             continue
                         spells.append((sid, spell))
-                    spells_in_contracts[peer_ward._id] = spells
+
+                    if spells:
+                        spells_in_contracts[peer_ward._id] = spells
                 except Exception as e:
                     if validate:
                         self._logger.error(
@@ -1587,6 +1599,7 @@ class ConduitWard(Cleanable, IConduitWard):
                             mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                         )
                         raise RuntimeError(f"Failed to inspect contract {contract_id}: {e}")
+
         self._logger.debug(
             f"get_all_spells_in_contracts -> {len(spells_in_contracts)} peers",
             method_name="_get_all_spells_in_contracts",
@@ -1595,38 +1608,42 @@ class ConduitWard(Cleanable, IConduitWard):
         )
         return spells_in_contracts if spells_in_contracts else None
 
+
     def _get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, ISpell]]:
         """
         Internal
 
-        Attempts to retrieve a specific spell from the active contracts by searching through all links.
-
-        This looks for a spell that is being granted *to* this conduit by a peer.
+        Attempts to retrieve a specific spell that is being granted *to* this
+        conduit by any peer via active contracts.
 
         Args:
-            spell_id (str): The explicit spell ID to search for.
+            spell_id (str): The explicit spell version ID to search for.
 
         Returns:
-            Optional[tuple[str, ISpell]]: Tuple of (`Conduit ID`, `ISpell`) if found, otherwise None.
-
-        Raises:
-            RuntimeError: If the Conduit is cleaned.
+            Optional[tuple[str, ISpell]]: Tuple of (`peer_conduit_id`, `ISpell`)
+            if found, otherwise None.
         """
         self.check_cleaned()
         with self._lock:
-            for contract in self._contracts.values():
-                ward = contract._find_spell_in_ward(spell_id)
-                if ward:
-                    peer_ward = contract._get_peer(ward)
-                    spell = peer_ward._conduit.find_contracted_spell(spell_id)
-                    if spell:
-                        self._logger.debug(
-                            f"get_spell_in_contracts {spell_id} -> hit {peer_ward._id}",
-                            method_name="_get_spell_in_contracts",
-                            owner_id=self._id, owner_display=self._display_name,
-                            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                        )
-                        return (peer_ward._id, spell)
+            for contract in self._contracts.items():
+                contract = contract[1]  # (contract_id, contract)
+
+                peer_ward = contract._get_peer(self)
+                detail_map = contract._get_detail_map(peer_ward)
+
+                if spell_id not in detail_map:
+                    continue
+
+                spell = self._conduit.find_contracted_spell(spell_id)
+                if spell:
+                    self._logger.debug(
+                        f"get_spell_in_contracts {spell_id} -> hit {peer_ward._id}",
+                        method_name="_get_spell_in_contracts",
+                        owner_id=self._id, owner_display=self._display_name,
+                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                    )
+                    return peer_ward._id, spell
+
         self._logger.debug(
             f"get_spell_in_contracts {spell_id} -> miss",
             method_name="_get_spell_in_contracts",
@@ -1635,20 +1652,23 @@ class ConduitWard(Cleanable, IConduitWard):
         )
         return None
 
+
     def _get_spells_in_contract_by_conduit(self, conduit_id: str) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
         Internal
 
         Retrieves all spells exchanged with a specific conduit by its unique ID.
 
-        Returns details on both inbound (received) and outbound (granted) contracted spells.
+        - "inbound": spells the peer has granted to this conduit.
+        - "outbound": spells this conduit has granted to the peer.
 
         Args:
             conduit_id (str): The id of the target conduit.
 
         Returns:
-            dict[str, list[tuple[str, ISpell]]] | None: A dictionary mapping roles ("inbound", "outbound") to lists of (spell_id, ISpell) tuples.
-            Returns None if no such conduit is linked.
+            dict[str, list[tuple[str, ISpell]]] | None: A dictionary mapping roles
+            ("inbound", "outbound") to lists of (spell_id, ISpell) tuples, or None
+            if no such conduit is linked.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1665,19 +1685,27 @@ class ConduitWard(Cleanable, IConduitWard):
                 )
                 return None
 
-            spells_result = {"inbound": [], "outbound": []}
+            spells_result: dict[str, list[tuple[str, ISpell]]] = {"inbound": [], "outbound": []}
 
             peer_ward = contract._get_peer(self)
-            peer_conduit = peer_ward._conduit
-            received_map = contract._get_detail_map(self)
+
+            # Inbound: spells the peer has granted to us (live in peer's detail map).
+            received_map = contract._get_detail_map(peer_ward)
             for sid, detail in received_map.items():
-                spell = peer_conduit.find_contracted_spell(sid)
+                spell = self._conduit.find_contracted_spell(sid)
                 if spell:
                     spells_result["inbound"].append((sid, spell))
 
-            our_map = contract._get_detail_map(peer_ward)
+            # Outbound: spells we have granted to the peer (live in our detail map).
+            our_map = contract._get_detail_map(self)
             for sid, detail in our_map.items():
-                spell = self._conduit.find_contracted_spell(sid)
+                spell: Optional[ISpell] = None
+                try:
+                    # This is a local spell we own; resolve via SpellIndex-aware get_spell_by_id.
+                    spell = self._conduit.get_spell_by_id(sid)
+                except Exception:
+                    spell = None
+
                 if spell:
                     spells_result["outbound"].append((sid, spell))
 
@@ -1688,6 +1716,7 @@ class ConduitWard(Cleanable, IConduitWard):
             mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
         )
         return spells_result if spells_result["inbound"] or spells_result["outbound"] else None
+
 
     def _get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> dict[str, list[tuple[str, ISpell]]] | None:
         """

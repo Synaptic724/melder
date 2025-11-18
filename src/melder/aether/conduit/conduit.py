@@ -460,7 +460,11 @@ class Conduit(Cleanable, IConduit):
         """
         Internal
 
-        Adds the newly created Conduit's initial spells into the shared Aether world's registry.
+        Adds this Conduit's local spell lineages (SpellIndex keys) into the shared
+        Aether world's registry.
+
+        Aether is responsible for mapping individual version IDs inside each
+        SpellIndex to the owning conduit.
 
         Raises:
             RuntimeError: If Aether is not initialized.
@@ -468,10 +472,16 @@ class Conduit(Cleanable, IConduit):
         if Conduit._aether is None:
             self._logger.error("Aether is not initialized", "_add_spells_to_aether")
             raise RuntimeError("Aether is not initialized.")
-        spell_ids = list(self._spellbook._spells.keys())
-        self._logger.debug(f"Registering {len(spell_ids)} local spells into Aether", "_add_spells_to_aether")
-        spell_set = ConcurrentSet(spell_ids)
+
+        # NOTE: these are SpellIndex objects, not raw version SHA strings
+        spell_indices = list(self._spellbook._spells.keys())
+        self._logger.debug(
+            f"Registering {len(spell_indices)} local spell lineages into Aether",
+            "_add_spells_to_aether",
+        )
+        spell_set = ConcurrentSet(spell_indices)
         Conduit._aether._add_spells_to_aether(self._id, spell_set, self._aetheric_frame)
+
 
 
     def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[IConduit]:
@@ -504,31 +514,38 @@ class Conduit(Cleanable, IConduit):
         Checks if a spell with the given spell_id exists within the global Aether registry.
 
         Args:
-            spell_id (str): The unique identifier of the spell to check.
+            spell_id (str): The unique identifier of the spell to check (version SHA).
             aetheric_frame_name (str): The Aetheric Frame to search within. Defaults to "default".
 
         Returns:
-            bool: True if the Spell exists in the Aether, False otherwise.
+            bool: True if the spell exists in the Aether, False otherwise.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
         with self._lock:
-            found = Conduit._aether._check_for_spell(spell_id, aetheric_frame_name)
+            raw = Conduit._aether._check_for_spell(spell_id, aetheric_frame_name)
+            found = bool(raw)
         self._logger.debug(f"check_spell_id spell_id={spell_id} -> {found}", "check_spell_id")
         return found
+
 
     def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Any]:
         """
         Public API
 
-        Retrieves a spell object by its unique identifier (spell_id) from the spellbook of its owner.
+        Retrieves a spell object by its unique version identifier (spell_id) from the
+        spellbook of its owner.
 
-        The method first finds the owning conduit via Aether and then fetches the spell from that conduit's spellbook.
+        The method:
+          1) Uses Aether to locate the owning conduit.
+          2) Searches that conduit's spellbook for a SpellIndex whose lineage contains
+             this version ID.
+          3) Returns the corresponding ISpell instance if found.
 
         Args:
-            spell_id (str): The unique identifier of the spell.
+            spell_id (str): The unique version identifier of the spell (SHA256).
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
@@ -539,31 +556,62 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
         with self._lock:
-            conduit = self.get_conduit_by_spell_id(spell_id, aetheric_frame_name)
-            result = conduit._spellbook._find_spell(spell_id) if conduit else None
-        self._logger.debug(f"get_spell_by_id spell_id={spell_id} -> {'hit' if result else 'miss'}", "get_spell_by_id")
+            owner = self.get_conduit_by_spell_id(spell_id, aetheric_frame_name)
+            if owner is None:
+                result = None
+            else:
+                # Walk the owner's SpellIndex keys and find the lineage that contains this version
+                result = None
+                for spell_index, spell in owner._spellbook._spells.items():
+                    # SpellIndex is responsible for telling us whether it owns this version
+                    if spell_index.has_version and spell_index.has_version(spell_id):
+                        result = spell
+                        break
+
+        self._logger.debug(
+            f"get_spell_by_id spell_id={spell_id} -> {'hit' if result else 'miss'}",
+            "get_spell_by_id",
+        )
         return result
+
 
     def find_contracted_spell(self, spell_id: str) -> Optional[ISpell]:
         """
         Internal
 
-        Method to locate a spell by its spell_id within this Conduit's **contracted** spells.
+        Locate a contracted spell by its version spell_id within this Conduit's
+        contracted spells (across all peer conduits).
 
         Args:
-            spell_id (str): The unique ID of the spell to find.
+            spell_id (str): The unique version ID of the spell to find.
 
         Returns:
             Optional[ISpell]: The contracted spell instance, or None if not found.
         """
         self.check_cleaned()
-        return self._spellbook._find_contracted_spell(spell_id)
+        with self._lock:
+            spellbook = self._spellbook
+
+            # Walk all peer conduit contract maps in this spellbook
+            for conduit_id in spellbook._contracted_spells.keys():
+                # Delegate per-conduit search to Spellbook's helper if available
+                spell = spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
+                if spell is not None:
+                    return spell
+
+        return None
+
 
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
         """
         Public API
 
-        Finds a spell's unique ID (SHA256) using its logical identifiers.
+        Finds a spell's current version ID (SHA256 spell_id) using its logical identifiers.
+
+        This now uses:
+          1) Spellbook.find_spell_index(...) to locate the SpellIndex lineage.
+          2) Spellbook._find_spell(SpellIndex) to retrieve the ISpell.
+          3) Returns spell.spell_id (the current head version for that lineage).
 
         Args:
             spellframe (str): The logical namespace or grouping label.
@@ -571,18 +619,31 @@ class Conduit(Cleanable, IConduit):
             binding_name (str): The secondary key to distinguish the spell.
 
         Returns:
-            Optional[str]: The unique SHA256 identifier of the spell.
+            Optional[str]: The current SHA256 identifier of the spell.
 
         Raises:
             ValueError: If the spell is not found in the spellbook.
         """
         self.check_cleaned()
-        self._logger.debug(f"find_spell_id(frame={spellframe}, name={spell_name}, binding={binding_name})", "find_spell_id")
-        spell_id = self._spellbook.find_spell_id(spellframe, spell_name, binding_name)
-        if not spell_id:
-            self._logger.error(f"Spell '{spell_name}' not found", "find_spell_id")
+        self._logger.debug(
+            f"find_spell_id(frame={spellframe}, name={spell_name}, binding={binding_name})",
+            "find_spell_id",
+        )
+
+        # This will raise RuntimeError if the key is not found; we translate to ValueError
+        try:
+            spell_index = self._spellbook.find_spell_index(spellframe, spell_name, binding_name)
+        except RuntimeError as e:
+            self._logger.error(str(e), "find_spell_id")
+            raise ValueError(f"Spell '{spell_name}' not found in the spellbook.") from e
+
+        spell = self._spellbook._find_spell(spell_index)
+        if spell is None:
+            self._logger.error(f"Spell '{spell_name}' not found for SpellIndex {spell_index}", "find_spell_id")
             raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
-        return spell_id
+
+        return spell.spell_id
+
 
     def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
         """
@@ -727,12 +788,14 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Get the permissions for a spell by its spell_id.
+        Get the permissions for a spell by its version spell_id, **within this
+        conduit’s own spellbook**.
 
-        This returns the access level ("read", "create", "block") defined when the spell was bound.
+        This returns the access level ("read", "create", "block") defined when the
+        spell was bound.
 
         Args:
-            spell_id (str): SHA256 identifier of the spell.
+            spell_id (str): Version SHA256 identifier of the spell.
 
         Returns:
             Optional[str]: The permissions associated with the spell's binding.
@@ -741,13 +804,26 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the spell with the given ID is not found in the spellbook.
         """
         self.check_cleaned()
-        spell = self._spellbook._find_spell(spell_id)
-        if spell:
-            perms = spell.permissions.name
-            self._logger.debug(f"get_spell_permissions spell_id={spell_id} -> {perms}", "get_spell_permissions")
+        with self._lock:
+            target_spell: Optional[ISpell] = None
+
+            # Walk local SpellIndex keys and check which lineage owns this version
+            for spell_index, spell in self._spellbook._spells.items():
+                if spell_index.has_version(spell_id):
+                    target_spell = spell
+                    break
+
+        if target_spell is not None:
+            perms = target_spell.permissions.name
+            self._logger.debug(
+                f"get_spell_permissions spell_id={spell_id} -> {perms}",
+                "get_spell_permissions",
+            )
             return perms
+
         self._logger.error(f"Spell with ID {spell_id} not found", "get_spell_permissions")
         raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
+
 
 
     #endregion Spellbook Management API
