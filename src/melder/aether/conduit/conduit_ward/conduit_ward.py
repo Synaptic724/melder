@@ -2,6 +2,7 @@ import threading
 from typing import List, Optional, Any, Tuple
 
 # Melder Imports
+from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -1154,37 +1155,71 @@ class ConduitWard(Cleanable, IConduitWard):
         )
         return conduit_id, conduit
 
-    def _create_detail(self, spell_id: str, permissions: Permissions) -> Detail:
+    def _create_detail(
+            self,
+            spell: ISpell,
+            permissions: Permissions,
+            contract_type: ContractTypes,
+    ) -> Detail:
         """
         Internal
 
-        Creates a new Detail instance to represent spell permissions within a contract.
+        Factory for a lineage-aware Detail entry.
 
         Args:
-            spell_id (str): The ID of the spell this detail applies to.
-            permissions (Permissions): The permissions granted for this spell.
+            spell (ISpell): The spell being granted/received.
+            permissions (Permissions): The permissions applied to this lineage.
+            contract_type (ContractTypes): Role of this Detail from the
+                perspective of the ward that will own it.
 
         Returns:
             Detail: A new Detail instance.
-
-        Raises:
-            TypeError: If `permissions` is not an instance of `Permissions` enum.
         """
         if not isinstance(permissions, Permissions):
             self._logger.error(
-                f"create_detail: permissions wrong type {type(permissions).__name__}",
+                f"_create_detail: permissions wrong type {type(permissions).__name__}",
                 method_name="_create_detail",
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                owner_id=self._id,
+                owner_display=self._display_name,
+                mask=True,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
             )
             raise TypeError(f"Expected Permissions enum, got {type(permissions).__name__}")
+
+        if not isinstance(contract_type, ContractTypes):
+            self._logger.error(
+                f"_create_detail: contract_type wrong type {type(contract_type).__name__}",
+                method_name="_create_detail",
+                owner_id=self._id,
+                owner_display=self._display_name,
+                mask=True,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
+            )
+            raise TypeError(
+                f"Expected ContractTypes enum, got {type(contract_type).__name__}"
+            )
+
+        spell_index = spell.spell_index
+        spell_id = spell.spell_id  # SHA at the moment of contract creation
+
         self._logger.debug(
-            f"create_detail -> {spell_id}:{permissions.name}",
+            f"_create_detail -> index={spell_index}, spell_id={spell_id}, perms={permissions.name}, type={contract_type.name}",
             method_name="_create_detail",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            owner_id=self._id,
+            owner_display=self._display_name,
+            mask=True,
+            groups=self._log_groups,
+            system_groups=self._log_sysgroups,
         )
-        return Detail(spell_id, permissions)
+        return Detail(
+            spell_index=spell_index,
+            spell_id=spell_id,
+            permissions=permissions,
+            contract_type=contract_type,
+        )
+
 
 
     def _check_spell_if_eligible(self, spell: ISpell, conduit: IConduit, permissions: Permissions) -> None:
@@ -1251,23 +1286,35 @@ class ConduitWard(Cleanable, IConduitWard):
             mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
         )
 
-    def _add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: str = None,
-                               permissions: str = "create", aetheric_frame = "default") -> bool | None:
+    def _add_spell_to_contract(
+            self,
+            *,
+            spell: ISpell = None,
+            spell_id: str = None,
+            conduit: IConduit = None,
+            conduit_id: str = None,
+            permissions: str = "create",
+            aetheric_frame: str = "default",
+    ) -> bool | None:
         """
         Internal
 
         Adds a single spell to an existing contract with a peer conduit.
 
+        This now contracts the **SpellIndex lineage** and uses the spell's
+        current version ID only as the initial reference. On mutation, the
+        lineage will advance, and lookups will resolve to the new version.
+
         Args:
             spell (ISpell, optional): The spell object to contract.
-            spell_id (str, optional): The unique ID of the spell.
+            spell_id (str, optional): The unique version ID of the spell.
             conduit (IConduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
-            permissions (str): The permission level granted for this spell (default is "create").
+            permissions (str): The permission level granted for this spell.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:
-            bool: True if the contract was successfully updated.
+            bool | None: True if the contract was updated, None on internal error.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1276,47 +1323,84 @@ class ConduitWard(Cleanable, IConduitWard):
             ValueError/TypeError/RuntimeError: From internal helper checks.
         """
         self.check_cleaned()
-        permissions = EnumHelpers.convert_enum_and_check(permissions, Permissions)
+
+        # Normalize permissions into the enum
+        permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
+
+        # Resolve spell + spell_id and conduit + conduit_id via your existing helpers
         spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
+
         contract = self._find_contract_by_id(conduit_id)
         if contract is None:
             self._logger.error(
                 f"add_spell_to_contract: no contract for {conduit_id}",
                 method_name="_add_spell_to_contract",
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                owner_id=self._id,
+                owner_display=self._display_name,
+                mask=True,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
             )
-            raise RuntimeError(f"No contract found for conduit ID {conduit_id}, please link to this conduit prior to spell contract initiation.")
-        if contract._check_if_exists_and_permissions(conduit._conduit_ward, spell_id, permissions):
+            raise RuntimeError(
+                f"No contract found for conduit ID '{conduit_id}'. "
+                f"Please link to this conduit prior to spell contract initiation."
+            )
+
+        # We still use the original spell_id for duplicate detection
+        if contract._check_if_exists_and_permissions(conduit._conduit_ward, spell_id, permissions_enum):
             self._logger.error(
                 f"add_spell_to_contract: already exists {spell_id} with same permissions",
                 method_name="_add_spell_to_contract",
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                owner_id=self._id,
+                owner_display=self._display_name,
+                mask=True,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
             )
-            raise RuntimeError(f"Spell with ID '{spell_id}' is already contracted in this conduit with these permissions.")
-        self._check_spell_if_eligible(spell, conduit, permissions)
+            raise RuntimeError(
+                f"Spell with ID '{spell_id}' is already contracted in this conduit with these permissions."
+            )
+
+        # Policy + ownership checks remain unchanged
+        self._check_spell_if_eligible(spell, conduit, permissions_enum)
+
+        # From this ConduitWard's perspective, the peer's Detail represents
+        # a spell that the peer has **received** from us.
+        contract_type = ContractTypes.received
+
         with contract._lock:
-            detail = self._create_detail(spell_id, permissions)
+            detail = self._create_detail(spell, permissions_enum, contract_type)
             contract._add(conduit._conduit_ward, detail)
+
+        # Inform the peer spellbook about the contracted spell (SpellIndex-based)
         try:
-            contract._get_peer(conduit._conduit_ward)._conduit._spellbook._add_contracted_spell(spell, conduit_id)
+            peer_conduit = contract._get_peer(conduit._conduit_ward)._conduit
+            peer_conduit._spellbook._add_contracted_spell(spell, conduit_id)
         except Exception as e:
             self._logger.error(
                 f"add_spell_to_contract: spellbook add failed: {e}",
-                method_name="_add_spell_to_contract", exc_info=True,
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                method_name="_add_spell_to_contract",
+                exc_info=True,
+                owner_id=self._id,
+                owner_display=self._display_name,
+                mask=True,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
             )
             raise
+
         self._logger.info(
-            f"add_spell_to_contract: success spell_id={spell_id} conduit_id={conduit_id} perms={permissions.name}",
+            f"add_spell_to_contract: success spell_id={spell_id} conduit_id={conduit_id} perms={permissions_enum.name}",
             method_name="_add_spell_to_contract",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            owner_id=self._id,
+            owner_display=self._display_name,
+            mask=True,
+            groups=self._log_groups,
+            system_groups=self._log_sysgroups,
         )
         return True
+
 
     def _add_spells_to_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None, conduit_id: str = None,
                                 permissions: str = "create", aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
@@ -1533,80 +1617,110 @@ class ConduitWard(Cleanable, IConduitWard):
         )
         raise RuntimeError(f"No contract found for conduit ID {conduit_id}")
 
-    def _get_all_spells_in_contracts(self, validate: bool = True) -> Optional[dict[str, list[Tuple[str, ISpell]]]]:
+    def _get_all_spells_in_contracts(
+            self,
+            validate: bool = True,
+    ) -> Optional[dict[str, list[Tuple[str, ISpell]]]]:
         """
         Internal
 
         Retrieves all spells that **this conduit can use** via active contracts.
 
-        For each peer conduit, this returns the list of (spell_id, ISpell) pairs
-        that the peer has granted to this conduit.
+        For each peer conduit, this returns a list of:
+            (current_spell_version_id, ISpell)
 
-        Args:
-            validate (bool): Whether to validate contract consistency before retrieval.
-
-        Returns:
-            Optional[dict[str, list[Tuple[str, ISpell]]]]: A dictionary mapping
-            peer conduit IDs to lists of (spell_id, ISpell) tuples, or None if no
-            contracts exist.
-
-        Raises:
-            RuntimeError: If validation is enabled and any contract is invalid.
+        Semantics:
+            * Contracts are anchored on SpellIndex (via Detail.spell_index).
+            * Resolution uses Spellbook._find_contracted_spell(spell_index),
+              so if the lineage has mutated, we get the **current** spell object.
+            * The version ID returned in the tuple is spell.spell_id (head).
         """
         self.check_cleaned()
+
         if validate:
             validation = self._validate_contracts_and_define()
             if not all(validation.values()):
                 self._logger.error(
                     "get_all_spells_in_contracts: validation failed",
                     method_name="_get_all_spells_in_contracts",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                    owner_id=self._id,
+                    owner_display=self._display_name,
+                    mask=True,
+                    groups=self._log_groups,
+                    system_groups=self._log_sysgroups,
                 )
-                raise RuntimeError("One or more contracts are invalid. Please validate contracts before retrieving spells.")
+                raise RuntimeError(
+                    "One or more contracts are invalid. Please validate contracts before retrieving spells."
+                )
 
         spells_in_contracts: dict[str, list[Tuple[str, ISpell]]] = {}
+
         with self._lock:
             for contract_id, contract in self._contracts.items():
                 try:
                     peer_ward = contract._get_peer(self)
 
-                    # Spells granted by the peer to this conduit live in the peer's detail map.
+                    # We want spells the peer has GRANTED to this conduit,
+                    # which live in the peer's detail map.
                     detail_map = contract._get_detail_map(peer_ward)
                     if not detail_map:
                         continue
 
                     spells: list[Tuple[str, ISpell]] = []
-                    for sid, detail in detail_map.items():
-                        # Resolve from *this* conduit’s contracted spells (SpellIndex-aware via Spellbook).
-                        spell = self._conduit.find_contracted_spell(sid)
-                        if spell is None:
+
+                    for detail in detail_map.values():
+                        # lineage-based resolution
+                        spell_index = detail.spell_index
+                        try:
+                            spell = self._conduit._spellbook._find_contracted_spell(spell_index)
+                        except Exception as e:
                             if validate:
-                                raise RuntimeError(
-                                    f"Inconsistent state: Spell '{sid}' missing in this conduit’s contracted spells."
+                                self._logger.error(
+                                    f"_get_all_spells_in_contracts: contracted spell lookup failed "
+                                    f"for peer={peer_ward._id}, index={spell_index}: {e}",
+                                    method_name="_get_all_spells_in_contracts",
+                                    exc_info=True,
+                                    owner_id=self._id,
+                                    owner_display=self._display_name,
+                                    mask=True,
+                                    groups=self._log_groups,
+                                    system_groups=self._log_sysgroups,
                                 )
+                                raise
                             continue
-                        spells.append((sid, spell))
+
+                        # Expose the CURRENT version id, not the historical one.
+                        current_id = spell.spell_id
+                        spells.append((current_id, spell))
 
                     if spells:
                         spells_in_contracts[peer_ward._id] = spells
+
                 except Exception as e:
                     if validate:
                         self._logger.error(
                             f"inspect contract {contract_id} failed: {e}",
-                            method_name="_get_all_spells_in_contracts", exc_info=True,
-                            owner_id=self._id, owner_display=self._display_name,
-                            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                            method_name="_get_all_spells_in_contracts",
+                            exc_info=True,
+                            owner_id=self._id,
+                            owner_display=self._display_name,
+                            mask=True,
+                            groups=self._log_groups,
+                            system_groups=self._log_sysgroups,
                         )
                         raise RuntimeError(f"Failed to inspect contract {contract_id}: {e}")
 
         self._logger.debug(
             f"get_all_spells_in_contracts -> {len(spells_in_contracts)} peers",
             method_name="_get_all_spells_in_contracts",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            owner_id=self._id,
+            owner_display=self._display_name,
+            mask=True,
+            groups=self._log_groups,
+            system_groups=self._log_sysgroups,
         )
         return spells_in_contracts if spells_in_contracts else None
+
 
 
     def _get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, ISpell]]:
@@ -1616,39 +1730,72 @@ class ConduitWard(Cleanable, IConduitWard):
         Attempts to retrieve a specific spell that is being granted *to* this
         conduit by any peer via active contracts.
 
+        This now behaves in a lineage-aware way:
+
+            * spell_id may be ANY version SHA belonging to the lineage.
+            * We search each Detail's SpellIndex using Detail.has_version(spell_id).
+            * If matched, we resolve via Spellbook._find_contracted_spell(spell_index)
+              and return the **current** spell object (not the historical version).
+
         Args:
-            spell_id (str): The explicit spell version ID to search for.
+            spell_id (str): The version ID (SHA) to search for.
 
         Returns:
-            Optional[tuple[str, ISpell]]: Tuple of (`peer_conduit_id`, `ISpell`)
-            if found, otherwise None.
+            Optional[tuple[str, ISpell]]: (peer_conduit_id, ISpell) if found, else None.
         """
         self.check_cleaned()
+
         with self._lock:
             for contract in self._contracts.values():
                 peer_ward = contract._get_peer(self)
                 detail_map = contract._get_detail_map(peer_ward)
 
-                if spell_id not in detail_map:
+                if not detail_map:
                     continue
 
-                spell = self._conduit.find_contracted_spell(spell_id)
-                if spell:
+                for detail in detail_map.values():
+                    if not detail.has_version(spell_id):
+                        continue
+
+                    spell_index = detail.spell_index
+                    try:
+                        spell = self._conduit._spellbook._find_contracted_spell(spell_index)
+                    except Exception as e:
+                        self._logger.error(
+                            f"_get_spell_in_contracts: contracted spell lookup failed "
+                            f"for version={spell_id}, index={spell_index}: {e}",
+                            method_name="_get_spell_in_contracts",
+                            exc_info=True,
+                            owner_id=self._id,
+                            owner_display=self._display_name,
+                            mask=True,
+                            groups=self._log_groups,
+                            system_groups=self._log_sysgroups,
+                        )
+                        return None
+
                     self._logger.debug(
                         f"get_spell_in_contracts {spell_id} -> hit {peer_ward._id}",
                         method_name="_get_spell_in_contracts",
-                        owner_id=self._id, owner_display=self._display_name,
-                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                        owner_id=self._id,
+                        owner_display=self._display_name,
+                        mask=True,
+                        groups=self._log_groups,
+                        system_groups=self._log_sysgroups,
                     )
                     return peer_ward._id, spell
 
         self._logger.debug(
             f"get_spell_in_contracts {spell_id} -> miss",
             method_name="_get_spell_in_contracts",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            owner_id=self._id,
+            owner_display=self._display_name,
+            mask=True,
+            groups=self._log_groups,
+            system_groups=self._log_sysgroups,
         )
         return None
+
 
 
     def _get_spells_in_contract_by_conduit(self, conduit_id: str) -> dict[str, list[tuple[str, ISpell]]] | None:
