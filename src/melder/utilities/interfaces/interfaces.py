@@ -1,6 +1,7 @@
 import threading
 from threading import RLock
-from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator, Callable
+from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator, Callable, \
+    Tuple, Mapping, Set
 
 
 @runtime_checkable
@@ -444,81 +445,2170 @@ class ISpell(ICleanable, Protocol):
         ...
 
 @runtime_checkable
+class ISpellIndex(ICleanable, Protocol):
+    """
+    Interface for a **SpellIndex**: a stable, hashable dictionary key that
+    points to a mutable version ID (e.g., a SHA256 commit or spell version).
+
+    Design:
+        * Hashing and equality are based **only** on an immutable ULID.
+        * The "current" version pointer is mutable and thread-safe.
+        * The object is safe to use as a dictionary key even while the
+          version pointer changes over time.
+        * Tracks the full lineage of versions via an internal version set.
+
+    Typical usage:
+        * As a key into spell registries:
+              Dict[SpellIndex, ISpell]
+        * As a stable lineage handle for spell mutation/versioning.
+        * As a synchronization primitive when multiple threads need to
+          reason about "which version is active" without breaking key
+          identity in maps.
+    """
+
+    # ------------------------------------------------------------------
+    # Core backing fields (shape only; concrete type lives in impl)
+    # ------------------------------------------------------------------
+    _id: str
+    _current_id: Optional[str]
+    _lock: Any
+    _cleaned: bool
+    _versions: Optional[Set[str]]
+
+    # ------------------------------------------------------------------
+    # Core API
+    # ------------------------------------------------------------------
+    @property
+    def current(self) -> Optional[str]:
+        """
+        Gets the currently active version ID (e.g., SHA256) this index points to.
+
+        Returns:
+            Optional[str]:
+                The current version ID, or ``None`` if the index has
+                been cleaned.
+        """
+        ...
+
+    def update(self, new_id: str) -> None:
+        """
+        Atomically updates the pointer to a new version ID.
+
+        This operation is thread-safe and does **not** affect the
+        object's hash or its location in any dictionary.
+
+        Args:
+            new_id:
+                The new version ID (e.g., SHA256 commit ID) to point to.
+        """
+        ...
+
+    def get_all_versions(self) -> Set[str]:
+        """
+        Retrieves all version IDs that this index has ever pointed to.
+
+        Returns:
+            Set[str]:
+                A copy of the internal set of all version IDs seen for
+                this lineage.
+        """
+        ...
+
+    def has_version(self, version_id: str) -> bool:
+        """
+        Checks whether this index has ever pointed to the specified
+        version ID.
+
+        Args:
+            version_id:
+                The version ID to check for.
+
+        Returns:
+            bool:
+                ``True`` if the version ID is present in the lineage
+                set, ``False`` otherwise.
+        """
+        ...
+
+    @property
+    def id(self) -> str:
+        """
+        Returns the immutable, unique ULID that serves as the stable
+        identity for this index.
+
+        This is the only value used for hashing and equality.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Dict-safety / identity semantics
+    # ------------------------------------------------------------------
+    def __hash__(self) -> int:
+        """
+        Produces a hash based **only** on the immutable ULID.
+
+        This guarantees a stable hash even when the current version
+        pointer changes, making the object safe as a dictionary key.
+        """
+        ...
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Compares two SpellIndex instances based solely on their
+        immutable ULIDs.
+
+        Args:
+            other:
+                Another object to compare to.
+
+        Returns:
+            bool:
+                ``True`` if ``other`` is a SpellIndex/ISpellIndex with
+                the same ULID; otherwise ``False``.
+        """
+        ...
+
+    def __repr__(self) -> str:
+        """
+        Returns a developer-friendly representation of the index state,
+        typically including the ULID and current version ID.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Context manager support
+    # ------------------------------------------------------------------
+    def __enter__(self) -> "ISpellIndex":
+        """
+        Context manager entry.
+
+        Typical behavior in the concrete implementation:
+            * Performs a cleaned check.
+            * Acquires the internal lock.
+            * Returns ``self``.
+        """
+        ...
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        """
+        Context manager exit.
+
+        Typical behavior in the concrete implementation:
+            * Releases the internal lock regardless of outcome.
+        """
+        ...
+
+
+
+@runtime_checkable
 class ISpellbook(ICleanable, Protocol):
     """
-    An Interface for a 'Spellbook', the central registry and configuration manager
-    for all spells within a Conduit.
+    Interface for a **Spellbook**: the central authority for spell definitions,
+    bindings, configuration, and contract-based sharing.
 
-    It behaves as the primary interface for binding, resolving, and configuring
-    the spells available in its scope.
+    This interface reflects the *SpellIndex-native* implementation:
 
-    Attributes:
-        _lookup_contracted_spells (Optional[Any]): Internal lookup for borrowed spells.
-        _lookup_spells (Optional[Any]): Internal lookup for owned spells.
-        _contracted_spells (Optional[Any]): Storage for borrowed spells.
-        _spells (Optional[Any]): Storage for spells owned by this spellbook.
-        _bind (Optional[Any]): The internal binding mechanism.
+    * Local and contracted spells are keyed by `SpellIndex` (lineage).
+    * Version SHAs are tracked via `SpellIndex._versions` plus:
+        - `_spell_versions`  (local)
+        - `_contracted_versions` (per-conduit)
+
+    The Spellbook participates in:
+      * Local binding + lifecycle (`bind`, `Existence`)
+      * Cross-conduit contracts (via ConduitWard/Contract)
+      * Aether frame configuration and global registry
+      * Conduit conjuration (execution scope)
     """
+
+    # ------------------------------------------------------------------
+    # Core backing fields (shape only; concrete types live in impl)
+    # ------------------------------------------------------------------
     _lookup_contracted_spells: Optional[Any]
     _lookup_spells: Optional[Any]
     _contracted_spells: Optional[Any]
+    _contracted_versions: Optional[Any]
     _spells: Optional[Any]
+    _spell_versions: Optional[Any]
     _bind: Optional[Any]
     _id: str
+    _aetheric_frame: Optional[str]
+    _configuration: Optional['IConfiguration']
 
-    def _lesser_conduit_spellbook_copy(self) -> 'ISpellbook':
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+    @property
+    def spells(self) -> Mapping[ISpellIndex, ISpell]:
         """
-        Creates a copy of the spellbook for use in a new lesser (child) conduit.
+        Public API
+
+        Returns a read-only view of the **local spells** registered
+        in this Spellbook.
+
+        This provides safe introspection of the local registry without
+        allowing external mutation.
 
         Returns:
-            ISpellbook: A new spellbook instance configured for a lesser conduit.
+            Mapping[SpellIndex, ISpell]:
+                An immutable map of `SpellIndex` → spell object.
         """
         ...
 
-    def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
+    @property
+    def contracted_spells(self) -> Mapping[str, Mapping[ISpellIndex, ISpell]]:
         """
-        Finds the unique spell_id (SHA256 hash) for a spell.
+        Public API
 
-        Args:
-            spellframe: The logical grouping or interface of the spell.
-            spell_name: The concrete name of the spell class/function.
-            binding_name: The user-provided unique name for this binding.
+        Returns a per-conduit read-only view of all **borrowed** spells.
+
+        Each peer conduit ID maps to its own immutable
+        `SpellIndex → ISpell` map.
 
         Returns:
-            Optional[str]: The unique spell_id if found, otherwise None.
+            Mapping[str, Mapping[SpellIndex, ISpell]]:
+                Immutable map of peer Conduit ID → immutable map of
+                borrowed spells.
         """
         ...
 
-    def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
+    # ------------------------------------------------------------------
+    # Binding / inspection / lookup API
+    # ------------------------------------------------------------------
+    def bind(
+            self,
+            spell: Any,
+            existence: 'Existence',
+            *,
+            permissions: str = "create",
+            spellframe: Any = None,
+            binding_name: Any = None,
+            **kwargs: Any,
+    ) -> str:
         """
-        Finds the internal lookup key (tuple) for a spell.
+        Public API
+
+        Binds a spell into the Spellbook for future instantiation and
+        dependency injection.
+
+        This method profiles the spell, computes a unique SHA256 ID,
+        stores it locally, and assigns lifecycle + permission policies.
+
+        Permissions (access control to other conduits):
+            - ``"read"``:
+                Other conduits may *use* the spell but not create
+                new instances.
+            - ``"create"`` (default):
+                Other conduits may both use *and* create instances.
+            - ``"block"``:
+                Completely blocks access from other conduits; only
+                the owning conduit may use it.
+
+        Existence (spell lifecycle):
+            Controls how instances are managed (e.g., `Existence.unique`,
+            `Existence.many`, etc.).
+
+        Lifecycle hooks (optional ``**kwargs``):
+            - ``pre_hooks``:
+                List[Callable] executed *before* the spell is constructed.
+            - ``activation_hooks``:
+                List[Callable] executed *during* spell construction.
+            - ``post_hooks``:
+                List[Callable] executed *after* the spell has been cast.
 
         Args:
-            spellframe: The logical grouping or interface of the spell.
-            spell_name: The concrete name of the spell class/function.
-            binding_name: The user-provided unique name for this binding.
+            spell:
+                The class, function, or object to bind.
+            existence:
+                The lifecycle scope for this spell.
+            permissions:
+                Permission level exposed to other conduits:
+                ``"read"``, ``"create"``, or ``"block"``.
+            spellframe:
+                Logical interface/namespace or grouping label.
+            binding_name:
+                Secondary key to distinguish this spell within its frame.
+            **kwargs:
+                Optional lifecycle hooks: ``pre_hooks``,
+                ``activation_hooks``, ``post_hooks``.
 
         Returns:
-            Optional[tuple]: The internal lookup key if found, otherwise None.
+            str: The primary SHA256 ``spell_id`` for the head version.
+
+        Raises:
+            RuntimeError:
+                If a spell with the same ID already exists in the Aether registry.
+            TypeError:
+                If any provided hook is not callable.
+            ValueError:
+                If the ``permissions`` string cannot be converted into a
+                valid `Permissions` enum.
         """
         ...
 
     def inspect_spell(self, spell: Any, aetheric_frame: str = "default") -> Optional[str]:
         """
-        Inspects an object to find its spell_id and checks if it exists in the Aether.
+        Public API
+
+        Inspects an object instance to determine its unique SHA256 ID,
+        then checks if that ID is registered anywhere in the Aether
+        Registry for the given frame.
 
         Args:
-            spell (Any): The spell object or class to inspect.
-            aetheric_frame (str, optional): The Aetheric Frame to search within.
+            spell:
+                The object to inspect (class, function, or instance).
+            aetheric_frame:
+                The Aether frame to check against.
 
         Returns:
-            Optional[str]: The spell_id if the spell is found in the registry.
+            Optional[str]:
+                The spell_id if the spell is registered in the Aether,
+                otherwise ``None``.
+        """
+        ...
+
+    def find_spell_index(
+            self,
+            spellframe: str,
+            spell_name: str,
+            binding_name: str,
+    ) -> Optional[ISpellIndex]:
+        """
+        Public API
+
+        Finds a spell's **SpellIndex** (lineage identifier) using its
+        logical identifiers.
+
+        Lookup order:
+            1. Local spells
+            2. Contracted (borrowed) spells
+
+        Args:
+            spellframe:
+                Logical namespace or grouping label.
+            spell_name:
+                Name of the spell class or function.
+            binding_name:
+                Secondary key used to distinguish this spell.
+
+        Returns:
+            Optional[SpellIndex]:
+                The SpellIndex representing this spell's lineage.
+
+        Raises:
+            RuntimeError:
+                If the spell is not found locally or in any contracted
+                spellbook.
+        """
+        ...
+
+    def find_spell_key(
+            self,
+            spellframe: str,
+            spell_name: str,
+            binding_name: str,
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Public API
+
+        Finds a spell's **primary lookup key** using its logical
+        identifiers.
+
+        The search checks local spells first, then contracted spells.
+
+        Args:
+            spellframe:
+                Logical namespace or grouping label.
+            spell_name:
+                Name of the spell class or function.
+            binding_name:
+                Secondary key to distinguish this spell.
+
+        Returns:
+            Optional[tuple[str, str]]:
+                The normalized lookup key
+                ``(frame_or_name, binding_name_or_default)`` if found.
+
+        Raises:
+            RuntimeError:
+                If the key cannot be found (local or contracted).
+        """
+        ...
+
+    def get_spell_permissions(self, spell_index: ISpellIndex) -> Optional[str]:
+        """
+        Public API
+
+        Retrieves the access permissions for a **locally** registered spell.
+
+        Args:
+            spell_index:
+                The SpellIndex (lineage) of the spell.
+
+        Returns:
+            Optional[str]:
+                The permissions name (``"read"``, ``"create"``, or
+                ``"block"``) for this spell.
+
+        Raises:
+            RuntimeError:
+                If the spell with the given index is not found in the
+                local spellbook.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Internal local/contracted lookup + version cache API
+    # ------------------------------------------------------------------
+    def _find_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
+        """
+        Internal
+
+        Locates a **local** spell by its `SpellIndex`.
+
+        Args:
+            spell_index:
+                The SpellIndex of the spell to find.
+
+        Returns:
+            Optional[ISpell]:
+                The spell object if found, else ``None``.
+        """
+        ...
+
+    def _find_contracted_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
+        """
+        Internal
+
+        Locates a **contracted** spell by its `SpellIndex` by searching
+        across all peer conduit maps.
+
+        Args:
+            spell_index:
+                The SpellIndex of the contracted spell.
+
+        Returns:
+            Optional[ISpell]:
+                The spell object if found.
+
+        Raises:
+            RuntimeError:
+                If the contracted spell cannot be found in any peer
+                contract map.
+        """
+        ...
+
+    def _find_spell_count(self) -> int:
+        """
+        Internal
+
+        Returns the total number of **locally registered** spells.
+
+        Returns:
+            int: Count of local spells.
+        """
+        ...
+
+    def _find_contracted_spell_count(self) -> int:
+        """
+        Internal
+
+        Returns the number of **peer conduits** this spellbook currently
+        has contracts with (i.e., how many contracted spell maps exist).
+
+        Returns:
+            int: Number of active contract links (peer conduits).
+        """
+        ...
+
+    def _check_all_spells(self) -> None:
+        """
+        Internal
+
+        Performs a system check to verify that no locally bound spell
+        version ID is already registered in the global Aether registry
+        for this frame.
+
+        Raises:
+            RuntimeError:
+                If any spell version is already present in Aether for
+                this frame.
+        """
+        ...
+
+    def _refresh_local_spell_versions(self) -> None:
+        """
+        Internal
+
+        Rebuilds the local version cache (`_spell_versions`) from the
+        current set of `SpellIndex` keys in `_spells`.
+
+        Useful after bulk mutation or research operations that may have
+        changed the version lists on `SpellIndex` instances.
+        """
+        ...
+
+    def _refresh_contracted_spell_versions(self) -> None:
+        """
+        Internal
+
+        Rebuilds the per-conduit contracted version caches
+        (`_contracted_versions`) from the current `_contracted_spells`
+        structure.
+
+        After this runs:
+            * Each `conduit_id` in `_contracted_spells` will have a
+              corresponding `ConcurrentSet[str]` in `_contracted_versions`
+              containing **all version IDs** (SHA256) for that
+              conduit’s spells.
+        """
+        ...
+
+    def _refresh_all_spell_versions(self) -> None:
+        """
+        Internal
+
+        Convenience method to refresh **both** local and contracted spell
+        version caches in a single call.
+
+        Calls:
+            * ``_refresh_local_spell_versions()``
+            * ``_refresh_contracted_spell_versions()``
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Contract / link API (used by ConduitWard / Contract)
+    # ------------------------------------------------------------------
+    def _find_contracted_spell_by_id(
+            self,
+            spell_id: str,
+            conduit_id: str,
+    ) -> Optional[ISpell]:
+        """
+        Internal
+
+        Resolves a contracted spell by its **version SHA** using the
+        Spellbook’s local copies of contracted spells.
+
+        Each contracted spell’s `SpellIndex` contains all known versions,
+        so this can be resolved purely from local SpellIndex data.
+
+        Args:
+            spell_id:
+                The version SHA of the spell.
+            conduit_id:
+                The contracting peer conduit ID.
+
+        Returns:
+            Optional[ISpell]:
+                The resolved spell if found, otherwise ``None``.
+        """
+        ...
+
+    def _create_link_contract(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Initializes the internal storage maps for a **new contract link**
+        with a peer conduit.
+
+        Ensures that:
+            * `_contracted_spells[conduit_id]`
+            * `_lookup_contracted_spells[conduit_id]`
+            * `_contracted_versions[conduit_id]`
+
+        are created **atomically** and remain in a consistent state.
+
+        Args:
+            conduit_id:
+                The ID of the peer conduit to create the contract
+                structure for.
+
+        Raises:
+            RuntimeError:
+                If the contract structure is present in some maps but not
+                all (inconsistent state).
+        """
+        ...
+
+    def _remove_link_contract(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Removes the internal storage maps for a **dissolved** contract
+        link with a peer conduit.
+
+        This removes all three maps in lockstep:
+
+            * `_contracted_spells[conduit_id]`
+            * `_lookup_contracted_spells[conduit_id]`
+            * `_contracted_versions[conduit_id]`
+
+        Args:
+            conduit_id:
+                The ID of the peer conduit whose contract structure
+                should be removed.
+
+        Raises:
+            RuntimeError:
+                If the contract structure is present in some maps but not
+                all (inconsistent cleanup).
+        """
+        ...
+
+    def _add_contracted_spell(self, spell: ISpell, conduit_id: str) -> None:
+        """
+        Internal
+
+        Adds a specific spell (borrowed from a peer) into the
+        **contracted spells** registry and updates the key + version
+        caches for the given conduit.
+
+        Args:
+            spell:
+                The spell object to add.
+            conduit_id:
+                The ID of the peer conduit this spell was contracted
+                from.
+        """
+        ...
+
+    def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
+        """
+        Internal
+
+        Removes a specific contracted spell from the internal registry,
+        identified by its **version SHA** and peer conduit.
+
+        Steps:
+            * Locate `SpellIndex` whose versions contain `spell_id`.
+            * Remove from `_contracted_spells[conduit_id]`.
+            * Remove from `_lookup_contracted_spells[conduit_id]`.
+            * Remove all versions for this SpellIndex from
+              `_contracted_versions[conduit_id]`.
+
+        Args:
+            spell_id:
+                The version SHA of the spell to remove.
+            conduit_id:
+                The ID of the peer conduit the spell was contracted from.
+
+        Raises:
+            RuntimeError:
+                If the conduit maps do not exist or the target version
+                cannot be found.
+        """
+        ...
+
+    def _clear_contracted_spells_for_conduit(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Clears **all spells** associated with a contracted conduit, while
+        retaining the contract structure and zeroing its version cache.
+
+        Args:
+            conduit_id:
+                The ID of the peer conduit whose contracted spells are
+                to be cleared.
+
+        Raises:
+            RuntimeError:
+                If no contracted spell maps exist for the given conduit.
+        """
+        ...
+
+    def _sever_link_contract(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Fully severs the link contract for a given conduit ID:
+
+            1. Calls ``_clear_contracted_spells_for_conduit(conduit_id)``
+               to zero out spells.
+            2. Calls ``_remove_link_contract(conduit_id)`` to remove the
+               underlying contract structure.
+
+        Args:
+            conduit_id:
+                The ID of the peer conduit whose contract is to be
+                severed.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Configuration / Aether frame API
+    # ------------------------------------------------------------------
+    def is_configuration_locked(self) -> bool:
+        """
+        Public API
+
+        Indicates whether this Spellbook's configuration has been
+        **frozen** (locked) for its Aether frame.
+
+        Returns:
+            bool: ``True`` if locked, ``False`` otherwise.
+        """
+        ...
+
+    def configure_aether_frame(
+            self,
+            *,
+            system_state: Optional[str],
+            debugging: Optional[bool],
+            disposal: Optional[bool],
+            disposal_method_names: Optional[List[str]],
+            logger_factory: Optional[Callable[[object], Any]] = None,
+            use_default_std_logger: bool = False,
+    ) -> None:
+        """
+        Public API
+
+        Consolidated setup for this Spellbook's **Aether frame**:
+
+          1. (Optional) Install a logger factory on the configuration.
+          2. Apply provided configuration properties.
+          3. Validate + freeze configuration.
+          4. Bind the configuration to the Aether.
+          5. Optionally upgrade the Aether logger.
+
+        Once frozen during this call, the configuration becomes
+        immutable.
+
+        Args:
+            system_state:
+                System mode (e.g. ``"automatic"`` or ``"dynamic"``).
+            debugging:
+                Enables or disables internal debugging features such as
+                id tagging.
+            disposal:
+                Enables automatic resource disposal when conduits are
+                cleaned.
+            disposal_method_names:
+                Method names to invoke on created objects during
+                disposal.
+            logger_factory:
+                Optional logger factory to install before freezing.
+            use_default_std_logger:
+                If True and `logger_factory` is not provided, installs
+                the default StdLoggerFactory via `set_logger_factory()`.
+
+        Raises:
+            RuntimeError:
+                If configuration is already locked/cleaned.
+            KeyError:
+                If an unknown configuration key is provided.
+            ValueError:
+                If configuration fails validation.
+            TypeError:
+                If the provided logger factory is invalid.
+        """
+        ...
+
+    def get_configuration(self) -> 'IConfiguration':
+        """
+        Public API
+
+        Returns the active configuration object for this Spellbook.
+
+        Returns:
+            IConfiguration: The configuration instance used by this
+            Spellbook's Aether frame.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Conduit / cloning API
+    # ------------------------------------------------------------------
+    def create_new_preset_spellbook(self) -> "ISpellbook":
+        """
+        Internal
+
+        Creates a new `Spellbook` instance that shares the same
+        **Aether frame** and **Configuration** as the current
+        Spellbook.
+
+        Used internally when upgrading a lesser conduit into a normal
+        conduit with a fresh Spellbook that reuses the existing frame +
+        configuration.
+
+        Returns:
+            ISpellbook:
+                A new Spellbook instance ready for use by a normal
+                conduit.
+        """
+        ...
+
+    def conjure(
+            self,
+            policy: Optional[str] = "automatic",
+            name: Optional[str] = None,
+            conduit_logger: Any | None = None,
+    ) -> Any:
+        """
+        Public API
+
+        Creates a new **Conduit** (execution channel) from this Spellbook.
+
+        This method finalizes configuration (if needed), validates all
+        local spells, and instantiates the Conduit.
+
+        Args:
+            policy:
+                Spell access control behavior for this conduit.
+                Must map to a `Policies` enum member (e.g. "automatic",
+                "dynamic", "whitelist_all", "block_all").
+            name:
+                Optional name for the conduit.
+            conduit_logger:
+                Optional logger instance to attach to the Conduit.
+
+        Returns:
+            Any:
+                The newly created Conduit instance.
+
+        Raises:
+            RuntimeError:
+                If this Spellbook has already conjured a Conduit (only
+                one allowed per Spellbook).
+            RuntimeError:
+                If dynamic policies are used while `system_state` is
+                ``"automatic"``.
+            ValueError:
+                If configuration fails validation or the policy string is
+                invalid.
         """
         ...
 
 
-    def bind(self, spell, existence: 'Existence', *, permissions: str = "create", spellframe=None, binding_name=None,
-             **kwargs) -> str:
+@runtime_checkable
+class IBind(ICleanable, Protocol):
+    """
+    An Interface for a binding mechanism, responsible for profiling and
+    registering a spell blueprint.
+    """
+    _id: str
+    def bind(self, permissions: 'Permissions', *, aetheric_frame: str, spell=None, spellframe=None, name=None,
+             existence='Existence.unique') -> 'Union["ISpell", Any]':
+        """
+        Binds a spell, creating its blueprint and returning it.
+
+        Args:
+            permissions (Permissions): The access policy for the spell.
+            aetheric_frame (str): The Aetheric Frame this bind is part of.
+            spell (Any, optional): The class, function, or object to bind.
+            spellframe (Any, optional): The logical interface or group.
+            name (str, optional): A unique binding name.
+            existence (str, optional): The lifecycle policy.
+
+        Returns:
+            Union[ISpell, Any]: The newly created ISpell blueprint.
+        """
+        ...
+
+@runtime_checkable
+class IMeld(ICleanable, Protocol):
+    """
+    An Interface for the object resolution (melding) process.
+
+    This is responsible for taking a spell request, resolving its dependencies,
+    and "casting" it into a live object instance.
+    """
+    _id: str
+    def meld(self, spell, *, spellframe=None, name=None, spell_override: Optional[Dict[str, Any]] = None):
+        """
+        Resolves and creates an instance of a spell.
+
+        Args:
+            spell (Any): The spell to resolve (e.g., by class, name, or ID).
+            spellframe (Any, optional): The logical interface to resolve against.
+            name (str, optional): The unique binding name to resolve.
+            spell_override (Optional[Dict[str, Any]], optional): A dictionary
+                of dependencies to override for this cast only.
+        """
+        ...
+
+@runtime_checkable
+class IConduitWard(ICleanable, Protocol):
+    """
+    ConduitWard manages the dynamic linking, lineage, and permission policy
+    for a single conduit within the Melder framework.
+
+    Key Responsibilities:
+    * **Contract Management:** Maintains thread-safe contracts defining shared spells with other conduits.
+    * **Lineage Tracking:** Handles the tree structure via parent and lesser conduit tracking.
+    * **Policy Enforcement:** Enforces conduit access policies (e.g., whitelist, block, dynamic).
+
+    Contract Directionality:
+    * `_initiated_index`: Tracks links this conduit has initiated (outbound).
+    * `_received_index`: Tracks links where this conduit has been the provider target (inbound).
+    """
+
+    # Core fields (structural)
+    _conduit: 'IConduit'
+    _logger: 'ISafeLogger'
+    _dynamic: bool
+    _conduit_type: 'ConduitState'
+    _id: str
+    _display_name: str
+    _log_groups: List[str]
+    _log_sysgroups: List[str]
+    _policy_set: bool
+    _policy: Optional['Policies']
+    _initiated_index: 'ConcurrentDict[str, str]'
+    _received_index: 'ConcurrentDict[str, str]'
+    _contracts: 'ConcurrentDict[str, Contract]'
+    _parent_conduit: Optional['IConduit']
+    _lesser_conduits: 'ConcurrentDict[str, IConduit]'
+    _lock: Any
+
+    def __init__(self, conduit: 'IConduit', dynamic: bool,
+                 conduit_type: 'ConduitState', policy: 'Policies') -> None:
+        ...
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+    def cleanup(self) -> None:
+        """
+        Public API
+
+        Cleanups the conduit ward, preventing any further modifications or operations.
+        """
+        ...
+
+    def _clean_up_lesser_conduits_links(self) -> None:
+        """
+        Internal
+
+        Recursively cleans up and removes all linked lesser conduits (children).
+        """
+        ...
+
+    def _clean_up_links(self) -> None:
+        """
+        Internal
+
+        cleans and disposes of all active external contracts and links.
+        """
+        ...
+
+    def cleanup_all_lesser_conduits(self) -> None:
+        """
+        Public API
+
+        Cleans up all lesser conduits (children) linked to this conduit.
+
+        This is typically used when the parent conduit is undergoing a state change,
+        like an upgrade to a normal state, or as part of a controlled shutdown.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Context Manager
+    # ------------------------------------------------------------------
+    def __enter__(self) -> 'IConduitWard':
+        """
+        Enters the context manager for Aether.
+        """
+        ...
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        """
+        Exits the context manager for Aether.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Conduit Ward Configuration
+    # ------------------------------------------------------------------
+    def _convert_to_normal_conduit(self) -> None:
+        """
+        Internal
+
+        Converts this Conduit from a `lesser` state to a `normal` state.
+
+        This method is called internally during the conduit upgrade process.
+        It detaches the parent link and updates the policy state.
+
+        Raises:
+            RuntimeError: If the Conduit is not a lesser conduit.
+            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If no parent conduit link is found (unknown error state).
+        """
+        ...
+
+    def _set_initial_policy(self, policy: 'Policies') -> Optional['Policies']:
+        """
+        Internal
+
+        Sets the default policy for this Conduit during initialization.
+
+        Args:
+            policy (Policies): The desired initial policy.
+
+        Returns:
+            Optional[Policies]: The set policy.
+
+        Raises:
+            TypeError: If `policy` is not an instance of the `Policies` enum.
+            RuntimeError: If the policy has already been set.
+        """
+        ...
+
+    def _set_new_policy(self, policy: 'str | Policies') -> None:
+        """
+        Internal
+
+        Sets a new operational policy for this Conduit.
+
+        This is restricted to `normal` conduits in dynamic mode.
+
+        Args:
+            policy (str | Policies): The new policy to set.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If the Conduit is a lesser Conduit.
+            RuntimeError: If attempting to set to `automatic` in dynamic mode.
+            RuntimeError: If attempting to set to `lesser_conduit` on a non-lesser Conduit.
+            RuntimeError: If attempting to set to `block_all` or `whitelist_all` while contracts exist.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Link Management
+    # ------------------------------------------------------------------
+    def _link(self, target_conduit: 'IConduit') -> bool:
+        """
+        Internal
+
+        Attempts to establish a link (contract) with another normal Conduit.
+
+        Args:
+            target_conduit (IConduit): The target Conduit to link to.
+
+        Returns:
+            bool: True if the contract was established or already exists.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If attempting to link to a lesser conduit.
+            RuntimeError: If attempting to link a conduit to itself.
+            RuntimeError: If dynamic environment is not enabled.
+        """
+        ...
+
+    def _create_new_contract(self, target_conduit: 'IConduit') -> bool:
+        """
+        Internal
+
+        Creates a new bidirectional contract (link) with the specified target conduit.
+
+        This method handles simultaneous locking of both wards to prevent deadlocks.
+
+        Args:
+            target_conduit (IConduit): The conduit to link with.
+
+        Returns:
+            bool: True if the contract was created successfully.
+        """
+        ...
+
+    def _find_contract_id(self, target_conduit: 'IConduit') -> Optional[str]:
+        """
+        Internal
+
+        Finds a contract ID associated with the specified target conduit.
+
+        Args:
+            target_conduit (IConduit): The target conduit to find the contract for.
+
+        Returns:
+            Optional[str]: The ID of the found contract or None if not found.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            TypeError: If `target_conduit` is not an `IConduit` instance.
+        """
+        ...
+
+    def _find_contract(self, target_conduit: 'IConduit') -> Optional['Contract']:
+        """
+        Internal
+
+        Finds the contract object linked to the given target conduit.
+
+        Args:
+            target_conduit (IConduit): The target conduit to find the contract for.
+
+        Returns:
+            Optional[Contract]: The contract object if it exists, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            TypeError: If `target_conduit` is not an `IConduit` instance.
+        """
+        ...
+
+    def _find_contract_by_id(self, conduit_id: str) -> Optional['Contract']:
+        """
+        Internal
+
+        Finds a contract by the peer's Conduit ID.
+
+        Args:
+            conduit_id (str): The ID of the peer conduit in the contract.
+
+        Returns:
+            Optional[Contract]: The found contract object or None if not found.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _sever_link(self, target_conduit: 'IConduit') -> bool:
+        """
+        Internal
+
+        Sever the link (contract) between this Conduit and its target Conduit.
+
+        Args:
+            target_conduit (IConduit): The target Conduit to sever the link with.
+
+        Returns:
+            bool: True if the link was successfully severed.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If no contract is found to sever.
+        """
+        ...
+
+    def _remove_contract(self, target_conduit: 'IConduit') -> bool:
+        """
+        Internal
+
+        Removes the contract and cleans up internal indices and spellbook links.
+
+        Args:
+            target_conduit (IConduit): The conduit whose contract should be removed.
+
+        Returns:
+            bool: True if the contract was removed successfully.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _link_lesser_conduit(self, lesser_conduit: 'IConduit') -> None:
+        """
+        Internal
+
+        Links a lesser conduit (child) to this conduit (parent).
+
+        This establishes the parent-child lineage relationship.
+
+        Args:
+            lesser_conduit (IConduit): The lesser conduit to link.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _get_lesser_conduit(self, conduit_id: str) -> Optional['IConduit']:
+        """
+        Internal
+
+        Recursively searches for a lesser conduit with the given ID within this conduit's hierarchy.
+
+        Args:
+            conduit_id (str): The ID of the conduit to retrieve.
+
+        Returns:
+            Optional[IConduit]: The matched conduit if found, else None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _get_links(self) -> List['IConduit']:
+        """
+        Internal
+
+        Returns a combined list of all peer conduits this conduit has contracts with (both initiated and provider).
+
+        Returns:
+            List[IConduit]: A list of all linked peer conduits.
+        """
+        ...
+
+    def _get_initiated_conduits(self) -> List['IConduit']:
+        """
+        Internal
+
+        Retrieves all conduits that this conduit has initiated contracts toward (outbound links).
+
+        Returns:
+            List[IConduit]: A list of conduits that this conduit has initiated contracts with.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _get_provider_conduits(self) -> List['IConduit']:
+        """
+        Internal
+
+        Retrieves all conduits that have initiated contracts to this conduit (inbound links).
+
+        Returns:
+            List[IConduit]: A list of conduits that have linked to this conduit as a provider.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _get_initiated_conduit(self, conduit_id: str) -> Optional['IConduit']:
+        """
+        Internal
+
+        Retrieves the conduit that this conduit has initiated a contract *toward*.
+
+        Args:
+            conduit_id (str): The ID of the target conduit this conduit linked to.
+
+        Returns:
+            Optional[IConduit]: The target conduit if the link exists, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _get_provider_conduit(self, conduit_id: str) -> Optional['IConduit']:
+        """
+        Internal
+
+        Retrieves the conduit that initiated a contract *to this* conduit.
+
+        Args:
+            conduit_id (str): The ID of the source conduit that linked to this one.
+
+        Returns:
+            Optional[IConduit]: The source conduit if the link exists, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _sever_all_linked_conduits(self) -> None:
+        """
+        Internal
+
+        Severs all active peer links (contracts) to conduits. Excludes lesser conduits.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Spellbinding API
+    # ------------------------------------------------------------------
+    def _check_spell_id_and_spell(
+            self,
+            spell: 'ISpell' = None,
+            spell_id: str = None,
+            aetheric_frame: str = "default",
+    ) -> Tuple[str, 'ISpell']:
+        """
+        Internal
+
+        Validation and resolution helper: ensures both a spell ID and its corresponding spell object are available.
+
+        Args:
+            spell (ISpell, optional): The spell object.
+            spell_id (str, optional): The unique ID of the spell.
+            aetheric_frame (str): The Aetheric Frame to search within.
+
+        Returns:
+            Tuple[str, ISpell]: The resolved (spell_id, spell) pair.
+
+        Raises:
+            ValueError: If neither `spell` nor `spell_id` is provided.
+            TypeError: If types are incorrect.
+            RuntimeError: If the spell cannot be resolved or if the provided ID and resolved ID mismatch.
+        """
+        ...
+
+    def _check_conduit_id_and_conduit(
+            self,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            aetheric_frame: str = "default",
+    ) -> Tuple[str, 'IConduit']:
+        """
+        Internal
+
+        Validation and resolution helper: ensures both a conduit ID and its corresponding conduit object are available.
+
+        Args:
+            conduit (IConduit, optional): The target conduit object.
+            conduit_id (str, optional): The unique ID of the target conduit.
+            aetheric_frame (str): The Aetheric Frame to search within.
+
+        Returns:
+            Tuple[str, IConduit]: The resolved (conduit_id, conduit) pair.
+
+        Raises:
+            ValueError: If neither `conduit` nor `conduit_id` is provided.
+            TypeError: If types are incorrect.
+            RuntimeError: If the conduit cannot be resolved or if IDs mismatch.
+        """
+        ...
+
+    def _create_detail(
+            self,
+            spell: 'ISpell',
+            permissions: 'Permissions',
+            contract_type: 'ContractTypes',
+    ) -> 'Detail':
+        """
+        Internal
+
+        Factory for a lineage-aware Detail entry.
+
+        Args:
+            spell (ISpell): The spell being granted/received.
+            permissions (Permissions): The permissions applied to this lineage.
+            contract_type (ContractTypes): Role of this Detail from the
+                perspective of the ward that will own it.
+
+        Returns:
+            Detail: A new Detail instance.
+        """
+        ...
+
+    def _check_spell_if_eligible(
+            self,
+            spell: 'ISpell',
+            conduit: 'IConduit',
+            permissions: 'Permissions',
+    ) -> None:
+        """
+        Internal
+
+        Checks if the provided spell is eligible for contracting based on policy and spell permissions.
+
+        Args:
+            spell (ISpell): The spell to check.
+            conduit (IConduit): The conduit proposing the contract.
+            permissions (Permissions): The permissions requested for the contract.
+
+        Raises:
+            RuntimeError: If the conduit policy prevents contracting (`block_all`).
+            RuntimeError: If the spell doesn't have the required permissions (`create`, `read`).
+            RuntimeError: If the spell is blocked (`Permissions.block`) and policy isn't `whitelist_all`.
+            RuntimeError: If the spell is not owned by the proposing conduit.
+        """
+        ...
+
+    def _add_spell_to_contract(
+            self,
+            *,
+            spell: 'ISpell' = None,
+            spell_id: str = None,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            permissions: str = "create",
+            aetheric_frame: str = "default",
+    ) -> bool | None:
+        """
+        Internal
+
+        Adds a single spell to an existing contract with a peer conduit.
+
+        This now contracts the **SpellIndex lineage** and uses the spell's
+        current version ID only as the initial reference. On mutation, the
+        lineage will advance, and lookups will resolve to the new version.
+
+        Args:
+            spell (ISpell, optional): The spell object to contract.
+            spell_id (str, optional): The unique version ID of the spell.
+            conduit (IConduit, optional): The target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
+            permissions (str): The permission level granted for this spell.
+            aetheric_frame (str): The Aetheric Frame to resolve entities in.
+
+        Returns:
+            bool | None: True if the contract was updated, None on internal error.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If no contract exists with the target conduit (link required first).
+            RuntimeError: If the spell is already contracted with the same permissions.
+            ValueError/TypeError/RuntimeError: From internal helper checks.
+        """
+        ...
+
+    def _add_spells_to_contract(
+            self,
+            *,
+            spell_ids: list[str] = None,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            permissions: str = "create",
+            aetheric_frame: str = "default",
+    ) -> dict[str, list[str] | dict[str, str]]:
+        """
+        Internal
+
+        Attempts to add multiple spells to an existing contract in a bulk operation.
+
+        Args:
+            spell_ids (list[str], optional): List of spell IDs to contract.
+            conduit (IConduit, optional): The target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
+            permissions (str): The permission level to apply to all spells (default is "create").
+            aetheric_frame (str): The Aetheric Frame to resolve entities in.
+
+        Returns:
+            dict: A dictionary containing a list of "success" spell IDs and a dictionary of "failed" spell IDs mapped to error messages.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _remove_spell_from_contract(
+            self,
+            *,
+            spell: 'ISpell' = None,
+            spell_id: str = None,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            aetheric_frame: str = "default",
+    ) -> bool | None:
+        """
+        Internal
+
+        Removes a specific spell from an existing contract.
+
+        Args:
+            spell (ISpell, optional): The spell object to remove.
+            spell_id (str, optional): The unique ID of the spell to remove.
+            conduit (IConduit, optional): The target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
+            aetheric_frame (str): The Aetheric Frame to resolve entities in.
+
+        Returns:
+            bool: True if the spell was successfully removed.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If no contract is found.
+            RuntimeError: If the spell ID is not found in the contract.
+            ValueError/TypeError/RuntimeError: From internal helper checks.
+        """
+        ...
+
+    def _remove_spells_from_contract(
+            self,
+            *,
+            spell_ids: list[str] = None,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            aetheric_frame: str = "default",
+    ) -> dict[str, list[str] | dict[str, str]]:
+        """
+        Internal
+
+        Attempts to remove multiple spells from an existing contract in a bulk operation.
+
+        Args:
+            spell_ids (list[str], optional): List of spell IDs to remove.
+            conduit (IConduit, optional): The target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
+            aetheric_frame (str): The Aetheric Frame to resolve entities in.
+
+        Returns:
+            dict: A dictionary containing a list of "success" spell IDs and a dictionary of "failed" spell IDs mapped to error messages.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _remove_all_spells_from_contract(
+            self,
+            *,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            aetheric_frame: str = "default",
+    ) -> bool | None:
+        """
+        Internal
+
+        Removes ALL spells from the contract associated with the specified peer conduit.
+
+        Args:
+            conduit (IConduit, optional): The target peer conduit.
+            conduit_id (str, optional): The id of the target peer conduit.
+            aetheric_frame (str): The Aetheric Frame to resolve entities in.
+
+        Returns:
+            bool: True if all spells were successfully removed and cleanup performed.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If no contract is found.
+            ValueError/TypeError/RuntimeError: From internal helper checks.
+        """
+        ...
+
+    def _get_all_spells_in_contracts(
+            self,
+            validate: bool = True,
+    ) -> Optional[dict[str, list[Tuple[str, 'ISpell']]]]:
+        """
+        Internal
+
+        Retrieves all spells that **this conduit can use** via active contracts.
+
+        For each peer conduit, this returns a list of:
+            (current_spell_version_id, ISpell)
+
+        Semantics:
+            * Contracts are anchored on SpellIndex (via Detail.spell_index).
+            * Resolution uses Spellbook._find_contracted_spell(spell_index),
+              so if the lineage has mutated, we get the **current** spell object.
+            * The version ID returned in the tuple is spell.spell_id (head).
+        """
+        ...
+
+    def _get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, 'ISpell']]:
+        """
+        Internal
+
+        Attempts to retrieve a specific spell that is being granted *to* this
+        conduit by any peer via active contracts.
+
+        This now behaves in a lineage-aware way:
+
+            * spell_id may be ANY version SHA belonging to the lineage.
+            * We search each Detail's SpellIndex using Detail.has_version(spell_id).
+            * If matched, we resolve via Spellbook._find_contracted_spell(spell_index)
+              and return the **current** spell object (not the historical version).
+
+        Args:
+            spell_id (str): The version ID (SHA) to search for.
+
+        Returns:
+            Optional[tuple[str, ISpell]]: (peer_conduit_id, ISpell) if found, else None.
+        """
+        ...
+
+    def _get_spells_in_contract_by_conduit(
+            self,
+            conduit_id: str,
+    ) -> dict[str, list[tuple[str, 'ISpell']]] | None:
+        """
+        Internal
+
+        Retrieves all spells exchanged with a specific conduit by its unique ID.
+
+        - "inbound": spells the peer has granted to this conduit.
+        - "outbound": spells this conduit has granted to the peer.
+
+        Args:
+            conduit_id (str): The id of the target conduit.
+
+        Returns:
+            dict[str, list[tuple[str, ISpell]]] | None: A dictionary mapping roles
+            ("inbound", "outbound") to lists of (spell_id, ISpell) tuples, or None
+            if no such conduit is linked.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _get_spells_in_contract_by_conduit_name(
+            self,
+            conduit_name: str,
+    ) -> dict[str, list[tuple[str, 'ISpell']]] | None:
+        """
+        Internal
+
+        Retrieves all spells exchanged with a specific conduit by its declared name.
+
+        Mirrors `_get_spells_in_contract_by_conduit` but performs lookup by name.
+
+        Args:
+            conduit_name (str): The name identifier of the target conduit.
+
+        Returns:
+            dict[str, list[tuple[str, ISpell]]] | None: A dictionary of spells exchanged (inbound/outbound), or None if not found.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            ValueError: If `conduit_name` is empty or not a string.
+        """
+        ...
+
+    def _get_contracted_conduits(self) -> list[Tuple[str, 'IConduit']] | None:
+        """
+        Internal
+
+        Returns all conduits that currently have active spell contracts with this conduit.
+
+        Args:
+            None
+
+        Returns:
+            list[Tuple[str, IConduit]] | None: A list of (`conduit_id`, `IConduit`) tuples. Returns None if no links exist.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _describe_contract(self, conduit_id: str) -> dict:
+        """
+        Internal
+
+        Returns a detailed diagnostic summary of a contract established with a specific peer conduit ID.
+
+        Args:
+            conduit_id (str): id of the peer conduit whose contract you wish to examine.
+
+        Returns:
+            dict: Dictionary containing contract metadata, including spell list and permissions.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If no contract is found with the given conduit ID.
+        """
+        ...
+
+    def _validate_contracts_and_define(self) -> dict[str, bool]:
+        """
+        Internal
+
+        Validates all active contracts attached to this conduit for symmetry and integrity.
+
+        This ensures both sides list the same spells, permissions are consistent, and all
+        referenced contracted spells exist in the peer's spellbook.
+
+        Args:
+            None
+
+        Returns:
+            dict[str, bool]: Dictionary mapping contract id to validation results (True/False).
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def _validate_received_contracts(self) -> bool:
+        """
+        Internal
+
+        Performs a high-level validation check across all contracts involving this conduit.
+
+        This aggregates the results of `_validate_contracts_and_define` to provide a simple pass/fail status.
+
+        Args:
+            None
+
+        Returns:
+            bool: True if all active contracts pass validation, False otherwise.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+
+@runtime_checkable
+class IConduit(ICleanable, Protocol):
+    """
+    A Conduit is a modular graph node that behaves like a scope and a factory.
+
+    It can spawn lesser Conduits, link to other Conduits if dynamic mode is enabled,
+    and manage the lifecycle of services registered inside itself.
+    """
+
+    # Class-level
+    _aether: 'Aether'
+
+    # Instance-level core attributes (1:1 with Conduit)
+    _lock: 'threading.RLock'
+    _id: str
+    _name: Optional[str]
+    __debugger_mode__: bool
+    __dynamic_environment__: bool
+    _aetheric_frame: str
+
+    _configuration: 'IConfiguration'
+    _logger: 'ISafeLogger'
+
+    _conduit_state: 'ConduitState'
+    _creations: 'Creations | LesserCreations'
+    _spellbook: 'ISpellbook'
+    _meld: 'Meld'
+
+    _conduit_ward: 'ConduitWard'
+
+    # ------------------------------------------------------------------
+    # __init__
+    # ------------------------------------------------------------------
+    def __init__(
+            self,
+            spellbook: 'ISpellbook',
+            configuration: 'IConfiguration',
+            conduit_state: 'ConduitState',
+            aetheric_frame: str,
+            policy: 'Policies',
+            name: Optional[str] = None,
+            logger: Any | None = None,
+    ) -> None:
+        """
+        Public API
+
+        Initializes a new Conduit.
+
+        Args:
+            spellbook (ISpellbook): The Spellbook governing this Conduit.
+            configuration (IConfiguration): The locked system configuration.
+            conduit_state (str): The role of this Conduit ('normal' or 'lesser').
+            name (str, optional): An optional name for easier identification.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Logger configuration
+    # ------------------------------------------------------------------
+    def _configure_logger(self, logger: Any, configuration: 'IConfiguration') -> Any:
+        """
+        Internal
+
+        Configures the logger for this Conduit.
+
+        Args:
+            logger (Any): The logger instance or configuration.
+        Returns:
+            SafeLogger: The configured SafeLogger instance.
+        """
+        ...
+
+    def _configure_conduit_state(self) -> None:
+        """
+        Internal
+
+        Configures the conduit state based on the provided configuration.
+
+        Raises:
+            RuntimeError: If normal conduit registration fails.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Cleanup and Disposal
+    # ------------------------------------------------------------------
+    def cleanup(self) -> None:
+        """
+        Public API
+
+        Cleans up this Conduit and all its lesser Conduits.
+
+        Prevents further operation, releases internal references,
+        and unregisters from the Aether.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Context Management
+    # ------------------------------------------------------------------
+    def __enter__(self) -> 'IConduit':
+        """
+        Public API
+
+        Enters the context of this Conduit.
+
+        Returns:
+            Conduit: The current Conduit instance.
+        """
+        ...
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        """
+        Public API
+
+        Exits the context of this Conduit.
+
+        Args:
+            exc_type: The exception type, if any.
+            exc_value: The exception value, if any.
+            traceback: The traceback object, if any.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Logger resolution
+    # ------------------------------------------------------------------
+    def _resolve_logger_from_config(self, configuration: 'IConfiguration') -> 'ISafeLogger':
+        """
+        This internal method resolves the logger for this Conduit based on the provided configuration.
+
+        Args:
+            configuration (IConfiguration): The locked system configuration.
+
+        Returns:
+            SafeLogger: The resolved SafeLogger instance.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Utilities
+    # ------------------------------------------------------------------
+    def __repr__(self) -> str:
+        """
+        Public API
+
+        Returns a string representation of the Conduit instance.
+        :return:
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+    @property
+    def id(self) -> str:
+        """
+        Public API
+
+        Returns the unique identifier of this Conduit.
+        """
+        ...
+
+    @property
+    def name(self) -> Optional[str]:
+        """
+        Public API
+
+        Returns the name of this Conduit. Name must be created during conduit creation.
+        """
+        ...
+
+    @name.setter
+    def name(self, name: str) -> None:
+        """
+        Public API
+
+        Allows user to name conduit if available
+
+        Raises:
+            RuntimeError: If the Conduit name is already set.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Conduit Configuration
+    # ------------------------------------------------------------------
+    def register_conduit_cloud(self, conduit: 'IConduit') -> None:
+        """
+        Public API
+
+        Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit in order
+        to name it afterward and register it. You can only register it once.
+
+        Args:
+            conduit (IConduit): The conduit instance to register.
+
+        Raises:
+            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If the conduit is a lesser conduit.
+            RuntimeError: If the Conduit name is not set.
+        """
+        ...
+
+    def _apply_configuration_flags(self) -> None:
+        """
+        Internal
+
+        Sets the environment mode and debugging mode for this Conduit
+        based on the configuration instance passed.
+        """
+        ...
+
+    def _add_conduit_to_aether(self) -> None:
+        """
+        Internal
+
+        Adds the newly created Conduit into the shared Aether world.
+
+        Raises:
+            RuntimeError: If Aether is not initialized.
+        """
+        ...
+
+    def _creations_configuration(self, configuration: 'IConfiguration') -> 'Creations | LesserCreations':
+        """
+        Internal
+
+        Returns the current creations configuration for this Conduit.
+
+        Args:
+            configuration (IConfiguration): The locked system configuration.
+
+        Returns:
+            Creations | LesserCreations: The appropriate creation manager based on conduit state.
+
+        Raises:
+            RuntimeError: If the Conduit state is unknown.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Conduit Management
+    # ------------------------------------------------------------------
+    def upgrade_to_normal(self, name: Optional[str] = None) -> None:
+        """
+        Public API
+
+        Upgrades this Conduit from a lesser to a **normal** state.
+
+        This process allows the conduit to create its own links through the Aether system.
+        It effectively forks this conduit into a new tree, retaining its children and
+        creation data, and establishes new links with the parent. Only a normal conduit
+        can access the Spellbook to bind new spells.
+
+        Please name the conduit if your intention is to add it to the Conduit Cloud.
+
+        Args:
+            name (str, optional): An optional name to assign to the upgraded conduit.
+
+        Raises:
+            RuntimeError: If the dynamic environment is not enabled.
+            RuntimeError: If the current conduit state is not 'lesser'.
+        """
+        ...
+
+    def set_new_policy(self, policy: str) -> None:
+        """
+        Public API
+
+        Sets a new policy for this Conduit. This is only allowed in dynamic mode.
+
+        Args:
+            policy (str): The new policy to set, governing linking behavior.
+
+        Raises:
+            RuntimeError: If dynamic environment is not enabled.
+        """
+        ...
+
+    def create_lesser_conduit(self, logger: Any | None = None) -> 'IConduit':
+        """
+        Public API
+
+        Creates a **lesser Conduit** (child node) attached to this Conduit.
+
+        The lesser conduit inherits the parent's Spellbook and Configuration but is restricted
+        in its ability to establish external links or register new spells.
+
+        Returns:
+            IConduit: The newly created lesser Conduit instance.
+
+        Raises:
+            RuntimeError: If the parent Conduit is cleaned.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Spellbook Management API
+    # ------------------------------------------------------------------
+    def _add_spells_to_aether(self) -> None:
+        """
+        Internal
+
+        Adds this Conduit's local spell lineages (SpellIndex keys) into the shared
+        Aether world's registry.
+
+        Aether is responsible for mapping individual version IDs inside each
+        SpellIndex to the owning conduit.
+
+        Raises:
+            RuntimeError: If Aether is not initialized.
+        """
+        ...
+
+    def get_conduit_by_spell_id(
+            self,
+            spell_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> Optional['IConduit']:
+        """
+        Public API
+
+        Retrieves the conduit that has registered a spell with the given spell_id.
+
+        This method queries the Aether to find the original source conduit for a specific spell ID.
+
+        Args:
+            spell_id (str): The unique identifier of the spell.
+            aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
+
+        Returns:
+            Optional[IConduit]: The conduit that registered the spell, or None if not found.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def check_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
+        """
+        Public API
+
+        Checks if a spell with the given spell_id exists within the global Aether registry.
+
+        Args:
+            spell_id (str): The unique identifier of the spell to check (version SHA).
+            aetheric_frame_name (str): The Aetheric Frame to search within. Defaults to "default".
+
+        Returns:
+            bool: True if the spell exists in the Aether, False otherwise.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Any]:
+        """
+        Public API
+
+        Retrieves a spell object by its unique version identifier (spell_id) from the
+        spellbook of its owner.
+
+        The method:
+          1) Uses Aether to locate the owning conduit.
+          2) Searches that conduit's spellbook for a SpellIndex whose lineage contains
+             this version ID.
+          3) Returns the corresponding ISpell instance if found.
+
+        Args:
+            spell_id (str): The unique version identifier of the spell (SHA256).
+            aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
+
+        Returns:
+            Optional[Any]: The spell object if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def find_contracted_spell(self, spell_id: str) -> Optional['ISpell']:
+        """
+        Internal
+
+        Locate a contracted spell by its version spell_id across all peer
+        conduits in this Spellbook.
+
+        Args:
+            spell_id (str): The unique version ID (SHA) of the spell to find.
+
+        Returns:
+            Optional[ISpell]: The contracted spell instance, or None if not found.
+        """
+        ...
+
+    def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:
+        """
+        Public API
+
+        Finds a spell's current version ID (SHA256 spell_id) using its logical identifiers.
+
+        This now uses:
+          1) Spellbook.find_spell_index(...) to locate the SpellIndex lineage.
+          2) Spellbook._find_spell(SpellIndex) to retrieve the ISpell.
+          3) Returns spell.spell_id (the current head version for that lineage).
+
+        Args:
+            spellframe (str): The logical namespace or grouping label.
+            spell_name (str): The name of the spell class or function.
+            binding_name (str): The secondary key to distinguish the spell.
+
+        Returns:
+            Optional[str]: The current SHA256 identifier of the spell.
+
+        Raises:
+            ValueError: If the spell is not found in the spellbook.
+        """
+        ...
+
+    def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
+        """
+        Public API
+
+        Finds a spell's primary lookup key using its logical identifiers.
+
+        The key is typically a tuple used for internal retrieval within the spellbook.
+
+        Args:
+            spellframe (str): The logical namespace or grouping label.
+            spell_name (str): The name of the spell class or function.
+            binding_name (str): The secondary key to distinguish the spell.
+
+        Returns:
+            Optional[tuple]: The spell's key (frame, name, binding_name) tuple.
+
+        Raises:
+            ValueError: If the spell is not found in the spellbook.
+        """
+        ...
+
+    def inspect_spell(self, spell: Any, aetheric_frame: str = "default") -> Optional[str]:
+        """
+        Public API
+
+        Inspects any object to determine if it is a valid, registered spell in the Aether Registry.
+
+        This method uses the Spellbook's internal reflection to identify the spell.
+
+        Args:
+            spell (Any): The class, function, or object instance to inspect.
+            aetheric_frame (str): The Aetheric Frame to search within. Defaults to "default".
+
+        Returns:
+            Optional[str]: The SHA256 unique ID of the spell if found, otherwise None.
+        """
+        ...
+
+    def bind(
+            self,
+            *,
+            spell,
+            existence: str,
+            permissions: str = "create",
+            spellframe=None,
+            binding_name=None,
+            **kwargs,
+    ) -> str:
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
 
@@ -579,405 +2669,664 @@ class ISpellbook(ICleanable, Protocol):
             ⚠️ All hooks must be callables.
 
         ──────────────────────────────────────────────
-        Parameters:
+        Args:
             spell (Any): The class, function, or object to bind into the spellbook.
             existence (Existence): The lifecycle scope for this spell.
             permissions (str): Permission level exposed to other conduits ("read", "create", "block").
             spellframe (Optional[Any]): Logical interface or category for grouping.
             binding_name (Optional[str]): Name key to distinguish this spell among others in its frame.
             **kwargs:
-                - pre_hooks: Optional[List[Callable]]
-                - activation_hooks: Optional[List[Callable]]
-                - post_hooks: Optional[List[Callable]]
+                - pre_hooks (Optional[List[Callable]]): Hooks executed before casting.
+                - activation_hooks (Optional[List[Callable]]): Hooks executed during casting/construction.
+                - post_hooks (Optional[List[Callable]]): Hooks executed after casting/construction.
 
         Returns:
             str: The unique SHA256 `spell_id` associated with the bound spell.
 
         Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
             RuntimeError: If the spell is already bound in the registry.
             TypeError: If invalid hook types are provided.
         """
         ...
 
-    def remove_bind(self, spell: Any):
+    def get_spell_permissions(self, spell_id: str) -> Optional[str]:
         """
-        Removes a spell blueprint from this spellbook.
+        Public API
+
+        Get the permissions for a spell by its version spell_id, **within this
+        conduit’s own spellbook**.
+
+        This returns the access level ("read", "create", "block") defined when the
+        spell was bound.
 
         Args:
-            spell (Any): The spell object or class to remove.
-        """
-        ...
-
-    def _find_spell(self, spell_id: str) -> Optional[Any]:
-        """
-        Internal method to resolve a spell blueprint directly by its ID.
-
-        Args:
-            spell_id (str): The unique spell_id (SHA256 hash).
+            spell_id (str): Version SHA256 identifier of the spell.
 
         Returns:
-            Optional[Any]: The spell object if found.
+            Optional[str]: The permissions associated with the spell's binding.
+
+        Raises:
+            RuntimeError: If the spell with the given ID is not found in the spellbook.
         """
         ...
 
-    def conjure(self, policy: Optional[str], name: str = None) -> Any:
+    # ------------------------------------------------------------------
+    # fakemeld
+    # ------------------------------------------------------------------
+    def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
         """
-        Finalizes the spellbook configuration and conjures its governing Conduit.
+        Public API
 
-        This locks the spellbook's configuration and creates the live
-        execution scope (Conduit) that this spellbook defines.
+        Placeholder for the service resolution/dependency injection mechanism.
 
         Args:
-            policy (Optional[str]): The policy for the new Conduit (e.g., "automatic", "dynamic").
-            name (str, optional): An optional name for the Conduit.
+            spell_name (str): The name of the spell to resolve.
+            spell_type (str): The expected type ("class" or "method").
+            spellframe (Type, optional): An optional interface or type to validate against.
+
+        Raises:
+            NotImplementedError: As this method is not yet fully implemented.
+            ValueError: If no spell is registered for the given name/type.
+            TypeError: If the resolved instance does not comply with the required SpellFrame.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Conduit Cloud
+    # ------------------------------------------------------------------
+    def get_conduit_cloud(self) -> 'IConduitCloud':
+        """
+        Public API
+
+        Returns the global Conduit Cloud, a registry of all normal conduits in the current Aetheric Frame.
+
+        This object is designed to be used in dynamic mode only and serves as an Abstract Factory/Service Locator.
 
         Returns:
-            Any: The newly created Conduit instance.
+            IConduitCloud: The conduit cloud instance.
+
+        Raises:
+            RuntimeError: If the Conduit is a lesser conduit.
+            RuntimeError: If dynamic environment is not enabled.
         """
         ...
 
-    def get_configuration(self) -> 'Configuration':
+    # ------------------------------------------------------------------
+    # Aether API
+    # ------------------------------------------------------------------
+    def get_conduit_by_id(self, conduit_id: str, aetheric_frame: str = "default") -> Optional['IConduit']:
         """
-        Retrieves the configuration object associated with this spellbook.
+        Public API
+
+        Retrieves a conduit by its unique ID from the Aether.
+
+        Args:
+            conduit_id (str): The unique identifier of the conduit.
+            aetheric_frame (str): The aetheric frame to check against. Defaults to this conduit's frame.
 
         Returns:
-            Configuration: The configuration instance.
+            Optional[IConduit]: The conduit instance if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            TypeError: If the `aetheric_frame` is not a string.
         """
         ...
 
-    def configure_conduit_state(self, **kwargs):
+    def get_conduit_by_name(self, name: str, aetheric_frame: str = "default") -> Optional['IConduit']:
         """
-        Applies settings to the spellbook's configuration before it is locked.
+        Public API
+
+        Retrieves a conduit by its name from the Aether.
 
         Args:
-            **kwargs: Configuration keys and values to set.
-        """
-        ...
-
-    def lock_configuration(self):
-        """
-        Locks the spellbook's configuration, preventing further changes.
-        """
-        ...
-
-    def is_configuration_locked(self) -> bool:
-        """
-        Checks if the spellbook's configuration is locked.
+            name (str): The name of the conduit.
+            aetheric_frame (str): The aetheric frame to check against. Defaults to this conduit's frame.
 
         Returns:
-            bool: True if locked, False otherwise.
+            Optional[IConduit]: The conduit instance if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            TypeError: If the `aetheric_frame` is not a string.
         """
         ...
 
-    def create_new_preset_spellbook(self):
+    # ------------------------------------------------------------------
+    # Conduit Ward API
+    # ------------------------------------------------------------------
+    def link(self, target_conduit: 'IConduit') -> bool:
         """
-        Creates a new spellbook, typically for upgrading a lesser conduit.
-        """
-        ...
+        Public API
 
-    def get_spell_details(self, spell_id):
-        """
-        Retrieves the detailed profile for a registered spell.
+        Attempts to establish a link between this Conduit and a `target_conduit`.
+
+        Linking is only allowed if the world is in dynamic mode. This process initiates a contract
+        relationship between the two conduits based on the current policy.
 
         Args:
-            spell_id (str): The unique spell_id.
-        """
-        ...
-
-    def _add_contracted_spell(self, spell, conduit_id):
-        """
-        Internal: Adds a borrowed (contracted) spell to the spellbook.
-
-        Args:
-            spell (Any): The spell object.
-            conduit_id (str): The ID of the Conduit providing the spell.
-        """
-        ...
-
-    def _create_link_contract(self, _id):
-        """
-        Internal: Initializes the storage for a new contract.
-
-        Args:
-            _id (str): The ID of the peer conduit.
-        """
-        ...
-
-    def _sever_link_contract(self, _conduit_id):
-        """
-        Internal: Removes a contract and all associated borrowed spells.
-
-        Args:
-            _conduit_id (str): The ID of the peer conduit to sever ties with.
-        """
-        ...
-
-    def _inspect_spell_using_aetheric_frame(self, spell, aetheric_frame):
-        """
-        Internal: Inspects a spell within the context of a specific Aetheric Frame.
-
-        Args:
-            spell (Any): The spell object.
-            aetheric_frame (str): The frame to search within.
-        """
-        ...
-
-    def _remove_contracted_spell(self, spell_id, conduit_id):
-        """
-        Internal: Removes a single borrowed spell from a contract.
-
-        Args:
-            spell_id (str): The ID of the spell to remove.
-            conduit_id (str): The ID of the peer conduit.
-        """
-        ...
-
-    def _clear_contracted_spells_for_conduit(self, conduit_id):
-        """
-        Internal: Clears all borrowed spells from a specific peer conduit.
-
-        Args:
-            conduit_id (str): The ID of the peer conduit.
-        """
-        ...
-
-    def _find_contracted_spell(self, spell_id):
-        """
-        Internal: Finds a borrowed spell by its ID.
-
-        Args:
-            spell_id (str): The unique spell_id.
-        """
-        ...
-
-@runtime_checkable
-class IBind(ICleanable, Protocol):
-    """
-    An Interface for a binding mechanism, responsible for profiling and
-    registering a spell blueprint.
-    """
-    _id: str
-    def bind(self, permissions: 'Permissions', *, aetheric_frame: str, spell=None, spellframe=None, name=None,
-             existence='Existence.unique') -> 'Union["ISpell", Any]':
-        """
-        Binds a spell, creating its blueprint and returning it.
-
-        Args:
-            permissions (Permissions): The access policy for the spell.
-            aetheric_frame (str): The Aetheric Frame this bind is part of.
-            spell (Any, optional): The class, function, or object to bind.
-            spellframe (Any, optional): The logical interface or group.
-            name (str, optional): A unique binding name.
-            existence (str, optional): The lifecycle policy.
+            target_conduit (IConduit): The target Conduit to link to.
 
         Returns:
-            Union[ISpell, Any]: The newly created ISpell blueprint.
+            bool: True if the linking process succeeds.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If dynamic environment is not enabled.
+            TypeError: If `target_conduit` is not an `IConduit` instance.
+            RuntimeError: If the target conduit does not have a valid creation context.
         """
         ...
 
-@runtime_checkable
-class IMeld(ICleanable, Protocol):
-    """
-    An Interface for the object resolution (melding) process.
-
-    This is responsible for taking a spell request, resolving its dependencies,
-    and "casting" it into a live object instance.
-    """
-    _id: str
-    def meld(self, spell, *, spellframe=None, name=None, spell_override: Optional[Dict[str, Any]] = None):
+    def sever_link(self, target_conduit: 'IConduit') -> bool:
         """
-        Resolves and creates an instance of a spell.
+        Public API
+
+        Sever the link and the corresponding spell contracts between this Conduit and its target Conduit.
+
+        This method validates the link's existence, ensures it can be severed according to policy,
+        and removes the link and all contracted spells. This is intended for public use to dissolve a relationship.
 
         Args:
-            spell (Any): The spell to resolve (e.g., by class, name, or ID).
-            spellframe (Any, optional): The logical interface to resolve against.
-            name (str, optional): The unique binding name to resolve.
-            spell_override (Optional[Dict[str, Any]], optional): A dictionary
-                of dependencies to override for this cast only.
-        """
-        ...
-@runtime_checkable
-class IConduitWard(ICleanable, Protocol):
-    """
-    An Interface for a 'ConduitWard', managing links, policies, and contracts
-    between its Conduit and other Conduits.
+            target_conduit (IConduit): The target Conduit whose link to sever.
 
-    Attributes:
-        _contracts (Optional[Any]): Storage for active contracts.
-        _lock (Optional[Any]): The concurrency lock.
-        _received_index (Optional[Any]): Index of incoming links.
-        _policy (Optional[Any]): The active access policy.
-        _id (Optional[str]): The ID of the Conduit this ward protects.
-        _conduit (Optional['IConduit']): A reference to the Conduit itself.
-    """
-    _contracts: Optional[Any]
-    _lock: Optional[Any]
-    _received_index: Optional[Any]
-    _policy: Optional[Any]
-    _id: str
-    _conduit: Optional['IConduit']
-    @property
-    def policy(self) -> 'IPolicy':
-        """
-        The current access control policy for this Conduit.
-        """
-        ...
+        Returns:
+            bool: True if the link was successfully severed.
 
-    @policy.setter
-    def policy(self, value: 'IPolicy'):
-        """
-        Sets the access control policy for this Conduit.
-        """
-        ...
-
-    @property
-    def conduit_type(self) -> 'ConduitState':
-        """
-        The current state of the Conduit (e.g., 'normal', 'lesser').
-        """
-        ...
-
-    def _change_conduit_type(self, conduit_type: 'ConduitState'):
-        """
-        Internal: Changes the state of the Conduit.
-
-        Args:
-            conduit_type (ConduitState): The new state.
-        """
-        ...
-
-    def remove_link(self, other_conduit):
-        """
-        Removes a link between this Conduit and another.
-
-        Args:
-            other_conduit (Any): The peer Conduit to unlink from.
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If dynamic environment is not enabled.
         """
         ...
 
     def get_links(self):
         """
-        Retrieves a list of all active links (contracts) with peer Conduits.
+        Public API
+
+        Returns a list of all active peer links associated with this conduit.
+
+        This list excludes links to lesser (child) conduits.
 
         Returns:
-            A list of active links.
+            list: A list of the linked conduit instances.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If dynamic environment is not enabled.
         """
         ...
 
-    def _remove_contract(self, _conduit):
+    def get_lesser_conduit(self, conduit_id: str) -> Optional['IConduit']:
         """
-        Internal: Removes a specific contract.
+        Internal
+
+        Returns a specific lesser conduit (child) linked to this conduit by its ID.
 
         Args:
-            _conduit (Any): The peer Conduit whose contract should be removed.
-        """
-        ...
-
-@runtime_checkable
-class IConduit(ICleanable, Protocol):
-    """
-    An Interface for a 'Conduit', the core execution scope and object factory.
-
-    It owns a Spellbook (its registry) and a ConduitWard (its security)
-    and is responsible for "melding" (creating) objects.
-
-    Attributes:
-        _conduit_state (Optional[Any]): The current state (e.g., 'normal', 'lesser').
-        _conduit_ward (IConduitWard): The ward managing its links and policies.
-        _spellbook (ISpellbook): The registry of spells available to this conduit.
-    """
-    _conduit_state: Optional[Any]
-    _conduit_ward: IConduitWard
-    _spellbook: ISpellbook
-    _aetheric_frame : str
-    _id: str
-    _logger: 'ISafeLogger'
-
-    @property
-    def name(self) -> Optional[str]:
-        """
-        The human-readable name of the Conduit this ward protects.
-        """
-        ...
-
-    @name.setter
-    def name(self, value: str) -> None:
-        """
-        Sets the human-readable name of the Conduit this ward protects.
-        """
-        ...
-
-    def link(self, target_conduit: 'IConduit') -> bool:
-        """
-        Establishes a contract link with another Conduit (in 'dynamic' mode).
-
-        Args:
-            target_conduit (IConduit): The peer Conduit to link with.
+            conduit_id (str): The ID of the lesser conduit to retrieve.
 
         Returns:
-            bool: True if linking was successful.
+            Optional[IConduit]: The linked lesser conduit if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
         """
         ...
 
-    def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
+    def get_initiated_conduit(self, conduit_id: str) -> Optional['IConduit']:
         """
-        Resolves and creates an instance of a spell from this Conduit's scope.
+        Public API
+
+        Retrieves the conduit that this conduit has initiated a contract *toward*.
+
+        This method uses the internal index to resolve an outbound connection,
+        where this conduit was the **initiator** of the contract.
 
         Args:
-            spell_name (str): The name of the spell to resolve.
-            spell_type (str): The type of spell (e.g., 'class', 'method').
-            spellframe (Type, optional): The logical interface to resolve against.
-        """
-        ...
-
-    def create_lesser_conduit(self):
-        """
-        Creates a new, lightweight child scope (lesser conduit).
+            conduit_id (str): The ID of the target conduit this conduit linked to.
 
         Returns:
-            A new IConduit instance in the 'lesser' state.
+            Optional[IConduit]: The target conduit if the link exists, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
         """
         ...
 
-    def check_spell_id(self, spell_id, aetheric_frame):
+    def get_provider_conduit(self, conduit_id: str) -> Optional['IConduit']:
         """
-        Checks if a spell_id exists within a given Aetheric Frame.
+        Public API
+
+        Retrieves the conduit that initiated a contract *to this* conduit.
+
+        This method uses the internal index to resolve an inbound connection,
+        where another conduit linked to this one as the **provider**.
 
         Args:
-            spell_id (str): The unique spell_id.
-            aetheric_frame (str): The frame to search within.
+            conduit_id (str): The ID of the source conduit that linked to this one.
+
+        Returns:
+            Optional[IConduit]: The source conduit if the link exists, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
         """
         ...
 
-    def inspect_spell(self, spell, aetheric_frame):
+    def get_initiated_conduits(self) -> list['IConduit']:
         """
-        Inspects an object to find its spell_id within a given frame.
+        Public API
+
+        Returns a list of all conduits that this conduit has initiated contracts toward (outbound links).
+
+        This is useful for understanding the dependencies and relationships initiated by this conduit.
+
+        Returns:
+            list[IConduit]: A list of conduits this conduit linked to.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def get_provider_conduits(self) -> list['IConduit']:
+        """
+        Public API
+
+        Returns a list of all conduits that have initiated contracts to this conduit (inbound links).
+
+        These are the conduits that depend on this one for contracted spells.
+
+        Returns:
+            list[IConduit]: A list of conduits that have linked to this conduit as the provider.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    def cleanup_lesser_conduits(self) -> None:
+        """
+        Public API
+
+        Cleans up all lesser conduits (children) linked to this conduit.
+
+        This prevents further operations on lesser conduits and is typically used when the parent
+        is cleaning or undergoing a major state change (e.g., upgrade).
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Spell Contracting API
+    # ------------------------------------------------------------------
+    def _qualify_contracts(self) -> None:
+        """
+        Internal
+
+        Performs checks to ensure the conduit is in a state capable of managing spell contracts.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If the Conduit is not a 'normal' conduit.
+            RuntimeError: If dynamic environment is not enabled.
+        """
+        ...
+
+    def add_spell_to_contract(
+            self,
+            *,
+            spell: 'ISpell' = None,
+            spell_id: str = None,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            permissions: str = "create",
+            aetheric_frame="default",
+    ) -> bool | None:
+        """
+        Public API
+
+        Establishes a single spell contract between this conduit and another target conduit.
+
+        This allows one conduit to borrow or grant a specific spell, identified either by object or ID,
+        to/from a peer conduit. The contract defines the permissions under which the spell can be used.
+
+        You must provide either a `spell` object or a `spell_id`. The target conduit must be specified
+        either directly or resolved via its ID and aetheric frame.
 
         Args:
-            spell (Any): The spell object.
-            aetheric_frame (str): The frame to search within.
+            spell (ISpell, optional): The spell object to contract.
+            spell_id (str, optional): The unique ID of the spell to contract.
+            conduit (IConduit, optional): The target conduit to contract with.
+            conduit_id (str, optional): The str of the target conduit (used if `conduit` is not provided).
+            permissions (str): The permission level granted for this spell (default is "create").
+            aetheric_frame (str): Optional frame override used to locate the target conduit.
+
+        Returns:
+            bool | None: True if the contract was created, False otherwise. None if an internal error occurs.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         ...
 
-    def get_spell_by_id(self, spell_id, aetheric_frame):
+    def add_spells_to_contract(
+            self,
+            spell_ids: list[str],
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            permissions: str = "create",
+            aetheric_frame="default",
+    ) -> dict:
         """
-        Retrieves a spell blueprint by its ID from a given frame.
+        Public API
+
+        Establishes multiple spell contracts with another conduit in a single operation.
+
+        Allows you to bulk-grant or bulk-borrow spells by specifying a list of spell IDs. Each spell
+        will be contracted using the same permission level.
 
         Args:
-            spell_id (str): The unique spell_id.
-            aetheric_frame (str): The frame to search within.
+            spell_ids (list[str]): List of spell IDs to contract.
+            conduit (IConduit, optional): The target conduit to contract with.
+            conduit_id (str, optional): The id of the target conduit (used if `conduit` is not provided).
+            permissions (str): The permission level granted for all spells (default is "create").
+            aetheric_frame (str): Optional frame override used to locate the target conduit.
+
+        Returns:
+            dict: Dictionary of `spell_id` -> success boolean for each attempted contract.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         ...
 
-    def get_conduit_by_id(self, conduit_id, aetheric_frame):
+    def remove_spell_from_contract(
+            self,
+            *,
+            spell: 'ISpell' = None,
+            spell_id: str = None,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            aetheric_frame="default",
+    ) -> bool | None:
         """
-        Retrieves a peer Conduit by its ID from a given frame.
+        Public API
+
+        Removes a single spell contract between this conduit and another.
+
+        Either the `spell` or `spell_id` can be provided to specify the contract to dissolve.
+        Once removed, the spell is no longer accessible across the link.
 
         Args:
-            conduit_id (str): The unique ID of the Conduit.
-            aetheric_frame (str): The frame to search within.
+            spell (ISpell, optional): The spell object to remove.
+            spell_id (str, optional): The unique ID of the spell to remove.
+            conduit (IConduit, optional): The target conduit involved in the contract.
+            conduit_id (str, optional): id of the target conduit (used if `conduit` not provided).
+            aetheric_frame (str): Optional frame override to resolve the target conduit.
+
+        Returns:
+            bool | None: True if the spell was successfully removed from the contract, False otherwise. None if an internal error occurs.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
         ...
+
+    def remove_spells_from_contract(
+            self,
+            *,
+            spell_ids: list[str] = None,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            aetheric_frame="default",
+    ) -> dict:
+        """
+        Public API
+
+        Removes multiple spells from an existing contract with a target conduit.
+
+        Useful for bulk cleanup or revocation when retiring behaviors or permissions.
+
+        Args:
+            spell_ids (list[str], optional): List of spell IDs to remove.
+            conduit (IConduit, optional): Target conduit object.
+            conduit_id (str, optional): str of target conduit (used if `conduit` is not provided).
+            aetheric_frame (str): Optional frame override.
+
+        Returns:
+            dict: Dictionary of `spell_id` -> success boolean for each removal attempt.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+        """
+        ...
+
+    def _remove_all_spells_from_contract(
+            self,
+            *,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            aetheric_frame="default",
+    ) -> bool | None:
+        """
+        Public API
+
+        Dissolves **all** spell contracts between this conduit and the specified target.
+
+        All borrowed and granted spells in the active contract will be severed, effectively
+        resetting the spell relationship between the two conduits.
+
+        Args:
+            conduit (IConduit, optional): Target conduit object.
+            conduit_id (str, optional): str of target conduit (used if `conduit` is not provided).
+            aetheric_frame (str): Optional frame override.
+
+        Returns:
+            bool | None: True if all spells were successfully removed, False otherwise. None if an internal error occurs.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+        """
+        ...
+
+    def get_all_spells_in_contracts(
+            self,
+            validate: bool = True,
+    ) -> Optional[dict[str, list[Tuple[str, 'ISpell']]]]:
+        """
+        Public API
+
+        Retrieves all active spells that this conduit has access to through its contracts (i.e., borrowed spells).
+
+        Walks all current spell contracts and collects the spell IDs and objects that are currently
+        borrowed from other conduits. Optionally validates contracts before collecting data.
+
+        Args:
+            validate (bool): If True, performs contract consistency validation before returning data.
+
+        Returns:
+            Optional[dict[str, list[Tuple[str, ISpell]]]]: Dictionary mapping peer conduit ids to lists of (spell_id, ISpell) tuples,
+            or None if no contracts exist.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            TypeError: If `validate` is not a boolean.
+        """
+        ...
+
+    def get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, 'ISpell']]:
+        """
+        Public API
+
+        Searches all known contracts to find the origin of a specific contracted spell.
+
+        Looks for a specific spell by ID and returns the str of the conduit it's contracted from
+        along with the spell object, if found.
+
+        Args:
+            spell_id (str): The unique ID of the spell.
+
+        Returns:
+            Optional[tuple[str, ISpell]]: Tuple of (`conduit_id`, `spell`) if found, otherwise None.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            TypeError: If `spell_id` is not a string.
+        """
+        ...
+
+    def get_spells_in_contract_by_conduit(
+            self,
+            conduit_id: str,
+    ) -> dict[str, list[tuple[str, 'ISpell']]] | None:
+        """
+        Public API
+
+        Retrieves all spell contracts associated with a specific peer conduit, identified by id.
+
+        Returns a detailed list of all spells that this conduit currently accesses or has granted
+        through its relationship with the specified peer.
+
+        Args:
+            conduit_id (str): id of the target peer conduit.
+
+        Returns:
+            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            TypeError: If `conduit_id` is not a str.
+        """
+        ...
+
+    def get_spells_in_contract_by_conduit_name(
+            self,
+            conduit_name: str,
+    ) -> dict[str, list[tuple[str, 'ISpell']]] | None:
+        """
+        Public API
+
+        Retrieves all spell contracts associated with a peer conduit identified by name.
+
+        Performs resolution using a human-readable name instead of str.
+
+        Args:
+            conduit_name (str): Name of the peer conduit.
+
+        Returns:
+            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            TypeError: If `conduit_name` is not a string.
+        """
+        ...
+
+    def get_contracted_conduits(self) -> list[Tuple[str, 'IConduit']] | None:
+        """
+        Public API
+
+        Lists all conduits that have an active spell contract with this conduit.
+
+        Each returned conduit represents a peer in the current dynamic spell network.
+
+        Returns:
+            list[Tuple[str, IConduit]] | None: List of (`conduit_id`, `IConduit`) tuples, or None if no contracts exist.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+        """
+        ...
+
+    def _describe_contract(self, conduit_id: str) -> dict:
+        """
+        Public API
+
+        Produces a detailed diagnostic summary of a contract established with a specific conduit.
+
+        This method inspects the contract associated with the provided `conduit_id` and returns metadata
+        including the peer conduit’s name, the number of active spells involved, and permission levels.
+        Primarily used for debugging, introspection, and UI inspection tools.
+
+        Args:
+            conduit_id (str): str of the peer conduit whose contract you wish to examine.
+
+        Returns:
+            dict: Dictionary containing contract metadata, including a list of spells and their permissions.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+        """
+        ...
+
+    def validate_contracts_and_define(self) -> dict[str, bool]:
+        """
+        Public API
+
+        Validates all known contracts attached to this conduit and confirms mutual agreement and consistency.
+
+        This performs a deep validation pass, ensuring both sides list the same spells, permissions are symmetrical,
+        and all referenced spells are valid.
+
+        Returns:
+            dict[str, bool]: Dictionary mapping contract ids to validation results:
+                 - True: Contract is valid and consistent
+                 - False: Contract is malformed or inconsistent
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+        """
+        ...
+
+    def validate_received_contracts(self) -> bool:
+        """
+        Public API
+
+        Performs a high-level validation check across all contracts involving this conduit.
+
+        Aggregates the results of `_validate_contracts_and_define` to determine whether every connected
+        contract is structurally valid and symmetrical.
+
+        Returns:
+            bool: True if all active contracts pass validation, False otherwise.
+
+        Raises:
+            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Mutation Research
+    # ------------------------------------------------------------------
+    def get_mutation_research(self):
+        """
+        Public API
+
+        Returns the MutationResearch manager for this Conduit's Aetheric Frame.
+
+        Mutation Research is a specialized system that allows AI agents to study and mutate spells and creations.
+        If you are a human using this API directly, be aware that Mutation Research is primarily designed for AI-driven
+        experimentation and may not be suitable for manual use.
+
+        This method is only available when:
+          - The Conduit is a NORMAL conduit.
+          - The system is in DYNAMIC mode.
+
+        Returns:
+            MutationResearch: The mutation research manager for this Conduit's frame.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If the Conduit is a lesser conduit.
+            RuntimeError: If dynamic environment is not enabled.
+        """
+        ...
+
 
 
 class ILink(ICleanable, Protocol):

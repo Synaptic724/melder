@@ -9,7 +9,7 @@ from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration
+from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration, ISpellIndex
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
@@ -405,20 +405,25 @@ class Spellbook(Cleanable, ISpellbook):
 
     #region Core Methods
     #region General Methods
-    def get_spell_permissions(self, spell_index: SpellIndex) -> Optional[str]:
+    def get_spell_permissions(self, spell_index: ISpellIndex) -> Optional[str]:
         """
         Public API
 
-        Retrieves the access permissions for a locally registered spell.
+        Retrieves the access permissions for a **locally** registered spell.
 
         Args:
-            spell_index (SpellIndex): The SpellIndex (lineage) of the spell.
+            spell_index:
+                The SpellIndex (lineage) of the spell.
 
         Returns:
-            Optional[str]: The permissions ("read", "create", or "block") associated with the spell.
+            Optional[str]:
+                The permissions name (``"read"``, ``"create"``, or
+                ``"block"``) for this spell.
 
         Raises:
-            RuntimeError: If the spell with the given index is not found in the spellbook.
+            RuntimeError:
+                If the spell with the given index is not found in the
+                local spellbook.
         """
         self._logger.debug(
             f"get_spell_permissions(spell_index={spell_index})",
@@ -434,17 +439,19 @@ class Spellbook(Cleanable, ISpellbook):
         )
         raise RuntimeError(f"Spell with index {spell_index} not found in the spellbook.")
 
-    def _find_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
+    def _find_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
         """
         Internal
 
-        Locates a locally registered spell by its unique ID.
+        Locates a **local** spell by its `SpellIndex`.
 
         Args:
-            spell_index (SpellIndex): The ID of the spell to find.
+            spell_index:
+                The SpellIndex of the spell to find.
 
         Returns:
-            Optional[ISpell]: The spell object if found, otherwise None.
+            Optional[ISpell]:
+                The spell object if found, else ``None``.
         """
         spell = self._spells.get(spell_index)
         self._logger.debug(f"_find_spell({spell_index}) -> {spell is not None}", "_find_spell")
@@ -894,27 +901,74 @@ class Spellbook(Cleanable, ISpellbook):
     #endregion Contract API
     #region Binding API
 
-    def bind(self, spell, existence: Existence, *, permissions: str = "create", spellframe=None, binding_name=None,
-             **kwargs) -> str:
+    def bind(
+            self,
+            *,
+            spell,
+            existence: str,
+            permissions: str = "create",
+            spellframe=None,
+            binding_name=None,
+            **kwargs,
+    ) -> str:
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
 
-        This method profiles the spell, computes a unique SHA256 ID, stores it locally,
-        and assigns necessary lifecycle and permission policies.
+        The `bind()` method registers a class, function, or object into Melder’s system,
+        associating it with a lifecycle (`Existence`), a permission policy, and optional metadata.
+        Once bound, the spell becomes available for resolution and casting within its conduit
+        or across systems (depending on permissions).
+
+        ──────────────────────────────────────────────
+        🧠 Binding Overview:
+            - Profiles the spell via reflection.
+            - Computes a unique SHA256 `spell_id`.
+            - Stores the spell into the internal spell registry.
+            - Assigns its lookup key via `(spellframe, binding_name)`.
+            - Applies lifecycle and permission policies.
+            - Optionally attaches lifecycle hooks.
 
         ──────────────────────────────────────────────
         🛡️ Permissions (access control to other conduits):
-            - `"read"`: Allows other conduits to *use* but not create new instances.
-            - `"create"` (default): Allows other conduits to both use *and* create instances.
-            - `"block"`: Completely blocks access to the spell from other conduits.
+            - `"read"`:
+                Allows other conduits to *use* the spell but not create new instances.
+                Useful for shared utilities or resources.
+
+            - `"create"` (default):
+                Allows other conduits to both use *and* create instances from this spell.
+
+            - `"block"`:
+                Completely blocks access to the spell from other conduits.
+                Only the owning conduit can use or instantiate it.
 
         🔄 Existence (spell lifecycle):
-            Determines how the spell instance is managed (e.g., `Existence.unique`, `Existence.many`).
+            Determines how the spell instance is managed (singleton, transient, etc.).
+            Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
 
+        📦 Spellframe (optional):
+            Logical namespace or grouping label.
+            Often corresponds to a shared interface, protocol, or feature group.
+
+        🔑 Binding Name (optional):
+            Secondary key used to distinguish different versions or roles of the same type.
+            Useful when multiple spells are bound under the same interface.
+
+        ──────────────────────────────────────────────
         🪝 Lifecycle Hooks (optional `**kwargs`):
-            - `pre_hooks`: Executed *before* the spell is constructed.
-            - `activation_hooks`: Executed *during* spell construction.
-            - `post_hooks`: Executed *after* the spell has been cast.
+
+            - `pre_hooks`: List[Callable]
+                Executed *before* the spell is constructed or cast.
+                Can be used for validation, preparation, or logging.
+
+            - `activation_hooks`: List[Callable]
+                Executed *during* spell construction. Useful for modifying dependencies
+                or adapting runtime context.
+
+            - `post_hooks`: List[Callable]
+                Executed *after* the spell has been cast. Often used for initialization,
+                analytics, or final injection steps.
+
+            ⚠️ All hooks must be callables.
 
         ──────────────────────────────────────────────
         Args:
@@ -923,25 +977,30 @@ class Spellbook(Cleanable, ISpellbook):
             permissions (str): Permission level exposed to other conduits ("read", "create", "block").
             spellframe (Optional[Any]): Logical interface or category for grouping.
             binding_name (Optional[str]): Name key to distinguish this spell among others in its frame.
-            **kwargs: Optional lifecycle hooks (`pre_hooks`, `activation_hooks`, `post_hooks`).
+            **kwargs:
+                - pre_hooks (Optional[List[Callable]]): Hooks executed before casting.
+                - activation_hooks (Optional[List[Callable]]): Hooks executed during casting/construction.
+                - post_hooks (Optional[List[Callable]]): Hooks executed after casting/construction.
 
         Returns:
             str: The unique SHA256 `spell_id` associated with the bound spell.
 
         Raises:
-            RuntimeError: If the spell is already bound in the Aether registry.
-            TypeError: If invalid hook types are provided (not callable).
-            ValueError: If the `permissions` string is invalid.
+            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
+            RuntimeError: If the spell is already bound in the registry.
+            TypeError: If invalid hook types are provided.
         """
         self._logger.debug("bind()", "bind")
         try:
             permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
+            existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
             new_spell = self._bind.bind(
                 permissions=permissions_enum,
                 spell=spell,
                 spellframe=spellframe,
                 binding_name=binding_name,
-                existence=existence,
+                existence=existence_enum,
                 aetheric_frame=self._aetheric_frame,
             )
             if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame):
@@ -1089,36 +1148,44 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Public API
 
-        Consolidated setup for this Spellbook's Aether frame:
-          1) (Optional) Install a logger factory on the configuration.
-          2) Apply provided configuration properties.
-          3) Validate + freeze configuration.
-          4) Bind the configuration to the Aether.
-          5) Upgrade Aether's logger exactly once if a factory exists.
+        Consolidated setup for this Spellbook's **Aether frame**:
 
-        Once frozen during this call, the configuration becomes immutable.
+          1. (Optional) Install a logger factory on the configuration.
+          2. Apply provided configuration properties.
+          3. Validate + freeze configuration.
+          4. Bind the configuration to the Aether.
+          5. Optionally upgrade the Aether logger.
+
+        Once frozen during this call, the configuration becomes
+        immutable.
 
         Args:
-            system_state (str, optional):
-                Defines the system mode ("automatic" or "dynamic").
-            debugging (bool, optional):
-                Enables internal id tagging for object tracking.
-            disposal (bool, optional):
-                Enables automatic resource disposal upon conduit cleaning.
-            disposal_method_names (List[str], optional):
-                Method names to invoke on created objects during disposal.
-            logger_factory (Callable[[object], Any], optional):
-                Specific logger factory to install prior to freezing. If provided,
-                it overrides `use_default_std_logger`.
-            use_default_std_logger (bool):
-                If True and `logger_factory` not provided, installs the default
-                StdLoggerFactory() via `set_logger_factory()`.
+            system_state:
+                System mode (e.g. ``"automatic"`` or ``"dynamic"``).
+            debugging:
+                Enables or disables internal debugging features such as
+                id tagging.
+            disposal:
+                Enables automatic resource disposal when conduits are
+                cleaned.
+            disposal_method_names:
+                Method names to invoke on created objects during
+                disposal.
+            logger_factory:
+                Optional logger factory to install before freezing.
+            use_default_std_logger:
+                If True and `logger_factory` is not provided, installs
+                the default StdLoggerFactory via `set_logger_factory()`.
 
         Raises:
-            RuntimeError: If the configuration has already been locked/cleaned.
-            KeyError: If an unknown configuration key is provided.
-            ValueError: If the provided configuration fails validation.
-            TypeError: If the provided logger factory is invalid.
+            RuntimeError:
+                If configuration is already locked/cleaned.
+            KeyError:
+                If an unknown configuration key is provided.
+            ValueError:
+                If configuration fails validation.
+            TypeError:
+                If the provided logger factory is invalid.
         """
         if self._configuration_locked:
             self._logger.error("Configuration is locked. Cannot modify conduit state.", "configure_aether_frame", exc_info=True)
