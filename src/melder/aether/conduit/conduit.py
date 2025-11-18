@@ -579,11 +579,11 @@ class Conduit(Cleanable, IConduit):
         """
         Internal
 
-        Locate a contracted spell by its version spell_id within this Conduit's
-        contracted spells (across all peer conduits).
+        Locate a contracted spell by its version spell_id across all peer
+        conduits in this Spellbook.
 
         Args:
-            spell_id (str): The unique version ID of the spell to find.
+            spell_id (str): The unique version ID (SHA) of the spell to find.
 
         Returns:
             Optional[ISpell]: The contracted spell instance, or None if not found.
@@ -594,12 +594,13 @@ class Conduit(Cleanable, IConduit):
 
             # Walk all peer conduit contract maps in this spellbook
             for conduit_id in spellbook._contracted_spells.keys():
-                # Delegate per-conduit search to Spellbook's helper if available
+                # Delegate per-conduit search to Spellbook's helper
                 spell = spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
                 if spell is not None:
                     return spell
 
         return None
+
 
 
     def find_spell_id(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[str]:

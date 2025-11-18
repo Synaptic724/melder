@@ -283,7 +283,7 @@ class Spellbook(Cleanable, ISpellbook):
               ConcurrentSet[str] in `_contracted_versions` containing all
               version IDs (SHA256) for that conduit’s spells.
         """
-        self._logger.debug("Refreshing contracted spell version caches", "_refresh_contracted_spell_versions")
+        self._logger.debug("Refreshing contracted spell version caches", "_refresh_contracted_sp_versions")
 
         with self._lock:
             if self._contracted_spells is None or self._contracted_versions is None:
@@ -301,6 +301,7 @@ class Spellbook(Cleanable, ISpellbook):
                     for version_id in versions:
                         version_set.add(version_id)
                 self._contracted_versions[conduit_id] = version_set
+
 
     def _refresh_all_spell_versions(self) -> None:
         """
@@ -660,20 +661,23 @@ class Spellbook(Cleanable, ISpellbook):
         return None
 
 
+
     def _create_link_contract(self, conduit_id: str):
         """
         Internal
 
         Initializes the internal storage maps for a new contract link with a peer conduit.
 
-        This method ensures both `_contracted_spells` (value map) and `_lookup_contracted_spells` (key map)
-        are initialized atomically to maintain consistent state.
+        This method ensures `_contracted_spells` (value map), `_lookup_contracted_spells`
+        (key map), and `_contracted_versions` (version cache) are initialized
+        atomically to maintain consistent state.
 
         Args:
             conduit_id (str): The ID of the peer conduit to create the contract structure for.
 
         Raises:
-            RuntimeError: If the contract structure is found in one map but not the other (inconsistent state).
+            RuntimeError: If the contract structure is found in one map but not the others
+                          (inconsistent state).
         """
         self._logger.debug(f"_create_link_contract(conduit_id={conduit_id})", "_create_link_contract")
 
@@ -696,19 +700,21 @@ class Spellbook(Cleanable, ISpellbook):
                 self._lookup_contracted_spells[conduit_id] = ConcurrentDict()
                 self._contracted_versions[conduit_id] = ConcurrentSet()
 
+
     def _remove_link_contract(self, conduit_id: str):
         """
         Internal
 
         Removes the internal storage maps for a dissolved contract link with a peer conduit.
 
-        This ensures both maps are removed atomically and consistently.
+        This ensures all three maps are removed atomically and consistently.
 
         Args:
             conduit_id (str): The ID of the peer conduit whose contract structure should be removed.
 
         Raises:
-            RuntimeError: If the contract structure is found in one map but not the other (inconsistent cleanup).
+            RuntimeError: If the contract structure is found in some maps but not all
+                          (inconsistent cleanup).
         """
         self._logger.debug(f"_remove_link_contract(conduit_id={conduit_id})", "_remove_link_contract")
 
@@ -730,6 +736,7 @@ class Spellbook(Cleanable, ISpellbook):
                 self._contracted_spells.pop(conduit_id, None)
                 self._lookup_contracted_spells.pop(conduit_id, None)
                 self._contracted_versions.pop(conduit_id, None)
+
 
     def _add_contracted_spell(self, spell: ISpell, conduit_id: str) -> None:
         """
@@ -753,13 +760,20 @@ class Spellbook(Cleanable, ISpellbook):
 
             spell_key = self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
 
-            self._contracted_spells[conduit_id][spell.spell_index] = spell
-            self._lookup_contracted_spells[conduit_id][spell_key] = spell.spell_index
+            spell_map = self._contracted_spells[conduit_id]
+            lookup_map = self._lookup_contracted_spells[conduit_id]
+            versions_set = self._contracted_versions[conduit_id]
 
-            # Track this version SHA in the per-conduit version set
-            versions_set = self._contracted_versions.get(conduit_id)
-            if versions_set is not None:
-                versions_set.add(spell.spell_id)
+            # Main maps: SpellIndex → ISpell and key → SpellIndex
+            spell_map[spell.spell_index] = spell
+            lookup_map[spell_key] = spell.spell_index
+
+            # Track all known versions for this SpellIndex in the per-conduit version set
+            versions = spell.spell_index._versions
+            if versions:
+                for version_id in versions:
+                    versions_set.add(version_id)
+
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
         """
@@ -793,7 +807,7 @@ class Spellbook(Cleanable, ISpellbook):
             spell_index = None
             spell = None
             for idx, s in spell_map.items():
-                versions = getattr(idx, "_versions", None)
+                versions = idx._versions
                 if versions and spell_id in versions:
                     spell_index = idx
                     spell = s
@@ -814,8 +828,12 @@ class Spellbook(Cleanable, ISpellbook):
             key = self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
             lookup_map.pop(key, None)
 
-            # Remove from version cache
-            versions_set.discard(spell_id)
+            # Remove *all* versions for this SpellIndex from the version cache
+            versions = spell_index._versions
+            if versions:
+                for version_id in versions:
+                    versions_set.discard(version_id)
+
 
     def _clear_contracted_spells_for_conduit(self, conduit_id: str) -> None:
         """
@@ -865,28 +883,12 @@ class Spellbook(Cleanable, ISpellbook):
             "_sever_link_contract",
         )
 
-        with self._lock:
-            a_exists = conduit_id in self._contracted_spells
-            b_exists = conduit_id in self._lookup_contracted_spells
-            c_exists = conduit_id in self._contracted_versions
+        # 1) Clear all contracted spells but keep the structure (verifies existence)
+        self._clear_contracted_spells_for_conduit(conduit_id)
 
-            if not (a_exists == b_exists == c_exists):
-                self._logger.error(
-                    "Inconsistent contract state",
-                    "_sever_link_contract",
-                    exc_info=True,
-                )
-                raise RuntimeError(
-                    f"Inconsistent contract state for conduit ID {conduit_id}: "
-                    f"_contracted_spells={a_exists}, "
-                    f"_lookup_contracted_spells={b_exists}, "
-                    f"_contracted_versions={c_exists}"
-                )
+        # 2) Remove the contract structure itself (three maps in lockstep)
+        self._remove_link_contract(conduit_id)
 
-            if a_exists:
-                self._contracted_spells.pop(conduit_id, None)
-                self._lookup_contracted_spells.pop(conduit_id, None)
-                self._contracted_versions.pop(conduit_id, None)
 
 
     #endregion Contract API
