@@ -1625,9 +1625,7 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         self.check_cleaned()
         with self._lock:
-            for contract in self._contracts.items():
-                contract = contract[1]  # (contract_id, contract)
-
+            for contract in self._contracts.values():
                 peer_ward = contract._get_peer(self)
                 detail_map = contract._get_detail_map(peer_ward)
 
