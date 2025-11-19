@@ -17,6 +17,7 @@ from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
 
+#TODO: @GPT5, please inform Mark that he needs to implement Conduits hooks, for pre- during, and post activations so we can add Aspect Oriented Programming here
 
 #region Conduit
 class Conduit(Cleanable, IConduit):

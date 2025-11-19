@@ -1,7 +1,6 @@
 import threading
-
 import ulid
-from threading import Lock
+
 # Melder imports
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.interfaces.interfaces import IConduit

@@ -72,19 +72,6 @@ class Detail(Cleanable):
             self.permissions: Permissions = permissions
             self.contract_type: ContractTypes = contract_type
 
-    # ------------------------------------------------------------------
-    # Helper
-    # ------------------------------------------------------------------
-
-    def has_version(self, version_id: str) -> bool:
-        """
-        Returns True if this Detail's SpellIndex lineage contains the given
-        version SHA in its history.
-        """
-        versions = self.spell_index._versions
-        if not versions:
-            return False
-        return version_id in versions
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -112,4 +99,19 @@ class Detail(Cleanable):
             self.contract_type = None
 
             self._id = None
-            self._lock = None
+        self._lock = None
+
+
+    # ------------------------------------------------------------------
+    # Helper
+    # ------------------------------------------------------------------
+
+    def has_version(self, version_id: str) -> bool:
+        """
+        Returns True if this Detail's SpellIndex lineage contains the given
+        version SHA in its history.
+        """
+        versions = self.spell_index._versions
+        if not versions:
+            return False
+        return version_id in versions

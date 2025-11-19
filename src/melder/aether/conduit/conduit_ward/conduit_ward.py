@@ -1851,7 +1851,7 @@ class ConduitWard(Cleanable, IConduitWard):
                 except Exception:
                     spell = None
 
-                if spell:
+                if spell is not None:
                     spells_result["outbound"].append((sid, spell))
 
         self._logger.debug(
