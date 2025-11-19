@@ -54,7 +54,7 @@ class AethericFrame(Cleanable):
         # This is the dynamic mode registry
         self._conduit_cloud = ConduitCloud(name)
         # Holds the mutation research for this frame
-        self.mutation_research = MutationResearch(self)
+        self._mutation_research = MutationResearch(self)
         # This is the configuration for the Aetheric Frame
         self._configuration = None
 
@@ -80,13 +80,17 @@ class AethericFrame(Cleanable):
 
             self._conduits.cleanup()
             self._spell_registry.cleanup()
+            self._version_registry.cleanup()
             self._conduit_clusters.cleanup()
             self._conduit_cloud.cleanup()
-            self._version_registry.cleanup()
+            self._mutation_research.cleanup()
+            self._configuration = None
             self._conduits = None
             self._spell_registry = None
             self._conduit_clusters = None
             self._conduit_cloud = None
+
+        self._lock = None
 
 
     #region Context Manager

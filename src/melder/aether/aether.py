@@ -787,6 +787,6 @@ class Aether(Cleanable):
                 f"The AethericFrame '{aetheric_frame_name}' has been cleaned or is unavailable."
             )
 
-        return frame.mutation_research
+        return frame._mutation_research
 
     #endregion Mutation Research
