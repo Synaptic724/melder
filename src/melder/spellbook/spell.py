@@ -5,6 +5,7 @@ from threading import RLock
 # Melder Imports
 from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import MethodProfile, ClassProfile
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import ISpell
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
@@ -146,8 +147,13 @@ class Spell(ISpell, Cleanable):
         self.owned_spell = None
         self._owner_creations: Any = None # Scope level creations for singletons
 
-        # Key for the spell in the Spellbook
-        self._key = (self.spellframe or type(self.spell).__name__, self.binding_name or "__default__")
+        # Key for the spell in the Spellbook (normalized)
+        frame_key, bind_key = SpellInputUtils.make_spell_key_from_parts(
+            spellframe=self.spellframe,
+            spell_name=self.spell_name,
+            binding_name=self.binding_name,
+        )
+        self._key = (frame_key, bind_key)
 
     #region Disposal
     def cleanup(self):

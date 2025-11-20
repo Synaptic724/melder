@@ -37,6 +37,13 @@ class Creations(Cleanable):
         super().__init__()
         self._conduit: IConduit = conduit
         self._id: str = conduit._id
+
+        if conduit._conduit_state is None:
+            raise RuntimeError("Conduit state is not initialized.")
+        elif conduit._conduit_state.__str__() != "normal":
+            raise RuntimeError("Creations can only be initialized for normal conduits.")
+        self._conduit_state = conduit._conduit_state
+
         self._lock = RLock()
         self._display_name: str = self.__class__.__name__
         self._log_groups = ["creation_management", "creations"]

@@ -36,6 +36,13 @@ class LesserCreations(Cleanable):
         self._conduit: IConduit = conduit
         self._id: str = conduit._id
         self._logger = conduit._logger
+
+        if conduit._conduit_state is None:
+            raise RuntimeError("LesserCreations initialized with a Conduit that has no state.")
+        elif conduit._conduit_state.__str__() != "lesser":
+            raise RuntimeError("LesserCreations can only be initialized for Lesser Conduits.")
+        self._conduit_state = conduit._conduit_state
+
         self._display_name: str = self.__class__.__name__
         self._log_groups = ["creation_management", "creations"]
         self._log_sysgroups = ["conduit"]

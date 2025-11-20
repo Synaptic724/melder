@@ -20,7 +20,7 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.helpers.init_helpers import InitHelpers
-
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 #region Spellbook
 class Spellbook(Cleanable, ISpellbook):
@@ -554,9 +554,13 @@ class Spellbook(Cleanable, ISpellbook):
         Returns:
             tuple: (frame_or_name, binding_name_or_default)
         """
-        key = (spellframe or spell_name, binding_name or "__default__")
-        self._logger.debug(f"_make_spell_key -> {key}", "_make_spell_key")
-        return key
+        frame_key, bind_key = SpellInputUtils.make_spell_key_from_parts(
+            spellframe=spellframe,
+            spell_name=spell_name,
+            binding_name=binding_name,
+        )
+        self._logger.debug(f"_make_spell_key -> {(frame_key, bind_key)}", "_make_spell_key")
+        return frame_key, bind_key
 
     def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
         """

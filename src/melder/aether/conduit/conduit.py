@@ -829,48 +829,103 @@ class Conduit(Cleanable, IConduit):
 
 
     #endregion Spellbook Management API
-    #region fakemeld
-    def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
+    #region Meld
+
+    def meld(
+            self,
+            spell: str,
+            *,
+            spellframe: str | None = None,
+            binding_name: str | None = None,
+            spell_override: dict | list | tuple | None = None,
+    ) -> Any:
         """
         Public API
 
-        Placeholder for the service resolution/dependency injection mechanism.
+        Direct spell activation facade for this Conduit.
+
+        At the Conduit boundary, `meld` is a **string-only** API:
+        callers must always provide a concrete `spell` identifier
+        (the spell's `spell_id`), and may optionally supply a
+        logical `spellframe` and `binding_name` for metadata or
+        downstream consumers.
+
+        Resolution, reuse, and lifecycle behavior are delegated to
+        the underlying ``Meld`` instance.
 
         Args:
-            spell_name (str): The name of the spell to resolve.
-            spell_type (str): The expected type ("class" or "method").
-            spellframe (Type, optional): An optional interface or type to validate against.
+            spell:
+                The unique `spell_id` (SHA256 fingerprint) of the
+                spell to activate. Must be a non-empty string.
+            spellframe:
+                Optional logical spellframe identifier (string).
+                Not used for resolution at this layer, but may be
+                useful for tracing, logging, or future behavior.
+            binding_name:
+                Optional binding name (string) associated with the
+                spell. Also not used for resolution here, but passed
+                through to ``Meld.meld`` for potential consumers.
+            spell_override:
+                Optional payload (dict / list / tuple) attached to the
+                Spell's metadata under the key ``"spell_override"``.
+
+        Returns:
+            Any:
+                The resolved component instance (reused or newly
+                created) as returned by ``Meld.meld``.
 
         Raises:
-            NotImplementedError: As this method is not yet fully implemented.
-            ValueError: If no spell is registered for the given name/type.
-            TypeError: If the resolved instance does not comply with the required SpellFrame.
+            RuntimeError:
+                - If the Conduit has been cleaned.
+                - If the underlying ``Meld`` instance is missing.
+            TypeError:
+                - If `spell` is not a non-empty string.
+                - If `spellframe` is not a string when provided.
+                - If `binding_name` is not a string when provided.
+            KeyError:
+                Propagated from ``Meld.meld`` when a spell_id cannot be
+                resolved.
+            NotImplementedError:
+                Propagated from ``Meld.meld`` for spell types or
+                existence modes not yet implemented.
+            HookExecutionError:
+                Propagated from ``Meld.meld`` if hook execution fails.
         """
         self.check_cleaned()
-        raise NotImplementedError("Not ready yet, not even using real class")
-        if spell_type == "class":
-            class_spell = self._spellbook.get(spell_name)
-            if not class_spell:
-                raise ValueError(f"No class registered for spell '{spell_name}'")
-            instance = class_spell()
-            if spellframe and not isinstance(instance, spellframe):
-                raise TypeError(
-                    f"Spell '{spell_name}' does not comply with required SpellFrame '{spellframe.__name__}'")
-            return instance
 
-        elif spell_type == "method":
-            method_spell = self._spellbook.get(spell_name)
-            if not method_spell:
-                raise ValueError(f"No method registered for spell '{spell_name}'")
-            result = method_spell()
-            if spellframe and not isinstance(result, spellframe):
-                raise TypeError(
-                    f"Spell '{spell_name}' does not comply with required SpellFrame '{spellframe.__name__}'")
-            return result
+        if self._meld is None:
+            raise RuntimeError("[CONDUIT] Meld instance is not available on this Conduit.")
 
-        else:
-            raise ValueError(f"Invalid spell type '{spell_type}'")
-    #endregion
+        # Enforce string-only, non-empty spell_id
+        if not isinstance(spell, str) or not spell:
+            raise TypeError(
+                "[CONDUIT] 'spell' must be a non-empty string spell_id when "
+                "calling Conduit.meld()."
+            )
+
+        if spellframe is not None and not isinstance(spellframe, str):
+            raise TypeError(
+                "[CONDUIT] 'spellframe' must be a string identifier when "
+                "provided to Conduit.meld()."
+            )
+
+        if binding_name is not None and not isinstance(binding_name, str):
+            raise TypeError(
+                "[CONDUIT] 'binding_name' must be a string identifier when "
+                "provided to Conduit.meld()."
+            )
+
+        # Pure passthrough to Meld; internal layer still supports richer inputs.
+        return self._meld.meld(
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            spell_override=spell_override,
+        )
+
+
+
+    #endregion Meld
     #region Conduit Cloud
     def get_conduit_cloud(self) -> IConduitCloud:
         """
