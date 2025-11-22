@@ -35,7 +35,7 @@ class ConduitWard(Cleanable, IConduitWard):
     * `_initiated_index`: Tracks links this conduit has initiated (outbound).
     * `_received_index`: Tracks links where this conduit has been the provider target (inbound).
     """
-    def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies, configuration: IConfiguration):
+    def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies):
         super().__init__()
         self._lock: threading.RLock  = threading.RLock()
 
@@ -44,7 +44,6 @@ class ConduitWard(Cleanable, IConduitWard):
         self._logger: ISafeLogger = conduit._logger
         self._dynamic: bool = dynamic
         self._conduit_type: ConduitState = conduit_type
-        self._configuration: IConfiguration = configuration
         self._id = conduit._id
         self._display_name: str = self.__class__.__name__
         self._log_groups = ["spell_management", "spells"]

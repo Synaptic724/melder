@@ -56,7 +56,7 @@ class Meld(IMeld):
     8.  **Return Instance:** Returns the final, resolved instance.
     """
 
-    def __init__(self, creations: ILesserCreations | ICreations, spellbook: ISpellbook, configuration: IConfiguration):
+    def __init__(self, creations: ILesserCreations | ICreations, spellbook: ISpellbook):
         """
         Initializes the Meld component with references to the component store
         and the configuration registry.
@@ -74,8 +74,6 @@ class Meld(IMeld):
         self._lock = RLock()
         self._cleaned = False  # Track cleanup state
 
-        # Configuration
-        self._configuration = configuration
         # Spellbook references (used for resolution)
         # These are direct references to the ConcurrentDicts in the Spellbook
         self._owned_spells: ConcurrentDict[ISpellIndex, ISpell] = spellbook._spells
@@ -114,7 +112,6 @@ class Meld(IMeld):
             self._lookup_owned_spells = None
             self._lookup_contracted_spells = None
             self._creations = None
-            self._configuration = None
 
     # region Context Manager
     def __enter__(self):
