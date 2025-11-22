@@ -76,6 +76,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
         self._conjured = False
+        self._conduit: Optional[Conduit] = None
         self._aetheric_frame = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
             raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
@@ -206,6 +207,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._bind = None
         self._aetheric_frame = None
         self._id = None
+        self._conduit = None
         self._conjured = None
         self._configuration_locked = None
 
@@ -1086,6 +1088,9 @@ class Spellbook(Cleanable, ISpellbook):
                 else:
                     self._spell_versions.add(new_spell.spell_id)
 
+            if self._conjured:
+                self._conduit._register_to_creations(new_spell, new_spell.user_created_object)
+
             self._logger.debug(f"Binding spell => id={new_spell.spell_id}, key={new_spell._key}", "bind")
             return new_spell.spell_id
         except Exception as e:
@@ -1514,7 +1519,7 @@ class Spellbook(Cleanable, ISpellbook):
 
             # Mark this Spellbook as having conjured its single conduit
             self._conjured = True
-
+            self._conduit = conduit
             # 3) ACTIVATED: conduit exists but is not yet wired into spells.
             self._fire_conjure_hooks(
                 hook_map,
@@ -1561,18 +1566,63 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Defines the newly created Conduit's ownership metadata into all locally bound spells.
+        Defines the newly created Conduit's ownership metadata into all locally
+        bound spells and eagerly registers any **existing-object** spells into
+        the Conduit's Creations manager as unique instances.
 
-        Args:
-            conduit (Conduit): The newly conjured Conduit instance.
+        Behavior
+        --------
+        For every local spell:
+
+          1. Stamp ownership metadata:
+               - spell._owner_conduit_id
+               - spell._owner_conduit_name
+               - spell._owner_creations  (points at conduit._creations)
+
+          2. If the spell represents an existing object
+             (``spell.user_created_object is not None``):
+
+               - Treat it as an already-constructed singleton instance.
+               - Register it immediately into the Conduit's Creations via
+                 ``conduit._register_to_creations(spell, spell.user_created_object)``.
+
+        This means that by the time the Conduit starts resolving spells,
+        all existing-object spells are already present in the Creations store
+        under their normal singleton semantics.
         """
-        self._logger.debug("Linking conduit metadata into local spells", "_define_conduit_into_spells")
+        self._logger.debug(
+            "Linking conduit metadata into local spells (and priming existing creations)",
+            "_define_conduit_into_spells",
+        )
+
         with self._lock:
             for spell in self._spells.values():
                 try:
+                    # 1) Stamp conduit ownership metadata on every spell
                     spell._add_owned_conduit(conduit._id, conduit._name, conduit._creations)
+
+                    # 2) If this spell wraps an existing object, eagerly register it.
+                    if spell.user_created_object is not None:
+                        try:
+                            conduit._register_to_creations(spell, spell.user_created_object)
+                            self._logger.debug(
+                                f"Primed existing creation for spell_id={spell.spell_id}",
+                                "_define_conduit_into_spells",
+                            )
+                        except Exception as reg_err:
+                            self._logger.error(
+                                f"Failed to register existing creation for spell_id={spell.spell_id}: {reg_err}",
+                                "_define_conduit_into_spells",
+                                exc_info=True,
+                            )
+
                 except Exception as e:
-                    self._logger.error(f"Failed to define conduit into spell: {e}", "_define_conduit_into_spells", exc_info=True)
+                    self._logger.error(
+                        f"Failed to define conduit into spell: {e}",
+                        "_define_conduit_into_spells",
+                        exc_info=True,
+                    )
+
 
 
     def _set_policy_state(self, policy: Policies) -> None:

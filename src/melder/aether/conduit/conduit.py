@@ -9,7 +9,8 @@ from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration, ISafeLogger
+from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration, \
+    ISafeLogger
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.meld import Meld
@@ -133,6 +134,55 @@ class Conduit(Cleanable, IConduit):
             if self._name is not None:
                 self._logger.warning("Lesser conduits cannot have a name. Overriding to None.", "__init__")
                 self._name = None
+
+    def _register_to_creations(self, spell: ISpell, instance: Any) -> None:
+        """
+        Internal
+
+        Eagerly register an **existing-object** spell as a unique creation
+        in this Conduit's Creations manager.
+
+        Semantics
+        ---------
+        - This helper is intended for spells that were bound with an already-
+          constructed instance (existing-object spells).
+        - These spells are treated as **singletons** for this Conduit and
+          must use `Existence.unique`.
+        - The instance is registered under `spell.spell_id` via
+          `Creations.add_unique(...)`.
+
+        This is primarily used during the conjure flow when a Conduit is
+        first wired into its Spellbook and needs to prime its Creations
+        store with pre-existing objects.
+        """
+        if not isinstance(self._creations, Creations):
+            self._logger.error(
+                "_register_to_creations called on non-normal creations",
+                "_register_to_creations",
+            )
+            raise RuntimeError(
+                "_register_to_creations can only be called on normal Creations instances."
+            )
+
+        creations: Creations = self._creations
+
+        # Existing-object spells are semantically singletons in Melder.
+        existence: Existence = spell.existence
+        if existence is not Existence.unique:
+            self._logger.error(
+                f"_register_to_creations: existing-object spell {spell.spell_id} "
+                f"has unsupported existence={existence}; expected Existence.unique.",
+                "_register_to_creations",
+            )
+            raise RuntimeError(
+                "Existing-object spells must use Existence.unique when "
+                "registered into Creations."
+            )
+
+        spell_id: str = spell.spell_id
+        creations.add_unique(spell_id, instance)
+
+
 
     def _initialize_conduit_hooks(self) -> None:
         """
@@ -484,7 +534,8 @@ class Conduit(Cleanable, IConduit):
                 # Step 3: Create new Creations and inject data
                 new_creations = Creations(
                     disposal_enabled=self._configuration.get_property("disposal"),
-                    disposal_method_names=self._configuration.get_property("disposal_method_names")
+                    disposal_method_names=self._configuration.get_property("disposal_method_names"),
+                    conduit=self
                 )
                 new_creations._upgrade_from_lesser_conduit(**creations_data)
 

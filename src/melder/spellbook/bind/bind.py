@@ -302,7 +302,6 @@ class Bind(IBind, Cleanable):
 
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
-
     @staticmethod
     def _validate_binding(
             profile: ClassProfile | MethodProfile,
@@ -322,13 +321,31 @@ class Bind(IBind, Cleanable):
         Raises:
             ValueError: If the binding violates any rule:
                 - Lambda/method bound without a required binding name.
-                - Method/lambda bound with an existence type other than `Existence.unique`.
+                - Method/lambda spells bound with an existence type other than `Existence.unique`.
+                - Existing-object spells bound with an existence type other than `Existence.unique`.
                 - Invalid `existence` type provided.
         """
+        # Validate that existence is a valid Existence member
         if Bind._existence_check(existence) is False:
             # Note: _existence_check itself raises ValueError, but included here for completeness
             raise ValueError(
                 f"Invalid existence type: {existence}. Must be an instance of Existence."
+            )
+
+        # ------------------------------------------------------------------
+        # Existing-object spells: must be Existence.unique (global singleton)
+        # ------------------------------------------------------------------
+        #
+        # Existing creations are pre-instantiated and cannot participate in any
+        # other lifecycle – they are always treated as singletons for the entire
+        # Aetheric Frame. If the caller tries to bind an existing object with
+        # any other existence type, we fail fast.
+        #
+        if is_instance and existence is not Existence.unique:
+            raise ValueError(
+                "Existing-object spells must use Existence.unique. "
+                "Pre-created instances are always treated as singletons and "
+                "cannot be bound with other lifecycle modes."
             )
 
         # NOTE:
@@ -337,6 +354,9 @@ class Bind(IBind, Cleanable):
         # Existing-object spells are treated as opaque, non-recreatable creations.
         # They can be named and participate in spellframes, but do not act as factories.
 
+        # ------------------------------------------------------------------
+        # Lambda / method rules
+        # ------------------------------------------------------------------
         # Enforce lambda naming rule
         if (
                 profile
@@ -350,8 +370,9 @@ class Bind(IBind, Cleanable):
             )
 
         # Methods / lambdas are forced to unique existence
-        if isinstance(profile, MethodProfile) and existence != Existence.unique:
+        if isinstance(profile, MethodProfile) and existence is not Existence.unique:
             raise ValueError("Method and lambda spells must use Existence.unique.")
+
 
     @staticmethod
     def _existence_check(existence: Existence):
