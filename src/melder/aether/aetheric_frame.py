@@ -43,7 +43,7 @@ class AethericFrame(Cleanable):
         self._id: str = str(ulid.ULID())
         self._lock = RLock()
         # This retains all normal conduits i.e roots created by a spellbook
-        # _conduits maps conduit IDs to IConduit instances
+        # _conduits maps conduit IDs to IConduit instances, Specifically root conduits
         self._conduits: ConcurrentDict[str, IConduit] = ConcurrentDict()
         # Holds conduit ids and their spell indices
         self._spell_registry: ConcurrentDict[str, ConcurrentSet[SpellIndex]] = ConcurrentDict()

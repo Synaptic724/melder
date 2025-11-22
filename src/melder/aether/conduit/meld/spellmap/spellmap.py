@@ -1,113 +1,152 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union, Tuple
+
+from melder.spellbook.spell_input_utils import SpellInputUtils
+
 
 class SpellMap:
     """
-    SpellMap is a lightweight declarative placeholder used during object construction
-    to signal that a specific spell should be injected at this location.
+    Declarative DI placeholder used inside user code to tell Melder:
 
-    It mirrors the `meld()` interface but performs no resolution until runtime.
-    It is used by `SpellCrafter` to extract spell declarations and build the `_Creations` DAG.
+        “At this location, inject *that* spell (or whatever is bound under this
+        frame/name), possibly with these overrides.”
+
+    SpellMap is **never** resolved eagerly. It is a *pure intent object*:
+    - You put it in your `__init__` defaults or instance attributes.
+    - SpellCrafter / ResolutionFrame inspect it when a `meld(...)` happens.
+    - The DI engine replaces it with a real creation (or callable) using the
+      normal spellbook + SpellIndex + existence pipeline.
 
     ─────────────────────────────────────────────
-    ✅ You do NOT subclass SpellMap.
-    ✅ You instantiate it inside a constructor or as a default param.
-    ✅ You use it to describe *intent*, and `meld(...)` replaces it with the real spell.
-
+    ✅ Do NOT subclass SpellMap.
+    ✅ Instantiate it in constructors or as attributes.
+    ✅ Treat it as a declarative DI signature, not a real object.
     ─────────────────────────────────────────────
-    🔧 Example Usage:
 
-        class MyModel:
-            def __init__(self, logic: ILogic = SpellMap(MyParser, spellframe=ILogic)):
-                self.logic = logic  # Gets replaced during `meld(...)`
+    Typical patterns
+    ----------------
 
-        class MyOtherModel:
+        class MyService:
+            def __init__(self, repo = SpellMap(MyRepo)):
+                self.repo = repo
+
+        class UsesLogic:
+            def __init__(self, logic = SpellMap(ILogic, binding_name="primary")):
+                self.logic = logic
+
+        class Configured:
             def __init__(self):
                 self.db = SpellMap(Postgres, spell_override={"dsn": "localhost"})
-                self.logic = SpellMap(ILogic, binding_name="primary")
-
-    ─────────────────────────────────────────────
-    Attributes:
-        spell : Any
-            The target spell (class, function, UUID, etc.)
-
-        spellframe : Optional[Any]
-            Interface, protocol, or category used for spell grouping.
-
-        binding_name : Optional[str]
-            Named lookup key for disambiguation.
-
-        spell_override (dict | list | tuple, optional):
-            Optional override to inject custom arguments when creating the spell.
     """
 
-    __slots__ = ("spell", "spellframe", "binding_name", "override")
+    __slots__ = ("spell", "spellframe", "binding_name", "spell_override")
 
     def __init__(
-        self,
-        spell: Any,
-        *,
-        spellframe: Optional[Any] = None,
-        binding_name: Optional[str] = None,
-        spell_override: Optional[dict | list | tuple] = None
-    ):
+            self,
+            spell: Any,
+            *,
+            spellframe: Optional[Any] = None,
+            binding_name: Optional[str] = None,
+            spell_override: Optional[Union[dict, list, tuple]] = None,
+    ) -> None:
+        """
+        Create a new SpellMap declarative descriptor.
+
+        Args:
+            spell:
+                The primary lookup target. This may be:
+                - the concrete implementation class,
+                - a Protocol used as a frame,
+                - a callable (method/lambda spell),
+                - or any other object your resolver supports.
+
+                Resolution rules (at SpellCrafter / Meld level):
+                    - If `spellframe` is provided, `spellframe` is the
+                      grouping key and `spell` is treated as the concrete
+                      spell implementation (when needed).
+                    - If `spellframe` is None, `spell` itself is used as the
+                      DI key (type or frame).
+
+            spellframe:
+                Optional logical interface / Protocol / string frame key used
+                to group spells. If provided, this is the primary key used to
+                locate the spell in the spellbook.
+
+            binding_name:
+                Optional named binding used to disambiguate multiple spells
+                under the same frame. None means “use the default binding”.
+
+            spell_override:
+                Optional positional/keyword override payload passed through
+                into the `meld(...)` pipeline when constructing the target
+                creation.
+
+                - dict       → treated as keyword arguments
+                - list/tuple → treated as positional arguments
+        """
+        if spell is None:
+            raise ValueError("SpellMap requires `spell` to be provided.")
+
         self.spell = spell
         self.spellframe = spellframe
         self.binding_name = binding_name
-        self.override = spell_override or {}
+        self.spell_override = spell_override if spell_override is not None else {}
 
+    # ------------------------------------------------------------------
+    # Raw data for higher-level systems
+    # ------------------------------------------------------------------
     @property
-    def spell_key(self) -> tuple[str, str]:
-        spell_name = getattr(self.spell, "__name__", str(self.spell))
-        return (self.spellframe or spell_name, self.binding_name or "__default__")
+    def lookup_triplet(self) -> tuple[Any, Optional[Any], Optional[str]]:
+        """
+        Raw lookup data:
 
-    def __repr__(self):
-        return (
-            f"<SpellMap spell={self.spell} frame={self.spellframe} "
-            f"binding_name={self.binding_name}>"
+            (spell, spellframe, binding_name)
+
+        This is what SpellCrafter / ResolutionFrame should consume when
+        deciding how to locate the underlying Spell in the Spellbook.
+
+        Typical usage:
+
+            frame_key, bind_key = SpellInputUtils.normalize_spell_key(
+                spell=sm.spell, spellframe=sm.spellframe, binding_name=sm.binding_name
+            )
+        """
+        return (self.spell, self.spellframe, self.binding_name)
+
+    # ------------------------------------------------------------------
+    # Canonical key (String-based) for Spellbook maps
+    # ------------------------------------------------------------------
+    @property
+    def canonical_key(self) -> Tuple[str, str]:
+        """
+        Canonical `(frame_key, binding_key)` for use in Spellbook-style maps.
+
+        This is **exactly** the same shape as used by:
+            - SpellInputUtils.make_spell_key_from_parts
+            - SpellInputUtils.normalize_spell_key
+
+        It applies all the standard normalization:
+            - frame: lowercased frame key (from spellframe or spell name)
+            - binding: lowercased name or "__default__"
+        """
+        frame_key, bind_key = SpellInputUtils.normalize_spell_key(
+            spell=self.spell,
+            spellframe=self.spellframe,
+            binding_name=self.binding_name,
         )
+        return frame_key, bind_key
 
-#───────────────────────────────────────────────────────────────────────────────
-
-class SM:
-    """
-    SM is a shorthand alias for `SpellMap` to allow faster typing and cleaner syntax.
-
-    It uses abbreviated lowercase parameter names:
-        - s  = spell
-        - sf = spellframe
-        - bn = binding_name
-        - so = spell_override
-
-    🔧 Example Usage:
-
-        self.cache = SM(s=CacheService, sf=ICache, bn="local", so={"ttl": 300})
-
-    Equivalent to:
-
-        self.cache = SpellMap(CacheService, spellframe=ICache, binding_name="local", spell_override={"ttl": 300})
-    """
-
-    __slots__ = ("s", "sf", "bn", "so")
-
-    def __init__(
-        self,
-        s: Any,
-        *,
-        sf: Optional[Any] = None,
-        bn: Optional[str] = None,
-        so: Optional[dict | list | tuple] = None
-    ):
-        self.s = s
-        self.sf = sf
-        self.bn = bn
-        self.so = so or {}
-
+    # Backwards-compat alias if you want the old name:
     @property
-    def spell_key(self) -> tuple[str, str]:
-        spell_name = getattr(self.s, "__name__", str(self.s))
-        return (self.sf or spell_name, self.bn or "__default__")
+    def spell_key(self) -> Tuple[str, str]:
+        """
+        Alias to `canonical_key` for compatibility with older SpellMap usage.
+        """
+        return self.canonical_key
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
-            f"<SM s={self.s} sf={self.sf} bn={self.bn}>"
+            f"<SpellMap spell={self.spell!r} "
+            f"spellframe={self.spellframe!r} "
+            f"binding_name={self.binding_name!r} "
+            f"override={self.spell_override!r}>"
         )

@@ -19,7 +19,12 @@ class SpellType(Enum):
     #Methods
     METHOD = auto()
     METHOD_WITH_BINDING_NAME = auto()
+    METHOD_WITH_SPELLFRAME = auto()
+    METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME = auto()
+
     LAMBDA_METHOD_WITH_BINDING_NAME = auto()
+    LAMBDA_METHOD_WITH_SPELLFRAME = auto()
+    LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME = auto()
 
     def __str__(self):
         return self.name

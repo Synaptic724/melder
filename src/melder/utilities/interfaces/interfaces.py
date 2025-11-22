@@ -3,6 +3,7 @@ from threading import RLock
 from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator, Callable, \
     Tuple, Mapping, Set
 
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.existence.existence import Existence
 
 
@@ -1437,8 +1438,16 @@ class IBind(ICleanable, Protocol):
     registering a spell blueprint.
     """
     _id: str
-    def bind(self, permissions: 'Permissions', *, aetheric_frame: str, spell=None, spellframe=None, name=None,
-             existence='Existence.unique') -> 'Union["ISpell", Any]':
+    def bind(
+            self,
+            permissions: Permissions,
+            existence : Existence,
+            *,
+            aetheric_frame: str,
+            spell=None,
+            spellframe=None,
+            binding_name=None,
+    ) -> Union[ISpell, Any]:
         """
         Binds a spell, creating its blueprint and returning it.
 
@@ -1447,7 +1456,7 @@ class IBind(ICleanable, Protocol):
             aetheric_frame (str): The Aetheric Frame this bind is part of.
             spell (Any, optional): The class, function, or object to bind.
             spellframe (Any, optional): The logical interface or group.
-            name (str, optional): A unique binding name.
+            binding_name (str, optional): A unique binding name.
             existence (str, optional): The lifecycle policy.
 
         Returns:

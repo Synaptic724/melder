@@ -9,7 +9,7 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
 )
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.interfaces import IBind
+from melder.utilities.interfaces.interfaces import IBind, ISpell
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.spell import Spell
@@ -53,13 +53,13 @@ class Bind(IBind, Cleanable):
     def bind(
             self,
             permissions: Permissions,
+            existence : Existence,
             *,
             aetheric_frame: str,
             spell=None,
             spellframe=None,
             binding_name=None,
-            existence=Existence.unique,
-    ) -> Union[Spell, Any]:
+    ) -> Union[ISpell, Any]:
         """
         Public API
 
@@ -123,9 +123,13 @@ class Bind(IBind, Cleanable):
 
         This method performs the full binding pipeline:
         * Validates existence and method/lambda constraints.
-        * Enforces Protocol/Spellframe semantics (Protocols cannot be spells;
-          class-based spells bound under a Protocol spellframe must structurally
-          implement that Protocol).
+        * Enforces Protocol/Spellframe semantics:
+          - Protocols cannot be bound as concrete spells.
+          - Class-based spells bound under a Protocol spellframe must structurally
+            implement that Protocol.
+          - Method/lambda spells may also be grouped under Protocol or string
+            spellframes (factory / handler semantics), but are not structurally
+            validated against the Protocol.
         * Computes a deterministic fingerprint and SpellIndex.
         * Determines the canonical SpellType.
         * Constructs the final `Spell` instance.
@@ -145,9 +149,8 @@ class Bind(IBind, Cleanable):
         Raises:
             TypeError:
                 - If a Protocol is bound directly as a concrete spell.
-                - If a Protocol spellframe is provided but the spell does not
-                  structurally implement it.
-                - If a Protocol spellframe is used with a non-class spell.
+                - If a Protocol spellframe is provided for a class-based spell that
+                  does not structurally implement it.
             ValueError:
                 - If the binding is otherwise invalid (existence errors, lambda
                   without name, etc.).
@@ -181,43 +184,29 @@ class Bind(IBind, Cleanable):
             # ------------------------------------------------------------------
             Bind._validate_binding(profile, is_instance, binding_name, existence)
 
-            # Methods / lambdas are forced to unique existence
-            if isinstance(profile, MethodProfile):
-                if existence != Existence.unique:
-                    print(
-                        f"[WARN] Overriding existence to `Existence.unique` for "
-                        f"method/lambda spell: {getattr(spell, '__name__', repr(spell))}"
-                    )
-                existence = Existence.unique
-
             # ------------------------------------------------------------------
             # 4. Protocol spellframe semantics
             # ------------------------------------------------------------------
-            # If the caller provided a Protocol as the spellframe, enforce that:
-            #   * The spell is a class (factory-based spell).
-            #   * The class structurally implements the Protocol (best-effort
-            #     member existence check).
+            # If the caller provided a Protocol as the spellframe:
+            #   * For class-based spells: enforce structural implementation.
+            #   * For method/lambda spells: allow binding (factory/handler semantics),
+            #     but do not run structural checks (no meaningful attribute set).
             if spellframe is not None and Bind._is_protocol_type(spellframe):
-                if not inspect.isclass(spell):
-                    spell_name = getattr(spell, "__name__", type(spell).__name__)
-                    raise TypeError(
-                        f"Spellframe '{spellframe.__name__}' is a Protocol, but the "
-                        f"bound spell '{spell_name}' is not a class. "
-                        f"Only class-based spells can be bound under Protocol "
-                        f"spellframes."
+                if isinstance(profile, ClassProfile):
+                    ok, missing_members = Bind._structurally_implements_protocol(
+                        spell, spellframe
                     )
-
-                ok, missing_members = Bind._structurally_implements_protocol(
-                    spell, spellframe
-                )
-                if not ok:
-                    spell_name = getattr(spell, "__name__", type(spell).__name__)
-                    missing_str = ", ".join(sorted(missing_members))
-                    raise TypeError(
-                        f"Class '{spell_name}' does not structurally implement "
-                        f"Protocol '{spellframe.__name__}'. "
-                        f"Missing members: {missing_str}"
-                    )
+                    if not ok:
+                        spell_name = getattr(spell, "__name__", type(spell).__name__)
+                        missing_str = ", ".join(sorted(missing_members))
+                        raise TypeError(
+                            f"Class '{spell_name}' does not structurally implement "
+                            f"Protocol '{spellframe.__name__}'. "
+                            f"Missing members: {missing_str}"
+                        )
+                # For MethodProfile (functions/lambdas), we accept the Protocol
+                # spellframe as a callable contract / grouping key without
+                # structural validation at this stage.
 
             # ------------------------------------------------------------------
             # 5. Determine the spell type (enum classification)
@@ -360,6 +349,7 @@ class Bind(IBind, Cleanable):
                 "Lambdas must be registered as LAMBDA_METHOD_WITH_BINDING_NAME spells."
             )
 
+        # Methods / lambdas are forced to unique existence
         if isinstance(profile, MethodProfile) and existence != Existence.unique:
             raise ValueError("Method and lambda spells must use Existence.unique.")
 
@@ -440,12 +430,22 @@ class Bind(IBind, Cleanable):
         # METHOD / FUNCTION / LAMBDA SPELLS
         # -------------------------------------------------------
         if isinstance(profile, MethodProfile):
-            # Lambdas always require a binding name and get their own type.
+            # Lambdas always require a binding name and get their own type family.
             if profile.lambda_fn:
                 # _validate_binding guarantees name is present.
+                if spellframe and name:
+                    return SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME
+                if spellframe and not name:
+                    # This path should not occur under current validation rules,
+                    # but we include it for completeness.
+                    return SpellType.LAMBDA_METHOD_WITH_SPELLFRAME
                 return SpellType.LAMBDA_METHOD_WITH_BINDING_NAME
 
-            # Non-lambda methods
+            # Non-lambda methods / functions
+            if name and spellframe:
+                return SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME
+            if spellframe:
+                return SpellType.METHOD_WITH_SPELLFRAME
             if name:
                 return SpellType.METHOD_WITH_BINDING_NAME
             return SpellType.METHOD
@@ -484,7 +484,6 @@ class Bind(IBind, Cleanable):
             return True
 
         return False
-
 
     @staticmethod
     def _structurally_implements_protocol(
