@@ -494,7 +494,88 @@ class Conduit(Cleanable, IConduit):
 
     #endregion Conduit Configuration
     #region Conduit Management
-    def upgrade_to_normal(self, name: Optional[str] = None) -> None:
+    def _register_conduit_hooks_on_upgrade(
+            self,
+            hooks: dict[str, Any],
+    ) -> None:
+        """
+        Internal
+
+        Register per-conduit hooks for this upgraded Conduit into both:
+
+            1) The Configuration hook registry, and
+            2) This Conduit's local `_conduit_hooks` map,
+
+        so that all downstream subsystems (Meld, ConduitWard, links, contracts,
+        cleanup, etc.) see them immediately.
+
+        Shape is identical to the Configuration registry:
+
+            _hooks[owner_id][hook_name] -> list[callables]
+
+        where `owner_id` here is this Conduit's `self._id`.
+
+        Rules:
+            - Only allowed when the system is in **dynamic** mode.
+            - `hooks` values may be a single callable or an iterable of callables.
+            - Hook names must be in Configuration._ALLOWED_HOOKS.
+            - We first update Configuration via `add_hooks(...)`; only on success
+              do we merge into the local `_conduit_hooks` map.
+        """
+        # Enforce dynamic environment – this is a dynamic-only feature.
+        if not self.__dynamic_environment__:
+            self._logger.error(
+                "_register_conduit_hooks_on_upgrade in non-dynamic env",
+                "_register_conduit_hooks_on_upgrade",
+            )
+            raise RuntimeError(
+                "Dynamic environment is not enabled. Cannot register per-conduit hooks."
+            )
+
+        # 1) Push into Configuration using the existing hook API.
+        #
+        #    Note: While the config docs talk about "spellbook_id", the registry
+        #    is just:
+        #         ConcurrentDict[str, ConcurrentDict[str, list[Callable]]]
+        #    and happily accepts any string key. We treat `self._id` as the
+        #    owner ID for this conduit-specific hook set.
+        self._configuration.add_hooks(self._id, **hooks)
+
+        # 2) Mirror into this Conduit's local hook map so all future
+        #    `_fire_conduit_hooks(...)` calls will see them immediately.
+        if self._conduit_hooks is None:
+            self._conduit_hooks = {}
+
+        for name, value in hooks.items():
+            if value is None:
+                continue
+
+            # Single callable
+            if callable(value):
+                self._conduit_hooks.setdefault(name, []).append(value)
+                continue
+
+            # Iterable of callables
+            try:
+                iterator = iter(value)
+            except TypeError:
+                raise TypeError(
+                    f"Hook value for '{name}' must be a callable or an iterable of callables."
+                )
+
+            for fn in iterator:
+                if not callable(fn):
+                    raise TypeError(
+                        f"All entries for hook '{name}' must be callable."
+                    )
+                self._conduit_hooks.setdefault(name, []).append(fn)
+
+    def upgrade_to_normal(
+            self,
+            name: Optional[str] = None,
+            *,
+            hooks: dict[str, Any] | None = None,
+    ) -> None:
         """
         Public API
 
@@ -505,14 +586,35 @@ class Conduit(Cleanable, IConduit):
         creation data, and establishes new links with the parent. Only a normal conduit
         can access the Spellbook to bind new spells.
 
+        Optionally, in **dynamic mode**, you can supply a `hooks` mapping that will be
+        registered into the Configuration and attached to this Conduit:
+
+            hooks = {
+                "on_meld_pre_resolve": trace_before_meld,
+                "on_conduit_post_link": [log_link, audit_link],
+            }
+
+        The shape mirrors the Configuration hook registry:
+
+            _hooks[owner_id][hook_name] -> list[callables]
+
+        where `owner_id` is this Conduit's id.
+
         Please name the conduit if your intention is to add it to the Conduit Cloud.
 
         Args:
-            name (str, optional): An optional name to assign to the upgraded conduit.
+            name (str, optional):
+                An optional name to assign to the upgraded conduit.
+            hooks (dict[str, Any] | None, keyword-only):
+                Optional mapping of hook_name -> callable or iterable[callable].
+                Only honored when the system is in dynamic mode.
 
         Raises:
             RuntimeError: If the dynamic environment is not enabled.
             RuntimeError: If the current conduit state is not 'lesser'.
+            RuntimeError / ValueError / TypeError:
+                Propagated from Configuration.add_hooks(...) if the hook set is invalid
+                (frozen configuration, unknown hook names, non-callables, etc.).
         """
         with self._lock:
             self._logger.debug("upgrade_to_normal start", "upgrade_to_normal")
@@ -524,18 +626,22 @@ class Conduit(Cleanable, IConduit):
                 raise RuntimeError("Only lesser conduits can be upgraded.")
 
             try:
-                # Step 1: Change state
+                # Step 1: Change state + optional name
                 self._conduit_state = ConduitState.normal
                 self._name = name
 
-                # Step 2: Transfer creation data
+                # Step 1.1: Attach any Spellbook-level hooks now that we're normal.
+                # This *only* wires the map into _conduit_hooks; it does NOT fire hooks.
+                self._initialize_conduit_hooks()
+
+                # Step 2: Transfer creation data from LesserCreations
                 creations_data = self._creations.transfer_data_and_clear()
 
                 # Step 3: Create new Creations and inject data
                 new_creations = Creations(
                     disposal_enabled=self._configuration.get_property("disposal"),
                     disposal_method_names=self._configuration.get_property("disposal_method_names"),
-                    conduit=self
+                    conduit=self,
                 )
                 new_creations._upgrade_from_lesser_conduit(**creations_data)
 
@@ -548,15 +654,21 @@ class Conduit(Cleanable, IConduit):
                 # Step 6: Reconfigure the spellbook
                 self._spellbook.create_new_preset_spellbook()
 
-                # Step 7: Register as a full Conduit in Aether
+                # Step 7: Register as a full Conduit in Aether and Conduit Cloud
                 Conduit._add_conduit_to_aether(self)
                 if self.__dynamic_environment__ and self._name is not None:
                     Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
 
+                # Step 8: If the caller supplied per-conduit hooks, register them now.
+                if hooks:
+                    self._register_conduit_hooks_on_upgrade(hooks)
+
             except Exception as e:
                 self._logger.error(f"upgrade_to_normal failed: {e}", "upgrade_to_normal", exc_info=True)
                 raise
+
         self._logger.debug("upgrade_to_normal complete", "upgrade_to_normal")
+
 
 
     def set_new_policy(self, policy: str) -> None:

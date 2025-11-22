@@ -4627,6 +4627,38 @@ class IConfiguration(ICleanable, Protocol):
             RuntimeError: If the configuration is cleaned.
         """
         ...
+    def add_hooks(self, spellbook_id: str, **hooks: Any) -> None:
+        """
+        Register multiple system hooks for a specific Spellbook in one call.
+
+        Each keyword argument maps a hook name to either:
+            * A single callable, or
+            * An iterable of callables.
+
+        The internal registry shape is:
+
+            _hooks[spellbook_id][hook_name] -> list[callables]
+
+        Example:
+            cfg.add_hooks(
+                "spellbook-123",
+                on_meld_pre_resolve=trace_meld_enter,
+                on_conduit_cleanup_complete=[cleanup_fn_1, cleanup_fn_2],
+                on_contract_created=contract_observer,
+            )
+
+        Args:
+            spellbook_id (str):
+                The ID of the Spellbook these hooks belong to.
+            **hooks:
+                Mapping of hook name -> callable or iterable[callable].
+
+        Raises:
+            RuntimeError: If the configuration is cleaned or frozen.
+            ValueError: If any hook name is unknown.
+            TypeError: If any value is not a callable or an iterable of callables.
+        """
+        ...
 
     # ---------------------------
     # Fluent / Builder-style API
@@ -4818,6 +4850,9 @@ class IConfiguration(ICleanable, Protocol):
         Load defaults and set automatic state, returning `self`.
         """
         ...
+
+
+
 
 @runtime_checkable
 class ISafeLogger(ICleanable, Protocol):

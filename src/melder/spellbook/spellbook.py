@@ -1063,6 +1063,7 @@ class Spellbook(Cleanable, ISpellbook):
         try:
             permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
             existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
+
             new_spell = self._bind.bind(
                 permissions=permissions_enum,
                 spell=spell,
@@ -1071,16 +1072,23 @@ class Spellbook(Cleanable, ISpellbook):
                 existence=existence_enum,
                 aetheric_frame=self._aetheric_frame,
             )
+
             if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame):
-                self._logger.error(f"Spell with ID {new_spell.spell_id} already exists in the registry.", "bind", exc_info=True)
+                self._logger.error(
+                    f"Spell with ID {new_spell.spell_id} already exists in the registry.",
+                    "bind",
+                    exc_info=True,
+                )
                 raise RuntimeError(f"Spell with ID {new_spell.spell_id} already exists in the registry.")
+
             self._add_hooks_to_spell(new_spell, **kwargs)
+
+            # Register into local spell maps
             self._lookup_spells[new_spell._key] = new_spell.spell_index
             self._spells[new_spell.spell_index] = new_spell
 
             # keep local version cache warm
             if self._spell_versions is not None:
-                # At minimum track the primary id; if SpellIndex already has a versions list, use that.
                 versions = new_spell.spell_index._versions
                 if versions:
                     for vid in versions:
@@ -1088,10 +1096,31 @@ class Spellbook(Cleanable, ISpellbook):
                 else:
                     self._spell_versions.add(new_spell.spell_id)
 
-            if self._conjured:
-                self._conduit._register_to_creations(new_spell, new_spell.user_created_object)
+            # If a Conduit already exists, and this is an existing-object spell,
+            # eagerly register it into Creations as a unique instance.
+            if (
+                    self._conjured
+                    and self._conduit is not None
+                    and new_spell.user_created_object is not None
+            ):
+                try:
+                    self._conduit._register_to_creations(new_spell, new_spell.user_created_object)
+                    self._logger.debug(
+                        f"Eagerly registered existing-object spell into Creations: spell_id={new_spell.spell_id}",
+                        "bind",
+                    )
+                except Exception as reg_err:
+                    self._logger.error(
+                        f"Failed to register existing-object spell into Creations "
+                        f"(spell_id={new_spell.spell_id}): {reg_err}",
+                        "bind",
+                        exc_info=True,
+                    )
 
-            self._logger.debug(f"Binding spell => id={new_spell.spell_id}, key={new_spell._key}", "bind")
+            self._logger.debug(
+                f"Binding spell => id={new_spell.spell_id}, key={new_spell._key}",
+                "bind",
+            )
             return new_spell.spell_id
         except Exception as e:
             self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
