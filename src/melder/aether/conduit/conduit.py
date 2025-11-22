@@ -703,12 +703,12 @@ class Conduit(Cleanable, IConduit):
         Public API
 
         Creates a `SpellBinder` instance that provides an Autofac-style
-        fluent syntax on top of `Spellbook.bind(...)`.
+        fluent syntax on top of `Conduit.bind(...)`.
 
         This does *not* introduce a new registration path; it simply
         forwards everything into the existing binding pipeline so all
         reflection, `SpellIndex` construction, `SpellType` classification,
-        and validation flows remain exactly the same. :contentReference[oaicite:1]{index=1}
+        and validation flows remain exactly the same.
 
         Example:
             binder = spellbook.create_binder()
@@ -737,7 +737,6 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
         return self._spellbook.create_binder(
-            spellbook=self,
             default_existence=default_existence,
             default_permissions=default_permissions,
         )

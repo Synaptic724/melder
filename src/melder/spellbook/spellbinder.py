@@ -4,9 +4,10 @@ from typing import Any, Optional, Callable
 # Melder Imports
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.interfaces import ISpellbook
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-class SpellBinder:
+class SpellBinder(Cleanable):
     """
     Fluent registration helper for `Spellbook`.
 
@@ -99,10 +100,28 @@ class SpellBinder:
                 `"read"`, `"block"`), and are passed through unchanged to
                 `Spellbook.bind(...)`.
         """
+        super().__init__()
         self._spellbook = spellbook
         self._default_existence = default_existence
         self._default_permissions = default_permissions
         self._reset_current()
+
+
+    def cleanup(self) -> None:
+        """
+        Clean up the `SpellBinder`, releasing references.
+
+        After calling `cleanup()`, the binder should not be used again.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._spellbook = None
+        self._existence = None
+        self._permissions = None
+        self._spellframe = None
+        self._binding_name = None
+        self._kwargs = None
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -117,6 +136,7 @@ class SpellBinder:
         reused for multiple registrations without leaking configuration
         from one registration into the next.
         """
+        self.check_cleaned()
         self._spell: Any = None
         self._existence: Existence = self._default_existence
         self._permissions: str = self._default_permissions
@@ -134,6 +154,7 @@ class SpellBinder:
                 :meth:`bind`. A spell must be selected as the target of the
                 registration first.
         """
+        self.check_cleaned()
         if self._spell is None:
             raise RuntimeError(
                 "SpellBinder.finalize() called with no active spell. "
@@ -167,6 +188,7 @@ class SpellBinder:
                 (for example by passing an incompatible `**kwargs` entry
                 directly through :meth:`bind` or :meth:`with_kwargs`).
         """
+        self.check_cleaned()
         existing = self._kwargs.get(key)
         if existing is None:
             hooks: list[Callable[..., Any]] = []
@@ -270,6 +292,7 @@ class SpellBinder:
                 The same binder instance, allowing additional fluent calls
                 to be chained for this registration.
         """
+        self.check_cleaned()
         self._reset_current()
         self._spell = spell
 
@@ -308,6 +331,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._existence = existence
         return self
     def as_unique(self) -> "SpellBinder":
@@ -330,6 +354,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._existence = Existence.unique
         return self
 
@@ -351,6 +376,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._existence = Existence.many
         return self
 
@@ -373,6 +399,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._existence = Existence.unique_per_conduit
         return self
 
@@ -398,6 +425,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._existence = Existence.unique_per_conduit_cluster
         return self
 
@@ -420,6 +448,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._existence = Existence.unique_per_conduit_lineage
         return self
 
@@ -446,6 +475,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._existence = Existence.unique_per_spell_space
         return self
 
@@ -466,6 +496,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._permissions = permissions
         return self
 
@@ -485,6 +516,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._spellframe = spellframe
         return self
 
@@ -504,6 +536,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         self._binding_name = binding_name
         return self
 
@@ -528,6 +561,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         if kwargs:
             self._kwargs.update(kwargs)
         return self
@@ -555,6 +589,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         hooks = self._ensure_hook_list("pre_hooks")
         hooks.append(hook)
         return self
@@ -574,6 +609,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         if not hooks:
             return self
         lst = self._ensure_hook_list("pre_hooks")
@@ -597,6 +633,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         hooks = self._ensure_hook_list("activation_hooks")
         hooks.append(hook)
         return self
@@ -614,6 +651,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         if not hooks:
             return self
         lst = self._ensure_hook_list("activation_hooks")
@@ -638,6 +676,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         hooks = self._ensure_hook_list("post_hooks")
         hooks.append(hook)
         return self
@@ -654,6 +693,7 @@ class SpellBinder:
             SpellBinder:
                 The same binder instance, to allow further chaining.
         """
+        self.check_cleaned()
         if not hooks:
             return self
         lst = self._ensure_hook_list("post_hooks")
