@@ -693,6 +693,55 @@ class Conduit(Cleanable, IConduit):
         with self._lock:
             return self._spellbook.inspect_spell(spell, aetheric_frame)
 
+    def create_binder(
+            self,
+            *,
+            default_existence: Existence = Existence.unique,
+            default_permissions: str = "create",
+    ) -> 'SpellBinder':
+        """
+        Public API
+
+        Creates a `SpellBinder` instance that provides an Autofac-style
+        fluent syntax on top of `Spellbook.bind(...)`.
+
+        This does *not* introduce a new registration path; it simply
+        forwards everything into the existing binding pipeline so all
+        reflection, `SpellIndex` construction, `SpellType` classification,
+        and validation flows remain exactly the same. :contentReference[oaicite:1]{index=1}
+
+        Example:
+            binder = spellbook.create_binder()
+
+            binder.bind(MyService) \\
+                  .as_unique() \\
+                  .under_spellframe(IMyServiceProtocol) \\
+                  .named("primary") \\
+                  .with_permissions("create") \\
+                  .finalize()
+
+            # Reuse the same binder for another spell:
+            binder.bind(OtherService, existence=Existence.many).finalize()
+
+        Args:
+            default_existence (Existence):
+                Default lifecycle scope for fluent registrations started via
+                this binder.
+
+            default_permissions (str):
+                Default permissions for fluent registrations (e.g. "create").
+
+        Returns:
+            SpellBinder:
+                A reusable fluent registration helper bound to this Spellbook.
+        """
+        self.check_cleaned()
+        return self._spellbook.create_binder(
+            spellbook=self,
+            default_existence=default_existence,
+            default_permissions=default_permissions,
+        )
+
     def bind(self, *, spell, existence: str, permissions: str = "create", spellframe=None, binding_name=None, **kwargs) -> str:
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
@@ -894,26 +943,35 @@ class Conduit(Cleanable, IConduit):
         self.check_cleaned()
 
         if self._meld is None:
+            self._logger.error("Meld instance is not available on this Conduit", "meld")
             raise RuntimeError("[CONDUIT] Meld instance is not available on this Conduit.")
 
         # Enforce string-only, non-empty spell_id
         if not isinstance(spell, str) or not spell:
+            self._logger.error("spell must be a non-empty string spell_id", "meld")
             raise TypeError(
                 "[CONDUIT] 'spell' must be a non-empty string spell_id when "
                 "calling Conduit.meld()."
             )
 
         if spellframe is not None and not isinstance(spellframe, str):
+            self._logger.error("spellframe must be a string identifier when provided", "meld")
             raise TypeError(
                 "[CONDUIT] 'spellframe' must be a string identifier when "
                 "provided to Conduit.meld()."
             )
 
         if binding_name is not None and not isinstance(binding_name, str):
+            self._logger.error("binding_name must be a string identifier when provided", "meld")
             raise TypeError(
                 "[CONDUIT] 'binding_name' must be a string identifier when "
                 "provided to Conduit.meld()."
             )
+
+        self._logger.debug(
+            f"meld(spell_id={spell}, frame={spellframe}, binding={binding_name})",
+            "meld",
+        )
 
         # Pure passthrough to Meld; internal layer still supports richer inputs.
         return self._meld.meld(
@@ -922,6 +980,7 @@ class Conduit(Cleanable, IConduit):
             binding_name=binding_name,
             spell_override=spell_override,
         )
+
 
 
 

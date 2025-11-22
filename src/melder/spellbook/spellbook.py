@@ -6,6 +6,7 @@ import threading
 from melder.aether.aether import Aether
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.configuration.system_state import SystemState
+from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -904,6 +905,55 @@ class Spellbook(Cleanable, ISpellbook):
 
     #endregion Contract API
     #region Binding API
+
+    def create_binder(
+            self,
+            *,
+            default_existence: Existence = Existence.unique,
+            default_permissions: str = "create",
+    ) -> SpellBinder:
+        """
+        Public API
+
+        Creates a `SpellBinder` instance that provides an Autofac-style
+        fluent syntax on top of `Spellbook.bind(...)`.
+
+        This does *not* introduce a new registration path; it simply
+        forwards everything into the existing binding pipeline so all
+        reflection, `SpellIndex` construction, `SpellType` classification,
+        and validation flows remain exactly the same. :contentReference[oaicite:1]{index=1}
+
+        Example:
+            binder = spellbook.create_binder()
+
+            binder.bind(MyService) \\
+                  .as_unique() \\
+                  .under_spellframe(IMyServiceProtocol) \\
+                  .named("primary") \\
+                  .with_permissions("create") \\
+                  .finalize()
+
+            # Reuse the same binder for another spell:
+            binder.bind(OtherService, existence=Existence.many).finalize()
+
+        Args:
+            default_existence (Existence):
+                Default lifecycle scope for fluent registrations started via
+                this binder.
+
+            default_permissions (str):
+                Default permissions for fluent registrations (e.g. "create").
+
+        Returns:
+            SpellBinder:
+                A reusable fluent registration helper bound to this Spellbook.
+        """
+        self.check_cleaned()
+        return SpellBinder(
+            spellbook=self,
+            default_existence=default_existence,
+            default_permissions=default_permissions,
+        )
 
     def bind(
             self,

@@ -3,6 +3,8 @@ from threading import RLock
 from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator, Callable, \
     Tuple, Mapping, Set
 
+from melder.spellbook.existence.existence import Existence
+
 
 @runtime_checkable
 class ICleanable(Protocol):
@@ -845,6 +847,50 @@ class ISpellbook(ICleanable, Protocol):
             ValueError:
                 If the ``permissions`` string cannot be converted into a
                 valid `Permissions` enum.
+        """
+        ...
+
+    def create_binder(
+            self,
+            *,
+            default_existence: Existence = Existence.unique,
+            default_permissions: str = "create",
+    ) -> 'SpellBinder':
+        """
+        Public API
+
+        Creates a `SpellBinder` instance that provides an Autofac-style
+        fluent syntax on top of `Spellbook.bind(...)`.
+
+        This does *not* introduce a new registration path; it simply
+        forwards everything into the existing binding pipeline so all
+        reflection, `SpellIndex` construction, `SpellType` classification,
+        and validation flows remain exactly the same. :contentReference[oaicite:1]{index=1}
+
+        Example:
+            binder = spellbook.create_binder()
+
+            binder.bind(MyService) \\
+                  .as_unique() \\
+                  .under_spellframe(IMyServiceProtocol) \\
+                  .named("primary") \\
+                  .with_permissions("create") \\
+                  .finalize()
+
+            # Reuse the same binder for another spell:
+            binder.bind(OtherService, existence=Existence.many).finalize()
+
+        Args:
+            default_existence (Existence):
+                Default lifecycle scope for fluent registrations started via
+                this binder.
+
+            default_permissions (str):
+                Default permissions for fluent registrations (e.g. "create").
+
+        Returns:
+            SpellBinder:
+                A reusable fluent registration helper bound to this Spellbook.
         """
         ...
 
