@@ -25,7 +25,26 @@ class Configuration(Cleanable, IConfiguration):
     This object should only be configured once and then frozen to prevent any further changes,
     enforcing idempotent laws across the system. Thread-safe operations are ensured with RLock.
     """
+    _ALLOWED_HOOKS = (
+        # Meld pipeline hooks
+        "on_meld_pre_resolve",
+        "on_meld_post_resolve",
 
+        # Conduit lifecycle hooks
+        "on_conduit_pre_created",
+        "on_conduit_post_created",
+        "on_conduit_activated",
+        "on_conduit_cleanup_start",
+        "on_conduit_cleanup_complete",
+
+        # Linking hooks
+        "on_conduit_post_link",
+        "on_conduit_post_unlink",
+
+        # Contract hooks
+        "on_contract_created",
+        "on_contract_removed",
+    )
     def __init__(self, aether_frame: str = "default"):
         """
         Initializes a new Configuration manager.
@@ -40,7 +59,7 @@ class Configuration(Cleanable, IConfiguration):
         self._aether_frame: str = aether_frame
         self._frozen = False
 
-        self._logger_factory: Pack[[object], Any] | None = None # Pack is used for management of callables
+        self._logger_factory: Pack[[object], Any] | None = None  # Pack is used for management of callables
 
         # Private dictionary storing all properties.
         self._properties: ConcurrentDict = ConcurrentDict()
@@ -53,6 +72,16 @@ class Configuration(Cleanable, IConfiguration):
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
         self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
+
+        # System hook registry (Meld / Conduit / Link / Contract).
+        # Maps hook name -> list[Callable[..., Any]].
+        #
+        # This is per-Configuration and is intended to be wired into:
+        #   - Meld pipeline (on_meld_pre_resolve / on_meld_post_resolve)
+        #   - Conduit lifecycle (pre/post created, activated, cleanup start/complete)
+        #   - Linking (on_conduit_post_link / on_conduit_post_unlink)
+        #   - Contract events (on_contract_created / on_contract_removed)
+        self._hooks: ConcurrentDict[str, ConcurrentDict[str, list[Callable[..., Any]]]] = ConcurrentDict()
 
     def cleanup(self) -> None:
         """
@@ -76,10 +105,17 @@ class Configuration(Cleanable, IConfiguration):
                     self._logger_factory.cleanup()
                 self._logger_factory = None
 
-            self._properties.cleanup()
-            self._properties = None
-            self.available_properties.cleanup()
-            self.available_properties = None
+            if self._properties is not None:
+                self._properties.cleanup()
+                self._properties = None
+
+            if self.available_properties is not None:
+                self.available_properties.cleanup()
+                self.available_properties = None
+
+            if self._hooks is not None:
+                self._hooks.cleanup()
+                self._hooks = None
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -352,9 +388,218 @@ class Configuration(Cleanable, IConfiguration):
         with self._lock:
             return self._logger_factory is not None
 
+    # ------------------------------------------------------------------
+    # System hook API (Meld / Conduit / Link / Contract) – normal style
+    # ------------------------------------------------------------------
+
+    def add_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> None:
+        """
+        Register a single system hook under this configuration for a specific Spellbook.
+
+        The registry is keyed as:
+
+            _hooks[spellbook_id][hook_name] -> list[callables]
+
+        Covered hook categories:
+            * Meld pipeline hooks:
+                - "on_meld_pre_resolve"
+                - "on_meld_post_resolve"
+            * Conduit lifecycle hooks:
+                - "on_conduit_pre_created"
+                - "on_conduit_post_created"
+                - "on_conduit_activated"
+                - "on_conduit_cleanup_start"
+                - "on_conduit_cleanup_complete"
+            * Linking hooks:
+                - "on_conduit_post_link"
+                - "on_conduit_post_unlink"
+            * Contract hooks:
+                - "on_contract_created"
+                - "on_contract_removed"
+
+        Args:
+            spellbook_id (str):
+                The ID of the Spellbook these hooks belong to. This allows
+                dynamic environments to register hooks per-Spellbook and later
+                pull the appropriate hook sets when instantiating Conduits.
+            hook_name (str):
+                The canonical hook name to register. Must be one of
+                :attr:`_ALLOWED_HOOKS`.
+            hook (Callable[..., Any]):
+                A callable to be invoked when the corresponding hook event fires.
+
+        Raises:
+            RuntimeError: If the configuration is cleaned or frozen.
+            ValueError: If `hook_name` is unknown.
+            TypeError: If `hook` is not callable.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            raise RuntimeError("Cannot modify hooks after configuration is frozen.")
+
+        if hook_name not in self._ALLOWED_HOOKS:
+            raise ValueError(f"Unknown hook name: {hook_name!r}")
+
+        if not callable(hook):
+            raise TypeError("hook must be callable.")
+
+        with self._lock:
+            per_spellbook = self._hooks.get(spellbook_id)
+            if per_spellbook is None:
+                per_spellbook = ConcurrentDict[str, list[Callable[..., Any]]]()
+                self._hooks[spellbook_id] = per_spellbook
+
+            hooks_list = per_spellbook.get(hook_name)
+            if hooks_list is None:
+                hooks_list = []
+                per_spellbook[hook_name] = hooks_list
+
+            hooks_list.append(hook)
+
+    def add_hooks(self, spellbook_id: str, **hooks: Any) -> None:
+        """
+        Register multiple system hooks for a specific Spellbook in one call.
+
+        Each keyword argument maps a hook name to either:
+            * A single callable, or
+            * An iterable of callables.
+
+        The internal registry shape is:
+
+            _hooks[spellbook_id][hook_name] -> list[callables]
+
+        Example:
+            cfg.add_hooks(
+                "spellbook-123",
+                on_meld_pre_resolve=trace_meld_enter,
+                on_conduit_cleanup_complete=[cleanup_fn_1, cleanup_fn_2],
+                on_contract_created=contract_observer,
+            )
+
+        Args:
+            spellbook_id (str):
+                The ID of the Spellbook these hooks belong to.
+            **hooks:
+                Mapping of hook name -> callable or iterable[callable].
+
+        Raises:
+            RuntimeError: If the configuration is cleaned or frozen.
+            ValueError: If any hook name is unknown.
+            TypeError: If any value is not a callable or an iterable of callables.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            raise RuntimeError("Cannot modify hooks after configuration is frozen.")
+
+        for name, value in hooks.items():
+            if name not in self._ALLOWED_HOOKS:
+                raise ValueError(f"Unknown hook name: {name!r}")
+
+            if value is None:
+                continue
+
+            if callable(value):
+                self.add_hook(spellbook_id, name, value)
+            else:
+                try:
+                    iterator = iter(value)
+                except TypeError:
+                    raise TypeError(
+                        f"Value for hook '{name}' must be a callable or an iterable of callables."
+                    )
+                for fn in iterator:
+                    if not callable(fn):
+                        raise TypeError(
+                            f"All entries for hook '{name}' must be callable."
+                        )
+                    self.add_hook(spellbook_id, name, fn)
+
+    def get_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
+        """
+        Retrieve a snapshot of all configured system hooks for a specific Spellbook.
+
+        This returns a shallow copy of the inner registry for the given
+        ``spellbook_id`` so callers (e.g., Spellbook / Conduit / Meld wiring
+        code) can safely iterate without holding the configuration lock.
+
+        Shape:
+
+            { hook_name: [callables...] }
+
+        Args:
+            spellbook_id (str):
+                The ID of the Spellbook whose hooks should be retrieved.
+
+        Returns:
+            Dict[str, list[Callable[..., Any]]]:
+                Mapping of hook name -> list of callables currently registered
+                for that Spellbook. Returns an empty dict if no hooks exist.
+
+        Raises:
+            RuntimeError: If the configuration is cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._hooks is None:
+                return {}
+
+            per_spellbook = self._hooks.get(spellbook_id)
+            if per_spellbook is None:
+                return {}
+
+            snapshot: Dict[str, list[Callable[..., Any]]] = {}
+            for name, hooks_list in per_spellbook.items():
+                snapshot[name] = list(hooks_list)
+            return snapshot
+
+
     # ---------------------------
     # Fluent / Builder-style API
     # ---------------------------
+
+    def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> IConfiguration:
+        """
+        Fluent
+
+        Register a single system hook for a specific Spellbook and return ``self``.
+
+        This is a fluent wrapper over :meth:`add_hook`, supporting all valid
+        hook names defined in :attr:`_ALLOWED_HOOKS`.
+
+        Example:
+            (Configuration()
+                .with_defaults()
+                .with_hook("spellbook-123", "on_meld_pre_resolve", trace_meld_enter)
+                .with_hook("spellbook-123", "on_conduit_cleanup_complete", cleanup_fn)
+                .finalize())
+        """
+        self.add_hook(spellbook_id, hook_name, hook)
+        return self
+
+    def with_hooks(self, spellbook_id: str, **hooks: Any) -> IConfiguration:
+        """
+        Fluent
+
+        Register multiple system hooks for a specific Spellbook in one call
+        and return ``self``.
+
+        Each keyword argument maps a hook name to either:
+            * A single callable, or
+            * An iterable of callables.
+
+        Example:
+            (Configuration()
+                .with_defaults()
+                .with_hooks(
+                    "spellbook-123",
+                    on_meld_pre_resolve=trace_meld_enter,
+                    on_conduit_pre_created=log_conduit_construction,
+                    on_contract_created=[observer_1, observer_2],
+                )
+                .finalize())
+        """
+        self.add_hooks(spellbook_id, **hooks)
+        return self
 
     def clear_logger_factory(self) -> IConfiguration:
         """

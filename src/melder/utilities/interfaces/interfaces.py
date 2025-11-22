@@ -4593,10 +4593,76 @@ class IConfiguration(ICleanable, Protocol):
         """
         ...
 
+    def get_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
+        """
+        Retrieve a snapshot of all configured system hooks for a specific Spellbook.
+
+        This returns a shallow copy of the inner registry for the given
+        ``spellbook_id`` so callers (e.g., Spellbook / Conduit / Meld wiring
+        code) can safely iterate without holding the configuration lock.
+
+        Shape:
+
+            { hook_name: [callables...] }
+
+        Args:
+            spellbook_id (str):
+                The ID of the Spellbook whose hooks should be retrieved.
+
+        Returns:
+            Dict[str, list[Callable[..., Any]]]:
+                Mapping of hook name -> list of callables currently registered
+                for that Spellbook. Returns an empty dict if no hooks exist.
+
+        Raises:
+            RuntimeError: If the configuration is cleaned.
+        """
+        ...
+
     # ---------------------------
     # Fluent / Builder-style API
     # ---------------------------
+    def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> 'IConfiguration':
+        """
+        Fluent
 
+        Register a single system hook for a specific Spellbook and return ``self``.
+
+        This is a fluent wrapper over :meth:`add_hook`, supporting all valid
+        hook names defined in :attr:`_ALLOWED_HOOKS`.
+
+        Example:
+            (Configuration()
+                .with_defaults()
+                .with_hook("spellbook-123", "on_meld_pre_resolve", trace_meld_enter)
+                .with_hook("spellbook-123", "on_conduit_cleanup_complete", cleanup_fn)
+                .finalize())
+        """
+        ...
+
+    def with_hooks(self, spellbook_id: str, **hooks: Any) -> 'IConfiguration':
+        """
+        Fluent
+
+        Register multiple system hooks for a specific Spellbook in one call
+        and return ``self``.
+
+        Each keyword argument maps a hook name to either:
+            * A single callable, or
+            * An iterable of callables.
+
+        Example:
+            (Configuration()
+                .with_defaults()
+                .with_hooks(
+                    "spellbook-123",
+                    on_meld_pre_resolve=trace_meld_enter,
+                    on_conduit_pre_created=log_conduit_construction,
+                    on_contract_created=[observer_1, observer_2],
+                )
+                .finalize())
+        """
+        ...
     def clear_logger_factory(self) -> 'IConfiguration':
         """
         Clear the logger factory (pre-freeze only) and return `self`.

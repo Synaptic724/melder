@@ -102,6 +102,7 @@ class Spellbook(Cleanable, ISpellbook):
         # Binding system
         self._bind: Bind = Bind()
 
+
     #region Disposal
 
     def cleanup(self) -> None:
@@ -371,6 +372,17 @@ class Spellbook(Cleanable, ISpellbook):
 
     #endregion Logging
     #region Properties
+    @property
+    def id(self) -> str:
+        """
+        Public API
+
+        Returns the unique ID of this Spellbook instance.
+
+        Returns:
+            str: The Spellbook's unique identifier.
+        """
+        return self._id
 
     @property
     def spells(self) -> Mapping[SpellIndex, ISpell]:

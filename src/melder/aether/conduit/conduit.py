@@ -5,6 +5,7 @@ from typing import Optional, Type, Any, Tuple
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -57,20 +58,41 @@ class Conduit(Cleanable, IConduit):
 
         self._configuration: IConfiguration = configuration
         self._logger: ISafeLogger = self._configure_logger(logger, configuration)
-        self._logger.debug(f"Conduit __init__ starting (frame='{aetheric_frame}', state={conduit_state.name}, name={name})", "__init__")
+        self._logger.debug(
+            f"Conduit __init__ starting (frame='{aetheric_frame}', state={conduit_state.name}, name={name})",
+            "__init__"
+        )
 
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
         self._spellbook: ISpellbook = spellbook
-        self._meld: Meld = Meld(self._creations, self._spellbook)
+        self._meld: Meld = Meld(creations=self._creations, spellbook=self._spellbook, configuration=configuration)
+
+        # Localized hook map for this conduit.
+        # Populated from Configuration using the Spellbook's ID.
+        # Shape: { hook_name: [callables...] }
+        self._conduit_hooks: dict[str, list[Any]] | None = None
+
         self._apply_configuration_flags()
 
-        self._conduit_ward: ConduitWard = ConduitWard(self, self.__dynamic_environment__, self._conduit_state, policy)
+        self._conduit_ward: ConduitWard = ConduitWard(
+            conduit=self,
+            dynamic=self.__dynamic_environment__,
+            conduit_type=self._conduit_state,
+            policy=policy,
+            configuration=configuration
+        )
         self._configure_conduit_state()
+
+        # ID swap: pull any hooks registered under this Spellbook's ID in the
+        # Configuration into this Conduit instance as a local hook map.
+        self._initialize_conduit_hooks()
+
         self._logger.debug(
             f"Conduit initialized (id={self._id}, frame='{self._aetheric_frame}')",
             "__init__"
         )
+
 
 
     def _configure_logger(self, logger: Any, configuration: IConfiguration) -> Any:
@@ -114,6 +136,80 @@ class Conduit(Cleanable, IConduit):
                 self._logger.warning("Lesser conduits cannot have a name. Overriding to None.", "__init__")
                 self._name = None
 
+    def _initialize_conduit_hooks(self) -> None:
+        """
+        Internal
+
+        Attach any configured system hooks that were registered under this
+        Conduit's Spellbook into the Conduit instance.
+
+        This is the "ID swap" boundary:
+
+            - Registration happens per-Spellbook ID on `Configuration` via:
+
+                  configuration.add_hook(spellbook_id, hook_name, hook)
+
+            - At Conduit construction time, we look up that Spellbook ID
+              and pull the hook map into a Conduit-local structure:
+
+                  self._conduit_hooks: { hook_name: [callables...] }
+
+        Rules:
+            - Only NORMAL conduits participate; lesser conduits skip this.
+            - If the Spellbook has no `id`, we log and bail.
+            - If the Configuration does not expose `get_hooks(spellbook_id)`,
+              we treat that as "no hooks registered" and bail quietly.
+        """
+        # Lesser conduits do not own their own hook sets.
+        if self._conduit_state != ConduitState.normal:
+            self._logger.debug(
+                "_initialize_conduit_hooks: skipping for non-normal conduit",
+                "_initialize_conduit_hooks",
+            )
+            return
+
+        # Spellbook must expose an `id` (ISpellbook contract).
+        try:
+            spellbook_id = self._spellbook._id
+        except AttributeError:
+            self._logger.debug(
+                "_initialize_conduit_hooks: Spellbook has no 'id' attribute; "
+                "skipping hook attachment.",
+                "_initialize_conduit_hooks",
+            )
+            return
+
+        # Configuration may or may not support the hook registry yet.
+        try:
+            hook_map = self._configuration.get_hooks(spellbook_id)
+        except AttributeError:
+            self._logger.debug(
+                "_initialize_conduit_hooks: Configuration has no get_hooks(spellbook_id); "
+                "skipping hook attachment.",
+                "_initialize_conduit_hooks",
+            )
+            return
+
+        if not hook_map:
+            self._logger.debug(
+                f"_initialize_conduit_hooks: no hooks registered for spellbook_id={spellbook_id}; "
+                "nothing to attach.",
+                "_initialize_conduit_hooks",
+            )
+            return
+
+        # At this point we conceptually "swap IDs": hooks registered under the
+        # Spellbook's ID become owned by this Conduit instance.
+        self._conduit_hooks = hook_map
+
+        self._logger.debug(
+            f"_initialize_conduit_hooks: attached {len(hook_map)} hook groups "
+            f"from spellbook_id={spellbook_id} to conduit_id={self._id}",
+            "_initialize_conduit_hooks",
+        )
+
+
+
     #region Cleanup and Disposal
     def cleanup(self):
         """
@@ -124,29 +220,40 @@ class Conduit(Cleanable, IConduit):
         Prevents further operation, releases internal references,
         and unregisters from the Aether.
         """
-        raise NotImplementedError("Cleanup is not implemented yet.")
         if self._cleaned:
             return
         with self._lock:
             if self._cleaned:
                 return
-
-            # Phase 1: Cleanup and disposal
-            self._clean_up_lesser_conduits_links()
-            self._clean_up_links()
-            self._spellbook.cleanup()
-            self._creations.cleanup()
-
-            # Phase 2: De-reference internal structures
-            self._spellbook = None
-            self._creations = None
-
-            # Phase 3: Deregister from the world
-            if Conduit._aether and not Conduit._aether._cleaned:
-                Conduit._aether._remove_conduit(self, self._aetheric_frame)
-
-            self._conduit_state = ConduitState.cleaned
             self._cleaned = True
+            if self._conduit_state == ConduitState.lesser:
+                self._cleanup_lesser_conduit()
+            elif self._conduit_state == ConduitState.normal:
+                self._cleanup_normal_conduit()
+            else:
+                self._logger.error("Unknown Conduit state during cleanup", "cleanup")
+                raise RuntimeError("Conduit state is unknown during cleanup")
+
+
+
+
+
+    def _cleanup_lesser_conduit(self):
+        """
+        Internal
+
+        Cleans up a lesser Conduit.
+        """
+        pass
+
+
+    def _cleanup_normal_conduit(self):
+        """
+        Internal
+
+        Cleans up a normal Conduit.
+        """
+        pass
 
     #endregion Cleanup and Disposal
     #region Context Management
@@ -432,6 +539,29 @@ class Conduit(Cleanable, IConduit):
         The lesser conduit inherits the parent's Spellbook and Configuration but is restricted
         in its ability to establish external links or register new spells.
 
+        If this (parent) Conduit has lifecycle hooks attached via the Configuration
+        for its Spellbook, the following hooks will be fired in order:
+
+            1. "on_conduit_pre_created"
+                   Fired *before* the lesser Conduit is constructed.
+
+                   Signature:
+                       hook(parent_conduit)
+
+            2. "on_conduit_activated"
+                   Fired immediately after the lesser Conduit instance has been
+                   constructed (its __init__ has run).
+
+                   Signature:
+                       hook(new_conduit)
+
+            3. "on_conduit_post_created"
+                   Fired after the lesser Conduit has been constructed and
+                   linked into this parent's ConduitWard.
+
+                   Signature:
+                       hook(parent_conduit, new_conduit)
+
         Returns:
             IConduit: The newly created lesser Conduit instance.
 
@@ -439,20 +569,45 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the parent Conduit is cleaned.
         """
         self.check_cleaned()
-
         self._logger.debug("Creating lesser conduit", "create_lesser_conduit")
+
         with self._lock:
+            # 1) Pre-create hook on the parent, if any.
+            self._fire_conduit_hooks(
+                "on_conduit_pre_created",
+                self,  # parent_conduit
+            )
+
+            # 2) Construct the lesser conduit (activation point).
             new_conduit = Conduit(
                 spellbook=self._spellbook,
                 configuration=self._configuration,
                 conduit_state=ConduitState.lesser,
                 aetheric_frame=self._aetheric_frame,
                 policy=Policies.lesser_conduit,
-                logger=logger
+                logger=logger,
             )
-        self._conduit_ward._link_lesser_conduit(new_conduit)
+
+            # Fire activation hook with the new conduit instance.
+            self._fire_conduit_hooks(
+                "on_conduit_activated",
+                new_conduit,  # new lesser conduit
+            )
+
+            # 3) Link the lesser conduit into the parent's ConduitWard.
+            self._conduit_ward._link_lesser_conduit(new_conduit)
+
+            # Fire post-create hook with both parent and child.
+            self._fire_conduit_hooks(
+                "on_conduit_post_created",
+                self,         # parent_conduit
+                new_conduit,  # child_conduit
+            )
+
         self._logger.debug("Lesser conduit created and linked", "create_lesser_conduit")
         return new_conduit
+
+
 
 
     #endregion Conduit Management
@@ -1672,4 +1827,59 @@ class Conduit(Cleanable, IConduit):
         return Conduit._aether._get_mutation_research(self._aetheric_frame)
 
 #endregion Mutation Research
+
+
+#region Hooks
+    def _fire_conduit_hooks(self, hook_name: str, *conduits: "Conduit") -> None:
+        """
+        Internal
+
+        Invoke all local Conduit hooks registered under ``hook_name``, if any.
+
+        This uses the hook map localized into this Conduit via
+        :meth:`_initialize_conduit_hooks`. The contract is intentionally
+        narrow and stable:
+
+            - All hooks are plain callables.
+            - They are invoked as: hook(*conduits)
+            - Each element in ``conduits`` MUST be a Conduit instance.
+            - Exceptions are logged and suppressed so hooks cannot
+              destabilize core lifecycle behavior.
+
+        Typical patterns:
+
+            - on_conduit_pre_created(parent)
+            - on_conduit_activated(new_conduit)
+            - on_conduit_post_created(parent, new_conduit)
+            - on_conduit_cleanup_start(conduit)
+            - on_conduit_cleanup_complete(conduit)
+
+        Args:
+            hook_name (str):
+                The canonical hook name to invoke
+                (e.g., "on_conduit_pre_created", "on_conduit_post_created").
+            *conduits:
+                One or more Conduit instances passed directly to each hook.
+        """
+        hooks_by_name = self._conduit_hooks
+        if not hooks_by_name:
+            return
+
+        hook_list = hooks_by_name.get(hook_name)
+        if not hook_list:
+            return
+
+        for hook in list(hook_list):
+            try:
+                hook(*conduits)
+            except Exception as e:
+                # Hooks are advisory; they must not break Conduit behavior.
+                self._logger.error(
+                    f"Error while executing hook '{hook_name}': {e}",
+                    "_fire_conduit_hooks",
+                    exc_info=True,
+                )
+
+
+#endregion Hooks
 #endregion Conduit

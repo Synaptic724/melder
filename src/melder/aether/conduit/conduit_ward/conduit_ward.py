@@ -8,7 +8,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger
+from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger, IConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 
@@ -35,7 +35,7 @@ class ConduitWard(Cleanable, IConduitWard):
     * `_initiated_index`: Tracks links this conduit has initiated (outbound).
     * `_received_index`: Tracks links where this conduit has been the provider target (inbound).
     """
-    def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies):
+    def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies, configuration: IConfiguration):
         super().__init__()
         self._lock: threading.RLock  = threading.RLock()
 
@@ -44,6 +44,7 @@ class ConduitWard(Cleanable, IConduitWard):
         self._logger: ISafeLogger = conduit._logger
         self._dynamic: bool = dynamic
         self._conduit_type: ConduitState = conduit_type
+        self._configuration: IConfiguration = configuration
         self._id = conduit._id
         self._display_name: str = self.__class__.__name__
         self._log_groups = ["spell_management", "spells"]
