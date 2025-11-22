@@ -5,7 +5,6 @@ from typing import Optional, Type, Any, Tuple
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -66,7 +65,7 @@ class Conduit(Cleanable, IConduit):
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
         self._spellbook: ISpellbook = spellbook
-        self._meld: Meld = Meld(creations=self._creations, spellbook=self._spellbook, configuration=configuration)
+        self._meld: Meld = Meld(creations=self._creations, spellbook=self._spellbook)
 
         # Localized hook map for this conduit.
         # Populated from Configuration using the Spellbook's ID.
@@ -79,8 +78,7 @@ class Conduit(Cleanable, IConduit):
             conduit=self,
             dynamic=self.__dynamic_environment__,
             conduit_type=self._conduit_state,
-            policy=policy,
-            configuration=configuration
+            policy=policy
         )
         self._configure_conduit_state()
 
@@ -1127,13 +1125,27 @@ class Conduit(Cleanable, IConduit):
             "meld",
         )
 
+        # Pre-resolve hook for the meld pipeline.
+        self._fire_conduit_hooks(
+            "on_meld_pre_resolve",
+            self,
+        )
+
         # Pure passthrough to Meld; internal layer still supports richer inputs.
-        return self._meld.meld(
+        result = self._meld.meld(
             spell=spell,
             spellframe=spellframe,
             binding_name=binding_name,
             spell_override=spell_override,
         )
+
+        # Post-resolve hook for the meld pipeline.
+        self._fire_conduit_hooks(
+            "on_meld_post_resolve",
+            self,
+        )
+
+        return result
 
 
 
@@ -1232,6 +1244,10 @@ class Conduit(Cleanable, IConduit):
         Linking is only allowed if the world is in dynamic mode. This process initiates a contract
         relationship between the two conduits based on the current policy.
 
+        On success, the following hook will be fired on this Conduit (if configured):
+
+            - "on_conduit_post_link(self, target_conduit)"
+
         Args:
             target_conduit (IConduit): The target Conduit to link to.
 
@@ -1255,8 +1271,19 @@ class Conduit(Cleanable, IConduit):
             self._logger.error("link target has no valid creation context", "link")
             raise RuntimeError("Target conduit does not have a valid creation context.")
         self._logger.debug(f"link -> target={target_conduit._id}", "link")
+
         with self._lock:
-            return self._conduit_ward._link(target_conduit)
+            linked = self._conduit_ward._link(target_conduit)
+
+        if linked:
+            # Fire post-link hook with both ends of the relationship.
+            self._fire_conduit_hooks(
+                "on_conduit_post_link",
+                self,
+                target_conduit,
+            )
+
+        return linked
 
     def sever_link(self, target_conduit: IConduit) -> bool:
         """
@@ -1266,6 +1293,10 @@ class Conduit(Cleanable, IConduit):
 
         This method validates the link's existence, ensures it can be severed according to policy,
         and removes the link and all contracted spells. This is intended for public use to dissolve a relationship.
+
+        On success, the following hook will be fired on this Conduit (if configured):
+
+            - "on_conduit_post_unlink(self, target_conduit)"
 
         Args:
             target_conduit (IConduit): The target Conduit whose link to sever.
@@ -1282,9 +1313,19 @@ class Conduit(Cleanable, IConduit):
             self._logger.error("sever_link in non-dynamic env", "sever_link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
         self._logger.debug(f"sever_link target={target_conduit._id}", "sever_link")
-        with self._lock:
-            return self._conduit_ward._sever_link(target_conduit)
 
+        with self._lock:
+            unlinked = self._conduit_ward._sever_link(target_conduit)
+
+        if unlinked:
+            # Fire post-unlink hook with both ends of the relationship.
+            self._fire_conduit_hooks(
+                "on_conduit_post_unlink",
+                self,
+                target_conduit,
+            )
+
+        return unlinked
 
     def get_links(self):
         """
@@ -1484,8 +1525,26 @@ class Conduit(Cleanable, IConduit):
         """
         self._logger.debug(f"add_spell_to_contract(spell_id={spell_id}, conduit_id={conduit_id}, perms={permissions})", "add_spell_to_contract")
         self._qualify_contracts()
-        return self._conduit_ward._add_spell_to_contract(spell=spell, spell_id=spell_id, conduit=conduit, conduit_id=conduit_id,
-                                                         permissions=permissions, aetheric_frame=aetheric_frame)
+
+        result = self._conduit_ward._add_spell_to_contract(
+            spell=spell,
+            spell_id=spell_id,
+            conduit=conduit,
+            conduit_id=conduit_id,
+            permissions=permissions,
+            aetheric_frame=aetheric_frame,
+        )
+
+        if result:
+            peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
+            if peer is not None:
+                self._fire_conduit_hooks(
+                    "on_contract_created",
+                    self,
+                    peer,
+                )
+
+        return result
 
 
 
@@ -1514,9 +1573,26 @@ class Conduit(Cleanable, IConduit):
         """
         self._logger.debug(f"add_spells_to_contract(count={len(spell_ids)}, conduit_id={conduit_id}, perms={permissions})", "add_spells_to_contract")
         self._qualify_contracts()
-        return self._conduit_ward._add_spells_to_contract(spell_ids=spell_ids,
-                                                          conduit=conduit, conduit_id=conduit_id,
-                                                          permissions=permissions, aetheric_frame=aetheric_frame)
+
+        results = self._conduit_ward._add_spells_to_contract(
+            spell_ids=spell_ids,
+            conduit=conduit,
+            conduit_id=conduit_id,
+            permissions=permissions,
+            aetheric_frame=aetheric_frame,
+        )
+
+        # Fire hook only if at least one contract addition succeeded.
+        if results and any(results.values()):
+            peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
+            if peer is not None:
+                self._fire_conduit_hooks(
+                    "on_contract_created",
+                    self,
+                    peer,
+                )
+
+        return results
 
 
     def remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
@@ -1544,8 +1620,25 @@ class Conduit(Cleanable, IConduit):
         """
         self._logger.debug(f"remove_spell_from_contract(spell_id={spell_id}, conduit_id={conduit_id})", "remove_spell_from_contract")
         self._qualify_contracts()
-        return self._conduit_ward._remove_spell_from_contract(spell=spell, spell_id=spell_id, conduit=conduit,
-                                                              conduit_id=conduit_id, aetheric_frame=aetheric_frame)
+
+        result = self._conduit_ward._remove_spell_from_contract(
+            spell=spell,
+            spell_id=spell_id,
+            conduit=conduit,
+            conduit_id=conduit_id,
+            aetheric_frame=aetheric_frame,
+        )
+
+        if result:
+            peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
+            if peer is not None:
+                self._fire_conduit_hooks(
+                    "on_contract_removed",
+                    self,
+                    peer,
+                )
+
+        return result
 
     def remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
                                     conduit_id: str = None, aetheric_frame = "default") -> dict:
@@ -1570,8 +1663,24 @@ class Conduit(Cleanable, IConduit):
         """
         self._logger.debug(f"remove_spells_from_contract(count={0 if spell_ids is None else len(spell_ids)}, conduit_id={conduit_id})", "remove_spells_from_contract")
         self._qualify_contracts()
-        return self._conduit_ward._remove_spells_from_contract(spell_ids=spell_ids, conduit=conduit,
-                                                               conduit_id=conduit_id, aetheric_frame=aetheric_frame)
+
+        results = self._conduit_ward._remove_spells_from_contract(
+            spell_ids=spell_ids,
+            conduit=conduit,
+            conduit_id=conduit_id,
+            aetheric_frame=aetheric_frame,
+        )
+
+        if results and any(results.values()):
+            peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
+            if peer is not None:
+                self._fire_conduit_hooks(
+                    "on_contract_removed",
+                    self,
+                    peer,
+                )
+
+        return results
 
 
     def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: str = None, aetheric_frame = "default") -> bool | None:
@@ -1596,8 +1705,23 @@ class Conduit(Cleanable, IConduit):
         """
         self._logger.debug(f"_remove_all_spells_from_contract(conduit_id={conduit_id})", "_remove_all_spells_from_contract")
         self._qualify_contracts()
-        return self._conduit_ward._remove_all_spells_from_contract(conduit=conduit, conduit_id=conduit_id, aetheric_frame=aetheric_frame)
 
+        result = self._conduit_ward._remove_all_spells_from_contract(
+            conduit=conduit,
+            conduit_id=conduit_id,
+            aetheric_frame=aetheric_frame,
+        )
+
+        if result:
+            peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
+            if peer is not None:
+                self._fire_conduit_hooks(
+                    "on_contract_removed",
+                    self,
+                    peer,
+                )
+
+        return result
 
     def get_all_spells_in_contracts(self, validate: bool = True) -> Optional[dict[str, list[Tuple[str, ISpell]]]]:
         """
@@ -1830,6 +1954,52 @@ class Conduit(Cleanable, IConduit):
 
 
 #region Hooks
+    def _resolve_peer_conduit_for_contract_hooks(
+            self,
+            conduit: IConduit | None,
+            conduit_id: str | None,
+            aetheric_frame: str,
+    ) -> Optional[IConduit]:
+        """
+        Internal
+
+        Resolve the peer conduit instance for contract-related hooks.
+
+        This helper normalizes the two input forms:
+
+            - Direct `conduit` instance, or
+            - `conduit_id` + `aetheric_frame`
+
+        so that hooks can always receive a concrete Conduit object when
+        possible.
+
+        Args:
+            conduit (IConduit | None):
+                Optional direct conduit instance supplied by the caller.
+            conduit_id (str | None):
+                Optional conduit id, used when `conduit` is not provided.
+            aetheric_frame (str):
+                Frame hint; "default" means this Conduit's own frame.
+
+        Returns:
+            Optional[IConduit]:
+                The resolved peer conduit, or None if it cannot be resolved.
+        """
+        if conduit is not None:
+            return conduit
+
+        if conduit_id is None:
+            return None
+
+        frame = self._aetheric_frame if aetheric_frame == "default" else aetheric_frame
+        try:
+            return Conduit._aether._get_conduit_by_id(conduit_id, frame)
+        except Exception:
+            # Hooks are advisory; failure to resolve a peer must not
+            # break the primary contract APIs.
+            return None
+
+
     def _fire_conduit_hooks(self, hook_name: str, *conduits: "Conduit") -> None:
         """
         Internal

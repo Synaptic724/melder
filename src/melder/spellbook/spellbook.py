@@ -1447,21 +1447,61 @@ class Spellbook(Cleanable, ISpellbook):
                 * `"dynamic"`: Enables custom linking and access resolution.
                 * `"whitelist_all"`: Grants access to all local spells.
                 * `"block_all"`: Denies access to all spells unless explicitly whitelisted.
+
+        Hook integration
+        ----------------
+        If the active Configuration has Conduit lifecycle hooks registered under this
+        Spellbook's ID, they are fetched via ``_get_conjure_hook_map()`` and invoked
+        in the following order:
+
+            1. "on_conduit_pre_created()"
+                   Fired **before** the Conduit is constructed. No Conduit instance
+                   is passed, because it does not exist yet.
+
+            2. "on_conduit_activated(conduit)"
+                   Fired immediately after the Conduit has been constructed
+                   (its ``__init__`` has run), but before it is wired into spells.
+
+            3. "on_conduit_post_created(conduit)"
+                   Fired after the Conduit has been integrated into all local
+                   spells via ``_define_conduit_into_spells``.
+
+        For conjured (root) conduits, these hooks receive:
+
+            - pre  : no arguments
+            - act  : (conduit,)
+            - post : (conduit,)
         """
         self._logger.debug(f"Conjuring Conduit(name={name}, policy={policy})", "conjure")
+
         with self._lock:
             if self._conjured:
                 self._logger.error("This Spellbook has already conjured a Conduit.", "conjure", exc_info=True)
                 raise RuntimeError("This Spellbook has already conjured a Conduit. Only one is allowed per Spellbook.")
+
+            # Ensure configuration is frozen and bound to Aether
             if not self.is_configuration_locked():
                 self._configuration.load_default_dictionary()
                 self._configuration.freeze()
                 self._configuration_locked = True
                 Spellbook._aether._bind_configuration(self._configuration, self._aetheric_frame)
                 self._logger.debug("Configuration locked (defaults applied)", "conjure")
+
+            # Validate policy vs system_state and local spell registry
             self._check_system_state(policy)
             policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
             self._check_all_spells()
+
+            # Pull the hook map once for this conjuration.
+            hook_map = self._get_conjure_hook_map()
+
+            # 1) PRE: before Conduit exists — NO conduit instance passed here.
+            self._fire_conjure_hooks(
+                hook_map,
+                "on_conduit_pre_created",
+            )
+
+            # 2) Construct the Conduit.
             conduit = Conduit(
                 spellbook=self,
                 name=name,
@@ -1471,10 +1511,30 @@ class Spellbook(Cleanable, ISpellbook):
                 policy=policy_enum,
                 logger=conduit_logger,
             )
+
+            # Mark this Spellbook as having conjured its single conduit
             self._conjured = True
+
+            # 3) ACTIVATED: conduit exists but is not yet wired into spells.
+            self._fire_conjure_hooks(
+                hook_map,
+                "on_conduit_activated",
+                conduit,
+            )
+
+            # Wire conduit ownership metadata into all local spells.
             self._define_conduit_into_spells(conduit)
+
+            # 4) POST: final notification after Spellbook-side init is complete.
+            self._fire_conjure_hooks(
+                hook_map,
+                "on_conduit_post_created",
+                conduit,
+            )
+
             self._logger.debug(f"Conduit created => id={conduit._id}, name={conduit._name}", "conjure")
             return conduit
+
 
     def _check_system_state(self, policy: str) -> None:
         """
@@ -1533,4 +1593,113 @@ class Spellbook(Cleanable, ISpellbook):
                 self._whitelist_all_spells = False
 
 #endregion Conduit API
+
+#region Hook Management
+    def _get_conjure_hook_map(self) -> Optional[Mapping[str, List[Callable]]]:
+        """
+        Internal
+
+        Fetch the Conduit lifecycle hook map for this Spellbook from the
+        active Configuration, if the Configuration supports hook
+        registration.
+
+        Hooks are registered under this Spellbook's ID, and the map is
+        shaped as:
+
+            {
+                "on_conduit_pre_created":   [callable, ...],
+                "on_conduit_activated":     [callable, ...],
+                "on_conduit_post_created":  [callable, ...],
+                ...
+            }
+
+        Returns:
+            Optional[Mapping[str, List[Callable]]]:
+                The hook map if available and non-empty, otherwise None.
+        """
+        if self._configuration is None:
+            self._logger.debug(
+                "_get_conjure_hook_map: no configuration; skipping conjure hooks",
+                "_get_conjure_hook_map",
+            )
+            return None
+
+        # Configuration may not yet support hooks.
+        if self._configuration.get_hooks(self._id):
+            self._logger.debug(
+                "_get_conjure_hook_map: configuration has no get_hooks(spellbook_id); "
+                "skipping conjure hooks",
+                "_get_conjure_hook_map",
+            )
+            return None
+
+        try:
+            hook_map = self._configuration.get_hooks(self._id)
+        except Exception as e:
+            self._logger.error(
+                f"_get_conjure_hook_map failed: {e}",
+                "_get_conjure_hook_map",
+                exc_info=True,
+            )
+            return None
+
+        if not hook_map:
+            self._logger.debug(
+                f"_get_conjure_hook_map: no hooks registered for spellbook_id={self._id}; "
+                "nothing to attach for conjure.",
+                "_get_conjure_hook_map",
+            )
+            return None
+
+        return hook_map
+
+    def _fire_conjure_hooks(
+            self,
+            hook_map: Optional[Mapping[str, List[Callable]]],
+            hook_name: str,
+            *args: Any,
+    ) -> None:
+        """
+        Internal
+
+        Execute all hooks registered under ``hook_name`` from the provided
+        hook map. This is the Spellbook-side counterpart to Conduit's
+        ``_fire_conduit_hooks``, but it is used only for the conjure
+        lifecycle.
+
+        Contract:
+
+            - If ``hook_map`` is None or empty, this no-ops.
+            - If ``hook_name`` is not present, this no-ops.
+            - Each hook is invoked as: ``hook(*args)``.
+            - Exceptions are logged and suppressed so hooks cannot break
+              core conjuration behavior.
+
+        For root conjuration, we follow this calling convention:
+
+            - Pre  : _fire_conjure_hooks(hooks, "on_conduit_pre_created")
+                     (no Conduit instance yet; hooks must not assume one)
+
+            - Act  : _fire_conjure_hooks(hooks, "on_conduit_activated", conduit)
+
+            - Post : _fire_conjure_hooks(hooks, "on_conduit_post_created", conduit)
+        """
+        if not hook_map:
+            return
+
+        hooks = hook_map.get(hook_name)
+        if not hooks:
+            return
+
+        for hook in list(hooks):
+            try:
+                hook(*args)
+            except Exception as e:
+                self._logger.error(
+                    f"Error while executing conjure hook '{hook_name}': {e}",
+                    "_fire_conjure_hooks",
+                    exc_info=True,
+                )
+
+#endregion Hook Management
 #endregion
