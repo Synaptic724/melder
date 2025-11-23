@@ -1,11 +1,14 @@
-# Melder imports
 import inspect
 import threading
 from typing import Any, Optional
 
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import ParameterDIShape
+# Melder imports
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+    ParameterDIShape,
+)
 from melder.aether.conduit.meld.spellmap.spellmap import SpellMap
 from melder.utilities.general_base.cleanable import Cleanable
+
 
 class SpellParameterRequirement(Cleanable):
     """
@@ -29,6 +32,7 @@ class SpellParameterRequirement(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_name",
         "_position",
         "_kind",
@@ -67,7 +71,6 @@ class SpellParameterRequirement(Cleanable):
             raise ValueError("Parameter name must be a non-empty string.")
 
         self._lock: threading.RLock = threading.RLock()
-
 
         self._name: str = name
         self._position: int = position
@@ -116,7 +119,6 @@ class SpellParameterRequirement(Cleanable):
             self._cleaned = True
 
         self._lock = None
-
 
     # ------------------------------------------------------------------
     # Properties

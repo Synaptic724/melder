@@ -1,5 +1,6 @@
 import threading
 from typing import Any, Optional, Sequence, List
+
 # Melder imports
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_types.spell_types import SpellType
@@ -31,6 +32,7 @@ class SpellRequirements(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_spell_id",
         "_spell_type",
         "_existence",
@@ -47,7 +49,7 @@ class SpellRequirements(Cleanable):
             existence: Existence,
             spellframe: Any,
             binding_name: Optional[str],
-            parameters: Optional[List['SpellParameterRequirement']] = None,
+            parameters: Optional[List["SpellParameterRequirement"]] = None,
     ) -> None:
         Cleanable.__init__(self)
 
@@ -60,10 +62,9 @@ class SpellRequirements(Cleanable):
         self._existence: Existence = existence
         self._spellframe: Any = spellframe
         self._binding_name: Optional[str] = binding_name
-        self._parameters: List['SpellParameterRequirement'] = (
+        self._parameters: List["SpellParameterRequirement"] = (
             parameters if parameters is not None else []
         )
-
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -141,7 +142,7 @@ class SpellRequirements(Cleanable):
         return self._binding_name
 
     @property
-    def parameters(self) -> Sequence['SpellParameterRequirement']:
+    def parameters(self) -> Sequence["SpellParameterRequirement"]:
         """
         Ordered, per-parameter requirements for the spell's primary call target.
 

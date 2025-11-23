@@ -11,6 +11,14 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.spell import Spell
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import SpellExaminer
+from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+    SpellBindingProfile,
+    ClassBindingProfile,
+    CallableBindingProfile,
+    InstanceBindingProfile,
+    OtherBindingProfile,
+)
 
 
 #region Bind
@@ -21,7 +29,7 @@ class Bind(IBind, Cleanable):
 
     It acts as the single entry point for declaring a component's lifecycle (`Existence`),
     access control (`Permissions`), and structural identity. The process involves:
-    1.  **Reflection:** Examining the object using `SpellExaminer` to create a `Profile`.
+    1.  **Reflection:** Examining the object using `SpellExaminer` to create a binding profile.
     2.  **Fingerprinting:** Generating a deterministic SHA256 unique ID (`spell_id`) based on the profile.
     3.  **Validation:** Enforcing rules regarding naming conventions, existence, and spell type.
     4.  **Registration:** Creating the final `Spell` object, which encapsulates the component
@@ -52,7 +60,7 @@ class Bind(IBind, Cleanable):
     def bind(
             self,
             permissions: Permissions,
-            existence : Existence,
+            existence: Existence,
             *,
             aetheric_frame: str,
             spell=None,
@@ -129,7 +137,7 @@ class Bind(IBind, Cleanable):
           - Method/lambda spells may also be grouped under Protocol or string
             spellframes (factory / handler semantics), but are not structurally
             validated against the Protocol.
-        * Computes a deterministic fingerprint and SpellIndex.
+        * Computes a deterministic fingerprint and SpellIndex from a `SpellBindingProfile`.
         * Determines the canonical SpellType.
         * Constructs the final `Spell` instance.
 
@@ -169,29 +177,32 @@ class Bind(IBind, Cleanable):
                 )
 
             # ------------------------------------------------------------------
-            # 2. Build reflection profile and fingerprint
+            # 2. Build binding profile and fingerprint
             # ------------------------------------------------------------------
-            profile = SpellExaminer(spell).inspect()
-            fingerprint: str = Bind.sha256_profile(profile)
+            examiner = SpellExaminer()
+            binding_profile: SpellBindingProfile = examiner.binding_profile_for_object(spell)
+            fingerprint: str = Bind.sha256_profile(binding_profile)
             spell_index = SpellIndex(initial_id=fingerprint)
 
-            # Check if spell is an instance (not a class/function)
-            is_instance = not inspect.isclass(spell) and not inspect.isfunction(spell)
+            # Check if this should be treated as an "existing creation"
+            is_instance = isinstance(
+                binding_profile, (InstanceBindingProfile, OtherBindingProfile)
+            )
 
             # ------------------------------------------------------------------
-            # 3. Generic binding validation (existence + method rules)
+            # 3. Generic binding validation (existence + callable rules)
             # ------------------------------------------------------------------
-            Bind._validate_binding(profile, is_instance, binding_name, existence)
+            Bind._validate_binding(binding_profile, binding_name, existence)
 
             # ------------------------------------------------------------------
             # 4. Protocol spellframe semantics
             # ------------------------------------------------------------------
             # If the caller provided a Protocol as the spellframe:
             #   * For class-based spells: enforce structural implementation.
-            #   * For method/lambda spells: allow binding (factory/handler semantics),
+            #   * For callable spells: allow binding (factory/handler semantics),
             #     but do not run structural checks (no meaningful attribute set).
             if spellframe is not None and Bind._is_protocol_type(spellframe):
-                if isinstance(profile, ClassProfile):
+                if isinstance(binding_profile, ClassBindingProfile):
                     ok, missing_members = Bind._structurally_implements_protocol(
                         spell, spellframe
                     )
@@ -203,15 +214,17 @@ class Bind(IBind, Cleanable):
                             f"Protocol '{spellframe.__name__}'. "
                             f"Missing members: {missing_str}"
                         )
-                # For MethodProfile (functions/lambdas), we accept the Protocol
-                # spellframe as a callable contract / grouping key without
+                # For CallableBindingProfile (functions/lambdas), we accept the
+                # Protocol spellframe as a callable contract / grouping key without
                 # structural validation at this stage.
 
             # ------------------------------------------------------------------
             # 5. Determine the spell type (enum classification)
             # ------------------------------------------------------------------
             spell_type = Bind._determine_spell_type(
-                spell, profile, binding_name, spellframe, is_instance
+                binding_profile=binding_profile,
+                name=binding_name,
+                spellframe=spellframe,
             )
 
             # Resolve spell name
@@ -228,11 +241,11 @@ class Bind(IBind, Cleanable):
                 spell_name=spell_name,
                 existence=existence,
                 spell_type=spell_type,
-                existing_object=spell if is_instance else None,
-                profile=profile,
+                profile=binding_profile,
                 spell_id=fingerprint,
                 permissions=permissions,
                 aetheric_frame=aetheric_frame,
+                existing_object=spell if is_instance else None,
                 spellbook=self._spellbook,
             )
 
@@ -246,7 +259,7 @@ class Bind(IBind, Cleanable):
     @staticmethod
     def spell_id_inspector(spell: Any) -> str:
         """
-        Generates a unique identifier (SHA256 hash) for the spell based on its reflection profile.
+        Generates a unique identifier (SHA256 hash) for the spell based on its binding profile.
 
         The ID is deterministic, ensuring the same spell definition always results in the same ID.
 
@@ -256,26 +269,24 @@ class Bind(IBind, Cleanable):
         Returns:
             str: A unique identifier string (SHA256 hash) for the spell.
         """
-        profile = SpellExaminer(spell).inspect()
+        examiner = SpellExaminer()
+        profile = examiner.binding_profile_for_object(spell)
         return Bind.sha256_profile(profile)
 
     @staticmethod
-    def sha256_profile(profile: ClassProfile | MethodProfile) -> str:
+    def sha256_profile(profile: SpellBindingProfile) -> str:
         """
-        Computes the SHA256 hash of a spell's profile metadata.
+        Computes the SHA256 hash of a spell's binding profile metadata.
 
-        The profile includes name, module, bases, method names, and source preview to create a
-        unique, versioned fingerprint of the spell's structure.
+        The binding profile includes just enough structural metadata to create a
+        unique, versioned fingerprint of the spell's shape.
 
-        Args:
-            profile (ClassProfile | MethodProfile): The reflection profile of the spell.
-
-        Returns:
-            str: The SHA256 hash string (fingerprint).
+        This function is intentionally coupled to the `SpellBindingProfile`
+        dataclasses rather than the heavier inspector profiles.
         """
-        parts = ["v1"]  # fingerprint version tag
+        parts: list[str] = ["v2-binding"]  # fingerprint schema version
 
-        if isinstance(profile, ClassProfile):
+        if isinstance(profile, ClassBindingProfile):
             parts += [
                 profile.name,
                 profile.qualname,
@@ -283,12 +294,12 @@ class Bind(IBind, Cleanable):
                 ",".join(sorted(profile.bases)),
                 ",".join(sorted(profile.mro)),
                 ",".join(sorted(profile.annotations.keys())),
-                ",".join(sorted(profile.methods.keys())),
+                ",".join(sorted(profile.method_names)),
                 (profile.source_preview or "").strip(),
             ]
-        elif isinstance(profile, MethodProfile):
+        elif isinstance(profile, CallableBindingProfile):
             param_parts = [
-                f"{p['name']}:{p['kind']}={p['default']}"
+                f"{p.name}:{p.kind}={p.default_repr}"
                 for p in profile.parameters
             ]
             parts += [
@@ -297,15 +308,34 @@ class Bind(IBind, Cleanable):
                 profile.module or "",
                 profile.signature or "",
                 ",".join(param_parts),
-                (profile.preview or "").strip(),
+                (profile.repr_string or "").strip(),
+                profile.type_name,
+                "lambda" if profile.lambda_function else "",
+                "builtin" if profile.builtin_module else "",
+                "extension" if profile.extension_module else "",
                 ]
+        elif isinstance(profile, InstanceBindingProfile):
+            parts += [
+                profile.type_name,
+                profile.module or "",
+                (profile.repr_string or "").strip(),
+                ]
+        elif isinstance(profile, OtherBindingProfile):
+            parts += [
+                profile.type_name,
+                profile.module or "",
+                (profile.repr_string or "").strip(),
+                ]
+        else:
+            # Absolute fallback – should effectively never happen.
+            parts.append(repr(type(profile)))
 
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
     @staticmethod
     def _validate_binding(
-            profile: ClassProfile | MethodProfile,
-            is_instance: bool,
+            profile: SpellBindingProfile,
             binding_name: Optional[str],
             existence: Existence,
     ) -> None:
@@ -313,8 +343,7 @@ class Bind(IBind, Cleanable):
         Performs structural and policy checks on the binding parameters prior to registration.
 
         Args:
-            profile (ClassProfile | MethodProfile): The reflection profile of the spell.
-            is_instance (bool): True if the spell is an existing object instance, False otherwise.
+            profile (SpellBindingProfile): The binding profile of the spell.
             binding_name (Optional[str]): The optional binding name provided.
             existence (Existence): The lifecycle scope provided.
 
@@ -327,7 +356,6 @@ class Bind(IBind, Cleanable):
         """
         # Validate that existence is a valid Existence member
         if Bind._existence_check(existence) is False:
-            # Note: _existence_check itself raises ValueError, but included here for completeness
             raise ValueError(
                 f"Invalid existence type: {existence}. Must be an instance of Existence."
             )
@@ -341,7 +369,7 @@ class Bind(IBind, Cleanable):
         # Aetheric Frame. If the caller tries to bind an existing object with
         # any other existence type, we fail fast.
         #
-        if is_instance and existence is not Existence.unique:
+        if isinstance(profile, (InstanceBindingProfile, OtherBindingProfile)) and existence is not Existence.unique:
             raise ValueError(
                 "Existing-object spells must use Existence.unique. "
                 "Pre-created instances are always treated as singletons and "
@@ -357,22 +385,17 @@ class Bind(IBind, Cleanable):
         # ------------------------------------------------------------------
         # Lambda / method rules
         # ------------------------------------------------------------------
-        # Enforce lambda naming rule
-        if (
-                profile
-                and isinstance(profile, MethodProfile)
-                and profile.lambda_fn
-                and not binding_name
-        ):
-            raise ValueError(
-                "Cannot bind a lambda method without providing a `name=`. "
-                "Lambdas must be registered as LAMBDA_METHOD_WITH_BINDING_NAME spells."
-            )
+        if isinstance(profile, CallableBindingProfile):
+            # Enforce lambda naming rule
+            if profile.lambda_function and not binding_name:
+                raise ValueError(
+                    "Cannot bind a lambda method without providing a `name=`. "
+                    "Lambdas must be registered as LAMBDA_METHOD_WITH_BINDING_NAME spells."
+                )
 
-        # Methods / lambdas are forced to unique existence
-        if isinstance(profile, MethodProfile) and existence is not Existence.unique:
-            raise ValueError("Method and lambda spells must use Existence.unique.")
-
+            # Methods / lambdas are forced to unique existence
+            if existence is not Existence.unique:
+                raise ValueError("Method and lambda spells must use Existence.unique.")
 
     @staticmethod
     def _existence_check(existence: Existence):
@@ -396,49 +419,30 @@ class Bind(IBind, Cleanable):
 
     @staticmethod
     def _determine_spell_type(
-            spell: Any,
-            profile: Union[ClassProfile, MethodProfile, dict],
+            binding_profile: SpellBindingProfile,
             name: Optional[str],
             spellframe: Optional[Any],
-            is_instance: bool,
     ) -> SpellType:
         """
-        Determines the canonical `SpellType` based on the spell's reflection profile
+        Determines the canonical `SpellType` based on the spell's binding profile
         and binding metadata.
 
         This helps the system categorize the spell for later resolution
         (e.g., class, method, named, spellframe-scoped, existing creation).
 
         Args:
-            spell (Any): The original object being bound.
-            profile (Union[ClassProfile, MethodProfile, dict]): The reflection profile of the spell.
+            binding_profile (SpellBindingProfile): The binding profile of the spell.
             name (Optional[str]): The optional binding name provided.
             spellframe (Optional[Any]): The optional spell frame / protocol provided.
-            is_instance (bool): True if the spell is an existing object instance.
 
         Returns:
             SpellType: The determined type of the spell.
         """
 
         # -------------------------------------------------------
-        # CLASS-BASED SPELLS (includes existing object instances)
+        # CLASS-BASED SPELLS
         # -------------------------------------------------------
-        if isinstance(profile, ClassProfile):
-            # Existing instance (pre-created object)
-            if is_instance:
-                # We allow binding_name + spellframe for creations, but the enum
-                # only encodes the "with spellframe" + "with binding name+spellframe"
-                # variants explicitly.
-                if name and spellframe:
-                    return (
-                        SpellType.EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME
-                    )
-                if spellframe:
-                    return SpellType.EXISTING_CREATION_WITH_SPELLFRAME
-                # Instance with or without name but no spellframe both classify as EXISTING_CREATION.
-                return SpellType.EXISTING_CREATION
-
-            # Normal class spells (factory-based)
+        if isinstance(binding_profile, ClassBindingProfile):
             if name and spellframe:
                 return SpellType.SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME
             if spellframe:
@@ -450,15 +454,12 @@ class Bind(IBind, Cleanable):
         # -------------------------------------------------------
         # METHOD / FUNCTION / LAMBDA SPELLS
         # -------------------------------------------------------
-        if isinstance(profile, MethodProfile):
+        if isinstance(binding_profile, CallableBindingProfile):
             # Lambdas always require a binding name and get their own type family.
-            if profile.lambda_fn:
-                # _validate_binding guarantees name is present.
-                if spellframe and name:
+            if binding_profile.lambda_function:
+                if name and spellframe:
                     return SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME
                 if spellframe and not name:
-                    # This path should not occur under current validation rules,
-                    # but we include it for completeness.
                     return SpellType.LAMBDA_METHOD_WITH_SPELLFRAME
                 return SpellType.LAMBDA_METHOD_WITH_BINDING_NAME
 
@@ -472,9 +473,19 @@ class Bind(IBind, Cleanable):
             return SpellType.METHOD
 
         # -------------------------------------------------------
+        # EXISTING OBJECT / OTHER SPELLS
+        # -------------------------------------------------------
+        if isinstance(binding_profile, (InstanceBindingProfile, OtherBindingProfile)):
+            if name and spellframe:
+                return SpellType.EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME
+            if spellframe:
+                return SpellType.EXISTING_CREATION_WITH_SPELLFRAME
+            return SpellType.EXISTING_CREATION
+
+        # -------------------------------------------------------
         # FALLBACK (should almost never happen, but be safe)
         # -------------------------------------------------------
-        return SpellType.EXISTING_CREATION if is_instance else SpellType.SPELL
+        return SpellType.EXISTING_CREATION
 
     # ------------------------------------------------------------------
     # Protocol helpers
@@ -552,5 +563,5 @@ class Bind(IBind, Cleanable):
 
         return (len(missing) == 0, missing)
 
-#endregion Spell Inspector Helpers
+    #endregion Spell Inspector Helpers
 #endregion Bind

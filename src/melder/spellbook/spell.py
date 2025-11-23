@@ -2,8 +2,13 @@ from typing import Optional, List, Any, Callable
 import ulid
 from threading import RLock
 
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
+    SpellRequirementsFinder,
+)
+from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
+    SpellResolutionProfile,
+)
 # Melder Imports
-from melder.spellbook.spell_crafter.old_spell_examiner.spell_examiner import MethodProfile, ClassProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
@@ -12,10 +17,6 @@ from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-from melder.spellbook.resolution.spell_requirements_finder import (
-    SpellRequirementsFinder,
-    SpellRequirements,
-)
 
 
 #region Spell
@@ -25,17 +26,19 @@ class Spell(ISpell, Cleanable):
 
     🪄 Represents a registered spell within the Melder system.
 
-    A `Spell` encapsulates an instantiable or callable unit of logic (class or method)
-    that can be bound, shared, and conjured via conduits within a Spellbook context.
-    It includes type metadata, existence constraints, dependency information,
-    and permission rules for downstream access.
+    A `Spell` encapsulates an instantiable or callable unit of logic (class, function,
+    lambda, or existing object) that can be bound, shared, and conjured via conduits
+    within a Spellbook context. It includes type metadata, existence constraints,
+    dependency information, and permission rules for downstream access.
 
     Core Responsibilities:
-    - Holds an immutable reference to the object (function/class) it represents.
-    - Tracks configuration data: type, profile, spellframe, ownership, and hooks.
-    - Defines dependency DAGs for invocation and construction.
+    - Holds an immutable reference to the object (function/class/instance) it represents.
+    - Tracks configuration data: type, binding profile (if attached), spellframe,
+      ownership, and hooks.
+    - Defines dependency DAGs for invocation and construction (via external DAG /
+      resolution pipelines).
     - Manages permission control via the `Permissions` enum.
-    - Enables hook-based lifecycle support (pre, activate, post).
+    - Enables hook-based lifecycle support (pre, activation, post).
     - Acts as a source of truth for spell identity and access.
 
     🔐 Permissions (Permissions Enum):
@@ -44,15 +47,17 @@ class Spell(ISpell, Cleanable):
         - `block`: Prevents external access. Internal (owner conduit) access is still allowed.
 
     🎯 Key Concepts:
-        - Each spell has a unique SHA256 `spell_id`, generated from its signature and metadata.
-        - `spellframe` distinguishes the context it was declared in (e.g., class name, Protocol, or string frame).
+        - Each spell has a unique SHA256 `spell_id`, generated from its structural fingerprint.
+        - `spellframe` distinguishes the context it was declared in (e.g., Protocol, class,
+          or string frame).
         - Spells may be cleaned (`cleanup()`), after which modification is disallowed.
-        - Supports dependency-based object generation via a DAG executor (Resolution / Meld layer).
+        - Dependency graphs and resolution profiles are produced by the Resolution / Meld
+          pipeline, not by this class directly.
         - Permissions are enforced during conduit contract evaluation.
 
     Parameters:
         spell (Any):
-            The actual object to register (function, class, or other construct).
+            The actual object to register (function, class, lambda, or existing instance).
 
         spell_index (SpellIndex):
             Versioned identity for this spell (current + historical fingerprints).
@@ -60,9 +65,10 @@ class Spell(ISpell, Cleanable):
         spellframe (Optional[Any]):
             Frame context (usually a Protocol, class, or string) to scope the spell's identity.
 
-        binding_name (str):
+        binding_name (Optional[str]):
             The logical name this spell is bound to (e.g., "database", "engine").
             Normalized as part of the internal key via SpellInputUtils.
+            May be None for unnamed/default bindings.
 
         spell_name (str):
             The actual internal name of the object or callable (for display/debugging).
@@ -74,9 +80,6 @@ class Spell(ISpell, Cleanable):
             Indicates if the spell is a class, method, lambda, or existing creation, and
             whether it participates in spellframes and/or binding names.
 
-        profile (ClassProfile | MethodProfile):
-            Captures metadata and reflection info from spell inspection.
-
         spell_id (str):
             Unique identifier derived from object fingerprinting (SHA256).
 
@@ -86,8 +89,22 @@ class Spell(ISpell, Cleanable):
         aetheric_frame (str):
             Logical Aether frame / namespace this spell was registered under.
 
+        profile (Optional[Any]):
+            Optional reflective profile associated with this spell.
+
+            Currently:
+            - The Bind pipeline attaches a **SpellBindingProfile** instance here.
+            - AI / analysis subsystems may later attach richer profiles (e.g. SpellAIProfile).
+            - Legacy usage expecting ClassProfile / MethodProfile should treat this as
+              an opaque introspection artifact.
+
         existing_object (Optional[object]):
             Optional pre-instantiated object to attach to the spell (EXISTING_CREATION* types).
+            For factory-like spells (class/method/lambda), this is usually None.
+
+        spellbook (Optional[ISpellbook]):
+            Back-reference to the owning Spellbook. Primarily used for internal coordination
+            (conduit ownership, graph wiring, diagnostics). May be None in some contexts.
 
         *args / **kwargs:
             Arbitrary tags and metadata for internal use or future extensions.
@@ -96,8 +113,8 @@ class Spell(ISpell, Cleanable):
         - This class is never used directly by users. It is created during `bind()` and
           registered into the Spellbook and Aether.
         - Internal mutation after cleaning is disallowed.
-        - Dependency graphs and resolution profiles are consumed by the Resolution / Meld
-          layer; `Spell` itself does not execute resolution.
+        - Dependency graphs, resolution frames, and resolution profiles are produced
+          by the Resolution / Meld layer; `Spell` itself does not execute resolution.
     """
 
     def __init__(
@@ -105,18 +122,18 @@ class Spell(ISpell, Cleanable):
             spell: Any,
             spell_index: SpellIndex,
             spellframe: Optional[Any],
-            binding_name: str,
+            binding_name: Optional[str],
             spell_name: str,
             existence: Existence,
             spell_type: SpellType,
-            profile: ClassProfile | MethodProfile,
             spell_id: str,
             permissions: Permissions,
             aetheric_frame: str,
-            existing_object: object = None,
-            spellbook: ISpellbook = None,
-            *args,
-            **kwargs
+            profile: Optional[Any] = None,
+            existing_object: Optional[object] = None,
+            spellbook: Optional[ISpellbook] = None,
+            *args: Any,
+            **kwargs: Any,
     ):
         super().__init__()
         self._lock = RLock()
@@ -124,15 +141,19 @@ class Spell(ISpell, Cleanable):
 
         # Spell Data
         self.spell_index: SpellIndex = spell_index
-        self.spell = spell  # Object reference
+        self.spell: Any = spell  # Object reference
         self.spell_id: str = spell_id  # SHA256 unique identifier
         self.spellframe: Optional[Any] = spellframe
         self.spell_type: SpellType = spell_type
-        self.user_created_object: object = existing_object
-        self.binding_name: str = binding_name
+        self.user_created_object: Optional[object] = existing_object
+        self.binding_name: Optional[str] = binding_name
         self.spell_name: str = spell_name
         self.existence: Existence = existence
-        self.profile: ClassProfile | MethodProfile = profile
+
+        # Reflective / binding profile (shape of the spell).
+        # Typically a SpellBindingProfile, but treated as opaque here.
+        self.profile: Optional[Any] = profile
+
         self.aetheric_frame: str = aetheric_frame
         self.timeout: Optional[int] = None  # Optional timeout for spell execution
         self.retries: int = 0  # Number of retries allowed for spell execution
@@ -141,36 +162,37 @@ class Spell(ISpell, Cleanable):
         self.permissions: Permissions = permissions
 
         # Spellbook
-        self._spellbook: ISpellbook = spellbook
+        self._spellbook: Optional[ISpellbook] = spellbook
 
         # Spell Metadata
         self.tags = args if args else []
         self.metadata = kwargs if kwargs else {}
 
-        # hooks
-        self.pre_hooks: List[Callable] = []
-        self.activation_hooks: List[Callable] = []
-        self.post_hooks: List[Callable] = []
+        # Hooks
+        self.pre_hooks: List[Callable[..., Any]] = []
+        self.activation_hooks: List[Callable[..., Any]] = []
+        self.post_hooks: List[Callable[..., Any]] = []
 
-        # Created During validation / graph construction
-        self.dependency_graph = None
+        # Created during validation / graph construction
+        self.dependency_graph: Any = None
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
-        # Optional resolution profile (DI contract), to be populated by SpellCrafter.
-        self.resolution_profile: Any = None
+        # Optional resolution profile (DI contract), to be populated by the
+        # resolution pipeline (SpellExaminer → ResolutionProfileStrategy).
+        self.resolution_profile: Optional[SpellResolutionProfile] = None
 
         # Per-spell resolution phase artifacts (Phase 1–4)
-        self._requirements: Optional[SpellRequirements] = None
+        self._requirements: Optional['SpellRequirements'] = None
         self._symbolic_graph: Any = None
         self._resolution_frame: Any = None
         self._validation_result: Any = None
         self._validated: bool = False
         self._is_broken: bool = False
 
-        # Created after Conduit Made (ownership / scope integration)
-        self._owner_conduit_id: str | None = None
-        self._owner_conduit_name: str | None = None
-        self.owned_spell = None
+        # Created after Conduit made (ownership / scope integration)
+        self._owner_conduit_id: Optional[str] = None
+        self._owner_conduit_name: Optional[str] = None
+        self.owned_spell: Optional[bool] = None
         self._owner_creations: Any = None  # Scope level creations for singletons
 
         # Key for the spell in the Spellbook (normalized)
@@ -182,14 +204,15 @@ class Spell(ISpell, Cleanable):
         self._key = (frame_key, bind_key)
 
     #region Disposal
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Cleans up the spell, preventing any further modifications.
 
         This:
         - Disposes the static dependency graph if one was attached and exposes a `dispose()` method.
-        - Clears references to owner creations and user_created_object.
+        - Clears references to owner creations and `user_created_object`.
         - Clears phase artifacts produced by the resolution pipeline.
+        - Drops the Spellbook reference.
         - Marks the spell as cleaned so that further configuration is disallowed.
 
         Runtime resolution and instance lifecycle are owned by the Resolution / Meld layer,
@@ -203,7 +226,11 @@ class Spell(ISpell, Cleanable):
 
             dg = self.dependency_graph
             if dg is not None and hasattr(dg, "dispose"):
-                dg.dispose()
+                try:
+                    dg.dispose()
+                except Exception:
+                    # Never let cleanup explosions propagate.
+                    pass
 
             # Phase artifacts – deterministically dropped when this Spell is torn down.
             if self._requirements is not None:
@@ -233,7 +260,7 @@ class Spell(ISpell, Cleanable):
     #endregion Disposal
 
     #region Context Manager
-    def __enter__(self):
+    def __enter__(self) -> "Spell":
         """
         Enters the context manager for Aether-related operations.
 
@@ -243,14 +270,14 @@ class Spell(ISpell, Cleanable):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
         Exits the context manager for Aether-related operations.
         """
         self._lock.release()
     #endregion Context Manager
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         frame = self.spellframe.__name__ if self.spellframe else type(self.spell).__name__
         return (
             f"Spell(name={self.spell_name}, binding={self.binding_name or '__default__'}, "
@@ -336,7 +363,7 @@ class Spell(ISpell, Cleanable):
         return self._owner_conduit_id, self._owner_conduit_name
 
     @property
-    def requirements(self) -> Optional[SpellRequirements]:
+    def requirements(self) -> Optional['SpellRequirements']:
         """
         Phase 1 artifact for this spell, if it has been computed.
 
@@ -359,46 +386,8 @@ class Spell(ISpell, Cleanable):
         return self._is_broken
     #endregion Introspection Helpers
 
-    #region Existing Object Transfer
-    def take_existing_object(self) -> object | None:
-        """
-        Internal
-
-        Atomically detach and return the existing object associated with this spell.
-
-        This is the main hook used by Conduit / ResolutionFrame when materializing
-        a Creation for an EXISTING_CREATION* spell:
-
-            existing = spell.take_existing_object()
-            creation = Creation(..., instance=existing, ...)
-
-        Semantics:
-            - Only valid for EXISTING_CREATION* SpellTypes (see `is_existing_creation`).
-            - After this call, the Spell no longer owns the instance; it is expected
-              to live inside a Creation / scope container.
-            - Multiple calls are allowed; subsequent calls will return None.
-
-        Returns:
-            object | None:
-                The detached existing object if it was present, otherwise None.
-
-        Raises:
-            RuntimeError:
-                If called on a non-EXISTING_CREATION spell.
-        """
-        if not self.is_existing_creation:
-            raise RuntimeError(
-                "take_existing_object() is only valid for EXISTING_CREATION spells."
-            )
-
-        with self._lock:
-            existing = self.user_created_object
-            self.user_created_object = None
-            return existing
-    #endregion Existing Object Transfer
-
     #region Configuration
-    def _add_owned_conduit(self, conduit_id: str, conduit_name: str = None, creations: Any = None):
+    def _add_owned_conduit(self, conduit_id: str, conduit_name: Optional[str] = None, creations: Any = None) -> None:
         """
         Internal
 
@@ -422,7 +411,7 @@ class Spell(ISpell, Cleanable):
             self.owned_spell = True
             self._owner_creations = creations
 
-    def _add_build_details(self, dag: Any, dependencies: List[str] = None):
+    def _add_build_details(self, dag: Any, dependencies: List[str]) -> None:
         """
         Internal
 
@@ -451,13 +440,15 @@ class Spell(ISpell, Cleanable):
         with self._lock:
             self.dependency_graph = dag
             self.dependencies = dependencies
+
+
     #endregion Configuration
 
     #region Resolution Phases (per-spell compiler pipeline)
     def run_phase_requirements(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> SpellRequirements:
+    ) -> 'SpellRequirements':
         """
         Phase 1 – Requirements Extraction
 
@@ -589,7 +580,7 @@ class Spell(ISpell, Cleanable):
 
         This method is intentionally **not implemented** in the new architecture.
         All resolution is handled via the Resolution / Meld pipeline using
-        `SpellResolutionProfile` + `ResolutionFrame`.
+        `SpellResolutionProfile` + resolution frames / DAGs.
 
         Notes:
             - Existing-creation spells are surfaced directly by Meld using
@@ -601,7 +592,9 @@ class Spell(ISpell, Cleanable):
             NotImplementedError: Always. This method is a legacy placeholder and
             should not be used.
         """
-        raise NotImplementedError("Spell.cast() is not used; resolution is handled by Meld/ResolutionFrame.")
+        raise NotImplementedError(
+            "Spell.cast() is not used; resolution is handled by Meld/ResolutionFrame."
+        )
     #endregion Casting
 
 #endregion Spell

@@ -4,15 +4,21 @@ import threading
 from typing import Any, List, Optional, Tuple, Union, get_args, get_origin
 
 # Melder imports
-from melder.spellbook.spell import Spell
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import ParameterDIShape
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_parameter_requirements import \
-    SpellParameterRequirement
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements import SpellRequirements
+from melder.utilities.interfaces.interfaces import ISpell
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+    ParameterDIShape,
+)
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_parameter_requirements import (
+    SpellParameterRequirement,
+)
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements import (
+    SpellRequirements,
+)
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.meld.spellmap.spellmap import SpellMap
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
+
 
 class SpellRequirementsFinder(Cleanable):
     """
@@ -48,11 +54,12 @@ class SpellRequirementsFinder(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_spell",
         "_requirements",
     ]
 
-    def __init__(self, spell: Spell) -> None:
+    def __init__(self, spell: ISpell) -> None:
         """
         Create a new requirements finder for the given :class:`Spell`.
 
@@ -67,7 +74,7 @@ class SpellRequirementsFinder(Cleanable):
             raise ValueError("spell must not be None.")
 
         self._lock: threading.RLock = threading.RLock()
-        self._spell: Spell = spell
+        self._spell: ISpell = spell
         self._requirements: Optional[SpellRequirements] = None
 
     # ------------------------------------------------------------------
@@ -102,14 +109,12 @@ class SpellRequirementsFinder(Cleanable):
 
         self._lock = None
 
-
-
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
     @property
-    def spell(self) -> Spell:
+    def spell(self) -> ISpell:
         """
         The underlying :class:`Spell` being analysed.
         """
@@ -189,31 +194,20 @@ class SpellRequirementsFinder(Cleanable):
             # event helper.
             cancel_event.throw_if_set()
 
-    def _resolve_call_target(self, spell: Spell) -> Any:
+    def _resolve_call_target(self, spell: ISpell) -> Any:
         """
         Determine the **call target** for this spell.
 
-        For now:
+        For now, this is simply the underlying ``spell.spell`` attribute:
 
-            * Class spells   → the class object itself (``inspect.signature``
-                               handles mapping to ``__init__``).
-            * Method/lambda  → the underlying callable stored on ``spell.spell``.
-            * Everything else → we still return ``spell.spell``; later phases
-                               can decide how to treat them.
+            * For class-based spells this is the class object itself
+              (``inspect.signature`` will look at ``__init__``).
+            * For method / lambda spells this is the underlying callable.
+            * For any other SpellType we still return ``spell.spell`` and
+              let later phases decide how (or if) DI should apply.
 
         This method does **not** call or mutate the target.
         """
-        # We rely on the Spell's own helpers rather than re-encoding
-        # SpellType combos here.
-        if spell.is_class_spell:
-            return spell.spell
-
-        # For method/lambda spells, we still treat the underlying callable
-        # as the target; Phase 2 controls how/if DI is applied.
-        if spell.is_method_spell or spell.is_lambda_spell:
-            return spell.spell
-
-        # Fallback – whatever the spell considers its callable.
         return spell.spell
 
     def _build_parameter_requirements(

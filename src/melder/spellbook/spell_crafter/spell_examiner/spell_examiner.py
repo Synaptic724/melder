@@ -1,3 +1,5 @@
+# melder/spellbook/spell_crafter/spell_examiner/spell_examiner.py
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,18 +16,26 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
 from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import (
     SpellAIProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.strategies.ai_profile_strategy import AIProfileStrategy
-from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import AIProfileStrategy
-from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import BindingProfileStrategy
-
+from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
+    BindingProfileStrategy,
+)
+from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import (
+    ResolutionProfileStrategy,
+)
+from melder.spellbook.spell_crafter.spell_examiner.strategies.ai_profile_strategy import (
+    AIProfileStrategy,
+)
 
 
 class SpellExaminationKind(Enum):
     """
-    High-level mode selector for SpellExaminer.
+    High–level modes of spell examination.
 
-    This enum exists so you can easily add more profile types later
-    without changing the overall shape of the API.
+    * BINDING    – Lightweight structural view used by `Bind` to classify spells,
+                   enforce binding rules, and compute fingerprints.
+    * RESOLUTION – Resolution–time view of the spell’s dependencies and DAG edges.
+    * AI         – Heavy, AI–oriented profile that merges binding + resolution +
+                   deep reflection profiles (ClassProfile / MethodProfile).
     """
 
     BINDING = auto()
@@ -36,54 +46,65 @@ class SpellExaminationKind(Enum):
 @dataclass
 class SpellExaminer:
     """
-    Central façade over profile strategies.
+    Facade over the spell–examination strategies.
 
-    Responsibilities:
-        * Provide a clean, mode-based API:
-            - binding_profile_for_object(...)
-            - resolution_profile_for_spell(...)
-            - ai_profile_for_spell(...)
-        * Delegate real work to pluggable strategies.
-        * Stay dumb and composable – no hard coupling to Bind or Meld.
+    This keeps the binding / resolution / AI profiles decoupled:
 
-    This class does **not** own any global state. Each instance is a thin
-    coordinator; strategies are stateless or short-lived.
+    * BindingProfileStrategy        → SpellBindingProfile
+    * ResolutionProfileStrategy     → SpellResolutionProfile
+    * AIProfileStrategy             → SpellAIProfile
     """
 
     show_dunders: bool = False
     max_repr: int = 120
 
-    def __post_init__(self) -> None:
-        self._binding_strategy = BindingProfileStrategy(
-            show_dunders=self.show_dunders,
-            max_repr=self.max_repr,
-        )
-        self._resolution_strategy = ResolutionProfileStrategy()
-        self._ai_strategy = AIProfileStrategy(
-            show_dunders=self.show_dunders,
-            max_repr=self.max_repr,
-        )
-
-    # ------------------------------------------------------------------ #
-    # Explicit mode-specific entrypoints
-    # ------------------------------------------------------------------ #
-
+    # ----------------------------------------------------------------------
+    # Binding layer
+    # ----------------------------------------------------------------------
     def binding_profile_for_object(self, candidate: Any) -> SpellBindingProfile:
         """
-        Produce a SpellBindingProfile from a raw user-provided object.
+        Build a lightweight `SpellBindingProfile` for any candidate object.
 
-        This is the entrypoint Bind will eventually use.
+        This is the **only** thing `Bind` needs at registration time.
         """
-        return self._binding_strategy.build_profile(candidate)
+        strategy = BindingProfileStrategy(
+            show_dunders=self.show_dunders,
+            max_repr=self.max_repr,
+        )
+        return strategy.build_profile(candidate)
 
+    # Optional backwards-compat alias (so you can keep `.inspect(...)` in Bind).
+    def inspect(self, candidate: Any) -> SpellBindingProfile:
+        """
+        Backwards–compatible alias for `binding_profile_for_object`.
+
+        Old code that expected `.inspect()` can now simply work with the
+        new `SpellBindingProfile` instead of `ClassProfile / MethodProfile`.
+        """
+        return self.binding_profile_for_object(candidate)
+
+    # ----------------------------------------------------------------------
+    # Resolution layer
+    # ----------------------------------------------------------------------
     def resolution_profile_for_spell(self, spell: Spell) -> SpellResolutionProfile:
         """
-        Produce a SpellResolutionProfile for a fully-formed Spell.
+        Build a `SpellResolutionProfile` from a fully registered Spell instance.
 
-        This will be integrated into the resolution / conjure pipeline.
+        This is used by the Spellbook / DAG builder to understand dependency
+        edges (constructor parameters, field injections, etc.).
         """
-        return self._resolution_strategy.build_profile(spell)
+        if not isinstance(spell, Spell):
+            raise TypeError(
+                "resolution_profile_for_spell expects a Spell instance. "
+                f"Got: {type(spell)!r}"
+            )
 
+        strategy = ResolutionProfileStrategy()
+        return strategy.build_profile(spell)
+
+    # ----------------------------------------------------------------------
+    # AI layer
+    # ----------------------------------------------------------------------
     def ai_profile_for_spell(
             self,
             spell: Spell,
@@ -92,22 +113,38 @@ class SpellExaminer:
             resolution_profile: Optional[SpellResolutionProfile] = None,
     ) -> SpellAIProfile:
         """
-        Produce a SpellAIProfile for a Spell.
+        Build the full AI profile for a spell.
 
-        If AI-native mode is enabled, the conjure pipeline can call this
-        to materialize the heavy, agent-facing view of the spell, including
-        deep introspection and resolution semantics.
+        This merges:
+        * Binding profile  → lightweight structural view.
+        * Resolution       → how the spell participates in the DAG.
+        * Deep reflection  → ClassProfile / MethodProfile via the inspector layer.
         """
-        return self._ai_strategy.build_profile(
+        if not isinstance(spell, Spell):
+            raise TypeError(
+                "ai_profile_for_spell expects a Spell instance. "
+                f"Got: {type(spell)!r}"
+            )
+
+        if binding_profile is None:
+            binding_profile = self.binding_profile_for_object(spell.spell)
+
+        if resolution_profile is None:
+            resolution_profile = self.resolution_profile_for_spell(spell)
+
+        strategy = AIProfileStrategy(
+            show_dunders=self.show_dunders,
+            max_repr=self.max_repr,
+        )
+        return strategy.build_profile(
             spell=spell,
             binding_profile=binding_profile,
             resolution_profile=resolution_profile,
         )
 
-    # ------------------------------------------------------------------ #
-    # Generic dispatch if you want a single entrypoint
-    # ------------------------------------------------------------------ #
-
+    # ----------------------------------------------------------------------
+    # Unified facade
+    # ----------------------------------------------------------------------
     def examine(
             self,
             target: Union[Any, Spell],
@@ -117,14 +154,16 @@ class SpellExaminer:
             resolution_profile: Optional[SpellResolutionProfile] = None,
     ) -> Union[SpellBindingProfile, SpellResolutionProfile, SpellAIProfile]:
         """
-        Generic dispatcher if you want a single public entrypoint that can
-        produce any profile type.
+        Unified entry point over the three examination modes.
 
-        Typical usage:
-            examiner = SpellExaminer()
-            binding = examiner.examine(MyService, SpellExaminationKind.BINDING)
+        * BINDING    – `target` can be a raw class/function/instance or a Spell.
+        * RESOLUTION – `target` must be a Spell.
+        * AI         – `target` must be a Spell.
         """
         if kind is SpellExaminationKind.BINDING:
+            # Allow passing a Spell directly: we peel back to its underlying object.
+            if isinstance(target, Spell):
+                target = target.spell
             return self.binding_profile_for_object(target)
 
         if kind is SpellExaminationKind.RESOLUTION:
@@ -136,13 +175,11 @@ class SpellExaminer:
 
         if kind is SpellExaminationKind.AI:
             if not isinstance(target, Spell):
-                raise TypeError(
-                    "AI examination requires a Spell instance as target."
-                )
+                raise TypeError("AI examination requires a Spell instance as target.")
             return self.ai_profile_for_spell(
-                spell=target,
+                target,
                 binding_profile=binding_profile,
                 resolution_profile=resolution_profile,
             )
 
-        raise ValueError(f"Unsupported SpellExaminationKind: {kind!r}")
+        raise ValueError(f"Unknown SpellExaminationKind: {kind!r}")

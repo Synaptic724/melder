@@ -10,55 +10,34 @@ from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
 
 class SpellBinder(Cleanable):
     """
-    Fluent registration helper for `Spellbook`.
+    A Fluent Interface for registering Spells into a `Spellbook`.
 
-    `SpellBinder` is an optional, ergonomic layer on top of
-    :meth:`Spellbook.bind` that provides an Autofac-style fluent API for
-    registering spells. It does **not** introduce a new binding pathway or
-    semantics – it simply collects parameters and forwards them into the
-    existing `Spellbook.bind(...)` pipeline.
+    The `SpellBinder` acts as a temporary configuration context. It allows you to
+    chain methods to define the lifecycle, permissions, and hooks for a spell
+    before committing it to the Spellbook via `finalize()`.
 
-    Typical usage
-    -------------
+    **Core Responsibilities:**
+    1.  **Fluent Configuration:** Accumulate binding parameters (e.g., `.as_unique()`, `.named()`).
+    2.  **State Management:** Holds in-flight configuration for exactly one registration at a time.
+    3.  **Safe Delegation:** Forwards the final configuration to `Spellbook.bind(...)` only when `finalize()` is called.
 
-    Basic one-shot registration:
-
+    **Usage Example:**
+        ```python
         binder = spellbook.create_binder()
 
-        binder.bind(MyService).finalize()
-
-    Fully fluent style with lifecycle, spellframe, name, and hooks:
-
-        binder = spellbook.create_binder()
-
-        binder.bind(MyService) \
-              .as_unique() \
-              .under_spellframe(IMyServiceProtocol) \
-              .named("primary") \
-              .with_permissions("create") \
-              .with_pre_hook(log_before) \
-              .with_activation_hook(wire_dependencies) \
-              .with_post_hook(log_after) \
+        # Complex registration with hooks and specific scoping
+        binder.bind(MyDatabaseService) \\
+              .as_unique() \\
+              .named("primary_db") \\
+              .under_spellframe(IDatabase) \\
+              .with_pre_hook(connect_db) \\
               .finalize()
+        ```
 
-    Reuse (the same `SpellBinder` instance can be used for multiple
-    registrations; each successful `finalize()` clears the in-flight state):
-
-        binder.bind(FirstService).as_many().finalize()
-        binder.bind(SecondService).as_unique_per_conduit().finalize()
-
-    Design notes
-    ------------
-
-    * `SpellBinder` does not perform graph or container validation. It only
-      assembles the arguments for a **single** registration and forwards
-      them into `Spellbook.bind(...)`.
-    * Any validation (existence rules, spell type checks, hook validation,
-      spellframe / binding_name rules, etc.) is still owned by the existing
-      Spellbook implementation.
-    * `finalize()` is the “fail-fast” moment for that one registration: if
-      `Spellbook.bind(...)` rejects the configuration, the exception
-      surfaces immediately.
+    **Note on Reusability:**
+    A single `SpellBinder` instance can be reused for multiple registrations.
+    Calling `finalize()` automatically clears the internal state, making the
+    binder ready for the next `bind(...)` call.
     """
 
     __slots__ = (
@@ -81,41 +60,51 @@ class SpellBinder(Cleanable):
             default_permissions: str = "create",
     ) -> None:
         """
-        Initialize a new `SpellBinder` bound to a specific `Spellbook`.
+        Initialize a new `SpellBinder` linked to a specific `Spellbook`.
 
         Args:
-            spellbook:
-                The `Spellbook` instance that registrations will be forwarded
-                into. All calls to :meth:`finalize` ultimately delegate to
-                `spellbook.bind(...)`.
-
-            default_existence:
-                Lifecycle to apply when a registration is started via
-                :meth:`bind` and no explicit `existence` is supplied.
-                Defaults to :data:`Existence.unique`.
-
-            default_permissions:
-                Permission string to apply when a registration is started via
-                :meth:`bind` and no explicit `permissions` is supplied.
-                Typical values are implementation-defined (e.g. `"create"`,
-                `"read"`, `"block"`), and are passed through unchanged to
-                `Spellbook.bind(...)`.
+            spellbook (ISpellbook):
+                The target Spellbook. The binder holds a weak reference to this
+                book to prevent reference cycles.
+            default_existence (Existence):
+                The default lifecycle scope to use if one is not explicitly
+                set during a chain. Defaults to `Existence.unique`.
+            default_permissions (str):
+                The default permission level ("create", "read", "block") to use
+                if not explicitly set. Defaults to "create".
         """
-        super().__init__()
+        # 1. Initialize Base (Sets self._cleaned = False)
+        Cleanable.__init__(self)
+
+        if spellbook is None:
+            raise ValueError("SpellBinder requires a valid ISpellbook instance.")
+
+        # 2. Initialize Infrastructure
         self._weak_spellbook: SyncWeakRef[ISpellbook] = SyncWeakRef(spellbook)
         self._default_existence = default_existence
         self._default_permissions = default_permissions
-        self._reset_current()
 
+        # 3. Initialize Transient State directly (Satisfying __slots__)
+        # We initialize these to None/Defaults immediately to ensure the object
+        # is valid before any methods (like _reset_current) are called.
+        self._spell: Any = None
+        self._existence: Existence = default_existence
+        self._permissions: str = default_permissions
+        self._spellframe: Any | None = None
+        self._binding_name: Optional[str] = None
+        self._kwargs: dict[str, Any] = {}
 
     def cleanup(self) -> None:
         """
-        Clean up the `SpellBinder`, releasing references.
+        Deterministically cleans up the SpellBinder.
 
-        After calling `cleanup()`, the binder should not be used again.
+        Releases the weak reference to the Spellbook and clears all internal
+        state. After cleanup, this instance cannot be used.
         """
         if self._cleaned:
             return
+
+        # Mark cleaned first to prevent race conditions
         self._cleaned = True
 
         if self._weak_spellbook is not None:
@@ -123,23 +112,29 @@ class SpellBinder(Cleanable):
                 self._weak_spellbook.cleanup()
             except Exception:
                 pass
+
+        # Nullify all slots to assist GC
         self._weak_spellbook = None
+        self._spell = None
         self._existence = None
         self._permissions = None
         self._spellframe = None
         self._binding_name = None
         self._kwargs = None
-        
-        
+
     def _still_alive(self) -> None:
         """
-        Check whether the binder is still alive (not cleaned).
+        Internal guard ensuring the binder and its target Spellbook are valid.
+
+        Raises:
+            RuntimeError: If the binder is cleaned or the Spellbook is dead.
         """
         if self._cleaned:
             raise RuntimeError(
                 "SpellBinder has been cleaned up and can no longer be used."
             )
-        elif not self._weak_spellbook.is_alive():
+        # Defensive check: if cleanup happened partially, _weak_spellbook might be None
+        if self._weak_spellbook is None or not self._weak_spellbook.is_alive():
             raise RuntimeError(
                 "Spellbook is no longer alive; SpellBinder cannot be used."
             )
@@ -150,30 +145,25 @@ class SpellBinder(Cleanable):
 
     def _reset_current(self) -> None:
         """
-        Reset the in-flight registration state.
+        Resets the in-flight registration state to defaults.
 
-        This is called on construction and after each successful
-        :meth:`finalize`, allowing a single `SpellBinder` instance to be
-        reused for multiple registrations without leaking configuration
-        from one registration into the next.
+        This is called automatically after `finalize()` to prepare the binder
+        for the next `bind(...)` call.
         """
         self._still_alive()
-        self._spell: Any = None
-        self._existence: Existence = self._default_existence
-        self._permissions: str = self._default_permissions
-        self._spellframe: Any | None = None
-        self._binding_name: Optional[str] = None
-        self._kwargs: dict[str, Any] = {}
+        self._spell = None
+        self._existence = self._default_existence
+        self._permissions = self._default_permissions
+        self._spellframe = None
+        self._binding_name = None
+        self._kwargs = {}
 
     def _require_spell_selected(self) -> None:
         """
-        Ensure that a spell has been selected before finalization.
+        Validates that a spell target has been selected.
 
         Raises:
-            RuntimeError:
-                If :meth:`finalize` is called before any call to
-                :meth:`bind`. A spell must be selected as the target of the
-                registration first.
+            RuntimeError: If `finalize()` is called before `bind(...)`.
         """
         self._still_alive()
         if self._spell is None:
@@ -184,30 +174,13 @@ class SpellBinder(Cleanable):
 
     def _ensure_hook_list(self, key: str) -> list[Callable[..., Any]]:
         """
-        Ensure that a named hook list exists in the current registration.
-
-        This helper backs the hook-oriented fluent methods such as
-        :meth:`with_pre_hook`, :meth:`with_activation_hook`, and
-        :meth:`with_post_hook`. It guarantees that `self._kwargs[key]` is a
-        list that can be appended to.
+        Internal helper to initialize hook lists in `_kwargs` on demand.
 
         Args:
-            key:
-                The keyword under which to track a list of hook callables.
-                Expected values are `"pre_hooks"`, `"activation_hooks"`, or
-                `"post_hooks"`.
+            key (str): The hook key (e.g., "pre_hooks", "post_hooks").
 
         Returns:
-            list[Callable[..., Any]]:
-                The list stored at `self._kwargs[key]` after ensuring it
-                exists and is a list.
-
-        Raises:
-            TypeError:
-                If there is already a value under `key` but it is not a list.
-                This indicates that the registration has been misconfigured
-                (for example by passing an incompatible `**kwargs` entry
-                directly through :meth:`bind` or :meth:`with_kwargs`).
+            list: The mutable list of hooks for that key.
         """
         self._still_alive()
         existing = self._kwargs.get(key)
@@ -223,7 +196,7 @@ class SpellBinder(Cleanable):
         return existing
 
     # ------------------------------------------------------------------
-    # Fluent API – starting a registration
+    # Fluent API – Starting a Registration
     # ------------------------------------------------------------------
 
     def bind(
@@ -237,84 +210,34 @@ class SpellBinder(Cleanable):
             **kwargs: Any,
     ) -> "SpellBinder":
         """
-        Begin a new fluent registration chain for a single spell.
+        **Start Here:** Begins a new registration chain for a spell.
 
-        Calling :meth:`bind` clears any previous in-flight configuration and
-        starts a fresh registration targeting the provided `spell`. All
-        subsequent fluent calls (lifecycle, permissions, spellframe, hooks,
-        extra kwargs) apply to this new registration until :meth:`finalize`
-        is called.
-
-        You may either:
-
-        * Supply all configuration here in one shot, or
-        * Provide only the spell (and maybe a few values) and refine the
-          registration step-by-step via fluent methods.
-
-        Examples
-        --------
-
-        One-shot configuration:
-
-            binder.bind(
-                MyService,
-                existence=Existence.unique,
-                permissions="create",
-                spellframe=IMyServiceProtocol,
-                binding_name="primary",
-                pre_hooks=[hook_a],
-                post_hooks=[hook_b],
-            ).finalize()
-
-        Fluent configuration:
-
-            binder.bind(MyService) \\
-                  .as_unique() \\
-                  .under_spellframe(IMyServiceProtocol) \\
-                  .named("primary") \\
-                  .with_pre_hook(hook_a) \\
-                  .with_post_hook(hook_b) \\
-                  .finalize()
+        This method clears any previous configuration and targets the provided
+        `spell`. You can supply arguments immediately or use fluent methods
+        (e.g., `.as_unique()`) to configure the registration subsequently.
 
         Args:
-            spell:
-                The concrete class, function, wrapper, lambda, or pre-existing
-                creation object that should be registered as a spell. The exact
-                interpretation is delegated to the underlying `Spellbook.bind`
-                implementation.
-
-            existence:
-                Optional lifecycle override for this registration. When omitted,
-                the binder's `default_existence` is used.
-
-            permissions:
-                Optional permission override for this registration. When
-                omitted, the binder's `default_permissions` is used.
-
-            spellframe:
-                Optional logical spellframe / protocol / interface used to
-                organize this registration. This value is forwarded directly
-                to the `spellframe` parameter of `Spellbook.bind(...)`.
-
-            binding_name:
-                Optional human-readable name used to distinguish multiple
-                spells under the same spellframe or type. Forwarded directly
-                to the `binding_name` parameter of `Spellbook.bind(...)`.
-
+            spell (Any):
+                The class, function, or object to register.
+            existence (Existence, optional):
+                Immediate override for lifecycle scope.
+            permissions (str, optional):
+                Immediate override for access permissions.
+            spellframe (Any, optional):
+                The interface or protocol to bind this spell under.
+            binding_name (str, optional):
+                A unique string identifier for this specific binding.
             **kwargs:
-                Additional keyword arguments passed through to
-                `Spellbook.bind(...)` as-is. This can be used to supply
-                hook lists (`pre_hooks`, `activation_hooks`, `post_hooks`)
-                or any other advanced options supported by the current
-                Spellbook implementation.
+                Pass-through arguments for the Spellbook (e.g., specific hooks).
 
         Returns:
-            SpellBinder:
-                The same binder instance, allowing additional fluent calls
-                to be chained for this registration.
+            SpellBinder: Self, to enable fluent chaining.
         """
         self._still_alive()
+
+        # Clear previous state to ensure a clean slate
         self._reset_current()
+
         self._spell = spell
 
         if existence is not None:
@@ -332,48 +255,32 @@ class SpellBinder(Cleanable):
         return self
 
     # ------------------------------------------------------------------
-    # Fluent modifiers – lifecycle / metadata
+    # Fluent Modifiers – Lifecycle / Scope
     # ------------------------------------------------------------------
 
     def with_existence(self, existence: Existence) -> "SpellBinder":
         """
-        Set the lifecycle (Existence) for the active registration.
+        Manually set the `Existence` lifecycle for this registration.
 
-        This is a direct wrapper over the `existence` argument of
-        `Spellbook.bind(...)`. Any deeper rules about how existence interacts
-        with spell types, conduits, or frames remain the responsibility of
-        the Spellbook implementation.
-
-        Args:
-            existence:
-                The desired lifecycle mode for this registration.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        Use this if you need a specific existence mode not covered by the
+        convenience methods below (e.g., a custom extension).
         """
         self._still_alive()
         self._existence = existence
         return self
+
     def as_unique(self) -> "SpellBinder":
         """
-        Configure this spell as **unique per Aetheric Frame**.
+        Configures the spell as a **Global Singleton** (Unique per Aetheric Frame).
 
-        Effect:
-            - Only one instance of this spell exists in a given Aetheric Frame.
-            - All conduits in the same frame share that single instance.
-            - This behaves like a traditional "singleton" *within* the frame.
+        **Behavior:**
+        - Only one instance is created for the entire Aetheric Frame.
+        - Shared by ALL conduits in that frame.
 
-        When to use:
-            - For core services that should exist exactly once, such as:
-              configuration, logging hubs, schedulers, orchestrators, etc.
-            - When you want a stable, long-lived object that is reused across
-              the entire system (or across a particular frame in multi-frame
-              setups).
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        **Use Case:**
+        - Global configuration managers.
+        - Heavy, thread-safe resources (e.g., Database Connection Pools).
+        - Centralized logging or telemetry services.
         """
         self._still_alive()
         self._existence = Existence.unique
@@ -381,21 +288,16 @@ class SpellBinder(Cleanable):
 
     def as_many(self) -> "SpellBinder":
         """
-        Configure this spell as **many instances** (no reuse).
+        Configures the spell as **Transient** (Many Instances).
 
-        Effect:
-            - A new instance is created *every time* the spell is resolved /
-              cast.
-            - No caching or reuse occurs at the Spellbook level.
+        **Behavior:**
+        - A new instance is created **every time** it is requested.
+        - No caching occurs.
 
-        When to use:
-            - For stateless or very short-lived objects.
-            - For things that are cheap to construct and not worth caching.
-            - When you explicitly want isolation between callers.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        **Use Case:**
+        - Lightweight, stateless objects.
+        - Request-specific data holders.
+        - Objects that are cheap to create and should not be shared.
         """
         self._still_alive()
         self._existence = Existence.many
@@ -403,22 +305,16 @@ class SpellBinder(Cleanable):
 
     def as_unique_per_conduit(self) -> "SpellBinder":
         """
-        Configure this spell as **unique per conduit**.
+        Configures the spell as **Scoped to Conduit**.
 
-        Effect:
-            - Each conduit gets its own instance of this spell.
-            - Within a single conduit, the instance is reused.
-            - Different conduits never share the same instance.
+        **Behavior:**
+        - Each Conduit gets its own unique instance.
+        - Within a single Conduit, the instance is reused (singleton-per-conduit).
 
-        When to use:
-            - For per-conduit caches or services that should be shared only
-              inside that conduit.
-            - When each conduit represents an independent "sub-application"
-              and you want local singletons for each one.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        **Use Case:**
+        - Conduit-local caches.
+        - Services that maintain state specific to a specific module or plugin.
+        - Is isolating "sub-applications" from one another.
         """
         self._still_alive()
         self._existence = Existence.unique_per_conduit
@@ -426,25 +322,15 @@ class SpellBinder(Cleanable):
 
     def as_unique_per_conduit_cluster(self) -> "SpellBinder":
         """
-        Configure this spell as **unique per conduit cluster**.
+        Configures the spell as **Scoped to Cluster**.
 
-        Effect:
-            - Conduits can be grouped into logical clusters (e.g., by domain,
-              feature area, or subsystem).
-            - All conduits in the same cluster share a single instance of
-              this spell.
-            - Different clusters get different instances.
+        **Behavior:**
+        - Conduits in the same named cluster share a single instance.
+        - Conduits in different clusters get different instances.
 
-        When to use:
-            - For services that should be shared across a *group* of related
-              conduits (e.g., "analytics cluster", "billing cluster") but not
-              globally across the entire system.
-            - When you want more sharing than `as_unique_per_conduit()` but
-              less than a global `as_unique()` singleton.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        **Use Case:**
+        - Sharing resources across a specific subsystem (e.g., "AuthCluster").
+        - Grouping related services that need shared state but shouldn't leak globally.
         """
         self._still_alive()
         self._existence = Existence.unique_per_conduit_cluster
@@ -452,22 +338,15 @@ class SpellBinder(Cleanable):
 
     def as_unique_per_conduit_lineage(self) -> "SpellBinder":
         """
-        Configure this spell as **unique per conduit lineage tree**.
+        Configures the spell as **Scoped to Lineage** (Hierarchical).
 
-        Effect:
-            - A "lineage" is a parent → child → grandchild chain of conduits.
-            - All conduits in the same lineage tree share a single instance.
-            - Separate lineages get separate instances.
+        **Behavior:**
+        - An instance is shared down a specific parent -> child -> grandchild chain.
+        - Useful for recursive structures or inheritance-based contexts.
 
-        When to use:
-            - For scenarios where conduits are spawned dynamically (e.g.,
-              child pipelines or subflows) and you want them to share context
-              with their ancestors but stay isolated from other families.
-            - When the lifetime should follow a tree of related conduits.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        **Use Case:**
+        - Context propagation in a specific execution tree.
+        - Sharing configuration overrides down a specific branch of the graph.
         """
         self._still_alive()
         self._existence = Existence.unique_per_conduit_lineage
@@ -475,47 +354,32 @@ class SpellBinder(Cleanable):
 
     def as_unique_per_spell_space(self) -> "SpellBinder":
         """
-        Configure this spell as **unique per spell space**.
+        Configures the spell as **Scoped to SpellSpace** (Session/Request).
 
-        Effect:
-            - A "spell space" is a manually-controlled scope (start/close)
-              that acts like a temporary sandbox or semaphore.
-            - Within a given spell space, all resolutions of this spell share
-              the same instance.
-            - When the spell space is closed or reset, a new instance will be
-              created for the next space.
+        **Behavior:**
+        - The instance lives only as long as the manually managed `SpellSpace`.
+        - When the space is closed/reset, the instance is discarded.
 
-        When to use:
-            - For operations that run inside a bounded "session" or "phase"
-              where you want a shared instance while the space is open, and a
-              clean reset when it closes.
-            - For workflows that need explicit "begin scope / end scope"
-              semantics (e.g., batch jobs, request groups, experiments).
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        **Use Case:**
+        - Per-request handling (e.g., HTTP Request context).
+        - Batch processing jobs where state must be cleared between batches.
+        - "Unit of Work" patterns where objects must live for a transaction duration.
         """
         self._still_alive()
         self._existence = Existence.unique_per_spell_space
         return self
 
+    # ------------------------------------------------------------------
+    # Fluent Modifiers – Identity & Permissions
+    # ------------------------------------------------------------------
 
     def with_permissions(self, permissions: str) -> "SpellBinder":
         """
-        Set the permissions string for the active registration.
+        Sets the access permissions for this spell ("create", "read", "block").
 
-        The meaning and allowed values of `permissions` are defined by the
-        Spellbook. The binder simply forwards the value to
-        `Spellbook.bind(...)` without interpretation.
-
-        Args:
-            permissions:
-                Permission label to attach to this registration.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        **"create" (Default):** Other conduits can see and instantiate this spell.
+        **"read":** Other conduits can use an existing instance but cannot create new ones.
+        **"block":** Only the owning conduit can use this spell (private).
         """
         self._still_alive()
         self._permissions = permissions
@@ -523,19 +387,13 @@ class SpellBinder(Cleanable):
 
     def under_spellframe(self, spellframe: Any) -> "SpellBinder":
         """
-        Associate the active registration with a specific spellframe.
+        Registers the spell under a specific **Interface** or **Protocol**.
 
-        The spellframe acts as a logical namespace, protocol, or interface
-        under which this spell is registered. It is forwarded as the
-        `spellframe` argument to `Spellbook.bind(...)`.
+        This is the primary mechanism for Dependency Inversion. Consumers request
+        the `spellframe`, and Melder injects this specific spell implementation.
 
         Args:
-            spellframe:
-                Spellframe / protocol / logical group key for this spell.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+            spellframe (Any): The Protocol, Abstract Base Class, or String key.
         """
         self._still_alive()
         self._spellframe = spellframe
@@ -543,19 +401,10 @@ class SpellBinder(Cleanable):
 
     def named(self, binding_name: str) -> "SpellBinder":
         """
-        Attach a binding name to the active registration.
+        Assigns a specific **Binding Name** to this registration.
 
-        Binding names help distinguish multiple registrations under the same
-        spellframe or base type. The value is forwarded as the `binding_name`
-        argument to `Spellbook.bind(...)`.
-
-        Args:
-            binding_name:
-                A human-readable name identifying this registration.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        Useful when you have multiple implementations of the same Interface
+        (e.g., "primary_db", "replica_db") and need to disambiguate them.
         """
         self._still_alive()
         self._binding_name = binding_name
@@ -563,24 +412,10 @@ class SpellBinder(Cleanable):
 
     def with_kwargs(self, **kwargs: Any) -> "SpellBinder":
         """
-        Add arbitrary keyword arguments to the active registration.
+        Pass arbitrary keyword arguments directly to the Spellbook's bind method.
 
-        Any keys provided here are merged into the internal `**kwargs` that
-        will be forwarded directly to `Spellbook.bind(...)` when
-        :meth:`finalize` is called. This allows the binder to expose new
-        features added to `Spellbook.bind(...)` without having to change the
-        fluent surface.
-
-        Note:
-            Hook-specific helpers such as :meth:`with_pre_hook` and
-            :meth:`with_post_hook` also write into `self._kwargs`. If you
-            pass the same keys here (e.g. `pre_hooks=`), you are responsible
-            for ensuring the resulting structure matches what the Spellbook
-            expects.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        This acts as a catch-all for advanced or future parameters that might
+        not have dedicated fluent methods yet.
         """
         self._still_alive()
         if kwargs:
@@ -588,27 +423,15 @@ class SpellBinder(Cleanable):
         return self
 
     # ------------------------------------------------------------------
-    # Fluent modifiers – lifecycle hooks
+    # Fluent Modifiers – Lifecycle Hooks
     # ------------------------------------------------------------------
 
     def with_pre_hook(self, hook: Callable[..., Any]) -> "SpellBinder":
         """
-        Add a single pre-hook to the active registration.
+        Adds a **Pre-Cast Hook**.
 
-        The hook will be appended to an internal ``pre_hooks`` list, which is
-        forwarded to `Spellbook.bind(...)` as ``pre_hooks=[...]`` when
-        :meth:`finalize` is called. The Spellbook remains responsible for
-        validating and invoking these hooks at the appropriate time.
-
-        Args:
-            hook:
-                A callable that should be invoked *before* the spell is
-                activated/constructed, according to the Spellbook's hook
-                semantics.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        Executed *before* the object is instantiated.
+        Useful for validation, logging, or setting up thread-local context.
         """
         self._still_alive()
         hooks = self._ensure_hook_list("pre_hooks")
@@ -616,20 +439,7 @@ class SpellBinder(Cleanable):
         return self
 
     def with_pre_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
-        """
-        Add one or more pre-hooks to the active registration.
-
-        This is a convenience wrapper around :meth:`with_pre_hook` that allows
-        multiple hooks to be added in a single call.
-
-        Args:
-            *hooks:
-                One or more callables to be appended to the ``pre_hooks`` list.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
-        """
+        """Adds multiple Pre-Cast Hooks at once."""
         self._still_alive()
         if not hooks:
             return self
@@ -639,20 +449,11 @@ class SpellBinder(Cleanable):
 
     def with_activation_hook(self, hook: Callable[..., Any]) -> "SpellBinder":
         """
-        Add a single activation-hook to the active registration.
+        Adds an **Activation Hook**.
 
-        The hook will be appended to an internal ``activation_hooks`` list,
-        forwarded to `Spellbook.bind(...)` as ``activation_hooks=[...]`` when
-        :meth:`finalize` is called. Activation hooks are typically invoked at
-        the point where the spell is being activated / constructed.
-
-        Args:
-            hook:
-                A callable to be run during activation of the spell.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        Executed *during* instantiation (or immediately after).
+        Useful for setter injection, initialization logic, or wiring up event listeners.
+        Receives the instance as an argument.
         """
         self._still_alive()
         hooks = self._ensure_hook_list("activation_hooks")
@@ -660,18 +461,7 @@ class SpellBinder(Cleanable):
         return self
 
     def with_activation_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
-        """
-        Add one or more activation-hooks to the active registration.
-
-        Args:
-            *hooks:
-                One or more callables to be appended to the
-                ``activation_hooks`` list.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
-        """
+        """Adds multiple Activation Hooks at once."""
         self._still_alive()
         if not hooks:
             return self
@@ -681,21 +471,10 @@ class SpellBinder(Cleanable):
 
     def with_post_hook(self, hook: Callable[..., Any]) -> "SpellBinder":
         """
-        Add a single post-hook to the active registration.
+        Adds a **Post-Cast Hook**.
 
-        The hook will be appended to an internal ``post_hooks`` list, which is
-        forwarded to `Spellbook.bind(...)` as ``post_hooks=[...]`` when
-        :meth:`finalize` is called. Post-hooks are typically invoked after a
-        spell has been activated or after a resolution event.
-
-        Args:
-            hook:
-                A callable to be run *after* the spell's main work has
-                completed, according to the Spellbook's hook semantics.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
+        Executed *after* the object is fully ready and returned to the system.
+        Useful for final validation or registration with external systems.
         """
         self._still_alive()
         hooks = self._ensure_hook_list("post_hooks")
@@ -703,17 +482,7 @@ class SpellBinder(Cleanable):
         return self
 
     def with_post_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
-        """
-        Add one or more post-hooks to the active registration.
-
-        Args:
-            *hooks:
-                One or more callables to be appended to the ``post_hooks`` list.
-
-        Returns:
-            SpellBinder:
-                The same binder instance, to allow further chaining.
-        """
+        """Adds multiple Post-Cast Hooks at once."""
         self._still_alive()
         if not hooks:
             return self
@@ -722,45 +491,33 @@ class SpellBinder(Cleanable):
         return self
 
     # ------------------------------------------------------------------
-    # Commit step
+    # Commit Step
     # ------------------------------------------------------------------
 
     def finalize(self) -> str:
         """
-        Commit the current registration into the owning `Spellbook`.
+        **Commit:** Finalizes the configuration and registers the spell.
 
-        This is the terminal step for the active fluent chain. It:
+        This gathers all the fluent configuration (lifecycle, names, hooks)
+        and calls `spellbook.bind(...)`.
 
-        * Ensures a spell has been selected via :meth:`bind`.
-        * Forwards all collected parameters to `Spellbook.bind(...)`:
-          `spell`, `existence`, `permissions`, `spellframe`, `binding_name`,
-          plus any hook lists or additional keyword arguments accumulated
-          along the way.
-        * Returns the `spell_id` string produced by `Spellbook.bind(...)`.
-        * Resets the internal state so this `SpellBinder` can be reused for
-          another registration.
-
-        `finalize()` does **not** perform any explicit validation beyond
-        checking that `bind(...)` was called first; all binding rules and
-        invariants are enforced by the Spellbook implementation. Any exception
-        raised inside `Spellbook.bind(...)` will surface directly here.
+        **Behavior:**
+        1. Validates that a spell was actually selected via `.bind()`.
+        2. Performs the binding in the Spellbook.
+        3. **Resets** the binder's state, allowing it to be reused for the next spell.
 
         Returns:
-            str:
-                The spell's identifier (for example, a SHA256‐based ID)
-                returned by `Spellbook.bind(...)`.
+            str: The unique SHA256 `spell_id` of the registered spell.
 
         Raises:
-            RuntimeError:
-                If called when no spell has been selected via :meth:`bind`.
-
-            Exception:
-                Any exception propagated from `Spellbook.bind(...)` or its
-                internal binding pipeline.
+            RuntimeError: If called without first calling `.bind()`.
         """
         self._require_spell_selected()
 
-        spell_id: str = self._weak_spellbook.get().bind(
+        # Access the weakref safely; throws if Spellbook is collected
+        spellbook = self._weak_spellbook.get()
+
+        spell_id: str = spellbook.bind(
             spell=self._spell,
             existence=self._existence,
             permissions=self._permissions,
@@ -769,6 +526,6 @@ class SpellBinder(Cleanable):
             **self._kwargs,
         )
 
-        # Allow reuse for another registration
+        # Allow reuse for another registration by clearing state
         self._reset_current()
         return spell_id
