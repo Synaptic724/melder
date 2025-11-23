@@ -567,32 +567,7 @@ class Spell(ISpell, Cleanable):
         crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
         crafter.run_phase_local_frame(cancel_event=cancel_event)
         crafter.run_phase_validation(cancel_event=cancel_event)
+
+
     #endregion Resolution Phases
-
-    #region Casting
-    def cast(self) -> object:
-        """
-        Internal (Legacy Placeholder)
-
-        Casts the spell.
-
-        This method is intentionally **not implemented** in the new architecture.
-        All resolution is handled via the Resolution / Meld pipeline using
-        `SpellResolutionProfile` + resolution frames / DAGs.
-
-        Notes:
-            - Existing-creation spells are surfaced directly by Meld using
-              `user_created_object` / `take_existing_object()`.
-            - Class and method spells are instantiated/invoked by the resolution
-              engine, not by this method.
-
-        Raises:
-            NotImplementedError: Always. This method is a legacy placeholder and
-            should not be used.
-        """
-        raise NotImplementedError(
-            "Spell.cast() is not used; resolution is handled by Meld/ResolutionFrame."
-        )
-    #endregion Casting
-
 #endregion Spell

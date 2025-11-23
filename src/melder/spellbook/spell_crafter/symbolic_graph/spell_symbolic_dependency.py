@@ -15,27 +15,22 @@ class SpellSymbolicDependency(Cleanable):
 
     Conceptually:
 
-        “For spell *version* V, parameter P has DI shape X and wants type T
+        “For spell version V, parameter P has DI shape X and wants type T
         (or SpellMap M).”
 
-    This is a *symbolic* edge, not yet tied to concrete dependency spell
-    versions. Later phases (local frame / DAG builder) will interpret these
-    edges against the Spellbook.
+    This is a *symbolic* edge, not yet tied to concrete spell IDs. Later phases
+    (local frame / DAG builder) will interpret these edges against the Spellbook.
 
     Identity
     --------
-    ``spell_version_id`` is always the **version identity** of the owning spell:
+    ``spell_id`` here is the **versioned identity** of the owning spell:
 
         ``spell.spell_index.current``
 
-    This is intentionally **not** the `Spell.spell_id` fingerprint. The
-    `SpellIndex` is the durable key, and `.current` is the active version
-    pointer that can change over time as mutations occur.
-
     Fields
     ------
-    spell_version_id:
-        Version identity (string) of the owning spell (SpellIndex.current).
+    spell_id:
+        Versioned identity (string) of the owning spell.
 
     param_name:
         Parameter name on the call target.
@@ -60,12 +55,12 @@ class SpellSymbolicDependency(Cleanable):
 
     spellmap_default:
         For SPELLMAP_DEFAULT shape, the original :class:`SpellMap` default
-        instance attached to the parameter (if any).
+        instance attached to the parameter.
     """
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",
-        "_spell_version_id",
+        "_spell_id",
         "_param_name",
         "_position",
         "_di_shape",
@@ -96,7 +91,9 @@ class SpellSymbolicDependency(Cleanable):
 
         self._lock: threading.RLock = threading.RLock()
 
-        self._spell_version_id: str = spell_version_id
+        # Stored as _spell_id for backwards compatibility; semantically this is
+        # the *version id* (SpellIndex.current).
+        self._spell_id: str = spell_version_id
         self._param_name: str = param_name
         self._position: int = position
         self._di_shape: ParameterDIShape = di_shape
@@ -123,7 +120,7 @@ class SpellSymbolicDependency(Cleanable):
             if self._cleaned:
                 return
 
-            self._spell_version_id = None
+            self._spell_id = None
             self._param_name = None
             self._position = -1
             self._di_shape = None
@@ -140,12 +137,12 @@ class SpellSymbolicDependency(Cleanable):
     # ------------------------------------------------------------------
 
     @property
-    def spell_version_id(self) -> str:
+    def spell_id(self) -> str:
         """
-        Version identity of the owning spell (SpellIndex.current).
+        Versioned identity of the owning spell (SpellIndex.current).
         """
         self.check_cleaned()
-        return self._spell_version_id
+        return self._spell_id
 
     @property
     def param_name(self) -> str:

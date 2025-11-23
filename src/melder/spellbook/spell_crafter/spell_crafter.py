@@ -1,8 +1,7 @@
 from __future__ import annotations
-
 import threading
 from typing import Any, Optional, List
-
+# Melder Imports
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import SpellSymbolicDependency
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import SpellSymbolicGraph
 from melder.utilities.general_base.cleanable import Cleanable
@@ -16,7 +15,6 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 

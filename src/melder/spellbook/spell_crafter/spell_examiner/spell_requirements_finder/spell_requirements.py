@@ -142,7 +142,7 @@ class SpellRequirements(Cleanable):
         return self._binding_name
 
     @property
-    def parameters(self) -> Sequence["SpellParameterRequirement"]:
+    def parameters(self) -> Sequence['SpellParameterRequirement']:
         """
         Ordered, per-parameter requirements for the spell's primary call target.
 

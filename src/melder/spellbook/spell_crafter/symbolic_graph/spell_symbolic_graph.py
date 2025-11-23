@@ -10,19 +10,17 @@ class SpellSymbolicGraph(Cleanable):
     Phase 2 **per-spell symbolic graph**.
 
     This represents a spell's DI requirements as a *set of edges* with no
-    concrete dependency spell versions yet. Think of it as a mid-level,
-    versioned description of “what this spell wants”, without binding to
-    specific implementations.
+    concrete spell IDs yet. Think of it as a mid-level, versioned description
+    of “what this spell wants”, without binding to specific implementations.
 
     Identity
     --------
-    ``spell_version_id`` is the spell's **version identity**:
+    ``spell_id`` is again the spell's **version ID**:
 
         ``spell.spell_index.current``
 
-    The graph is always scoped per spell version; if a spell mutates and its
-    SpellIndex is updated to a new version ID, a new graph should be built for
-    that version.
+    The graph is always scoped per spell version; if a spell mutates and a new
+    version is created, a new graph should be built.
 
     Contents
     --------
@@ -33,7 +31,7 @@ class SpellSymbolicGraph(Cleanable):
     --------------------------
     * No DAG / topo ordering.
     * No existence policy decisions.
-    * No concrete dependency spell_ids.
+    * No concrete spell_ids for dependencies.
     * No runtime execution logic.
 
     Those concerns belong to Phase 3 (local frame / DAG) and Phase 4 (validation).
@@ -41,7 +39,7 @@ class SpellSymbolicGraph(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",
-        "_spell_version_id",
+        "_spell_id",
         "_dependencies",
     ]
 
@@ -57,7 +55,8 @@ class SpellSymbolicGraph(Cleanable):
             raise ValueError("spell_version_id must be a non-empty string.")
 
         self._lock: threading.RLock = threading.RLock()
-        self._spell_version_id: str = spell_version_id
+        # Same story: stored as _spell_id, semantics = version id.
+        self._spell_id: str = spell_version_id
         self._dependencies: List['SpellSymbolicDependency'] = dependencies or []
 
     # ------------------------------------------------------------------
@@ -86,7 +85,7 @@ class SpellSymbolicGraph(Cleanable):
                     pass
 
             self._dependencies = []
-            self._spell_version_id = None
+            self._spell_id = None
             self._cleaned = True
 
         self._lock = None
@@ -96,12 +95,12 @@ class SpellSymbolicGraph(Cleanable):
     # ------------------------------------------------------------------
 
     @property
-    def spell_version_id(self) -> str:
+    def spell_id(self) -> str:
         """
-        Version identity of the owning spell (SpellIndex.current).
+        Versioned identity of the owning spell (SpellIndex.current).
         """
         self.check_cleaned()
-        return self._spell_version_id
+        return self._spell_id
 
     @property
     def dependencies(self) -> List['SpellSymbolicDependency']:
