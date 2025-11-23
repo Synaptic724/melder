@@ -3,7 +3,7 @@ import inspect
 import threading
 from typing import Any, Optional
 
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import ParameterDIShape
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import ParameterDIShape
 from melder.aether.conduit.meld.spellmap.spellmap import SpellMap
 from melder.utilities.general_base.cleanable import Cleanable
 

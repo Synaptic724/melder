@@ -3,7 +3,7 @@ import ulid
 from threading import RLock
 
 # Melder Imports
-from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import MethodProfile, ClassProfile
+from melder.spellbook.spell_crafter.old_spell_examiner.spell_examiner import MethodProfile, ClassProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import ISpell, ISpellbook

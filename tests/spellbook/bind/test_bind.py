@@ -11,7 +11,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.spellbook.spell_types.spell_types import SpellType
 
 # Profiles used by Bind.sha256_profile / type checks
-from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
+from melder.spellbook.spell_crafter.old_spell_examiner.spell_examiner import (
     SpellExaminer, ClassProfile, MethodProfile
 )
 

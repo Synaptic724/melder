@@ -1,133 +1,148 @@
-import inspect
-import json
-from typing import Any, Dict
-# Melder imports
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.class_inspector import ClassInspector
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.method_inspector import MethodInspector
-from melder.spellbook.spell_crafter.spell_examiner.profiles.class_profile import ClassProfile
-from melder.spellbook.spell_crafter.spell_examiner.profiles.method_profile import MethodProfile
+from __future__ import annotations
 
-#region SpellExaminer
+from dataclasses import dataclass
+from enum import Enum, auto
+from typing import Any, Optional, Union
+
+from melder.spellbook.spell import Spell
+from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+    SpellBindingProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
+    SpellResolutionProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import (
+    SpellAIProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.strategies.ai_profile_strategy import AIProfileStrategy
+from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import AIProfileStrategy
+from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import BindingProfileStrategy
+
+
+
+class SpellExaminationKind(Enum):
+    """
+    High-level mode selector for SpellExaminer.
+
+    This enum exists so you can easily add more profile types later
+    without changing the overall shape of the API.
+    """
+
+    BINDING = auto()
+    RESOLUTION = auto()
+    AI = auto()
+
+
+@dataclass
 class SpellExaminer:
-    utility = InspectorUtility
-    def __init__(
+    """
+    Central façade over profile strategies.
+
+    Responsibilities:
+        * Provide a clean, mode-based API:
+            - binding_profile_for_object(...)
+            - resolution_profile_for_spell(...)
+            - ai_profile_for_spell(...)
+        * Delegate real work to pluggable strategies.
+        * Stay dumb and composable – no hard coupling to Bind or Meld.
+
+    This class does **not** own any global state. Each instance is a thin
+    coordinator; strategies are stateless or short-lived.
+    """
+
+    show_dunders: bool = False
+    max_repr: int = 120
+
+    def __post_init__(self) -> None:
+        self._binding_strategy = BindingProfileStrategy(
+            show_dunders=self.show_dunders,
+            max_repr=self.max_repr,
+        )
+        self._resolution_strategy = ResolutionProfileStrategy()
+        self._ai_strategy = AIProfileStrategy(
+            show_dunders=self.show_dunders,
+            max_repr=self.max_repr,
+        )
+
+    # ------------------------------------------------------------------ #
+    # Explicit mode-specific entrypoints
+    # ------------------------------------------------------------------ #
+
+    def binding_profile_for_object(self, candidate: Any) -> SpellBindingProfile:
+        """
+        Produce a SpellBindingProfile from a raw user-provided object.
+
+        This is the entrypoint Bind will eventually use.
+        """
+        return self._binding_strategy.build_profile(candidate)
+
+    def resolution_profile_for_spell(self, spell: Spell) -> SpellResolutionProfile:
+        """
+        Produce a SpellResolutionProfile for a fully-formed Spell.
+
+        This will be integrated into the resolution / conjure pipeline.
+        """
+        return self._resolution_strategy.build_profile(spell)
+
+    def ai_profile_for_spell(
             self,
-            obj: Any,
+            spell: Spell,
             *,
-            show_dunders: bool = False,
-            max_repr: int = 120,
-    ):
-        self.obj = obj
-        self.dunders = show_dunders
-        self.max_repr = max_repr
+            binding_profile: Optional[SpellBindingProfile] = None,
+            resolution_profile: Optional[SpellResolutionProfile] = None,
+    ) -> SpellAIProfile:
+        """
+        Produce a SpellAIProfile for a Spell.
 
-    def inspect(self) -> Any:
-        if inspect.isclass(self.obj):
-            inspector = ClassInspector(self.obj, show_dunders=self.dunders, max_repr=self.max_repr)
-            data = inspector.inspect()
+        If AI-native mode is enabled, the conjure pipeline can call this
+        to materialize the heavy, agent-facing view of the spell, including
+        deep introspection and resolution semantics.
+        """
+        return self._ai_strategy.build_profile(
+            spell=spell,
+            binding_profile=binding_profile,
+            resolution_profile=resolution_profile,
+        )
 
-            method_profiles: Dict[str, MethodProfile] = {}
-            for name, info in data["members"].items():
-                if info.get("callable"):
-                    try:
-                        # Get the actual method reference from the class
-                        fn = getattr(self.obj, name)
-                        method_data = MethodInspector(fn, max_repr=self.max_repr).inspect()
-                        method_profiles[name] = MethodProfile(
-                            name=method_data["name"],
-                            qualname=method_data["qualname"],
-                            module=method_data["module"],
-                            id=method_data["id"],
-                            type=method_data["type"],
-                            repr=method_data["repr"],
-                            builtin_mod=method_data["builtin_mod"],
-                            extension_mod=method_data["extension_mod"],
-                            file=method_data["file"],
-                            preview=method_data["preview"],
-                            src_offset=method_data["src_offset"],
-                            signature=method_data.get("signature"),
-                            parameters=method_data.get("parameters", []),
-                            uninspectable=method_data.get("uninspectable", False),
-                            func=method_data.get("func", False),
-                            method=method_data.get("method", False),
-                            builtin=method_data.get("builtin", False),
-                            classmethod=method_data.get("classmethod", False),
-                            staticmethod=method_data.get("staticmethod", False),
-                            generator=method_data.get("generator", False),
-                            async_gen=method_data.get("async_gen", False),
-                            coroutine=method_data.get("coroutine", False),
-                            lambda_fn=method_data.get("lambda_fn", False),
-                            abstract=method_data.get("abstract", False),
-                            closure=method_data.get("closure"),
-                            decorated=method_data.get("decorated"),
-                            wrapped_repr=method_data.get("wrapped_repr"),
-                        )
-                    except Exception as e:
-                        # fallback if something goes wrong
-                        continue
+    # ------------------------------------------------------------------ #
+    # Generic dispatch if you want a single entrypoint
+    # ------------------------------------------------------------------ #
 
-            return ClassProfile(
-                name=data["name"],
-                qualname=data["qualname"],
-                module=data["module"],
-                mro=data["mro"],
-                bases=data["bases"],
-                annotations=data["annotations"],
-                protocols=data["protocols"],
-                slots=data["slots"],
-                origin_file=data["file"],
-                origin_line=data["source_line_offset"],
-                source_preview=data["source_preview"],
-                members=data["members"],  #original dict
-                methods=method_profiles,  #structured MethodProfile dict
-                is_dataclass=data["is_dataclass"],
-                decorated=data["decorated"],
+    def examine(
+            self,
+            target: Union[Any, Spell],
+            kind: SpellExaminationKind,
+            *,
+            binding_profile: Optional[SpellBindingProfile] = None,
+            resolution_profile: Optional[SpellResolutionProfile] = None,
+    ) -> Union[SpellBindingProfile, SpellResolutionProfile, SpellAIProfile]:
+        """
+        Generic dispatcher if you want a single public entrypoint that can
+        produce any profile type.
+
+        Typical usage:
+            examiner = SpellExaminer()
+            binding = examiner.examine(MyService, SpellExaminationKind.BINDING)
+        """
+        if kind is SpellExaminationKind.BINDING:
+            return self.binding_profile_for_object(target)
+
+        if kind is SpellExaminationKind.RESOLUTION:
+            if not isinstance(target, Spell):
+                raise TypeError(
+                    "Resolution examination requires a Spell instance as target."
+                )
+            return self.resolution_profile_for_spell(target)
+
+        if kind is SpellExaminationKind.AI:
+            if not isinstance(target, Spell):
+                raise TypeError(
+                    "AI examination requires a Spell instance as target."
+                )
+            return self.ai_profile_for_spell(
+                spell=target,
+                binding_profile=binding_profile,
+                resolution_profile=resolution_profile,
             )
 
-        elif callable(self.obj) and not inspect.isclass(self.obj):
-            inspector = MethodInspector(self.obj, max_repr=self.max_repr)
-            data = inspector.inspect()
-            return MethodProfile(
-                name=data["name"],
-                qualname=data["qualname"],
-                module=data["module"],
-                id=data["id"],
-                type=data["type"],
-                repr=data["repr"],
-                builtin_mod=data["builtin_mod"],
-                extension_mod=data["extension_mod"],
-                file=data["file"],
-                preview=data["preview"],
-                src_offset=data["src_offset"],
-                signature=data.get("signature"),
-                parameters=data.get("parameters", []),
-                uninspectable=data.get("uninspectable", False),
-                func=data.get("func", False),
-                method=data.get("method", False),
-                builtin=data.get("builtin", False),
-                classmethod=data.get("classmethod", False),
-                staticmethod=data.get("staticmethod", False),
-                generator=data.get("generator", False),
-                async_gen=data.get("async_gen", False),
-                coroutine=data.get("coroutine", False),
-                lambda_fn=data.get("lambda_fn", False),
-                abstract=data.get("abstract", False),
-                closure=data.get("closure"),
-                decorated=data.get("decorated"),
-                wrapped_repr=data.get("wrapped_repr"),
-            )
-
-        return {
-            "object_type": "instance_or_other",
-            "repr": self.utility.safe_repr(self.obj, self.max_repr),
-            "id": id(self.obj),
-            "type": type(self.obj).__name__,
-        }
-
-    def to_json(self) -> str:
-        result = self.inspect()
-        if isinstance(result, (ClassProfile, MethodProfile)):
-            return json.dumps(result.__dict__, default=str, indent=2)
-        return json.dumps(result, default=str, indent=2)
-#endregion
+        raise ValueError(f"Unsupported SpellExaminationKind: {kind!r}")

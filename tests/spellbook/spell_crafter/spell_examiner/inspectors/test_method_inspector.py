@@ -1,10 +1,8 @@
 import unittest
 import functools
 import inspect
-import asyncio
 
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.method_inspector import MethodInspector
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
 
 
 # ---- Sample targets ----

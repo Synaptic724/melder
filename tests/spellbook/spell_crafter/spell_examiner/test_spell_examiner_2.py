@@ -6,7 +6,7 @@ import inspect
 from dataclasses import dataclass, field, make_dataclass
 from typing import Any, Optional, Iterator, AsyncIterator, Generic, TypeVar
 
-from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
+from melder.spellbook.spell_crafter.old_spell_examiner.spell_examiner import (
     InspectorUtility, ClassInspector, MethodInspector, SpellExaminer,
     MethodProfile, ClassProfile
 )

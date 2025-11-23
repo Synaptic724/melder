@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
-from melder.spellbook.spell_crafter.spell_examiner.profiles.method_profile import MethodProfile
+from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import MethodProfile
 
 @dataclass
 class ClassProfile:

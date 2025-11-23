@@ -1,14 +1,14 @@
 from __future__ import annotations
 import inspect
 import threading
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union, get_args, get_origin
+from typing import Any, List, Optional, Tuple, Union, get_args, get_origin
 
 # Melder imports
 from melder.spellbook.spell import Spell
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import ParameterDIShape
-from melder.spellbook.spell_crafter.spell_requirements_finder.spell_parameter_requirements import \
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import ParameterDIShape
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_parameter_requirements import \
     SpellParameterRequirement
-from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import SpellRequirements
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements import SpellRequirements
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.meld.spellmap.spellmap import SpellMap
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent

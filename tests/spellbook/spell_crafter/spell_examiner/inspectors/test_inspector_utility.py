@@ -1,9 +1,8 @@
 import unittest
-import types
 import functools
 import inspect
 
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
+from melder.spellbook.spell_crafter.spell_examiner.inspectors import InspectorUtility
 
 
 class TestInspectorUtility(unittest.TestCase):

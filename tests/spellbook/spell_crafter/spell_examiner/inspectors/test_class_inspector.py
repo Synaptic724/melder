@@ -1,5 +1,4 @@
 import unittest
-import inspect
 import dataclasses
 from abc import ABC, abstractmethod
 
