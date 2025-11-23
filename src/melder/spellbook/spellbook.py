@@ -103,7 +103,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, SpellIndex]]  = ConcurrentDict()
 
         # Binding system
-        self._bind: Bind = Bind()
+        self._bind: Bind = Bind(self)
 
 
     #region Disposal

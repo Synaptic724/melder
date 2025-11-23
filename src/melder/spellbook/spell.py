@@ -6,7 +6,7 @@ from threading import RLock
 from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import MethodProfile, ClassProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.interfaces import ISpell
+from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -109,6 +109,7 @@ class Spell(ISpell, Cleanable):
             permissions: Permissions,
             aetheric_frame: str,
             existing_object: object = None,
+            spellbook: ISpellbook = None,
             *args,
             **kwargs
     ):
@@ -133,6 +134,9 @@ class Spell(ISpell, Cleanable):
 
         # Permissions
         self.permissions: Permissions = permissions
+
+        # Spellbook
+        self._spellbook: ISpellbook = spellbook
 
         # Spell Metadata
         self.tags = args if args else []
@@ -186,6 +190,8 @@ class Spell(ISpell, Cleanable):
             dg = self.dependency_graph
             if dg is not None and hasattr(dg, "dispose"):
                 dg.dispose()
+
+            self._spellbook = None
 
             # Drop references to help GC and enforce immutability after cleanup.
             self._owner_creations = None

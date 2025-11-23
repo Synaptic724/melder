@@ -9,7 +9,7 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
 )
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.interfaces import IBind, ISpell
+from melder.utilities.interfaces.interfaces import IBind, ISpell, ISpellbook
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.spell import Spell
@@ -30,8 +30,9 @@ class Bind(IBind, Cleanable):
     4.  **Registration:** Creating the final `Spell` object, which encapsulates the component
         and its metadata for resolution and dependency injection.
     """
-    def __init__(self):
+    def __init__(self, spellbook: ISpellbook):
         super().__init__()
+        self._spellbook = spellbook
         self._lock = threading.RLock()
 
     def cleanup(self):
@@ -48,6 +49,7 @@ class Bind(IBind, Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            self._spellbook = None
         self._lock = None
 
     def bind(
@@ -234,6 +236,7 @@ class Bind(IBind, Cleanable):
                 spell_id=fingerprint,
                 permissions=permissions,
                 aetheric_frame=aetheric_frame,
+                spellbook=self._spellbook,
             )
 
             print(
