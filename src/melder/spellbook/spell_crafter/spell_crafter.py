@@ -224,12 +224,7 @@ class SpellCrafter(Cleanable):
 
         finder = SpellRequirementsFinder(spell)
         requirements = finder.build_requirements(cancel_event=cancel_event)
-
-        # NOTE:
-        # We do **not** call finder.cleanup() here, because its cleanup would
-        # also cleanup the SpellRequirements instance. Higher-level code is
-        # responsible for ending the cycle and disposing requirements.
-
+        # Store for later phases
         self._requirements = requirements
         return requirements
 

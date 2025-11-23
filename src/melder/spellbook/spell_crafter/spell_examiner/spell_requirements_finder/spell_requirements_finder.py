@@ -4,16 +4,11 @@ import threading
 from typing import Any, List, Optional, Tuple, Union, get_args, get_origin
 
 # Melder imports
-from melder.utilities.interfaces.interfaces import ISpell
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
-    ParameterDIShape,
-)
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_parameter_requirements import (
-    SpellParameterRequirement,
-)
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements import (
-    SpellRequirements,
-)
+from melder.spellbook.spell import Spell
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import ParameterDIShape
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_parameter_requirements import \
+    SpellParameterRequirement
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements import SpellRequirements
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.meld.spellmap.spellmap import SpellMap
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -51,15 +46,26 @@ class SpellRequirementsFinder(Cleanable):
     It just answers:
 
         *“What does this spell *want* injected, according to its signature?”*
+
+    Policy note
+    -----------
+
+    This finder **does not** treat ``Optional[...]`` or plain ``Union[...]``
+    annotations as DI drivers:
+
+        * ``Optional[T]`` / ``T | None`` → caller/default-only, never DI.
+        * ``Union[A, B, ...]``           → caller/default-only, never DI.
+
+    Only **bare non-builtin types** (and ``list[T]`` of such types) and
+    explicit :class:`SpellMap` defaults are considered DI candidates.
     """
 
     __slots__ = Cleanable.__slots__ + [
-        "_lock",
         "_spell",
         "_requirements",
     ]
 
-    def __init__(self, spell: ISpell) -> None:
+    def __init__(self, spell: Spell) -> None:
         """
         Create a new requirements finder for the given :class:`Spell`.
 
@@ -74,7 +80,7 @@ class SpellRequirementsFinder(Cleanable):
             raise ValueError("spell must not be None.")
 
         self._lock: threading.RLock = threading.RLock()
-        self._spell: ISpell = spell
+        self._spell: Spell = spell
         self._requirements: Optional[SpellRequirements] = None
 
     # ------------------------------------------------------------------
@@ -114,7 +120,7 @@ class SpellRequirementsFinder(Cleanable):
     # ------------------------------------------------------------------
 
     @property
-    def spell(self) -> ISpell:
+    def spell(self) -> Spell:
         """
         The underlying :class:`Spell` being analysed.
         """
@@ -194,20 +200,31 @@ class SpellRequirementsFinder(Cleanable):
             # event helper.
             cancel_event.throw_if_set()
 
-    def _resolve_call_target(self, spell: ISpell) -> Any:
+    def _resolve_call_target(self, spell: Spell) -> Any:
         """
         Determine the **call target** for this spell.
 
-        For now, this is simply the underlying ``spell.spell`` attribute:
+        For now:
 
-            * For class-based spells this is the class object itself
-              (``inspect.signature`` will look at ``__init__``).
-            * For method / lambda spells this is the underlying callable.
-            * For any other SpellType we still return ``spell.spell`` and
-              let later phases decide how (or if) DI should apply.
+            * Class spells   → the class object itself (``inspect.signature``
+                               handles mapping to ``__init__``).
+            * Method/lambda  → the underlying callable stored on ``spell.spell``.
+            * Everything else → we still return ``spell.spell``; later phases
+                               can decide how to treat them.
 
         This method does **not** call or mutate the target.
         """
+        # We rely on the Spell's own helpers rather than re-encoding
+        # SpellType combos here.
+        if spell.is_class_spell:
+            return spell.spell
+
+        # For method/lambda spells, we still treat the underlying callable
+        # as the target; Phase 2 controls how/if DI is applied.
+        if spell.is_method_spell or spell.is_lambda_spell:
+            return spell.spell
+
+        # Fallback – whatever the spell considers its callable.
         return spell.spell
 
     def _build_parameter_requirements(
@@ -296,11 +313,12 @@ class SpellRequirementsFinder(Cleanable):
         Map a raw annotation + default value pair into a high-level
         :class:`ParameterDIShape` plus optional metadata.
 
-        This is intentionally conservative:
-
-            * We only classify as DI when the patterns match our contract
-              (SpellMap default, non-builtin types, collection-of-type).
-            * Everything else is treated as :data:`ParameterDIShape.PLAIN`.
+        Policy:
+            * **Optional[...]** / ``T | None`` are treated as **caller-owned**:
+              they never drive DI. We still mark them as logically optional.
+            * Plain ``Union[...]`` (without ``None``) is also caller-owned.
+            * Only bare non-builtin types and ``list[T]`` of such types are
+              considered DI candidates, plus explicit :class:`SpellMap` defaults.
 
         Returns:
             Tuple of:
@@ -322,9 +340,20 @@ class SpellRequirementsFinder(Cleanable):
         if not has_annotation or annotation is None:
             return ParameterDIShape.PLAIN, has_default, None, None
 
-        # Unwrap Optional[T] / Union[T, None] / T | None first.
-        base_annotation, is_optional = self._unwrap_optional(annotation)
+        # First, detect Optional[T] / Union[T, None] / T | None and
+        # hard-code them as **non-DI**.
+        base_annotation, is_optional_annot = self._unwrap_optional(annotation)
+        if is_optional_annot:
+            # Caller / default territory; DI never attaches edges here.
+            return ParameterDIShape.PLAIN, True, None, None
 
+        # Next, detect *other* unions and also force them to non-DI.
+        full_origin = get_origin(annotation)
+        if full_origin is Union:
+            # Union without None – always caller-owned.
+            return ParameterDIShape.PLAIN, has_default, None, None
+
+        # At this point, we know we're not dealing with Optional/Union.
         # Detect list[T] collections.
         origin = get_origin(base_annotation)
         args = get_args(base_annotation)
@@ -334,7 +363,7 @@ class SpellRequirementsFinder(Cleanable):
             if self._looks_like_di_target(element_annotation):
                 return (
                     ParameterDIShape.COLLECTION_BY_ANNOTATION,
-                    is_optional or has_default,
+                    has_default,
                     element_annotation,
                     None,
                 )
@@ -343,13 +372,13 @@ class SpellRequirementsFinder(Cleanable):
         if self._looks_like_di_target(base_annotation):
             return (
                 ParameterDIShape.SINGLE_BY_ANNOTATION,
-                is_optional or has_default,
+                has_default,
                 None,
                 None,
             )
 
         # Everything else is plain.
-        return ParameterDIShape.PLAIN, is_optional or has_default, None, None
+        return ParameterDIShape.PLAIN, has_default, None, None
 
     def _unwrap_optional(self, annotation: Any) -> Tuple[Any, bool]:
         """
@@ -361,6 +390,10 @@ class SpellRequirementsFinder(Cleanable):
             * Optional[T]
             * Union[T, None]
             * T | None
+
+        The caller decides how to treat the "optional" flag. In this project,
+        we deliberately do **not** treat Optional[T] as a DI target – it is
+        caller/default-owned.
         """
         origin = get_origin(annotation)
         args = get_args(annotation)
