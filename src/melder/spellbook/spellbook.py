@@ -1729,6 +1729,7 @@ class Spellbook(Cleanable, ISpellbook):
 
 #endregion Hook Management
 #region Resolution Phases
+    #region Resolution Phases
     def _run_resolution_phases(self) -> Dict[str, Sequence['UnitOfWork']]:
         """
         Internal
@@ -1776,6 +1777,7 @@ class Spellbook(Cleanable, ISpellbook):
         )
 
         scheduler = PhaseScheduler(
+            spellbook=self,
             configuration=self._configuration,
         )
 
@@ -1833,7 +1835,7 @@ class Spellbook(Cleanable, ISpellbook):
             ``spell.run_phase_requirements(cancel_event: CancellationEvent) -> Any``
 
         where the spell cooperatively honours the shared CancellationEvent
-        attached via :meth:`PhaseScheduler.create_unit_of_work`.
+        attached via the scheduler.
         """
         self.check_cleaned()
         units: List['UnitOfWork'] = []
@@ -1842,6 +1844,7 @@ class Spellbook(Cleanable, ISpellbook):
             units.append(
                 scheduler.create_unit_of_work(
                     func=spell.run_phase_requirements,
+                    args=(scheduler.cancel_event,),
                     label=f"requirements:{spell.spell_id}",
                     metadata={
                         "phase": "requirements",
@@ -1873,6 +1876,7 @@ class Spellbook(Cleanable, ISpellbook):
             units.append(
                 scheduler.create_unit_of_work(
                     func=spell.run_phase_symbolic_graph,
+                    args=(scheduler.cancel_event,),
                     label=f"symbolic_graph:{spell.spell_id}",
                     metadata={
                         "phase": "symbolic_graph",
@@ -1904,6 +1908,7 @@ class Spellbook(Cleanable, ISpellbook):
             units.append(
                 scheduler.create_unit_of_work(
                     func=spell.run_phase_local_frame,
+                    args=(scheduler.cancel_event,),
                     label=f"local_frame:{spell.spell_id}",
                     metadata={
                         "phase": "local_frame",
@@ -1939,6 +1944,7 @@ class Spellbook(Cleanable, ISpellbook):
             units.append(
                 scheduler.create_unit_of_work(
                     func=spell.run_phase_validation,
+                    args=(scheduler.cancel_event,),
                     label=f"validation:{spell.spell_id}",
                     metadata={
                         "phase": "validation",
@@ -1948,5 +1954,7 @@ class Spellbook(Cleanable, ISpellbook):
             )
 
         return units
+#endregion
+
 #endregion Resolution Phases
 #endregion

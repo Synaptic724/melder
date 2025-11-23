@@ -11,6 +11,11 @@ from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+from melder.spellbook.resolution.spell_requirements_finder import (
+    SpellRequirementsFinder,
+    SpellRequirements,
+)
 
 
 #region Spell
@@ -154,6 +159,14 @@ class Spell(ISpell, Cleanable):
         # Optional resolution profile (DI contract), to be populated by SpellCrafter.
         self.resolution_profile: Any = None
 
+        # Per-spell resolution phase artifacts (Phase 1–4)
+        self._requirements: Optional[SpellRequirements] = None
+        self._symbolic_graph: Any = None
+        self._resolution_frame: Any = None
+        self._validation_result: Any = None
+        self._validated: bool = False
+        self._is_broken: bool = False
+
         # Created after Conduit Made (ownership / scope integration)
         self._owner_conduit_id: str | None = None
         self._owner_conduit_name: str | None = None
@@ -176,6 +189,7 @@ class Spell(ISpell, Cleanable):
         This:
         - Disposes the static dependency graph if one was attached and exposes a `dispose()` method.
         - Clears references to owner creations and user_created_object.
+        - Clears phase artifacts produced by the resolution pipeline.
         - Marks the spell as cleaned so that further configuration is disallowed.
 
         Runtime resolution and instance lifecycle are owned by the Resolution / Meld layer,
@@ -190,6 +204,21 @@ class Spell(ISpell, Cleanable):
             dg = self.dependency_graph
             if dg is not None and hasattr(dg, "dispose"):
                 dg.dispose()
+
+            # Phase artifacts – deterministically dropped when this Spell is torn down.
+            if self._requirements is not None:
+                try:
+                    self._requirements.cleanup()
+                except Exception:
+                    # Never let cleanup explosions propagate.
+                    pass
+
+            self._requirements = None
+            self._symbolic_graph = None
+            self._resolution_frame = None
+            self._validation_result = None
+            self._validated = False
+            self._is_broken = False
 
             self._spellbook = None
 
@@ -305,6 +334,29 @@ class Spell(ISpell, Cleanable):
         been attached to a specific Conduit, otherwise `(None, None)`.
         """
         return self._owner_conduit_id, self._owner_conduit_name
+
+    @property
+    def requirements(self) -> Optional[SpellRequirements]:
+        """
+        Phase 1 artifact for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_requirements`.
+        """
+        return self._requirements
+
+    @property
+    def validated(self) -> bool:
+        """
+        True if the validation phase has run and marked this spell as validated.
+        """
+        return self._validated
+
+    @property
+    def is_broken(self) -> bool:
+        """
+        True if the validation phase classified this spell as broken / unsafe.
+        """
+        return self._is_broken
     #endregion Introspection Helpers
 
     #region Existing Object Transfer
@@ -400,6 +452,133 @@ class Spell(ISpell, Cleanable):
             self.dependency_graph = dag
             self.dependencies = dependencies
     #endregion Configuration
+
+    #region Resolution Phases (per-spell compiler pipeline)
+    def run_phase_requirements(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> SpellRequirements:
+        """
+        Phase 1 – Requirements Extraction
+
+        Extract and/or refresh this spell's requirements.
+
+        Responsibilities:
+            - Inspect the spell’s constructor/signature and metadata.
+            - Determine dependencies (spellframes, binding names, types, etc.).
+            - Capture existence constraints that are relevant to resolution.
+
+        Side effects:
+            - Stores a :class:`SpellRequirements` instance on this spell
+              (``self._requirements``).
+
+        This method is safe to call directly (single-threaded) or via
+        :class:`UnitOfWork` under :class:`PhaseScheduler`.
+        """
+        self.check_cleaned()
+
+        # If we've already computed requirements for this spell in this cycle,
+        # just return the cached artifact.
+        if self._requirements is not None:
+            return self._requirements
+
+        if cancel_event is not None and cancel_event.is_set:
+            cancel_event.throw_if_set()
+
+        finder = SpellRequirementsFinder(self)
+        requirements = finder.build_requirements(cancel_event=cancel_event)
+        # We deliberately do **not** call finder.cleanup() here, because its
+        # cleanup would also cleanup the SpellRequirements instance. The
+        # Spellbook / higher-level code is responsible for disposing
+        # SpellRequirements when a resolution cycle is over.
+        self._requirements = requirements
+        return requirements
+
+    def run_phase_symbolic_graph(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> Any:
+        """
+        Phase 2 – Symbolic Graph Construction (placeholder).
+
+        In the full implementation, this will:
+
+            - Use :attr:`_requirements` to construct a per-spell symbolic graph.
+            - Represent DI relationships as nodes/edges, without binding to
+              concrete creations yet.
+
+        For now, this is a **no-op placeholder** that:
+
+            - Honours the cancellation event.
+            - Returns the current ``self._symbolic_graph`` (likely ``None``).
+
+        This allows the :class:`PhaseScheduler` pipeline to be wired end-to-end
+        before DAG logic is implemented.
+        """
+        self.check_cleaned()
+
+        if cancel_event is not None and cancel_event.is_set:
+            cancel_event.throw_if_set()
+
+        # Placeholder – later this will build and assign a real symbolic graph.
+        return self._symbolic_graph
+
+    def run_phase_local_frame(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> Any:
+        """
+        Phase 3 – Local Resolution Frame / DAG (placeholder).
+
+        In the full implementation, this will:
+
+            - Translate the symbolic graph into a concrete, per-spell
+              resolution frame / local DAG.
+            - Encode the order and actions required for resolution.
+
+        For now, this is a **no-op placeholder** that:
+
+            - Honours the cancellation event.
+            - Returns the current ``self._resolution_frame`` (likely ``None``).
+        """
+        self.check_cleaned()
+
+        if cancel_event is not None and cancel_event.is_set:
+            cancel_event.throw_if_set()
+
+        # Placeholder – later this will build and assign a real resolution frame.
+        return self._resolution_frame
+
+    def run_phase_validation(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> Any:
+        """
+        Phase 4 – Validation (placeholder).
+
+        In the full implementation, this will:
+
+            - Validate the resolution frame and requirements.
+            - Populate :attr:`_validation_result`.
+            - Set :attr:`_validated` and :attr:`_is_broken` flags.
+
+        For now, this:
+
+            - Honours the cancellation event.
+            - Marks the spell as validated and **not broken** by default.
+            - Leaves :attr:`_validation_result` as-is for future expansion.
+
+        This is sufficient for wiring the PhaseScheduler pipeline end-to-end.
+        """
+        self.check_cleaned()
+
+        if cancel_event is not None and cancel_event.is_set:
+            cancel_event.throw_if_set()
+
+        self._validated = True
+        self._is_broken = False
+        return self._validation_result
+    #endregion Resolution Phases
 
     #region Casting
     def cast(self) -> object:
