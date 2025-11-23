@@ -1,10 +1,9 @@
+from __future__ import annotations
+
 from typing import Optional, List, Any, Callable
 import ulid
 from threading import RLock
 
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
-    SpellRequirementsFinder,
-)
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionProfile,
 )
@@ -173,7 +172,7 @@ class Spell(ISpell, Cleanable):
         self.activation_hooks: List[Callable[..., Any]] = []
         self.post_hooks: List[Callable[..., Any]] = []
 
-        # Created during validation / graph construction
+        # Final build-time artifacts
         self.dependency_graph: Any = None
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
@@ -181,13 +180,9 @@ class Spell(ISpell, Cleanable):
         # resolution pipeline (SpellExaminer → ResolutionProfileStrategy).
         self.resolution_profile: Optional[SpellResolutionProfile] = None
 
-        # Per-spell resolution phase artifacts (Phase 1–4)
-        self._requirements: Optional['SpellRequirements'] = None
-        self._symbolic_graph: Any = None
-        self._resolution_frame: Any = None
-        self._validation_result: Any = None
-        self._validated: bool = False
-        self._is_broken: bool = False
+        # Per-spell compiler / resolution helper (SpellCrafter).
+        # This owns all Phase 1–4 artifacts and is disposable.
+        self._crafter: Optional["SpellCrafter"] = None
 
         # Created after Conduit made (ownership / scope integration)
         self._owner_conduit_id: Optional[str] = None
@@ -211,7 +206,7 @@ class Spell(ISpell, Cleanable):
         This:
         - Disposes the static dependency graph if one was attached and exposes a `dispose()` method.
         - Clears references to owner creations and `user_created_object`.
-        - Clears phase artifacts produced by the resolution pipeline.
+        - Clears any compiler/phase artifacts via the attached :class:`SpellCrafter`.
         - Drops the Spellbook reference.
         - Marks the spell as cleaned so that further configuration is disallowed.
 
@@ -232,20 +227,14 @@ class Spell(ISpell, Cleanable):
                     # Never let cleanup explosions propagate.
                     pass
 
-            # Phase artifacts – deterministically dropped when this Spell is torn down.
-            if self._requirements is not None:
+            # Phase artifacts – deterministically dropped via SpellCrafter.
+            if self._crafter is not None:
                 try:
-                    self._requirements.cleanup()
+                    self._crafter.cleanup()
                 except Exception:
                     # Never let cleanup explosions propagate.
                     pass
-
-            self._requirements = None
-            self._symbolic_graph = None
-            self._resolution_frame = None
-            self._validation_result = None
-            self._validated = False
-            self._is_broken = False
+                self._crafter = None
 
             self._spellbook = None
 
@@ -283,6 +272,21 @@ class Spell(ISpell, Cleanable):
             f"Spell(name={self.spell_name}, binding={self.binding_name or '__default__'}, "
             f"frame={frame}, SHA256={self.spell_id})"
         )
+
+    #region Internal helpers
+    def _ensure_crafter(self) -> "SpellCrafter":
+        """
+        Lazily create and attach the :class:`SpellCrafter` that owns this
+        spell's compilation / resolution phases.
+
+        We use a local import to avoid circular import issues between the
+        `spell` and `spell_crafter` modules.
+        """
+        if self._crafter is None:
+            from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
+            self._crafter = SpellCrafter(self)
+        return self._crafter
+    #endregion Internal helpers
 
     #region Introspection Helpers
     @property
@@ -363,27 +367,30 @@ class Spell(ISpell, Cleanable):
         return self._owner_conduit_id, self._owner_conduit_name
 
     @property
-    def requirements(self) -> Optional['SpellRequirements']:
+    def requirements(self) -> Optional["SpellRequirements"]:
         """
         Phase 1 artifact for this spell, if it has been computed.
 
-        This is populated by :meth:`run_phase_requirements`.
+        This is populated by :meth:`run_phase_requirements` via :class:`SpellCrafter`.
         """
-        return self._requirements
+        crafter = self._crafter
+        return crafter.requirements if crafter is not None else None
 
     @property
     def validated(self) -> bool:
         """
         True if the validation phase has run and marked this spell as validated.
         """
-        return self._validated
+        crafter = self._crafter
+        return crafter.validated if crafter is not None else False
 
     @property
     def is_broken(self) -> bool:
         """
         True if the validation phase classified this spell as broken / unsafe.
         """
-        return self._is_broken
+        crafter = self._crafter
+        return crafter.is_broken if crafter is not None else False
     #endregion Introspection Helpers
 
     #region Configuration
@@ -417,7 +424,7 @@ class Spell(ISpell, Cleanable):
 
         Attach static build-time dependency graph details to this spell.
 
-        This is typically invoked by the SpellCrafter / DAG builder after it has
+        This is typically invoked by the :class:`SpellCrafter` / DAG builder after it has
         analyzed the spell's parameters and constructed a dependency DAG.
 
         Args:
@@ -440,135 +447,126 @@ class Spell(ISpell, Cleanable):
         with self._lock:
             self.dependency_graph = dag
             self.dependencies = dependencies
-
-
     #endregion Configuration
 
-    #region Resolution Phases (per-spell compiler pipeline)
+    #region Resolution Phases (facades over SpellCrafter)
     def run_phase_requirements(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> 'SpellRequirements':
+    ) -> None:
         """
-        Phase 1 – Requirements Extraction
+        Phase 1 – Requirements Extraction (facade).
 
-        Extract and/or refresh this spell's requirements.
+        Delegates to :class:`SpellCrafter` to:
 
-        Responsibilities:
             - Inspect the spell’s constructor/signature and metadata.
             - Determine dependencies (spellframes, binding names, types, etc.).
             - Capture existence constraints that are relevant to resolution.
 
         Side effects:
-            - Stores a :class:`SpellRequirements` instance on this spell
-              (``self._requirements``).
+            - Stores a :class:`SpellRequirements` instance inside the crafter.
 
-        This method is safe to call directly (single-threaded) or via
-        :class:`UnitOfWork` under :class:`PhaseScheduler`.
+        The return value is intentionally ignored at the Spell level; callers
+        should access :attr:`requirements` if they need the artifact.
         """
         self.check_cleaned()
-
-        # If we've already computed requirements for this spell in this cycle,
-        # just return the cached artifact.
-        if self._requirements is not None:
-            return self._requirements
-
-        if cancel_event is not None and cancel_event.is_set:
-            cancel_event.throw_if_set()
-
-        finder = SpellRequirementsFinder(self)
-        requirements = finder.build_requirements(cancel_event=cancel_event)
-        # We deliberately do **not** call finder.cleanup() here, because its
-        # cleanup would also cleanup the SpellRequirements instance. The
-        # Spellbook / higher-level code is responsible for disposing
-        # SpellRequirements when a resolution cycle is over.
-        self._requirements = requirements
-        return requirements
+        crafter = self._ensure_crafter()
+        crafter.run_phase_requirements(cancel_event=cancel_event)
 
     def run_phase_symbolic_graph(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> Any:
+    ) -> None:
         """
-        Phase 2 – Symbolic Graph Construction (placeholder).
+        Phase 2 – Symbolic Graph Construction (facade).
+
+        Delegates to :class:`SpellCrafter`.
 
         In the full implementation, this will:
 
-            - Use :attr:`_requirements` to construct a per-spell symbolic graph.
+            - Use Phase 1 requirements to construct a per-spell symbolic graph.
             - Represent DI relationships as nodes/edges, without binding to
               concrete creations yet.
 
-        For now, this is a **no-op placeholder** that:
-
-            - Honours the cancellation event.
-            - Returns the current ``self._symbolic_graph`` (likely ``None``).
-
-        This allows the :class:`PhaseScheduler` pipeline to be wired end-to-end
-        before DAG logic is implemented.
+        The Spell class does not use the return value; later phases read
+        artifacts via the crafter if needed.
         """
         self.check_cleaned()
-
-        if cancel_event is not None and cancel_event.is_set:
-            cancel_event.throw_if_set()
-
-        # Placeholder – later this will build and assign a real symbolic graph.
-        return self._symbolic_graph
+        crafter = self._ensure_crafter()
+        crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
 
     def run_phase_local_frame(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> Any:
+    ) -> None:
         """
-        Phase 3 – Local Resolution Frame / DAG (placeholder).
+        Phase 3 – Local Resolution Frame / DAG (facade).
+
+        Delegates to :class:`SpellCrafter`.
 
         In the full implementation, this will:
 
             - Translate the symbolic graph into a concrete, per-spell
               resolution frame / local DAG.
             - Encode the order and actions required for resolution.
+            - Eventually push the final DAG into this Spell via
+              :meth:`_add_build_details`.
 
-        For now, this is a **no-op placeholder** that:
-
-            - Honours the cancellation event.
-            - Returns the current ``self._resolution_frame`` (likely ``None``).
+        The Spell class does not use the return value; later phases read
+        artifacts via the crafter if needed.
         """
         self.check_cleaned()
-
-        if cancel_event is not None and cancel_event.is_set:
-            cancel_event.throw_if_set()
-
-        # Placeholder – later this will build and assign a real resolution frame.
-        return self._resolution_frame
+        crafter = self._ensure_crafter()
+        crafter.run_phase_local_frame(cancel_event=cancel_event)
 
     def run_phase_validation(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> Any:
+    ) -> None:
         """
-        Phase 4 – Validation (placeholder).
+        Phase 4 – Validation (facade).
+
+        Delegates to :class:`SpellCrafter`.
 
         In the full implementation, this will:
 
             - Validate the resolution frame and requirements.
-            - Populate :attr:`_validation_result`.
-            - Set :attr:`_validated` and :attr:`_is_broken` flags.
+            - Populate underlying validation results.
+            - Set validated/broken flags.
 
-        For now, this:
-
-            - Honours the cancellation event.
-            - Marks the spell as validated and **not broken** by default.
-            - Leaves :attr:`_validation_result` as-is for future expansion.
-
-        This is sufficient for wiring the PhaseScheduler pipeline end-to-end.
+        The Spell class does not use the return value; callers consult
+        :attr:`validated` and :attr:`is_broken`.
         """
         self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_validation(cancel_event=cancel_event)
 
-        if cancel_event is not None and cancel_event.is_set:
-            cancel_event.throw_if_set()
+    def run_all_phases(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Convenience helper to run **all compiler / resolution phases**
+        (Phase 1–4) for this spell, in order.
 
-        self._validated = True
-        self._is_broken = False
-        return self._validation_result
+        Currently this means:
+
+            1. Requirements extraction.
+            2. Symbolic graph construction (placeholder).
+            3. Local resolution frame / DAG (placeholder).
+            4. Validation (placeholder).
+
+        Each phase honours the optional :class:`CancellationEvent`. If the
+        event is set, the underlying phase methods will raise via
+        ``cancel_event.throw_if_set()``.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+
+        crafter.run_phase_requirements(cancel_event=cancel_event)
+        crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
+        crafter.run_phase_local_frame(cancel_event=cancel_event)
+        crafter.run_phase_validation(cancel_event=cancel_event)
     #endregion Resolution Phases
 
     #region Casting
