@@ -388,6 +388,8 @@ class ISpell(ICleanable, Protocol):
       - Dependency information (`dependency_graph`, `dependencies`)
       - Conduit ownership metadata
       - Hook-based lifecycle behavior (pre / activation / post)
+      - Per-spell **resolution phase artifacts** (requirements, symbolic graphs,
+        local frames, validation flags)
 
     It is **never** user-facing directly; users call into higher-level APIs
     (Spellbook / Conduit). This protocol describes the shape used internally
@@ -403,16 +405,16 @@ class ISpell(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Spell metadata / structure
     # ------------------------------------------------------------------
-    spell_index: "SpellIndex"
+    spell_index: 'SpellIndex'
     spell: Any
     spell_id: str
     spellframe: Optional[Any]
-    spell_type: "SpellType"
+    spell_type: 'SpellType'
     user_created_object: Optional[object]
     binding_name: str
     spell_name: str
-    existence: "Existence"
-    profile: "ClassProfile | MethodProfile"
+    existence: Existence
+    profile: 'ClassProfile | MethodProfile'
     aetheric_frame: str
 
     # Execution policy
@@ -420,7 +422,7 @@ class ISpell(ICleanable, Protocol):
     retries: int
 
     # Permissions
-    permissions: "Permissions"
+    permissions: Permissions
 
     # Arbitrary metadata
     tags: list
@@ -429,6 +431,14 @@ class ISpell(ICleanable, Protocol):
     # Dependency graph + requirements
     dependency_graph: Any
     dependencies: List[str]
+
+    # Per-spell resolution phase artifacts
+    _requirements: Optional['SpellRequirements']
+    _symbolic_graph: Any
+    _resolution_frame: Any
+    _validation_result: Any
+    _validated: bool
+    _is_broken: bool
 
     # Ownership (filled after Conduit creation)
     _owner_conduit_id: Optional[str]
@@ -453,21 +463,19 @@ class ISpell(ICleanable, Protocol):
         """
         Internal
 
-        Declares that this spell is owned by a specific Conduit and attaches
-        the Conduit's creation scope.
+        Records ownership information about the Conduit that \"owns\" this spell.
 
-        Typical responsibilities:
-          - Set `_owner_conduit_id` and `_owner_conduit_name`.
-          - Mark `owned_spell` as True.
-          - Store the `creations` container for singleton / scoped existence.
+        This is used to:
+        - Attach the spell to a specific Conduit identity (for logging, diagnostics, and scoping).
+        - Provide a handle to the Conduit's creation scope (e.g., for singletons tied to that conduit).
 
         Args:
             conduit_id:
-                Unique ID of the owning Conduit.
+                The unique ID of the conduit that owns this spell.
             conduit_name:
-                Optional human-readable name of the Conduit.
+                Human-readable name of the owning conduit, if available.
             creations:
-                The Conduit's creations registry used for existence management.
+                Conduit-level creations container used for managing shared instances.
         """
         ...
 
@@ -479,19 +487,137 @@ class ISpell(ICleanable, Protocol):
         """
         Internal
 
-        Attaches the dependency graph and explicit dependency list for this spell.
+        Attach static build-time dependency graph details to this spell.
 
-        The dependency graph is responsible for constructing / resolving the
-        spell at cast-time. The dependency list captures upstream spell IDs
-        (typically SHA256 version IDs) required for this spell to function.
+        This is typically invoked by the SpellCrafter / DAG builder after it has
+        analyzed the spell's parameters and constructed a dependency DAG.
 
         Args:
             dag:
-                A resolved dependency graph object which knows how to
-                construct / execute the spell.
+                A static DAG representation for this spell's dependency structure.
+                This object is considered immutable at runtime and may expose a
+                `dispose()` method for cleanup.
             dependencies:
-                List of spell IDs this spell depends on. Must not be None in
-                concrete implementations.
+                A list of spell_ids (SHA256 fingerprints) that this spell depends on.
+
+        Raises:
+            ValueError:
+                If `dag` is None or `dependencies` is None.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Resolution Phase Artifacts (read-only view)
+    # ------------------------------------------------------------------
+    @property
+    def requirements(self) -> Optional['SpellRequirements']:
+        """
+        Phase 1 artifact for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_requirements`.
+        """
+        ...
+
+    @property
+    def validated(self) -> bool:
+        """
+        True if the validation phase has run and marked this spell as validated.
+        """
+        ...
+
+    @property
+    def is_broken(self) -> bool:
+        """
+        True if the validation phase classified this spell as broken / unsafe.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Resolution / compilation phases
+    # ------------------------------------------------------------------
+    def run_phase_requirements(
+            self,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> 'SpellRequirements':
+        """
+        Phase 1 – Requirements Extraction
+
+        Extract and/or refresh this spell's requirements.
+
+        Responsibilities:
+            - Inspect the spell’s constructor/signature and metadata.
+            - Determine dependencies (spellframes, binding names, types, etc.).
+            - Capture existence constraints that are relevant to resolution.
+
+        Side effects:
+            - Stores a :class:`SpellRequirements` instance on this spell
+              (``self._requirements``).
+
+        This method is safe to call directly (single-threaded) or via
+        :class:`UnitOfWork` under :class:`PhaseScheduler`.
+        """
+        ...
+
+    def run_phase_symbolic_graph(
+            self,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> Any:
+        """
+        Phase 2 – Symbolic Graph Construction.
+
+        In the full implementation, this will:
+
+            - Use :attr:`requirements` to construct a per-spell symbolic graph.
+            - Represent DI relationships as nodes/edges, without binding to
+              concrete creations yet.
+
+        The implementation is allowed to be a **no-op placeholder** initially:
+
+            - Honours the cancellation event.
+            - Returns the current symbolic graph (or None) while wiring up the
+              PhaseScheduler pipeline.
+        """
+        ...
+
+    def run_phase_local_frame(
+            self,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> Any:
+        """
+        Phase 3 – Local Resolution Frame / DAG.
+
+        In the full implementation, this will:
+
+            - Translate the symbolic graph into a concrete, per-spell
+              resolution frame / local DAG.
+            - Encode the order and actions required for resolution.
+
+        The implementation is allowed to be a **no-op placeholder** initially:
+
+            - Honours the cancellation event.
+            - Returns the current resolution frame (or None) while wiring up the
+              PhaseScheduler pipeline.
+        """
+        ...
+
+    def run_phase_validation(
+            self,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> Any:
+        """
+        Phase 4 – Validation.
+
+        In the full implementation, this will:
+
+            - Validate the resolution frame and requirements.
+            - Populate an internal validation result.
+            - Set :attr:`validated` and :attr:`is_broken` flags.
+
+        A minimal implementation may:
+
+            - Honour the cancellation event.
+            - Mark the spell as validated and not broken by default.
+            - Leave the validation result as None until richer semantics exist.
         """
         ...
 
@@ -504,7 +630,8 @@ class ISpell(ICleanable, Protocol):
 
         Casts the spell and returns the resulting object or value.
 
-        Typical implementation outline:
+        In the **legacy** model, a typical implementation outline would be:
+
           1. Acquire internal lock.
           2. Validate that the spell has not been cleaned.
           3. Run `pre_hooks`.
@@ -513,6 +640,11 @@ class ISpell(ICleanable, Protocol):
           5. Run `activation_hooks` during construction.
           6. Run `post_hooks` after construction.
           7. Return the resulting object.
+
+        In the **current architecture**, concrete `Spell` implementations may
+        delegate casting to the Resolution / Meld pipeline and raise
+        `NotImplementedError` here, while preserving this method in the
+        protocol for future compatibility.
 
         Returns:
             object:
@@ -525,30 +657,6 @@ class ISpell(ICleanable, Protocol):
                 Any error encountered during dependency resolution or hooks.
         """
         ...
-
-    # ------------------------------------------------------------------
-    # Context manager
-    # ------------------------------------------------------------------
-    def __enter__(self) -> "ISpell":
-        """
-        Context manager entry.
-
-        Typical behavior:
-          - Acquire the internal re-entrant lock.
-          - Return ``self`` for scoped manipulation.
-        """
-        ...
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        """
-        Context manager exit.
-
-        Typical behavior:
-          - Release the internal lock, regardless of whether an exception
-            occurred within the context.
-        """
-        ...
-
 
 @runtime_checkable
 class ISpellIndex(ICleanable, Protocol):
