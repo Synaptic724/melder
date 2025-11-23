@@ -1182,27 +1182,56 @@ class Spellbook(Cleanable, ISpellbook):
             aether_config: Optional[IConfiguration] = self._get_configuration_from_aether()
             if aether_config is not None:
                 if self._configuration is not None and aether_config is not self._configuration:
-                    self._logger.error("Aether configuration does not match provided configuration", "_initialize_configuration", exc_info=True)
+                    self._logger.error(
+                        "Aether configuration does not match provided configuration",
+                        "_initialize_configuration",
+                        exc_info=True,
+                    )
                     raise RuntimeError("Aether configuration does not match the provided configuration.")
+
                 self._configuration = aether_config
                 self._configuration_locked = True
-                self._logger.debug("Adopted configuration from Aether (locked=True)", "_initialize_configuration")
+                self._logger.debug(
+                    "Adopted configuration from Aether (locked=True)",
+                    "_initialize_configuration",
+                )
                 return
 
+            # No configuration registered in Aether yet
             if self._configuration is not None:
+                # User supplied a configuration object
                 if self._configuration._aether_frame != self._aetheric_frame:
-                    self._logger.error("Configuration name does not match the aetheric frame", "_initialize_configuration", exc_info=True)
+                    self._logger.error(
+                        "Configuration name does not match the aetheric frame",
+                        "_initialize_configuration",
+                        exc_info=True,
+                    )
                     raise RuntimeError("Configuration name does not match the aetheric frame.")
+
                 self._configuration_locked = False
-                self._logger.debug("Using provided configuration (locked=False)", "_initialize_configuration")
+                self._logger.debug(
+                    "Using provided configuration (locked=False)",
+                    "_initialize_configuration",
+                )
                 return
 
+            # No config in Aether and none provided: create a fresh one and load defaults.
             self._configuration = Configuration(self._aetheric_frame)
+            self._configuration.load_default_dictionary()
             self._configuration_locked = False
-            self._logger.debug("Created new Configuration (locked=False)", "_initialize_configuration")
+            self._logger.debug(
+                "Created new Configuration with defaults (locked=False)",
+                "_initialize_configuration",
+            )
         except Exception as e:
-            self._logger.error(f"Failed to initialize configuration: {e}", "_initialize_configuration", exc_info=True)
+            self._logger.error(
+                f"Failed to initialize configuration: {e}",
+                "_initialize_configuration",
+                exc_info=True,
+            )
             raise
+
+
 
 
     def _get_configuration_from_aether(self) -> IConfiguration | None:
@@ -1215,12 +1244,15 @@ class Spellbook(Cleanable, ISpellbook):
             IConfiguration | None: The configuration instance for this Aether frame, or None if not registered.
         """
         try:
-            cfg = Spellbook._aether._get_configuration(self._aetheric_frame)
-            self._logger.debug(f"Retrieved configuration for frame '{self._aetheric_frame}'", "_get_configuration_from_aether")
-            return cfg
+            return Spellbook._aether._get_configuration(self._aetheric_frame)
         except Exception as e:
-            self._logger.error(f"Error retrieving configuration from Aether: {e}", "_get_configuration_from_aether", exc_info=True)
+            self._logger.error(
+                f"Error retrieving configuration from Aether: {e}",
+                "_get_configuration_from_aether",
+                exc_info=True,
+            )
             raise
+
 
     def is_configuration_locked(self) -> bool:
         """
@@ -1231,151 +1263,8 @@ class Spellbook(Cleanable, ISpellbook):
         Returns:
             bool: True if the configuration is locked, False otherwise.
         """
-        self._logger.debug(f"is_configuration_locked -> {self._configuration_locked}", "is_configuration_locked")
         return self._configuration_locked
 
-
-    def configure_aether_frame(
-            self,
-            *,
-            system_state: Optional[str],
-            debugging: Optional[bool],
-            disposal: Optional[bool],
-            disposal_method_names: Optional[List[str]],
-            logger_factory: Optional[Callable[[object], Any]] = None,
-            use_default_std_logger: bool = False,
-    ) -> None:
-        """
-        Public API
-
-        Consolidated setup for this Spellbook's **Aether frame**:
-
-          1. (Optional) Install a logger factory on the configuration.
-          2. Apply provided configuration properties.
-          3. Validate + freeze configuration.
-          4. Bind the configuration to the Aether.
-          5. Optionally upgrade the Aether logger.
-
-        Once frozen during this call, the configuration becomes
-        immutable.
-
-        Args:
-            system_state:
-                System mode (e.g. ``"automatic"`` or ``"dynamic"``).
-            debugging:
-                Enables or disables internal debugging features such as
-                id tagging.
-            disposal:
-                Enables automatic resource disposal when conduits are
-                cleaned.
-            disposal_method_names:
-                Method names to invoke on created objects during
-                disposal.
-            logger_factory:
-                Optional logger factory to install before freezing.
-            use_default_std_logger:
-                If True and `logger_factory` is not provided, installs
-                the default StdLoggerFactory via `set_logger_factory()`.
-
-        Raises:
-            RuntimeError:
-                If configuration is already locked/cleaned.
-            KeyError:
-                If an unknown configuration key is provided.
-            ValueError:
-                If configuration fails validation.
-            TypeError:
-                If the provided logger factory is invalid.
-        """
-        if self._configuration_locked:
-            self._logger.error("Configuration is locked. Cannot modify conduit state.", "configure_aether_frame", exc_info=True)
-            raise RuntimeError("Configuration is locked. Cannot modify conduit state.")
-        self._logger.debug("Configuring Aether frame (pre-freeze)", "configure_aether_frame")
-        try:
-            self._maybe_install_logger_factory(logger_factory, use_default_std_logger)
-            self._apply_configuration_properties(
-                system_state=system_state,
-                debugging=debugging,
-                disposal=disposal,
-                disposal_method_names=disposal_method_names,
-            )
-            self._validate_and_freeze_configuration()
-            self._bind_configuration_to_aether()
-            self._upgrade_aether_logger_if_possible()
-            self._logger.debug(f"Configuration bound and frozen for frame '{self._aetheric_frame}'", "configure_aether_frame")
-        except (KeyError, ValueError) as e:
-            try:
-                self._configuration.clear_properties()
-                self._logger.debug("Reverted configuration properties after failure", "configure_aether_frame")
-            except Exception as ce:
-                self._logger.error(f"Failed to revert configuration after error: {ce}", "configure_aether_frame", exc_info=True)
-            self._logger.error(f"Configuration error: {e}", "configure_aether_frame", exc_info=True)
-            raise
-        except Exception as e:
-            self._logger.error(f"Unexpected error configuring Aether frame: {e}", "configure_aether_frame", exc_info=True)
-            raise
-
-
-    def _maybe_install_logger_factory(
-            self,
-            logger_factory: Optional[Callable[[object], Any]],
-            use_default_std_logger: bool,
-    ) -> None:
-        """
-        Internal
-
-        Installs a logger factory onto the configuration (pre-freeze) if requested.
-
-        Priority:
-          - If `logger_factory` provided, use it.
-          - Else, if `use_default_std_logger` is True, call `set_logger_factory()`
-            which uses the StdLoggerFactory() default from the Configuration API.
-          - Else, do nothing (silent logging).
-        """
-        cfg = self._configuration
-        try:
-            if logger_factory is not None:
-                self._logger.debug("Installing explicit logger factory on configuration", "_maybe_install_logger_factory")
-                cfg.set_logger_factory(logger_factory)
-            elif use_default_std_logger:
-                self._logger.debug("Installing default StdLoggerFactory on configuration", "_maybe_install_logger_factory")
-                cfg.set_logger_factory()
-        except Exception as e:
-            self._logger.error(f"Failed to install logger factory: {e}", "_maybe_install_logger_factory", exc_info=True)
-            raise
-
-
-    def _apply_configuration_properties(
-            self,
-            *,
-            system_state: Optional[str],
-            debugging: Optional[bool],
-            disposal: Optional[bool],
-            disposal_method_names: Optional[List[str]],
-    ) -> None:
-        """
-        Internal
-
-        Applies only the provided properties to the configuration (pre-freeze).
-        Enforces allowed keys using the configuration's `available_properties`.
-        """
-        cfg = self._configuration
-        kwargs = {
-            k: v for k, v in {
-                "system_state": system_state,
-                "debugging": debugging,
-                "disposal": disposal,
-                "disposal_method_names": disposal_method_names,
-            }.items() if v is not None
-        }
-        self._logger.debug(f"Applying configuration properties: {list(kwargs.keys())}", "_apply_configuration_properties")
-        for key, value in kwargs.items():
-            if key not in cfg.available_properties:
-                self._logger.error(f"Unknown configuration key '{key}'", "_apply_configuration_properties", exc_info=True)
-                raise KeyError(
-                    f"Unknown configuration key '{key}'. Allowed keys are: {list(cfg.available_properties.keys())}"
-                )
-            cfg.set_property(key, value)
 
     def _validate_and_freeze_configuration(self) -> None:
         """
@@ -1384,26 +1273,58 @@ class Spellbook(Cleanable, ISpellbook):
         Validates configuration, then freezes it (no further mutation allowed).
         Sets `_configuration_locked` upon success.
 
+        This assumes that any desired properties (including AI-native flags,
+        worker counts, etc.) have already been applied via the Configuration's
+        own API. This method does not mutate properties; it only validates and
+        finalizes.
+
         Raises:
             ValueError: If validation fails.
+            RuntimeError: If no configuration is present.
         """
-        cfg = self._configuration
-        try:
-            self._logger.debug("Validating configuration", "_validate_and_freeze_configuration")
-            if not cfg.validate():
-                self._logger.error("Configuration validation failed", "_validate_and_freeze_configuration", exc_info=True)
-                raise ValueError("Invalid configuration. Please check your settings.")
-            cfg.freeze()
+        if self._configuration is None:
+            self._logger.error(
+                "No configuration instance available to validate/freeze.",
+                "_validate_and_freeze_configuration",
+                exc_info=True,
+            )
+            raise RuntimeError("No configuration instance available to validate/freeze.")
+
+        # If configuration is already frozen, just mark locked and return.
+        if self._configuration._frozen:
             self._configuration_locked = True
-            self._logger.debug("Configuration frozen (locked=True)", "_validate_and_freeze_configuration")
+            self._logger.debug(
+                "Configuration already frozen; marking locked=True",
+                "_validate_and_freeze_configuration",
+            )
+            return
+
+        try:
+            self._logger.debug(
+                "Validating configuration",
+                "_validate_and_freeze_configuration",
+            )
+
+            if not self._configuration.validate():
+                self._logger.error(
+                    "Configuration validation failed",
+                    "_validate_and_freeze_configuration",
+                    exc_info=True,
+                )
+                raise ValueError("Invalid configuration. Please check your settings.")
+
+            self._configuration.freeze()
+            self._configuration_locked = True
+
+            self._logger.debug(
+                "Configuration frozen (locked=True)",
+                "_validate_and_freeze_configuration",
+            )
         except Exception:
-            # Roll back property changes to avoid leaving a broken state around
-            try:
-                cfg.clear_properties()
-            except Exception:
-                # best-effort; if this fails, let original error surface
-                pass
+            # Do not auto-clear properties here; configuration is user-owned.
             raise
+
+
 
 
     def _bind_configuration_to_aether(self) -> None:
@@ -1414,10 +1335,18 @@ class Spellbook(Cleanable, ISpellbook):
         """
         try:
             Spellbook._aether._bind_configuration(self._configuration, self._aetheric_frame)
-            self._logger.debug(f"Bound configuration to Aether frame '{self._aetheric_frame}'", "_bind_configuration_to_aether")
+            self._logger.debug(
+                f"Bound configuration to Aether frame '{self._aetheric_frame}'",
+                "_bind_configuration_to_aether",
+            )
         except Exception as e:
-            self._logger.error(f"Failed to bind configuration to Aether: {e}", "_bind_configuration_to_aether", exc_info=True)
+            self._logger.error(
+                f"Failed to bind configuration to Aether: {e}",
+                "_bind_configuration_to_aether",
+                exc_info=True,
+            )
             raise
+
 
 
     def get_configuration(self) -> IConfiguration:
@@ -1510,16 +1439,21 @@ class Spellbook(Cleanable, ISpellbook):
 
         with self._lock:
             if self._conjured:
-                self._logger.error("This Spellbook has already conjured a Conduit.", "conjure", exc_info=True)
+                self._logger.error(
+                    "This Spellbook has already conjured a Conduit.",
+                    "conjure",
+                    exc_info=True,
+                )
                 raise RuntimeError("This Spellbook has already conjured a Conduit. Only one is allowed per Spellbook.")
 
-            # Ensure configuration is frozen and bound to Aether
+            # Ensure configuration is validated, frozen, and bound to Aether
             if not self.is_configuration_locked():
-                self._configuration.load_default_dictionary()
-                self._configuration.freeze()
-                self._configuration_locked = True
-                Spellbook._aether._bind_configuration(self._configuration, self._aetheric_frame)
-                self._logger.debug("Configuration locked (defaults applied)", "conjure")
+                self._validate_and_freeze_configuration()
+                self._bind_configuration_to_aether()
+                self._logger.debug(
+                    "Configuration validated, frozen and bound from conjure()",
+                    "conjure",
+                )
 
             # Validate policy vs system_state and local spell registry
             self._check_system_state(policy)
@@ -1549,6 +1483,7 @@ class Spellbook(Cleanable, ISpellbook):
             # Mark this Spellbook as having conjured its single conduit
             self._conjured = True
             self._conduit = conduit
+
             # 3) ACTIVATED: conduit exists but is not yet wired into spells.
             self._fire_conjure_hooks(
                 hook_map,
@@ -1566,8 +1501,12 @@ class Spellbook(Cleanable, ISpellbook):
                 conduit,
             )
 
-            self._logger.debug(f"Conduit created => id={conduit._id}, name={conduit._name}", "conjure")
+            self._logger.debug(
+                f"Conduit created => id={conduit._id}, name={conduit._name}",
+                "conjure",
+            )
             return conduit
+
 
 
     def _check_system_state(self, policy: str) -> None:

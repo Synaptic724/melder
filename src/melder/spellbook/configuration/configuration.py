@@ -70,6 +70,7 @@ class Configuration(Cleanable, IConfiguration):
             "disposal_method_names": list,
             "phase_scheduler_workers_per_spellbook": int,
             "ai_native_enabled": bool,
+            "phase_scheduler_barrier_timeout_milliseconds": int,
         })
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
@@ -420,6 +421,7 @@ class Configuration(Cleanable, IConfiguration):
             "disposal_method_names": [],
             "phase_scheduler_workers_per_spellbook": 5,
             "ai_native_enabled": False,
+            "phase_scheduler_barrier_timeout_milliseconds": 60000,
         }))
 
     def has_logger_factory(self) -> bool:
@@ -612,6 +614,32 @@ class Configuration(Cleanable, IConfiguration):
         if not isinstance(workers, int) or workers < 1:
             raise ValueError("phase_scheduler_workers must be a positive integer.")
         self.set_property("phase_scheduler_workers_per_spellbook", workers)
+        return self
+
+
+    def with_phase_scheduler_barrier_timeout(self, timeout_milliseconds: int) -> IConfiguration:
+        """
+        Fluent
+
+        Set the barrier timeout in milliseconds used by the Resolution Phase Scheduler.
+        Must be >= 0.
+
+        Args:
+            timeout_milliseconds (int): Barrier timeout in milliseconds.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        if not isinstance(timeout_milliseconds, int) or timeout_milliseconds < 0:
+            raise ValueError("phase_scheduler_barrier_timeout_milliseconds must be a non-negative integer.")
+
+        if timeout_milliseconds == 0:
+            raise ValueError("phase_scheduler_barrier_timeout_milliseconds cannot be zero; use a positive integer.")
+
+        if timeout_milliseconds > 300000:
+            raise ValueError("phase_scheduler_barrier_timeout_milliseconds cannot exceed 300000 milliseconds (5 minutes).")
+
+        self.set_property("phase_scheduler_barrier_timeout_milliseconds", timeout_milliseconds)
         return self
 
     def with_ai_native(self, enabled: bool = True) -> IConfiguration:
