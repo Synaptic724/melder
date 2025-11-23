@@ -34,8 +34,7 @@ class ConcurrentQueue(Generic[_T], Cleanable):
     __slots__ = Cleanable.__slots__ + ["_lock", "_deque", "_id"]
     def __init__(
             self,
-            initial: Optional[Iterable[_T]] = None,
-            agentic_mode: Optional[bool] = None
+            initial: Optional[Iterable[_T]] = None
     ) -> None:
         """
         Initialize the ConcurrentQueue.
@@ -43,9 +42,6 @@ class ConcurrentQueue(Generic[_T], Cleanable):
         Args:
             initial (Iterable[_T], optional):
                 An iterable of initial items. Defaults to an empty list if None is given.
-            agentic_mode (bool):
-                If True, uses an AgenticRLock for synchronization.
-                Defaults to False, using a standard threading.RLock.
         """
         super().__init__()
         if initial is None:
