@@ -1,0 +1,123 @@
+from __future__ import annotations
+import threading
+from typing import List, Optional
+# Melder Imports
+from melder.utilities.general_base.cleanable import Cleanable
+
+
+class SpellSymbolicGraph(Cleanable):
+    """
+    Phase 2 **per-spell symbolic graph**.
+
+    This represents a spell's DI requirements as a *set of edges* with no
+    concrete dependency spell versions yet. Think of it as a mid-level,
+    versioned description of “what this spell wants”, without binding to
+    specific implementations.
+
+    Identity
+    --------
+    ``spell_version_id`` is the spell's **version identity**:
+
+        ``spell.spell_index.current``
+
+    The graph is always scoped per spell version; if a spell mutates and its
+    SpellIndex is updated to a new version ID, a new graph should be built for
+    that version.
+
+    Contents
+    --------
+    * ``dependencies`` – list of :class:`SpellSymbolicDependency` objects,
+      one per DI-relevant parameter.
+
+    What it does *not* contain
+    --------------------------
+    * No DAG / topo ordering.
+    * No existence policy decisions.
+    * No concrete dependency spell_ids.
+    * No runtime execution logic.
+
+    Those concerns belong to Phase 3 (local frame / DAG) and Phase 4 (validation).
+    """
+
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_spell_version_id",
+        "_dependencies",
+    ]
+
+    def __init__(
+            self,
+            *,
+            spell_version_id: str,
+            dependencies: Optional[List['SpellSymbolicDependency']] = None,
+    ) -> None:
+        super().__init__()
+
+        if not spell_version_id:
+            raise ValueError("spell_version_id must be a non-empty string.")
+
+        self._lock: threading.RLock = threading.RLock()
+        self._spell_version_id: str = spell_version_id
+        self._dependencies: List['SpellSymbolicDependency'] = dependencies or []
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+
+    def cleanup(self) -> None:
+        """
+        Deterministically tear down this symbolic graph and all its edges.
+
+        This cascades cleanup into all :class:`SpellSymbolicDependency`
+        instances and clears internal references.
+        """
+        if self._cleaned:
+            return
+
+        with self._lock:
+            if self._cleaned:
+                return
+
+            for dep in self._dependencies:
+                try:
+                    dep.cleanup()
+                except Exception:
+                    # Dependency cleanup must never blow up tear-down.
+                    pass
+
+            self._dependencies = []
+            self._spell_version_id = None
+            self._cleaned = True
+
+        self._lock = None
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+
+    @property
+    def spell_version_id(self) -> str:
+        """
+        Version identity of the owning spell (SpellIndex.current).
+        """
+        self.check_cleaned()
+        return self._spell_version_id
+
+    @property
+    def dependencies(self) -> List['SpellSymbolicDependency']:
+        """
+        All DI edges for this spell.
+
+        Each edge corresponds to a parameter that actually drives DI:
+
+            * SINGLE_BY_ANNOTATION
+            * COLLECTION_BY_ANNOTATION
+            * SPELLMAP_DEFAULT
+
+        Returns:
+            list[SpellSymbolicDependency]: A shallow copy of the underlying
+            dependency list. Mutating the returned list does not affect the
+            internal state.
+        """
+        self.check_cleaned()
+        return list(self._dependencies)

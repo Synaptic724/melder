@@ -1,0 +1,212 @@
+from __future__ import annotations
+
+import threading
+from typing import Any
+
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+    ParameterDIShape,
+)
+
+
+class SpellSymbolicDependency(Cleanable):
+    """
+    Phase 2 representation of a **single DI edge** for a spell.
+
+    Conceptually:
+
+        “For spell *version* V, parameter P has DI shape X and wants type T
+        (or SpellMap M).”
+
+    This is a *symbolic* edge, not yet tied to concrete dependency spell
+    versions. Later phases (local frame / DAG builder) will interpret these
+    edges against the Spellbook.
+
+    Identity
+    --------
+    ``spell_version_id`` is always the **version identity** of the owning spell:
+
+        ``spell.spell_index.current``
+
+    This is intentionally **not** the `Spell.spell_id` fingerprint. The
+    `SpellIndex` is the durable key, and `.current` is the active version
+    pointer that can change over time as mutations occur.
+
+    Fields
+    ------
+    spell_version_id:
+        Version identity (string) of the owning spell (SpellIndex.current).
+
+    param_name:
+        Parameter name on the call target.
+
+    position:
+        0-based positional index of the parameter in the signature.
+
+    di_shape:
+        High-level DI shape from :class:`ParameterDIShape`.
+
+    is_optional:
+        True if the parameter is logically optional from a DI perspective
+        (e.g., Optional/T|None, or has a default).
+
+    target_annotation:
+        For SINGLE/COLLECTION shapes, the annotation (or element annotation)
+        used as the DI key in later phases (class, Protocol, string, etc.).
+
+    is_collection:
+        True if this dependency represents a collection-of-implementations
+        requirement (e.g., ``list[IMyHandler]``).
+
+    spellmap_default:
+        For SPELLMAP_DEFAULT shape, the original :class:`SpellMap` default
+        instance attached to the parameter (if any).
+    """
+
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_spell_version_id",
+        "_param_name",
+        "_position",
+        "_di_shape",
+        "_is_optional",
+        "_target_annotation",
+        "_is_collection",
+        "_spellmap_default",
+    ]
+
+    def __init__(
+            self,
+            *,
+            spell_version_id: str,
+            param_name: str,
+            position: int,
+            di_shape: ParameterDIShape,
+            is_optional: bool,
+            target_annotation: Any,
+            is_collection: bool,
+            spellmap_default: Any = None,
+    ) -> None:
+        super().__init__()
+
+        if not spell_version_id:
+            raise ValueError("spell_version_id must be a non-empty string.")
+        if not param_name:
+            raise ValueError("param_name must be a non-empty string.")
+
+        self._lock: threading.RLock = threading.RLock()
+
+        self._spell_version_id: str = spell_version_id
+        self._param_name: str = param_name
+        self._position: int = position
+        self._di_shape: ParameterDIShape = di_shape
+        self._is_optional: bool = is_optional
+        self._target_annotation: Any = target_annotation
+        self._is_collection: bool = is_collection
+        self._spellmap_default: Any = spellmap_default
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+
+    def cleanup(self) -> None:
+        """
+        Deterministically tear down this dependency edge.
+
+        This only drops references; it does not affect any external graph
+        or Spellbook state.
+        """
+        if self._cleaned:
+            return
+
+        with self._lock:
+            if self._cleaned:
+                return
+
+            self._spell_version_id = None
+            self._param_name = None
+            self._position = -1
+            self._di_shape = None
+            self._is_optional = False
+            self._target_annotation = None
+            self._is_collection = False
+            self._spellmap_default = None
+            self._cleaned = True
+
+        self._lock = None
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+
+    @property
+    def spell_version_id(self) -> str:
+        """
+        Version identity of the owning spell (SpellIndex.current).
+        """
+        self.check_cleaned()
+        return self._spell_version_id
+
+    @property
+    def param_name(self) -> str:
+        """
+        Parameter name on the call target.
+        """
+        self.check_cleaned()
+        return self._param_name
+
+    @property
+    def position(self) -> int:
+        """
+        0-based positional index in the call target's signature.
+        """
+        self.check_cleaned()
+        return self._position
+
+    @property
+    def di_shape(self) -> ParameterDIShape:
+        """
+        High-level DI shape (SINGLE, COLLECTION, SPELLMAP_DEFAULT).
+        """
+        self.check_cleaned()
+        return self._di_shape
+
+    @property
+    def is_optional(self) -> bool:
+        """
+        True if the parameter is logically optional from a DI perspective.
+        """
+        self.check_cleaned()
+        return self._is_optional
+
+    @property
+    def target_annotation(self) -> Any:
+        """
+        Effective DI target annotation (or element annotation for collections).
+
+        May be:
+            * A concrete class
+            * A Protocol/interface type
+            * A string (to be resolved later)
+            * None for SpellMap-default-based dependencies
+        """
+        self.check_cleaned()
+        return self._target_annotation
+
+    @property
+    def is_collection(self) -> bool:
+        """
+        True if this dependency represents a collection-of-implementations DI
+        requirement (e.g., list[IMyHandler]).
+        """
+        self.check_cleaned()
+        return self._is_collection
+
+    @property
+    def spellmap_default(self) -> Any:
+        """
+        If ``di_shape`` is SPELLMAP_DEFAULT, this holds the default SpellMap
+        instance; otherwise this is None.
+        """
+        self.check_cleaned()
+        return self._spellmap_default
