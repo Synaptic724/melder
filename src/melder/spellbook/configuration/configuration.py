@@ -68,6 +68,8 @@ class Configuration(Cleanable, IConfiguration):
             "debugging": bool,
             "disposal": bool,
             "disposal_method_names": list,
+            "phase_scheduler_workers_per_spellbook": int,
+            "ai_native_enabled": bool,
         })
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
@@ -233,40 +235,76 @@ class Configuration(Cleanable, IConfiguration):
 
     def validate(self) -> bool:
         """
-        Validates that all required configuration properties exist and match expected types.
+        Validates that all configuration properties are present, correctly typed,
+        and semantically valid.
 
-        Performs both presence/type checks and enum-specific validation.
-
-        Returns:
-            bool: True if all validation checks pass.
-
-        Raises:
-            RuntimeError: If the configuration is cleaned.
-            ValueError: If any property is missing or has the wrong type/value.
+        The validation pipeline is intentionally decomposed into small, focused
+        helper methods to avoid an overly long and unmaintainable validate() method.
         """
         self.check_cleaned()
-        for key, expected_type in self.available_properties.items():
+
+        self._validate_required_properties_exist()
+        self._validate_required_property_types()
+        self._validate_enum_properties()
+        self._validate_phase_scheduler_workers()
+        self._validate_ai_native_enabled()
+
+        return True
+
+    def _validate_required_properties_exist(self) -> None:
+        """
+        Ensures that all properties listed in `available_properties` are present.
+        """
+        for key in self.available_properties.keys():
             if key not in self._properties:
                 raise ValueError(f"Missing required configuration property: '{key}'.")
 
+    def _validate_required_property_types(self) -> None:
+        """
+        Performs generic type checking using `available_properties`.
+        """
+        for key, expected_type in self.available_properties.items():
             value = self._properties[key]
-            # Handle tuple of expected types
+
+            # Normalize to tuple
             if not isinstance(expected_type, tuple):
                 expected_type = (expected_type,)
 
             if not isinstance(value, expected_type):
-                expected_names = [t.__name__ for t in expected_type]
+                expected_names = ", ".join(t.__name__ for t in expected_type)
                 raise ValueError(
                     f"Invalid type for property '{key}': "
-                    f"expected {', '.join(expected_names)}, got {type(value).__name__}."
+                    f"expected {expected_names}, got {type(value).__name__}."
                 )
 
-        # Additional validation for specific properties
-        if self.validate_enums():
-            return True
-        else:
-            # Should be caught by validate_enums internal ValueError, but included for safety.
-            raise ValueError("Enum validation failed. Invalid enum values found in properties.")
+    def _validate_enum_properties(self) -> None:
+        """
+        Ensures all enum-based properties contain valid enum values.
+        """
+        if "system_state" in self._properties:
+            system_state = self._properties["system_state"]
+            if not isinstance(system_state, SystemState):
+                raise ValueError(
+                    f"Invalid type for 'system_state': expected SystemState, got {type(system_state).__name__}."
+                )
+
+    def _validate_phase_scheduler_workers(self) -> None:
+        """
+        Ensures the phase scheduler worker count is a valid integer >= 1.
+        """
+        workers = self._properties.get("phase_scheduler_workers")
+
+        if not isinstance(workers, int) or workers < 1:
+            raise ValueError("phase_scheduler_workers must be a positive integer >= 1.")
+
+    def _validate_ai_native_enabled(self) -> None:
+        """
+        Ensures ai_native_enabled is a boolean.
+        """
+        enabled = self._properties.get("ai_native_enabled")
+
+        if not isinstance(enabled, bool):
+            raise ValueError("ai_native_enabled must be a boolean.")
 
     def validate_enums(self) -> bool:
         """
@@ -380,6 +418,8 @@ class Configuration(Cleanable, IConfiguration):
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
+            "phase_scheduler_workers_per_spellbook": 5,
+            "ai_native_enabled": False,
         }))
 
     def has_logger_factory(self) -> bool:
@@ -556,6 +596,41 @@ class Configuration(Cleanable, IConfiguration):
     # ---------------------------
     # Fluent / Builder-style API
     # ---------------------------
+    def with_phase_scheduler_workers(self, workers: int) -> IConfiguration:
+        """
+        Fluent
+
+        Set the number of worker threads used by the Resolution Phase Scheduler.
+        Must be >= 1.
+
+        Args:
+            workers (int): Number of worker threads.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        if not isinstance(workers, int) or workers < 1:
+            raise ValueError("phase_scheduler_workers must be a positive integer.")
+        self.set_property("phase_scheduler_workers_per_spellbook", workers)
+        return self
+
+    def with_ai_native(self, enabled: bool = True) -> IConfiguration:
+        """
+        Fluent
+
+        Enable or disable AI-native resolution pipeline features.
+
+        Args:
+            enabled (bool): True to enable AI-native mode.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        if not isinstance(enabled, bool):
+            raise TypeError("ai_native_enabled must be a bool.")
+        self.set_property("ai_native_enabled", enabled)
+        return self
+
 
     def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> IConfiguration:
         """
