@@ -1,7 +1,7 @@
 import threading
 from concurrent.futures import Future
 from typing import Any, Optional, Dict, Callable, Tuple
-
+# Melder imports
 from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
@@ -200,10 +200,7 @@ class UnitOfWork(Cleanable, Future):
         done in :meth:`run_synchronously`.
         """
         self.check_cleaned()
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("UnitOfWork has been cleaned.")
-        with lock:
+        with self._lock:
             return self._cancel_event
 
     @property
@@ -215,12 +212,7 @@ class UnitOfWork(Cleanable, Future):
         agents (e.g. tagging a unit with spell IDs and stage names).
         """
         self.check_cleaned()
-        # Label is immutable after init; we don't strictly need the lock,
-        # but we take it for symmetry with other properties.
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("UnitOfWork has been cleaned.")
-        with lock:
+        with self._lock:
             return self._label
 
     @property
@@ -233,10 +225,7 @@ class UnitOfWork(Cleanable, Future):
         pipeline wants to keep track of.
         """
         self.check_cleaned()
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("UnitOfWork has been cleaned.")
-        with lock:
+        with self._lock:
             return self._metadata
 
     # ------------------------------------------------------------------
@@ -276,12 +265,7 @@ class UnitOfWork(Cleanable, Future):
                 be recorded on the Future and re-raised here.
         """
         self.check_cleaned()
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("UnitOfWork has been cleaned.")
-
-        # Snapshot state under lock to avoid races with cleanup.
-        with lock:
+        with self._lock:
             # If we've already been run, just surface stored result/exception.
             if self.done():
                 return self.result()
