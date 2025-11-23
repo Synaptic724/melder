@@ -64,7 +64,7 @@ class UnitOfWork(Cleanable, Future):
     ]
 
     def __init__(
-            self,
+            self: "UnitOfWork",
             func: Callable[..., Any],
             *,
             args: Optional[Tuple[Any, ...]] = None,
@@ -103,15 +103,16 @@ class UnitOfWork(Cleanable, Future):
         if not callable(func):
             raise TypeError("func must be callable.")
 
-        self._func = func
-        self._args = args if args is not None else ()
-        self._kwargs = kwargs if kwargs is not None else {}
-        self._cancel_event = cancel_event
-        self._label = label
-        self._metadata = metadata
+        self._func: Optional[Callable[..., Any]] = func
+        self._args: Optional[Tuple[Any, ...]] = args if args is not None else ()
+        self._kwargs: Optional[Dict[str, Any]] = kwargs if kwargs is not None else {}
+        self._cancel_event: Optional[CancellationEvent] = cancel_event
+        self._label: Optional[str] = label
+        self._metadata: Any = metadata
 
         # Internal synchronization for our own state (separate from Future's lock).
         self._lock: threading.RLock = threading.RLock()
+
 
 
     # ------------------------------------------------------------------
@@ -262,36 +263,39 @@ class UnitOfWork(Cleanable, Future):
                 :class:`CancellationEvent` prior to execution.
             Exception:
                 Any exception raised by the underlying callable. It will also
-                be recorded on the Future and re-raised here.
+                be recorded on the underlying Future and re-raised here.
         """
         self.check_cleaned()
+
+        # Acquire lock to safely read/verify mutable state.
+        if self._lock is None:
+            raise RuntimeError("UnitOfWork has been cleaned.")
+
         with self._lock:
-            # If we've already been run, just surface stored result/exception.
+            # If someone else already executed us, surface the stored outcome.
             if self.done():
                 return self.result()
 
-            cancel_event = self._cancel_event
-            func = self._func
-            args = self._args
-            kwargs = self._kwargs
+            # Cancellation check BEFORE running the work.
+            if self._cancel_event is not None and self._cancel_event.is_set:
+                exc = OperationCancelledError(
+                    f"UnitOfWork{f'[{self._label}]' if self._label else ''} "
+                    f"aborted before start due to cancellation."
+                )
+                self.set_exception(exc)
+                raise exc
 
-        # Respect cancellation before running.
-        if cancel_event is not None and getattr(cancel_event, "is_set", False):
-            exc = OperationCancelledError(
-                f"UnitOfWork{f'[{self._label}]' if self._label else ''} "
-                f"aborted before start due to cancellation."
-            )
-            self.set_exception(exc)
-            raise exc
-
+        # ---- Execute underlying callable OUTSIDE the lock ----
+        # (This is intentional: avoid holding the lock across user code.)
         try:
-            result = func(*args, **kwargs)
-        except BaseException as exc:  # noqa: BLE001
+            result = self._func(*self._args, **self._kwargs)
+        except BaseException as exc:
             self.set_exception(exc)
             raise
         else:
             self.set_result(result)
             return result
+
 
     def __call__(self) -> Any:
         """
