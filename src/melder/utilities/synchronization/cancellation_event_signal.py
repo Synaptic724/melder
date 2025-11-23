@@ -1,9 +1,10 @@
 import threading
 # Melder Imports
 from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-class CancellationEvent:
+class CancellationEvent(Cleanable):
     """
     Lightweight, read-only view over a shared cancellation signal.
 
@@ -33,7 +34,7 @@ class CancellationEvent:
         signal.cancel()  # all observers see the cancellation almost instantly
     """
 
-    __slots__ = ("_flag",)
+    __slots__ = Cleanable.__slots__ + ("_flag",)
 
     def __init__(self, flag: threading.Event) -> None:
         """
@@ -48,7 +49,28 @@ class CancellationEvent:
                 The shared :class:`threading.Event` that represents the
                 underlying cancellation signal.
         """
+        Cleanable.__init__(self)
         self._flag = flag
+
+    # ------------------------------------------------------------
+    # Cleanup — deterministic, idempotent, zero contamination
+    # ------------------------------------------------------------
+
+    def cleanup(self) -> None:
+        """
+        Deterministically tear down this CancellationEvent.
+
+        Behavior:
+            * Idempotent via Cleanable._cleaned flag.
+            * Nulls out the underlying flag.
+            * After cleanup, any access raises RuntimeError.
+        """
+        if self._cleaned:
+            return
+
+        # No lock needed — this class is read-only and the flag is just a reference.
+        self._flag = None
+        self._cleaned = True
 
     @property
     def is_set(self) -> bool:
@@ -62,6 +84,7 @@ class CancellationEvent:
             bool: True if a call to :meth:`CancellationEventSignal.cancel`
             has occurred; False otherwise.
         """
+        self.check_cleaned()
         return self._flag.is_set()
 
     def throw_if_set(self) -> None:
@@ -71,13 +94,14 @@ class CancellationEvent:
         Raises:
             OperationCancelledError: If cancellation has been signalled.
         """
+        self.check_cleaned()
         if self._flag.is_set():
             raise OperationCancelledError(
                 "Operation cancelled via CancellationEvent signal."
             )
 
 
-class CancellationEventSignal:
+class CancellationEventSignal(Cleanable):
     """
     Mutable source of cancellation events.
 
@@ -99,12 +123,49 @@ class CancellationEventSignal:
       burst-style pipeline (e.g. staged resolution compilation).
     """
 
-    __slots__ = ("_flag", "_event")
+    __slots__ = Cleanable.__slots__ + ("_flag", "_event")
 
     def __init__(self) -> None:
+        Cleanable.__init__(self)
         self._flag = threading.Event()
         # Pre-create a single event view; all consumers share it.
         self._event = CancellationEvent(self._flag)
+
+    # ------------------------------------------------------------
+    # Cleanup — deterministic, complete teardown
+    # ------------------------------------------------------------
+
+    def cleanup(self) -> None:
+        """
+        Deterministically tear down this CancellationEventSignal.
+
+        Behavior:
+            * Idempotent.
+            * Cancels the signal.
+            * Cleans the child CancellationEvent.
+            * Nulls out the underlying Threading.Event and event view.
+            * Marks cleaned via Cleanable.
+        """
+        if self._cleaned:
+            return
+
+        # Cancel any active workers
+        if self._flag is not None:
+            self._flag.set()
+
+        # Clean child event
+        if self._event is not None:
+            try:
+                self._event.cleanup()
+            except Exception:
+                pass
+
+        # Null everything
+        self._flag = None
+        self._event = None
+
+        self._cleaned = True
+
 
     @property
     def event(self) -> CancellationEvent:
@@ -115,6 +176,7 @@ class CancellationEventSignal:
         All callers receive the **same** event instance; this is intentional
         so that everyone observes the same cancellation signal.
         """
+        self.check_cleaned()
         return self._event
 
     def cancel(self) -> None:
@@ -123,16 +185,8 @@ class CancellationEventSignal:
 
         This method is idempotent: calling it multiple times has no additional
         effect beyond the first call.
-
-        Typical usage in a parallel resolution pipeline:
-
-            signal = CancellationEventSignal()
-            cancel_event = signal.event
-
-            # Worker threads poll cancel_event.is_set periodically.
-            # Coordinator decides to abort after N failures:
-            signal.cancel()
         """
+        self.check_cleaned()
         self._flag.set()
 
     @property
@@ -143,4 +197,5 @@ class CancellationEventSignal:
         Returns:
             bool: True if cancellation has been signalled.
         """
+        self.check_cleaned()
         return self._flag.is_set()

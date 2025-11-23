@@ -1,5 +1,5 @@
 from types import MappingProxyType
-from typing import Optional, List, Any, Mapping, Callable
+from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict
 import threading
 
 # Melder Imports
@@ -22,6 +22,8 @@ from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
+from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
+
 
 #region Spellbook
 class Spellbook(Cleanable, ISpellbook):
@@ -1388,7 +1390,8 @@ class Spellbook(Cleanable, ISpellbook):
 
         Args:
             policy (str, optional):
-                Determines the spell access control behavior for this conduit. Must match a `Policies` enum member.
+                Determines the spell access control behavior for this conduit.
+                Must match a `Policies` enum member.
                 Defaults to "automatic".
             name (str, optional):
                 An optional name for the conduit.
@@ -1455,6 +1458,10 @@ class Spellbook(Cleanable, ISpellbook):
                     "conjure",
                 )
 
+            # Run the multi-phase resolution pipeline (requirements, graphs, frames, validation)
+            # This uses PhaseScheduler + UnitOfWork and cooperates via the shared CancellationEvent.
+            self._run_resolution_phases()
+
             # Validate policy vs system_state and local spell registry
             self._check_system_state(policy)
             policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
@@ -1506,6 +1513,7 @@ class Spellbook(Cleanable, ISpellbook):
                 "conjure",
             )
             return conduit
+
 
 
 
@@ -1720,4 +1728,225 @@ class Spellbook(Cleanable, ISpellbook):
                 )
 
 #endregion Hook Management
+#region Resolution Phases
+    def _run_resolution_phases(self) -> Dict[str, Sequence['UnitOfWork']]:
+        """
+        Internal
+
+        Orchestrate the multi-phase Spellbook resolution pipeline using
+        :class:`PhaseScheduler` and :class:`UnitOfWork`.
+
+        This method is invoked from :meth:`conjure` **after** the
+        configuration has been validated, frozen, and bound into Aether,
+        but **before** any Conduit is constructed.
+
+        Phases (in order)
+        -----------------
+        1. ``"requirements"``:
+               Per-spell static checks and requirement gathering
+               (dependencies, frames, policy hints, etc.).
+
+        2. ``"symbolic_graph"``:
+               Build per-spell symbolic graphs / local structural views.
+
+        3. ``"local_frame"``:
+               Construct local execution frames / resolution frames that
+               will later be combined into larger DAGs.
+
+        4. ``"validation"``:
+               Final per-spell validation over the assembled metadata
+               and frames.
+
+        All work is executed via :class:`UnitOfWork` on a shared worker pool
+        sized by the Configuration's
+        ``phase_scheduler_workers_per_spellbook`` property. Each unit
+        cooperates with a shared :class:`CancellationEvent`, so any failure
+        or timeout cancels the remaining pipeline.
+
+        Returns:
+            Dict[str, Sequence[UnitOfWork]]:
+                Mapping of phase name -> sequence of `UnitOfWork` instances.
+                Callers may inspect individual `uow.result()`/`uow.exception()`
+                if they need detailed telemetry or diagnostics.
+        """
+        self.check_cleaned()
+        self._logger.debug(
+            "Starting Spellbook resolution pipeline via PhaseScheduler",
+            "_run_resolution_phases",
+        )
+
+        scheduler = PhaseScheduler(
+            configuration=self._configuration,
+        )
+
+        try:
+            # Register phases in the scheduler – each factory closes over
+            # the scheduler so it can mint correctly-wired UnitOfWork items.
+            scheduler.register_phase(
+                "requirements",
+                lambda: self._phase_requirements_factory(scheduler),
+            )
+            scheduler.register_phase(
+                "symbolic_graph",
+                lambda: self._phase_symbolic_graph_factory(scheduler),
+            )
+            scheduler.register_phase(
+                "local_frame",
+                lambda: self._phase_local_frame_factory(scheduler),
+            )
+            scheduler.register_phase(
+                "validation",
+                lambda: self._phase_validation_factory(scheduler),
+            )
+
+            results = scheduler.run_all_phases()
+            self._logger.debug(
+                "Spellbook resolution pipeline completed successfully",
+                "_run_resolution_phases",
+            )
+            return results
+        finally:
+            # Deterministic teardown of the scheduler regardless of success/failure.
+            try:
+                scheduler.cleanup()
+            except Exception:
+                # We do not let cleanup failures override the original phase error.
+                self._logger.error(
+                    "PhaseScheduler.cleanup() raised during _run_resolution_phases",
+                    "_run_resolution_phases",
+                    exc_info=True,
+                )
+
+    def _phase_requirements_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **requirements** phase.
+
+        Each local spell gets one unit of work that is responsible for:
+            * Performing static requirement checks.
+            * Registering dependency edges.
+            * Emitting any metadata needed by later phases.
+
+        The underlying spell method is expected to be:
+
+            ``spell.run_phase_requirements(cancel_event: CancellationEvent) -> Any``
+
+        where the spell cooperatively honours the shared CancellationEvent
+        attached via :meth:`PhaseScheduler.create_unit_of_work`.
+        """
+        self.check_cleaned()
+        units: List['UnitOfWork'] = []
+
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_requirements,
+                    label=f"requirements:{spell.spell_id}",
+                    metadata={
+                        "phase": "requirements",
+                        "spell_id": spell.spell_id,
+                    },
+                )
+            )
+
+        return units
+
+    def _phase_symbolic_graph_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **symbolic_graph** phase.
+
+        Each spell contributes its own symbolic graph representation – a
+        spell-local structural view that captures parameters, dependencies,
+        and internal resolution semantics without yet forming a global DAG.
+
+        Expected spell surface:
+
+            ``spell.run_phase_symbolic_graph(cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        units: List['UnitOfWork'] = []
+
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_symbolic_graph,
+                    label=f"symbolic_graph:{spell.spell_id}",
+                    metadata={
+                        "phase": "symbolic_graph",
+                        "spell_id": spell.spell_id,
+                    },
+                )
+            )
+
+        return units
+
+    def _phase_local_frame_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **local_frame** phase.
+
+        This phase is responsible for constructing per-spell execution frames
+        (resolution frames, local DAG fragments, etc.) that can later be
+        combined into deeper, cross-spell structures.
+
+        Expected spell surface:
+
+            ``spell.run_phase_local_frame(cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        units: List['UnitOfWork'] = []
+
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_local_frame,
+                    label=f"local_frame:{spell.spell_id}",
+                    metadata={
+                        "phase": "local_frame",
+                        "spell_id": spell.spell_id,
+                    },
+                )
+            )
+
+        return units
+
+    def _phase_validation_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **validation** phase.
+
+        This is the final Spell-level validation pass that runs after
+        requirements, symbolic graphs, and local frames have been built.
+
+        Typical responsibilities:
+            * Cross-check that required dependencies were satisfied.
+            * Ensure frames/graphs are internally consistent.
+            * Surface any final Spell-level errors before conjuration.
+
+        Expected spell surface:
+
+            ``spell.run_phase_validation(cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        units: List['UnitOfWork'] = []
+
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_validation,
+                    label=f"validation:{spell.spell_id}",
+                    metadata={
+                        "phase": "validation",
+                        "spell_id": spell.spell_id,
+                    },
+                )
+            )
+
+        return units
+#endregion Resolution Phases
 #endregion

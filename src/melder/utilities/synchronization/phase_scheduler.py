@@ -1,65 +1,24 @@
 import threading
 import time
 from concurrent.futures import wait, ALL_COMPLETED
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from melder.utilities.data_structures.concurrent_queue import ConcurrentQueue
+from melder.utilities.data_structures.concurrent_list import ConcurrentList
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
+from melder.utilities.interfaces.interfaces import IConfiguration, ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
     CancellationEventSignal,
 )
-from melder.utilities.custom_exceptions.operation_cancelled_error import (
-    OperationCancelledError,
-)
+from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
+from melder.utilities.custom_exceptions.phase_scheduler_error import PhaseSchedulerError
+from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.phase_timeout_error import PhaseTimeoutError
 from melder.utilities.general_base.cleanable import Cleanable
 
-
-class PhaseSchedulerError(RuntimeError):
-    """
-    Base exception for PhaseScheduler-related failures.
-    """
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-
-
-class PhaseTimeoutError(PhaseSchedulerError):
-    """
-    Raised when a phase exceeds its configured barrier timeout.
-    """
-
-    def __init__(self, phase_name: str, timeout_ms: int) -> None:
-        msg = (
-            f"Phase '{phase_name}' exceeded barrier timeout "
-            f"({timeout_ms} ms). Resolution pipeline aborted."
-        )
-        super().__init__(msg)
-        self.phase_name = phase_name
-        self.timeout_ms = timeout_ms
-
-
-class PhaseExecutionError(PhaseSchedulerError):
-    """
-    Raised when one or more units of work in a phase fail.
-
-    Attributes:
-        phase_name: Name of the failing phase.
-        errors: List of exceptions raised by the phase's units.
-    """
-
-    def __init__(self, phase_name: str, errors: List[BaseException]) -> None:
-        msg = (
-            f"Phase '{phase_name}' encountered {len(errors)} error(s). "
-            f"Resolution pipeline aborted."
-        )
-        super().__init__(msg)
-        self.phase_name = phase_name
-        self.errors = errors
-
-
-# Factory signature:
-#   factory(cancel_event) -> Sequence[UnitOfWork]
-PhaseWorkFactory = Callable[[CancellationEvent], Sequence["UnitOfWork"]]
+# Adjust this import path to wherever UnitOfWork is actually defined.
+from melder.utilities.synchronization.unit_of_work import UnitOfWork
 
 
 class PhaseScheduler(Cleanable):
@@ -108,12 +67,12 @@ class PhaseScheduler(Cleanable):
       It only coordinates UnitOfWork instances.
     - Phase strategies/factories are responsible for:
       * Inspecting the Spellbook.
-      * Creating appropriately labeled UnitOfWork instances.
-      * Attaching the shared `cancel_event` (for cooperative cancellation).
+      * Creating appropriately labeled UnitOfWork instances via
+        :meth:`create_unit_of_work` so that all work items share the
+        scheduler's CancellationEvent.
     """
 
     __slots__ = Cleanable.__slots__ + [
-        "_spellbook",
         "_configuration",
         "_workers",
         "_barrier_timeout_ms",
@@ -134,8 +93,6 @@ class PhaseScheduler(Cleanable):
             *,
             spellbook: Any,
             configuration: Any,
-            workers: Optional[int] = None,
-            barrier_timeout_ms: Optional[int] = None,
     ) -> None:
         """
         Initialize a new PhaseScheduler.
@@ -147,76 +104,57 @@ class PhaseScheduler(Cleanable):
             configuration:
                 The active Configuration instance. Used to pull worker counts
                 and barrier timeout if explicit overrides are not provided.
-            workers:
-                Optional override for the number of worker threads. If None,
-                the scheduler reads `phase_scheduler_workers_per_spellbook`
-                from the configuration and falls back to 4 if not present.
-            barrier_timeout_ms:
-                Optional override for the per-phase barrier timeout in
-                milliseconds. If None, the scheduler reads
-                `phase_scheduler_barrier_timeout_milliseconds` from the
-                configuration and falls back to 60000 ms (60 seconds).
         """
         Cleanable.__init__(self)
-
-        self._spellbook = spellbook
-        self._configuration = configuration
-
-        # Worker count: configuration → override → default (4)
-        if workers is not None:
-            resolved_workers = workers
-        else:
-            try:
-                resolved_workers = configuration.get_property(
-                    "phase_scheduler_workers_per_spellbook"
-                )
-            except Exception:
-                resolved_workers = 4
-
-        if not isinstance(resolved_workers, int) or resolved_workers < 1:
-            raise ValueError(
-                "phase_scheduler_workers_per_spellbook must be a positive integer."
-            )
-
-        self._workers: int = resolved_workers
-
-        # Barrier timeout (ms): configuration → override → default (60000)
-        if barrier_timeout_ms is not None:
-            resolved_timeout = barrier_timeout_ms
-        else:
-            try:
-                resolved_timeout = configuration.get_property(
-                    "phase_scheduler_barrier_timeout_milliseconds"
-                )
-            except Exception:
-                resolved_timeout = 60000
-
-        if not isinstance(resolved_timeout, int) or resolved_timeout <= 0:
-            raise ValueError(
-                "phase_scheduler_barrier_timeout_milliseconds must be a positive integer."
-            )
-
-        self._barrier_timeout_ms: int = resolved_timeout
+        self._configuration: IConfiguration = configuration
+        self._workers: int = self._get_worker_count(configuration)
+        self._barrier_timeout_ms: int = self._get_timeout_ms(configuration)
 
         # Cancellation + queue + worker state
         self._cancel_signal: CancellationEventSignal = CancellationEventSignal()
         self._cancel_event: CancellationEvent = self._cancel_signal.event
 
-        # Use ConcurrentQueue instead of queue.Queue
+        # Use concurrent containers for shared state.
         self._queue: ConcurrentQueue[Any] = ConcurrentQueue()
-        self._threads: List[threading.Thread] = []
+        self._threads: ConcurrentList[threading.Thread] = ConcurrentList()
         self._workers_started: bool = False
         self._shutdown: bool = False
 
         self._lock: threading.RLock = threading.RLock()
 
-        # Phase registry
-        self._phase_factories: Dict[str, PhaseWorkFactory] = {}
-        self._phase_order: List[str] = []
+        # Phase registry (concurrent containers).
+        self._phase_factories: ConcurrentDict[str, Callable[[], Sequence[UnitOfWork]]] = ConcurrentDict()
+        self._phase_order: ConcurrentList[str] = ConcurrentList()
 
         # Unique sentinel object to signal worker shutdown
         self._sentinel: object = object()
 
+    def _get_worker_count(self, configuration: IConfiguration) -> int:
+        """
+        Internal helper to get the worker count.
+        """
+        # Worker count
+        try:
+            return configuration.get_property(
+                "phase_scheduler_workers_per_spellbook"
+            )
+        except Exception:
+            raise ValueError(
+                "Failed to read phase_scheduler_workers_per_spellbook from configuration."
+            )
+
+    def _get_timeout_ms(self, configuration: IConfiguration) -> int:
+        """
+        Internal helper to get the barrier timeout in milliseconds.
+        """
+        try:
+            return configuration.get_property(
+                "phase_scheduler_barrier_timeout_milliseconds"
+            )
+        except Exception:
+            raise ValueError(
+                "Failed to read phase_scheduler_barrier_timeout_milliseconds from configuration."
+            )
     # ------------------------------------------------------------------
     # Cleanup
     # ------------------------------------------------------------------
@@ -253,7 +191,7 @@ class PhaseScheduler(Cleanable):
             # Join threads.
             for thread in self._threads:
                 try:
-                    thread.join(timeout=1.0)
+                    thread.join(timeout=5.0)
                 except Exception:
                     # Ignore join failures during teardown.
                     pass
@@ -266,9 +204,25 @@ class PhaseScheduler(Cleanable):
                     pass
                 self._queue = None
 
-            # Null out references for GC friendliness.
-            self._threads = []
-            self._spellbook = None
+            if self._threads is not None:
+                try:
+                    self._threads.cleanup()
+                except Exception:
+                    pass
+                self._threads = None
+            if self._phase_factories is not None:
+                try:
+                    self._phase_factories.cleanup()
+                except Exception:
+                    pass
+                self._phase_factories = None
+            if self._phase_order is not None:
+                try:
+                    self._phase_order.cleanup()
+                except Exception:
+                    pass
+                self._phase_order = None
+
             self._configuration = None
 
         # Drop lock last.
@@ -283,8 +237,9 @@ class PhaseScheduler(Cleanable):
         """
         Shared CancellationEvent used by all Units of Work.
 
-        Phase factories should attach this event to every UnitOfWork they
-        produce so that scheduler-initiated cancellation is honoured.
+        Phase factories should NOT construct their own events; instead they
+        should call :meth:`create_unit_of_work` so this event is wired in
+        automatically.
         """
         return self._cancel_event
 
@@ -310,10 +265,62 @@ class PhaseScheduler(Cleanable):
         return self._barrier_timeout_ms
 
     # ------------------------------------------------------------------
+    # UnitOfWork factory
+    # ------------------------------------------------------------------
+
+    def create_unit_of_work(
+            self,
+            func: Callable[..., Any],
+            *,
+            args: Optional[Tuple[Any, ...]] = None,
+            kwargs: Optional[Dict[str, Any]] = None,
+            label: Optional[str] = None,
+            metadata: Any = None,
+    ) -> UnitOfWork:
+        """
+        Convenience factory for creating a UnitOfWork that is already wired to
+        this scheduler's shared CancellationEvent.
+
+        Phase factories should prefer this instead of constructing UnitOfWork
+        directly so that:
+
+            - All work items participate in scheduler-driven cooperative
+              cancellation.
+            - The wiring of CancellationEvent is centralized inside the
+              scheduler.
+
+        Args:
+            func:
+                The callable to execute inside the UnitOfWork.
+            args:
+                Optional positional arguments for the callable.
+            kwargs:
+                Optional keyword arguments for the callable.
+            label:
+                Optional human-readable label (for logging/telemetry).
+            metadata:
+                Optional metadata describing this unit (spell id, phase, etc.).
+
+        Returns:
+            UnitOfWork: A newly constructed UnitOfWork bound to this scheduler's
+            CancellationEvent.
+        """
+        self.check_cleaned()
+
+        return UnitOfWork(
+            func=func,
+            args=args,
+            kwargs=kwargs,
+            cancel_event=self._cancel_event,
+            label=label,
+            metadata=metadata,
+        )
+
+    # ------------------------------------------------------------------
     # Phase registration API
     # ------------------------------------------------------------------
 
-    def register_phase(self, name: str, factory: PhaseWorkFactory) -> None:
+    def register_phase(self, name: str, factory: Callable[[], Sequence[UnitOfWork]]) -> None:
         """
         Register a phase in the scheduler.
 
@@ -323,9 +330,10 @@ class PhaseScheduler(Cleanable):
             name:
                 Logical phase name (e.g. "scan_spells", "build_graphs").
             factory:
-                Callable that receives the shared CancellationEvent and
-                returns a Sequence of UnitOfWork objects to execute for
-                this phase.
+                Callable[[] -> Sequence[UnitOfWork]] that, when invoked, builds
+                all UnitsOfWork for this phase. Factories should use
+                :meth:`create_unit_of_work` to ensure each unit is bound to
+                this scheduler's CancellationEvent.
 
         Raises:
             RuntimeError: If the scheduler has been cleaned.
@@ -338,7 +346,7 @@ class PhaseScheduler(Cleanable):
             raise ValueError("Phase name must be a non-empty string.")
 
         if not callable(factory):
-            raise TypeError("Phase factory must be callable(cancel_event) -> Sequence[UnitOfWork].")
+            raise TypeError("Phase factory must be callable() -> Sequence[UnitOfWork].")
 
         with self._lock:
             if name in self._phase_factories:
@@ -421,8 +429,8 @@ class PhaseScheduler(Cleanable):
     def _run_single_phase(
             self,
             phase_name: str,
-            factory: PhaseWorkFactory,
-    ) -> Sequence["UnitOfWork"]:
+            factory: Callable[[], Sequence[UnitOfWork]],
+    ) -> Sequence[UnitOfWork]:
         """
         Internal
 
@@ -437,7 +445,8 @@ class PhaseScheduler(Cleanable):
             phase_name:
                 Logical name of the phase.
             factory:
-                PhaseWorkFactory used to build the phase's UoWs.
+                Callable[[] -> Sequence[UnitOfWork]] used to build the phase's
+                UnitsOfWork.
 
         Returns:
             Sequence[UnitOfWork]:
@@ -455,7 +464,7 @@ class PhaseScheduler(Cleanable):
             )
 
         # Build the work for this phase.
-        units: Sequence["UnitOfWork"] = factory(self._cancel_event)
+        units: Sequence[UnitOfWork] = factory()
 
         # No work = trivial barrier.
         if not units:
@@ -498,7 +507,7 @@ class PhaseScheduler(Cleanable):
     # Public run API
     # ------------------------------------------------------------------
 
-    def run_all_phases(self) -> Dict[str, Sequence["UnitOfWork"]]:
+    def run_all_phases(self) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Execute all registered phases in registration order.
 
@@ -514,13 +523,14 @@ class PhaseScheduler(Cleanable):
         """
         self.check_cleaned()
 
-        with self._lock:
-            phase_names = list(self._phase_order)
+        # Snapshot the phase order to avoid surprises if someone tweaks it
+        # concurrently (ConcurrentList is safe, but we still want a stable run view).
+        phase_names = list(self._phase_order)
 
         if not phase_names:
             return {}
 
-        results: Dict[str, Sequence["UnitOfWork"]] = {}
+        results: Dict[str, Sequence[UnitOfWork]] = {}
 
         for name in phase_names:
             factory = self._phase_factories.get(name)
