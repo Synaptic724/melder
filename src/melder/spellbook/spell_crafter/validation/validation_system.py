@@ -1,6 +1,16 @@
 from __future__ import annotations
 from threading import RLock
 from typing import Any, Dict, List, Optional
+
+from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
+from melder.spellbook.spell_crafter.validation.spell_validation_result import SpellValidationResult
+from melder.spellbook.spell_crafter.validation.strategies.circular_dependency_strategy import CircularDependencyStrategy
+from melder.spellbook.spell_crafter.validation.strategies.dangling_dependency_strategy import \
+    DanglingDependenciesStrategy
+from melder.spellbook.spell_crafter.validation.strategies.required_holes_strategy import RequiredHolesStrategy
+from melder.spellbook.spell_crafter.validation.strategies.resolution_frame_presence_strategy import \
+    ResolutionFramePresenceStrategy
+from melder.spellbook.spell_crafter.validation.strategies.self_validation_strategy import SelfDependencyStrategy
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
@@ -44,7 +54,7 @@ class SpellValidationSystem(Cleanable):
     def __init__(self) -> None:
         super().__init__()
         self._lock: RLock = RLock()
-        self._strategies: Dict[str, SpellValidationStrategy] = {}
+        self._strategies: Dict[str, 'SpellValidationStrategy'] = {}
         self._register_builtin_strategies()
 
     # ------------------------------------------------------------------ #
@@ -102,7 +112,7 @@ class SpellValidationSystem(Cleanable):
         self.register_strategy(CircularDependencyStrategy())
         self.register_strategy(RequiredHolesStrategy())
 
-    def register_strategy(self, strategy: SpellValidationStrategy) -> None:
+    def register_strategy(self, strategy: 'SpellValidationStrategy') -> None:
         """
         Register (or replace) a validation strategy.
 
@@ -146,7 +156,7 @@ class SpellValidationSystem(Cleanable):
                 # Validation cleanup should never explode callers.
                 pass
 
-    def iter_strategies(self) -> List[SpellValidationStrategy]:
+    def iter_strategies(self) -> List['SpellValidationStrategy']:
         """
         Return a snapshot list of all registered strategies.
 
@@ -168,7 +178,7 @@ class SpellValidationSystem(Cleanable):
             symbolic_graph: Optional[SpellSymbolicGraph],
             resolution_frame: Optional[SpellResolutionFrame],
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> SpellValidationResult:
+    ) -> 'SpellValidationResult':
         """
         Validate a single spell using all registered strategies.
         """
@@ -190,7 +200,7 @@ class SpellValidationSystem(Cleanable):
         if spellbook is not None:
             scanner = SpellbookScanner(spellbook)
 
-        issues: List[SpellValidationIssue] = []
+        issues: List['SpellValidationIssue'] = []
 
         context = SpellValidationContext(
             spell=spell,
