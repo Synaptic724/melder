@@ -17,7 +17,6 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
 )
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.spellbook.spell import Spell
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
@@ -95,6 +94,7 @@ class SpellCrafter(Cleanable):
 
         self._lock: threading.RLock = threading.RLock()
         self._spell: ISpell = spell
+        self._spell_validator: 'SpellValidationSystem' = self._spell._spellbook._spell_validator
 
         self._requirements: Optional[SpellRequirements] = None
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
@@ -154,6 +154,7 @@ class SpellCrafter(Cleanable):
             self._validated = False
             self._is_broken = False
             self._spell = None
+            self._spell_validator = None
             self._cleaned = True
 
         self._lock = None
@@ -750,27 +751,13 @@ class SpellCrafter(Cleanable):
             cancel_event=cancel_event
         )
 
-        # Local import to avoid hard wiring module-level dependencies and
-        # potential circular import surprises.
-        from melder.spellbook.spell_crafter.validation.spell_validation_system import (
-            SpellValidationSystem,
+        result = self._spell_validator.validate_spell(
+            spell=self._spell,
+            requirements=requirements,
+            symbolic_graph=symbolic_graph,
+            resolution_frame=resolution_frame,
+            cancel_event=cancel_event,
         )
-
-        system = SpellValidationSystem()
-        try:
-            result = system.validate_spell(
-                spell=self._spell,
-                requirements=requirements,
-                symbolic_graph=symbolic_graph,
-                resolution_frame=resolution_frame,
-                cancel_event=cancel_event,
-            )
-        finally:
-            try:
-                system.cleanup()
-            except Exception:
-                # Validation cleanup failures should never explode callers.
-                pass
 
         self._validation_result = result
         self._validated = True

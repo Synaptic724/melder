@@ -6,6 +6,7 @@ import threading
 from melder.aether.aether import Aether
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.configuration.system_state import SystemState
+from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
 from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
@@ -105,6 +106,9 @@ class Spellbook(Cleanable, ISpellbook):
         # Binding system
         self._bind: Bind = Bind(self)
 
+        # Spell validator
+        self._spell_validator: SpellValidationSystem = SpellValidationSystem()
+
 
     #region Disposal
 
@@ -182,6 +186,13 @@ class Spellbook(Cleanable, ISpellbook):
             except Exception as e:
                 self._logger.error(f"Error cleaning _contracted_versions: {e}", "_cleanup_components", exc_info=True)
             self._contracted_versions = None
+
+        if self._spell_validator is not None:
+            try:
+                self._spell_validator.cleanup()
+            except Exception as e:
+                self._logger.error(f"Error cleaning spell validator: {e}", "_cleanup_components", exc_info=True)
+            self._spell_validator = None
 
         self._logger.debug("Spellbook component cleanup complete", "_cleanup_components")
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from threading import RLock
 from typing import Any, Dict, List, Optional
-
+# Melder imports
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
 from melder.spellbook.spell_crafter.validation.spell_validation_result import SpellValidationResult
 from melder.spellbook.spell_crafter.validation.strategies.circular_dependency_strategy import CircularDependencyStrategy
@@ -11,7 +11,6 @@ from melder.spellbook.spell_crafter.validation.strategies.required_holes_strateg
 from melder.spellbook.spell_crafter.validation.strategies.resolution_frame_presence_strategy import \
     ResolutionFramePresenceStrategy
 from melder.spellbook.spell_crafter.validation.strategies.self_validation_strategy import SelfDependencyStrategy
-# Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
@@ -151,7 +150,8 @@ class SpellValidationSystem(Cleanable):
 
         if strategy is not None:
             try:
-                strategy.cleanup()
+                if hasattr(strategy, 'cleanup'):
+                    strategy.cleanup()
             except Exception:
                 # Validation cleanup should never explode callers.
                 pass
