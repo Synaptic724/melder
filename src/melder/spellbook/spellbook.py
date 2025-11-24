@@ -8,6 +8,7 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
 from melder.spellbook.spellbinder import SpellBinder
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -1740,7 +1741,6 @@ class Spellbook(Cleanable, ISpellbook):
 
 #endregion Hook Management
 #region Resolution Phases
-    #region Resolution Phases
     def _run_resolution_phases(self) -> Dict[str, Sequence['UnitOfWork']]:
         """
         Internal
@@ -1775,11 +1775,25 @@ class Spellbook(Cleanable, ISpellbook):
         cooperates with a shared :class:`CancellationEvent`, so any failure
         or timeout cancels the remaining pipeline.
 
+        After all phases complete, this method performs a **hard validation
+        barrier**:
+
+            - It inspects every local Spell.
+            - If any spell reports ``spell.is_broken is True`` (i.e. its
+              validation phase found errors), a :class:`SpellbookValidationError`
+              is raised and Conduit construction is aborted.
+
         Returns:
             Dict[str, Sequence[UnitOfWork]]:
-                Mapping of phase name -> sequence of `UnitOfWork` instances.
-                Callers may inspect individual `uow.result()`/`uow.exception()`
-                if they need detailed telemetry or diagnostics.
+                Mapping of phase name -> sequence of `UnitOfWork` instances,
+                if and only if all spells validate successfully. Callers may
+                inspect individual `uow.result()` / `uow.exception()` for
+                detailed telemetry or diagnostics.
+
+        Raises:
+            SpellbookValidationError:
+                If one or more spells are marked as broken after the
+                validation phase.
         """
         self.check_cleaned()
         self._logger.debug(
@@ -1813,6 +1827,36 @@ class Spellbook(Cleanable, ISpellbook):
             )
 
             results = scheduler.run_all_phases()
+
+            # --------------------------------------------------------------
+            # Post-phase validation barrier
+            #
+            # At this point, every spell has had its validation phase invoked
+            # via SpellCrafter / SpellValidationSystem. We now inspect the
+            # per-spell flags and **fail hard** if any spell is broken.
+            # --------------------------------------------------------------
+            broken_spells: list[ISpell] = []
+            for spell in self._spells.values():
+                # `is_broken` is a facade over SpellCrafter's validation state.
+                try:
+                    if spell.is_broken:
+                        broken_spells.append(spell)
+                except Exception:
+                    # If a spell explodes during status check, treat it as broken.
+                    broken_spells.append(spell)
+
+            if broken_spells:
+                self._logger.error(
+                    "Spellbook resolution pipeline completed with broken spells; "
+                    "raising SpellbookValidationError.",
+                    "_run_resolution_phases",
+                    extra={
+                        "broken_spell_ids": [s.spell_id for s in broken_spells],
+                        "broken_spell_names": [s.spell_name for s in broken_spells],
+                    },
+                )
+                raise SpellbookValidationError(broken_spells)
+
             self._logger.debug(
                 "Spellbook resolution pipeline completed successfully",
                 "_run_resolution_phases",
@@ -1829,6 +1873,7 @@ class Spellbook(Cleanable, ISpellbook):
                     "_run_resolution_phases",
                     exc_info=True,
                 )
+    #endregion
 
     def _phase_requirements_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
         """
