@@ -1,0 +1,94 @@
+
+class CircularDependencyStrategy(SpellValidationStrategy):
+    """
+    Detect circular dependency chains in the spell dependency graph.
+
+    This uses the *Spellbook-level* view of dependencies:
+
+        spell_id -> spell.dependencies (spell_id list)
+
+    and looks for cycles reachable from the spell being validated.
+    """
+
+    __slots__ = SpellValidationStrategy.__slots__
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="circular_dependency",
+            description="Detects cycles in the spell dependency graph.",
+        )
+
+    def validate(self, context: SpellValidationContext) -> None:
+        self.check_cleaned()
+
+        cancel_event = context.cancel_event
+        if cancel_event is not None and cancel_event.is_set:
+            cancel_event.throw_if_set()
+
+        scanner = context.scanner
+        if scanner is None:
+            # Without a Spellbook, we cannot reason about global cycles.
+            return
+
+        # Build adjacency: version_id -> [dependency_ids...]
+        adjacency: Dict[str, List[str]] = {}
+        for index, spell in scanner.iter_all_spells():
+            if cancel_event is not None and cancel_event.is_set:
+                cancel_event.throw_if_set()
+
+            spell_id = index.current
+            deps: List[str] = getattr(spell, "dependencies", [])
+            adjacency[spell_id] = list(deps) if deps else []
+
+        root_id = context.spell.spell_index.current
+
+        visited: set[str] = set()
+        stack: set[str] = set()
+        cycle_path: List[str] = []
+
+        def dfs(node_id: str, path: List[str]) -> None:
+            if node_id in stack:
+                # Found a cycle; extract the cycle segment from the path.
+                try:
+                    start_idx = path.index(node_id)
+                except ValueError:
+                    # Should not happen, but be defensive.
+                    start_idx = 0
+                cycle_path.extend(path[start_idx:])
+                return
+
+            if node_id in visited:
+                return
+
+            visited.add(node_id)
+            stack.add(node_id)
+
+            for dep_id in adjacency.get(node_id, []):
+                if cancel_event is not None and cancel_event.is_set:
+                    cancel_event.throw_if_set()
+
+                if dep_id not in adjacency:
+                    # Dangling dependency – another strategy will handle it.
+                    continue
+                dfs(dep_id, path + [dep_id])
+                if cycle_path:
+                    return
+
+            stack.remove(node_id)
+
+        dfs(root_id, [root_id])
+
+        if cycle_path:
+            # Format as "A -> B -> C -> A"
+            pretty = " -> ".join(cycle_path + [cycle_path[0]])
+            context.issues.append(
+                SpellValidationIssue(
+                    severity="error",
+                    code="CIRCULAR_DEPENDENCY",
+                    message=(
+                        f"Circular dependency detected starting from spell "
+                        f"{context.spell.spell_name!r}: {pretty}."
+                    ),
+                    details={"cycle": list(cycle_path)},
+                )
+            )

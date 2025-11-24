@@ -1,0 +1,77 @@
+from typing import Optional, List
+# Melder imports
+from melder.utilities.general_base.cleanable import Cleanable
+
+
+class SpellValidationResult(Cleanable):
+    """
+    Aggregate validation result for a single spell.
+
+    Attributes
+    ----------
+    spell_id:
+        Versioned identity of the spell (typically ``SpellIndex.current``).
+    spell_name:
+        Human-readable spell name (usually the underlying callable's __name__).
+    issues:
+        All issues (errors + warnings) discovered by the validation strategies.
+    """
+
+    __slots__ = Cleanable.__slots__ + [
+        "spell_id",
+        "spell_name",
+        "issues",
+    ]
+
+    def __init__(
+            self,
+            spell_id: str,
+            spell_name: str,
+            issues: Optional[List['SpellValidationIssue']] = None,
+    ) -> None:
+        super().__init__()
+
+        if not spell_id:
+            raise ValueError("spell_id cannot be empty.")
+        if not spell_name:
+            raise ValueError("spell_name cannot be empty.")
+
+        self.spell_id: str = spell_id
+        self.spell_name: str = spell_name
+        self.issues: List['SpellValidationIssue'] = issues or []
+
+    @property
+    def has_errors(self) -> bool:
+        """Return True if any issue is an error."""
+        return any(issue.severity == "error" for issue in self.issues)
+
+    @property
+    def has_warnings(self) -> bool:
+        """Return True if any issue is a warning."""
+        return any(issue.severity == "warning" for issue in self.issues)
+
+    def cleanup(self) -> None:
+        """
+        Deterministically tear down this result and its issues.
+
+        This:
+        - Calls ``cleanup()`` on each issue that supports it.
+        - Clears the issues list.
+        """
+        if self._cleaned:
+            return
+
+        for issue in self.issues:
+            if isinstance(issue, Cleanable):
+                try:
+                    issue.cleanup()
+                except Exception:
+                    # Diagnostics cleanup must never break callers.
+                    pass
+
+        try:
+            self.issues.clear()
+        except Exception:
+            pass
+
+        self._cleaned = True

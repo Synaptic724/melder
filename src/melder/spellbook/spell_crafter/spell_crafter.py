@@ -17,8 +17,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
 )
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpell
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+from melder.spellbook.spell import Spell
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
@@ -28,6 +27,8 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
+from melder.utilities.interfaces.interfaces import ISpell
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 class SpellCrafter(Cleanable):
@@ -141,8 +142,13 @@ class SpellCrafter(Cleanable):
                 except Exception:
                     pass
 
-            # The resolution frame is a lightweight dataclass; the owning Spell
-            # retains the concrete DAG via ``_add_build_details``.
+            if self._validation_result is not None and isinstance(self._validation_result, Cleanable):
+                try:
+                    self._validation_result.cleanup()
+                except Exception:
+                    pass
+
+            # Resolution frame is a lightweight summary; just drop it.
             self._resolution_frame = None
             self._validation_result = None
             self._validated = False
@@ -207,7 +213,10 @@ class SpellCrafter(Cleanable):
         """
         Phase 4 validation result artifact, if any.
 
-        Current placeholder is None.
+        Once Phase 4 is wired, this will typically be a
+        :class:`SpellValidationResult` produced by the
+        :class:`SpellValidationSystem`. For now the type is kept as ``Any``
+        to avoid constraining callers.
         """
         self.check_cleaned()
         return self._validation_result
@@ -270,19 +279,14 @@ class SpellCrafter(Cleanable):
         only ever targets class/creation spells; method/lambda spells must be
         obtained explicitly via SpellMap or root-level meld.
         """
+        # Filter out method / lambda style spells for "single" DI.
         if require_class_spell:
             spell_type = spell_obj.spell_type
-            # Exclude **all** method / lambda spell variants, matching Spell.is_method_spell /
-            # Spell.is_lambda_spell semantics.
-            if spell_type in {
-                SpellType.METHOD,
-                SpellType.METHOD_WITH_BINDING_NAME,
-                SpellType.METHOD_WITH_SPELLFRAME,
-                SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
-                SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
-                SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
-                SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
-            }:
+            if spell_type in (
+                    SpellType.METHOD,
+                    SpellType.METHOD_WITH_BINDING_NAME,
+                    SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            ):
                 return False
 
         # Concrete class match.
@@ -705,7 +709,7 @@ class SpellCrafter(Cleanable):
             return frame
 
     # ------------------------------------------------------------------
-    # Phase 4 – Validation (placeholder)
+    # Phase 4 – Validation
     # ------------------------------------------------------------------
 
     def run_phase_validation(
@@ -713,27 +717,68 @@ class SpellCrafter(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> Any:
         """
-        Phase 4 – Validation (placeholder).
+        Phase 4 – Validation.
 
-        Future responsibilities:
-            * Validate the resolution frame and symbolic graph against:
-                - existence / lifecycle policies
-                - cross-conduit boundaries
-                - configuration flags
-            * Populate ``self._validation_result`` with a rich result object.
-            * Set ``self._validated`` and ``self._is_broken`` appropriately.
+        Responsibilities (current increment):
 
-        Current behavior:
-            * Honors cancellation.
-            * Marks the spell as validated and not broken.
-            * Returns ``self._validation_result`` (currently None).
+            * Ensure Phase 1–3 artifacts are available.
+            * Invoke :class:`SpellValidationSystem` with a fully-populated
+              :class:`SpellValidationContext`.
+            * Store the resulting validation artifact and derived flags:
+
+                - :attr:`_validation_result`
+                - :attr:`_validated`
+                - :attr:`_is_broken`
+
+        Validation does **not** mutate the Spellbook or the Spell graph; it
+        only produces diagnostics about structural correctness and safety.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
 
+        if self._validated and self._validation_result is not None:
+            return self._validation_result
+
+        # Ensure earlier phases have run so strategies have full context.
+        requirements = self._requirements or self.run_phase_requirements(
+            cancel_event=cancel_event
+        )
+        symbolic_graph = self._symbolic_graph or self.run_phase_symbolic_graph(
+            cancel_event=cancel_event
+        )
+        resolution_frame = self._resolution_frame or self.run_phase_local_frame(
+            cancel_event=cancel_event
+        )
+
+        # Local import to avoid hard wiring module-level dependencies and
+        # potential circular import surprises.
+        from melder.spellbook.spell_crafter.validation.spell_validation_system import (
+            SpellValidationSystem,
+        )
+
+        system = SpellValidationSystem()
+        try:
+            result = system.validate_spell(
+                spell=self._spell,
+                requirements=requirements,
+                symbolic_graph=symbolic_graph,
+                resolution_frame=resolution_frame,
+                cancel_event=cancel_event,
+            )
+        finally:
+            try:
+                system.cleanup()
+            except Exception:
+                # Validation cleanup failures should never explode callers.
+                pass
+
+        self._validation_result = result
         self._validated = True
-        self._is_broken = False
-        return self._validation_result
+        # Treat any validation error as "broken" for now; we can refine this
+        # later with severity levels / policies.
+        self._is_broken = bool(getattr(result, "has_errors", False))
+
+        return result
 
     # ------------------------------------------------------------------
     # Convenience – run all phases
