@@ -187,7 +187,7 @@ class Meld(IMeld):
             target_spell = self._resolve_spell(spell, spellframe, binding_name)
 
             # 2) Attach override metadata (if any)
-            self._apply_override(target_spell, spell_override)
+            self._apply_override(target_spell, spell_override) #TODO: WE gotta rethink this because attaching it to spell.metadata is dumb
 
             # 3) Execute pre-cast hooks (no instance yet)
             self._execute_hooks(target_spell.pre_hooks, "pre_cast")
@@ -475,24 +475,6 @@ class Meld(IMeld):
             return result
 
         return None
-
-
-
-    @staticmethod
-    def _apply_override(spell: ISpell, override: Optional[Union[dict, list, tuple]]) -> None:
-        """
-        Attaches the user-provided override payload to the spell's metadata.
-
-        Args:
-            spell (ISpell): The resolved Spell configuration object.
-            override (Optional[Union[dict, list, tuple]]): The payload to attach.
-
-        Returns:
-            None.
-        """
-        if override is not None:
-            # Metadata is exposed as a mutable dictionary on the Spell interface
-            spell.metadata["spell_override"] = override
 
     @staticmethod
     def _execute_hooks(hooks: List[Callable], phase: str) -> None:
