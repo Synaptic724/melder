@@ -192,7 +192,7 @@ class SpellValidationSystem(Cleanable):
         # Try to obtain the owning Spellbook without resorting to getattr.
         spellbook: Optional[ISpellbook]
         try:
-            spellbook = spell._spellbook  # type: ignore[attr-defined]
+            spellbook = spell._spellbook
         except AttributeError:
             spellbook = None
 
