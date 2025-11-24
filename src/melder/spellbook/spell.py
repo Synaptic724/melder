@@ -67,7 +67,7 @@ class Spell(ISpell, Cleanable):
         binding_name (Optional[str]):
             The logical name this spell is bound to (e.g., "database", "engine").
             Normalized as part of the internal key via SpellInputUtils.
-            May be None for unnamed/default bindings.
+            Maybe None for unnamed/default bindings.
 
         spell_name (str):
             The actual internal name of the object or callable (for display/debugging).
@@ -103,7 +103,7 @@ class Spell(ISpell, Cleanable):
 
         spellbook (Optional[ISpellbook]):
             Back-reference to the owning Spellbook. Primarily used for internal coordination
-            (conduit ownership, graph wiring, diagnostics). May be None in some contexts.
+            (conduit ownership, graph wiring, diagnostics). Maybe None in some contexts.
 
         *args / **kwargs:
             Arbitrary tags and metadata for internal use or future extensions.
@@ -150,7 +150,7 @@ class Spell(ISpell, Cleanable):
         self.existence: Existence = existence
 
         # Reflective / binding profile (shape of the spell).
-        # Typically a SpellBindingProfile, but treated as opaque here.
+        # Typically, a SpellBindingProfile, but treated as opaque here.
         self.profile: Optional[Any] = profile
 
         self.aetheric_frame: str = aetheric_frame
@@ -377,6 +377,38 @@ class Spell(ISpell, Cleanable):
         return crafter.requirements if crafter is not None else None
 
     @property
+    def symbolic_graph(self) -> Optional["SpellSymbolicGraph"]:
+        """
+        Phase 2 symbolic graph for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_symbolic_graph` via :class:`SpellCrafter`.
+        """
+        crafter = self._crafter
+        return crafter.symbolic_graph if crafter is not None else None
+
+    @property
+    def resolution_frame(self) -> Any:
+        """
+        Phase 3 local resolution frame / DAG for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_local_frame` via :class:`SpellCrafter`.
+        Concrete type is intentionally opaque here; callers should treat it as
+        an internal resolution artifact.
+        """
+        crafter = self._crafter
+        return crafter.resolution_frame if crafter is not None else None
+
+    @property
+    def validation_result(self) -> Any:
+        """
+        Phase 4 validation result for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
+        """
+        crafter = self._crafter
+        return crafter.validation_result if crafter is not None else None
+
+    @property
     def validated(self) -> bool:
         """
         True if the validation phase has run and marked this spell as validated.
@@ -418,21 +450,25 @@ class Spell(ISpell, Cleanable):
             self.owned_spell = True
             self._owner_creations = creations
 
-    def _add_build_details(self, dag: Any, dependencies: List[str]) -> None:
+    def _add_build_details(
+            self,
+            dag: Any,
+            dependencies: List[str],
+    ) -> None:
         """
         Internal
 
         Attach static build-time dependency graph details to this spell.
 
-        This is typically invoked by the :class:`SpellCrafter` / DAG builder after it has
+        This is typically invoked by the SpellCrafter / DAG builder after it has
         analyzed the spell's parameters and constructed a dependency DAG.
 
         Args:
-            dag (Any):
+            dag:
                 A static DAG representation for this spell's dependency structure.
                 This object is considered immutable at runtime and may expose a
                 `dispose()` method for cleanup.
-            dependencies (List[str]):
+            dependencies:
                 A list of spell_ids (SHA256 fingerprints) that this spell depends on.
 
         Raises:
@@ -447,6 +483,8 @@ class Spell(ISpell, Cleanable):
         with self._lock:
             self.dependency_graph = dag
             self.dependencies = dependencies
+
+
     #endregion Configuration
 
     #region Resolution Phases (facades over SpellCrafter)
@@ -549,7 +587,7 @@ class Spell(ISpell, Cleanable):
         Convenience helper to run **all compiler / resolution phases**
         (Phase 1–4) for this spell, in order.
 
-        Currently this means:
+        Currently, this means:
 
             1. Requirements extraction.
             2. Symbolic graph construction (placeholder).

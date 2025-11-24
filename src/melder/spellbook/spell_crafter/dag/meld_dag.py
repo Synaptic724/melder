@@ -42,6 +42,34 @@ class DagNode(Cleanable):
         self._tasks: List[Callable[[], Any]] = []
 
     # --------------------------------------------------------------------- #
+    # Cleanup
+    # --------------------------------------------------------------------- #
+    def cleanup(self) -> None:
+        """
+        Cleans up the node, dropping references to payload, dependencies,
+        dependents, and tasks.
+
+        Idempotent.
+        """
+        if self._cleaned:
+            return
+
+        # No lock is used here; nodes are owned by the DAG and not expected
+        # to be mutated concurrently in Melder.
+        self._payload = None
+
+        # Break graph links
+        for dep in list(self._dependencies):
+            dep._dependents.discard(self)
+        for dep in list(self._dependents):
+            dep._dependencies.discard(self)
+
+        self._dependencies.clear()
+        self._dependents.clear()
+        self._tasks.clear()
+        self._cleaned = True
+
+    # --------------------------------------------------------------------- #
     # Properties
     # --------------------------------------------------------------------- #
     @property
@@ -119,34 +147,6 @@ class DagNode(Cleanable):
         for task in self._tasks:
             task()
 
-    # --------------------------------------------------------------------- #
-    # Cleanup
-    # --------------------------------------------------------------------- #
-    def cleanup(self) -> None:
-        """
-        Cleans up the node, dropping references to payload, dependencies,
-        dependents, and tasks.
-
-        Idempotent.
-        """
-        if self._cleaned:
-            return
-
-        # No lock is used here; nodes are owned by the DAG and not expected
-        # to be mutated concurrently in Melder.
-        self._payload = None
-
-        # Break graph links
-        for dep in list(self._dependencies):
-            dep._dependents.discard(self)
-        for dep in list(self._dependents):
-            dep._dependencies.discard(self)
-
-        self._dependencies.clear()
-        self._dependents.clear()
-        self._tasks.clear()
-        self._cleaned = True
-
     def __repr__(self) -> str:
         return f"DagNode(id={self._id!r}, deps={len(self._dependencies)}, dependents={len(self._dependents)})"
 
@@ -179,6 +179,39 @@ class DirectedAcyclicWorkGraph(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: RLock = RLock()
         self._nodes: Dict[str, DagNode] = {}
+
+    # --------------------------------------------------------------------- #
+    # Cleanup
+    # --------------------------------------------------------------------- #
+    def cleanup(self) -> None:
+        """
+        Cleans up the DAG and all contained nodes.
+
+        - Calls `cleanup()` on every node.
+        - Clears internal maps and breaks references.
+        - Marks this DAG as cleaned.
+
+        Idempotent.
+        """
+        if self._cleaned:
+            return
+
+        with self._lock:
+            if self._cleaned:
+                return
+
+            for node in list(self._nodes.values()):
+                try:
+                    node.cleanup()
+                except Exception:
+                    # Cleanup should never explode the caller; failures here
+                    # just mean some references may linger a bit longer.
+                    pass
+
+            self._nodes.clear()
+            self._nodes = {}
+            self._cleaned = True
+
 
     # --------------------------------------------------------------------- #
     # Core API
@@ -318,38 +351,6 @@ class DirectedAcyclicWorkGraph(Cleanable):
         """
         for node in self.topological_sort():
             node.run_tasks()
-
-    # --------------------------------------------------------------------- #
-    # Cleanup
-    # --------------------------------------------------------------------- #
-    def cleanup(self) -> None:
-        """
-        Cleans up the DAG and all contained nodes.
-
-        - Calls `cleanup()` on every node.
-        - Clears internal maps and breaks references.
-        - Marks this DAG as cleaned.
-
-        Idempotent.
-        """
-        if self._cleaned:
-            return
-
-        with self._lock:
-            if self._cleaned:
-                return
-
-            for node in list(self._nodes.values()):
-                try:
-                    node.cleanup()
-                except Exception:
-                    # Cleanup should never explode the caller; failures here
-                    # just mean some references may linger a bit longer.
-                    pass
-
-            self._nodes.clear()
-            self._nodes = {}
-            self._cleaned = True
 
     def __repr__(self) -> str:
         return f"DirectedAcyclicWorkGraph(id={self._id!r}, nodes={len(self._nodes)})"

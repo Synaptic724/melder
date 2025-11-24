@@ -369,7 +369,6 @@ class ILesserCreations(ICleanable, Protocol):
             RuntimeError: If the Creations manager is cleaned.
         """
         ...
-
 @runtime_checkable
 class ISpell(ICleanable, Protocol):
     """
@@ -383,7 +382,7 @@ class ISpell(ICleanable, Protocol):
       - Its lineage handle (`spell_index`)
       - Identity and metadata (`spell_id`, `spellframe`, `binding_name`, `spell_name`)
       - Lifecycle policy (`existence`)
-      - Structural profile (`ClassProfile` / `MethodProfile`)
+      - Structural profile (`ClassProfile` / `MethodProfile` / `SpellBindingProfile`)
       - Access control (`permissions`)
       - Dependency information (`dependency_graph`, `dependencies`)
       - Conduit ownership metadata
@@ -411,10 +410,11 @@ class ISpell(ICleanable, Protocol):
     spellframe: Optional[Any]
     spell_type: 'SpellType'
     user_created_object: Optional[object]
-    binding_name: str
+    binding_name: Optional[str]
     spell_name: str
     existence: Existence
-    profile: 'ClassProfile | MethodProfile'
+    # Profile type broadened to Any to support Binding/Resolution/AI profiles
+    profile: Optional[Any]
     aetheric_frame: str
 
     # Execution policy
@@ -432,13 +432,13 @@ class ISpell(ICleanable, Protocol):
     dependency_graph: Any
     dependencies: List[str]
 
+    # Spellbook
+    _spellbook: Optional['ISpellbook']
+
     # Per-spell resolution phase artifacts
-    _requirements: Optional['SpellRequirements']
-    _symbolic_graph: Any
-    _resolution_frame: Any
-    _validation_result: Any
-    _validated: bool
-    _is_broken: bool
+    # Note: These are populated by the resolution pipeline via SpellCrafter
+    resolution_profile: Optional['SpellResolutionProfile']
+    _crafter: Optional[Any] # 'SpellCrafter'
 
     # Ownership (filled after Conduit creation)
     _owner_conduit_id: Optional[str]
@@ -452,6 +452,71 @@ class ISpell(ICleanable, Protocol):
     post_hooks: List[Callable[..., Any]]
 
     # ------------------------------------------------------------------
+    # Key property
+    # ------------------------------------------------------------------
+    @property
+    def key(self) -> Tuple[str, str]:
+        """
+        Internal
+
+        Returns the canonical `(frame_key, binding_key)` used by the Spellbook
+        for dictionary-based lookups. This is always normalized via SpellInputUtils.
+
+        This is intentionally read-only; key semantics are controlled by binding time.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Introspection Helpers
+    # ------------------------------------------------------------------
+    @property
+    def is_existing_creation(self) -> bool:
+        """
+        Returns True if this spell represents an existing, pre-created object
+        (EXISTING_CREATION* SpellTypes), rather than a factory.
+        """
+        ...
+
+    @property
+    def is_class_spell(self) -> bool:
+        """
+        Returns True if this spell represents a class-based factory (SPELL* SpellTypes).
+        """
+        ...
+
+    @property
+    def is_method_spell(self) -> bool:
+        """
+        Returns True if this spell represents a non-lambda method/function spell.
+        """
+        ...
+
+    @property
+    def is_lambda_spell(self) -> bool:
+        """
+        Returns True if this spell represents a lambda-based method spell.
+        """
+        ...
+
+    @property
+    def has_existing_object(self) -> bool:
+        """
+        Returns True if this spell currently holds a user-provided existing object.
+
+        This is only meaningful for EXISTING_CREATION* SpellTypes; for other types
+        it will always be False.
+        """
+        ...
+
+    @property
+    def owner_conduit_info(self) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Returns `(owner_conduit_id, owner_conduit_name)` if this spell has
+        been attached to a specific Conduit, otherwise `(None, None)`.
+        """
+        ...
+
+    # ------------------------------------------------------------------
     # Ownership / configuration API
     # ------------------------------------------------------------------
     def _add_owned_conduit(
@@ -463,7 +528,7 @@ class ISpell(ICleanable, Protocol):
         """
         Internal
 
-        Records ownership information about the Conduit that \"owns\" this spell.
+        Records ownership information about the Conduit that "owns" this spell.
 
         This is used to:
         - Attach the spell to a specific Conduit identity (for logging, diagnostics, and scoping).
@@ -482,7 +547,7 @@ class ISpell(ICleanable, Protocol):
     def _add_build_details(
             self,
             dag: Any,
-            dependencies: Optional[List[str]] = None,
+            dependencies: List[str],
     ) -> None:
         """
         Internal
@@ -514,7 +579,7 @@ class ISpell(ICleanable, Protocol):
         """
         Phase 1 artifact for this spell, if it has been computed.
 
-        This is populated by :meth:`run_phase_requirements`.
+        This is populated by :meth:`run_phase_requirements` via :class:`SpellCrafter`.
         """
         ...
 
@@ -538,125 +603,108 @@ class ISpell(ICleanable, Protocol):
     def run_phase_requirements(
             self,
             cancel_event: Optional['CancellationEvent'] = None,
-    ) -> 'SpellRequirements':
+    ) -> None:
         """
-        Phase 1 – Requirements Extraction
+        Phase 1 – Requirements Extraction (facade).
 
-        Extract and/or refresh this spell's requirements.
+        Delegates to :class:`SpellCrafter` to:
 
-        Responsibilities:
             - Inspect the spell’s constructor/signature and metadata.
             - Determine dependencies (spellframes, binding names, types, etc.).
             - Capture existence constraints that are relevant to resolution.
 
         Side effects:
-            - Stores a :class:`SpellRequirements` instance on this spell
-              (``self._requirements``).
+            - Stores a :class:`SpellRequirements` instance inside the crafter.
 
-        This method is safe to call directly (single-threaded) or via
-        :class:`UnitOfWork` under :class:`PhaseScheduler`.
+        The return value is intentionally ignored at the Spell level; callers
+        should access :attr:`requirements` if they need the artifact.
         """
         ...
 
     def run_phase_symbolic_graph(
             self,
             cancel_event: Optional['CancellationEvent'] = None,
-    ) -> Any:
+    ) -> None:
         """
-        Phase 2 – Symbolic Graph Construction.
+        Phase 2 – Symbolic Graph Construction (facade).
+
+        Delegates to :class:`SpellCrafter`.
 
         In the full implementation, this will:
 
-            - Use :attr:`requirements` to construct a per-spell symbolic graph.
+            - Use Phase 1 requirements to construct a per-spell symbolic graph.
             - Represent DI relationships as nodes/edges, without binding to
               concrete creations yet.
 
-        The implementation is allowed to be a **no-op placeholder** initially:
-
-            - Honours the cancellation event.
-            - Returns the current symbolic graph (or None) while wiring up the
-              PhaseScheduler pipeline.
+        The Spell class does not use the return value; later phases read
+        artifacts via the crafter if needed.
         """
         ...
 
     def run_phase_local_frame(
             self,
             cancel_event: Optional['CancellationEvent'] = None,
-    ) -> Any:
+    ) -> None:
         """
-        Phase 3 – Local Resolution Frame / DAG.
+        Phase 3 – Local Resolution Frame / DAG (facade).
+
+        Delegates to :class:`SpellCrafter`.
 
         In the full implementation, this will:
 
             - Translate the symbolic graph into a concrete, per-spell
               resolution frame / local DAG.
             - Encode the order and actions required for resolution.
+            - Eventually push the final DAG into this Spell via
+              :meth:`_add_build_details`.
 
-        The implementation is allowed to be a **no-op placeholder** initially:
-
-            - Honours the cancellation event.
-            - Returns the current resolution frame (or None) while wiring up the
-              PhaseScheduler pipeline.
+        The Spell class does not use the return value; later phases read
+        artifacts via the crafter if needed.
         """
         ...
 
     def run_phase_validation(
             self,
             cancel_event: Optional['CancellationEvent'] = None,
-    ) -> Any:
+    ) -> None:
         """
-        Phase 4 – Validation.
+        Phase 4 – Validation (facade).
+
+        Delegates to :class:`SpellCrafter`.
 
         In the full implementation, this will:
 
             - Validate the resolution frame and requirements.
-            - Populate an internal validation result.
-            - Set :attr:`validated` and :attr:`is_broken` flags.
+            - Populate underlying validation results.
+            - Set validated/broken flags.
 
-        A minimal implementation may:
-
-            - Honour the cancellation event.
-            - Mark the spell as validated and not broken by default.
-            - Leave the validation result as None until richer semantics exist.
+        The Spell class does not use the return value; callers consult
+        :attr:`validated` and :attr:`is_broken`.
         """
         ...
 
-    # ------------------------------------------------------------------
-    # Casting API
-    # ------------------------------------------------------------------
-    def cast(self) -> object:
+    def run_all_phases(
+            self,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> None:
         """
-        Public API
+        Convenience helper to run **all compiler / resolution phases**
+        (Phase 1–4) for this spell, in order.
 
-        Casts the spell and returns the resulting object or value.
+        Currently this means:
 
-        In the **legacy** model, a typical implementation outline would be:
+            1. Requirements extraction.
+            2. Symbolic graph construction.
+            3. Local resolution frame / DAG.
+            4. Validation.
 
-          1. Acquire internal lock.
-          2. Validate that the spell has not been cleaned.
-          3. Run `pre_hooks`.
-          4. Execute the dependency graph (building or reusing instances
-             according to `existence` and `user_created_object`).
-          5. Run `activation_hooks` during construction.
-          6. Run `post_hooks` after construction.
-          7. Return the resulting object.
-
-        In the **current architecture**, concrete `Spell` implementations may
-        delegate casting to the Resolution / Meld pipeline and raise
-        `NotImplementedError` here, while preserving this method in the
-        protocol for future compatibility.
-
-        Returns:
-            object:
-                The constructed or resolved object produced by this spell.
-
-        Raises:
-            RuntimeError:
-                If the spell has been cleaned or cannot be cast.
-            Exception:
-                Any error encountered during dependency resolution or hooks.
+        Each phase honours the optional :class:`CancellationEvent`. If the
+        event is set, the underlying phase methods will raise via
+        ``cancel_event.throw_if_set()``.
         """
         ...
+
+
 
 @runtime_checkable
 class ISpellIndex(ICleanable, Protocol):

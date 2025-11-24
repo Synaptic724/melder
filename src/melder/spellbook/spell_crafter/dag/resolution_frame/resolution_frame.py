@@ -69,6 +69,7 @@ class ResolutionFrame(Cleanable):
         """
         Returns the unique identifier for this ResolutionFrame instance.
         """
+        self.check_cleaned()
         return self._id
 
     @property
@@ -78,6 +79,7 @@ class ResolutionFrame(Cleanable):
 
         Keys are parameter names or other resolution keys chosen by SpellCrafter.
         """
+        self.check_cleaned()
         with self._lock:
             return dict(self._overrides)
 
@@ -88,6 +90,7 @@ class ResolutionFrame(Cleanable):
 
         Keys are node ids (as used in the resolution DAG).
         """
+        self.check_cleaned()
         with self._lock:
             return dict(self._results)
 
@@ -98,6 +101,7 @@ class ResolutionFrame(Cleanable):
 
         Keys are node ids; values are the associated exceptions.
         """
+        self.check_cleaned()
         with self._lock:
             return dict(self._errors)
 

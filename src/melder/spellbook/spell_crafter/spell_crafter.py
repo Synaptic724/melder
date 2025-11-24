@@ -1,11 +1,24 @@
 from __future__ import annotations
+
 import threading
-from typing import Any, Optional, List
+from typing import Any, Optional, List, Dict
+
+from melder.spellbook.spell_crafter.dag.meld_dag import DirectedAcyclicWorkGraph
 # Melder Imports
-from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import SpellSymbolicDependency
-from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import SpellSymbolicGraph
+from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
+    SpellSymbolicDependency,
+)
+from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
+    SpellSymbolicGraph,
+)
+from melder.spellbook.spell_crafter.spellbook_scanner import SpellbookScanner
+from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
+    SpellResolutionFrame,
+)
+from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.spellbook.spell import Spell
+from melder.utilities.interfaces.interfaces import ISpell
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
@@ -15,7 +28,6 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 class SpellCrafter(Cleanable):
@@ -65,7 +77,7 @@ class SpellCrafter(Cleanable):
         "_is_broken",
     ]
 
-    def __init__(self, spell: Spell) -> None:
+    def __init__(self, spell: ISpell) -> None:
         """
         Create a new SpellCrafter for the given :class:`Spell`.
 
@@ -73,7 +85,7 @@ class SpellCrafter(Cleanable):
             spell:
                 The owning Spell. The crafter treats it as read-only, except when
                 later phases push the final DAG back into the Spell via internal
-                methods like ``_add_build_details`` (not implemented here yet).
+                methods like ``_add_build_details``.
         """
         Cleanable.__init__(self)
 
@@ -81,11 +93,13 @@ class SpellCrafter(Cleanable):
             raise ValueError("spell must not be None.")
 
         self._lock: threading.RLock = threading.RLock()
-        self._spell: Spell = spell
+        self._spell: ISpell = spell
 
         self._requirements: Optional[SpellRequirements] = None
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
-        self._resolution_frame: Any = None
+        # Phase 3 artifact – currently a SpellResolutionFrame summarising the
+        # concrete dependency DAG that is pushed into the owning Spell.
+        self._resolution_frame: Optional[SpellResolutionFrame] = None
         self._validation_result: Any = None
         self._validated: bool = False
         self._is_broken: bool = False
@@ -101,7 +115,8 @@ class SpellCrafter(Cleanable):
         Behavior:
             * Cleans up :class:`SpellRequirements` if present.
             * Cleans up :class:`SpellSymbolicGraph` and its dependencies.
-            * Cleans up the resolution frame if it exposes ``cleanup()``.
+            * Resets the resolution frame (the owning :class:`Spell` keeps the
+              concrete DAG and dependency ids).
             * Resets validation state.
             * Nulls the Spell reference (but does **not** mutate/dispose the Spell).
 
@@ -126,14 +141,8 @@ class SpellCrafter(Cleanable):
                 except Exception:
                     pass
 
-            if self._resolution_frame is not None and hasattr(self._resolution_frame, "cleanup"):
-                try:
-                    self._resolution_frame.cleanup()
-                except Exception:
-                    pass
-
-            self._requirements = None
-            self._symbolic_graph = None
+            # The resolution frame is a lightweight dataclass; the owning Spell
+            # retains the concrete DAG via ``_add_build_details``.
             self._resolution_frame = None
             self._validation_result = None
             self._validated = False
@@ -148,7 +157,7 @@ class SpellCrafter(Cleanable):
     # ------------------------------------------------------------------
 
     @property
-    def spell(self) -> Spell:
+    def spell(self) -> ISpell:
         """
         The owning :class:`Spell` for this crafter.
 
@@ -181,12 +190,14 @@ class SpellCrafter(Cleanable):
         return self._symbolic_graph
 
     @property
-    def resolution_frame(self) -> Any:
+    def resolution_frame(self) -> Optional[SpellResolutionFrame]:
         """
-        Phase 3 local resolution frame / DAG (placeholder).
+        Phase 3 artifact for this spell, if it has been computed.
 
-        In the full implementation, this will be a structured object that
-        encodes topo order and resolution actions.
+        The resolution frame is a **summary view** over the concrete
+        dependency DAG that is pushed into the owning :class:`Spell` via
+        :meth:`Spell._add_build_details`. It records the spell id and the
+        topological order of all nodes participating in that DAG.
         """
         self.check_cleaned()
         return self._resolution_frame
@@ -227,6 +238,225 @@ class SpellCrafter(Cleanable):
         """
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
+
+    def _iter_all_spells(self, scanner: SpellbookScanner):
+        """
+        Small wrapper to keep the scanner usage in one place.
+
+        Centralising this makes it easier to plug in conduit/ward filtering
+        later without touching Phase 3 logic.
+        """
+        return scanner.iter_all_spells()
+
+    def _matches_annotation(
+            self,
+            annotation: Any,
+            binding_name: Optional[str],
+            spell_obj: ISpell,
+            *,
+            require_class_spell: bool,
+    ) -> bool:
+        """
+        Return True if ``spell_obj`` is a candidate for the given annotation.
+
+        Matching rules (Phase 3 view):
+
+          * First try concrete-class match: ``spell_obj.spell is annotation``.
+          * Then try frame match: ``spell_obj.spellframe is/== annotation``.
+          * If ``binding_name`` is not None, require an exact match.
+
+        If ``require_class_spell`` is True, method / lambda style spells are
+        excluded. This enforces the rule that *single* DI by plain type-hint
+        only ever targets class/creation spells; method/lambda spells must be
+        obtained explicitly via SpellMap or root-level meld.
+        """
+        if require_class_spell:
+            spell_type = spell_obj.spell_type
+            # Exclude **all** method / lambda spell variants, matching Spell.is_method_spell /
+            # Spell.is_lambda_spell semantics.
+            if spell_type in {
+                SpellType.METHOD,
+                SpellType.METHOD_WITH_BINDING_NAME,
+                SpellType.METHOD_WITH_SPELLFRAME,
+                SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+                SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+                SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
+                SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+            }:
+                return False
+
+        # Concrete class match.
+        if spell_obj.spell is annotation:
+            if binding_name is not None and spell_obj.binding_name != binding_name:
+                return False
+            return True
+
+        # Frame / protocol / string-key match.
+        frame = spell_obj.spellframe
+        if frame is annotation or frame == annotation:
+            if binding_name is not None and spell_obj.binding_name != binding_name:
+                return False
+            return True
+
+        return False
+
+    def _resolve_single_by_annotation(
+            self,
+            scanner: SpellbookScanner,
+            dep: SpellSymbolicDependency,
+    ) -> Dict[Any, ISpell]:
+        """
+        Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
+        spell.
+
+        Returns:
+            Dict[SpellIndex, ISpell]: mapping with **exactly one** entry.
+
+        Raises:
+            RuntimeError:
+                If zero or multiple candidates are found.
+        """
+        annotation = dep.target_annotation
+        # Parameter-level binding metadata does not exist yet; we only support
+        # the default binding for now.
+        binding_name: Optional[str] = None
+
+        candidates: Dict[Any, ISpell] = {}
+
+        for index, spell_obj in self._iter_all_spells(scanner):
+            if self._matches_annotation(
+                    annotation,
+                    binding_name,
+                    spell_obj,
+                    require_class_spell=True,
+            ):
+                candidates[index] = spell_obj
+
+        if not candidates:
+            raise RuntimeError(
+                f"SpellCrafter Phase 3: no DI candidate found for parameter "
+                f"{dep.param_name!r} on spell {self._spell.spell_name!r} "
+                f"(annotation={annotation!r})."
+            )
+
+        if len(candidates) > 1:
+            # Ambiguous single DI – tell the user how to disambiguate.
+            names = ", ".join(
+                sorted(spell.spell_name for spell in candidates.values())
+            )
+            raise RuntimeError(
+                "SpellCrafter Phase 3: multiple DI candidates found for "
+                f"parameter {dep.param_name!r} on spell {self._spell.spell_name!r} "
+                f"(annotation={annotation!r}). "
+                f"Candidates: {names}. "
+                "Use a SpellMap with an explicit spellframe/binding_name or a "
+                "collection type (e.g. list[FrameType]) to inject multiple "
+                "implementations."
+            )
+
+        return candidates
+
+    def _resolve_collection_by_annotation(
+            self,
+            scanner: SpellbookScanner,
+            dep: SpellSymbolicDependency,
+    ) -> Dict[Any, ISpell]:
+        """
+        Resolve a COLLECTION_BY_ANNOTATION dependency to **all** matching
+        spells (classes, methods, lambdas) bound under the given frame/type.
+
+        This corresponds to list[FrameType]-style DI where the user explicitly
+        asked for "all implementations".
+
+        Returns:
+            Dict[SpellIndex, Spell]: mapping of all candidates. It is valid
+            for this mapping to be empty (an empty collection will be injected).
+        """
+        annotation = dep.target_annotation
+        binding_name: Optional[str] = None
+
+        candidates: Dict[Any, ISpell] = {}
+
+        for index, spell_obj in self._iter_all_spells(scanner):
+            # For collection DI we deliberately allow methods/lambdas – the
+            # frame is the grouping mechanism.
+            if self._matches_annotation(
+                    annotation,
+                    binding_name,
+                    spell_obj,
+                    require_class_spell=False,
+            ):
+                candidates[index] = spell_obj
+
+        return candidates
+
+    def _resolve_spellmap_default(
+            self,
+            scanner: SpellbookScanner,
+            dep: SpellSymbolicDependency,
+    ) -> Dict[Any, ISpell]:
+        """
+        Resolve a SPELLMAP_DEFAULT dependency using the original SpellMap
+        default attached to the parameter.
+
+        SpellMap defaults are **explicit** – they may point at classes,
+        methods, lambdas, or frame+binding pairs. We honour the user's
+        intent exactly and still enforce uniqueness.
+        """
+        spellmap = dep.spellmap_default
+        if spellmap is None:
+            return {}
+
+        candidates: Dict[Any, ISpell] = {}
+
+        # If the SpellMap carries an explicit spell callable/class, that wins.
+        explicit_spell = spellmap.spell
+        frame = spellmap.spellframe
+        binding_name = spellmap.binding_name
+
+        if explicit_spell is not None:
+            for index, spell_obj in self._iter_all_spells(scanner):
+                if spell_obj.spell is not explicit_spell:
+                    continue
+
+                # Optional frame/binding_name refinement.
+                if frame is not None:
+                    spell_frame = spell_obj.spellframe
+                    if not (spell_frame is frame or spell_frame == frame):
+                        continue
+
+                if binding_name is not None and spell_obj.binding_name != binding_name:
+                    continue
+
+                candidates[index] = spell_obj
+        else:
+            # Frame+binding only – delegate to the scanner helper.
+            frame_candidates = scanner.find_by_frame_and_binding(
+                spellmap.spellframe,
+                spellmap.binding_name,
+                include_contracted=True,
+            )
+            candidates.update(frame_candidates)
+
+        if not candidates:
+            raise RuntimeError(
+                "SpellCrafter Phase 3: SpellMap default could not be resolved for "
+                f"parameter {dep.param_name!r} on spell {self._spell.spell_name!r}. "
+                f"SpellMap={spellmap!r}."
+            )
+
+        if len(candidates) > 1:
+            names = ", ".join(
+                sorted(spell.spell_name for spell in candidates.values())
+            )
+            raise RuntimeError(
+                "SpellCrafter Phase 3: SpellMap default resolved to multiple "
+                f"candidates for parameter {dep.param_name!r} on spell "
+                f"{self._spell.spell_name!r}. Candidates: {names}. "
+                "SpellMap defaults must be unambiguous."
+            )
+
+        return candidates
 
     # ------------------------------------------------------------------
     # Phase 1 – Requirements
@@ -294,7 +524,9 @@ class SpellCrafter(Cleanable):
         if self._symbolic_graph is not None:
             return self._symbolic_graph
 
-        requirements = self._requirements or self.run_phase_requirements(cancel_event=cancel_event)
+        requirements = self._requirements or self.run_phase_requirements(
+            cancel_event=cancel_event
+        )
 
         # Versioned identity from SpellIndex.
         version_id: str = self._spell.spell_index.current
@@ -344,32 +576,133 @@ class SpellCrafter(Cleanable):
         return graph
 
     # ------------------------------------------------------------------
-    # Phase 3 – Local Frame / DAG (placeholder)
+    # Phase 3 – Local Frame / DAG
     # ------------------------------------------------------------------
 
     def run_phase_local_frame(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> Any:
+    ) -> SpellResolutionFrame:
         """
-        Phase 3 – Local Resolution Frame / DAG (placeholder).
+        Phase 3 – Local Resolution Frame / DAG.
 
-        Future responsibilities:
-            * Interpret the symbolic graph in the context of the Spellbook.
-            * Map annotations / spellframes to actual spell_ids (version IDs).
-            * Build a concrete resolution DAG or "ResolutionFrame" structure,
-              including topo order and actions.
-            * Push the final DAG back into the owning Spell via
-              ``spell._add_build_details(dag, dependency_ids)``.
+        Responsibilities (current increment):
 
-        Current behavior:
-            * Honors cancellation.
-            * Returns ``self._resolution_frame`` (likely None).
+            * Interpret the symbolic graph in the context of the owning
+              :class:`Spellbook` (via :class:`SpellbookScanner`).
+            * Map annotations / SpellMaps to **concrete** dependency spell_ids.
+            * Build a minimal concrete resolution DAG using
+              :class:`DirectedAcyclicWorkGraph`, where each dependency spell
+              points into the root spell node.
+            * Push the DAG + dependency ids back into the owning :class:`Spell`
+              via :meth:`Spell._add_build_details`.
+            * Expose a lightweight :class:`SpellResolutionFrame` summary that
+              records the spell id and the topological order of the DAG nodes.
+
+        This method is idempotent; repeated calls reuse the same frame.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
 
-        return self._resolution_frame
+        if self._resolution_frame is not None:
+            return self._resolution_frame
+
+        with self._lock:
+            # Double-checked locking in case another thread raced us.
+            if self._resolution_frame is not None:
+                return self._resolution_frame
+
+            # Ensure Phase 1 + 2 have run.
+            self._requirements = self._requirements or self.run_phase_requirements(
+                cancel_event=cancel_event
+            )
+            graph = self._symbolic_graph or self.run_phase_symbolic_graph(
+                cancel_event=cancel_event
+            )
+
+            # If the spell has no DI parameters at all (or no spellbook), we
+            # still build a trivial DAG that only contains the root node.
+            spellbook = self._spell._spellbook
+            root_id = self._spell.spell_index.current
+
+            if spellbook is None:
+                dag = DirectedAcyclicWorkGraph()
+                dag.add_node(root_id, payload=self._spell)
+                ordered_ids = dag.collect_dependency_ids()
+                frame = SpellResolutionFrame(
+                    spell_id=root_id,
+                    ordered_node_ids=ordered_ids,
+                )
+                self._resolution_frame = frame
+                self._spell._add_build_details(
+                    dag=dag,
+                    dependencies=[],
+                )
+                return frame
+
+            scanner = SpellbookScanner(spellbook)
+
+            dag = DirectedAcyclicWorkGraph()
+            dag.add_node(root_id, payload=self._spell)
+
+            dependency_spell_ids: List[str] = []
+
+            # Build DI edges from the symbolic graph.
+            for dep in graph.dependencies:
+                self._throw_if_cancelled(cancel_event)
+
+                di_shape = dep.di_shape
+
+                if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
+                    resolved = self._resolve_single_by_annotation(scanner, dep)
+                elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
+                    resolved = self._resolve_collection_by_annotation(scanner, dep)
+                elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
+                    resolved = self._resolve_spellmap_default(scanner, dep)
+                else:
+                    # Should not happen given Phase 2 filtering, but we keep
+                    # this guard for robustness.
+                    continue
+
+                # For SINGLE + SPELLMAP_DEFAULT we expect exactly one entry;
+                # for COLLECTION we may have many or zero.
+                for spell_index, spell_obj in resolved.items():
+                    # SpellIndex exposes the current version id we want to
+                    # encode into the DAG.
+                    dep_spell_id: str = spell_index.current
+
+                    dependency_spell_ids.append(dep_spell_id)
+                    # Nodes are created on-demand; add_dependency will ensure
+                    # both parent and child nodes exist.
+                    dag.add_node(dep_spell_id, payload=spell_obj)
+                    dag.add_dependency(parent_key=dep_spell_id, child_key=root_id)
+
+            # Deduplicate dependency ids while preserving order.
+            if dependency_spell_ids:
+                seen: set[str] = set()
+                unique_dependency_ids: List[str] = []
+                for dep_id in dependency_spell_ids:
+                    if dep_id in seen:
+                        continue
+                    seen.add(dep_id)
+                    unique_dependency_ids.append(dep_id)
+            else:
+                unique_dependency_ids = []
+
+            ordered_ids = dag.collect_dependency_ids()
+            frame = SpellResolutionFrame(
+                spell_id=root_id,
+                ordered_node_ids=ordered_ids,
+            )
+            self._resolution_frame = frame
+
+            # Push the concrete DAG + dependency ids into the owning Spell.
+            self._spell._add_build_details(
+                dag=dag,
+                dependencies=unique_dependency_ids,
+            )
+
+            return frame
 
     # ------------------------------------------------------------------
     # Phase 4 – Validation (placeholder)

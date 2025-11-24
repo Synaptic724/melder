@@ -1,8 +1,9 @@
 import threading
-from typing import Any, Optional, Sequence, List
+from typing import Any, Optional, Sequence, List, Iterable
 
 # Melder imports
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import ParameterDIShape
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -151,3 +152,100 @@ class SpellRequirements(Cleanable):
         """
         self.check_cleaned()
         return tuple(self._parameters)
+
+
+    # ------------------------------------------------------------------
+    # Parameter classification helpers
+    # ------------------------------------------------------------------
+
+    def iter_di_parameters(self) -> Iterable['SpellParameterRequirement']:
+        """
+        Iterate over parameters that are **intended to be satisfied by DI**.
+
+        This includes parameters whose :attr:`di_shape` is one of:
+
+        * :data:`ParameterDIShape.SINGLE_BY_ANNOTATION`
+        * :data:`ParameterDIShape.COLLECTION_BY_ANNOTATION`
+        * :data:`ParameterDIShape.SPELLMAP_DEFAULT`
+
+        These are the parameters that Phase 2+ will turn into symbolic
+        dependencies and, eventually, concrete resolution DAG nodes.
+        """
+        self.check_cleaned()
+
+        for param in self._parameters:
+            di_shape = param.di_shape
+            if di_shape in (
+                    ParameterDIShape.SINGLE_BY_ANNOTATION,
+                    ParameterDIShape.COLLECTION_BY_ANNOTATION,
+                    ParameterDIShape.SPELLMAP_DEFAULT,
+            ):
+                yield param
+
+    def iter_plain_parameters(self) -> Iterable['SpellParameterRequirement']:
+        """
+        Iterate over parameters whose :attr:`di_shape` is
+        :data:`ParameterDIShape.PLAIN`.
+
+        For these parameters, Melder does **not** perform automatic DI.
+        They are intended to be satisfied by:
+
+        * Default values on the parameter itself, or
+        * Root-level ``spell_override`` payloads, or
+        * Manual composition by the caller.
+
+        This includes both required and optional/plain parameters; see
+        :meth:`iter_required_holes` for the stricter subset that have
+        **no default** at all.
+        """
+        self.check_cleaned()
+
+        for param in self._parameters:
+            if param.di_shape is ParameterDIShape.PLAIN:
+                yield param
+
+    def iter_required_holes(self) -> Iterable['SpellParameterRequirement']:
+        """
+        Iterate over **required holes** – parameters that Melder will never
+        auto-wire and that also have **no default value**.
+
+        Definition (Phase 1 view):
+
+        * :attr:`SpellParameterRequirement.di_shape` is
+          :data:`ParameterDIShape.PLAIN`.
+        * :attr:`SpellParameterRequirement.has_default` is ``False``.
+
+        These parameters **must** be satisfied by the caller somehow
+        (e.g. via ``spell_override`` or by constructing intermediate objects
+        manually) or resolution will fail once we try to instantiate the spell.
+
+        Notes
+        -----
+        * Optional vs non-optional is *not* considered here. If you encode
+          Optional/Union shapes without giving a default, they will still be
+          reported as holes – Melder will not guess a union branch for you.
+        * This method is purely structural; it does not perform any
+          spellbook lookups or consider existence policies.
+        """
+        self.check_cleaned()
+
+        for param in self._parameters:
+            if (
+                    param.di_shape is ParameterDIShape.PLAIN
+                    and not param.has_default
+            ):
+                yield param
+
+    def has_required_holes(self) -> bool:
+        """
+        Convenience predicate: return ``True`` if this spell has at least
+        one **required hole** as defined by :meth:`iter_required_holes`.
+
+        This is useful for fast checks in validation, tooling, or diagnostics
+        without having to allocate an intermediate list.
+        """
+        self.check_cleaned()
+
+        for _ in self.iter_required_holes():
+            return True
+        return False

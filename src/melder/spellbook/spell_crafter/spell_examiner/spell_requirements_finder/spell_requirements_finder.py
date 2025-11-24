@@ -17,6 +17,7 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
 )
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.meld.spellmap.spellmap import SpellMap
+from melder.utilities.interfaces.interfaces import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -64,7 +65,7 @@ class SpellRequirementsFinder(Cleanable):
         "_lock",
     ]
 
-    def __init__(self, spell: Spell) -> None:
+    def __init__(self, spell: ISpell) -> None:
         """
         Initialize a new requirements finder for the given :class:`Spell`.
 
@@ -79,7 +80,7 @@ class SpellRequirementsFinder(Cleanable):
             raise ValueError("spell must not be None.")
 
         self._lock: threading.RLock = threading.RLock()
-        self._spell: Spell = spell
+        self._spell: ISpell = spell
         self._requirements: Optional[SpellRequirements] = None
 
     # ------------------------------------------------------------------
@@ -123,7 +124,7 @@ class SpellRequirementsFinder(Cleanable):
     # ------------------------------------------------------------------
 
     @property
-    def spell(self) -> Spell:
+    def spell(self) -> ISpell:
         """
         The underlying :class:`Spell` being analysed.
 
@@ -232,7 +233,7 @@ class SpellRequirementsFinder(Cleanable):
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
 
-    def _resolve_call_target(self, spell: Spell) -> Any:
+    def _resolve_call_target(self, spell: ISpell) -> Any:
         """
         Determine the **call target** for this spell.
 
