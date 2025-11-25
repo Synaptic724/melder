@@ -249,10 +249,6 @@ class Bind(IBind, Cleanable):
                 spellbook=self._spellbook,
             )
 
-            print(
-                f"[BIND] Registered: {spell_name} | Frame: {spellframe} | "
-                f"Type: {spell_type} | Existence: {existence}"
-            )
             return new_spell
 
     #region Spell Inspector Helpers

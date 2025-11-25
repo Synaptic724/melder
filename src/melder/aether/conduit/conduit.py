@@ -1197,12 +1197,13 @@ class Conduit(Cleanable, IConduit):
 
     def meld(
             self,
-            spell: str,
+            spell_name: str | None = None,
             *,
-            spellframe: str | None = None,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
             binding_name: str | None = None,
-            spell_override: dict | list | tuple | None = None,
-    ) -> Any:
+            spell_override: Optional[dict | list | tuple] = None,
+    ) -> Optional[Any]:
         """
         Public API
 
@@ -1218,9 +1219,11 @@ class Conduit(Cleanable, IConduit):
         the underlying ``Meld`` instance.
 
         Args:
+            spell_name:
+                Simple name of the spell (string).
             spell:
-                The unique `spell_id` (SHA256 fingerprint) of the
-                spell to activate. Must be a non-empty string.
+                The unique spell identifier (string) to resolve.
+                This is typically the SHA256 version ID of the spell.
             spellframe:
                 Optional logical spellframe identifier (string).
                 Not used for resolution at this layer, but may be
@@ -1261,18 +1264,20 @@ class Conduit(Cleanable, IConduit):
             self._logger.error("Meld instance is not available on this Conduit", "meld")
             raise RuntimeError("[CONDUIT] Meld instance is not available on this Conduit.")
 
-        # Enforce string-only, non-empty spell_id
-        if not isinstance(spell, str) or not spell:
-            self._logger.error("spell must be a non-empty string spell_id", "meld")
-            raise TypeError(
-                "[CONDUIT] 'spell' must be a non-empty string spell_id when "
-                "calling Conduit.meld()."
+        if spell_name is None and spell is None and spellframe is None:
+            self._logger.error(
+                "Conduit.meld requires at least one of spell_name, spell, or spellframe",
+                "meld",
+            )
+            raise ValueError(
+                "[CONDUIT] meld(...) requires at least one of "
+                "`spell_name`, `spell`, or `spellframe`."
             )
 
-        if spellframe is not None and not isinstance(spellframe, str):
-            self._logger.error("spellframe must be a string identifier when provided", "meld")
+        if spell_name is not None and not isinstance(spell_name, str):
+            self._logger.error("spell_name must be a string when provided", "meld")
             raise TypeError(
-                "[CONDUIT] 'spellframe' must be a string identifier when "
+                "[CONDUIT] 'spell_name' must be a string when "
                 "provided to Conduit.meld()."
             )
 
@@ -1284,29 +1289,22 @@ class Conduit(Cleanable, IConduit):
             )
 
         self._logger.debug(
-            f"meld(spell_id={spell}, frame={spellframe}, binding={binding_name})",
+            f"meld(spell_name={spell_name!r}, spell={spell!r}, "
+            f"frame={spellframe!r}, binding={binding_name!r})",
             "meld",
         )
 
-        # Pre-resolve hook for the meld pipeline.
-        self._fire_conduit_hooks(
-            "on_meld_pre_resolve",
-            self,
-        )
+        self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
-        # Pure passthrough to Meld; internal layer still supports richer inputs.
         result = self._meld.meld(
+            spell_name=spell_name,
             spell=spell,
             spellframe=spellframe,
             binding_name=binding_name,
             spell_override=spell_override,
         )
 
-        # Post-resolve hook for the meld pipeline.
-        self._fire_conduit_hooks(
-            "on_meld_post_resolve",
-            self,
-        )
+        self._fire_conduit_hooks("on_meld_post_resolve", self)
 
         return result
 

@@ -1,6 +1,8 @@
 from threading import RLock
 from typing import Optional, Dict, Any, NamedTuple, Callable, List, Union
 
+from melder.aether.conduit.meld.meld_context.meld_context import MeldContext
+from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 # Melder Imports
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -56,62 +58,87 @@ class Meld(IMeld):
     8.  **Return Instance:** Returns the final, resolved instance.
     """
 
-    def __init__(self, creations: ILesserCreations | ICreations, spellbook: ISpellbook):
+    def __init__(
+            self,
+            creations: ILesserCreations | ICreations,
+            spellbook: ISpellbook
+    ) -> None:
         """
-        Initializes the Meld component with references to the component store
-        and the configuration registry.
+        Initialize the Meld component with references to the component store,
+        spellbook lookup maps, and the DAG-based meld runtime.
 
         Args:
-            creations (ILesserCreations | ICreations):
+            creations:
                 The local component instance manager (either `Creations` for a
                 full Conduit or `LesserCreations` for a LesserConduit).
-            spellbook (ISpellbook):
-                The registry of all known spell configurations, whose internal
-                ConcurrentDicts are referenced here for thread-safe lookups.
+            spellbook:
+                The registry of all known spell configurations. Meld keeps
+                direct references to the internal `ConcurrentDict` instances
+                to perform fast, thread-safe lookups.
         """
         super().__init__()
-        # Internal lock for thread-safe state management (e.g., during cleanup)
+
         self._lock = RLock()
-        self._cleaned = False  # Track cleanup state
+        self._cleaned: bool = False
 
         # Spellbook references (used for resolution)
-        # These are direct references to the ConcurrentDicts in the Spellbook
         self._owned_spells: ConcurrentDict[ISpellIndex, ISpell] = spellbook._spells
-        self._contracted_spells: ConcurrentDict[str, ConcurrentDict[ISpellIndex, ISpell]] = spellbook._contracted_spells
+        self._contracted_spells: ConcurrentDict[str, ConcurrentDict[ISpellIndex, ISpell]] = (
+            spellbook._contracted_spells
+        )
 
         self._lookup_owned_spells: ConcurrentDict[tuple, ISpellIndex] = spellbook._lookup_spells
-        self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, ISpellIndex]] = spellbook._lookup_contracted_spells
-
+        self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, ISpellIndex]] = (
+            spellbook._lookup_contracted_spells
+        )
 
         # Conduit-local instantiation manager (Creations or LesserCreations)
         self._creations = creations
 
+        # DAG-based runtime that will actually execute the DI graph for
+        # factory-style spells (class / method / lambda).
+        self._runtime: MeldRuntime = MeldRuntime()
+
+
     def cleanup(self) -> None:
         """
-        Cleanup the Meld instance to prevent further modifications and release
-        references to the spell configurations and creations manager.
+        Cleanup the Meld instance to prevent further use and release references
+        to spell configurations, creations manager, and the meld runtime.
 
         This should be called when the owning `Conduit` is being shut down.
 
-        Args:
-            None.
-
-        Returns:
-            None.
+        Behaviour:
+            - Marks the instance as cleaned.
+            - Clears references to spellbook maps and creations.
+            - Cleans up and drops the internal `MeldRuntime` instance.
         """
         if self._cleaned:
             return
+
         with self._lock:
             if self._cleaned:
                 return
+
             self._cleaned = True
 
-            # Clear references
+            # Clear spellbook references
             self._owned_spells = None
             self._contracted_spells = None
             self._lookup_owned_spells = None
             self._lookup_contracted_spells = None
+
+            # Clear creations reference
             self._creations = None
+
+            # Tear down the runtime if present
+            if self._runtime is not None:
+                try:
+                    self._runtime.cleanup()
+                except Exception:
+                    # Runtime cleanup should never blow up conduit teardown.
+                    pass
+                self._runtime = None
+
 
     # region Context Manager
     def __enter__(self):
@@ -138,11 +165,11 @@ class Meld(IMeld):
         """
         self._lock.release()
     # endregion Context Manager
-
     def meld(
             self,
-            spell: str | object | None = None,
+            spell_name: str | None = None,
             *,
+            spell: str | object | None = None,
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
@@ -154,69 +181,223 @@ class Meld(IMeld):
         hook execution, and registration.
 
         Args:
+            spell_name (str):
+                spell_name of the spell to meld
+
+                When provided without an explicit ``spell`` or ``spellframe``, this is
+                treated as the **logical name key** used by the resolution pipeline.
+                In other words, ``meld(spell_name=\"MyService\")`` becomes equivalent
+                to a name-based lookup driven by the Spellbook / SpellIndex mappings.
             spell (str | object | None):
                 The primary spell identifier.
-                - If a **string**, treated as the unique `spell_id`.
-                - If an **object** (e.g., a class), used with `spellframe`
-                  and `binding_name` to form the DI identity key.
+                - If a **string**, treated as the unique `spell_id` (typically the
+                  SHA256 structural fingerprint for the SpellIndex).
+                - If an **object** (e.g., a class or function), used together with
+                  `spellframe` and `binding_name` to form the DI identity key via the
+                  `SpellInputUtils` normalization helpers.
             spellframe (str | object | None):
                 Optional Spellframe / Protocol / class used as the primary DI identity.
-                Often redundant if `spell` is the class/protocol itself.
+                Often redundant if `spell` is the class/protocol itself. Spellframes
+                act as grouping keys (interfaces, protocol frames, string categories)
+                under which multiple spells may be bound.
             binding_name (str | None):
                 Optional binding name, used alongside `spell` or `spellframe` to create
-                a unique lookup key.
+                a unique lookup key within a given frame. If omitted, the default
+                binding (e.g. `"__default__"`) is used internally.
             spell_override (dict | list | tuple | None):
-                Optional override payload attached to the Spell's metadata (under the
-                key `"spell_override"`) for downstream strategy layers to consume.
+                Optional override payload attached to the meld call. This payload
+                represents **per-call overrides** (constructor arguments, factory
+                inputs, etc.) and is normalized into a dictionary by
+                :meth:`_normalize_spell_override`.
+
+                Semantics:
+                - `dict`  → treated as keyword-style overrides (param_name → value).
+                - `list` / `tuple` → treated as positional overrides, stored under
+                  a special internal key (e.g. `"__args__"`).
+
+                This data is **not** written onto the Spell itself; it is intended
+                to be consumed by the runtime / engine layer for this specific
+                meld invocation.
 
         Returns:
             Optional[Any]:
-                The resolved component instance (either reused or newly created).
+                The resolved component instance (either reused or newly created)
+                after all pre-/activation-/post-hooks have executed.
 
         Raises:
-            KeyError: If the spell cannot be resolved by the provided inputs.
-            NotImplementedError: If the spell type (e.g., class-based DI) or existence
-                                 mode is not yet supported for construction/registration.
-            HookExecutionError: If a pre-cast, activation, or post-cast hook fails.
-            RuntimeError: For unexpected internal state issues (e.g., missing object
-                          after ID resolution, unsupported Creations manager, or
-                          missing `existing_object`).
+            ValueError:
+                If none of `spell_name`, `spell`, or `spellframe` are provided.
+            KeyError:
+                If the spell cannot be resolved by the provided inputs.
+            NotImplementedError:
+                If the spell type (e.g., class-based DI) or existence mode is not
+                yet supported for construction/registration.
+            HookExecutionError:
+                If a pre-cast, activation, or post-cast hook fails.
+            RuntimeError:
+                For unexpected internal state issues (e.g., missing object after
+                ID resolution, unsupported Creations manager, or attempting to
+                meld a broken spell).
         """
         with self._lock:
-            # 1) Resolve the spell object from the Spellbook
-            target_spell = self._resolve_spell(spell, spellframe, binding_name)
+            # Basic contract: we need at least *one* identity source.
+            if spell is None and spellframe is None and spell_name is None:
+                raise ValueError(
+                    "[MELD] meld(...) requires at least one of "
+                    "`spell_name`, `spell`, or `spellframe`."
+                )
 
-            # 2) Attach override metadata (if any)
-            self._apply_override(target_spell, spell_override) #TODO: WE gotta rethink this because attaching it to spell.metadata is dumb
+            # 1) Resolve the spell object from the Spellbook / SpellIndex.
+            target_spell = self._resolve_spell(
+                spell=spell,
+                spell_name=spell_name,
+                spellframe=spellframe,
+                binding_name=binding_name,
+            )
 
-            # 3) Execute pre-cast hooks (no instance yet)
+            # 2) Defensive guard: never attempt to meld a broken spell.
+            if target_spell.is_broken:
+                raise RuntimeError(
+                    f"[MELD] Cannot meld broken spell: {target_spell}."
+                )
+
+            # 3) Normalize per-call overrides into a stable dict shape.
+            override_map = self._normalize_spell_override(spell_override)
+
+            # 4) Execute pre-cast hooks (no instance context yet).
             self._execute_hooks(target_spell.pre_hooks, "pre_cast")
 
-            # 4) Try to reuse an existing creation based on Existence + creations type
+            # 5) Try to reuse an existing creation based on Existence + creations type.
             instance = self._get_existing_creation(target_spell)
 
-            # 5) If no existing instance, go through spell-type path and then register
+            # 6) If no existing instance, construct a new one via the spell-type path
+            #    and register it into the appropriate creations bucket.
             if instance is None:
-                instance = self._meld_by_spell_type(target_spell)
-                # Once we have an instance, register it into the proper creations bucket
+                instance = self._meld_by_spell_type(target_spell, override_map)
                 self._register_spell(target_spell, instance)
-                # 6) Execute activation hooks with instance context only if instance is new
+                # Activation hooks fire only when the instance is newly created.
                 self._execute_activation_hooks(target_spell.activation_hooks, instance)
 
-            # 7) Execute post-cast hooks (still no arguments for now)
+            # 7) Execute post-cast hooks (still no arguments for now).
             self._execute_hooks(target_spell.post_hooks, "post_cast")
 
-            # 8) Return the resolved instance
+            # 8) Return the resolved instance.
             return instance
+
+
+    def _normalize_spell_override(
+            self,
+            spell_override: Optional[dict | list | tuple]
+    ) -> Optional[dict[str, Any]]:
+        """
+        Normalize the ``spell_override`` input into a consistent dictionary format.
+
+        The **override payload** is intended to represent *per-call* constructor
+        / factory overrides for a given meld operation. This helper converts the
+        user-facing shapes into a uniform internal representation that can be
+        consumed by the Meld runtime / engine layer.
+
+        Supported input shapes
+        ----------------------
+
+        * ``None``:
+            - No overrides are supplied; returns ``None``.
+
+        * ``dict``:
+            - Treated as keyword-style overrides:
+              ``{"param_name": value, "other_param": other_value}``.
+            - A shallow copy is created to avoid accidental mutation of the
+              caller's dictionary.
+
+        * ``list`` / ``tuple``:
+            - Treated as **positional argument** overrides.
+            - These are stored under the special key ``"__args__"`` so that the
+              engine can distinguish them from keyword overrides:
+              ``{"__args__": [arg0, arg1, ...]}``.
+
+        Any more sophisticated interpretation (e.g. mixing positional and keyword
+        semantics, or nested override structures) can be layered on later, but the
+        MVP is deliberately simple and explicit.
+
+        Args:
+            spell_override:
+                The raw override payload supplied by the caller. Must be one of:
+                ``None``, ``dict``, ``list``, or ``tuple``.
+
+        Returns:
+            Optional[dict[str, Any]]:
+                A normalized dictionary representation of the overrides, or
+                ``None`` if no overrides were supplied.
+
+        Raises:
+            TypeError:
+                If ``spell_override`` is not one of the supported shapes.
+        """
+        if spell_override is None:
+            return None
+
+        if isinstance(spell_override, dict):
+            # Shallow copy to avoid side-effects if the caller mutates
+            # their dictionary after passing it into meld(...).
+            return dict(spell_override)
+
+        if isinstance(spell_override, (list, tuple)):
+            # MVP positional override support: caller is explicitly saying
+            # "treat these as *args for the constructor/factory".
+            return {"__args__": list(spell_override)}
+
+        raise TypeError(
+            "[MELD] spell_override must be a dict, list, or tuple."
+        )
+
+
 
     # ----------------------------------------------------------------------
     # Resolution helpers
     # ----------------------------------------------------------------------
+
+    def _create_meld_context(
+            self,
+            spell: ISpell,
+            overrides: Optional[dict[str, Any]],
+    ) -> MeldContext:
+        """
+        Internal
+
+        Create a per-call :class:`MeldContext` for a single meld operation.
+
+        The context binds together:
+            - The root spell to be constructed.
+            - The current Conduit’s creations manager.
+            - Any normalized per-call overrides (constructor/factory args).
+
+        This object is passed into the `MeldRuntime` / `MeldEngine` stack and
+        is cleaned up immediately after the engine finishes.
+
+        Args:
+            spell:
+                The root `ISpell` being melded.
+            overrides:
+                Normalized per-call overrides produced by
+                :meth:`_normalize_spell_override`, or ``None`` if no overrides
+                were supplied.
+
+        Returns:
+            MeldContext:
+                A freshly constructed context for this meld invocation.
+        """
+        # Positional construction keeps us insulated from minor signature changes
+        # in MeldContext as long as (root_spell, creations, overrides) stay first.
+        return MeldContext(root_spell=spell, creations=self._creations, overrides=overrides)
+
+
     def _resolve_spell(
             self,
-            spell: Any,
-            spellframe: Any,
-            binding_name: Optional[str],
+            *,
+            spell: Any | None,
+            spell_name: str | None,
+            spellframe: Any | None,
+            binding_name: str | None,
     ) -> ISpell:
         """
         Internal
@@ -235,6 +416,9 @@ class Meld(IMeld):
                 If a string, treated as the canonical ``spell_id``.
                 Otherwise treated as a class/function/instance used when
                 deriving the logical spell key.
+            spell_name:
+                Optional explicit spell name to use when deriving the
+                logical identity key. Used only if ``spell`` is not a string.
             spellframe:
                 Optional spellframe / Protocol / interface used as part of
                 the DI identity. If ``None``, the spell’s own type/name is
@@ -255,20 +439,26 @@ class Meld(IMeld):
                 a lookup key resolves to a SpellIndex that has no
                 corresponding spell object).
         """
-        # ------------------------------------------------------------------
-        # 1) Resolution by spell_id (string)
-        # ------------------------------------------------------------------
+        # 1) string spell → treated as spell_id (SHA)
         if isinstance(spell, str):
             return self._resolve_spell_by_id(spell)
 
-        # ------------------------------------------------------------------
-        # 2) Resolution by (spellframe / spell, binding_name)
-        # ------------------------------------------------------------------
+        # 2) Everything else → (frame_key, binding_key) path
+
+        # Decide what we use as "spell" for name-based resolution:
+        # - if we have a concrete spell object (class/function), use that
+        # - else if we have a spell_name string, use that
+        # - else spell remains None and spellframe must be non-None
+        spell_for_name = spell
+        if spell_for_name is None and spell_name is not None:
+            spell_for_name = spell_name
+
         frame_key, bind_key = SpellInputUtils.normalize_spell_key(
-            spell=spell,
+            spell=spell_for_name,
             spellframe=spellframe,
             binding_name=binding_name,
         )
+
         lookup_key = (frame_key, bind_key)
         return self._resolve_spell_by_lookup_key(lookup_key)
 
@@ -588,53 +778,79 @@ class Meld(IMeld):
     # ----------------------------------------------------------------------
     # Spell-type–aware dispatch and registration
     # ----------------------------------------------------------------------
-    def _meld_by_spell_type(self, spell: ISpell) -> Any:
+    def _meld_by_spell_type(
+            self,
+            spell: ISpell,
+            overrides: Optional[dict[str, Any]],
+    ) -> Any:
         """
         Obtain a new component instance based on the Spell's canonical `SpellType`.
 
+        Behaviour:
+
+            * EXISTING_CREATION*:
+                  Returns the pre-created object stored on the spell and relies
+                  on `_register_spell` to cache it into the creations manager.
+
+            * Class / method / lambda spells:
+                  Delegate to the DAG-based `MeldRuntime` / `MeldEngine` stack
+                  using a per-call `MeldContext` seeded with `overrides`.
+
+            * Anything else:
+                  Raises a `RuntimeError` indicating an unsupported SpellType.
+
         Args:
-            spell (ISpell): The resolved Spell configuration object.
+            spell:
+                The resolved Spell configuration object.
+            overrides:
+                Normalized per-call overrides (or ``None``), as produced by
+                :meth:`_normalize_spell_override`.
 
         Returns:
-            Any: The newly resolved component instance.
+            Any:
+                The newly resolved component instance.
 
         Raises:
-            NotImplementedError: For spell types requiring DI/constructor resolution
-                                 (e.g., `SPELL` for class construction or `METHOD`).
-            RuntimeError: For unknown or unsupported SpellTypes.
+            RuntimeError:
+                - If the spell is an existing-creation spell with no backing
+                  `user_created_object`.
+                - If the meld runtime is not configured.
+                - If the SpellType is unsupported.
+            MeldExecutionError:
+                Propagated from `MeldRuntime.execute` if DI or construction fails.
         """
         stype = spell.spell_type
 
-        # Existing Creation: The instance is already defined in the spell
-        if stype in (
-                SpellType.EXISTING_CREATION,
-                SpellType.EXISTING_CREATION_WITH_SPELLFRAME,
-                SpellType.EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME,
-        ):
-            raise RuntimeError("[MELD] Cannot meld existing creations, please register the spell as a direct spell reference.")
+        # 1) Existing Creation: the instance already exists on the spell and
+        #    must never be constructed via the runtime.
+        if spell.is_existing_creation:
+            instance = spell.user_created_object
+            if instance is None:
+                raise RuntimeError(
+                    "[MELD] EXISTING_CREATION spell has no `user_created_object` "
+                    f"(spell_id={spell.spell_id})."
+                )
+            return instance
 
-        # Class-based Spells: Requires full DI resolution (Not Implemented)
-        if stype in (
-                SpellType.SPELL,
-                SpellType.SPELL_WITH_SPELLFRAME,
-                SpellType.SPELL_WITH_BINDING_NAME,
-                SpellType.SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME,
-        ):
-            raise NotImplementedError(
-                "[MELD] Class-based spell melding is not yet implemented."
-            )
+        # 2) Factory-style spells must go through the runtime.
+        if self._runtime is None:
+            raise RuntimeError("[MELD] MeldRuntime is not configured on this Meld instance.")
 
-        # Method-based Spells: Requires full DI resolution (Not Implemented)
-        if stype in (
-                SpellType.METHOD,
-                SpellType.METHOD_WITH_BINDING_NAME,
-                SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
-        ):
-            raise NotImplementedError(
-                "[MELD] Method-based spell melding is not yet implemented."
-            )
+        if spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell:
+            context = self._create_meld_context(spell, overrides)
+            try:
+                return self._runtime.execute(context)
+            finally:
+                # Make sure we always tear down the context, even if the runtime
+                # raises a MeldExecutionError or another exception.
+                try:
+                    context.cleanup()
+                except Exception:
+                    pass
 
+        # 3) Anything else is currently unsupported.
         raise RuntimeError(f"[MELD] Unsupported SpellType encountered: {stype}")
+
 
 # ----------------------------------------------------------------------
 # Registration Helpers (New Structure)

@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 # Melder imports
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
 from melder.spellbook.spell_crafter.validation.spell_validation_result import SpellValidationResult
+# Strategies
 from melder.spellbook.spell_crafter.validation.strategies.circular_dependency_strategy import CircularDependencyStrategy
 from melder.spellbook.spell_crafter.validation.strategies.dangling_dependency_strategy import \
     DanglingDependenciesStrategy
@@ -11,6 +12,7 @@ from melder.spellbook.spell_crafter.validation.strategies.required_holes_strateg
 from melder.spellbook.spell_crafter.validation.strategies.resolution_frame_presence_strategy import \
     ResolutionFramePresenceStrategy
 from melder.spellbook.spell_crafter.validation.strategies.self_validation_strategy import SelfDependencyStrategy
+from melder.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import DuplicateSpellNameStrategy
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
@@ -26,6 +28,7 @@ from melder.spellbook.spell_crafter.spellbook_scanner import SpellbookScanner
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
 )
+
 
 
 class SpellValidationSystem(Cleanable):
@@ -104,12 +107,14 @@ class SpellValidationSystem(Cleanable):
         * SelfDependencyStrategy
         * CircularDependencyStrategy
         * RequiredHolesStrategy
+        * DuplicateSpellNameStrategy
         """
         self.register_strategy(ResolutionFramePresenceStrategy())
         self.register_strategy(DanglingDependenciesStrategy())
         self.register_strategy(SelfDependencyStrategy())
         self.register_strategy(CircularDependencyStrategy())
         self.register_strategy(RequiredHolesStrategy())
+        self.register_strategy(DuplicateSpellNameStrategy())
 
     def register_strategy(self, strategy: 'SpellValidationStrategy') -> None:
         """
