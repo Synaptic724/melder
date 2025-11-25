@@ -12,10 +12,9 @@ from melder.utilities.interfaces.interfaces import (
     ISpell,
     IMeld,
     ILesserCreations,
-    ICreations, ISpellIndex, IConfiguration,
+    ICreations, ISpellIndex,
 )
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
-from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 
 # Creations types
@@ -388,7 +387,7 @@ class Meld(IMeld):
         """
         # Positional construction keeps us insulated from minor signature changes
         # in MeldContext as long as (root_spell, creations, overrides) stay first.
-        return MeldContext(root_spell=spell, creations=self._creations, overrides=overrides)
+        return MeldContext(root_spell=spell, overrides=overrides)
 
 
     def _resolve_spell(

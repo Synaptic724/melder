@@ -6,8 +6,8 @@ from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.init_helpers import InitHelpers
+from melder.utilities.interfaces.interfaces import ISpell
 from melder.utilities.logger.safe_logger import SafeLogger
-from melder.spellbook.spell import Spell  # For type clarity; interface is ISpell-like
 from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
     ResolutionFrame,
 )
@@ -151,7 +151,7 @@ class MeldRuntime(Cleanable):
             raise ValueError("context.root_spell cannot be None.")
 
         # Work with the concrete Spell facade type when available.
-        spell: Spell = spell_obj  # type: ignore[assignment]
+        spell: ISpell = spell_obj
 
         # --- Invariants from the SpellCrafter / validation pipeline ----
         if spell.is_broken:

@@ -66,24 +66,18 @@ class MeldContext(Cleanable):
             self,
             *,
             root_spell: ISpell,
-            creations: Any,
             overrides: Optional[Mapping[str, Any]] = None,
             cancel_event: Optional[CancellationEvent] = None,
             logger: Optional[Any] = None,
-            conduit_id: Optional[str] = None,
-            conduit_name: Optional[str] = None,
-            aetheric_frame: Optional[str] = None,
     ) -> None:
         super().__init__()
 
         if root_spell is None:
             raise ValueError("root_spell cannot be None.")
-        if creations is None:
-            raise ValueError("creations cannot be None.")
 
         self._lock: RLock = RLock()
         self._root_spell: ISpell = root_spell
-        self._creations: Any = creations
+        self._creations: Any = self._root_spell._owner_creations
 
         # Normalized, per-call override map (never mutated in place by
         # the runtime; callers may mutate the dict they get back).
@@ -102,9 +96,9 @@ class MeldContext(Cleanable):
             else None
         )
 
-        self._conduit_id: Optional[str] = conduit_id
-        self._conduit_name: Optional[str] = conduit_name
-        self._aetheric_frame: Optional[str] = aetheric_frame
+        self._conduit_id: Optional[str] = self._root_spell._owner_conduit_id
+        self._conduit_name: Optional[str] = self._root_spell._owner_conduit_name
+        self._aetheric_frame: Optional[str] = self._root_spell.aetheric_frame
 
     # ------------------------------------------------------------------ #
     # Cleanup
@@ -128,7 +122,7 @@ class MeldContext(Cleanable):
             if self._cleaned:
                 return
 
-            self._root_spell = None  # type: ignore[assignment]
+            self._root_spell = None
             self._creations = None
             self._overrides.clear()
             self._cancel_event = None
