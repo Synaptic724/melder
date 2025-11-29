@@ -49,9 +49,6 @@ class ConcurrentDict(Generic[_K, _V], Cleanable):
             initial (Mapping[_K, _V] or Iterable of (_K, _V), optional):
                 Initial data for the dictionary. Can be another dictionary,
                 or an iterable of (key, value) pairs.
-            agentic_mode (bool, optional):
-                If True, uses an AgenticRLock for Hybrid (asyncio/sync) agentic operations.
-                Defaults to False, which uses a standard threading.RLock.
         """
         super().__init__()
         if initial is None:

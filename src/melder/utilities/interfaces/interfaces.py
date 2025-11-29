@@ -896,6 +896,9 @@ class ISpellbook(ICleanable, Protocol):
     _aetheric_frame: Optional[str]
     _configuration: Optional['IConfiguration']
 
+    # Spell Validator
+    _spell_validator: 'SpellValidationSystem'
+
     # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------

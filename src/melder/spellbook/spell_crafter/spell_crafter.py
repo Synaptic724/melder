@@ -75,6 +75,7 @@ class SpellCrafter(Cleanable):
         "_validation_result",
         "_validated",
         "_is_broken",
+        "_spell_validator",
     ]
 
     def __init__(self, spell: ISpell) -> None:
