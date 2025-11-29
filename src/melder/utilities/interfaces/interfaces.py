@@ -426,12 +426,12 @@ class ISpell(ICleanable, Protocol):
     permissions: Permissions
 
     # Arbitrary metadata
-    tags: list
-    metadata: dict
+    tags: 'ConcurrentList'
+    metadata: 'ConcurrentDict'
 
     # Dependency graph + requirements
     dependency_graph: Any
-    dependencies: List[str]
+    dependencies: 'ConcurrentList[str]'
 
     # Spellbook
     _spellbook: Optional['ISpellbook']
@@ -448,9 +448,9 @@ class ISpell(ICleanable, Protocol):
     _owner_creations: Any
 
     # Lifecycle hooks
-    pre_hooks: List[Callable[..., Any]]
-    activation_hooks: List[Callable[..., Any]]
-    post_hooks: List[Callable[..., Any]]
+    pre_hooks: 'ConcurrentList[Callable[..., Any]]'
+    activation_hooks: 'ConcurrentList[Callable[..., Any]]'
+    post_hooks: 'ConcurrentList[Callable[..., Any]]'
 
     # ------------------------------------------------------------------
     # Key property
