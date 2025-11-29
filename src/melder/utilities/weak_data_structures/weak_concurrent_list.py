@@ -98,12 +98,8 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         if self._cleaned or not self._auto_prune:
             return
 
-        lock = getattr(self, "_lock", None)
-        if lock is None:
-            return
-
         try:
-            lock.acquire()
+            self._lock.acquire()
         except Exception:
             # Cannot acquire lock on GC path, skip pruning
             return
@@ -123,7 +119,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
                     break
         finally:
             try:
-                lock.release()
+                self._lock.release()
             except Exception:
                 pass
 
@@ -692,9 +688,6 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def to_list(self) -> List[_T]:
         """
         Returns a **strong** standard Python list containing only the currently **live** values.
-
-        Args:
-            None
 
         Returns:
             List[_T]: A new list containing strong references to the live items.

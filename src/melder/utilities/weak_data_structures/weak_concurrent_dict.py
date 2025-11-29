@@ -178,12 +178,11 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         if self._cleaned or not self._auto_prune:
             return
 
-        lock = self._lock
-        if lock is None:
+        if self._lock is None:
             return
 
         try:
-            lock.acquire()
+            self._lock.acquire()
         except Exception:
             return
 
@@ -205,7 +204,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                     self._dict.pop(target_key, None)
         finally:
             try:
-                lock.release()
+                self._lock.release()
             except Exception:
                 pass
 
@@ -230,15 +229,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         """
         if self._cleaned:
             return
-
-        lock = self._lock
-        if lock is None:
-            # Already torn down.
-            self._cleaned = True
-            self._dict = None
-            return
-
-        with lock:
+        with self._lock:
             if self._cleaned:
                 return
 
@@ -295,10 +286,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 If this dict has already been cleaned.
         """
         self.check_cleaned()
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             self._auto_prune = bool(value)
 
     def freeze(self) -> None:
@@ -318,10 +306,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             not explicit user-driven structural changes.
         """
         self.check_cleaned()
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             self._freeze = True
 
     def unfreeze(self) -> None:
@@ -335,10 +320,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 If the dict has been cleaned.
         """
         self.check_cleaned()
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             self._freeze = False
 
     @property
@@ -391,10 +373,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         keys whose values have already been collected.
         """
         self.check_cleaned()
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             self._prune_dead_locked()
 
     def _snapshot_items(self) -> List[Tuple[_K, WeakRefNode[_V]]]:
@@ -412,19 +391,14 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 return []
 
             if self._auto_prune:
-                lock = self._lock
-                if lock is not None:
-                    with lock:
-                        self._prune_dead_locked()
-                        mapping = self._dict
-                        return list(mapping.items()) if mapping is not None else []
+                with self._lock:
+                    self._prune_dead_locked()
+                    mapping = self._dict
+                    return list(mapping.items()) if mapping is not None else []
             return list(mapping.items())
 
         # Non-frozen path: use the lock.
-        lock = self._lock
-        if lock is None:
-            return []
-        with lock:
+        with self._lock:
             if self._auto_prune:
                 self._prune_dead_locked()
             mapping = self._dict
@@ -458,10 +432,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             node = self._dict[key]
             return node.deref(strict=True)
 
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             if self._auto_prune:
                 self._prune_dead_locked()
             if self._dict is None or key not in self._dict:
@@ -487,10 +458,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self.check_cleaned()
         self._ensure_mutable()
 
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             if self._dict is None:
                 self._dict = {}
             old = self._dict.get(key)
@@ -518,10 +486,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self.check_cleaned()
         self._ensure_mutable()
 
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             if self._dict is None or key not in self._dict:
                 raise KeyError(key)
             node = self._dict.pop(key)
@@ -552,10 +517,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 return False
             return not node.dead
 
-        lock = self._lock
-        if lock is None:
-            return False
-        with lock:
+        with self._lock:
             if self._auto_prune:
                 self._prune_dead_locked()
             if self._dict is None:
@@ -577,11 +539,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         """
         self.check_cleaned()
         self._ensure_mutable()
-
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             if self._dict is None:
                 return
             for node in self._dict.values():
@@ -618,10 +576,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             except DeadReferenceError:
                 return default
 
-        lock = self._lock
-        if lock is None:
-            return default
-        with lock:
+        with self._lock:
             if self._auto_prune:
                 self._prune_dead_locked()
             if self._dict is None:
@@ -663,13 +618,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self.check_cleaned()
         self._ensure_mutable()
 
-        lock = self._lock
-        if lock is None:
-            if default is not None:
-                return default
-            raise KeyError(key)
-
-        with lock:
+        with self._lock:
             if self._auto_prune:
                 self._prune_dead_locked()
             if self._dict is None or key not in self._dict:
@@ -706,11 +655,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self.check_cleaned()
         self._ensure_mutable()
 
-        lock = self._lock
-        if lock is None:
-            raise KeyError("popitem(): dictionary is empty")
-
-        with lock:
+        with self._lock:
             if self._auto_prune:
                 self._prune_dead_locked()
             if self._dict is None or not self._dict:
@@ -758,10 +703,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             # strong dict semantics except for weakref constraints.
             pass
 
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             if self._dict is None:
                 self._dict = {}
             node = self._dict.get(key)
@@ -806,10 +748,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         if other is None:
             other = {}
 
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             if self._dict is None:
                 self._dict = {}
 
@@ -869,10 +808,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 return len(self._snapshot_items())
             return len(mapping)
 
-        lock = self._lock
-        if lock is None:
-            return 0
-        with lock:
+        with self._lock:
             if self._auto_prune:
                 self._prune_dead_locked()
             if self._dict is None:
@@ -1018,10 +954,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 If any node is dead while materializing current items.
         """
         self.check_cleaned()
-        items = self.items()  # may raise DeadReferenceError
 
         new_items: List[Tuple[_K, _V]] = []
-        for k, v in items:
+        for k, v in self.items():
             if func(k, v):
                 new_items.append((k, v))
         return WeakConcurrentDict(initial=new_items)
@@ -1090,10 +1025,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self.check_cleaned()
         self._ensure_mutable()
 
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        with lock:
+        with self._lock:
             # Materialize current live values (may raise DeadReferenceError).
             live_items = self.items()
             strong: Dict[_K, _V] = {k: v for k, v in live_items}
@@ -1158,9 +1090,8 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 A new WeakConcurrentDict containing deep-copied values.
         """
         self.check_cleaned()
-        items = self.items()  # may raise DeadReferenceError
         deep_items: List[Tuple[_K, _V]] = []
-        for k, v in items:
+        for k, v in self.items():
             deep_items.append((deepcopy(k, memo), deepcopy(v, memo)))
         return WeakConcurrentDict(
             initial=deep_items,
@@ -1178,9 +1109,8 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         repr generation.
         """
         self.check_cleaned()
-        items = self._snapshot_items()
         parts: List[str] = []
-        for k, node in items:
+        for k, node in self._snapshot_items():
             val = node.deref(strict=False)
             display = val if val is not None else "<dead>"
             parts.append(f"{k!r}: {display!r}")
@@ -1252,10 +1182,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 If the dict has already been cleaned.
         """
         self.check_cleaned()
-        lock = self._lock
-        if lock is None:
-            raise RuntimeError("WeakConcurrentDict has been cleaned.")
-        lock.acquire()
+        self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -1272,11 +1199,8 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             exc_tb:
                 Traceback object, if any.
         """
-        lock = self._lock
-        if lock is None:
-            return
         try:
-            lock.release()
+            self._lock.release()
         except RuntimeError:
             # In case it's already released or cleaned.
             pass

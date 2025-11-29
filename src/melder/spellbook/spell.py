@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import Optional, List, Any, Callable, Union
+from typing import Optional, List, Any, Callable
 import ulid
 from threading import RLock
 
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionProfile,
 )
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -166,18 +164,18 @@ class Spell(ISpell, Cleanable):
         self._spellbook: Optional[ISpellbook] = spellbook
 
         # Spell Metadata
-        self.tags: ConcurrentList = ConcurrentList(args) if args else ConcurrentList()
-        self.metadata: ConcurrentDict = ConcurrentDict(kwargs) if kwargs else ConcurrentDict()
-        self._mutation_override: Optional[ConcurrentDict] = None
+        self.tags = args if args else []
+        self.metadata = kwargs if kwargs else {}
+        self._mutation_override: dict = {}
 
         # Hooks
-        self.pre_hooks: ConcurrentList[Callable[..., Any]] = ConcurrentList()
-        self.activation_hooks: ConcurrentList[Callable[..., Any]] = ConcurrentList()
-        self.post_hooks: ConcurrentList[Callable[..., Any]] = ConcurrentList()
+        self.pre_hooks: List[Callable[..., Any]] = []
+        self.activation_hooks: List[Callable[..., Any]] = []
+        self.post_hooks: List[Callable[..., Any]] = []
 
         # Final build-time artifacts
         self.dependency_graph: Any = None
-        self.dependencies: ConcurrentList[str] = ConcurrentList()  # SHA256 spell IDs required for this spell to function
+        self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
         # Optional resolution profile (DI contract), to be populated by the
         # resolution pipeline (SpellExaminer → ResolutionProfileStrategy).
@@ -248,6 +246,9 @@ class Spell(ISpell, Cleanable):
             self._owner_creations = None
             self.user_created_object = None
             self._spell_system_states = None
+            self.pre_hooks = []
+            self.activation_hooks = []
+            self.post_hooks = []
 
             self._cleaned = True
     #endregion Disposal

@@ -165,12 +165,8 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         if self._cleaned or not self._auto_prune:
             return
 
-        lock = getattr(self, "_lock", None)
-        if lock is None:
-            return
-
         try:
-            lock.acquire()
+            self._lock.acquire()
         except Exception:
             return
 
@@ -186,7 +182,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                     self._set.discard(node)
         finally:
             try:
-                lock.release()
+                self._lock.release()
             except Exception:
                 pass
 
@@ -576,8 +572,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             rely on hash lookups for correctness here.
         """
         self.check_cleaned()
-        nodes = self._snapshot_nodes()
-        for node in nodes:
+        for node in self._snapshot_nodes():
             try:
                 if node.deref(strict=True) == item:
                     return True
@@ -626,10 +621,8 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 been pruned yet.
         """
         self.check_cleaned()
-        nodes = self._snapshot_nodes()
-
         def _iter() -> Iterator[_T]:
-            for node in nodes:
+            for node in self._snapshot_nodes():
                 yield node.deref(strict=True)
 
         return _iter()
@@ -655,9 +648,8 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         repr generation.
         """
         self.check_cleaned()
-        nodes = self._snapshot_nodes()
         values = []
-        for node in nodes:
+        for node in self._snapshot_nodes():
             val = node.deref(strict=False)
             values.append(val if val is not None else "<dead>")
         return f"{self.__class__.__name__}({values!r})"
