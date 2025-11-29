@@ -2,7 +2,6 @@ import inspect
 import threading
 import hashlib
 from typing import Any, Optional, Union, Protocol
-
 # Melder Imports
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence

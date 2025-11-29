@@ -6,9 +6,8 @@ from threading import RLock
 from types import SimpleNamespace
 import ulid
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
-from typing import Callable, Generic, ParamSpec, TypeVar, Iterable, Union, Optional, Collection, overload, Dict, Tuple, Any
+from typing import Callable, Generic, ParamSpec, TypeVar, Iterable, Union, Optional, Collection, overload, Dict, Tuple, \
+    Any, List
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -96,8 +95,8 @@ class Package(Cleanable, Generic[P, R]):
         self._is_async = inspect.iscoroutinefunction(normalized)
 
         self._func: Callable[..., R] = update_wrapper(lambda *a, **kw: normalized(*a, **kw), normalized)
-        self._args: ConcurrentList = ConcurrentList(initial=args)
-        self._kwargs: ConcurrentDict = ConcurrentDict(initial=kwargs)
+        self._args: List = args if args else []
+        self._kwargs: Dict = kwargs if kwargs else {}
         self._signature_cache: SimpleNamespace | None = None
         self._frozen: bool = False
 
@@ -230,9 +229,9 @@ class Package(Cleanable, Generic[P, R]):
             # 2. Perform cleanup of internal state
             self._cleaned = True
             self._func = None
-            self._args.cleanup()
+            self._args.clear()
             self._args = None
-            self._kwargs.cleanup()
+            self._kwargs.clear()
             self._kwargs = None
             self._signature_cache = None
             self._lock = None
@@ -325,7 +324,7 @@ class Package(Cleanable, Generic[P, R]):
             item: Optional[
                 Union[Callable[P, R], "Package[P, R]", Iterable[Union[Callable[P, R], "Package[P, R]"]]]
             ]
-    ) -> Union["Package[P, R]", ConcurrentList["Package[P, R]"]]:
+    ) -> Union["Package[P, R]", List["Package[P, R]"]]:
         """
         Converts the input into a single Pack instance or a ConcurrentList of Pack instances.
         Handles None, single callables, single Pack instances, and iterables of mixed types.
@@ -550,7 +549,7 @@ class Package(Cleanable, Generic[P, R]):
     @staticmethod
     def _normalize_many(
             tasks: Union[Callable[P, R], "Package[P, R]", Iterable[Union[Callable[P, R], "Package[P, R]"]]]
-    ) -> ConcurrentList["Package[P, R]"]:
+    ) -> List["Package[P, R]"]:
         """
         Normalize a single callable, Package, or an iterable of them into a ConcurrentList of Package instances.
 
@@ -571,12 +570,12 @@ class Package(Cleanable, Generic[P, R]):
 
         # Handle single callable or Package
         if isinstance(tasks, (Callable, Package)):
-            return ConcurrentList([Package(Package._normalize_task(tasks))])
+            return [Package(Package._normalize_task(tasks))]
 
         if not isinstance(tasks, Iterable):
             raise TypeError(f"Expected a callable or iterable of callables, got {type(tasks).__name__}")
 
-        result = ConcurrentList()
+        result = []
         for i, task in enumerate(tasks):
             try:
                 if task is None:
@@ -612,7 +611,7 @@ class Package(Cleanable, Generic[P, R]):
                 "Package[P, R]",
                 Iterable[Union[Callable[P, R], "Package[P, R]"]]
             ]
-    ) -> ConcurrentList["Package[P, R]"]:
+    ) -> List["Package[P, R]"]:
         """
         Internal mirror of `Pack()` for batch input. Always returns valid Packages.
 
@@ -629,12 +628,12 @@ class Package(Cleanable, Generic[P, R]):
             raise TypeError("Tasks input cannot be None.")
 
         if isinstance(tasks, (Callable, Package)):
-            return ConcurrentList([Package._pack(tasks)])
+            return [Package._pack(tasks)]
 
         if not isinstance(tasks, Iterable) or isinstance(tasks, str):
             raise TypeError(f"Expected a callable or iterable of callables, got {type(tasks).__name__}")
 
-        result = ConcurrentList()
+        result = []
         for i, task in enumerate(tasks):
             try:
                 result.append(Package._pack(task))
@@ -742,10 +741,10 @@ class Package(Cleanable, Generic[P, R]):
             return tuple(self._args)
 
     @property
-    def kwargs(self) -> ConcurrentDict:
+    def kwargs(self) -> Dict:
         """Return a thread-safe copy of the stored keyword arguments."""
         with self._lock:
-            return ConcurrentDict(self._kwargs)
+            return self._kwargs
 
     @property
     def signature(self):
@@ -758,7 +757,7 @@ class Package(Cleanable, Generic[P, R]):
         with self._lock:
             if self._signature_cache is None:
                 sig = inspect.signature(self._func.__wrapped__)
-                arg_map = ConcurrentDict()
+                arg_map = {}
                 for i, value in enumerate(self._args):
                     arg_map[f"arg{i}"] = value
                 arg_map.update(self._kwargs)

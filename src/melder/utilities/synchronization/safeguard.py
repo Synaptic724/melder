@@ -1,6 +1,5 @@
 import threading
 from typing import Iterable, Optional, Sequence, Any
-
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 from threading import RLock
 from typing import Any, Dict, List, Optional
-
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder

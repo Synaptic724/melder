@@ -1,8 +1,6 @@
 import threading
 from typing import Dict
-
 import ulid
-
 # Melder imports
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.utilities.general_base.cleanable import Cleanable

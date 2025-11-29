@@ -1,5 +1,6 @@
 from __future__ import annotations
-from threading import RLock
+
+import threading
 from typing import Any, Dict, List, Optional
 
 # Melder imports
@@ -38,7 +39,7 @@ class CreationMutationNode(Cleanable):
         self._parent_id: Optional[str] = parent_id
         self._metadata: Dict[str, Any] = metadata or {}
         self._snapshot: Optional[Dict[str, Any]] = snapshot
-        self._lock: RLock = RLock()
+        self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
         """

@@ -1,14 +1,11 @@
 from __future__ import annotations
 from threading import RLock
-from typing import Any, Dict, List, Optional
-
+from typing import Any, Dict, List, Optional, Set
+# Melder imports
 from melder.spellbook.mutations.research.creation.creation_research import ResearchCreation
 from melder.spellbook.mutations.research.spell.spell_research import ResearchSpell
-# Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.spellbook.bind.spell_index import SpellIndex
 
 
@@ -49,12 +46,12 @@ class Research(Cleanable):
         self._lock: RLock = RLock()
 
         # keyed by research id
-        self._spell_researches: ConcurrentDict[str, ResearchSpell] = ConcurrentDict()
-        self._creation_researches: ConcurrentDict[str, ResearchCreation] = ConcurrentDict()
+        self._spell_researches: Dict[str, ResearchSpell] = {}
+        self._creation_researches: Dict[str, ResearchCreation] = {}
 
         # Lightweight indices for quick membership checks / debugging.
-        self._spell_research_ids: ConcurrentSet[str] = ConcurrentSet()
-        self._creation_research_ids: ConcurrentSet[str] = ConcurrentSet()
+        self._spell_research_ids: Set[str] = set()
+        self._creation_research_ids: Set[str] = set()
 
     def cleanup(self) -> None:
         """
@@ -76,14 +73,14 @@ class Research(Cleanable):
                     except Exception:
                         pass
                 try:
-                    self._spell_researches.cleanup()
+                    self._spell_researches.clear()
                 except Exception:
                     pass
                 self._spell_researches = None
 
             if self._spell_research_ids is not None:
                 try:
-                    self._spell_research_ids.cleanup()
+                    self._spell_research_ids.clear()
                 except Exception:
                     pass
                 self._spell_research_ids = None
@@ -96,14 +93,14 @@ class Research(Cleanable):
                     except Exception:
                         pass
                 try:
-                    self._creation_researches.cleanup()
+                    self._creation_researches.clear()
                 except Exception:
                     pass
                 self._creation_researches = None
 
             if self._creation_research_ids is not None:
                 try:
-                    self._creation_research_ids.cleanup()
+                    self._creation_research_ids.clear()
                 except Exception:
                     pass
                 self._creation_research_ids = None

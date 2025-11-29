@@ -1,7 +1,6 @@
 import inspect
 import threading
 from typing import Any, Optional
-
 # Melder imports
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,

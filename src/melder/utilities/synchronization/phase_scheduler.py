@@ -2,10 +2,7 @@ import threading
 import time
 from concurrent.futures import wait, ALL_COMPLETED
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
-
-from melder.utilities.data_structures.concurrent_queue import ConcurrentQueue
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
+from collections import deque
 from melder.utilities.interfaces.interfaces import IConfiguration, ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
@@ -115,16 +112,16 @@ class PhaseScheduler(Cleanable):
         self._cancel_event: CancellationEvent = self._cancel_signal.event
 
         # Use concurrent containers for shared state.
-        self._queue: ConcurrentQueue[Any] = ConcurrentQueue()
-        self._threads: ConcurrentList[threading.Thread] = ConcurrentList()
+        self._queue: deque[Any] = deque()
+        self._threads: List[threading.Thread] = []
         self._workers_started: bool = False
         self._shutdown: bool = False
 
         self._lock: threading.RLock = threading.RLock()
 
         # Phase registry (concurrent containers).
-        self._phase_factories: ConcurrentDict[str, Callable[[], Sequence[UnitOfWork]]] = ConcurrentDict()
-        self._phase_order: ConcurrentList[str] = ConcurrentList()
+        self._phase_factories: Dict[str, Callable[[], Sequence[UnitOfWork]]] = {}
+        self._phase_order: List[str] = []
 
         # Unique sentinel object to signal worker shutdown
         self._sentinel: object = object()
@@ -186,7 +183,7 @@ class PhaseScheduler(Cleanable):
             # Send a sentinel to each worker if they've been started and the queue exists.
             if self._workers_started and self._queue is not None:
                 for _ in range(self._workers):
-                    self._queue.enqueue(self._sentinel)
+                    self._queue.append(self._sentinel)
 
             # Join threads.
             for thread in self._threads:
@@ -199,26 +196,26 @@ class PhaseScheduler(Cleanable):
             # Clean up the queue itself if present.
             if self._queue is not None:
                 try:
-                    self._queue.cleanup()
+                    self._queue.clear()
                 except Exception:
                     pass
                 self._queue = None
 
             if self._threads is not None:
                 try:
-                    self._threads.cleanup()
+                    self._threads.clear()
                 except Exception:
                     pass
                 self._threads = None
             if self._phase_factories is not None:
                 try:
-                    self._phase_factories.cleanup()
+                    self._phase_factories.clear()
                 except Exception:
                     pass
                 self._phase_factories = None
             if self._phase_order is not None:
                 try:
-                    self._phase_order.cleanup()
+                    self._phase_order.clear()
                 except Exception:
                     pass
                 self._phase_order = None
@@ -404,8 +401,9 @@ class PhaseScheduler(Cleanable):
 
             # Non-blocking dequeue using ConcurrentQueue.
             # If empty, briefly sleep to avoid a hot spin.
-            uow = self._queue.dequeue(ignore_exception=True)
-            if uow is None:
+            try:
+                uow = self._queue.popleft()
+            except IndexError:
                 time.sleep(0.01)
                 continue
 
@@ -475,7 +473,7 @@ class PhaseScheduler(Cleanable):
 
         # Enqueue all units.
         for uow in units:
-            self._queue.enqueue(uow)
+            self._queue.append(uow)
 
         timeout_sec = self._barrier_timeout_ms / 1000.0
 

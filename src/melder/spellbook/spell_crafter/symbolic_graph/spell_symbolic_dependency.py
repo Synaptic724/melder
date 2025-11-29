@@ -1,8 +1,7 @@
 from __future__ import annotations
-
 import threading
 from typing import Any
-
+# Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,

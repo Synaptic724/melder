@@ -2,9 +2,7 @@ import threading
 from enum import Enum
 from typing import Any, Dict, Type, Callable
 import ulid
-
 # Melder imports
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
@@ -62,8 +60,8 @@ class Configuration(Cleanable, IConfiguration):
         self._logger_factory: Pack[[object], Any] | None = None  # Pack is used for management of callables
 
         # Private dictionary storing all properties.
-        self._properties: ConcurrentDict = ConcurrentDict()
-        self.available_properties: ConcurrentDict[str, Type] = ConcurrentDict({
+        self._properties: Dict = {}
+        self.available_properties: Dict[str, Type] = {
             "system_state": SystemState,
             "debugging": bool,
             "disposal": bool,
@@ -71,7 +69,7 @@ class Configuration(Cleanable, IConfiguration):
             "phase_scheduler_workers_per_spellbook": int,
             "ai_native_enabled": bool,
             "phase_scheduler_barrier_timeout_milliseconds": int,
-        })
+        }
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
         self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
@@ -84,7 +82,7 @@ class Configuration(Cleanable, IConfiguration):
         #   - Conduit lifecycle (pre/post created, activated, cleanup start/complete)
         #   - Linking (on_conduit_post_link / on_conduit_post_unlink)
         #   - Contract events (on_contract_created / on_contract_removed)
-        self._hooks: ConcurrentDict[str, ConcurrentDict[str, list[Callable[..., Any]]]] = ConcurrentDict()
+        self._hooks: Dict[str, Dict[str, list[Callable[..., Any]]]] = {}
 
     def cleanup(self) -> None:
         """
@@ -109,15 +107,15 @@ class Configuration(Cleanable, IConfiguration):
                 self._logger_factory = None
 
             if self._properties is not None:
-                self._properties.cleanup()
+                self._properties.clear()
                 self._properties = None
 
             if self.available_properties is not None:
-                self.available_properties.cleanup()
+                self.available_properties.clear()
                 self.available_properties = None
 
             if self._hooks is not None:
-                self._hooks.cleanup()
+                self._hooks.clear()
                 self._hooks = None
 
     def set_property(self, key: str, value: Any) -> None:
@@ -230,7 +228,6 @@ class Configuration(Cleanable, IConfiguration):
             return
         if not self.validate():
             raise ValueError("Configuration validation failed. Cannot freeze.")
-        self._properties.freeze()
         with self._lock:
             self._frozen = True
 
@@ -414,7 +411,7 @@ class Configuration(Cleanable, IConfiguration):
             RuntimeError: If the configuration is cleaned.
         """
         self.check_cleaned()
-        self._properties.batch_update(lambda d: d.update({
+        self._properties.update({
             "system_state": self._convert_enum_if_needed("system_state", "automatic"),
             "debugging": False,
             "disposal": False,
@@ -422,7 +419,7 @@ class Configuration(Cleanable, IConfiguration):
             "phase_scheduler_workers_per_spellbook": 5,
             "ai_native_enabled": False,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
-        }))
+        })
 
     def has_logger_factory(self) -> bool:
         """Return True if a logger factory has been set."""
@@ -488,7 +485,7 @@ class Configuration(Cleanable, IConfiguration):
         with self._lock:
             per_spellbook = self._hooks.get(spellbook_id)
             if per_spellbook is None:
-                per_spellbook = ConcurrentDict[str, list[Callable[..., Any]]]()
+                per_spellbook = Dict[str, list[Callable[..., Any]]]()
                 self._hooks[spellbook_id] = per_spellbook
 
             hooks_list = per_spellbook.get(hook_name)

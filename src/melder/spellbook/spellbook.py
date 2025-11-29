@@ -1,7 +1,6 @@
 from types import MappingProxyType
-from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict
+from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set
 import threading
-
 # Melder Imports
 from melder.aether.aether import Aether
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -9,11 +8,9 @@ from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
 from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
-from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration, ISpellIndex, ISpellSystemStates
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
@@ -94,15 +91,15 @@ class Spellbook(Cleanable, ISpellbook):
         self._initialize_logging(logger)
 
         # Core spell storage (SpellIndex Maps)
-        self._spells: ConcurrentDict[SpellIndex, ISpell] = ConcurrentDict()
-        self._spell_versions: ConcurrentSet[str] = ConcurrentSet()
-        self._lookup_spells: ConcurrentDict[tuple, SpellIndex]  = ConcurrentDict()
+        self._spells: Dict[SpellIndex, ISpell] = {}
+        self._spell_versions: Set[str] = set()
+        self._lookup_spells: Dict[tuple, SpellIndex]  = {}
 
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
-        self._contracted_spells: ConcurrentDict[str, ConcurrentDict[SpellIndex, ISpell]] = ConcurrentDict()
-        self._contracted_versions: ConcurrentDict[str, ConcurrentSet[str]] = ConcurrentDict()
-        self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, SpellIndex]]  = ConcurrentDict()
+        self._contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = {}
+        self._contracted_versions: Dict[str, Set[str]] = {}
+        self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
 
         # Binding system
         self._bind: Bind = Bind(self)
@@ -140,28 +137,28 @@ class Spellbook(Cleanable, ISpellbook):
         # 2) Clean lookup/contracted maps and local maps
         if self._lookup_spells is not None:
             try:
-                self._lookup_spells.cleanup()
+                self._lookup_spells.clear()
             except Exception as e:
                 self._logger.error(f"Error cleaning _lookup_spells: {e}", "_cleanup_components", exc_info=True)
             self._lookup_spells = None
 
         if self._contracted_spells is not None:
             try:
-                self._contracted_spells.cleanup()
+                self._contracted_spells.clear()
             except Exception as e:
                 self._logger.error(f"Error cleaning _contracted_spells: {e}", "_cleanup_components", exc_info=True)
             self._contracted_spells = None
 
         if self._lookup_contracted_spells is not None:
             try:
-                self._lookup_contracted_spells.cleanup()
+                self._lookup_contracted_spells.clear()
             except Exception as e:
                 self._logger.error(f"Error cleaning _lookup_contracted_spells: {e}", "_cleanup_components", exc_info=True)
             self._lookup_contracted_spells = None
 
         if self._spells is not None:
             try:
-                self._spells.cleanup()
+                self._spells.clear()
             except Exception as e:
                 self._logger.error(f"Error cleaning _spells: {e}", "_cleanup_components", exc_info=True)
             self._spells = None
@@ -177,14 +174,14 @@ class Spellbook(Cleanable, ISpellbook):
 
         if self._spell_versions is not None:
             try:
-                self._spell_versions.cleanup()
+                self._spell_versions.clear()
             except Exception as e:
                 self._logger.error(f"Error cleaning _spell_versions: {e}", "_cleanup_components", exc_info=True)
             self._spell_versions = None
 
         if self._contracted_versions is not None:
             try:
-                self._contracted_versions.cleanup()
+                self._contracted_versions.clear()
             except Exception as e:
                 self._logger.error(f"Error cleaning _contracted_versions: {e}", "_cleanup_components", exc_info=True)
             self._contracted_versions = None
@@ -313,7 +310,7 @@ class Spellbook(Cleanable, ISpellbook):
             self._contracted_versions.clear()
 
             for conduit_id, spell_map in self._contracted_spells.items():
-                version_set = ConcurrentSet[str]()
+                version_set = set[str]()
                 for spell_index in spell_map.keys():
                     versions = spell_index._versions
                     if not versions:
@@ -738,9 +735,9 @@ class Spellbook(Cleanable, ISpellbook):
 
         if not a_exists and not b_exists and not c_exists:
             with self._lock:
-                self._contracted_spells[conduit_id] = ConcurrentDict()
-                self._lookup_contracted_spells[conduit_id] = ConcurrentDict()
-                self._contracted_versions[conduit_id] = ConcurrentSet()
+                self._contracted_spells[conduit_id] = {}
+                self._lookup_contracted_spells[conduit_id] = {}
+                self._contracted_versions[conduit_id] = set()
 
 
     def _remove_link_contract(self, conduit_id: str):

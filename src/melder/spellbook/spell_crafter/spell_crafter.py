@@ -1,8 +1,7 @@
 from __future__ import annotations
-
 import threading
 from typing import Any, Optional, List, Dict
-
+# Melder Imports
 from melder.spellbook.spell_crafter.dag.meld_dag import DirectedAcyclicWorkGraph
 # Melder Imports
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (

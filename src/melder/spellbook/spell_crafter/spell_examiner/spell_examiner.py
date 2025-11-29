@@ -1,11 +1,8 @@
-# melder/spellbook/spell_crafter/spell_examiner/spell_examiner.py
-
 from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Optional, Union
-
+# Melder imports
 from melder.spellbook.spell import Spell
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,

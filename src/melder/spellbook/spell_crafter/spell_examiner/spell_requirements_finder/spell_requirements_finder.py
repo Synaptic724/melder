@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 import inspect
 import threading
 from typing import Any, List, Optional, Tuple, Union, get_args, get_origin
-
 # Melder imports
 from melder.spellbook.spell import Spell
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (

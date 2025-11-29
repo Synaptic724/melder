@@ -1,14 +1,10 @@
 from __future__ import annotations
-
 from threading import RLock
 from typing import Any, Dict, List, Optional
-
-from melder.spellbook.mutations.research.creation.node.creation_mutation_node import CreationMutationNode
 # Melder imports
+from melder.spellbook.mutations.research.creation.node.creation_mutation_node import CreationMutationNode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
 
 class ResearchCreation(Cleanable):
@@ -41,8 +37,8 @@ class ResearchCreation(Cleanable):
         self._creation_ref: Optional[SyncWeakRef[Any]] = None
 
         # Mutation graph: id -> node, plus commit-order index.
-        self._nodes: ConcurrentDict[str, CreationMutationNode] = ConcurrentDict()
-        self._node_ids: ConcurrentList[str] = ConcurrentList()
+        self._nodes: Dict[str, CreationMutationNode] = {}
+        self._node_ids: List[str] = []
 
         self._head_id: Optional[str] = None
         self._metadata: Dict[str, Any] = {}
@@ -67,7 +63,7 @@ class ResearchCreation(Cleanable):
                     except Exception:
                         pass
                 try:
-                    self._nodes.cleanup()
+                    self._nodes.clear()
                 except Exception:
                     pass
                 self._nodes = None
@@ -75,7 +71,7 @@ class ResearchCreation(Cleanable):
             # Cleanup commit-order index
             if self._node_ids is not None:
                 try:
-                    self._node_ids.cleanup()
+                    self._node_ids.clear()
                 except Exception:
                     pass
                 self._node_ids = None

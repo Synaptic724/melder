@@ -1,11 +1,9 @@
 from __future__ import annotations
 from threading import RLock
 from typing import Any, Dict, List, Optional
-
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.mutations.research.research import Research
 from melder.utilities.interfaces.interfaces import IAethericFrame
@@ -29,7 +27,7 @@ class MutationResearch(Cleanable):
         self._aetheric_frame = aetheric_frame
 
         # Keyed by SpellIndex id (ULID string)
-        self._sessions_by_index: ConcurrentDict[str, Research] = ConcurrentDict()
+        self._sessions_by_index: Dict[str, Research] = {}
 
     def cleanup(self) -> None:
         """
@@ -50,7 +48,7 @@ class MutationResearch(Cleanable):
                     except Exception:
                         pass
                 try:
-                    self._sessions_by_index.cleanup()
+                    self._sessions_by_index.clear()
                 except Exception:
                     pass
                 self._sessions_by_index = None
