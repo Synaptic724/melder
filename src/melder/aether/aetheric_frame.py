@@ -107,53 +107,7 @@ class AethericFrame(Cleanable):
                 return
 
             self._cleaned = True
-
-            # Conduits
-            if self._conduits is not None:
-                for conduit in list(self._conduits.values()):
-                    try:
-                        conduit.cleanup()
-                    except Exception:
-                        # DevOps surfaces can record incidents if you want;
-                        # frame cleanup never dies on conduit cleanup.
-                        pass
-                self._conduits.cleanup()
-                self._conduits = None
-
-            # SpellIndex registry
-            if self._spell_registry is not None:
-                self._spell_registry.cleanup()
-                self._spell_registry = None
-
-            # Version registry
-            if self._version_registry is not None:
-                self._version_registry.cleanup()
-                self._version_registry = None
-
-            # Conduit clusters
-            if self._conduit_clusters is not None:
-                self._conduit_clusters.cleanup()
-                self._conduit_clusters = None
-
-            # Dynamic conduit cloud
-            if self._conduit_cloud is not None:
-                self._conduit_cloud.cleanup()
-                self._conduit_cloud = None
-
-            # Mutation research hub
-            if self._mutation_research is not None:
-                self._mutation_research.cleanup()
-                self._mutation_research = None
-
-            # Spell system states registry
-            if self._spell_system_states is not None:
-                self._spell_system_states.cleanup()
-                self._spell_system_states = None
-
-            # DevOps manager (incidents + change control)
-            if self._dev_ops_manager is not None:
-                self._dev_ops_manager.cleanup()
-                self._dev_ops_manager = None
+            self._cleanup_data_structures()
 
             # Configuration + identifiers
             self._configuration = None
@@ -162,6 +116,58 @@ class AethericFrame(Cleanable):
 
         # Drop lock last.
         self._lock = None
+
+
+    def _cleanup_data_structures(self) -> None:
+        """
+        Clean up all owned data structures.
+        """
+        # Conduits
+        if self._conduits is not None:
+            for conduit in list(self._conduits.values()):
+                try:
+                    conduit.cleanup()
+                except Exception:
+                    # DevOps surfaces can record incidents if you want;
+                    # frame cleanup never dies on conduit cleanup.
+                    pass
+            self._conduits.cleanup()
+            self._conduits = None
+
+        # SpellIndex registry
+        if self._spell_registry is not None:
+            self._spell_registry.cleanup()
+            self._spell_registry = None
+
+        # Version registry
+        if self._version_registry is not None:
+            self._version_registry.cleanup()
+            self._version_registry = None
+
+        # Conduit clusters
+        if self._conduit_clusters is not None:
+            self._conduit_clusters.cleanup()
+            self._conduit_clusters = None
+
+        # Dynamic conduit cloud
+        if self._conduit_cloud is not None:
+            self._conduit_cloud.cleanup()
+            self._conduit_cloud = None
+
+        # Mutation research hub
+        if self._mutation_research is not None:
+            self._mutation_research.cleanup()
+            self._mutation_research = None
+
+        # Spell system states registry
+        if self._spell_system_states is not None:
+            self._spell_system_states.cleanup()
+            self._spell_system_states = None
+
+        # DevOps manager (incidents + change control)
+        if self._dev_ops_manager is not None:
+            self._dev_ops_manager.cleanup()
+            self._dev_ops_manager = None
 
     # ------------------------------------------------------------------
     # Context Manager
