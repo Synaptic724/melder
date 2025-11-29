@@ -48,10 +48,6 @@ class AethericFrame(Cleanable):
         self._id: str = str(ulid.ULID())
         self._lock: threading.RLock = threading.RLock()
 
-        # -------------------------------
-        # Core conduit / spell registries
-        # -------------------------------
-
         # All root conduits created in this frame:
         #   conduit_id -> IConduit
         self._conduits: ConcurrentDict[str, IConduit] = ConcurrentDict()
@@ -73,10 +69,6 @@ class AethericFrame(Cleanable):
 
         # Per-frame mutation research hub (local lab entrypoint).
         self._mutation_research: MutationResearch = MutationResearch(self)
-
-        # -------------------------------
-        # DevOps / control-plane surfaces
-        # -------------------------------
 
         # Per-frame graph + dirtiness registry for all spell lineages.
         self._spell_system_states: SpellSystemStates = SpellSystemStates(self)
