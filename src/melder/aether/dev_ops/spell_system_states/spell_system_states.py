@@ -1,6 +1,7 @@
 import threading
 from typing import Iterable, Optional, Set, List
 
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable

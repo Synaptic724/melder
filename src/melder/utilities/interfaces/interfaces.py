@@ -4,6 +4,7 @@ from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dic
     Tuple, Mapping, Set
 
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.spellbook.existence.existence import Existence
 
 
@@ -5235,5 +5236,174 @@ class IContract(ICleanable, Protocol):
             ward (IConduitWard): The ward granting access.
             spell_ids (list[str]): List of spell IDs to grant.
             permission (Permissions): The permission level to assign.
+        """
+        ...
+
+class ISpellSystemStates(ICleanable, Protocol):
+    """
+    Per-frame registry for all SpellSystemState instances.
+
+    This is the "control tower" object:
+
+    - Owns the index: lineage id -> SpellSystemState.
+    - Keeps an auxiliary index: current_spell_id -> SpellSystemState
+      (for convenience when you only know the version id).
+    - Tracks which lineages are currently dirty so higher-level
+      DevOps/validation flows can decide what to re-run.
+
+    Intended lifecycle:
+
+    - One instance per AethericFrame (owned by the frame and initialized
+      alongside Spellbook / DevOpsManager).
+    - Spellbook / SpellCrafter call:
+        * `register_lineage(...)` when a new SpellIndex+Spell appears
+        * `update_dependencies(...)` after Phase 3/4 attaches dependency ids
+        * `mark_structural_change(...)` when a lineage is rebound/mutated
+    - DevOps / validation flows call:
+        * `consume_dirty_lineages(...)` to get a worklist
+        * `compute_impact_closure(...)` to fan out impacted lineages
+    """
+    _lock: threading.RLock
+    _frame: Optional["AethericFrame"]
+    _states_by_index_id: Optional['ConcurrentDict'[str, 'SpellSystemState']]
+    _states_by_spell_id: Optional['ConcurrentDict'[str, 'SpellSystemState']]
+    _dirty_lineages: Optional['ConcurrentSet[str]']
+
+    # ------------------------------------------------------------------
+    # Registration / lookup
+    # ------------------------------------------------------------------
+    def register_lineage(self, spell_index: ISpellIndex, spell: ISpell) -> 'SpellSystemState':
+        """
+        Ensure a SpellSystemState exists for the given lineage and return it.
+
+        Behaviour:
+        - If this is the first time we see `spell_index.id`, create a new
+          SpellSystemState with `spell_index.current` as the current_spell_id.
+        - If it already exists, update its current_spell_id to match
+          `spell_index.current`.
+        - Update the spell-id index so `get_by_spell_id(...)` can resolve
+          by current version id.
+        - Mark the lineage as structurally gated with reason
+          SpellStateChangeReason.register_or_rebind and add it to the dirty set.
+
+        This is intended to be called from Spellbook.bind(...) or equivalent.
+        """
+        ...
+
+    def get_by_index_id(self, index_id: str) -> Optional['SpellSystemState']:
+        """
+        Lookup a SpellSystemState by lineage id.
+
+        Returns:
+            - The SpellSystemState instance for this lineage, or
+            - None if no state has been registered for the id.
+        """
+        ...
+
+    def get_by_spell_id(self, spell_id: str) -> Optional['SpellSystemState']:
+        """
+        Lookup a SpellSystemState by current spell version id.
+
+        This is a convenience when the caller only knows the version id
+        (e.g., SpellIndex.current) and wants to find the associated lineage state.
+
+        Returns:
+            - The SpellSystemState instance, or
+            - None if no state is currently indexed for that spell id.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Dependency wiring (Phase 3/4 integration)
+    # ------------------------------------------------------------------
+    def update_dependencies(self, spell_index: ISpellIndex, dependency_ids: Iterable[str]) -> None:
+        """
+        Attach direct dependency ids for this lineage and update reverse edges.
+
+        `dependency_ids` are generic "spell ids" (version or lineage ids) – the
+        SpellCrafter / Spellbook decides the semantics. This manager only
+        cares about connectivity, not the type system.
+
+        Behaviour:
+        - Ensure there is a SpellSystemState for this lineage (create if missing).
+        - Compute the delta between previous and new dependency sets.
+        - Remove reverse edges from dependencies we no longer reference.
+        - Add reverse edges for new dependencies.
+        - Mark this lineage as gated due to dependency change and add to
+          `_dirty_lineages`.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Dirty / impact queries (used by DevOps / validation governor)
+    # ------------------------------------------------------------------
+    def mark_structural_change(
+            self,
+            spell_index: ISpellIndex,
+            reason: 'SpellStateChangeReason' = SpellStateChangeReason.structure_changed,
+    ) -> None:
+        """
+        Mark a lineage as structurally changed.
+
+        Typical triggers:
+        - New version promoted.
+        - Class/method profile changed.
+        - Binding semantics changed in a way that affects structure.
+
+        Behaviour:
+        - Ensure a SpellSystemState exists for the lineage.
+        - Mark it structurally gated with the provided reason.
+        - Add the lineage id to `_dirty_lineages`.
+        """
+        ...
+
+    def compute_impact_closure(self, root_index_ids: Iterable[str]) -> Set[str]:
+        """
+        Compute the transitive closure of impacted lineages downstream.
+
+        Args:
+            root_index_ids:
+                Lineage ids that changed *directly* (e.g., newly promoted or
+                structurally altered).
+
+        Behaviour:
+        - Walk reverse edges (`direct_dependents`) starting from each root.
+        - Build a set of all lineages that depend (directly or indirectly)
+          on any of the roots.
+        - For each impacted lineage:
+            * Roots: left in their existing structural state (already gated).
+            * Non-roots: marked as transitively dirty (impacted_by_dependency).
+        - All impacted lineages are added to `_dirty_lineages`.
+
+        Returns:
+            A set of all impacted lineage ids, including the roots.
+        """
+        ...
+
+    def consume_dirty_lineages(self) -> List[str]:
+        """
+        Pop and return the current set of dirty lineage ids.
+
+        This is the handoff to whatever runs the revalidation / mutation
+        governor (your "Phase 5–7" or equivalent).
+
+        Behaviour:
+        - Snapshot all ids currently in `_dirty_lineages`.
+        - Clear `_dirty_lineages`.
+        - Return the snapshot list. Order is unspecified.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Introspection helpers
+    # ------------------------------------------------------------------
+    def iter_states(self) -> List['SpellSystemState']:
+        """
+        Snapshot of all SpellSystemState instances currently registered.
+
+        Returns:
+            A list of SpellSystemState objects. The list is detached from the
+            underlying ConcurrentDict so callers cannot accidentally keep a
+            live iterator into internal state.
         """
         ...

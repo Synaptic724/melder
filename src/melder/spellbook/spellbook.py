@@ -81,7 +81,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._id: str = IDBuilder.create_id()
         self._conjured = False
         self._conduit: Optional[Conduit] = None
-        self._aetheric_frame = aetheric_frame
+        self._aetheric_frame: str = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
             raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
 
@@ -109,7 +109,8 @@ class Spellbook(Cleanable, ISpellbook):
 
         # Spell validator
         self._spell_validator: SpellValidationSystem = SpellValidationSystem()
-
+        # Spell States System
+        self._spell_states_system = Spellbook._aether._get_spell_states_system()
 
     #region Disposal
 

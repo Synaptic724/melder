@@ -1,9 +1,12 @@
 from __future__ import annotations
 from threading import RLock
+from typing import Optional
+
 # Melder Imports
 from melder.aether.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.aether.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import ISpellSystemStates
 
 
 class DevOpsManager(Cleanable):
@@ -26,13 +29,13 @@ class DevOpsManager(Cleanable):
         "_change_control_manager",
     ]
 
-    def __init__(self, spell_system_states: 'SpellSystemStates') -> None:
+    def __init__(self, spell_system_states: ISpellSystemStates) -> None:
         super().__init__()
         if spell_system_states is None:
             raise ValueError("spell_system_states cannot be None")
 
         self._lock: RLock = RLock()
-        self._spell_system_states: 'SpellSystemStates' = spell_system_states
+        self._spell_system_states: ISpellSystemStates = spell_system_states
         self._incident_manager: IncidentManager = IncidentManager()
         self._change_control_manager: ChangeControlManager = ChangeControlManager(
             spell_system_states=spell_system_states
@@ -75,20 +78,20 @@ class DevOpsManager(Cleanable):
     # Public API
     # ------------------------------------------------------------------
     @property
-    def incident_manager(self) -> IncidentManager:
+    def incident_manager(self) -> Optional[IncidentManager]:
         self.check_cleaned()
         # Read-only exposure; no structural mutation, but still guard with lock
         with self._lock:
             return self._incident_manager
 
     @property
-    def change_control_manager(self) -> ChangeControlManager:
+    def change_control_manager(self) -> Optional[ChangeControlManager]:
         self.check_cleaned()
         with self._lock:
             return self._change_control_manager
 
     @property
-    def spell_system_states(self) -> 'SpellSystemStates':
+    def spell_system_states(self) -> Optional[ISpellSystemStates]:
         """
         Expose the underlying SpellSystemStates for callers that want
         direct graph/dirty-state access through the DevOpsManager.
