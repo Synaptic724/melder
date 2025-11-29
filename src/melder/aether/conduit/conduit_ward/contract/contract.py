@@ -1,9 +1,8 @@
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 from threading import RLock
 # Melder imports
 from melder.aether.conduit.conduit_ward.contract.details import Detail
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IConduitWard, IConduit, IContract
 from melder.utilities.general_base.cleanable import Cleanable
@@ -31,8 +30,8 @@ class Contract(Cleanable):
         self._ward_b: IConduitWard = ward_b
 
         # Each side stores its own view of spell permissions.
-        self._details_a: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit b
-        self._details_b: ConcurrentDict[str, Detail] = ConcurrentDict() # Borrowed from conduit a
+        self._details_a: Dict[str, Detail] = {} # Borrowed from conduit b
+        self._details_b: Dict[str, Detail] = {} # Borrowed from conduit a
 
     #region Cleanup
     def cleanup(self):
@@ -49,6 +48,8 @@ class Contract(Cleanable):
             self._clean_up()
             self._ward_a = None
             self._ward_b = None
+            self._details_a = None
+            self._details_b = None
             self._cleaned = True
 
     def _clean_up(self):
@@ -100,9 +101,12 @@ class Contract(Cleanable):
         Internal
 
         Helper to find the opposite conduit in a contract based on a known conduit ID.
-        :param contract:
-        :param known_id:
-        :return:
+
+        Args:
+            contract (IContract): The contract to search within.
+            known_id (str): The ID of the known conduit.
+        Returns:
+            Optional[IConduit]: The opposite conduit if found, else None.
         """
         if contract._ward_a._id == known_id:
             return contract._ward_b._conduit
@@ -110,7 +114,7 @@ class Contract(Cleanable):
             return contract._ward_a._conduit
         return None
 
-    def _get_detail_map(self, ward: IConduitWard) -> ConcurrentDict[str, Detail]:
+    def _get_detail_map(self, ward: IConduitWard) -> Dict[str, Detail]:
         """
         Internal
 

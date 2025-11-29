@@ -5,7 +5,6 @@ from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 
 
 class SpellSystemState(Cleanable):
@@ -82,12 +81,12 @@ class SpellSystemState(Cleanable):
         self._current_spell_id: Optional[str] = current_spell_id
 
         # Concurrent topology sets
-        self._direct_dependencies: Optional[ConcurrentSet[str]] = ConcurrentSet()
-        self._direct_dependents: Optional[ConcurrentSet[str]] = ConcurrentSet()
+        self._direct_dependencies: Optional[Set[str]] = set()
+        self._direct_dependents: Optional[Set[str]] = set()
 
         # Validity + flags
         self._validity: Optional[SpellValidity] = SpellValidity.unknown
-        self._flags: Optional[ConcurrentSet[SpellState]] = ConcurrentSet()
+        self._flags: Optional[Set[SpellState]] = set()
         self._flags.add(SpellState.new_lineage)
 
         self._change_reason: Optional[SpellStateChangeReason] = SpellStateChangeReason.new_lineage
@@ -116,15 +115,15 @@ class SpellSystemState(Cleanable):
             self._cleaned = True
 
             if self._direct_dependencies is not None:
-                self._direct_dependencies.cleanup()
+                self._direct_dependencies.clear()
                 self._direct_dependencies = None
 
             if self._direct_dependents is not None:
-                self._direct_dependents.cleanup()
+                self._direct_dependents.clear()
                 self._direct_dependents = None
 
             if self._flags is not None:
-                self._flags.cleanup()
+                self._flags.clear()
                 self._flags = None
 
             self._validity = None
@@ -318,7 +317,7 @@ class SpellSystemState(Cleanable):
         deps = {d for d in dependency_ids if d}
         with self._lock:
             # Rebuild as a fresh concurrent set to avoid stale contents.
-            self._direct_dependencies = ConcurrentSet(deps)
+            self._direct_dependencies = set(deps)
 
     def add_dependent(self, index_id: str) -> None:
         """

@@ -1,16 +1,13 @@
 from __future__ import annotations
-from threading import RLock
+import threading
 from typing import Dict, List, Optional, Any, Iterable
 # Melder imports
 from melder.aether.dev_ops.incident_manager.incident import Incident
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.interfaces.interfaces import IIncidentManager
 
-
-class IncidentManager(IIncidentManager, Cleanable):
+class IncidentManager(Cleanable):
     """
     DevOps incident registry.
 
@@ -27,9 +24,9 @@ class IncidentManager(IIncidentManager, Cleanable):
 
     def __init__(self) -> None:
         super().__init__()
-        self._lock: RLock = RLock()
+        self._lock: threading.RLock = threading.RLock()
         # incident_id -> Incident
-        self._incidents_by_id: ConcurrentDict[str, Incident] = ConcurrentDict({})
+        self._incidents_by_id: Dict[str, Incident] = {}
         self._next_numeric_id: int = 1
 
     def cleanup(self) -> None:
@@ -54,7 +51,7 @@ class IncidentManager(IIncidentManager, Cleanable):
                     if incident is not None:
                         incident.cleanup()
                 # Then clean the registry itself.
-                self._incidents_by_id.cleanup()
+                self._incidents_by_id.clear()
                 self._incidents_by_id = None
 
             self._next_numeric_id = 0

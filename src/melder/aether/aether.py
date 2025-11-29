@@ -1,13 +1,9 @@
 import logging
 from threading import RLock
-from typing import Optional, Any
+from typing import Optional, Any, Dict, List, Set
 import ulid
-
-from melder.spellbook.bind.spell_index import SpellIndex
 # Melder Imports
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
-from melder.utilities.data_structures.concurrent_set import ConcurrentSet
+from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration, \
     IDevOpsManager, ISpellSystemStates, IIncidentManager, IChangeControlManager
 from melder.utilities.general_base.cleanable import Cleanable
@@ -51,8 +47,7 @@ class Aether(Cleanable):
             self._logger.debug("Aether initialized", "__init__")
 
             # --- Frame setup ---
-            self._aetheric_frames: ConcurrentDict[str, AethericFrame] = ConcurrentDict()
-            self._aetheric_frames["default"] = AethericFrame("default")
+            self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame("default")}
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
 
     def cleanup(self):
@@ -72,7 +67,7 @@ class Aether(Cleanable):
                 self._logger.debug("Cleaning up Aether...", "cleanup")
                 self.cleanup_aetheric_frames() # This will clean each individual frame
                 self._default_frame = None
-                self._aetheric_frames.cleanup() # This cleans the ConcurrentDictionary
+                self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
                 self._aetheric_frames = None
                 self._logger.debug("Aether cleanup successful", "cleanup")
             except Exception as e:
@@ -388,7 +383,7 @@ class Aether(Cleanable):
             self._logger.error(f"Cluster with name {cluster_name} already exists.", "_create_cluster", exc_info=True)
             raise ValueError(f"Cluster with name {cluster_name} already exists.")
 
-        conduit_clusters[cluster_name] = ConcurrentList()
+        conduit_clusters[cluster_name] = []
         self._logger.debug(f"Cluster '{cluster_name}' created in frame '{aetheric_frame_name}'", "_create_cluster")
 
     def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
@@ -458,7 +453,7 @@ class Aether(Cleanable):
 
         self._logger.debug(f"Conduit '{conduit_id}' removed from cluster '{cluster_name}'", "_remove_conduit_from_cluster")
 
-    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> ConcurrentList[str]:
+    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> List[str]:
         """
         Gets a list of all conduit ids in a specific cluster.
 
@@ -582,7 +577,7 @@ class Aether(Cleanable):
             )
             return None
 
-    def _add_spells_to_aether(self, conduit_id: str, spell_set: ConcurrentSet[SpellIndex],
+    def _add_spells_to_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
                               aetheric_frame_name: str = "default") -> None:
         """
         Registers a set of SpellIndex objects for a conduit and refreshes version registry.
@@ -647,12 +642,12 @@ class Aether(Cleanable):
 
         # Ensure there is a spell set for this conduit
         if conduit_id not in spell_registry:
-            spell_registry[conduit_id] = ConcurrentSet()
+            spell_registry[conduit_id] = set()
 
         # Add SpellIndex
         spell_registry[conduit_id].add(spell_index)
 
-        # 🔥 Critical: keep version registry in sync
+        # Critical: keep version registry in sync
         frame.refresh_version_registry()
 
     def _remove_single_spell_index(self, conduit_id: str, spell_index: SpellIndex,

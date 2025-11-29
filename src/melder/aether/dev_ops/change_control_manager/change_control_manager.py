@@ -3,7 +3,6 @@ from threading import RLock
 from typing import Optional, Any, Dict, Union
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.interfaces.interfaces import ISpellIndex, IChangeControlManager  # for identity / lineage
 
 
@@ -39,14 +38,14 @@ class ChangeControlManager(IChangeControlManager, Cleanable):
         if spell_system_states is None:
             raise ValueError("spell_system_states cannot be None")
 
-        super().__init__()
+        Cleanable.__init__(self)
 
         self._lock: RLock = RLock()
         self._spell_system_states: "SpellSystemStates" = spell_system_states
 
-        # spell_index_id -> ConcurrentDict[str, Any]
-        self._pending_changes: ConcurrentDict[str, ConcurrentDict[str, Any]]
-        self._pending_changes = ConcurrentDict()
+        # spell_index_id -> Dict[str, Any]
+        self._pending_changes: Dict[str, Dict[str, Any]]
+        self._pending_changes = {}
     # ----------------------------------------------------------------------
     # Cleanup
     # ----------------------------------------------------------------------
@@ -70,7 +69,7 @@ class ChangeControlManager(IChangeControlManager, Cleanable):
             self._cleaned = True
 
             if self._pending_changes is not None:
-                self._pending_changes.cleanup()
+                self._pending_changes.clear()
                 self._pending_changes = None
 
             # We do *not* own spell_system_states' lifecycle here; that will
@@ -89,7 +88,7 @@ class ChangeControlManager(IChangeControlManager, Cleanable):
             spell_index: ISpellIndex,
             reason: str,
             metadata: Optional[
-                Union[Dict[str, Any], ConcurrentDict[str, Any]]
+                Union[Dict[str, Any], Dict[str, Any]]
             ] = None,
     ) -> None:
         """
@@ -107,9 +106,8 @@ class ChangeControlManager(IChangeControlManager, Cleanable):
                 (e.g. "mutation_candidate", "rebinding", "config_change").
             metadata:
                 Optional free-form metadata. Can be a plain dict or a
-                ConcurrentDict; in both cases we wrap it into a new
-                ConcurrentDict instance so internal state is always nested
-                ConcurrentDict -> ConcurrentDict.
+                Dict; in both cases we wrap it into a new
+                Dict instance so internal state is always nested
         """
         self.check_cleaned()
         if spell_index is None:
@@ -121,8 +119,7 @@ class ChangeControlManager(IChangeControlManager, Cleanable):
 
         # Wrap metadata into a ConcurrentDict without manual iteration here.
         # ConcurrentDict supports being constructed from any Mapping.
-        base = metadata if metadata is not None else {}
-        details = ConcurrentDict(base)
+        details = metadata if metadata is not None else {}
         details["reason"] = reason
 
         with self._lock:

@@ -1,9 +1,7 @@
 from threading import RLock
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 # Melder imports
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.aether.conduit.creations.creation import Creation
@@ -49,12 +47,12 @@ class LesserCreations(Cleanable):
         self._lock = RLock()
 
         # Internal storage for managed objects
-        self._unique_per_scope: ConcurrentDict[str, Creation] = ConcurrentDict()
-        self._many: ConcurrentDict[str, ConcurrentList[Creation]] = ConcurrentDict()
+        self._unique_per_scope: Dict[str, Creation] = {}
+        self._many: Dict[str, List[Creation]] = {}
 
         # Disposal configuration
-        self._disposal_enabled = disposal_enabled
-        self._disposal_method_names = disposal_method_names or []
+        self._disposal_enabled: bool = disposal_enabled
+        self._disposal_method_names: List = disposal_method_names or []
 
         self._logger.debug(
             f"__init__: disposal_enabled={disposal_enabled}, methods={self._disposal_method_names}",
@@ -160,7 +158,7 @@ class LesserCreations(Cleanable):
                 if maybe_error:
                     errors.append(maybe_error)
                 item.cleanup()
-        self._unique_per_scope.cleanup()
+        self._unique_per_scope.clear()
         self._logger.debug(
             f"_cleanup_unique_per_scope: errors={len(errors)}",
             method_name="_cleanup_unique_per_scope", mask=True,
@@ -186,8 +184,8 @@ class LesserCreations(Cleanable):
                     if maybe_error:
                         errors.append(maybe_error)
                     item.cleanup()
-            items.cleanup()
-        self._many.cleanup()
+            items.clear()
+        self._many.clear()
         self._logger.debug(
             f"_cleanup_many: errors={len(errors)}",
             method_name="_cleanup_many", mask=True,
@@ -355,5 +353,5 @@ class LesserCreations(Cleanable):
             groups=self._log_groups, system_groups=self._log_sysgroups,
         )
         if key not in self._many:
-            self._many[key] = ConcurrentList()
+            self._many[key] = []
         self._many[key].append(Creation(item))

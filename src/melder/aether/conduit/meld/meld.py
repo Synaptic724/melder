@@ -1,13 +1,11 @@
 from threading import RLock
-from typing import Optional, Dict, Any, NamedTuple, Callable, List, Union
+from typing import Optional, Dict, Any, Callable, List
 
 from melder.aether.conduit.meld.meld_context.meld_context import MeldContext
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 # Melder Imports
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import (
-    IConduit,
     ISpellbook,
     ISpell,
     IMeld,
@@ -81,13 +79,13 @@ class Meld(IMeld):
         self._cleaned: bool = False
 
         # Spellbook references (used for resolution)
-        self._owned_spells: ConcurrentDict[ISpellIndex, ISpell] = spellbook._spells
-        self._contracted_spells: ConcurrentDict[str, ConcurrentDict[ISpellIndex, ISpell]] = (
+        self._owned_spells: Dict[ISpellIndex, ISpell] = spellbook._spells
+        self._contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]] = (
             spellbook._contracted_spells
         )
 
-        self._lookup_owned_spells: ConcurrentDict[tuple, ISpellIndex] = spellbook._lookup_spells
-        self._lookup_contracted_spells: ConcurrentDict[str, ConcurrentDict[tuple, ISpellIndex]] = (
+        self._lookup_owned_spells: Dict[tuple, ISpellIndex] = spellbook._lookup_spells
+        self._lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]] = (
             spellbook._lookup_contracted_spells
         )
 

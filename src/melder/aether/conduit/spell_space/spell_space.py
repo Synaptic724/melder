@@ -80,3 +80,4 @@ class SpellSpace:
     - Clean them up and they’ll serve you well.
 
     """
+    pass

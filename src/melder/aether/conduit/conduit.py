@@ -5,7 +5,6 @@ from typing import Optional, Type, Any, Tuple
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -796,7 +795,8 @@ class Conduit(Cleanable, IConduit):
             f"Registering {len(spell_indices)} local spell lineages into Aether",
             "_add_spells_to_aether",
         )
-        spell_set = ConcurrentSet(spell_indices)
+
+        spell_set = set(spell_indices)
         Conduit._aether._add_spells_to_aether(self._id, spell_set, self._aetheric_frame)
 
 

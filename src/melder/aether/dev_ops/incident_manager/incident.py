@@ -1,14 +1,10 @@
 from __future__ import annotations
-
 from threading import RLock
 from typing import Dict, List, Optional, Any, Iterable
-
 # Melder imports
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
 
 
 class Incident(Cleanable):
@@ -83,13 +79,8 @@ class Incident(Cleanable):
         self._status: IncidentStatus = IncidentStatus.open
         self._spell_index_id: Optional[str] = spell_index_id
         self._summary: str = summary
-
-        # concurrent collections
-        base_root_ids = list(root_ids or [])
-        self._root_ids: ConcurrentList[str] = ConcurrentList(base_root_ids)
-
-        base_details = details or {}
-        self._details: ConcurrentDict[str, Any] = ConcurrentDict(base_details)
+        self._root_ids: List[str] = list(root_ids or [])
+        self._details: ConcurrentDict[str, Any] = details or {}
 
     def cleanup(self) -> None:
         """
@@ -110,11 +101,11 @@ class Incident(Cleanable):
             self._cleaned = True
 
             if self._root_ids is not None:
-                self._root_ids.cleanup()
+                self._root_ids.clear()
                 self._root_ids = None
 
             if self._details is not None:
-                self._details.cleanup()
+                self._details.clear()
                 self._details = None
 
             self._spell_index_id = None

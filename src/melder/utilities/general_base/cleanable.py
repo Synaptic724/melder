@@ -1,3 +1,4 @@
+import threading
 from abc import ABC, abstractmethod
 
 class Cleanable(ABC):
@@ -84,30 +85,35 @@ class Cleanable(ABC):
             - the reference to the owner is explicitly nulled.
             - no strong references remain after exit.
         """
-        __slots__ = ("_owner", "_cleaned")
+        __slots__ = ("_owner", "_cleaned", "_lock")
 
         def __init__(self, owner):
             self._owner = owner
             self._cleaned = False
+            self._lock: threading.RLock = threading.RLock()
 
         def __enter__(self):
+            self._lock.acquire()
             return self._owner
 
         def __exit__(self, exc_type, exc, tb):
             # Guarantee cleanup only once.
-            owner = self._owner
-            if owner is not None and not self._cleaned:
-                self._cleaned = True
-                try:
-                    owner.cleanup()
-                except Exception:
-                    pass
+            try:
+                owner = self._owner
+                if owner is not None and not self._cleaned:
+                    self._cleaned = True
+                    try:
+                        owner.cleanup()
+                    except Exception:
+                        pass
 
-            # Explicitly drop the reference so nothing is leaked.
-            self._owner = None
+                # Explicitly drop the reference so nothing is leaked.
+                self._owner = None
 
-            # Do NOT suppress user exceptions.
-            return False
+                # Do NOT suppress user exceptions.
+                return False
+            finally:
+                self._lock.release()
 
 
     def using_cleanup(self):
@@ -126,37 +132,3 @@ class Cleanable(ABC):
         # __enter__/__exit__ context manager.
         """
         return Cleanable._CleanupContext(self)
-
-
-    def async_using_cleanup(self):
-        """
-        Return an async context manager that performs async_cleanup()
-        automatically when leaving the block.
-
-        This method itself is NOT async. It returns an object that implements
-        __aenter__ / __aexit__, which is what `async with` requires.
-        """
-        class _AsyncCleanupContext:
-            __slots__ = ("_owner", "_cleaned")
-
-            def __init__(self, owner):
-                self._owner = owner
-                self._cleaned = False
-
-            async def __aenter__(self):
-                return self._owner
-
-            async def __aexit__(self, exc_type, exc, tb):
-                owner = self._owner
-                if owner is not None and not self._cleaned:
-                    self._cleaned = True
-                    try:
-                        await owner.async_cleanup()
-                    except Exception:
-                        pass
-
-                # Drop the reference
-                self._owner = None
-                return False
-
-        return _AsyncCleanupContext(self)

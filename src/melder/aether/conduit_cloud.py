@@ -1,8 +1,9 @@
 import threading
+from typing import Dict
+
 import ulid
 
 # Melder imports
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -22,7 +23,7 @@ class ConduitCloud(Cleanable):
     Attributes:
         _lock (Lock): A lock for registry modifications.
         _name (str): The name of the frame this cloud belongs to.
-        _registry (ConcurrentDict): A map of `conduit_name` to `IConduit` instance.
+        _registry (Dict): A map of `conduit_name` to `IConduit` instance.
     """
     def __init__(self, name: str):
         """
@@ -34,7 +35,7 @@ class ConduitCloud(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._name: str = name
-        self._registry: ConcurrentDict = ConcurrentDict()
+        self._registry: Dict = {}
         self._id: str = str(ulid.ULID())
 
     def cleanup(self):
@@ -48,7 +49,7 @@ class ConduitCloud(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-            self._registry.cleanup()
+            self._registry.clear()
             self._registry = None
             self._cleaned = True
         self._lock = None

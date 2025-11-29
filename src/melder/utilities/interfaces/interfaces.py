@@ -944,7 +944,7 @@ class ISpellbook(ICleanable, Protocol):
     def bind(
             self,
             spell: Any,
-            existence: 'Existence',
+            existence: str,
             *,
             permissions: str = "create",
             spellframe: Any = None,
@@ -5267,9 +5267,9 @@ class ISpellSystemStates(ICleanable, Protocol):
     """
     _lock: threading.RLock
     _frame: Optional["AethericFrame"]
-    _states_by_index_id: Optional['ConcurrentDict'[str, 'SpellSystemState']]
-    _states_by_spell_id: Optional['ConcurrentDict'[str, 'SpellSystemState']]
-    _dirty_lineages: Optional['ConcurrentSet[str]']
+    _states_by_index_id: Optional[Dict[str, 'SpellSystemState']]
+    _states_by_spell_id: Optional[Dict[str, 'SpellSystemState']]
+    _dirty_lineages: Optional['Set[str]']
 
     # ------------------------------------------------------------------
     # Registration / lookup

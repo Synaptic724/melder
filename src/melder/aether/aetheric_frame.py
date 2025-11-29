@@ -1,10 +1,9 @@
 from __future__ import annotations
 import threading
+from typing import Set, Dict
+
 import ulid
 # Melder Imports
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
-from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit_cloud import ConduitCloud
@@ -50,19 +49,19 @@ class AethericFrame(Cleanable):
 
         # All root conduits created in this frame:
         #   conduit_id -> IConduit
-        self._conduits: ConcurrentDict[str, IConduit] = ConcurrentDict()
+        self._conduits: Dict[str, IConduit] = {}
 
         # SpellIndex registry per conduit:
-        #   conduit_id -> ConcurrentSet[SpellIndex]
-        self._spell_registry: ConcurrentDict[str, ConcurrentSet[SpellIndex]] = ConcurrentDict()
+        #   conduit_id -> Set[SpellIndex]
+        self._spell_registry: Dict[str, Set[SpellIndex]] = {}
 
         # SHA256 version registry per conduit:
-        #   conduit_id -> ConcurrentSet[str]
-        self._version_registry: ConcurrentDict[str, ConcurrentSet[str]] = ConcurrentDict()
+        #   conduit_id -> Set[str]
+        self._version_registry: Dict[str, Set[str]] = {}
 
         # Conduit clusters (grouping by logical name):
-        #   cluster_name -> ConcurrentList[conduit_id]
-        self._conduit_clusters: ConcurrentDict[str, ConcurrentList[str]] = ConcurrentDict()
+        #   cluster_name -> Set[conduit_id]
+        self._conduit_clusters: Dict[str, Set[str]] = {}
 
         # Dynamic-mode "cloud" factory for named conduits.
         self._conduit_cloud: ConduitCloud = ConduitCloud(name)
@@ -131,22 +130,22 @@ class AethericFrame(Cleanable):
                     # DevOps surfaces can record incidents if you want;
                     # frame cleanup never dies on conduit cleanup.
                     pass
-            self._conduits.cleanup()
+            self._conduits.clear()
             self._conduits = None
 
         # SpellIndex registry
         if self._spell_registry is not None:
-            self._spell_registry.cleanup()
+            self._spell_registry.clear()
             self._spell_registry = None
 
         # Version registry
         if self._version_registry is not None:
-            self._version_registry.cleanup()
+            self._version_registry.clear()
             self._version_registry = None
 
         # Conduit clusters
         if self._conduit_clusters is not None:
-            self._conduit_clusters.cleanup()
+            self._conduit_clusters.clear()
             self._conduit_clusters = None
 
         # Dynamic conduit cloud
@@ -259,10 +258,10 @@ class AethericFrame(Cleanable):
                 return
 
             # Start fresh
-            self._version_registry = ConcurrentDict()
+            self._version_registry = {}
 
             for conduit_id, spell_set in self._spell_registry.items():
-                version_set: ConcurrentSet[str] = ConcurrentSet()
+                version_set: Set[str] = set()
 
                 for spell_index in spell_set:
                     # SpellIndex.get_all_versions() returns set[str]

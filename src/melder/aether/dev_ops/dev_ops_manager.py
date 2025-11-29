@@ -1,15 +1,14 @@
 from __future__ import annotations
 from threading import RLock
 from typing import Optional
-
 # Melder Imports
 from melder.aether.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.aether.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpellSystemStates, IDevOpsManager
+from melder.utilities.interfaces.interfaces import ISpellSystemStates
 
 
-class DevOpsManager(IDevOpsManager, Cleanable):
+class DevOpsManager(Cleanable):
     """
     Aetheric Frame DevOps hub.
 

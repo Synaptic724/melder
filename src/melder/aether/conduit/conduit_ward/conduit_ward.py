@@ -1,12 +1,11 @@
 import threading
-from typing import List, Optional, Any, Tuple
+from typing import List, Optional, Any, Tuple, Dict
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger, IConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -51,14 +50,14 @@ class ConduitWard(Cleanable, IConduitWard):
 
         self._policy_set: bool = False
         # Contracts between conduits
-        self._initiated_index: ConcurrentDict[str, str] = ConcurrentDict()  # [Target ConduitID] -> [ContractID]
-        self._received_index: ConcurrentDict[str, str] = ConcurrentDict()  # [Source ConduitID] -> [ContractID]
+        self._initiated_index: Dict[str, str] = {}  # [Target ConduitID] -> [ContractID]
+        self._received_index: Dict[str, str] = {}  # [Source ConduitID] -> [ContractID]
 
-        self._contracts: ConcurrentDict[str, Contract] = ConcurrentDict() # [ContractID] -> Contract
+        self._contracts: Dict[str, Contract] = {} # [ContractID] -> Contract
 
         # Lineage Links
         self._parent_conduit: IConduit | None = None
-        self._lesser_conduits: ConcurrentDict[str, IConduit] = ConcurrentDict() # [Lesser ConduitID] -> Lesser Conduit
+        self._lesser_conduits: Dict[str, IConduit] = {} # [Lesser ConduitID] -> Lesser Conduit
 
         try:
             self._policy = self._set_initial_policy(policy)

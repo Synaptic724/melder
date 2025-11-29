@@ -1,9 +1,7 @@
 from threading import RLock
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 # Melder imports
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.aether.conduit.creations.creation import Creation
@@ -51,11 +49,11 @@ class Creations(Cleanable):
         self._logger = conduit._logger
 
         # Internal storage for created objects by lifecycle scope
-        self._unique: ConcurrentDict[str, Creation] = ConcurrentDict()
-        self._unique_per_scope: ConcurrentDict[str, Creation] = ConcurrentDict()
-        self._many: ConcurrentDict[str, ConcurrentList[Creation]] = ConcurrentDict()
-        self._unique_per_lineage: ConcurrentDict[str, Creation] = ConcurrentDict()
-        self._unique_per_cluster: ConcurrentDict[str, Creation] = ConcurrentDict()
+        self._unique: Dict[str, Creation] = {}
+        self._unique_per_scope: Dict[str, Creation] = {}
+        self._many: Dict[str, List[Creation]] = {}
+        self._unique_per_lineage: Dict[str, Creation] = {}
+        self._unique_per_cluster: Dict[str, Creation] = {}
 
         # Disposal configuration
         self._disposal_enabled = disposal_enabled
@@ -169,7 +167,7 @@ class Creations(Cleanable):
                 if maybe_error:
                     errors.append(maybe_error)
                 item.cleanup()
-        self._unique.cleanup()
+        self._unique.clear()
         self._logger.debug(f"_cleanup_unique: errors={len(errors)}", method_name="_cleanup_unique", mask=True,
                            owner_id=self._id, owner_display=self._display_name,
                            groups=self._log_groups, system_groups=self._log_sysgroups)
@@ -191,7 +189,7 @@ class Creations(Cleanable):
                 if maybe_error:
                     errors.append(maybe_error)
                 item.cleanup()
-        self._unique_per_lineage.cleanup()
+        self._unique_per_lineage.clear()
         self._logger.debug(f"_cleanup_unique_per_lineage: errors={len(errors)}",
                            method_name="_cleanup_unique_per_lineage", mask=True,
                            owner_id=self._id, owner_display=self._display_name,
@@ -214,7 +212,7 @@ class Creations(Cleanable):
                 if maybe_error:
                     errors.append(maybe_error)
                 item.cleanup()
-        self._unique_per_cluster.cleanup()
+        self._unique_per_cluster.clear()
         self._logger.debug(f"_cleanup_unique_per_cluster: errors={len(errors)}",
                            method_name="_cleanup_unique_per_cluster", mask=True,
                            owner_id=self._id, owner_display=self._display_name,
@@ -237,7 +235,7 @@ class Creations(Cleanable):
                 if maybe_error:
                     errors.append(maybe_error)
                 item.cleanup()
-        self._unique_per_scope.cleanup()
+        self._unique_per_scope.clear()
         self._logger.debug(f"_cleanup_unique_per_scope: errors={len(errors)}",
                            method_name="_cleanup_unique_per_scope", mask=True,
                            owner_id=self._id, owner_display=self._display_name,
@@ -261,8 +259,8 @@ class Creations(Cleanable):
                     if maybe_error:
                         errors.append(maybe_error)
                     item.cleanup()
-            items.cleanup()
-        self._many.cleanup()
+            items.clear()
+        self._many.clear()
         self._logger.debug(f"_cleanup_many: errors={len(errors)}",
                            method_name="_cleanup_many", mask=True,
                            owner_id=self._id, owner_display=self._display_name,
@@ -485,5 +483,5 @@ class Creations(Cleanable):
                            owner_id=self._id, owner_display=self._display_name,
                            groups=self._log_groups, system_groups=self._log_sysgroups)
         if key not in self._many:
-            self._many[key] = ConcurrentList()
+            self._many[key] = []
         self._many[key].append(Creation(item))

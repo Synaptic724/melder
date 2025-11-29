@@ -1,16 +1,13 @@
 import threading
-from typing import Iterable, Optional, Set, List
-
+from typing import Iterable, Optional, Set, List, Dict
+# Melder imports
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
-# Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.data_structures.concurrent_set import ConcurrentSet
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex, ISpellSystemStates
 
 
-class SpellSystemStates(ISpellSystemStates, Cleanable):
+class SpellSystemStates(Cleanable):
     """
     Per-frame registry for all SpellSystemState instances.
 
@@ -51,7 +48,7 @@ class SpellSystemStates(ISpellSystemStates, Cleanable):
         associate this registry with its owning frame; this class does not
         call back into the frame.
         """
-        Cleanable.__init__(self)
+        super().__init__()
 
         if frame is None:
             raise ValueError("frame cannot be None")
@@ -59,9 +56,9 @@ class SpellSystemStates(ISpellSystemStates, Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._frame: Optional["AethericFrame"] = frame
 
-        self._states_by_index_id: Optional[ConcurrentDict[str, SpellSystemState]] = ConcurrentDict()
-        self._states_by_spell_id: Optional[ConcurrentDict[str, SpellSystemState]] = ConcurrentDict()
-        self._dirty_lineages: Optional[ConcurrentSet[str]] = ConcurrentSet()
+        self._states_by_index_id: Optional[Dict[str, SpellSystemState]] = {}
+        self._states_by_spell_id: Optional[Dict[str, SpellSystemState]] = {}
+        self._dirty_lineages: Optional[Set[str]] = set()
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -92,15 +89,15 @@ class SpellSystemStates(ISpellSystemStates, Cleanable):
                 # Explicitly clean child state objects first.
                 for state in list(self._states_by_index_id.values()):
                     state.cleanup()
-                self._states_by_index_id.cleanup()
+                self._states_by_index_id.clear()
                 self._states_by_index_id = None
 
             if self._states_by_spell_id is not None:
-                self._states_by_spell_id.cleanup()
+                self._states_by_spell_id.clear()
                 self._states_by_spell_id = None
 
             if self._dirty_lineages is not None:
-                self._dirty_lineages.cleanup()
+                self._dirty_lineages.clear()
                 self._dirty_lineages = None
 
             self._frame = None
