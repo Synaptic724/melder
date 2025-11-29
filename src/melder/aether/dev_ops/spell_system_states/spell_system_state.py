@@ -1,6 +1,10 @@
-from __future__ import annotations
+from enum import Enum, auto
 import threading
-from typing import Iterable, Optional, Set
+from typing import Iterable, Optional, Set, List
+
+from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
@@ -10,8 +14,10 @@ class SpellSystemState(Cleanable):
     """
     System-level state for a single spell lineage.
 
-    This is intentionally *lightweight* and purely about topology + dirtiness:
+    This is intentionally *lightweight* and purely about topology + validity:
 
+    Identity
+    --------
     - `spell_index_id`:
         Lineage identifier (ULID from SpellIndex.id).
 
@@ -19,6 +25,8 @@ class SpellSystemState(Cleanable):
         The currently promoted version id for this lineage
         (e.g., SpellIndex.current; typically a SHA).
 
+    Topology
+    --------
     - `direct_dependencies`:
         Set of dependency ids for this lineage.
         These ids are deliberately generic "spell ids" so the caller can decide
@@ -28,12 +36,25 @@ class SpellSystemState(Cleanable):
         Set of ids for lineages that depend on this lineage. This is the
         reverse edge view used for "what breaks if this changes?".
 
-    - `dirty` / `dirty_reason` / `transitively_dirty`:
-        Flags used by higher-level orchestration (DevOpsManager / revalidation)
-        to know what needs attention.
+    Validity / State
+    ----------------
+    - `validity`:
+        Coarse resolution gate (unknown / valid / gated / invalid / disabled).
+
+    - `flags`:
+        Fine-grained SpellStateFlag markers describing *why* the lineage is in
+        its current condition (topology changes, contracts, mutation, ops).
+
+    - `change_reason`:
+        Last SpellStateChangeReason that moved this lineage into its current
+        validity/flag configuration.
+
+    - `transitively_dirty`:
+        True if this lineage is impacted indirectly by changes upstream
+        (dependency_changed closure) and needs a follow-up pass.
 
     - `last_validated_at`:
-        Optional timestamp (float seconds) of last successful structural
+        Optional timestamp (float seconds) of last *successful* structural
         validation. Caller is responsible for populating it.
     """
 
@@ -43,8 +64,9 @@ class SpellSystemState(Cleanable):
         "_current_spell_id",
         "_direct_dependencies",
         "_direct_dependents",
-        "_dirty",
-        "_dirty_reason",
+        "_validity",
+        "_flags",
+        "_change_reason",
         "_transitively_dirty",
         "_last_validated_at",
     ]
@@ -58,15 +80,19 @@ class SpellSystemState(Cleanable):
             raise ValueError("current_spell_id cannot be empty")
 
         self._lock: threading.RLock = threading.RLock()
-        self._spell_index_id: str = spell_index_id
-        self._current_spell_id: str = current_spell_id
+        self._spell_index_id: Optional[str] = spell_index_id
+        self._current_spell_id: Optional[str] = current_spell_id
 
         # Concurrent topology sets
-        self._direct_dependencies: ConcurrentSet = ConcurrentSet()
-        self._direct_dependents: ConcurrentSet = ConcurrentSet()
+        self._direct_dependencies: Optional[ConcurrentSet[str]] = ConcurrentSet()
+        self._direct_dependents: Optional[ConcurrentSet[str]] = ConcurrentSet()
 
-        self._dirty: bool = True
-        self._dirty_reason: Optional[str] = "new_lineage"
+        # Validity + flags
+        self._validity: Optional[SpellValidity] = SpellValidity.unknown
+        self._flags: Optional[ConcurrentSet[SpellState]] = ConcurrentSet()
+        self._flags.add(SpellState.new_lineage)
+
+        self._change_reason: Optional[SpellStateChangeReason] = SpellStateChangeReason.new_lineage
         self._transitively_dirty: bool = False
         self._last_validated_at: Optional[float] = None
 
@@ -99,8 +125,12 @@ class SpellSystemState(Cleanable):
                 self._direct_dependents.cleanup()
                 self._direct_dependents = None
 
-            self._dirty = False
-            self._dirty_reason = None
+            if self._flags is not None:
+                self._flags.cleanup()
+                self._flags = None
+
+            self._validity = None
+            self._change_reason = None
             self._transitively_dirty = False
             self._last_validated_at = None
 
@@ -115,11 +145,21 @@ class SpellSystemState(Cleanable):
     # ------------------------------------------------------------------
     @property
     def spell_index_id(self) -> str:
+        """
+        Lineage identifier (ULID from SpellIndex.id).
+
+        Note:
+            This assumes the state has not been cleaned; check_cleaned()
+            will raise if cleanup() has been called.
+        """
         self.check_cleaned()
         return self._spell_index_id
 
     @property
     def current_spell_id(self) -> str:
+        """
+        Currently promoted version id for this lineage (e.g., SpellIndex.current).
+        """
         self.check_cleaned()
         return self._current_spell_id
 
@@ -128,7 +168,8 @@ class SpellSystemState(Cleanable):
         """
         Snapshot of direct dependencies for this lineage.
 
-        Returns a plain set[str] copy so callers cannot mutate internal state.
+        Returns:
+            A plain set[str] copy so callers cannot mutate internal state.
         """
         self.check_cleaned()
         with self._lock:
@@ -141,7 +182,8 @@ class SpellSystemState(Cleanable):
         """
         Snapshot of direct dependents for this lineage.
 
-        Returns a plain set[str] copy so callers cannot mutate internal state.
+        Returns:
+            A plain set[str] copy so callers cannot mutate internal state.
         """
         self.check_cleaned()
         with self._lock:
@@ -150,24 +192,106 @@ class SpellSystemState(Cleanable):
             return set(self._direct_dependents)
 
     @property
-    def dirty(self) -> bool:
+    def validity(self) -> SpellValidity:
+        """
+        Coarse resolution gate for this lineage (unknown/valid/gated/invalid/disabled).
+        """
         self.check_cleaned()
-        return self._dirty
+        return self._validity
 
     @property
-    def dirty_reason(self) -> Optional[str]:
+    def flags(self) -> Set[SpellState]:
+        """
+        Snapshot of SpellStateFlag markers for this lineage.
+
+        Returns:
+            A plain set[SpellStateFlag] copy so callers cannot mutate internal state.
+        """
         self.check_cleaned()
-        return self._dirty_reason
+        with self._lock:
+            if self._flags is None:
+                return set()
+            return set(self._flags)
+
+    @property
+    def change_reason(self) -> Optional[SpellStateChangeReason]:
+        """
+        Last event that changed this lineage's validity/flags.
+
+        This is meant for DevOps / AI surfaces and TOON snapshots.
+        """
+        self.check_cleaned()
+        return self._change_reason
 
     @property
     def transitively_dirty(self) -> bool:
+        """
+        True if this lineage is impacted indirectly by upstream changes
+        (dependency_changed closure).
+        """
         self.check_cleaned()
         return self._transitively_dirty
 
     @property
     def last_validated_at(self) -> Optional[float]:
+        """
+        Timestamp (seconds) of last successful validation, or None if never.
+        """
         self.check_cleaned()
         return self._last_validated_at
+
+    @property
+    def dirty(self) -> bool:
+        """
+        Convenience view: lineage is considered "dirty" if it is not valid.
+
+        This is derived from `validity` and is mainly for legacy / quick checks.
+        """
+        self.check_cleaned()
+        v = self._validity
+        return v is not None and v is not SpellValidity.valid
+
+    # ------------------------------------------------------------------
+    # Internal helper for validity/flags
+    # ------------------------------------------------------------------
+    def set_validity(
+            self,
+            validity: SpellValidity,
+            *,
+            change_reason: Optional[SpellStateChangeReason] = None,
+            flags_to_add: Optional[Iterable[SpellState]] = None,
+            flags_to_remove: Optional[Iterable[SpellState]] = None,
+            transitively_dirty: Optional[bool] = None,
+    ) -> None:
+        """
+        Core helper for updating validity/flags/change_reason in one shot.
+
+        This is what higher-level helpers (mark_structural_change, etc.) use
+        so that state transitions remain consistent and centralized.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._flags is None:
+                # Already cleaned; guard check should have prevented this.
+                return
+
+            self._validity = validity
+
+            if change_reason is not None:
+                self._change_reason = change_reason
+
+            if flags_to_add is not None:
+                for f in flags_to_add:
+                    if f is not None:
+                        self._flags.add(f)
+
+            if flags_to_remove is not None:
+                for f in flags_to_remove:
+                    if f is not None:
+                        self._flags.discard(f)
+
+            if transitively_dirty is not None:
+                self._transitively_dirty = transitively_dirty
 
     # ------------------------------------------------------------------
     # Mutation helpers (used by manager / DevOps layer)
@@ -199,6 +323,9 @@ class SpellSystemState(Cleanable):
             self._direct_dependencies = ConcurrentSet(deps)
 
     def add_dependent(self, index_id: str) -> None:
+        """
+        Register that another lineage depends on this lineage.
+        """
         self.check_cleaned()
         if not index_id:
             return
@@ -207,6 +334,9 @@ class SpellSystemState(Cleanable):
                 self._direct_dependents.add(index_id)
 
     def remove_dependent(self, index_id: str) -> None:
+        """
+        Remove a dependent lineage from this lineage's reverse edges.
+        """
         self.check_cleaned()
         if not index_id:
             return
@@ -214,41 +344,93 @@ class SpellSystemState(Cleanable):
             if self._direct_dependents is not None:
                 self._direct_dependents.discard(index_id)
 
-    def mark_structural_change(self, reason: str = "structure_changed") -> None:
-        self.check_cleaned()
-        if not reason:
-            reason = "structure_changed"
-        with self._lock:
-            self._dirty = True
-            self._dirty_reason = reason
-            self._transitively_dirty = False
+    def mark_structural_change(
+            self,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Mark this lineage as structurally changed.
 
-    def mark_dependency_change(self, reason: str = "dependencies_changed") -> None:
+        Typical triggers:
+        - New version promoted.
+        - Class/method profile changed.
+        - Binding semantics changed in a way that affects structure.
+        """
         self.check_cleaned()
-        if not reason:
-            reason = "dependencies_changed"
-        with self._lock:
-            self._dirty = True
-            self._dirty_reason = reason
-            # Manager decides if this becomes transitively dirty.
+        if change_reason is None:
+            change_reason = SpellStateChangeReason.structure_changed
 
-    def mark_transitively_dirty(self, reason: str = "dependency_changed") -> None:
+        self.set_validity(
+            SpellValidity.gated,
+            change_reason=change_reason,
+            flags_to_add=[SpellState.structure_changed],
+            transitively_dirty=False,
+        )
+
+    def mark_dependency_change(
+            self,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Mark this lineage as dirty due to direct dependency changes.
+
+        This does *not* automatically mark it as transitively dirty; the manager
+        decides how to propagate closure.
+        """
         self.check_cleaned()
-        if not reason:
-            reason = "dependency_changed"
-        with self._lock:
-            self._dirty = True
-            self._transitively_dirty = True
-            if self._dirty_reason is None:
-                self._dirty_reason = reason
+        if change_reason is None:
+            change_reason = SpellStateChangeReason.dependencies_changed
+
+        self.set_validity(
+            SpellValidity.gated,
+            change_reason=change_reason,
+            flags_to_add=[SpellState.dependencies_changed],
+        )
+
+    def mark_transitively_dirty(
+            self,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Mark this lineage as impacted indirectly by upstream changes.
+
+        This is typically called by the manager during impact-closure expansion.
+        """
+        self.check_cleaned()
+        if change_reason is None:
+            change_reason = SpellStateChangeReason.dependency_changed
+
+        self.set_validity(
+            SpellValidity.gated,
+            change_reason=change_reason,
+            flags_to_add=[SpellState.impacted_by_dependency],
+            transitively_dirty=True,
+        )
 
     def clear_dirty(self, last_validated_at: Optional[float]) -> None:
         """
         Mark this lineage as clean after successful validation.
+
+        Behaviour:
+        - validity → SpellValidity.valid
+        - topology-related flags (new_lineage / structure_changed /
+          dependencies_changed / impacted_by_dependency) are cleared.
+        - transitively_dirty → False
+        - last_validated_at is set to the provided timestamp.
+
+        Note:
+        - Contract/mutation/ops flags are *not* cleared here; the subsystems
+          that own those lifecycles should flip them explicitly.
         """
         self.check_cleaned()
         with self._lock:
-            self._dirty = False
+            if self._flags is not None:
+                self._flags.discard(SpellState.new_lineage)
+                self._flags.discard(SpellState.structure_changed)
+                self._flags.discard(SpellState.dependencies_changed)
+                self._flags.discard(SpellState.impacted_by_dependency)
+
+            self._validity = SpellValidity.valid
+            self._change_reason = None
             self._transitively_dirty = False
-            self._dirty_reason = None
             self._last_validated_at = last_validated_at

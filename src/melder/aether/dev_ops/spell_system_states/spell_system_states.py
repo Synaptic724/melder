@@ -1,10 +1,11 @@
 import threading
-from typing import Set, Optional, Iterable, List
-# Melder imports
+from typing import Iterable, Optional, Set, List
+
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
-from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.data_structures.concurrent_set import ConcurrentSet
+# Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.data_structures.concurrent_set import ConcurrentSet
+from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex
 
 
@@ -14,10 +15,10 @@ class SpellSystemStates(Cleanable):
 
     This is the "control tower" object:
 
-    - It owns the index: lineage id -> SpellSystemState.
-    - It keeps an auxiliary index: current_spell_id -> SpellSystemState
+    - Owns the index: lineage id -> SpellSystemState.
+    - Keeps an auxiliary index: current_spell_id -> SpellSystemState
       (for convenience when you only know the version id).
-    - It tracks which lineages are currently dirty so higher-level
+    - Tracks which lineages are currently dirty so higher-level
       DevOps/validation flows can decide what to re-run.
 
     Intended lifecycle:
@@ -30,7 +31,7 @@ class SpellSystemStates(Cleanable):
         * `mark_structural_change(...)` when a lineage is rebound/mutated
     - DevOps / validation flows call:
         * `consume_dirty_lineages(...)` to get a worklist
-        * `compute_impact_closure(...)` to fan out dirty flags downstream
+        * `compute_impact_closure(...)` to fan out impacted lineages
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -54,11 +55,11 @@ class SpellSystemStates(Cleanable):
             raise ValueError("frame cannot be None")
 
         self._lock: threading.RLock = threading.RLock()
-        self._frame: "AethericFrame" = frame
+        self._frame: Optional["AethericFrame"] = frame
 
-        self._states_by_index_id: ConcurrentDict[str, SpellSystemState] = ConcurrentDict()
-        self._states_by_spell_id: ConcurrentDict[str, SpellSystemState] = ConcurrentDict()
-        self._dirty_lineages: ConcurrentSet[str] = ConcurrentSet()
+        self._states_by_index_id: Optional[ConcurrentDict[str, SpellSystemState]] = ConcurrentDict()
+        self._states_by_spell_id: Optional[ConcurrentDict[str, SpellSystemState]] = ConcurrentDict()
+        self._dirty_lineages: Optional[ConcurrentSet[str]] = ConcurrentSet()
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -119,8 +120,8 @@ class SpellSystemStates(Cleanable):
           `spell_index.current`.
         - Update the spell-id index so `get_by_spell_id(...)` can resolve
           by current version id.
-        - Mark the lineage as structurally dirty with reason "register_or_rebind"
-          and add it to the dirty set.
+        - Mark the lineage as structurally gated with reason
+          SpellStateChangeReason.register_or_rebind and add it to the dirty set.
 
         This is intended to be called from Spellbook.bind(...) or equivalent.
         """
@@ -135,6 +136,9 @@ class SpellSystemStates(Cleanable):
         current_id = spell_index.current
 
         with self._lock:
+            if self._states_by_index_id is None or self._states_by_spell_id is None or self._dirty_lineages is None:
+                raise RuntimeError("SpellSystemStates has been cleaned")
+
             state = self._states_by_index_id.get(index_id)
             if state is None:
                 state = SpellSystemState(index_id, current_id)
@@ -147,7 +151,7 @@ class SpellSystemStates(Cleanable):
             self._states_by_spell_id[current_id] = state
 
             # Any (re)binding is treated as structural change.
-            state.mark_structural_change(reason="register_or_rebind")
+            state.mark_structural_change(change_reason=SpellStateChangeReason.register_or_rebind)
             self._dirty_lineages.add(index_id)
 
             return state
@@ -203,7 +207,7 @@ class SpellSystemStates(Cleanable):
         - Compute the delta between previous and new dependency sets.
         - Remove reverse edges from dependencies we no longer reference.
         - Add reverse edges for new dependencies.
-        - Mark this lineage as dirty due to dependency change and add to
+        - Mark this lineage as gated due to dependency change and add to
           `_dirty_lineages`.
         """
         self.check_cleaned()
@@ -214,7 +218,7 @@ class SpellSystemStates(Cleanable):
         new_deps = {d for d in (dependency_ids or []) if d}
 
         with self._lock:
-            if self._states_by_index_id is None or self._states_by_spell_id is None:
+            if self._states_by_index_id is None or self._states_by_spell_id is None or self._dirty_lineages is None:
                 return
 
             state = self._states_by_index_id.get(index_id)
@@ -239,14 +243,18 @@ class SpellSystemStates(Cleanable):
                 if dep_state is not None:
                     dep_state.add_dependent(index_id)
 
-            # Mark this lineage dirty due to dependency changes
+            # Mark this lineage gated due to dependency changes
             state.mark_dependency_change()
             self._dirty_lineages.add(index_id)
 
     # ------------------------------------------------------------------
     # Dirty / impact queries (used by DevOps / validation governor)
     # ------------------------------------------------------------------
-    def mark_structural_change(self, spell_index: ISpellIndex, reason: str = "structure_changed") -> None:
+    def mark_structural_change(
+            self,
+            spell_index: ISpellIndex,
+            reason: SpellStateChangeReason = SpellStateChangeReason.structure_changed,
+    ) -> None:
         """
         Mark a lineage as structurally changed.
 
@@ -257,7 +265,7 @@ class SpellSystemStates(Cleanable):
 
         Behaviour:
         - Ensure a SpellSystemState exists for the lineage.
-        - Mark it structurally dirty with the provided reason.
+        - Mark it structurally gated with the provided reason.
         - Add the lineage id to `_dirty_lineages`.
         """
         self.check_cleaned()
@@ -266,7 +274,7 @@ class SpellSystemStates(Cleanable):
 
         index_id = spell_index.id
         with self._lock:
-            if self._states_by_index_id is None:
+            if self._states_by_index_id is None or self._dirty_lineages is None:
                 return
 
             state = self._states_by_index_id.get(index_id)
@@ -274,7 +282,7 @@ class SpellSystemStates(Cleanable):
                 state = SpellSystemState(index_id, spell_index.current)
                 self._states_by_index_id[index_id] = state
 
-            state.mark_structural_change(reason=reason)
+            state.mark_structural_change(change_reason=reason)
             self._dirty_lineages.add(index_id)
 
     def compute_impact_closure(self, root_index_ids: Iterable[str]) -> Set[str]:
@@ -291,8 +299,8 @@ class SpellSystemStates(Cleanable):
         - Build a set of all lineages that depend (directly or indirectly)
           on any of the roots.
         - For each impacted lineage:
-            * Roots: left in their existing "structurally dirty" state.
-            * Non-roots: marked as transitively dirty.
+            * Roots: left in their existing structural state (already gated).
+            * Non-roots: marked as transitively dirty (impacted_by_dependency).
         - All impacted lineages are added to `_dirty_lineages`.
 
         Returns:
@@ -304,7 +312,7 @@ class SpellSystemStates(Cleanable):
         worklist: List[str] = [index_id for index_id in root_index_ids if index_id]
 
         with self._lock:
-            if self._states_by_index_id is None:
+            if self._states_by_index_id is None or self._dirty_lineages is None:
                 return impacted
 
             while worklist:
@@ -323,7 +331,7 @@ class SpellSystemStates(Cleanable):
                         worklist.append(dependent_id)
 
             # Mark all impacted lineages as dirty; roots remain
-            # "structurally dirty", others become "transitively dirty".
+            # structurally gated, others become transitively gated.
             root_set = set(root_index_ids)
             for index_id in impacted:
                 state = self._states_by_index_id.get(index_id)
@@ -331,7 +339,7 @@ class SpellSystemStates(Cleanable):
                     continue
 
                 if index_id in root_set:
-                    # Already marked structurally dirty; leave as-is.
+                    # Already marked structurally gated; leave as-is.
                     pass
                 else:
                     state.mark_transitively_dirty()
