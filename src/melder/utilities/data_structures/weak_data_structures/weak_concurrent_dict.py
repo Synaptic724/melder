@@ -23,7 +23,7 @@ import ulid
 # Melder Imports
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.weak_data_structures.weak_ref_node import WeakRefNode
+from melder.utilities.data_structures.weak_data_structures.weak_ref_node import WeakRefNode
 
 _K = TypeVar("_K")
 _V = TypeVar("_V")

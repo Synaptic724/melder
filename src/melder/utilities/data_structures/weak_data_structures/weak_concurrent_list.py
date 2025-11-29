@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import threading
 import ulid
-from typing import Any, Callable, Optional, List, TypeVar, Generic, Union
+from typing import Any, Callable, Optional, List, TypeVar, Generic
 from collections.abc import Iterable, Iterator
 
 # Melder Imports
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.weak_data_structures.weak_ref_node import WeakRefNode
+from melder.utilities.data_structures.weak_data_structures.weak_ref_node import WeakRefNode
 
 
 _T = TypeVar("_T")

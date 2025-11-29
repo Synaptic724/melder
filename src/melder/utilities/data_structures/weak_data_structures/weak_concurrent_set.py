@@ -11,16 +11,14 @@ from typing import (
     Optional,
     Set,
     TypeVar,
-    Union,
 )
 
 import ulid
 
 # Melder Imports
-from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.weak_data_structures.weak_ref_node import WeakRefNode
+from melder.utilities.data_structures.weak_data_structures.weak_ref_node import WeakRefNode
 
 _T = TypeVar("_T")
 
@@ -220,8 +218,8 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 finally:
                     node.cleanup()
             self._set.clear()
-            self._set = None  # type: ignore[assignment]
-        self._lock = None  # type: ignore[assignment]
+            self._set = None
+        self._lock = None
 
     # -------------------------------------------------------------------------
     # Configuration / state
@@ -533,7 +531,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         nodes = self._snapshot_nodes()
         return self._values_from_nodes(nodes)
 
-    def to_concurrent_list(self) -> ConcurrentList[_T]:
+    def to_list(self) -> list[_T]:
         """
         Convert this WeakConcurrentSet into a :class:`ConcurrentList`.
 
@@ -548,8 +546,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             DeadReferenceError:
                 If any node in the set is dead and has not yet been pruned.
         """
-        values = list(self.to_set())
-        return ConcurrentList(initial=values)
+        return list(self.to_set())
 
     # -------------------------------------------------------------------------
     # Introspection / dunder helpers
