@@ -12,7 +12,7 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import Spellb
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration, ISpellIndex
+from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration, ISpellIndex, ISpellSystemStates
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
@@ -110,7 +110,7 @@ class Spellbook(Cleanable, ISpellbook):
         # Spell validator
         self._spell_validator: SpellValidationSystem = SpellValidationSystem()
         # Spell States System
-        self._spell_states_system = Spellbook._aether._get_spell_states_system()
+        self._spell_states_system: ISpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
 
     #region Disposal
 
@@ -224,6 +224,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._id = None
         self._conduit = None
         self._conjured = None
+        self._spell_states_system = None
         self._configuration_locked = None
 
         # Lock: just null it (no getattr/hasattr)
@@ -1114,9 +1115,9 @@ class Spellbook(Cleanable, ISpellbook):
             # If a Conduit already exists, and this is an existing-object spell,
             # eagerly register it into Creations as a unique instance.
             if (
-                    self._conjured
-                    and self._conduit is not None
-                    and new_spell.user_created_object is not None
+                self._conjured
+                and self._conduit is not None
+                and new_spell.user_created_object is not None
             ):
                 try:
                     self._conduit._register_to_creations(new_spell, new_spell.user_created_object)
@@ -1135,6 +1136,10 @@ class Spellbook(Cleanable, ISpellbook):
             self._logger.debug(
                 f"Binding spell => id={new_spell.spell_id}, key={new_spell._key}",
                 "bind",
+            )
+            self._spell_system_states.register_lineage(
+                spell_index=new_spell.spell_index,
+                spell=spell,
             )
             return new_spell.spell_id
         except Exception as e:

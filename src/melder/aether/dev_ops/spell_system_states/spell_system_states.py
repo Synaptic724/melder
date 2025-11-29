@@ -7,10 +7,10 @@ from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSy
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex
+from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex, ISpellSystemStates
 
 
-class SpellSystemStates(Cleanable):
+class SpellSystemStates(ISpellSystemStates, Cleanable):
     """
     Per-frame registry for all SpellSystemState instances.
 
@@ -51,7 +51,8 @@ class SpellSystemStates(Cleanable):
         associate this registry with its owning frame; this class does not
         call back into the frame.
         """
-        super().__init__()
+        Cleanable.__init__(self)
+
         if frame is None:
             raise ValueError("frame cannot be None")
 

@@ -6,10 +6,10 @@ from typing import Optional
 from melder.aether.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.aether.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpellSystemStates
+from melder.utilities.interfaces.interfaces import ISpellSystemStates, IDevOpsManager
 
 
-class DevOpsManager(Cleanable):
+class DevOpsManager(IDevOpsManager, Cleanable):
     """
     Aetheric Frame DevOps hub.
 

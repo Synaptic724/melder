@@ -899,6 +899,7 @@ class ISpellbook(ICleanable, Protocol):
 
     # Spell Validator
     _spell_validator: 'SpellValidationSystem'
+    _spell_system_states: 'ISpellSystemStates'
 
     # ------------------------------------------------------------------
     # Properties
@@ -5239,6 +5240,7 @@ class IContract(ICleanable, Protocol):
         """
         ...
 
+@runtime_checkable
 class ISpellSystemStates(ICleanable, Protocol):
     """
     Per-frame registry for all SpellSystemState instances.
@@ -5405,5 +5407,196 @@ class ISpellSystemStates(ICleanable, Protocol):
             A list of SpellSystemState objects. The list is detached from the
             underlying ConcurrentDict so callers cannot accidentally keep a
             live iterator into internal state.
+        """
+        ...
+
+
+@runtime_checkable
+class IDevOpsManager(ICleanable, Protocol):
+    """
+    Aetheric Frame DevOps hub protocol.
+
+    This interface defines the contract for the hub that owns:
+      - IncidentManager        (descriptive: what went wrong, where)
+      - ChangeControlManager   (process-level view of pending changes / releases)
+      - SpellSystemStates      (graph + dirty/impact state)
+
+    This is the place higher-level tools / AI consult when they want to
+    understand or manipulate the health and changes of a frame.
+    """
+    _lock: threading.RLock
+    _spell_system_states: ISpellSystemStates
+    _incident_manager: 'IncidentManager'
+    _change_control_manager: 'ChangeControlManager'
+    # ------------------------------------------------------------------
+    # Public API Properties
+    # ------------------------------------------------------------------
+    @property
+    def incident_manager(self) -> Optional['IncidentManager']:
+        """
+        Read-only exposure of the IncidentManager (descriptive: what went wrong, where).
+        """
+        ...
+
+    @property
+    def change_control_manager(self) -> Optional['ChangeControlManager']:
+        """
+        Read-only exposure of the ChangeControlManager (process-level view of pending changes / releases).
+        """
+        ...
+
+    @property
+    def spell_system_states(self) -> Optional['ISpellSystemStates']:
+        """
+        Expose the underlying SpellSystemStates for callers that want
+        direct graph/dirty-state access through the DevOpsManager.
+        """
+        ...
+
+
+@runtime_checkable
+class IIncidentManager(Protocol, ICleanable):
+    """
+    Protocol for the DevOps incident registry.
+
+    - Creates and stores Incident objects.
+    - Provides simple lookup/filtering.
+    - Does not enforce any policies; it is purely descriptive.
+    """
+    _lock: threading.RLock
+    _incidents_by_id: 'ConcurrentDict[str, Incident]'
+    _next_numeric_id: int
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+    def create_incident(
+            self,
+            *,
+            kind: str,
+            severity: 'IncidentSeverity',
+            summary: str,
+            spell_index_id: Optional[str] = None,
+            root_ids: Optional[Iterable[str]] = None,
+            details: Optional[Dict[str, Any]] = None,
+    ) -> 'Incident':
+        """
+        Create and register a new Incident. Returns the instance so callers
+        can attach it to logs/tests or stash the id.
+        """
+        ...
+
+    def get_incident(self, incident_id: str) -> Optional['Incident']:
+        """
+        Look up a single incident by id. Returns None if not found.
+        """
+        ...
+
+    def list_incidents(
+            self,
+            *,
+            status: Optional['IncidentStatus'] = None,
+            spell_index_id: Optional[str] = None,
+            kind: Optional[str] = None,
+    ) -> List['Incident']:
+        """
+        Basic filtering; returns a snapshot list of matching incidents.
+
+        Filters:
+        - status: only incidents with this IncidentStatus.
+        - spell_index_id: only incidents tied to this SpellIndex.id.
+        - kind: only incidents with this kind string.
+        """
+        ...
+
+@runtime_checkable
+class IChangeControlManager(Protocol, ICleanable):
+    """
+    Protocol for the High-level change/release tracker for an Aetheric Frame.
+
+    This is *not* the hot-path resolution guard. It is the DevOps-facing layer
+    that knows about:
+      - which spell lineages (SpellIndex.id) have pending changes or promotions,
+      - lightweight, structured metadata about those changes.
+
+    It does not apply changes or run policies itself; it's a registry that
+    higher-level tools (AI agents, DevOps flows, IncidentManager) can inspect
+    and update.
+    """
+    _lock: RLock
+    _spell_system_states: "SpellSystemStates"
+
+    # spell_index_id -> ConcurrentDict[str, Any]
+    _pending_changes: 'ConcurrentDict[str, ConcurrentDict[str, Any]]'
+    # ----------------------------------------------------------------------
+    # Registration / updates
+    # ----------------------------------------------------------------------
+    def register_pending_change(
+            self,
+            spell_index: 'ISpellIndex',
+            reason: str,
+            metadata: Optional[
+                Union[Dict[str, Any], 'ConcurrentDict[str, Any]']
+            ] = None,
+    ) -> None:
+        """
+        Record that a given lineage has a pending change (mutation candidate,
+        promotion proposal, config swap, etc.).
+
+        This is *bookkeeping only* – it does not apply the change, it just
+        surfaces it for DevOps / AI tooling.
+
+        Args:
+            spell_index:
+                The SpellIndex for the lineage we're tracking.
+            reason:
+                Short, machine-/human-readable reason code
+                (e.g. "mutation_candidate", "rebinding", "config_change").
+            metadata:
+                Optional free-form metadata. Can be a plain dict or a
+                ConcurrentDict; in both cases we wrap it into a new
+                ConcurrentDict instance so internal state is always nested
+                ConcurrentDict -> ConcurrentDict.
+        """
+        ...
+
+    # ----------------------------------------------------------------------
+    # Introspection
+    # ----------------------------------------------------------------------
+    def get_pending_change(
+            self,
+            spell_index_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get a *snapshot* of the pending-change metadata for a specific lineage.
+
+        Returns:
+            A plain dict copy of the inner ConcurrentDict metadata if present,
+            or None if no pending change exists for that lineage.
+        """
+        ...
+
+    def list_pending_changes(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Return a snapshot of all pending changes:
+
+            {
+              spell_index_id: { ...metadata... },
+              ...
+            }
+
+        This is intended for DevOps / AI tooling – not for hot-path use.
+        """
+        ...
+
+    # ----------------------------------------------------------------------
+    # Clearing
+    # ----------------------------------------------------------------------
+    def clear_pending_change(self, spell_index_id: str) -> None:
+        """
+        Remove the pending-change entry for the given lineage, if any.
+
+        This is typically called after a release is either:
+          - successfully applied, or
+          - explicitly cancelled/abandoned.
         """
         ...

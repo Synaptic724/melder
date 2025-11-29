@@ -10,7 +10,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
+from melder.utilities.interfaces.interfaces import ISpell, ISpellbook, ISpellSystemStates
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -190,6 +190,9 @@ class Spell(ISpell, Cleanable):
         self.owned_spell: Optional[bool] = None
         self._owner_creations: Any = None  # Scope level creations for singletons
 
+        # Spell System State
+        self._spell_system_states: ISpellSystemStates = self._spellbook._spell_system_states
+
         # Key for the spell in the Spellbook (normalized)
         frame_key, bind_key = SpellInputUtils.make_spell_key_from_parts(
             spellframe=self.spellframe,
@@ -241,6 +244,7 @@ class Spell(ISpell, Cleanable):
             # Drop references to help GC and enforce immutability after cleanup.
             self._owner_creations = None
             self.user_created_object = None
+            self._spell_system_states = None
             self.pre_hooks = []
             self.activation_hooks = []
             self.post_hooks = []

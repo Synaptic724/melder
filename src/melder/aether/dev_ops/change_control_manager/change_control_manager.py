@@ -1,15 +1,13 @@
 from __future__ import annotations
-
 from threading import RLock
 from typing import Optional, Any, Dict, Union
-
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
-from melder.utilities.interfaces.interfaces import ISpellIndex  # for identity / lineage
+from melder.utilities.interfaces.interfaces import ISpellIndex, IChangeControlManager  # for identity / lineage
 
 
-class ChangeControlManager(Cleanable):
+class ChangeControlManager(IChangeControlManager, Cleanable):
     """
     High-level change/release tracker for an Aetheric Frame.
 

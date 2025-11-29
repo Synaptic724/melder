@@ -7,9 +7,10 @@ from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSev
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
+from melder.utilities.interfaces.interfaces import IIncidentManager
 
 
-class IncidentManager(Cleanable):
+class IncidentManager(IIncidentManager, Cleanable):
     """
     DevOps incident registry.
 

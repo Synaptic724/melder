@@ -8,7 +8,8 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.data_structures.concurrent_dict import ConcurrentDict
 from melder.utilities.data_structures.concurrent_list import ConcurrentList
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
-from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration
+from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration, \
+    IDevOpsManager, ISpellSystemStates, IIncidentManager, IChangeControlManager
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame import AethericFrame
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -790,3 +791,72 @@ class Aether(Cleanable):
         return frame._mutation_research
 
     #endregion Mutation Research
+    #region DevOps Management
+    def _get_devops_manager(self, aetheric_frame_name: str = "default") -> IDevOpsManager:
+        """
+        Retrieves the DevOpsManager associated with a specific Aetheric Frame.
+
+        Internal use only.
+
+        Args:
+            aetheric_frame_name (str): The name of the frame whose DevOpsManager
+                object should be retrieved. Defaults to "default".
+
+        Returns:
+            DevOpsManager: The DevOpsManager instance for the target frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+            RuntimeError: If the Aether or target frame has been cleaned.
+        """
+        # Select frame
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_devops_manager",
+                    exc_info=True
+                )
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._default_frame
+
+        # Validate frame
+        if frame is None or frame._cleaned:
+            raise RuntimeError(
+                f"The AethericFrame '{aetheric_frame_name}' has been cleaned or is unavailable."
+            )
+
+        return frame._dev_ops_manager
+
+
+    def _get_spell_system_states(self, aetheric_frame_name: str = "default") -> ISpellSystemStates:
+        """
+        Retrieves the global SpellSystemStates manager.
+
+        Returns:
+            ISpellSystemStates: The SpellSystemStates instance.
+        """
+        return self._get_devops_manager(aetheric_frame_name).spell_system_states
+
+    def _get_incident_manager(self, aetheric_frame_name: str = "default") -> IIncidentManager:
+        """
+        Retrieves the IncidentManager from the DevOpsManager of a specific frame.
+
+        Returns:
+            IncidentManager: The IncidentManager instance.
+        """
+        return self._get_devops_manager(aetheric_frame_name).incident_manager
+
+    def _get_change_control_manager(self, aetheric_frame_name: str = "default") -> IChangeControlManager:
+        """
+        Retrieves the ChangeControlManager from the DevOpsManager of a specific frame.
+
+        Returns:
+            ChangeControlManager: The ChangeControlManager instance.
+        """
+        return self._get_devops_manager(aetheric_frame_name).change_control_manager
+
+    #endregion DevOps Management
