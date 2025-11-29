@@ -1,11 +1,9 @@
-from enum import Enum, auto
 import threading
 from typing import Iterable, Optional, Set, List
-
+# Melder imports
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-# Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.data_structures.concurrent_set import ConcurrentSet
 
