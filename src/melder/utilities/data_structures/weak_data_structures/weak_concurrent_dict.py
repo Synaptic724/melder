@@ -178,9 +178,6 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         if self._cleaned or not self._auto_prune:
             return
 
-        if self._lock is None:
-            return
-
         try:
             self._lock.acquire()
         except Exception:
