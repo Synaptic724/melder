@@ -1,7 +1,7 @@
 import threading
 from threading import RLock
 from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator, Callable, \
-    Tuple, Mapping, Set
+    Tuple, Mapping, Set, Sequence
 
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -5378,6 +5378,27 @@ class ISpellSystemStates(ICleanable, Protocol):
         - Ensure a SpellSystemState exists for the lineage.
         - Mark it structurally gated with the provided reason.
         - Add the lineage id to `_dirty_lineages`.
+        """
+        ...
+
+    def register_local_topology(
+            self,
+            spell_index: "SpellIndex",
+            topology: "SpellLocalTopology",
+    ) -> None:
+        """
+        Register or replace the local constructor topology for the given spell.
+
+        This is invoked from SpellCrafter Phase 3 whenever a spell is (re)built.
+        """
+        ...
+
+    def get_local_topology(
+            self,
+            spell_index: "SpellIndex",
+    ) -> Optional["SpellLocalTopology"]:
+        """
+        Retrieve the local constructor topology for the given spell, if any.
         """
         ...
 

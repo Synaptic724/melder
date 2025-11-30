@@ -3,6 +3,7 @@ from typing import Iterable, Optional, Set, List, Dict
 # Melder imports
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex, ISpellSystemStates
 
@@ -59,6 +60,7 @@ class SpellSystemStates(Cleanable):
         self._states_by_index_id: Optional[Dict[str, SpellSystemState]] = {}
         self._states_by_spell_id: Optional[Dict[str, SpellSystemState]] = {}
         self._dirty_lineages: Optional[Set[str]] = set()
+        self._local_topologies: Dict[SpellIndex, 'SpellLocalTopology'] = {}
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -99,6 +101,10 @@ class SpellSystemStates(Cleanable):
             if self._dirty_lineages is not None:
                 self._dirty_lineages.clear()
                 self._dirty_lineages = None
+
+            if self._local_topologies is not None:
+                self._local_topologies.clear()
+                self._local_topologies = None
 
             self._frame = None
 
@@ -384,3 +390,42 @@ class SpellSystemStates(Cleanable):
             if self._states_by_index_id is None:
                 return []
             return list(self._states_by_index_id.values())
+
+
+    def register_local_topology(
+            self,
+            spell_index: SpellIndex,
+            topology: 'SpellLocalTopology',
+    ) -> None:
+        """
+        Internal / DevOps
+
+        Register or replace the local constructor topology for the given spell.
+
+        This is called by :class:`SpellCrafter` during Phase 3 and is the
+        primary entry point for building higher-level blueprints in phases 5–7.
+        """
+        self.check_cleaned()
+        if spell_index is None:
+            raise ValueError("spell_index must not be None.")
+        if topology is None:
+            raise ValueError("topology must not be None.")
+
+        with self._lock:
+            self._local_topologies[spell_index] = topology
+
+    def get_local_topology(
+            self,
+            spell_index: SpellIndex,
+    ) -> Optional['SpellLocalTopology']:
+        """
+        Internal / DevOps
+
+        Retrieve the local constructor topology for the given spell, if any.
+        """
+        self.check_cleaned()
+        if spell_index is None:
+            raise ValueError("spell_index must not be None.")
+
+        with self._lock:
+            return self._local_topologies.get(spell_index)

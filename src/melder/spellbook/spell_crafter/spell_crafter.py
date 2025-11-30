@@ -735,138 +735,113 @@ class SpellCrafter(Cleanable):
 
     def run_phase_local_frame(
             self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> SpellResolutionFrame:
+            requirements: SpellRequirements,
+            graph: SpellSymbolicGraph,
+            cancellation_event: CancellationEvent,
+    ) -> DirectedAcyclicWorkGraph:
         """
-        Phase 3 – Local Resolution Frame / DAG.
+        Phase 3: Build the concrete DAG for this Spell's local frame.
 
-        Responsibilities (current increment):
+        Responsibilities:
+            * Instantiate a DAG node for this Spell (root of the local frame).
+            * Resolve all **normal** DI shapes (single, collection, SpellMap).
+            * Add concrete dependency nodes / edges to the DAG.
+            * Notify :class:`SpellSystemStates` about dependency topology.
 
-            * Interpret the symbolic graph in the context of the owning
-              :class:`Spellbook` (via :class:`SpellbookScanner`).
-            * Map annotations / SpellMaps to **concrete** dependency spell_ids.
-            * Build a minimal concrete resolution DAG using
-              :class:`DirectedAcyclicWorkGraph`, where each dependency spell
-              points into the root spell node.
-            * Push the DAG + dependency ids back into the owning :class:`Spell`
-              via :meth:`Spell._add_build_details`.
-            * Expose a lightweight :class:`SpellResolutionFrame` summary that
-              records the spell id and the topological order of the DAG nodes.
-
-        This method is idempotent; repeated calls reuse the same frame.
+        Note:
+            SpellContract and MutationContract sockets are currently treated as
+            metadata-only sockets. They participate in the symbolic graph and
+            local topology but do not yet produce concrete DI edges. Later
+            phases (5–7) and the override pipeline will wire their semantics.
         """
         self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
 
-        if self._resolution_frame is not None:
-            return self._resolution_frame
+        if requirements is None:
+            raise ValueError("requirements must not be None.")
+        if graph is None:
+            raise ValueError("graph must not be None.")
+        if cancellation_event is None:
+            raise ValueError("cancellation_event must not be None.")
 
         with self._lock:
-            # Double-checked locking in case another thread raced us.
-            if self._resolution_frame is not None:
-                return self._resolution_frame
+            if self._spell is None:
+                raise RuntimeError("SpellCrafter has no bound Spell.")
 
-            # Ensure Phase 1 + 2 have run.
-            self._requirements = self._requirements or self.run_phase_requirements(
-                cancel_event=cancel_event
-            )
-            graph = self._symbolic_graph or self.run_phase_symbolic_graph(
-                cancel_event=cancel_event
-            )
-
-            # If the spell has no DI parameters at all (or no spellbook), we
-            # still build a trivial DAG that only contains the root node.
-            spellbook = self._spell._spellbook
             root_id = self._spell.spell_index.current
+            dag = DirectedAcyclicWorkGraph(root_id=root_id)
 
-            if spellbook is None:
-                dag = DirectedAcyclicWorkGraph()
-                dag.add_node(root_id, payload=self._spell)
-                ordered_ids = dag.collect_dependency_ids()
-                frame = SpellResolutionFrame(
-                    spell_id=root_id,
-                    ordered_node_ids=ordered_ids,
-                )
-                self._resolution_frame = frame
-                self._spell._add_build_details(
-                    dag=dag,
-                    dependencies=[],
-                )
-                return frame
+            # Register the root node first.
+            dag.add_node(key=root_id, payload=self._spell)
 
-            scanner = SpellbookScanner(spellbook)
-
-            dag = DirectedAcyclicWorkGraph()
-            dag.add_node(root_id, payload=self._spell)
-
+            # Track all dependency spell IDs for SpellSystemStates.
             dependency_spell_ids: List[str] = []
 
-            # Build DI edges from the symbolic graph.
-            for dep in graph.dependencies:
-                self._throw_if_cancelled(cancel_event)
+            # Track per-socket resolutions for local topology:
+            # keyed by (param_name, position) -> [spell_id, ...]
+            socket_targets: Dict[tuple[str, int], List[str]] = {}
 
+            for dep in graph.dependencies:
+                if cancellation_event.is_set():
+                    raise RuntimeError("SpellCrafter Phase 3 cancelled.")
+
+                # Determine DI shape and resolve only the "normal" DI shapes.
                 di_shape = dep.di_shape
 
                 if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
-                    resolved = self._resolve_single_by_annotation(scanner, dep)
+                    resolved = self._resolve_single_by_annotation(dep)
                 elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
-                    resolved = self._resolve_collection_by_annotation(scanner, dep)
+                    resolved = self._resolve_collection_by_annotation(dep)
                 elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
-                    resolved = self._resolve_spellmap_default(scanner, dep)
+                    resolved = self._resolve_spellmap_default(dep)
                 else:
-                    # SPELL_CONTRACT / MUTATION_CONTRACT and other shapes do not
-                    # participate in *local* Phase 3 DAG edges yet. They are handled
-                    # at the system/mutation layers.
-                    continue
+                    # SpellContract / MutationContract and any future shapes
+                    # are currently metadata-only at the DAG level. They still
+                    # participate in local topology below.
+                    resolved = {}
 
-                socket_kind = self._socket_kind_for_dep(dep)
-                param_name = dep.param_name
+                if resolved:
+                    key = (dep.param_name, dep.position)
+                    targets_for_socket = socket_targets.setdefault(key, [])
 
-                # For SINGLE + SPELLMAP_DEFAULT we expect exactly one entry;
-                # for COLLECTION we may have many or zero.
-                for spell_index, spell_obj in resolved.items():
-                    dep_spell_id: str = spell_index.current
+                    for spell_index, spell_obj in resolved.items():
+                        dep_spell_id = spell_index.current
+                        dependency_spell_ids.append(dep_spell_id)
+                        targets_for_socket.append(dep_spell_id)
 
-                    dependency_spell_ids.append(dep_spell_id)
+                        dag.add_node(key=dep_spell_id, payload=spell_obj)
+                        dag.add_dependency(parent_key=dep_spell_id, child_key=root_id)
 
-                    dag.add_node(dep_spell_id, payload=spell_obj)
-                    dag.add_dependency(
-                        parent_key=dep_spell_id,
-                        child_key=root_id,
-                        param_name=param_name,
-                        socket_kind=socket_kind,
-                    )
+            # Snapshot local topology for this spell's constructor.
+            topology = self._build_local_topology(graph, socket_targets)
 
-            # Deduplicate dependency ids while preserving order.
-            if dependency_spell_ids:
-                seen: set[str] = set()
-                unique_dependency_ids: List[str] = []
-                for dep_id in dependency_spell_ids:
-                    if dep_id in seen:
-                        continue
-                    seen.add(dep_id)
-                    unique_dependency_ids.append(dep_id)
-            else:
-                unique_dependency_ids = []
+            # Update spell state system with dependency IDs and local topology.
+            try:
+                self._spell_system_states.update_dependencies(
+                    self._spell.spell_index,
+                    dependency_spell_ids,
+                )
+                self._spell_system_states.register_local_topology(
+                    self._spell.spell_index,
+                    topology,
+                )
+            except Exception as exc:
+                self._logger.error(
+                    f"Failed to update SpellSystemStates for spell_id={root_id}: {exc!r}",
+                    method_name="run_phase_local_frame",
+                    exc_info=True,
+                )
+                raise
 
-            ordered_ids = dag.collect_dependency_ids()
-            frame = SpellResolutionFrame(
-                spell_id=root_id,
-                ordered_node_ids=ordered_ids,
-            )
-            self._resolution_frame = frame
-
-            # Push the concrete DAG + dependency ids into the owning Spell.
+            # Attach DAG + dependency info to the Spell for diagnostic / reuse.
             self._spell._add_build_details(
+                requirements=requirements,
+                graph=graph,
                 dag=dag,
-                dependencies=unique_dependency_ids,
+                dependency_spell_ids=dependency_spell_ids,
             )
-            # Inform the per-frame SpellSystemStates registry that this lineage's
-            # direct dependency set has changed. This is the Phase 3 → topology
-            # bridge used by later Phase 5–7 change-control logic.
-            self._notify_dependencies_updated(unique_dependency_ids)
 
-            return frame
+            return dag
+
 
     # ------------------------------------------------------------------
     # Phase 4 – Validation
