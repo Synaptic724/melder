@@ -452,6 +452,8 @@ class ISpell(ICleanable, Protocol):
     activation_hooks: 'ConcurrentList[Callable[..., Any]]'
     post_hooks: 'ConcurrentList[Callable[..., Any]]'
 
+    _spell_system_states: 'ISpellSystemStates'
+
     # ------------------------------------------------------------------
     # Key property
     # ------------------------------------------------------------------

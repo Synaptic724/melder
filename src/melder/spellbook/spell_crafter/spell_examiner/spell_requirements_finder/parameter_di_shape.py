@@ -33,6 +33,15 @@ class ParameterDIShape(Enum):
     SPELLMAP_DEFAULT
         Parameter default is a :class:`SpellMap`. This is a fully explicit DI
         descriptor and has priority over plain annotations.
+
+    SPELL_CONTRACT
+        Parameter default is a :class:`SpellContract`. This indicates that
+        the parameter expects a single resolved spell matching the contract.
+
+    MUTATION_CONTRACT
+        Parameter default is a :class:`MutationContract`. This indicates that
+        the parameter expects a mutation lineage matching the contract.
+
     """
 
     IGNORE = auto()
@@ -40,3 +49,5 @@ class ParameterDIShape(Enum):
     SINGLE_BY_ANNOTATION = auto()
     COLLECTION_BY_ANNOTATION = auto()
     SPELLMAP_DEFAULT = auto()
+    SPELL_CONTRACT = auto()
+    MUTATION_CONTRACT = auto()

@@ -15,6 +15,8 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
 )
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.utilities.interfaces.interfaces import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
@@ -403,7 +405,25 @@ class SpellRequirementsFinder(Cleanable):
             tuple:
                 (di_shape, is_optional, collection_element_annotation, spellmap_default)
         """
-        # SpellMap default has top priority: explicit beats implicit.
+        # Mutation / contract defaults are explicit sockets controlled by
+        # dynamic/mutation flows. They take precedence over normal DI hints.
+        if has_default and isinstance(default_value, MutationContract):
+            return (
+                ParameterDIShape.MUTATION_CONTRACT,
+                True,   # logically optional – the contract object itself is fallback
+                None,   # no collection element annotation
+                None,   # no SpellMap default
+            )
+
+        if has_default and isinstance(default_value, SpellContract):
+            return (
+                ParameterDIShape.SPELL_CONTRACT,
+                True,   # logically optional – the contract object itself is fallback
+                None,
+                None,
+            )
+
+        # SpellMap default has top priority among "normal" DI hints: explicit beats implicit.
         if has_default and isinstance(default_value, SpellMap):
             return (
                 ParameterDIShape.SPELLMAP_DEFAULT,
