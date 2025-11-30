@@ -18,6 +18,8 @@ from melder.spellbook.existence.existence import Existence
 # Creations types
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 
 
 class Meld(IMeld):
@@ -244,7 +246,10 @@ class Meld(IMeld):
                     "`spell_name`, `spell`, or `spellframe`."
                 )
 
-            # 1) Resolve the spell object from the Spellbook / SpellIndex.
+            # 1) Normalize per-call overrides into a stable dict shape.
+            override_map = self._normalize_spell_override(spell_override)
+
+            # 2) Resolve the spell object from the Spellbook / SpellIndex.
             target_spell = self._resolve_spell(
                 spell=spell,
                 spell_name=spell_name,
@@ -252,22 +257,25 @@ class Meld(IMeld):
                 binding_name=binding_name,
             )
 
-            # 2) Defensive guard: never attempt to meld a broken spell.
+            # 1.5) SpellSystemState / SpellValidity gate + lazy revalidation.
+            self._ensure_lineage_resolvable(target_spell)
+
+            # 3) Defensive guard: never attempt to meld a broken spell.
             if target_spell.is_broken:
                 raise RuntimeError(
                     f"[MELD] Cannot meld broken spell: {target_spell}."
                 )
 
-            # 3) Normalize per-call overrides into a stable dict shape.
-            override_map = self._normalize_spell_override(spell_override)
+            # 4) Respect SpellSystemState / SpellValidity gate (if DevOps is wired).
+            self._gated_validation_required(target_spell)
 
-            # 4) Execute pre-cast hooks (no instance context yet).
+            # 5) Execute pre-cast hooks (no instance context yet).
             self._execute_hooks(target_spell.pre_hooks, "pre_cast")
 
-            # 5) Try to reuse an existing creation based on Existence + creations type.
+            # 6) Try to reuse an existing creation based on Existence + creations type.
             instance = self._get_existing_creation(target_spell)
 
-            # 6) If no existing instance, construct a new one via the spell-type path
+            # 7) If no existing instance, construct a new one via the spell-type path
             #    and register it into the appropriate creations bucket.
             if instance is None:
                 instance = self._meld_by_spell_type(target_spell, override_map)
@@ -275,11 +283,107 @@ class Meld(IMeld):
                 # Activation hooks fire only when the instance is newly created.
                 self._execute_activation_hooks(target_spell.activation_hooks, instance)
 
-            # 7) Execute post-cast hooks (still no arguments for now).
+            # 8) Execute post-cast hooks (still no arguments for now).
             self._execute_hooks(target_spell.post_hooks, "post_cast")
 
-            # 8) Return the resolved instance.
+            # 9) Return the resolved instance.
             return instance
+
+    def _ensure_lineage_resolvable(self, spell: ISpell) -> None:
+        """
+        Internal
+
+        Enforce SpellSystemState / SpellValidity gating **and** perform a
+        single lazy revalidation for UNKNOWN / GATED lineages.
+
+        Behaviour:
+
+        - If there is no SpellSystemState:
+            → no-op here; we rely on `spell.is_broken` later in `meld(...)`.
+
+        - If validity is VALID:
+            → no-op; allow meld to proceed.
+
+        - If validity is UNKNOWN or GATED:
+            → run the per-spell phases (1–4) via `spell.run_all_phases()`.
+              Then:
+                * if `spell.is_broken` → mark INVALID and raise
+                  SpellbookValidationError.
+                * else → if the lineage did not move to VALID, raise
+                  SpellbookValidationError.
+
+          After this call, the lineage should no longer be UNKNOWN/GATED. If it
+          is, that is treated as a validation failure.
+
+        - If validity is INVALID or DISABLED:
+            → raise SpellbookValidationError immediately.
+        """
+        state = spell.system_state
+        if state is None:
+            # No DevOps gate wired; let existing `is_broken` guard handle it.
+            return
+
+        # Fast path / immediate failure for invalid/disabled etc.
+        if not self._gated_validation_required(spell):
+            return
+
+        # At this point we know: state is not None and validity ∈ {unknown, gated}.
+        spell.run_all_phases()
+
+        # If the crafter thinks it's broken, we hard-pin to invalid and bail.
+        if spell.is_broken:
+            state.set_validity(SpellValidity.invalid)
+            raise SpellbookValidationError([spell])
+
+        # Re-read state in case your validation pipeline swapped the object
+        # or mutated validity.
+        refreshed_state = spell.system_state
+
+        # One chance: after revalidation, the lineage must be VALID.
+        if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
+            raise SpellbookValidationError([spell])
+
+
+    def _gated_validation_required(self, spell: ISpell) -> bool:
+        """
+        Internal
+
+        Decide whether this spell's lineage needs a **lazy revalidation**
+        pass before we attempt to meld it.
+
+        Semantics:
+
+        - If no SpellSystemState is attached → False
+          (DevOps / change-control not wired; Meld falls back to Spell flags).
+
+        - SpellValidity.valid   → False  (safe to resolve as-is).
+        - SpellValidity.unknown → True   (first-pass revalidation needed).
+        - SpellValidity.gated   → True   (structural / contract / mutation gate).
+        - SpellValidity.invalid / disabled → raise SpellbookValidationError.
+
+        This method does **not** run validation; it only answers:
+        “Should we try to revalidate this lineage now?”
+        """
+        state = spell.system_state
+        if state is None:
+            # No DevOps wiring; nothing for us to do at this layer.
+            return False
+
+        validity = state.validity
+
+        if validity is SpellValidity.valid:
+            return False
+
+        if validity is SpellValidity.unknown or validity is SpellValidity.gated:
+            return True
+
+        # invalid / disabled → hard block, no attempt to resolve
+        if validity is SpellValidity.invalid or validity is SpellValidity.disabled:
+            raise SpellbookValidationError([spell])
+
+        # Extremely defensive: any future enum value → treat as not resolvable.
+        raise SpellbookValidationError([spell])
+
 
 
     def _normalize_spell_override(

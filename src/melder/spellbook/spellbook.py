@@ -22,7 +22,9 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
-
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
 
 #region Spellbook
 class Spellbook(Cleanable, ISpellbook):
@@ -245,8 +247,6 @@ class Spellbook(Cleanable, ISpellbook):
 
 
     #endregion Disposal
-
-
     #region Context Manager
     def __enter__(self):
         """
@@ -387,6 +387,7 @@ class Spellbook(Cleanable, ISpellbook):
 
     #endregion Logging
     #region Properties
+
     @property
     def id(self) -> str:
         """

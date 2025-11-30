@@ -4,9 +4,12 @@ from typing import Optional, List, Any, Callable
 import ulid
 from threading import RLock
 
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionProfile,
 )
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -584,6 +587,71 @@ class Spell(ISpell, Cleanable):
         crafter = self._ensure_crafter()
         crafter.run_phase_validation(cancel_event=cancel_event)
 
+
+    def run_phase_system_graph(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 5 – System Graph Integration (placeholder).
+
+        In the full implementation, this phase will:
+
+            - Take this spell's local resolution frame / DAG (Phase 3).
+            - Integrate it into a system-wide graph (all spells / all frames).
+            - Coordinate with SpellSystemStates to track lineage-level
+              participation in the global graph.
+
+        For now, this is a **no-op**. It exists purely as a stable facade so
+        the system-level DevOps pipeline has a dedicated hook per spell.
+        """
+        self.check_cleaned()
+        # TODO: integrate with system-wide DAG / Aether-level graph in Phase 5.
+        return None
+
+    def run_phase_system_validation(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 6 – System Validation & Change-Control (placeholder).
+
+        In the full implementation, this phase will:
+
+            - Validate the system-wide graph (cycles, holes, policy, etc.).
+            - Coordinate incident/open-incident flags on SpellSystemState.
+            - Decide whether this lineage should remain gated or can be
+              promoted to `SpellValidity.valid`.
+
+        For now, this is a **no-op**. Lineage validation is done via
+        :meth:`ensure_lineage_resolvable` and Phase 1–4 only.
+        """
+        self.check_cleaned()
+        # TODO: hook into global validation / change-control engine in Phase 6.
+        return None
+
+    def run_phase_publish(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 7 – Publish / Runtime Gate Update (placeholder).
+
+        In the full implementation, this phase will:
+
+            - Commit validated system graphs to the active runtime.
+            - Update `SpellSystemState.validity` to reflect final decisions
+              (e.g., promote candidates, keep quarantined, disable, etc.).
+            - Drive rollout / canary / AI-governed mutation promotion.
+
+        For now, this is a **no-op**. It's a placeholder so that the full
+        Phase 1–7 pipeline has a per-spell hook for rollout decisions.
+        """
+        self.check_cleaned()
+        # TODO: implement rollout / promotion logic in Phase 7.
+        return None
+
+
     def run_all_phases(
             self,
             cancel_event: Optional[CancellationEvent] = None,
@@ -610,7 +678,134 @@ class Spell(ISpell, Cleanable):
         crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
         crafter.run_phase_local_frame(cancel_event=cancel_event)
         crafter.run_phase_validation(cancel_event=cancel_event)
+        crafter.run_phase_system_graph(cancel_event=cancel_event)
+        crafter.run_phase_system_validation(cancel_event=cancel_event)
+        crafter.run_phase_publish(cancel_event=cancel_event)
 
 
     #endregion Resolution Phases
+    #region Spell Mutations
+    @property
+    def system_state(self) -> Optional["SpellSystemState"]:
+        """
+        Return the SpellSystemState instance associated with this Spell's lineage.
+
+        This is a *view* into the change-control / validation state tracked
+        by SpellSystemStates. It is intentionally read-mostly at the Spell layer:
+
+        - Mutation and contract operations can ask for the current state.
+        - Higher-level dev-ops / validation pipelines can use this hook to
+          inspect or assert state when orchestrating Phase 1–7 revalidation.
+
+        Returns:
+            SpellSystemState | None:
+                The state object if SpellSystemStates is available and this
+                spell has a registered lineage; otherwise None.
+        """
+        self.check_cleaned()
+        if self._spell_system_states is None:
+            return None
+
+        # SpellSystemStates tracks states by SpellIndex.id / spell_id
+        return self._spell_system_states.get_by_index_id(self.spell_index.id)
+
+
+    # ------------------------------------------------------------------
+    # Mutation override (graph overlay) API
+    # ------------------------------------------------------------------
+    @property
+    def mutation_override(self) -> dict:
+        """
+        Current mutation override payload for this Spell's DAG.
+
+        This is a *structural overlay* that the mutation pipeline can apply
+        to the spell's DI shape in Dynamic / AI-native mode. It is conceptually
+        separate from normal SpellMap overrides:
+
+        - SpellMap.spell_override → per-call / per-site DI override.
+        - Spell.mutation_override → per-spell *graph* overlay used by the
+          MutationContract / mutation hub.
+
+        Semantics:
+            - An empty dict (`{}`) is treated as “no active overlay” by
+              default. The higher-level mutation system may refine this
+              distinction later (e.g., between "no overlay" and "explicit
+              empty override") but at the Spell level we simply expose the
+              raw payload.
+        """
+        # Expose the concrete container; callers can decide if '{}' means
+        # "no overlay" or an explicit empty overlay.
+        return self._mutation_override
+
+    @property
+    def has_mutation_override(self) -> bool:
+        """
+        Whether this Spell currently has a non-empty mutation overlay.
+
+        This is a convenience for Dynamic / AI-native flows that want a quick
+        check before doing more expensive revalidation or graph rebuilds.
+        """
+        return bool(self._mutation_override)
+
+    def apply_mutation_override(self, override: Optional[dict]) -> None:
+        """
+        Apply or update the DAG-level mutation override for this Spell.
+        Instead, it:
+
+        - Updates the local overlay payload; and
+        - Marks the Spell's lineage as structurally changed via
+          SpellSystemStates (if available), using a mutation_contract_*
+          change reason.
+
+        The actual rebuild / revalidation of the system graph is expected to
+        be driven by the Phase 5–7 pipelines and the mutation hub.
+
+        Args:
+            override:
+                New overlay payload. `None` or `{}` clears the overlay and
+                leaves this Spell in a "no active mutation overlay" state.
+        """
+        self.check_cleaned()
+
+        new_payload: dict = override if override is not None else {}
+        self._mutation_override = new_payload
+
+        if self._spell_system_states is not None and self.spell_index is not None:
+            if new_payload:
+                change_reason = SpellStateChangeReason.mutation_contract_set
+            else:
+                change_reason = SpellStateChangeReason.mutation_contract_cleared
+
+            self._spell_system_states.mark_structural_change(
+                self.spell_index,
+                change_reason,
+            )
+
+
+    def clear_mutation_override(self) -> None:
+        """
+        Clear any active mutation overlay for this Spell.
+
+        This resets the local overlay payload back to the default empty dict,
+        and, if SpellSystemStates is available, marks the lineage as having
+        rolled back a mutation.
+
+        The actual effect on the compiled/system DAG is owned by the higher-
+        level mutation / validation pipelines.
+        """
+        self.check_cleaned()
+
+        if not self._mutation_override and not self.has_mutation_override:
+            # Nothing to do; avoid spurious state changes.
+            return
+
+        self._mutation_override = {}
+
+        if self._spell_system_states is not None and self.spell_index is not None:
+            self._spell_system_states.mark_structural_change(
+                self.spell_index,
+                SpellStateChangeReason.mutation_contract_cleared,
+            )
+
+    #endregion Spell Mutations
 #endregion Spell

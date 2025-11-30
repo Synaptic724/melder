@@ -467,6 +467,26 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
+    @property
+    def system_state(self) -> Optional["SpellSystemState"]:
+        """
+        Return the SpellSystemState instance associated with this Spell's lineage.
+
+        This is a *view* into the change-control / validation state tracked
+        by SpellSystemStates. It is intentionally read-mostly at the Spell layer:
+
+        - Mutation and contract operations can ask for the current state.
+        - Higher-level dev-ops / validation pipelines can use this hook to
+          inspect or assert state when orchestrating Phase 1–7 revalidation.
+
+        Returns:
+            SpellSystemState | None:
+                The state object if SpellSystemStates is available and this
+                spell has a registered lineage; otherwise None.
+        """
+        ...
+
+
     # ------------------------------------------------------------------
     # Introspection Helpers
     # ------------------------------------------------------------------
