@@ -2,7 +2,7 @@ from __future__ import annotations
 import threading
 from typing import Any, Optional, List, Dict
 # Melder Imports
-from melder.spellbook.spell_crafter.dag.meld_dag import DirectedAcyclicWorkGraph
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 # Melder Imports
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
     SpellSymbolicDependency,
@@ -419,6 +419,29 @@ class SpellCrafter(Cleanable):
 
         return candidates
 
+    def _socket_kind_for_dep(self, dep: SpellSymbolicDependency) -> SocketKind:
+        """
+        Map a symbolic dependency's DI shape into a SocketKind.
+
+        NORMAL:
+            Regular DI parameter (annotation, SpellMap, collection).
+        SPELL_CONTRACT:
+            SpellContract socket – must be satisfied by a provider.
+        MUTATION_CONTRACT:
+            MutationContract socket – can be rewired at meld-time.
+
+        For now we classify based solely on `dep.di_shape`. If we later
+        introduce additional DI shapes, this is the central mapping point.
+        """
+        di_shape = dep.di_shape
+
+        if di_shape is ParameterDIShape.SPELL_CONTRACT:
+            return SocketKind.SPELL_CONTRACT
+        if di_shape is ParameterDIShape.MUTATION_CONTRACT:
+            return SocketKind.MUTATION_CONTRACT
+
+        return SocketKind.NORMAL
+
     def _resolve_spellmap_default(
             self,
             scanner: SpellbookScanner,
@@ -731,22 +754,28 @@ class SpellCrafter(Cleanable):
                 elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
                     resolved = self._resolve_spellmap_default(scanner, dep)
                 else:
-                    # Should not happen given Phase 2 filtering, but we keep
-                    # this guard for robustness.
+                    # SPELL_CONTRACT / MUTATION_CONTRACT and other shapes do not
+                    # participate in *local* Phase 3 DAG edges yet. They are handled
+                    # at the system/mutation layers.
                     continue
+
+                socket_kind = self._socket_kind_for_dep(dep)
+                param_name = dep.param_name
 
                 # For SINGLE + SPELLMAP_DEFAULT we expect exactly one entry;
                 # for COLLECTION we may have many or zero.
                 for spell_index, spell_obj in resolved.items():
-                    # SpellIndex exposes the current version id we want to
-                    # encode into the DAG.
                     dep_spell_id: str = spell_index.current
 
                     dependency_spell_ids.append(dep_spell_id)
-                    # Nodes are created on-demand; add_dependency will ensure
-                    # both parent and child nodes exist.
+
                     dag.add_node(dep_spell_id, payload=spell_obj)
-                    dag.add_dependency(parent_key=dep_spell_id, child_key=root_id)
+                    dag.add_dependency(
+                        parent_key=dep_spell_id,
+                        child_key=root_id,
+                        param_name=param_name,
+                        socket_kind=socket_kind,
+                    )
 
             # Deduplicate dependency ids while preserving order.
             if dependency_spell_ids:

@@ -1,7 +1,7 @@
 import unittest
 from typing import List, Set
 
-from melder.spellbook.spell_crafter.dag.meld_dag import (
+from melder.spellbook.spell_crafter.dag.dag_node import (
     DagNode,
     DirectedAcyclicWorkGraph,
 )

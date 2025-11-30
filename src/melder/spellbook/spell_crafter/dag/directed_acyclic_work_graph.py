@@ -1,155 +1,10 @@
 from threading import RLock
 from typing import Any, Callable, Dict, List, Optional, Set
+from melder.spellbook.spell_crafter.dag.dag_node import DagNode
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-
-
-class DagNode(Cleanable):
-    """
-    Internal
-
-    Represents a single node in a Directed Acyclic Graph used for resolution.
-
-    This is intentionally lightweight:
-
-    - No separate Edge objects.
-    - Dependencies are expressed as direct references to other DagNode instances.
-    - Optional `payload` and `tasks` allow the same DAG to be reused for:
-        * resolution ordering (spell dependencies)
-        * simple execution flows (if desired).
-
-    Typical usage in Melder:
-
-        - Each node maps to a "unit of work" (e.g., a spell or constructor).
-        - Dependencies model "must be created before me".
-        - The DAG object is responsible for computing a topological order.
-    """
-
-    def __init__(self, key: str, payload: Any | None = None) -> None:
-        """
-        Initializes a new DagNode.
-
-        Args:
-            key: Stable identifier for the node (e.g., spell id or name).
-            payload: Optional arbitrary payload (class, factory, metadata, etc.).
-        """
-        super().__init__()
-        self._id: str = key
-        self._payload: Any | None = payload
-        self._dependencies: Set["DagNode"] = set()   # Nodes this node depends on
-        self._dependents: Set["DagNode"] = set()     # Nodes that depend on this node
-        self._tasks: List[Callable[[], Any]] = []
-
-    # --------------------------------------------------------------------- #
-    # Cleanup
-    # --------------------------------------------------------------------- #
-    def cleanup(self) -> None:
-        """
-        Cleans up the node, dropping references to payload, dependencies,
-        dependents, and tasks.
-
-        Idempotent.
-        """
-        if self._cleaned:
-            return
-
-        # No lock is used here; nodes are owned by the DAG and not expected
-        # to be mutated concurrently in Melder.
-        self._payload = None
-
-        # Break graph links
-        for dep in list(self._dependencies):
-            dep._dependents.discard(self)
-        for dep in list(self._dependents):
-            dep._dependencies.discard(self)
-
-        self._dependencies.clear()
-        self._dependents.clear()
-        self._tasks.clear()
-        self._cleaned = True
-
-    # --------------------------------------------------------------------- #
-    # Properties
-    # --------------------------------------------------------------------- #
-    @property
-    def id(self) -> str:
-        """
-        Returns the stable identifier for this node.
-        """
-        return self._id
-
-    @property
-    def payload(self) -> Any | None:
-        """
-        Returns the payload associated with this node.
-        """
-        return self._payload
-
-    @payload.setter
-    def payload(self, value: Any | None) -> None:
-        self.check_cleaned()
-        self._payload = value
-
-    @property
-    def dependencies(self) -> Set["DagNode"]:
-        """
-        Returns the set of nodes this node directly depends on.
-        """
-        return self._dependencies
-
-    @property
-    def dependents(self) -> Set["DagNode"]:
-        """
-        Returns the set of nodes that directly depend on this node.
-        """
-        return self._dependents
-
-    # --------------------------------------------------------------------- #
-    # Configuration
-    # --------------------------------------------------------------------- #
-    def add_dependency(self, dependency: "DagNode") -> None:
-        """
-        Adds a dependency edge: `self` depends on `dependency`.
-
-        Args:
-            dependency: Node that must be processed before this node.
-        """
-        self.check_cleaned()
-        if dependency is self:
-            raise ValueError("DagNode cannot depend on itself.")
-        if dependency not in self._dependencies:
-            self._dependencies.add(dependency)
-            dependency._dependents.add(self)
-
-    def add_task(self, fn: Callable[[], Any]) -> None:
-        """
-        Optional
-
-        Registers a callable to be executed when this node is processed.
-
-        This is primarily for testing / demonstration and is not required
-        for Melder's spell resolution. It is kept to minimize behavioral
-        changes from prior DAG usage.
-        """
-        self.check_cleaned()
-        if not callable(fn):
-            raise TypeError("Task must be callable.")
-        self._tasks.append(fn)
-
-    def run_tasks(self) -> None:
-        """
-        Executes all registered tasks in insertion order.
-
-        Any exception will propagate to the caller.
-        """
-        self.check_cleaned()
-        for task in self._tasks:
-            task()
-
-    def __repr__(self) -> str:
-        return f"DagNode(id={self._id!r}, deps={len(self._dependencies)}, dependents={len(self._dependents)})"
-
 
 class DirectedAcyclicWorkGraph(Cleanable):
     """
@@ -179,6 +34,7 @@ class DirectedAcyclicWorkGraph(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: RLock = RLock()
         self._nodes: Dict[str, DagNode] = {}
+        self._socket_kinds: Dict[tuple[DagNode, DagNode], SocketKind] = {}
 
     # --------------------------------------------------------------------- #
     # Cleanup
@@ -268,22 +124,48 @@ class DirectedAcyclicWorkGraph(Cleanable):
         self.check_cleaned()
         return self._nodes.get(key)
 
-    def add_dependency(self, parent_key: str, child_key: str) -> None:
+    def add_dependency(
+            self,
+            parent_key: str,
+            child_key: str,
+            *,
+            param_name: str | None = None,
+            socket_kind: SocketKind | None = None,
+    ) -> None:
         """
         Adds a dependency edge using node keys.
 
         Semantics:
-            `child_key` depends on `parent_key`
+            ``child_key`` depends on ``parent_key``
 
-        i.e. `parent` must be processed before `child`.
+        i.e. ``parent`` must be processed before ``child``.
 
         Nodes are created on-demand if they don't already exist.
+
+        Args:
+            parent_key:
+                Id/key for the dependency node that must be processed first.
+            child_key:
+                Id/key for the node that depends on ``parent_key``.
+            param_name:
+                Optional name of the constructor parameter on ``child`` that
+                is wired to ``parent``. When provided, param-aware metadata
+                is updated on both nodes.
+            socket_kind:
+                Optional classification of the socket (normal / SpellContract /
+                MutationContract). When provided, the DAG records this for
+                later override/mutation logic.
         """
         self.check_cleaned()
         with self._lock:
             parent = self.add_node(parent_key)
             child = self.add_node(child_key)
-            child.add_dependency(parent)
+
+            # Wire the core graph edge
+            child.add_dependency(parent, param_name=param_name)
+
+            if socket_kind is not None:
+                self._socket_kinds[(parent, child)] = socket_kind
 
     # --------------------------------------------------------------------- #
     # Topological Sorting
