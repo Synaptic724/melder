@@ -14,7 +14,7 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
     SpellRequirements,
 )
 from melder.spellbook.spell_types.spell_types import SpellType
-from melder.aether.conduit.meld.spellmap.spellmap import SpellMap
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.utilities.interfaces.interfaces import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable

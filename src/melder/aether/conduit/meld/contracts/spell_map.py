@@ -1,9 +1,11 @@
 from typing import Any, Optional, Union, Tuple
+
+from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 
-class SpellMap:
+class SpellMap(Cleanable):
     """
     Declarative DI placeholder used inside user code to tell Melder:
 
@@ -68,7 +70,7 @@ class SpellMap:
               Protocol / frame with an explicit binding name.
     """
 
-    __slots__ = ("spell", "spellframe", "binding_name", "spell_override")
+    __slots__ = Cleanable.__slots__ + ["spell", "spellframe", "binding_name", "spell_override"]
 
     def __init__(
             self,
@@ -145,7 +147,7 @@ class SpellMap:
                 "SpellMap requires at least one of `spell` or `spellframe` "
                 "to be provided."
             )
-
+        super().__init__()
         self.spell = spell
         self.spellframe = spellframe
         self.binding_name = binding_name
@@ -153,6 +155,29 @@ class SpellMap:
         # "no override" vs "empty override" based on how they interpret this.
         self.spell_override = spell_override if spell_override is not None else {}
 
+    def cleanup(self) -> None:
+        """
+        Explicitly release references and mark this contract as cleaned.
+
+        Notes:
+            - Idempotent: safe to call multiple times.
+            - After cleanup, any attempt to use this contract should call
+              `check_cleaned()` first (e.g., via properties) and will raise.
+        """
+        if self._cleaned:
+            return
+
+        # No internal lock needed; this is a simple intent object.
+        self._cleaned = True
+
+        # Clear override payload if it is a container.
+        if isinstance(self.spell_override, (list, dict)):
+            self.spell_override.clear()
+
+        self.spell_override = None
+        self.spell = None
+        self.spellframe = None
+        self.binding_name = None
     # ------------------------------------------------------------------
     # Raw data for higher-level systems
     # ------------------------------------------------------------------

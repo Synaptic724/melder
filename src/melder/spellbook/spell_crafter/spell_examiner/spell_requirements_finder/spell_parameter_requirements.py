@@ -5,7 +5,7 @@ from typing import Any, Optional
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.aether.conduit.meld.spellmap.spellmap import SpellMap
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.utilities.general_base.cleanable import Cleanable
 
 
