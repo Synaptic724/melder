@@ -2,8 +2,8 @@ from __future__ import annotations
 import threading
 from typing import Any, Optional, List, Dict
 # Melder Imports
+from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-# Melder Imports
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
     SpellSymbolicDependency,
 )
