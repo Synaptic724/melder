@@ -1,6 +1,6 @@
 from __future__ import annotations
 import threading
-from typing import Any, Optional, List, Dict
+from typing import Any, Optional, List, Dict, Tuple
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -30,6 +30,12 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
+)
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+
 
 class SpellCrafter(Cleanable):
     """
@@ -672,6 +678,60 @@ class SpellCrafter(Cleanable):
     # ------------------------------------------------------------------
     # Phase 3 – Local Frame / DAG
     # ------------------------------------------------------------------
+    def _build_local_topology(
+            self,
+            graph: SpellSymbolicGraph,
+            socket_targets: Dict[tuple[str, int], List[str]],
+    ) -> SpellLocalTopology:
+        """
+        Internal
+
+        Build a :class:`SpellLocalTopology` for this Spell's constructor based
+        on the symbolic dependency graph and the concrete DI resolutions
+        performed in Phase 3.
+
+        Args:
+            graph:
+                The symbolic dependency graph produced in Phase 2.
+
+            socket_targets:
+                A mapping keyed by ``(param_name, position)`` to the list of
+                dependency spell IDs that this socket resolved to during
+                Phase 3. If a socket did not produce any concrete DI edges
+                (e.g. SpellContract / MutationContract), its entry will be
+                missing and we treat its targets as an empty tuple.
+        """
+        spell_id = self._spell.spell_index.current
+        descriptors: List[SpellSocketDescriptor] = []
+
+        for dep in graph.dependencies:
+            key = (dep.param_name, dep.position)
+            target_ids = socket_targets.get(key)
+            if target_ids:
+                target_spell_ids: Tuple[str, ...] = tuple(target_ids)
+            else:
+                target_spell_ids = ()
+
+            socket_kind = self._socket_kind_for_dep(dep)
+            descriptor = SpellSocketDescriptor(
+                spell_id=spell_id,
+                param_name=dep.param_name,
+                position=dep.position,
+                socket_kind=socket_kind,
+                is_collection=dep.is_collection,
+                is_optional=dep.is_optional,
+                target_spell_ids=target_spell_ids,
+            )
+            descriptors.append(descriptor)
+
+        topology = SpellLocalTopology(
+            spell_id=spell_id,
+            sockets=descriptors,
+        )
+        return topology
+
+
+
 
     def run_phase_local_frame(
             self,
