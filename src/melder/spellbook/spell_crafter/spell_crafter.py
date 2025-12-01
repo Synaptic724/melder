@@ -152,9 +152,9 @@ class SpellCrafter(Cleanable):
                 except Exception:
                     pass
 
-            if self._validation_result is not None and isinstance(self._validation_result, Cleanable):
+            if self._validation_result_phase4 is not None and isinstance(self._validation_result_phase4, Cleanable):
                 try:
-                    self._validation_result.cleanup()
+                    self._validation_result_phase4.cleanup()
                 except Exception:
                     pass
 
@@ -987,7 +987,7 @@ class SpellCrafter(Cleanable):
         self._throw_if_cancelled(cancel_event)
 
         # If we've already validated and still have a result, do nothing.
-        if self._validated and self._validation_result_phase4 is not None:
+        if self._validated_phase4 and self._validation_result_phase4 is not None:
             return
 
         # Hard contract: Phases 1–3 must have been run explicitly.
