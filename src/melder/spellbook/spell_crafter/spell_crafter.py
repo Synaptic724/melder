@@ -109,8 +109,10 @@ class SpellCrafter(Cleanable):
         # Phase 3 artifact – currently a SpellResolutionFrame summarising the
         # concrete dependency DAG that is pushed into the owning Spell.
         self._resolution_frame: Optional[SpellResolutionFrame] = None
-        self._validation_result: Any = None
-        self._validated: bool = False
+        self._validation_result_phase4: Any = None
+        self._validated_phase4: bool = False
+        self._validation_result_phase6: Any = None
+        self._validated_phase6: bool = False
         self._is_broken: bool = False
 
     # ------------------------------------------------------------------
@@ -160,9 +162,11 @@ class SpellCrafter(Cleanable):
             self._resolution_frame = None
             self._requirements = None
             self._symbolic_graph = None
-            self._validation_result = None
+            self._validation_result_phase4 = None
+            self._validation_result_phase6 = None
             self._spell_system_states = None
-            self._validated = False
+            self._validated_phase4 = False
+            self._validated_phase6 = False
             self._is_broken = False
             self._spell = None
             self._spell_validator = None
@@ -949,8 +953,6 @@ class SpellCrafter(Cleanable):
             ordered_node_ids=ordered_node_ids,
         )
 
-
-
     # ------------------------------------------------------------------
     # Phase 4 – Validation
     # ------------------------------------------------------------------
@@ -964,39 +966,42 @@ class SpellCrafter(Cleanable):
 
         Responsibilities:
             * Assume Phases 1–3 have completed for this Spell.
-            * Build a :class:`SpellValidationContext` containing:
-                  - the Spell and its Spellbook,
+            * Delegate to :class:`SpellValidationSystem` to validate this spell
+              using:
                   - Phase 1 requirements,
                   - Phase 2 symbolic graph,
-                  - Phase 3 resolution frame,
-                  - a SpellbookScanner for global graph inspection,
-                  - the cancellation event and an issues collection.
-            * Invoke :class:`SpellValidationSystem` to run all registered
-              validation strategies against the context.
-            * Store the resulting :class:`SpellValidationResult` and update
-              internal flags (e.g. ``_validated``, ``_is_broken``) on this
-              SpellCrafter.
+                  - Phase 3 resolution frame.
+            * Cache the resulting :class:`SpellValidationResult` and expose it
+              via :attr:`validation_result`, :attr:`validated`,
+              and :attr:`is_broken`.
 
         Contracts:
-            * Does **not** call earlier phases. If any of the required Phase
-              1–3 artifacts are missing, this method raises.
-            * Does **not** mutate the Spell or build any new DAGs. It only
-              records validation outcome and diagnostics on this SpellCrafter.
-            * Does not return a value; callers rely on the stored validation
-              result and flags.
+            * Does **not** call Phases 1–3. If any of the required artifacts
+              are missing, this method raises.
+            * Does **not** mutate the Spell or build any DAGs. It only records
+              validation outcome and diagnostics on this SpellCrafter.
+            * Returns ``None``; callers rely on the stored validation result and
+              flags instead of a direct return value.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
 
-        if self._validated and self._validation_result is not None:
-            return self._validation_result
+        # If we've already validated and still have a result, do nothing.
+        if self._validated and self._validation_result_phase4 is not None:
+            return
 
-        if self._requirements is None or self._symbolic_graph is None or self._resolution_frame is None:
+        # Hard contract: Phases 1–3 must have been run explicitly.
+        if (
+                self._requirements is None
+                or self._symbolic_graph is None
+                or self._resolution_frame is None
+        ):
             raise RuntimeError(
                 "SpellCrafter Phase 4: cannot run validation before Phases 1–3 "
                 "have completed."
             )
 
+        # Use the Spellbook-level SpellValidationSystem.
         result = self._spell_validator.validate_spell(
             spell=self._spell,
             requirements=self._requirements,
@@ -1005,13 +1010,14 @@ class SpellCrafter(Cleanable):
             cancel_event=cancel_event,
         )
 
-        self._validation_result = result
-        self._validated = True
-        # Treat any validation error as "broken" for now; we can refine this
-        # later with severity levels / policies.
-        self._is_broken = bool(getattr(result, "has_errors", False))
+        # Cache result + flags on the crafter; the Spell exposes these via
+        # properties (validation_result / validated / is_broken).
+        self._validation_result_phase4 = result
+        self._validated_phase4 = True
 
-        return result
+        # For now: any error -> broken. You can refine this later via severity.
+        self._is_broken = result.has_errors
+
     # ------------------------------------------------------------------
     # Phase 5 - Build Deep Dag Structures
     # ------------------------------------------------------------------
