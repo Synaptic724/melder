@@ -404,14 +404,24 @@ class Spell(Cleanable):
         return crafter.resolution_frame if crafter is not None else None
 
     @property
-    def validation_result(self) -> Any:
+    def validation_result_phase4(self) -> Any:
         """
         Phase 4 validation result for this spell, if it has been computed.
 
         This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
         """
         crafter = self._crafter
-        return crafter.validation_result if crafter is not None else None
+        return crafter.validation_result_phase4 if crafter is not None else None
+
+    @property
+    def validation_result_phase6(self) -> Any:
+        """
+        Phase 6 validation result for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
+        """
+        crafter = self._crafter
+        return crafter.validation_result_phase6 if crafter is not None else None
 
     @property
     def validated(self) -> bool:

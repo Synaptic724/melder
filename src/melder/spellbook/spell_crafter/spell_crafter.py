@@ -79,7 +79,10 @@ class SpellCrafter(Cleanable):
         "_requirements",
         "_symbolic_graph",
         "_resolution_frame",
-        "_validation_result",
+        "_validation_result_phase4",
+        "_validated_phase4",
+        "_validation_result_phase6",
+        "_validated_phase6",
         "_validated",
         "_is_broken",
         "_spell_validator",
@@ -113,6 +116,7 @@ class SpellCrafter(Cleanable):
         self._validated_phase4: bool = False
         self._validation_result_phase6: Any = None
         self._validated_phase6: bool = False
+        self._validated: bool = False
         self._is_broken: bool = False
 
     # ------------------------------------------------------------------
@@ -235,7 +239,7 @@ class SpellCrafter(Cleanable):
         to avoid constraining callers.
         """
         self.check_cleaned()
-        return self._validation_result
+        return self._validation_result_phase4
 
     @property
     def validated(self) -> bool:
