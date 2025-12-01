@@ -527,16 +527,24 @@ class SpellCrafter(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Phase 1 – Requirements Extraction.
+        Phase 1 – Analyse the Spell constructor and capture DI requirements.
 
-        Uses :class:`SpellRequirementsFinder` to:
+        Responsibilities:
+            * Inspect the bound Spell's constructor and classify every parameter
+              into a :class:`ParameterDIShape` (normal DI, SpellMap, contracts, etc.).
+            * Build a :class:`SpellRequirements` object that records per-parameter
+              metadata (name, position, shape, optionality, annotations).
+            * Store the requirements on this SpellCrafter (``_requirements``) for
+              later phases to consume.
 
-            * Inspect the spell’s call target (class/function/method).
-            * Derive parameter-level DI metadata.
-            * Produce a :class:`SpellRequirements` object keyed by the spell’s
-              version ID (SpellIndex.current).
-
-        This method is idempotent; repeated calls reuse the same requirements.
+        Contracts:
+            * Must only be called for a Spell that is fully constructed and
+              attached to a Spellbook.
+            * Does **not** call any other phases. The caller is responsible for
+              running phases in order.
+            * Does **not** mutate the Spell, SpellSystemStates, or any DAG
+              structures. It only updates this SpellCrafter's internal state.
+            * Does not return a value; consumers read ``self._requirements``.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
@@ -556,32 +564,27 @@ class SpellCrafter(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Phase 2 – Symbolic Graph Construction.
+        Phase 2 – Build the symbolic dependency graph for this Spell.
 
-        Consumes Phase 1 requirements and builds a :class:`SpellSymbolicGraph`
-        for this spell version. The graph describes DI *intents* (parameter →
-        type / SpellMap / contract sockets) but does not bind to concrete
-        spell IDs.
+        Responsibilities:
+            * Consume Phase 1 requirements and construct a
+              :class:`SpellSymbolicGraph` describing all constructor sockets.
+            * Create one :class:`SpellSymbolicDependency` per DI parameter,
+              including:
+                  - normal DI sockets (single, collection, SpellMap),
+                  - SpellContract sockets,
+                  - MutationContract sockets.
+            * Store the symbolic graph on this SpellCrafter
+              (``_symbolic_graph``) for later phases.
 
-        Current strategy
-        ----------------
-        * Walk all parameter requirements.
-        * For each parameter with a DI shape of:
-            - SINGLE_BY_ANNOTATION
-            - COLLECTION_BY_ANNOTATION
-            - SPELLMAP_DEFAULT
-            - SPELL_CONTRACT
-            - MUTATION_CONTRACT
-          construct a :class:`SpellSymbolicDependency` and add it to the graph.
-
-        Notes on contracts / mutation sockets
-        -------------------------------------
-        * SPELL_CONTRACT and MUTATION_CONTRACT entries are **recorded** in the
-          symbolic graph so later phases (5–7, frame-level DevOps) can see
-          where contract/mutation sockets exist.
-        * Phase 3 currently ignores these shapes for concrete DI resolution;
-          they behave as metadata-only edges until we wire the contract/mutation
-          semantics into the DAG / change-control machinery.
+        Contracts:
+            * Phase 1 (requirements) must already have run successfully.
+              This method will raise if requirements are missing; it does
+              **not** auto-run Phase 1.
+            * Does **not** build any concrete DAG or talk to SpellSystemStates.
+            * Does **not** mutate the Spell. It only updates this
+              SpellCrafter's internal state.
+            * Does not return a value; consumers read ``self._symbolic_graph``.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
@@ -679,22 +682,29 @@ class SpellCrafter(Cleanable):
             socket_targets: Dict[tuple[str, int], List[str]],
     ) -> SpellLocalTopology:
         """
-        Internal
+        Internal helper for Phase 3.
 
-        Build a :class:`SpellLocalTopology` for this Spell's constructor based
-        on the symbolic dependency graph and the concrete DI resolutions
-        performed in Phase 3.
+        Construct a :class:`SpellLocalTopology` describing this Spell's
+        constructor sockets, based on:
 
-        Args:
-            graph:
-                The symbolic dependency graph produced in Phase 2.
+            * the symbolic dependencies from :class:`SpellSymbolicGraph`, and
+            * the concrete dependency spell ids resolved during Phase 3.
 
-            socket_targets:
-                A mapping keyed by ``(param_name, position)`` to the list of
-                dependency spell IDs that this socket resolved to during
-                Phase 3. If a socket did not produce any concrete DI edges
-                (e.g. SpellContract / MutationContract), its entry will be
-                missing and we treat its targets as an empty tuple.
+        For each :class:`SpellSymbolicDependency`:
+            * Determine ``socket_kind`` from its :class:`ParameterDIShape`.
+            * Copy ``is_collection`` and ``is_optional`` flags from the
+              symbolic graph.
+            * Look up any concrete targets via ``socket_targets`` using
+              ``(param_name, position)``. Normal DI sockets may have one or
+              many targets; contract and mutation sockets will typically have
+              none at this phase.
+            * Create a :class:`SpellSocketDescriptor` for that parameter.
+
+        The resulting :class:`SpellLocalTopology` is a per-spell, constructor-
+        local view of sockets that later phases (blueprint assembly, override
+        targeting, change-control) will consume. It is registered into
+        :class:`SpellSystemStates` by Phase 3; this method does not talk to
+        SpellSystemStates directly.
         """
         self.check_cleaned()
 
@@ -741,21 +751,31 @@ class SpellCrafter(Cleanable):
         """
         Internal helper for Phase 3.
 
-        Builds the concrete DAG for this Spell's local frame **and** snapshots
-        the constructor topology for SpellSystemStates.
+        Build the concrete DAG for this Spell's **local frame** and emit
+        constructor topology into SpellSystemStates.
 
         Responsibilities:
-            * Instantiate a DAG node for this Spell (root of the local frame).
-            * Resolve all **normal** DI shapes (single, collection, SpellMap).
-            * Add concrete dependency nodes / edges to the DAG.
-            * Capture per-socket targets into a SpellLocalTopology.
-            * Notify :class:`SpellSystemStates` about dependency topology.
+            * Add a DAG node for the root Spell (current SpellIndex version).
+            * For each symbolic dependency:
+                  - resolve normal DI shapes via a SpellbookScanner,
+                  - add DAG nodes for resolved dependency spells,
+                  - add edges from each dependency node to the root node,
+                    tagging edges with ``param_name`` and ``socket_kind``.
+            * Track, per constructor socket ``(param_name, position)``, the
+              concrete dependency spell ids resolved in this phase.
+            * Build a :class:`SpellLocalTopology` from the symbolic graph plus
+              the per-socket targets.
+            * Call into :class:`SpellSystemStates` to:
+                  - record direct dependency spell ids, and
+                  - register the local topology for this Spell.
 
-        Note:
-            SpellContract and MutationContract sockets are currently treated as
-            metadata-only sockets. They participate in the symbolic graph and
-            local topology but do not yet produce concrete DI edges. Later
-            phases (5–7) and the override pipeline will wire their semantics.
+        Important:
+            * This helper does **not** mutate the Spell object. All artifacts
+              (DAG, topology, dependency ids) remain in this SpellCrafter and
+              SpellSystemStates.
+            * SpellContract and MutationContract sockets take part in the
+              symbolic graph and topology, but do not produce DAG edges or
+              concrete targets at this stage.
         """
         self.check_cleaned()
 
@@ -865,17 +885,45 @@ class SpellCrafter(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Phase 3 – Build the concrete DAG for this Spell's local frame.
+        Phase 3 – Build the local-frame DAG and constructor topology.
 
-        Public contract:
+        Responsibilities:
+            * Consume Phase 1 requirements and Phase 2 symbolic graph for the
+              bound Spell.
+            * Resolve **normal** DI sockets (single, collection, SpellMap)
+              against the Spellbook and build a **local-frame DAG** where:
+                  - the root node is this Spell's version id, and
+                  - direct edges represent first-hop constructor dependencies.
+            * Track, per constructor parameter, which dependency spell ids were
+              bound during resolution.
+            * Build a :class:`SpellLocalTopology` snapshot that describes all
+              sockets (normal, SpellContract, MutationContract) and their
+              concrete targets where applicable.
+            * Register both:
+                  - direct dependency spell ids, and
+                  - the local topology
+              into :class:`SpellSystemStates`.
 
-            * Ensure Phase 1–2 artifacts exist.
-            * Build the local DAG (root + direct dependencies).
-            * Derive a :class:`SpellResolutionFrame` with ordered node ids.
-            * Cache the frame on ``_resolution_frame`` and return it.
+        Socket semantics:
+            * Normal DI shapes (single, collection, SpellMap) produce DAG nodes,
+              DAG edges, and concrete ``target_spell_ids`` entries in topology.
+            * SpellContract and MutationContract sockets are **metadata-only** at
+              this phase:
+                  - they appear in the symbolic graph and topology,
+                  - they do **not** produce DAG edges or bound targets yet.
 
-        The actual DAG construction and SpellSystemStates notifications are
-        delegated to :meth:`_build_local_frame_dag`.
+        Contracts:
+            * Phases 1 and 2 must already have completed successfully. If
+              requirements or symbolic graph are missing, this method raises
+              instead of auto-running earlier phases.
+            * Assumes the bound Spell is attached to a Spellbook; the internal
+              SpellbookScanner is created against that Spellbook.
+            * Stores the local DAG and a :class:`SpellResolutionFrame`
+              internally on this SpellCrafter. These artifacts are not pushed
+              into the Spell; full, frame-level DAGs are owned by later phases.
+            * Does not return a value; callers rely on:
+                  - ``self._resolution_frame`` for ordering, and
+                  - SpellSystemStates for dependencies and topology.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
@@ -910,23 +958,32 @@ class SpellCrafter(Cleanable):
     def run_phase_validation(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> Any:
+    ) -> None:
         """
-        Phase 4 – Validation.
+        Phase 4 – Per-spell validation using SpellValidationSystem.
 
-        Responsibilities (current increment):
+        Responsibilities:
+            * Assume Phases 1–3 have completed for this Spell.
+            * Build a :class:`SpellValidationContext` containing:
+                  - the Spell and its Spellbook,
+                  - Phase 1 requirements,
+                  - Phase 2 symbolic graph,
+                  - Phase 3 resolution frame,
+                  - a SpellbookScanner for global graph inspection,
+                  - the cancellation event and an issues collection.
+            * Invoke :class:`SpellValidationSystem` to run all registered
+              validation strategies against the context.
+            * Store the resulting :class:`SpellValidationResult` and update
+              internal flags (e.g. ``_validated``, ``_is_broken``) on this
+              SpellCrafter.
 
-            * Ensure Phase 1–3 artifacts are available.
-            * Invoke :class:`SpellValidationSystem` with a fully-populated
-              :class:`SpellValidationContext`.
-            * Store the resulting validation artifact and derived flags:
-
-                - :attr:`_validation_result`
-                - :attr:`_validated`
-                - :attr:`_is_broken`
-
-        Validation does **not** mutate the Spellbook or the Spell graph; it
-        only produces diagnostics about structural correctness and safety.
+        Contracts:
+            * Does **not** call earlier phases. If any of the required Phase
+              1–3 artifacts are missing, this method raises.
+            * Does **not** mutate the Spell or build any new DAGs. It only
+              records validation outcome and diagnostics on this SpellCrafter.
+            * Does not return a value; callers rely on the stored validation
+              result and flags.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
