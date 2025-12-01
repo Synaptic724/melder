@@ -116,7 +116,6 @@ class SpellCrafter(Cleanable):
         self._validated_phase4: bool = False
         self._validation_result_phase6: Any = None
         self._validated_phase6: bool = False
-        self._validated: bool = False
         self._is_broken: bool = False
 
     # ------------------------------------------------------------------
@@ -244,10 +243,12 @@ class SpellCrafter(Cleanable):
     @property
     def validated(self) -> bool:
         """
-        True if Phase 4 has run and marked this spell as validated.
+        True if the validation phases classified this spell as valid.
+        This requires both Phase 4 and Phase 6 to have passed, and the spell
+        not to be marked as broken.
         """
         self.check_cleaned()
-        return self._validated
+        return bool(self._validated_phase4 and self._validated_phase6 and not self._is_broken)
 
     @property
     def is_broken(self) -> bool:
