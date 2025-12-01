@@ -35,6 +35,8 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellSocketDescriptor,
 )
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
+from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 
 
 class SpellCrafter(Cleanable):
@@ -84,6 +86,8 @@ class SpellCrafter(Cleanable):
         "_validation_result_phase6",
         "_validated_phase6",
         "_validated",
+        "_root_blueprint_phase5",
+        "_spell_system_index_phase5",
         "_is_broken",
         "_spell_validator",
     ]
@@ -116,6 +120,8 @@ class SpellCrafter(Cleanable):
         self._validated_phase4: bool = False
         self._validation_result_phase6: Any = None
         self._validated_phase6: bool = False
+        self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
+        self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._is_broken: bool = False
 
     # ------------------------------------------------------------------
@@ -158,6 +164,24 @@ class SpellCrafter(Cleanable):
             if self._validation_result_phase4 is not None and isinstance(self._validation_result_phase4, Cleanable):
                 try:
                     self._validation_result_phase4.cleanup()
+                except Exception:
+                    pass
+
+            if self._validation_result_phase6 is not None and isinstance(self._validation_result_phase6, Cleanable):
+                try:
+                    self._validation_result_phase6.cleanup()
+                except Exception:
+                    pass
+
+            if self._root_blueprint_phase5 is not None:
+                try:
+                    self._root_blueprint_phase5.cleanup()
+                except Exception:
+                    pass
+
+            if self._spell_system_index_phase5 is not None:
+                try:
+                    self._spell_system_index_phase5.cleanup()
                 except Exception:
                     pass
 
@@ -241,6 +265,19 @@ class SpellCrafter(Cleanable):
         return self._validation_result_phase4
 
     @property
+    def root_blueprint_phase5(self) -> Optional[RootResolutionBlueprint]:
+        """Deep DAG blueprint for this spell if it is a root."""
+        self.check_cleaned()
+        return self._root_blueprint_phase5
+
+    @property
+    def spell_system_index_phase5(self) -> Optional[SpellSystemIndex]:
+        """Frame-level index built during Phase 5."""
+        self.check_cleaned()
+        return self._spell_system_index_phase5
+
+
+    @property
     def validation_result_phase6(self) -> Any:
         """
         Phase 6 validation result artifact, if any.
@@ -274,6 +311,26 @@ class SpellCrafter(Cleanable):
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+    def set_root_blueprint_phase5(self, blueprint: RootResolutionBlueprint) -> None:
+        """Set the Phase-5 root blueprint for this spell."""
+        self.check_cleaned()
+        if blueprint is None:
+            raise ValueError("blueprint must not be None.")
+        self._root_blueprint_phase5 = blueprint
+
+    def set_spell_system_index_phase5(self, index: SpellSystemIndex) -> None:
+        """Set the Phase-5 spell system index for this spell."""
+        self.check_cleaned()
+        if index is None:
+            raise ValueError("index must not be None.")
+        self._spell_system_index_phase5 = index
+
+    def clear_phase5_artifacts(self) -> None:
+        """Deterministically clear Phase-5 state."""
+        self._root_blueprint_phase5 = None
+        self._spell_system_index_phase5 = None
+
+
     def _notify_dependencies_updated(self, dependency_ids: List[str]) -> None:
         """
         Notify the SpellSystemStates registry that this spell's direct

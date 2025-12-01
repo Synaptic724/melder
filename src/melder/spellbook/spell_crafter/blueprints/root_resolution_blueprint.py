@@ -9,8 +9,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.dag.socket_ref import SocketRef
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
 
 
 class RootResolutionBlueprint(Cleanable):
