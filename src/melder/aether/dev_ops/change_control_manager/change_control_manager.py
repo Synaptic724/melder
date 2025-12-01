@@ -6,7 +6,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpellIndex, IChangeControlManager  # for identity / lineage
 
 
-class ChangeControlManager(IChangeControlManager, Cleanable):
+class ChangeControlManager(Cleanable):
     """
     High-level change/release tracker for an Aetheric Frame.
 

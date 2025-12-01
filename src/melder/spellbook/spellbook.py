@@ -27,7 +27,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 )
 
 #region Spellbook
-class Spellbook(Cleanable, ISpellbook):
+class Spellbook(Cleanable):
     """
     Public API
 

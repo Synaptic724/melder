@@ -20,7 +20,7 @@ from melder.aether.conduit.creations.lesser_creations import LesserCreations
 #TODO: @GPT5, please inform Mark that he needs to implement Conduits hooks, for pre- during, and post activations so we can add Aspect Oriented Programming here
 
 #region Conduit
-class Conduit(Cleanable, IConduit):
+class Conduit(Cleanable):
     """
     A Conduit is a modular graph node that behaves like a scope and a factory.
 

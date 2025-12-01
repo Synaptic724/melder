@@ -20,7 +20,7 @@ from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contrac
 
 
 #region ConduitWard
-class ConduitWard(Cleanable, IConduitWard):
+class ConduitWard(Cleanable):
     """
     ConduitWard manages the dynamic linking, lineage, and permission policy
     for a single conduit within the Melder framework.

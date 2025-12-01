@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, Callable, List
 
 from melder.aether.conduit.meld.meld_context.meld_context import MeldContext
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
+from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import (
@@ -22,7 +23,7 @@ from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidi
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 
 
-class Meld(IMeld):
+class Meld(Cleanable):
     """
     ## 🪄 Meld: Spell Activation and Dependency Resolution
 

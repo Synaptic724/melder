@@ -158,6 +158,8 @@ class SpellCrafter(Cleanable):
 
             # Resolution frame is a lightweight summary; just drop it.
             self._resolution_frame = None
+            self._requirements = None
+            self._symbolic_graph = None
             self._validation_result = None
             self._spell_system_states = None
             self._validated = False
@@ -523,7 +525,7 @@ class SpellCrafter(Cleanable):
     def run_phase_requirements(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> SpellRequirements:
+    ) -> None:
         """
         Phase 1 – Requirements Extraction.
 
@@ -539,15 +541,11 @@ class SpellCrafter(Cleanable):
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
 
-        if self._requirements is not None:
-            return self._requirements
-
         finder = SpellRequirementsFinder(self._spell)
         requirements = finder.build_requirements(cancel_event=cancel_event)
         # We deliberately do not call finder.cleanup() here, because the finder
         # owns the same SpellRequirements instance we are going to retain.
         self._requirements = requirements
-        return requirements
 
     # ------------------------------------------------------------------
     # Phase 2 – Symbolic Graph
@@ -556,7 +554,7 @@ class SpellCrafter(Cleanable):
     def run_phase_symbolic_graph(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> SpellSymbolicGraph:
+    ) -> None:
         """
         Phase 2 – Symbolic Graph Construction.
 
@@ -588,19 +586,18 @@ class SpellCrafter(Cleanable):
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
 
-        if self._symbolic_graph is not None:
-            return self._symbolic_graph
-
-        requirements = self._requirements or self.run_phase_requirements(
-            cancel_event=cancel_event
-        )
+        if self._requirements is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 2: cannot build symbolic graph before "
+                "Phase 1 requirements have completed."
+            )
 
         # Versioned identity from SpellIndex.
         version_id: str = self._spell.spell_index.current
 
         deps: List[SpellSymbolicDependency] = []
 
-        for param in requirements.parameters:
+        for param in self._requirements.parameters:
             di_shape: ParameterDIShape = param.di_shape
 
             # Only shapes that participate in the symbolic DI graph.
@@ -667,12 +664,10 @@ class SpellCrafter(Cleanable):
             )
             deps.append(dep)
 
-        graph = SpellSymbolicGraph(
+        self._symbolic_graph = SpellSymbolicGraph(
             spell_version_id=version_id,
             dependencies=deps,
         )
-        self._symbolic_graph = graph
-        return graph
 
 
     # ------------------------------------------------------------------
@@ -731,21 +726,23 @@ class SpellCrafter(Cleanable):
         return topology
 
 
-
-
-    def run_phase_local_frame(
+    def _build_local_frame_dag(
             self,
             requirements: SpellRequirements,
             graph: SpellSymbolicGraph,
             cancellation_event: CancellationEvent,
     ) -> DirectedAcyclicWorkGraph:
         """
-        Phase 3: Build the concrete DAG for this Spell's local frame.
+        Internal helper for Phase 3.
+
+        Builds the concrete DAG for this Spell's local frame **and** snapshots
+        the constructor topology for SpellSystemStates.
 
         Responsibilities:
             * Instantiate a DAG node for this Spell (root of the local frame).
             * Resolve all **normal** DI shapes (single, collection, SpellMap).
             * Add concrete dependency nodes / edges to the DAG.
+            * Capture per-socket targets into a SpellLocalTopology.
             * Notify :class:`SpellSystemStates` about dependency topology.
 
         Note:
@@ -768,12 +765,12 @@ class SpellCrafter(Cleanable):
                 raise RuntimeError("SpellCrafter has no bound Spell.")
 
             root_id = self._spell.spell_index.current
-            dag = DirectedAcyclicWorkGraph(root_id=root_id)
+            dag = DirectedAcyclicWorkGraph()
 
             # Register the root node first.
             dag.add_node(key=root_id, payload=self._spell)
 
-            # Track all dependency spell IDs for SpellSystemStates.
+            # Track all dependency spell IDs for SpellSystemStates and Spell.
             dependency_spell_ids: List[str] = []
 
             # Track per-socket resolutions for local topology:
@@ -781,12 +778,12 @@ class SpellCrafter(Cleanable):
             socket_targets: Dict[tuple[str, int], List[str]] = {}
 
             for dep in graph.dependencies:
-                if cancellation_event.is_set():
+                if cancellation_event.is_set:
                     raise RuntimeError("SpellCrafter Phase 3 cancelled.")
 
-                # Determine DI shape and resolve only the "normal" DI shapes.
                 di_shape = dep.di_shape
 
+                # Only "normal" DI shapes produce concrete DAG edges for now.
                 if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
                     resolved = self._resolve_single_by_annotation(dep)
                 elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
@@ -814,8 +811,8 @@ class SpellCrafter(Cleanable):
             # Snapshot local topology for this spell's constructor.
             topology = self._build_local_topology(graph, socket_targets)
 
-            # Update spell state system with dependency IDs and local topology.
-            try:
+            # Update spell-system state with dependency IDs and local topology.
+            if self._spell_system_states is not None and self._spell.spell_index is not None:
                 self._spell_system_states.update_dependencies(
                     self._spell.spell_index,
                     dependency_spell_ids,
@@ -824,23 +821,65 @@ class SpellCrafter(Cleanable):
                     self._spell.spell_index,
                     topology,
                 )
-            except Exception as exc:
-                self._logger.error(
-                    f"Failed to update SpellSystemStates for spell_id={root_id}: {exc!r}",
-                    method_name="run_phase_local_frame",
-                    exc_info=True,
-                )
-                raise
-
-            # Attach DAG + dependency info to the Spell for diagnostic / reuse.
-            self._spell._add_build_details(
-                requirements=requirements,
-                graph=graph,
-                dag=dag,
-                dependency_spell_ids=dependency_spell_ids,
-            )
 
             return dag
+
+
+    # ------------------------------------------------------------------
+    # Phase 3 – Local frame / DAG
+    # ------------------------------------------------------------------
+
+    def run_phase_local_frame(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> SpellResolutionFrame:
+        """
+        Phase 3 – Build the concrete DAG for this Spell's local frame.
+
+        Public contract:
+
+            * Ensure Phase 1–2 artifacts exist.
+            * Build the local DAG (root + direct dependencies).
+            * Derive a :class:`SpellResolutionFrame` with ordered node ids.
+            * Cache the frame on ``_resolution_frame`` and return it.
+
+        The actual DAG construction and SpellSystemStates notifications are
+        delegated to :meth:`_build_local_frame_dag`.
+        """
+        self.check_cleaned()
+        self._throw_if_cancelled(cancel_event)
+
+        # Fast path – if we've already built and cached the frame, reuse it.
+        if self._resolution_frame is not None:
+            return self._resolution_frame
+
+        with self._lock:
+            # Double-check under the lock in case another thread raced us.
+            if self._resolution_frame is not None:
+                return self._resolution_frame
+
+            if self._requirements is None or self._symbolic_graph is None:
+                raise RuntimeError(
+                    "SpellCrafter Phase 3: cannot build local frame before "
+                    "Phases 1–2 have completed."
+                )
+
+            # Build the DAG + topology and push into Spell + SpellSystemStates.
+            dag = self._build_local_frame_dag(
+                requirements=self._requirements,
+                graph=self._symbolic_graph,
+                cancellation_event=cancel_event,
+            )
+
+            # Derive the ordered node ids for the resolution frame.
+            ordered_ids = dag.collect_dependency_ids()
+            frame = SpellResolutionFrame(
+                spell_id=self._spell.spell_index.current,
+                ordered_node_ids=ordered_ids,
+            )
+            self._resolution_frame = frame
+            return frame
+
 
 
     # ------------------------------------------------------------------
@@ -874,22 +913,17 @@ class SpellCrafter(Cleanable):
         if self._validated and self._validation_result is not None:
             return self._validation_result
 
-        # Ensure earlier phases have run so strategies have full context.
-        requirements = self._requirements or self.run_phase_requirements(
-            cancel_event=cancel_event
-        )
-        symbolic_graph = self._symbolic_graph or self.run_phase_symbolic_graph(
-            cancel_event=cancel_event
-        )
-        resolution_frame = self._resolution_frame or self.run_phase_local_frame(
-            cancel_event=cancel_event
-        )
+        if self._requirements is None or self._symbolic_graph is None or self._resolution_frame is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 4: cannot run validation before Phases 1–3 "
+                "have completed."
+            )
 
         result = self._spell_validator.validate_spell(
             spell=self._spell,
-            requirements=requirements,
-            symbolic_graph=symbolic_graph,
-            resolution_frame=resolution_frame,
+            requirements=self._requirements,
+            symbolic_graph=self._symbolic_graph,
+            resolution_frame=self._resolution_frame,
             cancel_event=cancel_event,
         )
 

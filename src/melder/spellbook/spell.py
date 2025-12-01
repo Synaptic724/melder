@@ -5,15 +5,13 @@ import ulid
 from threading import RLock
 
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionProfile,
 )
-from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.interfaces import ISpell, ISpellbook, ISpellSystemStates
+from melder.utilities.interfaces.interfaces import ISpellbook, ISpellSystemStates
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -22,7 +20,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 
 #region Spell
-class Spell(ISpell, Cleanable):
+class Spell(Cleanable):
     """
     Internal
 
@@ -226,10 +224,9 @@ class Spell(ISpell, Cleanable):
             if self._cleaned:
                 return
 
-            dg = self.dependency_graph
-            if dg is not None and hasattr(dg, "dispose"):
+            if self.dependency_graph is not None and hasattr(dg, "dispose"):
                 try:
-                    dg.dispose()
+                    self.dependency_graph.dispose()
                 except Exception:
                     # Never let cleanup explosions propagate.
                     pass

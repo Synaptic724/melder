@@ -50,6 +50,8 @@ class CancellationEvent(Cleanable):
                 underlying cancellation signal.
         """
         Cleanable.__init__(self)
+        if flag is None:
+            raise ValueError("CancellationEvent requires a valid threading.Event")
         self._flag = flag
 
     # ------------------------------------------------------------

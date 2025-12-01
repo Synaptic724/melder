@@ -6,12 +6,6 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements import SpellRequirements
 
 
-# NOTE:
-# -----
-# These are deliberately minimal placeholders for Phase 2–4 artifacts.
-# You will flesh them out when you implement Symbolic Graphs, ResolutionFrame,
-# and Validation in the Spell / PhaseScheduler pipeline.
-
 
 @dataclass
 class SpellSymbolicNode:
