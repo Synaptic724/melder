@@ -760,69 +760,68 @@ class SpellCrafter(Cleanable):
         if cancellation_event is None:
             raise ValueError("cancellation_event must not be None.")
 
-        with self._lock:
-            if self._spell is None:
-                raise RuntimeError("SpellCrafter has no bound Spell.")
+        if self._spell is None:
+            raise RuntimeError("SpellCrafter has no bound Spell.")
 
-            root_id = self._spell.spell_index.current
-            dag = DirectedAcyclicWorkGraph()
+        root_id = self._spell.spell_index.current
+        dag = DirectedAcyclicWorkGraph()
 
-            # Register the root node first.
-            dag.add_node(key=root_id, payload=self._spell)
+        # Register the root node first.
+        dag.add_node(key=root_id, payload=self._spell)
 
-            # Track all dependency spell IDs for SpellSystemStates and Spell.
-            dependency_spell_ids: List[str] = []
+        # Track all dependency spell IDs for SpellSystemStates and Spell.
+        dependency_spell_ids: List[str] = []
 
-            # Track per-socket resolutions for local topology:
-            # keyed by (param_name, position) -> [spell_id, ...]
-            socket_targets: Dict[tuple[str, int], List[str]] = {}
+        # Track per-socket resolutions for local topology:
+        # keyed by (param_name, position) -> [spell_id, ...]
+        socket_targets: Dict[tuple[str, int], List[str]] = {}
 
-            for dep in graph.dependencies:
-                if cancellation_event.is_set:
-                    raise RuntimeError("SpellCrafter Phase 3 cancelled.")
+        for dep in graph.dependencies:
+            if cancellation_event.is_set:
+                raise RuntimeError("SpellCrafter Phase 3 cancelled.")
 
-                di_shape = dep.di_shape
+            di_shape = dep.di_shape
 
-                # Only "normal" DI shapes produce concrete DAG edges for now.
-                if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
-                    resolved = self._resolve_single_by_annotation(dep)
-                elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
-                    resolved = self._resolve_collection_by_annotation(dep)
-                elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
-                    resolved = self._resolve_spellmap_default(dep)
-                else:
-                    # SpellContract / MutationContract and any future shapes
-                    # are currently metadata-only at the DAG level. They still
-                    # participate in local topology below.
-                    resolved = {}
+            # Only "normal" DI shapes produce concrete DAG edges for now.
+            if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
+                resolved = self._resolve_single_by_annotation(dep)
+            elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
+                resolved = self._resolve_collection_by_annotation(dep)
+            elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
+                resolved = self._resolve_spellmap_default(dep)
+            else:
+                # SpellContract / MutationContract and any future shapes
+                # are currently metadata-only at the DAG level. They still
+                # participate in local topology below.
+                resolved = {}
 
-                if resolved:
-                    key = (dep.param_name, dep.position)
-                    targets_for_socket = socket_targets.setdefault(key, [])
+            if resolved:
+                key = (dep.param_name, dep.position)
+                targets_for_socket = socket_targets.setdefault(key, [])
 
-                    for spell_index, spell_obj in resolved.items():
-                        dep_spell_id = spell_index.current
-                        dependency_spell_ids.append(dep_spell_id)
-                        targets_for_socket.append(dep_spell_id)
+                for spell_index, spell_obj in resolved.items():
+                    dep_spell_id = spell_index.current
+                    dependency_spell_ids.append(dep_spell_id)
+                    targets_for_socket.append(dep_spell_id)
 
-                        dag.add_node(key=dep_spell_id, payload=spell_obj)
-                        dag.add_dependency(parent_key=dep_spell_id, child_key=root_id)
+                    dag.add_node(key=dep_spell_id, payload=spell_obj)
+                    dag.add_dependency(parent_key=dep_spell_id, child_key=root_id)
 
-            # Snapshot local topology for this spell's constructor.
-            topology = self._build_local_topology(graph, socket_targets)
+        # Snapshot local topology for this spell's constructor.
+        topology = self._build_local_topology(graph, socket_targets)
 
-            # Update spell-system state with dependency IDs and local topology.
-            if self._spell_system_states is not None and self._spell.spell_index is not None:
-                self._spell_system_states.update_dependencies(
-                    self._spell.spell_index,
-                    dependency_spell_ids,
-                )
-                self._spell_system_states.register_local_topology(
-                    self._spell.spell_index,
-                    topology,
-                )
+        # Update spell-system state with dependency IDs and local topology.
+        if self._spell_system_states is not None and self._spell.spell_index is not None:
+            self._spell_system_states.update_dependencies(
+                self._spell.spell_index,
+                dependency_spell_ids,
+            )
+            self._spell_system_states.register_local_topology(
+                self._spell.spell_index,
+                topology,
+            )
 
-            return dag
+        return dag
 
 
     # ------------------------------------------------------------------
@@ -832,7 +831,7 @@ class SpellCrafter(Cleanable):
     def run_phase_local_frame(
             self,
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> SpellResolutionFrame:
+    ) -> None:
         """
         Phase 3 – Build the concrete DAG for this Spell's local frame.
 
@@ -849,36 +848,25 @@ class SpellCrafter(Cleanable):
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
 
-        # Fast path – if we've already built and cached the frame, reuse it.
-        if self._resolution_frame is not None:
-            return self._resolution_frame
-
-        with self._lock:
-            # Double-check under the lock in case another thread raced us.
-            if self._resolution_frame is not None:
-                return self._resolution_frame
-
-            if self._requirements is None or self._symbolic_graph is None:
-                raise RuntimeError(
-                    "SpellCrafter Phase 3: cannot build local frame before "
-                    "Phases 1–2 have completed."
-                )
-
-            # Build the DAG + topology and push into Spell + SpellSystemStates.
-            dag = self._build_local_frame_dag(
-                requirements=self._requirements,
-                graph=self._symbolic_graph,
-                cancellation_event=cancel_event,
+        if self._requirements is None or self._symbolic_graph is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 3: cannot build local frame before "
+                "Phases 1–2 have completed."
             )
 
-            # Derive the ordered node ids for the resolution frame.
-            ordered_ids = dag.collect_dependency_ids()
-            frame = SpellResolutionFrame(
-                spell_id=self._spell.spell_index.current,
-                ordered_node_ids=ordered_ids,
-            )
-            self._resolution_frame = frame
-            return frame
+        # Build the DAG + topology and push into Spell + SpellSystemStates.
+        dag = self._build_local_frame_dag(
+            requirements=self._requirements,
+            graph=self._symbolic_graph,
+            cancellation_event=cancel_event,
+        )
+
+        # Derive the ordered node ids for the resolution frame.
+        ordered_ids = dag.collect_dependency_ids()
+        self._resolution_frame = SpellResolutionFrame(
+            spell_id=self._spell.spell_index.current,
+            ordered_node_ids=ordered_ids,
+        )
 
 
 
