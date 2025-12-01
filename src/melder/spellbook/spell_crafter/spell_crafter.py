@@ -228,7 +228,7 @@ class SpellCrafter(Cleanable):
         return self._resolution_frame
 
     @property
-    def validation_result(self) -> Any:
+    def validation_result_phase4(self) -> Any:
         """
         Phase 4 validation result artifact, if any.
 
@@ -239,6 +239,19 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
         return self._validation_result_phase4
+
+    @property
+    def validation_result_phase6(self) -> Any:
+        """
+        Phase 6 validation result artifact, if any.
+
+        Once Phase 6 is wired, this will typically be a
+        :class:`SpellValidationResult` produced by the
+        :class:`SpellValidationSystem`. For now the type is kept as ``Any``
+        to avoid constraining callers.
+        """
+        self.check_cleaned()
+        return self._validation_result_phase6
 
     @property
     def validated(self) -> bool:

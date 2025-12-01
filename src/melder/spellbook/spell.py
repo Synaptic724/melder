@@ -224,9 +224,9 @@ class Spell(Cleanable):
             if self._cleaned:
                 return
 
-            if self.dependency_graph is not None and hasattr(dg, "dispose"):
+            if self.dependency_graph is not None and hasattr(self.dependency_graph, "cleanup"):
                 try:
-                    self.dependency_graph.dispose()
+                    self.dependency_graph.cleanup()
                 except Exception:
                     # Never let cleanup explosions propagate.
                     pass
