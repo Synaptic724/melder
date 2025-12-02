@@ -1126,6 +1126,12 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
 
+        if not self._validated_phase4 and self._validation_result_phase4 is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 5: cannot build root blueprints before "
+                "Phase 4 validation has completed."
+            )
+
         # --- 1. Build adjacency snapshot from system states ----------------
         adjacency_builder = SpellSystemAdjacencyBuilder()
         snapshot = adjacency_builder.build(spell_system_states)
