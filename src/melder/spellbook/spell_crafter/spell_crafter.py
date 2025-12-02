@@ -1197,7 +1197,6 @@ class SpellCrafter(Cleanable):
         # This crafter may or may not be a root; roots already had their
         # _root_blueprint_phase5 set above. We still keep the system index
         # for inspection from any SpellCrafter instance.
-        self._root_blueprint_phase5 = None
         self._spell_system_index_phase5 = system_index
         self._entire_dag_blueprint_phase5 = root_blueprints
 
