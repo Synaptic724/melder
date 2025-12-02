@@ -92,6 +92,7 @@ class SpellCrafter(Cleanable):
         "_root_blueprint_phase5",
         "_spell_system_index_phase5",
         "_is_broken",
+        "_entire_dag_blueprint_phase5"
         "_spell_validator",
     ]
 
@@ -114,6 +115,7 @@ class SpellCrafter(Cleanable):
         self._spell: ISpell = spell
         self._spell_validator: 'SpellValidationSystem' = self._spell._spellbook._spell_validator
         self._spell_system_states: Optional[ISpellSystemStates] = self._spell._spell_system_states
+        self._spellbook_scanner: Optional[SpellbookScanner] = None
         self._requirements: Optional[SpellRequirements] = None
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
         # Phase 3 artifact – currently a SpellResolutionFrame summarising the
@@ -125,6 +127,7 @@ class SpellCrafter(Cleanable):
         self._validated_phase6: bool = False
         self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
+        self._entire_dag_blueprint_phase5 : Optional[Dict[str, RootResolutionBlueprint]] = None
         self._is_broken: bool = False
 
     # ------------------------------------------------------------------
@@ -188,8 +191,22 @@ class SpellCrafter(Cleanable):
                 except Exception:
                     pass
 
+            if self._entire_dag_blueprint_phase5 is not None:
+                try:
+                    for blueprint in self._entire_dag_blueprint_phase5.values():
+                        blueprint.cleanup()
+                except Exception:
+                    pass
+
+            if self._spellbook_scanner is not None:
+                try:
+                    self._spellbook_scanner.cleanup()
+                except Exception:
+                    pass
+            self._spellbook_scanner = None
             # Resolution frame is a lightweight summary; just drop it.
             self._resolution_frame = None
+            self._entire_dag_blueprint_phase5 = None
             self._requirements = None
             self._symbolic_graph = None
             self._validation_result_phase4 = None
@@ -884,62 +901,53 @@ class SpellCrafter(Cleanable):
         # keyed by (param_name, position) -> [spell_id, ...]
         socket_targets: Dict[tuple[str, int], List[str]] = {}
 
-        spellbook_scanner = SpellbookScanner(self._spell._spellbook)
+        self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
 
-        try:
-            for dep in graph.dependencies:
-                self._throw_if_cancelled(cancellation_event)
+        for dep in graph.dependencies:
+            self._throw_if_cancelled(cancellation_event)
 
-                di_shape = dep.di_shape
+            di_shape = dep.di_shape
 
-                # Only "normal" DI shapes produce concrete DAG edges for now.
-                if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
-                    resolved = self._resolve_single_by_annotation(
-                        scanner=spellbook_scanner,
-                        dep=dep,
-                    )
-                elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
-                    resolved = self._resolve_collection_by_annotation(
-                        scanner=spellbook_scanner,
-                        dep=dep,
-                    )
-                elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
-                    resolved = self._resolve_spellmap_default(
-                        scanner=spellbook_scanner,
-                        dep=dep,
-                    )
-                else:
-                    # SpellContract / MutationContract and any future shapes
-                    # are currently metadata-only at the DAG level. They still
-                    # participate in local topology below.
-                    resolved = {}
+            # Only "normal" DI shapes produce concrete DAG edges for now.
+            if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
+                resolved = self._resolve_single_by_annotation(
+                    scanner=self._spellbook_scanner,
+                    dep=dep,
+                )
+            elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
+                resolved = self._resolve_collection_by_annotation(
+                    scanner=self._spellbook_scanner,
+                    dep=dep,
+                )
+            elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
+                resolved = self._resolve_spellmap_default(
+                    scanner=self._spellbook_scanner,
+                    dep=dep,
+                )
+            else:
+                # SpellContract / MutationContract and any future shapes
+                # are currently metadata-only at the DAG level. They still
+                # participate in local topology below.
+                resolved = {}
 
-                if not resolved:
-                    continue
+            if not resolved:
+                continue
 
-                key = (dep.param_name, dep.position)
-                targets_for_socket = socket_targets.setdefault(key, [])
+            key = (dep.param_name, dep.position)
+            targets_for_socket = socket_targets.setdefault(key, [])
 
-                for spell_index, spell_obj in resolved.items():
-                    dep_spell_id = spell_index.current
-                    dependency_spell_ids.append(dep_spell_id)
-                    targets_for_socket.append(dep_spell_id)
+            for spell_index, spell_obj in resolved.items():
+                dep_spell_id = spell_index.current
+                dependency_spell_ids.append(dep_spell_id)
+                targets_for_socket.append(dep_spell_id)
 
-                    dag.add_node(key=dep_spell_id, payload=spell_obj)
-                    dag.add_dependency(
-                        parent_key=dep_spell_id,
-                        child_key=root_id,
-                        param_name=dep.param_name,
-                        socket_kind=self._socket_kind_for_dep(dep),
-                    )
-        finally:
-            # Scanner is a short-lived helper; clean it up deterministically.
-            try:
-                spellbook_scanner.cleanup()
-            except Exception:
-                # We don't care if cleanup is a no-op or fails; DAG + topology
-                # are already built at this point.
-                pass
+                dag.add_node(key=dep_spell_id, payload=spell_obj)
+                dag.add_dependency(
+                    parent_key=dep_spell_id,
+                    child_key=root_id,
+                    param_name=dep.param_name,
+                    socket_kind=self._socket_kind_for_dep(dep),
+                )
 
         # Snapshot local topology for this spell's constructor.
         topology = self._build_local_topology(graph, socket_targets)
@@ -1102,50 +1110,55 @@ class SpellCrafter(Cleanable):
 
     def run_phase_root_blueprints(
             self,
-            spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
-            cancellation_event: Optional[CancellationEvent] = None,
-    ) -> Dict[str, RootResolutionBlueprint]:
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
         """
         Phase 5 entrypoint.
 
         Builds deep DAG blueprints (RootResolutionBlueprints) and a frame-level
-        SpellSystemIndex.  This step uses only *existing* Phase 1-4 artifacts;
+        SpellSystemIndex. This step uses only *existing* Phase 1–4 artifacts;
         no new discovery occurs.
 
         Args:
-            spellbook:
-                The frame's Spellbook (needed to enumerate Spell objects).
-            spell_system_states:
-                The SpellSystemStates instance for this frame.
-            cancellation_event:
+            cancel_event:
                 Optional cancellation handle.
 
         Returns:
-            dict[root_spell_id, RootResolutionBlueprint]
+            Dict[root_spell_id, RootResolutionBlueprint]
         """
         self.check_cleaned()
+        self._throw_if_cancelled(cancel_event)
 
+        # Phase 4 must have run; otherwise system-level work is meaningless.
         if not self._validated_phase4 and self._validation_result_phase4 is None:
             raise RuntimeError(
                 "SpellCrafter Phase 5: cannot build root blueprints before "
                 "Phase 4 validation has completed."
             )
 
+        # Cache for future calls on this crafter.
+        self._throw_if_cancelled(cancel_event)
+
         # --- 1. Build adjacency snapshot from system states ----------------
         adjacency_builder = SpellSystemAdjacencyBuilder()
-        snapshot = adjacency_builder.build(spell_system_states)
+        snapshot = adjacency_builder.build(self._spell_system_states)
+
+        self._throw_if_cancelled(cancel_event)
 
         # --- 2. Build deep DAGs for all roots ------------------------------
         root_builder = SpellSystemRootBlueprintBuilder()
         root_blueprints = root_builder.build_root_blueprints(snapshot)
 
+        self._throw_if_cancelled(cancel_event)
+
         # --- 3. Construct system-level index -------------------------------
         system_index = SpellSystemIndex()
 
         for spell_id, deps in snapshot.dependencies.items():
-            lineage_id = None
-            state = spell_system_states.get_state_by_spell_id(spell_id)
+            self._throw_if_cancelled(cancel_event)
+
+            lineage_id: Optional[str] = None
+            state = self._spell_system_states.get_by_spell_id(spell_id)
             if state is not None:
                 lineage_id = state.lineage_id
 
@@ -1157,22 +1170,38 @@ class SpellCrafter(Cleanable):
 
             system_index.upsert_node(node)
 
-        # --- 4. Attach artifacts to root SpellCrafters ---------------------
+        # --- 4. Build a version-id -> Spell lookup via SpellbookScanner ----
+        version_to_spell: Dict[str, ISpell] = {}
+
+        # We scan once, then reuse the lookup for all roots.
+        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
+            # SpellIndex exposes all known versions (current + historical).
+            version_to_spell[spell_index.current] = spell_instance
+
+        # --- 5. Attach artifacts to root SpellCrafters ---------------------
         for root_id, blueprint in root_blueprints.items():
-            # Resolve the actual Spell / SpellCrafter for this root version id
-            spell = spellbook.get_spell_by_version_id(root_id)
-            if spell is None or spell.spell_crafter is None:
-                continue  # skip missing or non-compiled spells
+            self._throw_if_cancelled(cancel_event)
 
-            crafter = spell.spell_crafter
-            crafter.set_root_blueprint_phase5(blueprint)
-            crafter.set_spell_system_index_phase5(system_index)
+            # Resolve the actual Spell / SpellCrafter for this root version id.
+            spell_for_root: ISpell = version_to_spell.get(root_id)
+            if spell_for_root is None or spell_for_root._crafter is None:
+                # Can happen if the frame has system-level roots the current
+                # Spellbook does not expose; we just skip attaching in that case.
+                continue
 
-        # --- 5. Store artifacts on self for completeness -------------------
-        self._root_blueprint_phase5 = None  # not a root; roots have theirs set
+            crafter_for_root = spell_for_root._crafter
+            crafter_for_root.set_root_blueprint_phase5(blueprint)
+            crafter_for_root.set_spell_system_index_phase5(system_index)
+
+        # --- 6. Store artifacts on self for completeness -------------------
+        # This crafter may or may not be a root; roots already had their
+        # _root_blueprint_phase5 set above. We still keep the system index
+        # for inspection from any SpellCrafter instance.
+        self._root_blueprint_phase5 = None
         self._spell_system_index_phase5 = system_index
+        self._entire_dag_blueprint_phase5 = root_blueprints
 
-        return root_blueprints
+
 
 
     # ------------------------------------------------------------------
