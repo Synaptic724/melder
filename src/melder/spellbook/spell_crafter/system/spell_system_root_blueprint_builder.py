@@ -14,7 +14,6 @@ from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot impor
     SpellSystemAdjacencySnapshot,
 )
 
-
 class SpellSystemRootBlueprintBuilder:
     """
     Phase-5 structural builder.
@@ -28,16 +27,12 @@ class SpellSystemRootBlueprintBuilder:
           but its DAG contains **all reachable version-ids** for that root.
         * Edges are provider → dependent (same orientation as Phase 3 DAGs).
         * This is *purely structural*:
-              - payloads are None,
-              - param_name and socket_kind are left unset (None).
+              - node payloads are None,
+              - param_name and socket_kind on edges are left unset (None).
           Socket metadata and DagIndex are overlaid in later Phase-5 steps.
     """
 
-    __slots__ = ()
-
-    # ------------------------------------------------------------------ #
-    # Public API
-    # ------------------------------------------------------------------ #
+    __slots__: list[str] = []
 
     def build_root_blueprints(
             self,
@@ -52,9 +47,9 @@ class SpellSystemRootBlueprintBuilder:
 
                 - snapshot.dependencies:
                     Dict[version_id, Set[version_id]]
-                    (child_version_id -> direct provider version_ids)
+                    (spell_id -> direct dependency version_ids; consumer → providers)
                 - snapshot.root_spell_ids:
-                    Set[version_id] for entrypoint spells.
+                    Set[version_id] of structural roots for this frame.
 
         Returns:
             Dict[str, RootResolutionBlueprint]:
@@ -69,7 +64,7 @@ class SpellSystemRootBlueprintBuilder:
             # Nothing to compile; just return an empty mapping.
             return {}
 
-        dependencies = snapshot.dependencies
+        dependencies: Dict[str, Set[str]] = snapshot.dependencies
 
         result: Dict[str, RootResolutionBlueprint] = {}
 
@@ -81,11 +76,11 @@ class SpellSystemRootBlueprintBuilder:
 
             blueprint = RootResolutionBlueprint(
                 root_spell_id=root_spell_id,
-                root_lineage_id=None,          # can be threaded later if you want
+                root_lineage_id=None,          # lineages can be threaded later if needed
                 dag=dag,
-                ordered_node_ids=ordered_ids,  # already a Sequence[str]
-                socket_refs=None,              # Phase 5 socket overlay will fill this
-                dag_index=None,                # Phase 5 DagIndex builder will fill this
+                ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
+                socket_refs=None,              # Phase-5 socket overlay will populate
+                dag_index=None,                # Phase-5 DagIndex builder will populate
             )
 
             result[root_spell_id] = blueprint
@@ -93,7 +88,7 @@ class SpellSystemRootBlueprintBuilder:
         return result
 
     # ------------------------------------------------------------------ #
-    # Internal helpers
+    # Internal helpers                                                   #
     # ------------------------------------------------------------------ #
 
     def _build_single_root_dag(
@@ -106,59 +101,101 @@ class SpellSystemRootBlueprintBuilder:
 
         Build a deep DirectedAcyclicWorkGraph for a single root spell:
 
-            * Nodes: all version_ids reachable from `root_spell_id`
-              by recursively following `dependencies`.
+            * Nodes: all version_ids reachable from ``root_spell_id``
+              by recursively following ``dependencies``.
             * Edges: provider → dependent (same orientation as Phase 3 DAG).
 
         Args:
             root_spell_id:
                 Version-id of the root spell for this blueprint.
             dependencies:
-                Dict[child_version_id, Set[parent_version_id]] – i.e. each spell's
-                direct provider dependencies.
+                Mapping of ``spell_id -> { dependency_spell_id, ... }`` where
+                edges are **consumer → providers** at the adjacency level.
 
         Returns:
-            Tuple[DirectedAcyclicWorkGraph, Sequence[str]]:
-                - The constructed DAG.
-                - A topologically sorted list of all node ids in that DAG.
+            A tuple of:
+
+            - The constructed DirectedAcyclicWorkGraph.
+            - A Sequence[str] of node ids in topological order
+              (dependencies first, root last).
+
+        Raises:
+            ValueError:
+                If root_spell_id or dependencies is None.
+            RuntimeError:
+                If a cycle is detected while topologically sorting the DAG.
         """
-        if not root_spell_id:
-            raise ValueError("root_spell_id must not be empty.")
+        if root_spell_id is None:
+            raise ValueError("root_spell_id must not be None.")
+        if dependencies is None:
+            raise ValueError("dependencies must not be None.")
 
-        dag = DirectedAcyclicWorkGraph()
-
-        visited: Set[str] = set()
+        # ------------------------------------------------------------------
+        # 1. Discover all nodes reachable from this root.
+        # ------------------------------------------------------------------
+        reachable_ids: Set[str] = set()
         stack: List[str] = [root_spell_id]
 
         while stack:
             current_id = stack.pop()
-            if current_id in visited:
-                continue
-            visited.add(current_id)
-
-            # Structural DAG: payloads are not used at Phase 5.
-            dag.add_node(key=current_id, payload=None)
-
-            direct_parents: Optional[Set[str]] = dependencies.get(current_id)
-            if not direct_parents:
+            if current_id in reachable_ids:
                 continue
 
-            for parent_id in direct_parents:
-                # Ensure provider node exists.
-                dag.add_node(key=parent_id, payload=None)
+            reachable_ids.add(current_id)
 
-                # Edge orientation: provider → dependent.
-                # No param_name / socket_kind yet; those are part of later overlays.
+            direct_deps: Optional[Set[str]] = dependencies.get(current_id)
+            if not direct_deps:
+                continue
+
+            # Use a deterministic order so that traversal (and therefore
+            # eventual DAG layout) is stable across runs.
+            for dep_id in sorted(direct_deps):
+                if dep_id not in reachable_ids:
+                    stack.append(dep_id)
+
+        # ------------------------------------------------------------------
+        # 2. Build the DAG nodes (one per reachable version-id).
+        # ------------------------------------------------------------------
+        dag = DirectedAcyclicWorkGraph()
+
+        for spell_id in reachable_ids:
+            # Purely structural: payload is None. Payloads at this level
+            # would couple the blueprint too tightly to runtime objects.
+            dag.add_node(key=spell_id, payload=None)
+
+        # ------------------------------------------------------------------
+        # 3. Add provider → dependent edges within the reachable subgraph.
+        # ------------------------------------------------------------------
+        for consumer_id in reachable_ids:
+            direct_deps = dependencies.get(consumer_id)
+            if not direct_deps:
+                continue
+
+            for provider_id in direct_deps:
+                if provider_id not in reachable_ids:
+                    # Dependency exists in the global graph but is not
+                    # reachable from this root's DFS (should not happen,
+                    # but guard defensively).
+                    continue
+
                 dag.add_dependency(
-                    parent_key=parent_id,
-                    child_key=current_id,
+                    parent_key=provider_id,
+                    child_key=consumer_id,
                     param_name=None,
                     socket_kind=None,
                 )
 
-                if parent_id not in visited:
-                    stack.append(parent_id)
+        # ------------------------------------------------------------------
+        # 4. Compute a stable topological ordering of node ids.
+        # ------------------------------------------------------------------
+        try:
+            ordered_node_ids: List[str] = dag.collect_dependency_ids()
+        except RuntimeError as exc:
+            # Clean up the DAG to avoid leaking partially-constructed graphs
+            # in the face of structural bugs (cycles).
+            dag.cleanup()
+            raise RuntimeError(
+                f"Cycle detected while building deep DAG for root '{root_spell_id}'."
+            ) from exc
 
-        # Use your existing topological helper; no root arg.
-        ordered_ids: List[str] = dag.collect_dependency_ids()
-        return dag, ordered_ids
+        return dag, ordered_node_ids

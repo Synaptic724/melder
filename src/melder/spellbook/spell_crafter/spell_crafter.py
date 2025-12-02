@@ -14,6 +14,9 @@ from melder.spellbook.spell_crafter.spellbook_scanner import SpellbookScanner
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
+from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import SpellSystemAdjacencyBuilder
+from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
+from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import SpellSystemRootBlueprintBuilder
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
@@ -25,7 +28,7 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
+from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates, ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -1096,29 +1099,75 @@ class SpellCrafter(Cleanable):
     # ------------------------------------------------------------------
     # Phase 5 - Build Deep Dag Structures
     # ------------------------------------------------------------------
+
     def run_phase_root_blueprints(
             self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
+            spellbook: ISpellbook,
+            spell_system_states: ISpellSystemStates,
+            cancellation_event: Optional[CancellationEvent] = None,
+    ) -> Dict[str, RootResolutionBlueprint]:
         """
-        Phase 5 – RootResolutionBlueprint assembly (placeholder).
+        Phase 5 entrypoint.
 
-        In the final design, Phase 5 is primarily *frame-level* and will live
-        on the Aether/Spellbook side, building deep DAG blueprints for root
-        spells and populating a SpellSystemIndex.
+        Builds deep DAG blueprints (RootResolutionBlueprints) and a frame-level
+        SpellSystemIndex.  This step uses only *existing* Phase 1-4 artifacts;
+        no new discovery occurs.
 
-        This placeholder exists so:
+        Args:
+            spellbook:
+                The frame's Spellbook (needed to enumerate Spell objects).
+            spell_system_states:
+                The SpellSystemStates instance for this frame.
+            cancellation_event:
+                Optional cancellation handle.
 
-        - Phase numbering remains clear and consistent.
-        - The crafter has an obvious hook for per-spell participation if we
-          decide to expose per-spell helpers later (e.g., dumping local recipe
-          metadata into the frame-level assembler).
-
-        Current implementation: no-op.
+        Returns:
+            dict[root_spell_id, RootResolutionBlueprint]
         """
         self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
-        # No-op for now. Root blueprint assembly is handled by frame-level code.
+
+        # --- 1. Build adjacency snapshot from system states ----------------
+        adjacency_builder = SpellSystemAdjacencyBuilder()
+        snapshot = adjacency_builder.build(spell_system_states)
+
+        # --- 2. Build deep DAGs for all roots ------------------------------
+        root_builder = SpellSystemRootBlueprintBuilder()
+        root_blueprints = root_builder.build_root_blueprints(snapshot)
+
+        # --- 3. Construct system-level index -------------------------------
+        system_index = SpellSystemIndex()
+
+        for spell_id, deps in snapshot.dependencies.items():
+            lineage_id = None
+            state = spell_system_states.get_state_by_spell_id(spell_id)
+            if state is not None:
+                lineage_id = state.lineage_id
+
+            node = SpellSystemNode(spell_id=spell_id, lineage_id=lineage_id)
+            node.add_dependencies(deps)
+
+            if spell_id in snapshot.root_spell_ids:
+                node.is_root = True
+
+            system_index.upsert_node(node)
+
+        # --- 4. Attach artifacts to root SpellCrafters ---------------------
+        for root_id, blueprint in root_blueprints.items():
+            # Resolve the actual Spell / SpellCrafter for this root version id
+            spell = spellbook.get_spell_by_version_id(root_id)
+            if spell is None or spell.spell_crafter is None:
+                continue  # skip missing or non-compiled spells
+
+            crafter = spell.spell_crafter
+            crafter.set_root_blueprint_phase5(blueprint)
+            crafter.set_spell_system_index_phase5(system_index)
+
+        # --- 5. Store artifacts on self for completeness -------------------
+        self._root_blueprint_phase5 = None  # not a root; roots have theirs set
+        self._spell_system_index_phase5 = system_index
+
+        return root_blueprints
+
 
     # ------------------------------------------------------------------
     # Phase 6 – System-level Validation
