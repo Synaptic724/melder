@@ -142,8 +142,7 @@ class RootResolutionBlueprint(Cleanable):
         """
         Topological order for execution: dependencies first, root last.
 
-        Callers should treat this as read-only; if you need to mutate it,
-        use `set_ordered_node_ids`.
+        Callers should treat this as read-only.
         """
         self.check_cleaned()
         return list(self._ordered_node_ids)
@@ -169,15 +168,6 @@ class RootResolutionBlueprint(Cleanable):
     # Mutators used by the Phase 5 frame compiler                        #
     # ------------------------------------------------------------------ #
 
-    def set_ordered_node_ids(self, node_ids: Sequence[str]) -> None:
-        """
-        Replace the execution order with a freshly computed topo order.
-        """
-        self.check_cleaned()
-        if node_ids is None:
-            raise ValueError("node_ids must not be None.")
-        self._ordered_node_ids = list(node_ids)
-
     def add_socket_ref(self, socket: SocketRef) -> None:
         """
         Append a single socket reference and index it.
@@ -187,16 +177,6 @@ class RootResolutionBlueprint(Cleanable):
             raise ValueError("socket must not be None.")
         self._socket_refs.append(socket)
         self._dag_index.add_socket(socket)
-
-    def extend_socket_refs(self, sockets: Iterable[SocketRef]) -> None:
-        """
-        Append multiple socket refs and index them.
-        """
-        self.check_cleaned()
-        if sockets is None:
-            raise ValueError("sockets must not be None.")
-        for socket in sockets:
-            self.add_socket_ref(socket)
 
     def replace_dag_index(self, index: DagIndex) -> None:
         """

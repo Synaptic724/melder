@@ -105,6 +105,12 @@ class SpellSystemStates(Cleanable):
                 self._dirty_lineages = None
 
             if self._local_topologies is not None:
+                try:
+                    for topology in list(self._local_topologies.values()):
+                        if topology is not None:
+                            topology.cleanup()
+                except Exception:
+                    pass
                 self._local_topologies.clear()
                 self._local_topologies = None
 
