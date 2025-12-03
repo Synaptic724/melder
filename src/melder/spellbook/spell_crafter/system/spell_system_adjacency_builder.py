@@ -58,6 +58,9 @@ class SpellSystemAdjacencyBuilder:
         # All node ids that are used as dependencies anywhere.
         all_dependency_ids: Set[str] = set()
 
+        # Optional per-spell constructor topologies keyed by version-id.
+        topologies: Dict[str, 'SpellLocalTopology'] = {}
+
         # We rely on the concrete SpellSystemStates.iter_states() helper,
         # which returns SpellSystemState instances with:
         #
@@ -65,7 +68,8 @@ class SpellSystemAdjacencyBuilder:
         #   * direct_dependencies: Optional[Set[str]] (version_ids)
         #
         # The interface is already in your codebase.
-        for state in spell_system_states.iter_states():
+        states_snapshot = spell_system_states.iter_states()
+        for state in states_snapshot:
             spell_id = state.current_spell_id
             if spell_id is None:
                 # The DevOps layer should never allow this, but we
@@ -92,6 +96,10 @@ class SpellSystemAdjacencyBuilder:
                     reverse_dependencies[dep_id] = parents_for_dep
                 parents_for_dep.add(spell_id)
 
+            topology = spell_system_states.get_local_topology_by_id(spell_id)
+            if topology is not None:
+                topologies[spell_id] = topology
+
         # Structural roots are spells that **never appear as a dependency**
         # of any other spell in the frame.
         root_spell_ids: Set[str] = all_spell_ids.difference(all_dependency_ids)
@@ -101,4 +109,5 @@ class SpellSystemAdjacencyBuilder:
             reverse_dependencies=reverse_dependencies,
             all_spell_ids=all_spell_ids,
             root_spell_ids=root_spell_ids,
+            topologies=topologies,
         )

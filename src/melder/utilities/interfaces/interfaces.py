@@ -5402,6 +5402,15 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
+    def get_local_topology_by_id(
+            self,
+            spell_id: str,
+    ) -> Optional["SpellLocalTopology"]:
+        """
+        Retrieve the local constructor topology using a version-id key.
+        """
+        ...
+
     def compute_impact_closure(self, root_index_ids: Iterable[str]) -> Set[str]:
         """
         Compute the transitive closure of impacted lineages downstream.

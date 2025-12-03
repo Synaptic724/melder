@@ -39,6 +39,7 @@ class SpellSystemStates(Cleanable):
         "_states_by_index_id",
         "_states_by_spell_id",
         "_dirty_lineages",
+        "_local_topologies",
     ]
 
     def __init__(self, frame: "AethericFrame") -> None:
@@ -60,7 +61,8 @@ class SpellSystemStates(Cleanable):
         self._states_by_index_id: Optional[Dict[str, SpellSystemState]] = {}
         self._states_by_spell_id: Optional[Dict[str, SpellSystemState]] = {}
         self._dirty_lineages: Optional[Set[str]] = set()
-        self._local_topologies: Dict[SpellIndex, 'SpellLocalTopology'] = {}
+        # Version-id keyed topologies captured during Phase 3.
+        self._local_topologies: Dict[str, 'SpellLocalTopology'] = {}
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -412,7 +414,8 @@ class SpellSystemStates(Cleanable):
             raise ValueError("topology must not be None.")
 
         with self._lock:
-            self._local_topologies[spell_index] = topology
+            spell_id = spell_index.current
+            self._local_topologies[spell_id] = topology
 
     def get_local_topology(
             self,
@@ -428,4 +431,20 @@ class SpellSystemStates(Cleanable):
             raise ValueError("spell_index must not be None.")
 
         with self._lock:
-            return self._local_topologies.get(spell_index)
+            return self._local_topologies.get(spell_index.current)
+
+    def get_local_topology_by_id(
+            self,
+            spell_id: str,
+    ) -> Optional['SpellLocalTopology']:
+        """
+        Internal / DevOps
+
+        Retrieve the local constructor topology using a version-id key.
+        """
+        self.check_cleaned()
+        if not spell_id:
+            raise ValueError("spell_id must not be None.")
+
+        with self._lock:
+            return self._local_topologies.get(spell_id)

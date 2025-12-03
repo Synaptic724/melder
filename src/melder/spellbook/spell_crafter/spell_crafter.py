@@ -92,7 +92,7 @@ class SpellCrafter(Cleanable):
         "_root_blueprint_phase5",
         "_spell_system_index_phase5",
         "_is_broken",
-        "_entire_dag_blueprint_phase5"
+        "_entire_dag_blueprint_phase5",
         "_spell_validator",
     ]
 
@@ -1174,6 +1174,8 @@ class SpellCrafter(Cleanable):
         version_to_spell: Dict[str, ISpell] = {}
 
         # We scan once, then reuse the lookup for all roots.
+        if self._spellbook_scanner is None:
+            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
         for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
             # SpellIndex exposes all known versions (current + historical).
             version_to_spell[spell_index.current] = spell_instance

@@ -30,6 +30,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
         "_reverse_dependencies",
         "_all_spell_ids",
         "_root_spell_ids",
+        "_topologies",
     ]
 
     def __init__(
@@ -38,6 +39,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
             reverse_dependencies: Dict[str, Set[str]],
             all_spell_ids: Set[str],
             root_spell_ids: Set[str],
+            topologies: Optional[Dict[str, 'SpellLocalTopology']] = None,
     ) -> None:
         super().__init__()
         if dependencies is None:
@@ -53,6 +55,8 @@ class SpellSystemAdjacencySnapshot(Cleanable):
         self._reverse_dependencies: Dict[str, Set[str]] = reverse_dependencies
         self._all_spell_ids: Set[str] = all_spell_ids
         self._root_spell_ids: Set[str] = root_spell_ids
+        # SpellLocalTopology references (owned by SpellSystemStates).
+        self._topologies: Dict[str, 'SpellLocalTopology'] = topologies or {}
 
 
     def cleanup(self) -> None:
@@ -79,6 +83,10 @@ class SpellSystemAdjacencySnapshot(Cleanable):
         if self._root_spell_ids is not None:
             self._root_spell_ids.clear()
             self._root_spell_ids = None
+
+        if self._topologies is not None:
+            self._topologies.clear()
+            self._topologies = None
 
     # ------------------------------------------------------------------
     # Read-only accessors
@@ -128,6 +136,16 @@ class SpellSystemAdjacencySnapshot(Cleanable):
         natural root candidates for RootResolutionBlueprints in Phase 5.
         """
         return self._root_spell_ids
+
+    @property
+    def topologies(self) -> Dict[str, 'SpellLocalTopology']:
+        """
+        Snapshot of local constructor topologies keyed by spell_id.
+
+        The contained topologies are owned by SpellSystemStates; callers
+        must not mutate or cleanup them from this snapshot.
+        """
+        return self._topologies
 
     # ------------------------------------------------------------------
     # Convenience helpers

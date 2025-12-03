@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from collections import deque
+from typing import Deque, Dict, List, Optional, Sequence, Set, Tuple
 
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import (
     SpellSystemAdjacencySnapshot,
+)
+from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+    SpellLocalTopology,
 )
 
 class SpellSystemRootBlueprintBuilder:
@@ -81,6 +86,11 @@ class SpellSystemRootBlueprintBuilder:
                 ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
                 socket_refs=None,              # Phase-5 socket overlay will populate
                 dag_index=None,                # Phase-5 DagIndex builder will populate
+            )
+
+            self._overlay_sockets_and_index(
+                blueprint=blueprint,
+                topologies=snapshot.topologies,
             )
 
             result[root_spell_id] = blueprint
@@ -199,3 +209,49 @@ class SpellSystemRootBlueprintBuilder:
             ) from exc
 
         return dag, ordered_node_ids
+
+    def _overlay_sockets_and_index(
+            self,
+            blueprint: RootResolutionBlueprint,
+            topologies: Dict[str, SpellLocalTopology],
+    ) -> None:
+        """
+        Overlay SocketRefs and build a deep DagIndex for the blueprint.
+        """
+        if blueprint is None:
+            raise ValueError("blueprint must not be None.")
+        if topologies is None:
+            raise ValueError("topologies must not be None.")
+
+        queue: Deque[Tuple[str, Tuple[str, ...]]] = deque()
+        queue.append((blueprint.root_spell_id, ()))
+
+        # Start with a fresh index to avoid stale entries in case of reuse.
+        blueprint.replace_dag_index(DagIndex())
+
+        visited: Set[Tuple[str, Tuple[str, ...]]] = set()
+
+        while queue:
+            node_id, path = queue.popleft()
+            key = (node_id, path)
+            if key in visited:
+                continue
+            visited.add(key)
+
+            topology = topologies.get(node_id)
+            if topology is None:
+                continue
+
+            for socket_desc in topology.sockets:
+                socket_path = path + (socket_desc.param_name,)
+                socket_ref = SocketRef(
+                    node_id=node_id,
+                    param_name=socket_desc.param_name,
+                    param_path=socket_path,
+                    socket_kind=socket_desc.socket_kind,
+                )
+                blueprint.add_socket_ref(socket_ref)
+
+                targets: Tuple[str, ...] = tuple(socket_desc.target_spell_ids or ())
+                for target_id in targets:
+                    queue.append((target_id, socket_path))
