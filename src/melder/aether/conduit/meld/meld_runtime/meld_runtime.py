@@ -1,6 +1,6 @@
 from __future__ import annotations
 from threading import RLock
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 # Melder Imports
@@ -13,6 +13,11 @@ from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.conduit.meld.overrides.graph_mutator import GraphMutator
+from melder.aether.conduit.meld.overrides.spell_overrider import SpellOverrider
+from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+    RootResolutionBlueprint,
+)
 
 
 class MeldRuntime(Cleanable):
@@ -225,6 +230,16 @@ class MeldRuntime(Cleanable):
         requirements = spell.requirements
         resolution_frame = spell.resolution_frame
 
+        # Phase 5 artifacts may be present for root spells.
+        root_blueprint: RootResolutionBlueprint = getattr(
+            getattr(spell, "_crafter", None), "_root_blueprint_phase5", None
+        )
+        mutation_override_payload = {}
+        try:
+            mutation_override_payload = spell.mutation_override
+        except Exception:
+            mutation_override_payload = {}
+
         if self._logger is not None:
             self._logger.debug(
                 f"MeldRuntime.execute: spell={spell.spell_name} "
@@ -232,8 +247,43 @@ class MeldRuntime(Cleanable):
                 "MeldRuntime",
             )
 
+        # Apply mutation overrides (graph-level) and spell overrides (value-level)
+        # if we have a deep blueprint. Fallback to simple overrides otherwise.
+        execution_blueprint = root_blueprint
+        override_map = {}
+        if root_blueprint is not None:
+            try:
+                mutator = GraphMutator(root_blueprint)
+                execution_blueprint = mutator.apply(mutation_override_payload or {})
+
+                overrider = SpellOverrider(execution_blueprint)
+                override_map = overrider.apply(context.overrides or {})
+            except Exception as exc:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=f"Failed to apply overrides for root '{spell.spell_name}': {exc}",
+                    inner=exc,
+                ) from exc
+
         # Per-execution ResolutionFrame seeded with per-call overrides.
-        frame = ResolutionFrame(overrides=context.overrides)
+        frame_overrides = self._build_frame_overrides(
+            context_overrides=context.overrides,
+            override_map=override_map,
+            root_spell_id=spell.spell_index.current,
+        )
+        frame = ResolutionFrame(overrides=frame_overrides)
+
+        # Build a lookup of spell_id -> ISpell for all known spells in this spellbook.
+        spell_lookup: Dict[str, ISpell] = {}
+        if spell._spellbook is not None:
+            for idx, inst in spell._spellbook._spells.items():
+                spell_lookup[idx.current] = inst
+            for lineage_map in spell._spellbook._contracted_spells.values():
+                for idx, inst in lineage_map.items():
+                    spell_lookup[idx.current] = inst
+
+        system_states = spell._spell_system_states
 
         engine = MeldEngine(
             context=context,
@@ -242,6 +292,10 @@ class MeldRuntime(Cleanable):
             resolution_frame=resolution_frame,
             requirements=requirements,
             frame=frame,
+            blueprint=execution_blueprint,
+            override_map=override_map,
+            spell_lookup=spell_lookup,
+            system_states=system_states,
             logger=self._logger,
         )
 
@@ -283,3 +337,37 @@ class MeldRuntime(Cleanable):
             )
 
         return result
+
+    # ------------------------------------------------------------------ #
+    # Internal helpers                                                   #
+    # ------------------------------------------------------------------ #
+    def _build_frame_overrides(
+            self,
+            *,
+            context_overrides,
+            override_map,
+            root_spell_id: str,
+    ):
+        """
+        Merge plain context overrides with socket-level override_map.
+
+        For the current MVP engine (single-node), we fold any SocketRef
+        that targets the root node and has a single-segment path into
+        keyword overrides.
+        """
+        merged = {}
+        # Preserve positional args if supplied.
+        if isinstance(context_overrides, dict):
+            if "__args__" in context_overrides:
+                merged["__args__"] = list(context_overrides["__args__"])
+            # Also keep any direct kw overrides.
+            for k, v in context_overrides.items():
+                if k == "__args__":
+                    continue
+                merged[k] = v
+
+        if override_map:
+            for socket_ref, value in override_map.items():
+                if socket_ref.node_id == root_spell_id and len(socket_ref.param_path) == 1:
+                    merged[socket_ref.param_name] = value
+        return merged

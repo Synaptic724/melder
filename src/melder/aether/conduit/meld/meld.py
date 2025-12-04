@@ -14,6 +14,7 @@ from melder.utilities.interfaces.interfaces import (
     ICreations, ISpellIndex,
 )
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.spellbook.existence.existence import Existence
 
 # Creations types
@@ -99,6 +100,9 @@ class Meld(Cleanable):
         # factory-style spells (class / method / lambda).
         self._runtime: MeldRuntime = MeldRuntime()
 
+        # Optional hook map pulled from Configuration (via Conduit).
+        self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = None
+
 
     def cleanup(self) -> None:
         """
@@ -138,6 +142,10 @@ class Meld(Cleanable):
                     # Runtime cleanup should never blow up conduit teardown.
                     pass
                 self._runtime = None
+
+            if self._meld_hooks is not None:
+                self._meld_hooks.clear()
+                self._meld_hooks = None
 
 
     # region Context Manager
