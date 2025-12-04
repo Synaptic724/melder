@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -34,6 +34,14 @@ class GraphConsistencyStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         nodes = index.nodes
+        # Collect all edges present in blueprint DAGs for reverse consistency checks.
+        dag_edges: Set[Tuple[str, str]] = set()
+        for blueprint in blueprints.values():
+            dag = blueprint.dag
+            for child_node in dag.nodes.values():
+                child_id = child_node.id
+                for parent_node in child_node.dependencies:
+                    dag_edges.add((parent_node.id, child_id))
 
         for root_id, blueprint in blueprints.items():
             if cancel_event is not None and cancel_event.is_set:
@@ -98,3 +106,26 @@ class GraphConsistencyStrategy(SpellSystemValidationStrategy):
                             )
                         )
 
+        # Check for edges present in the index but missing from all blueprints.
+        for child_id, node in nodes.items():
+            expected_parents = node.dependencies
+            for parent_id in expected_parents:
+                edge = (parent_id, child_id)
+                if edge in dag_edges:
+                    continue
+                diagnostics.append(
+                    SystemDiagnostic(
+                        code="edge_missing_from_blueprint",
+                        message=(
+                            f"Edge {parent_id} -> {child_id} present in SpellSystemIndex "
+                            f"but missing from all root blueprints."
+                        ),
+                        severity=SystemDiagnosticSeverity.ERROR,
+                        spell_id=child_id,
+                        root_id=None,
+                        details={
+                            "parent_id": parent_id,
+                            "child_id": child_id,
+                        },
+                    )
+                )

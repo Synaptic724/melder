@@ -1,9 +1,11 @@
 from __future__ import annotations
 from threading import RLock
-from typing import Optional, Any, Dict, Union
+from typing import Optional, Any, Dict, Union, Set
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpellIndex, IChangeControlManager  # for identity / lineage
+from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 class ChangeControlManager(Cleanable):
@@ -32,6 +34,10 @@ class ChangeControlManager(Cleanable):
         "_lock",
         "_spell_system_states",
         "_pending_changes",
+        "_component_of",
+        "_dirty_spells",
+        "_dirty_roots",
+        "_monitor_active",
     ]
 
     def __init__(self, spell_system_states: "SpellSystemStates") -> None:
@@ -44,8 +50,12 @@ class ChangeControlManager(Cleanable):
         self._spell_system_states: "SpellSystemStates" = spell_system_states
 
         # spell_index_id -> Dict[str, Any]
-        self._pending_changes: Dict[str, Dict[str, Any]]
-        self._pending_changes = {}
+        self._pending_changes: Dict[str, Dict[str, Any]] = {}
+        # spell_id (version) -> set[root_id]
+        self._component_of: Dict[str, Set[str]] = {}
+        self._dirty_spells: Set[str] = set()
+        self._dirty_roots: Set[str] = set()
+        self._monitor_active: bool = False
     # ----------------------------------------------------------------------
     # Cleanup
     # ----------------------------------------------------------------------
@@ -71,6 +81,22 @@ class ChangeControlManager(Cleanable):
             if self._pending_changes is not None:
                 self._pending_changes.clear()
                 self._pending_changes = None
+
+            if self._component_of is not None:
+                for roots in self._component_of.values():
+                    roots.clear()
+                self._component_of.clear()
+                self._component_of = None
+
+            if self._dirty_spells is not None:
+                self._dirty_spells.clear()
+                self._dirty_spells = None
+
+            if self._dirty_roots is not None:
+                self._dirty_roots.clear()
+                self._dirty_roots = None
+
+            self._monitor_active = False
 
             # We do *not* own spell_system_states' lifecycle here; that will
             # be cleaned by the Aetheric Frame / DevOpsManager. We only drop
@@ -189,3 +215,62 @@ class ChangeControlManager(Cleanable):
             # ConcurrentDict supports pop-like semantics via del / get+del
             if spell_index_id in self._pending_changes:
                 del self._pending_changes[spell_index_id]
+
+    # ----------------------------------------------------------------------
+    # Change-control (component-of / dirty tracking)
+    # ----------------------------------------------------------------------
+    def rebuild_component_of(
+            self,
+            root_blueprints: Dict[str, RootResolutionBlueprint],
+    ) -> None:
+        """
+        Rebuild the component-of index (spell_id -> root_ids) from deep root blueprints.
+        """
+        self.check_cleaned()
+        if root_blueprints is None:
+            raise ValueError("root_blueprints must not be None.")
+
+        with self._lock:
+            self._component_of.clear()
+            for root_id, blueprint in root_blueprints.items():
+                dag = blueprint.dag
+                for node_id in dag.nodes.keys():
+                    self._component_of.setdefault(node_id, set()).add(root_id)
+                # Ensure root is present in its own set.
+                self._component_of.setdefault(root_id, set()).add(root_id)
+
+            self._dirty_spells.clear()
+            self._dirty_roots.clear()
+            self._monitor_active = False
+
+    def notify_spell_changed(self, spell_id: str) -> None:
+        """
+        Mark a spell as changed and flag dependent roots as dirty.
+        """
+        self.check_cleaned()
+        if not spell_id:
+            raise ValueError("spell_id cannot be empty")
+
+        with self._lock:
+            self._dirty_spells.add(spell_id)
+            affected_roots = self._component_of.get(spell_id, ())
+            self._dirty_roots.update(affected_roots)
+            self._monitor_active = True
+
+    def notify_provider_changed(self, spell_id: str) -> None:
+        """
+        Alias for provider changes; currently identical to notify_spell_changed.
+        """
+        self.notify_spell_changed(spell_id)
+
+    def revalidate_dirty_roots(self, cancel_event: Optional["CancellationEvent"] = None) -> None:
+        """
+        Placeholder for rerunning Phases 1–6 on dirty roots.
+
+        The actual revalidation orchestration should live in the frame/compiler;
+        this manager only tracks state.
+        """
+        self.check_cleaned()
+        if cancel_event is not None and getattr(cancel_event, "is_set", False):
+            cancel_event.throw_if_set()
+        # No-op: orchestrator is responsible for invoking compiler phases.

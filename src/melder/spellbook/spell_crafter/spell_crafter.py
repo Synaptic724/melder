@@ -1207,7 +1207,16 @@ class SpellCrafter(Cleanable):
         self._spell_system_index_phase5 = system_index
         self._entire_dag_blueprint_phase5 = root_blueprints
 
-
+        # Rebuild component-of index in ChangeControlManager if available.
+        try:
+            spellbook = self._spell._spellbook
+            frame_name = getattr(spellbook, "_aetheric_frame", None)
+            change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
+            if change_control_manager is not None:
+                change_control_manager.rebuild_component_of(root_blueprints)
+        except Exception:
+            # Change control is optional; ignore if unavailable.
+            pass
 
 
     # ------------------------------------------------------------------
@@ -1328,5 +1337,3 @@ class SpellCrafter(Cleanable):
         self.run_phase_root_blueprints(cancel_event=cancel_event)
         self.run_phase_system_validation(cancel_event=cancel_event)
         self.run_phase_change_control(cancel_event=cancel_event)
-
-
