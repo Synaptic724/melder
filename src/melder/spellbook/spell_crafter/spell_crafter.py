@@ -1,6 +1,6 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 import threading
-from typing import Any, Optional, List, Dict, Tuple
+from typing import Any, Optional, List, Dict, Tuple, Set
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -40,6 +40,11 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
+from melder.spellbook.spell_crafter.system.spell_system_validation_state import SpellSystemValidationState
+from melder.spellbook.spell_crafter.system.spell_system_validation_system import SpellSystemValidationSystem
+from melder.spellbook.spell_crafter.system.validation.cycle_detection_strategy import CycleDetectionStrategy
+from melder.spellbook.spell_crafter.system.validation.broken_spell_in_dag_strategy import BrokenSpellInDagStrategy
+from melder.spellbook.spell_crafter.system.validation.graph_consistency_strategy import GraphConsistencyStrategy
 
 
 class SpellCrafter(Cleanable):
@@ -49,10 +54,10 @@ class SpellCrafter(Cleanable):
     This object owns all *ephemeral* artifacts across the four conceptual
     phases for a single :class:`Spell`:
 
-        1. Requirements (signature → SpellRequirements)
-        2. Symbolic graph (requirements → symbolic DI edges)
-        3. Local frame / DAG (symbolic graph + Spellbook → executable frame)
-        4. Validation (frame + policies → validated / broken flags)
+        1. Requirements (signature ? SpellRequirements)
+        2. Symbolic graph (requirements ? symbolic DI edges)
+        3. Local frame / DAG (symbolic graph + Spellbook ? executable frame)
+        4. Validation (frame + policies ? validated / broken flags)
 
     The :class:`Spell` instance only persists:
 
@@ -356,7 +361,7 @@ class SpellCrafter(Cleanable):
         Notify the SpellSystemStates registry that this spell's direct
         dependencies (by spell_id) have been updated.
 
-        This is the Phase 3 → system-state bridge:
+        This is the Phase 3 ? system-state bridge:
 
         - It does *not* recompute anything itself.
         - It simply forwards the concrete dependency_ids that were pushed back
@@ -713,7 +718,7 @@ class SpellCrafter(Cleanable):
                 # Shapes like IGNORE/PLAIN do not participate in DI edges.
                 continue
 
-            # Map shape → symbolic metadata.
+            # Map shape ? symbolic metadata.
             if di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
                 target_annotation = None
                 is_collection = False
@@ -1206,7 +1211,7 @@ class SpellCrafter(Cleanable):
 
 
     # ------------------------------------------------------------------
-    # Phase 6 – System-level Validation
+    # Phase 6 - System-level Validation
     # ------------------------------------------------------------------
 
     def run_phase_system_validation(
@@ -1214,22 +1219,52 @@ class SpellCrafter(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Phase 6 – System-level validation (placeholder).
+        Phase 6 - System-level validation.
 
-        Final behavior will be:
-
-        - Use SpellSystemStates + frame-level SpellSystemIndex to validate the
-          entire DI graph (cycles, provider coverage, existence rules, etc.).
-        - Drive SpellValidity for each lineage (valid/gated/invalid/disabled).
-
-        For now, this method is a stub so callers have an obvious link point
-        once the frame-level validator is wired.
-
-        Current implementation: no-op.
+        Runs system-level validation strategies over Phase-5 artifacts and
+        Phase-4 outcomes. Drives SpellValidity for all lineages via
+        SpellSystemStates and caches the frame-level validation state locally.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
-        # No-op for now; real system-level validation is frame/Aether owned.
+        if self._entire_dag_blueprint_phase5 is None or self._spell_system_index_phase5 is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 6: cannot run system validation before Phase 5 has completed."
+            )
+
+        if self._spellbook_scanner is None:
+            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
+
+        phase4_results: Dict[str, Any] = {}
+        broken_spell_ids: Set[str] = set()
+
+        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
+            crafter = getattr(spell_instance, "_crafter", None)
+            if crafter is None:
+                continue
+            if crafter._validation_result_phase4 is not None:
+                phase4_results[spell_index.current] = crafter._validation_result_phase4
+            if crafter._is_broken:
+                broken_spell_ids.add(spell_index.current)
+
+        strategies = [
+            CycleDetectionStrategy(),
+            BrokenSpellInDagStrategy(),
+            GraphConsistencyStrategy(),
+        ]
+
+        validator = SpellSystemValidationSystem(strategies=strategies)
+        validation_state: SpellSystemValidationState = validator.validate(
+            index=self._spell_system_index_phase5,
+            blueprints=self._entire_dag_blueprint_phase5,
+            phase4_results=phase4_results,
+            broken_spell_ids=broken_spell_ids,
+            spell_system_states=self._spell_system_states,
+            cancel_event=cancel_event,
+        )
+
+        self._validation_result_phase6 = validation_state
+        self._validated_phase6 = True
 
 
     # ------------------------------------------------------------------
@@ -1293,3 +1328,5 @@ class SpellCrafter(Cleanable):
         self.run_phase_root_blueprints(cancel_event=cancel_event)
         self.run_phase_system_validation(cancel_event=cancel_event)
         self.run_phase_change_control(cancel_event=cancel_event)
+
+
