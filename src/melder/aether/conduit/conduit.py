@@ -248,6 +248,11 @@ class Conduit(Cleanable):
         # At this point we conceptually "swap IDs": hooks registered under the
         # Spellbook's ID become owned by this Conduit instance.
         self._conduit_hooks = hook_map
+        try:
+            if hasattr(self, "_meld") and self._meld is not None:
+                self._meld.set_meld_hooks(self._conduit_hooks)
+        except Exception:
+            pass
 
         self._logger.debug(
             f"_initialize_conduit_hooks: attached {len(hook_map)} hook groups "

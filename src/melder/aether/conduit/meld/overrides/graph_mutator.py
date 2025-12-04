@@ -55,6 +55,9 @@ class GraphMutator(Cleanable):
         if not mutation_override:
             return self._blueprint
 
+        if not isinstance(mutation_override, dict):
+            raise RuntimeError("mutation_override must be a dict of override_key -> spell_id.")
+
         def _filter_mutation(socket_ref):
             return socket_ref.socket_kind is SocketKind.MUTATION_CONTRACT
 

@@ -395,6 +395,7 @@ class MeldEngine(Cleanable):
             if len(values) == 1:
                 kwargs[param_name] = values[0]
             else:
+                # Multiple providers -> inject list. Downstream type checks can enforce collections.
                 kwargs[param_name] = values
 
         return kwargs
@@ -454,7 +455,7 @@ class MeldEngine(Cleanable):
                 found = creations._unique_per_lineage.get(spell_id)
                 return found.value if found is not None else None
             if existence is Existence.unique_per_spell_space:
-                # Not implemented; no reuse
+                # Reserved for future spell-space reuse semantics.
                 return None
             return None
 
@@ -474,6 +475,7 @@ class MeldEngine(Cleanable):
                     found = parent_creations._unique_per_lineage.get(spell_id)
                     return found.value if found is not None else None
                 if existence is Existence.unique_per_spell_space:
+                    # Reserved for future spell-space reuse semantics.
                     return None
             return None
 
@@ -501,7 +503,7 @@ class MeldEngine(Cleanable):
                 creations.add_unique_per_lineage(spell_id, instance)
                 return
             if existence is Existence.unique_per_spell_space:
-                # Not implemented yet
+                # Reserved for future spell-space semantics (not implemented).
                 return
             return
 
@@ -524,6 +526,6 @@ class MeldEngine(Cleanable):
                     parent_creations.add_unique_per_lineage(spell_id, instance)
                     return
                 if existence is Existence.unique_per_spell_space:
-                    # Not implemented yet
+                    # Reserved for future spell-space semantics (not implemented).
                     return
             return

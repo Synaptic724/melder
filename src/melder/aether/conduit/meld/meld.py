@@ -275,28 +275,31 @@ class Meld(Cleanable):
                     f"[MELD] Cannot meld broken spell: {target_spell}."
                 )
 
-            # 4) Respect SpellSystemState / SpellValidity gate (if DevOps is wired).
-            self._gated_validation_required(target_spell)
+        # 4) Respect SpellSystemState / SpellValidity gate (if DevOps is wired).
+        self._gated_validation_required(target_spell)
 
-            # 5) Execute pre-cast hooks (no instance context yet).
-            self._execute_hooks(target_spell.pre_hooks, "pre_cast")
+        # 5) Execute pre-cast hooks (no instance context yet).
+        self._execute_hooks(target_spell.pre_hooks, "pre_cast")
+        self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
-            # 6) Try to reuse an existing creation based on Existence + creations type.
-            instance = self._get_existing_creation(target_spell)
+        # 6) Try to reuse an existing creation based on Existence + creations type.
+        instance = self._get_existing_creation(target_spell)
 
-            # 7) If no existing instance, construct a new one via the spell-type path
-            #    and register it into the appropriate creations bucket.
-            if instance is None:
-                instance = self._meld_by_spell_type(target_spell, override_map)
-                self._register_spell(target_spell, instance)
-                # Activation hooks fire only when the instance is newly created.
-                self._execute_activation_hooks(target_spell.activation_hooks, instance)
+        # 7) If no existing instance, construct a new one via the spell-type path
+        #    and register it into the appropriate creations bucket.
+        if instance is None:
+            instance = self._meld_by_spell_type(target_spell, override_map)
+            self._register_spell(target_spell, instance)
+            # Activation hooks fire only when the instance is newly created.
+            self._execute_activation_hooks(target_spell.activation_hooks, instance)
+            self._fire_meld_hooks("on_meld_activation", target_spell, instance)
 
-            # 8) Execute post-cast hooks (still no arguments for now).
-            self._execute_hooks(target_spell.post_hooks, "post_cast")
+        # 8) Execute post-cast hooks (still no arguments for now).
+        self._execute_hooks(target_spell.post_hooks, "post_cast")
+        self._fire_meld_hooks("on_meld_post_resolve", target_spell)
 
-            # 9) Return the resolved instance.
-            return instance
+        # 9) Return the resolved instance.
+        return instance
 
     def _ensure_lineage_resolvable(self, spell: ISpell) -> None:
         """
@@ -393,6 +396,31 @@ class Meld(Cleanable):
         # Extremely defensive: any future enum value → treat as not resolvable.
         raise SpellbookValidationError([spell])
 
+
+
+    def set_meld_hooks(self, hooks: Dict[str, list[Callable[..., Any]]]) -> None:
+        """
+        Install a hook map used by Meld-level hook firing.
+
+        Expected shape: { hook_name: [callables] }.
+        """
+        self._meld_hooks = hooks if hooks is not None else {}
+
+    def _fire_meld_hooks(self, hook_name: str, *args: Any) -> None:
+        """
+        Invoke meld-level hooks by name. Exceptions are wrapped in HookExecutionError.
+        """
+        if not self._meld_hooks:
+            return
+        hook_list = self._meld_hooks.get(hook_name)
+        if not hook_list:
+            return
+        for hook in list(hook_list):
+            try:
+                hook(*args)
+            except Exception as e:
+                hook_name_str = getattr(hook, "__name__", repr(hook))
+                raise HookExecutionError(hook_name, hook_name_str, e) from e
 
 
     def _normalize_spell_override(
