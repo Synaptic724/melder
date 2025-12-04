@@ -5,9 +5,7 @@ from typing import Any, Optional, Dict
 from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import ISpell
-from melder.utilities.logger.safe_logger import SafeLogger
 from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
     ResolutionFrame,
 )
@@ -56,7 +54,6 @@ class MeldRuntime(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",
-        "_logger",
     ]
 
     def __init__(self, logger: Optional[Any] = None) -> None:
@@ -71,11 +68,6 @@ class MeldRuntime(Cleanable):
         """
         super().__init__()
         self._lock: RLock = RLock()
-        self._logger: Optional[SafeLogger] = (
-            InitHelpers.resolve_safe_logger(logger)
-            if logger is not None
-            else None
-        )
 
     # ------------------------------------------------------------------ #
     # Cleanup
@@ -97,18 +89,12 @@ class MeldRuntime(Cleanable):
             if self._cleaned:
                 return
 
-            self._logger = None
             self._cleaned = True
 
 
     # ------------------------------------------------------------------ #
     # Properties
     # ------------------------------------------------------------------ #
-
-    @property
-    def logger(self) -> Optional[SafeLogger]:
-        """Optional `SafeLogger` attached to this runtime."""
-        return self._logger
 
     # ------------------------------------------------------------------ #
     # Core API
@@ -240,13 +226,6 @@ class MeldRuntime(Cleanable):
         except Exception:
             mutation_override_payload = {}
 
-        if self._logger is not None:
-            self._logger.debug(
-                f"MeldRuntime.execute: spell={spell.spell_name} "
-                f"({spell.spell_index.current})",
-                "MeldRuntime",
-            )
-
         # Apply mutation overrides (graph-level) and spell overrides (value-level)
         # if we have a deep blueprint. Fallback to simple overrides otherwise.
         execution_blueprint = root_blueprint
@@ -296,7 +275,6 @@ class MeldRuntime(Cleanable):
             override_map=override_map,
             spell_lookup=spell_lookup,
             system_states=system_states,
-            logger=self._logger,
         )
 
         result = None

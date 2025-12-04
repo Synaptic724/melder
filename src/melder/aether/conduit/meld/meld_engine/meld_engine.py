@@ -5,8 +5,6 @@ from typing import Any, Dict, MutableMapping, Optional, Sequence
 
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.interfaces.interfaces import ISpell, ICreations
 from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
@@ -118,11 +116,6 @@ class MeldEngine(Cleanable):
         self._override_map: Dict[SocketRef, Any] = override_map or {}
         self._spell_lookup: Dict[str, ISpell] = spell_lookup or {}
         self._system_states = system_states
-        self._logger: Optional[SafeLogger] = (
-            InitHelpers.resolve_safe_logger(logger)
-            if logger is not None
-            else None
-        )
 
     # ------------------------------------------------------------------ #
     # Cleanup
@@ -151,16 +144,14 @@ class MeldEngine(Cleanable):
 
             self._context = None
             self._root_spell = None
-        self._dag = None
-        self._resolution_frame = None
-        self._requirements = None
-        self._frame = None
-        self._blueprint = None
-        self._override_map = None
-        self._spell_lookup = None
-        self._system_states = None
-        self._logger = None
-
+            self._dag = None
+            self._resolution_frame = None
+            self._requirements = None
+            self._frame = None
+            self._blueprint = None
+            self._override_map = None
+            self._spell_lookup = None
+            self._system_states = None
             self._cleaned = True
 
     # ------------------------------------------------------------------ #
