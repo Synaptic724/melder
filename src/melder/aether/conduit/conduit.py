@@ -482,8 +482,12 @@ class Conduit(Cleanable):
         """
         if self._conduit_state == ConduitState.lesser:
             self._logger.debug("Selecting LesserCreations", "_creations_configuration")
-            return LesserCreations(disposal_enabled=configuration.get_property("disposal"),
-                                   disposal_method_names=configuration.get_property("disposal_method_names"), conduit=self)
+            return LesserCreations(
+                disposal_enabled=configuration.get_property("disposal"),
+                disposal_method_names=configuration.get_property("disposal_method_names"),
+                conduit=self,
+                parent_creations=getattr(self, "_parent_creations", None),
+            )
         if self._conduit_state == ConduitState.normal:
             self._logger.debug("Selecting Creations", "_creations_configuration")
             return Creations(disposal_enabled=configuration.get_property("disposal"),
@@ -747,6 +751,17 @@ class Conduit(Cleanable):
                 policy=Policies.lesser_conduit,
                 logger=logger,
             )
+            # Provide parent creations reference for delegation of frame-level singletons.
+            try:
+                if isinstance(self._creations, Creations):
+                    new_conduit._parent_creations = self._creations
+                    try:
+                        if isinstance(new_conduit._creations, LesserCreations):
+                            new_conduit._creations._parent_creations = self._creations
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
             # Fire activation hook with the new conduit instance.
             self._fire_conduit_hooks(

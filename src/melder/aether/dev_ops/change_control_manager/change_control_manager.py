@@ -301,3 +301,19 @@ class ChangeControlManager(Cleanable):
             if not self._dirty_roots:
                 self._dirty_spells.clear()
                 self._monitor_active = False
+
+    # ----------------------------------------------------------------------
+    # Introspection helpers
+    # ----------------------------------------------------------------------
+    def is_root_dirty(self, root_id: str) -> bool:
+        """
+        Return True if the supplied root spell_id is currently marked dirty
+        under change control and monitoring is active.
+        """
+        self.check_cleaned()
+        if not root_id:
+            return False
+        with self._lock:
+            if not self._monitor_active:
+                return False
+            return root_id in self._dirty_roots

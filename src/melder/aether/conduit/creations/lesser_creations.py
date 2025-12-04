@@ -19,7 +19,7 @@ class LesserCreations(Cleanable):
       * Providing a snapshot of local objects for transfer during an upgrade.
     """
 
-    def __init__(self, disposal_enabled: bool, disposal_method_names: List[str], conduit: IConduit):
+    def __init__(self, disposal_enabled: bool, disposal_method_names: List[str], conduit: IConduit, parent_creations=None):
         """
         Initialize a new LesserCreations manager.
 
@@ -32,6 +32,9 @@ class LesserCreations(Cleanable):
         """
         super().__init__()
         self._conduit: IConduit = conduit
+        # Optional link back to the parent conduit creations for delegating
+        # frame-wide singletons.
+        self._parent_creations = parent_creations
         self._id: str = conduit._id
         self._logger = conduit._logger
 
@@ -116,6 +119,7 @@ class LesserCreations(Cleanable):
             self._unique_per_scope = None
             self._many = None
             self._conduit = None
+            self._parent_creations = None
             self._disposal_method_names = None
 
             if errors:

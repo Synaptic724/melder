@@ -105,7 +105,7 @@ class RootResolutionBlueprint(Cleanable):
         self._socket_refs.clear()
         self._socket_refs = None
 
-        self._root_spell_id = None  # type: ignore[assignment]
+        self._root_spell_id = None
         self._root_lineage_id = None
 
 

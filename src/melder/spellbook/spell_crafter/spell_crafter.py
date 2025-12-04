@@ -45,6 +45,8 @@ from melder.spellbook.spell_crafter.system.spell_system_validation_system import
 from melder.spellbook.spell_crafter.system.validation.cycle_detection_strategy import CycleDetectionStrategy
 from melder.spellbook.spell_crafter.system.validation.broken_spell_in_dag_strategy import BrokenSpellInDagStrategy
 from melder.spellbook.spell_crafter.system.validation.graph_consistency_strategy import GraphConsistencyStrategy
+from melder.spellbook.spell_crafter.system.validation.missing_phase4_strategy import MissingPhase4Strategy
+from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import RootViabilityStrategy
 
 
 class SpellCrafter(Cleanable):
@@ -1288,6 +1290,8 @@ class SpellCrafter(Cleanable):
             CycleDetectionStrategy(),
             BrokenSpellInDagStrategy(),
             GraphConsistencyStrategy(),
+            MissingPhase4Strategy(),
+            RootViabilityStrategy(),
         ]
 
         validator = SpellSystemValidationSystem(strategies=strategies)

@@ -12,6 +12,7 @@ from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import
     ResolutionFrame,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 
 
 class MeldRuntime(Cleanable):
@@ -152,6 +153,52 @@ class MeldRuntime(Cleanable):
 
         # Work with the concrete Spell facade type when available.
         spell: ISpell = spell_obj
+
+        # ------------------------------------------------------------------ #
+        # System-level gating (Phase 6 / Change-control)                    #
+        # ------------------------------------------------------------------ #
+        system_state = None
+        try:
+            system_state = spell.system_state
+        except Exception:
+            system_state = None
+
+        if system_state is not None:
+            validity = system_state.validity
+            if validity in (
+                    SpellValidity.invalid,
+                    SpellValidity.gated,
+                    SpellValidity.disabled,
+            ):
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Cannot execute meld runtime for a spell whose lineage is "
+                        f"{validity.name}."
+                    ),
+                )
+
+        # Change-control dirty-root gating
+        try:
+            spellbook = spell._spellbook
+            aether = getattr(spellbook, "_aether", None)
+            if aether is not None:
+                manager = aether._get_change_control_manager(spell.aetheric_frame)
+                if manager is not None and manager.is_root_dirty(spell.spell_index.current):
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Cannot execute meld runtime while the root is marked dirty. "
+                            "Revalidation is required."
+                        ),
+                    )
+        except MeldExecutionError:
+            raise
+        except Exception:
+            # Change-control is optional; if unavailable we proceed.
+            pass
 
         # --- Invariants from the SpellCrafter / validation pipeline ----
         if spell.is_broken:

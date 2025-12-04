@@ -869,9 +869,22 @@ class Meld(Cleanable):
             if existence is Existence.unique_per_conduit:
                 creation = creations._unique_per_scope.get(spell_id)
                 return creation.value if creation is not None else None
-
-            # Existence.many is handled above. Other unique modes are not relevant
-            # for a LesserConduit's scope.
+            # Delegate frame-level singletons to parent creations when available.
+            parent_creations = getattr(creations, "_parent_creations", None)
+            if isinstance(parent_creations, Creations):
+                if existence is Existence.unique:
+                    found = parent_creations._unique.get(spell_id)
+                    return found.value if found is not None else None
+                if existence is Existence.unique_per_conduit_cluster:
+                    found = parent_creations._unique_per_cluster.get(spell_id)
+                    return found.value if found is not None else None
+                if existence is Existence.unique_per_conduit_lineage:
+                    found = parent_creations._unique_per_lineage.get(spell_id)
+                    return found.value if found is not None else None
+                if existence is Existence.unique_per_spell_space:
+                    # Not implemented; no reuse.
+                    return None
+            # Existence.many is handled above. Other unique modes are delegated or unsupported.
             return None
 
         # Unknown creations manager type; no reuse possible
@@ -1082,7 +1095,24 @@ class Meld(Cleanable):
             creations.add_many(spell_id, instance)
             return
 
-        # LesserConduits only support a subset of existence modes
+        # Delegate frame-level lifetimes to the parent creations when available.
+        parent_creations = getattr(creations, "_parent_creations", None)
+        if isinstance(parent_creations, Creations):
+            if existence is Existence.unique:
+                parent_creations.add_unique(spell_id, instance)
+                return
+            if existence is Existence.unique_per_conduit_cluster:
+                parent_creations.add_unique_per_cluster(spell_id, instance)
+                return
+            if existence is Existence.unique_per_conduit_lineage:
+                parent_creations.add_unique_per_lineage(spell_id, instance)
+                return
+            if existence is Existence.unique_per_spell_space:
+                raise NotImplementedError(
+                    "[MELD] Registration for Existence.unique_per_spell_space is not yet implemented."
+                )
+
+        # LesserConduits only support a subset of existence modes locally
         raise RuntimeError(
             f"[MELD] Existence '{existence}' is not supported for registration "
             f"in LesserConduits (spell_id={spell_id})."
