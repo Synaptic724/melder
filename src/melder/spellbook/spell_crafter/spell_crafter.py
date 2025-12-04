@@ -1207,13 +1207,41 @@ class SpellCrafter(Cleanable):
         self._spell_system_index_phase5 = system_index
         self._entire_dag_blueprint_phase5 = root_blueprints
 
-        # Rebuild component-of index in ChangeControlManager if available.
+        # Rebuild component-of index in ChangeControlManager if available and
+        # register a revalidation hook for dirty roots.
         try:
             spellbook = self._spell._spellbook
             frame_name = getattr(spellbook, "_aetheric_frame", None)
             change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
             if change_control_manager is not None:
                 change_control_manager.rebuild_component_of(root_blueprints)
+
+                def _revalidate_dirty_roots(dirty_roots: Set[str], cancel_event: Optional[CancellationEvent]) -> None:
+                    """
+                    Re-run Phases 1–6 for the supplied root spell_ids.
+                    """
+                    # Scanner scoped to this invocation to avoid stale spell refs.
+                    scanner = SpellbookScanner(spellbook)
+                    version_to_spell: Dict[str, ISpell] = {}
+                    for spell_index, spell_instance in scanner.iter_spells():
+                        version_to_spell[spell_index.current] = spell_instance
+
+                    for root_id in dirty_roots:
+                        if cancel_event is not None and cancel_event.is_set:
+                            cancel_event.throw_if_set()
+                        spell_instance = version_to_spell.get(root_id)
+                        if spell_instance is None:
+                            continue
+                        crafter = getattr(spell_instance, "_crafter", None)
+                        if crafter is None:
+                            continue
+                        try:
+                            crafter.run_all_phases(cancel_event=cancel_event)
+                        except Exception:
+                            # Leave dirty flags intact on failure.
+                            raise
+
+                change_control_manager.set_revalidator(_revalidate_dirty_roots)
         except Exception:
             # Change control is optional; ignore if unavailable.
             pass

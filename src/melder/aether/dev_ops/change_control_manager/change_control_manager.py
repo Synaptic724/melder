@@ -1,6 +1,6 @@
 from __future__ import annotations
 from threading import RLock
-from typing import Optional, Any, Dict, Union, Set
+from typing import Optional, Any, Dict, Union, Set, Callable
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpellIndex, IChangeControlManager  # for identity / lineage
@@ -38,6 +38,7 @@ class ChangeControlManager(Cleanable):
         "_dirty_spells",
         "_dirty_roots",
         "_monitor_active",
+        "_revalidate_fn",
     ]
 
     def __init__(self, spell_system_states: "SpellSystemStates") -> None:
@@ -56,6 +57,7 @@ class ChangeControlManager(Cleanable):
         self._dirty_spells: Set[str] = set()
         self._dirty_roots: Set[str] = set()
         self._monitor_active: bool = False
+        self._revalidate_fn: Optional[Callable[[Set[str], Optional[CancellationEvent]], None]] = None
     # ----------------------------------------------------------------------
     # Cleanup
     # ----------------------------------------------------------------------
@@ -97,6 +99,7 @@ class ChangeControlManager(Cleanable):
                 self._dirty_roots = None
 
             self._monitor_active = False
+            self._revalidate_fn = None
 
             # We do *not* own spell_system_states' lifecycle here; that will
             # be cleaned by the Aetheric Frame / DevOpsManager. We only drop
@@ -219,6 +222,21 @@ class ChangeControlManager(Cleanable):
     # ----------------------------------------------------------------------
     # Change-control (component-of / dirty tracking)
     # ----------------------------------------------------------------------
+    def set_revalidator(
+            self,
+            fn: Callable[[Set[str], Optional[CancellationEvent]], None],
+    ) -> None:
+        """
+        Register a callable that performs revalidation for the supplied dirty roots.
+
+        Signature: fn(dirty_roots: Set[str], cancel_event: Optional[CancellationEvent]) -> None
+        """
+        self.check_cleaned()
+        if fn is None:
+            raise ValueError("revalidator fn must not be None.")
+        with self._lock:
+            self._revalidate_fn = fn
+
     def rebuild_component_of(
             self,
             root_blueprints: Dict[str, RootResolutionBlueprint],
@@ -265,12 +283,21 @@ class ChangeControlManager(Cleanable):
 
     def revalidate_dirty_roots(self, cancel_event: Optional["CancellationEvent"] = None) -> None:
         """
-        Placeholder for rerunning Phases 1–6 on dirty roots.
+        Invoke the registered revalidator for current dirty roots.
 
-        The actual revalidation orchestration should live in the frame/compiler;
-        this manager only tracks state.
+        On success, clears dirty flags; on failure, dirty sets remain.
         """
         self.check_cleaned()
         if cancel_event is not None and getattr(cancel_event, "is_set", False):
             cancel_event.throw_if_set()
-        # No-op: orchestrator is responsible for invoking compiler phases.
+        with self._lock:
+            if not self._dirty_roots or self._revalidate_fn is None:
+                return
+            dirty_roots = set(self._dirty_roots)
+        # Call outside the lock to avoid deadlocks.
+        self._revalidate_fn(dirty_roots, cancel_event)
+        with self._lock:
+            self._dirty_roots.difference_update(dirty_roots)
+            if not self._dirty_roots:
+                self._dirty_spells.clear()
+                self._monitor_active = False
