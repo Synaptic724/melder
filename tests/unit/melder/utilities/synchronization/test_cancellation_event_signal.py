@@ -1,3 +1,4 @@
+import threading
 import pytest
 
 from melder.utilities.synchronization.cancellation_event_signal import (
@@ -27,3 +28,36 @@ def test_cancellation_event_signal_cleanup_disallows_use():
         _ = signal.event
     with pytest.raises(RuntimeError):
         signal.cancel()
+    with pytest.raises(RuntimeError):
+        _ = signal.is_set
+
+
+def test_cancellation_event_requires_flag():
+    with pytest.raises(ValueError):
+        CancellationEvent(None)  # type: ignore[arg-type]
+
+
+def test_cancellation_event_cleanup_is_idempotent():
+    flag = threading.Event()
+    evt = CancellationEvent(flag)
+    evt.cleanup()
+    evt.cleanup()  # no error
+    with pytest.raises(RuntimeError):
+        evt.throw_if_set()
+
+
+def test_cancellation_event_signal_is_idempotent_cancel():
+    signal = CancellationEventSignal()
+    evt = signal.event
+    signal.cancel()
+    assert evt.is_set is True
+    # multiple cancels fine
+    signal.cancel()
+
+
+def test_cancellation_event_signal_cleanup_cleans_child():
+    signal = CancellationEventSignal()
+    evt = signal.event
+    signal.cleanup()
+    with pytest.raises(RuntimeError):
+        evt.is_set
