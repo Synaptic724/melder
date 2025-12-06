@@ -100,6 +100,7 @@ class ConduitCloud(Cleanable):
             ValueError: If the conduit's name is None or already exists
                 in the registry.
         """
+        self.check_cleaned()
         if conduit.name is None:
             raise ValueError("Conduit name cannot be None for cloud registration.")
 
