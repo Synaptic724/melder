@@ -16,6 +16,7 @@ from melder.utilities.interfaces.interfaces import (
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 # Creations types
 from melder.aether.conduit.creations.creations import Creations
@@ -894,8 +895,18 @@ class Meld(Cleanable):
                 return creation.value if creation is not None else None
 
             if existence is Existence.unique_per_spell_space:
-                # Not wired yet; no reuse semantics defined.
-                return None
+                spellspace = creations._conduit.get_active_spellspace()
+                if spellspace is None:
+                    raise SpellSpaceScopeError(
+                        "Existence.unique_per_spell_space requires an active SpellSpace. "
+                        "Use 'with conduit.enter_spellspace()' when melding."
+                    )
+                if spellspace.owner_conduit is not creations._conduit:
+                    raise SpellSpaceScopeError(
+                        "Active SpellSpace belongs to a different conduit."
+                    )
+                creation = creations.get_spellspace_creation(spellspace.id, spell_id)
+                return creation.value if creation is not None else None
 
             # Defensive fallback
             return None
@@ -906,7 +917,7 @@ class Meld(Cleanable):
                 creation = creations._unique_per_scope.get(spell_id)
                 return creation.value if creation is not None else None
             # Delegate frame-level singletons to parent creations when available.
-            parent_creations = getattr(creations, "_parent_creations", None)
+            parent_creations = creations._parent_creations
             if isinstance(parent_creations, Creations):
                 if existence is Existence.unique:
                     found = parent_creations._unique.get(spell_id)
@@ -918,8 +929,18 @@ class Meld(Cleanable):
                     found = parent_creations._unique_per_lineage.get(spell_id)
                     return found.value if found is not None else None
                 if existence is Existence.unique_per_spell_space:
-                    # Not implemented; no reuse.
-                    return None
+                    spellspace = creations._conduit.get_active_spellspace()
+                    if spellspace is None:
+                        raise SpellSpaceScopeError(
+                            "Existence.unique_per_spell_space requires an active SpellSpace. "
+                            "Use 'with conduit.enter_spellspace()' when melding."
+                        )
+                    if spellspace.owner_conduit is not creations._conduit:
+                        raise SpellSpaceScopeError(
+                            "Active SpellSpace belongs to a different conduit."
+                        )
+                    creation = creations.get_spellspace_creation(spellspace.id, spell_id)
+                    return creation.value if creation is not None else None
             # Existence.many is handled above. Other unique modes are delegated or unsupported.
             return None
 
@@ -1090,9 +1111,18 @@ class Meld(Cleanable):
             return
 
         if existence is Existence.unique_per_spell_space:
-            raise NotImplementedError(
-                "[MELD] Registration for Existence.unique_per_spell_space is not yet implemented."
-            )
+            spellspace = creations._conduit.get_active_spellspace()
+            if spellspace is None:
+                raise SpellSpaceScopeError(
+                    "Existence.unique_per_spell_space requires an active SpellSpace. "
+                    "Use 'with conduit.enter_spellspace()' when melding."
+                )
+            if spellspace.owner_conduit is not creations._conduit:
+                raise SpellSpaceScopeError(
+                    "Active SpellSpace belongs to a different conduit."
+                )
+            creations.register_spellspace_creation(spellspace.id, spell_id, instance)
+            return
 
         # Fallback for any unsupported mode in Creations
         raise RuntimeError(
@@ -1132,7 +1162,7 @@ class Meld(Cleanable):
             return
 
         # Delegate frame-level lifetimes to the parent creations when available.
-        parent_creations = getattr(creations, "_parent_creations", None)
+        parent_creations = creations._parent_creations
         if isinstance(parent_creations, Creations):
             if existence is Existence.unique:
                 parent_creations.add_unique(spell_id, instance)
@@ -1144,9 +1174,18 @@ class Meld(Cleanable):
                 parent_creations.add_unique_per_lineage(spell_id, instance)
                 return
             if existence is Existence.unique_per_spell_space:
-                raise NotImplementedError(
-                    "[MELD] Registration for Existence.unique_per_spell_space is not yet implemented."
-                )
+                spellspace = creations._conduit.get_active_spellspace()
+                if spellspace is None:
+                    raise SpellSpaceScopeError(
+                        "Existence.unique_per_spell_space requires an active SpellSpace. "
+                        "Use 'with conduit.enter_spellspace()' when melding."
+                    )
+                if spellspace.owner_conduit is not creations._conduit:
+                    raise SpellSpaceScopeError(
+                        "Active SpellSpace belongs to a different conduit."
+                    )
+                creations.register_spellspace_creation(spellspace.id, spell_id, instance)
+                return
 
         # LesserConduits only support a subset of existence modes locally
         raise RuntimeError(

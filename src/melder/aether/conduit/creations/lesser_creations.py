@@ -52,6 +52,7 @@ class LesserCreations(Cleanable):
         # Internal storage for managed objects
         self._unique_per_scope: Dict[str, Creation] = {}
         self._many: Dict[str, List[Creation]] = {}
+        self._spellspace_instances: Dict[str, Dict[str, Creation]] = {}
 
         # Disposal configuration
         self._disposal_enabled: bool = disposal_enabled
@@ -106,6 +107,13 @@ class LesserCreations(Cleanable):
                     groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 errors.extend(self._cleanup_many())
+                self._logger.debug(
+                    "_cleanup_spellspace_instances()",
+                    method_name="cleanup", mask=True,
+                    owner_id=self._id, owner_display=self._display_name,
+                    groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+                errors.extend(self._cleanup_spellspace_instances())
             except Exception as e:
                 self._logger.error(
                     f"cleanup: fatal error during sequence: {e}",
@@ -118,6 +126,7 @@ class LesserCreations(Cleanable):
             # Null internals last
             self._unique_per_scope = None
             self._many = None
+            self._spellspace_instances = None
             self._conduit = None
             self._parent_creations = None
             self._disposal_method_names = None
@@ -195,6 +204,36 @@ class LesserCreations(Cleanable):
             method_name="_cleanup_many", mask=True,
             owner_id=self._id, owner_display=self._display_name,
             groups=self._log_groups, system_groups=self._log_sysgroups,
+        )
+        return errors
+
+    def _cleanup_spellspace_instances(self) -> List[Exception]:
+        """
+        Internal
+
+        Disposes of all objects registered under the spellspace scope buckets.
+
+        Returns:
+            List[Exception]: List of any cleanup errors encountered.
+        """
+        errors: List[Exception] = []
+        for _, bucket in self._spellspace_instances.items():
+            for item in bucket.values():
+                if item is not None:
+                    maybe_error = self._attempt_cleanup(item.value)
+                    if maybe_error:
+                        errors.append(maybe_error)
+                    item.cleanup()
+            bucket.clear()
+        self._spellspace_instances.clear()
+        self._logger.debug(
+            f"_cleanup_spellspace_instances: errors={len(errors)}",
+            method_name="_cleanup_spellspace_instances",
+            mask=True,
+            owner_id=self._id,
+            owner_display=self._display_name,
+            groups=self._log_groups,
+            system_groups=self._log_sysgroups,
         )
         return errors
 
@@ -359,3 +398,49 @@ class LesserCreations(Cleanable):
         if key not in self._many:
             self._many[key] = []
         self._many[key].append(Creation(item))
+
+    # ------------------------------------------------------------------
+    # SpellSpace helpers
+    # ------------------------------------------------------------------
+
+    def get_spellspace_creation(self, spellspace_id: str, spell_id: str) -> Optional[Creation]:
+        """
+        Retrieve a creation from a specific spellspace bucket.
+        """
+        self.check_cleaned()
+        bucket = self._spellspace_instances.get(spellspace_id)
+        if bucket is None:
+            return None
+        return bucket.get(spell_id)
+
+    def register_spellspace_creation(self, spellspace_id: str, spell_id: str, item: object) -> None:
+        """
+        Register a creation under a specific spellspace bucket.
+        """
+        self.check_cleaned()
+        if spellspace_id not in self._spellspace_instances:
+            self._spellspace_instances[spellspace_id] = {}
+        bucket = self._spellspace_instances[spellspace_id]
+        if spell_id in bucket:
+            raise ValueError(f"Key {spell_id} already exists in spellspace '{spellspace_id}'.")
+        bucket[spell_id] = Creation(item)
+
+    def clear_spellspace_instances(self, spellspace_id: str) -> None:
+        """
+        Dispose and clear all creations for a specific spellspace.
+        """
+        self.check_cleaned()
+        bucket = self._spellspace_instances.get(spellspace_id)
+        if bucket is None:
+            return
+        errors: List[Exception] = []
+        for item in bucket.values():
+            if item is not None:
+                maybe_error = self._attempt_cleanup(item.value)
+                if maybe_error:
+                    errors.append(maybe_error)
+                item.cleanup()
+        bucket.clear()
+        del self._spellspace_instances[spellspace_id]
+        if errors:
+            raise ExceptionGroup("Errors occurred during spellspace cleanup", errors)

@@ -19,6 +19,7 @@ from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
+from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 
 class MeldEngine(Cleanable):
@@ -446,15 +447,25 @@ class MeldEngine(Cleanable):
                 found = creations._unique_per_lineage.get(spell_id)
                 return found.value if found is not None else None
             if existence is Existence.unique_per_spell_space:
-                # Reserved for future spell-space reuse semantics.
-                return None
+                spellspace = creations._conduit.get_active_spellspace()
+                if spellspace is None:
+                    raise SpellSpaceScopeError(
+                        "Existence.unique_per_spell_space requires an active SpellSpace. "
+                        "Use 'with conduit.enter_spellspace()' when melding."
+                    )
+                if spellspace.owner_conduit is not creations._conduit:
+                    raise SpellSpaceScopeError(
+                        "Active SpellSpace belongs to a different conduit."
+                    )
+                found = creations.get_spellspace_creation(spellspace.id, spell_id)
+                return found.value if found is not None else None
             return None
 
         if isinstance(creations, LesserCreations):
             if existence is Existence.unique_per_conduit:
                 found = creations._unique_per_scope.get(spell_id)
                 return found.value if found is not None else None
-            parent_creations = getattr(creations, "_parent_creations", None)
+            parent_creations = creations._parent_creations
             if isinstance(parent_creations, Creations):
                 if existence is Existence.unique:
                     found = parent_creations._unique.get(spell_id)
@@ -466,8 +477,18 @@ class MeldEngine(Cleanable):
                     found = parent_creations._unique_per_lineage.get(spell_id)
                     return found.value if found is not None else None
                 if existence is Existence.unique_per_spell_space:
-                    # Reserved for future spell-space reuse semantics.
-                    return None
+                    spellspace = creations._conduit.get_active_spellspace()
+                    if spellspace is None:
+                        raise SpellSpaceScopeError(
+                            "Existence.unique_per_spell_space requires an active SpellSpace. "
+                            "Use 'with conduit.enter_spellspace()' when melding."
+                        )
+                    if spellspace.owner_conduit is not creations._conduit:
+                        raise SpellSpaceScopeError(
+                            "Active SpellSpace belongs to a different conduit."
+                        )
+                    found = creations.get_spellspace_creation(spellspace.id, spell_id)
+                    return found.value if found is not None else None
             return None
 
         return None
@@ -494,7 +515,17 @@ class MeldEngine(Cleanable):
                 creations.add_unique_per_lineage(spell_id, instance)
                 return
             if existence is Existence.unique_per_spell_space:
-                # Reserved for future spell-space semantics (not implemented).
+                spellspace = creations._conduit.get_active_spellspace()
+                if spellspace is None:
+                    raise SpellSpaceScopeError(
+                        "Existence.unique_per_spell_space requires an active SpellSpace. "
+                        "Use 'with conduit.enter_spellspace()' when melding."
+                    )
+                if spellspace.owner_conduit is not creations._conduit:
+                    raise SpellSpaceScopeError(
+                        "Active SpellSpace belongs to a different conduit."
+                    )
+                creations.register_spellspace_creation(spellspace.id, spell_id, instance)
                 return
             return
 
@@ -505,7 +536,7 @@ class MeldEngine(Cleanable):
             if existence is Existence.many:
                 creations.add_many(spell_id, instance)
                 return
-            parent_creations = getattr(creations, "_parent_creations", None)
+            parent_creations = creations._parent_creations
             if isinstance(parent_creations, Creations):
                 if existence is Existence.unique:
                     parent_creations.add_unique(spell_id, instance)
@@ -517,6 +548,16 @@ class MeldEngine(Cleanable):
                     parent_creations.add_unique_per_lineage(spell_id, instance)
                     return
                 if existence is Existence.unique_per_spell_space:
-                    # Reserved for future spell-space semantics (not implemented).
+                    spellspace = creations._conduit.get_active_spellspace()
+                    if spellspace is None:
+                        raise SpellSpaceScopeError(
+                            "Existence.unique_per_spell_space requires an active SpellSpace. "
+                            "Use 'with conduit.enter_spellspace()' when melding."
+                        )
+                    if spellspace.owner_conduit is not creations._conduit:
+                        raise SpellSpaceScopeError(
+                            "Active SpellSpace belongs to a different conduit."
+                        )
+                    creations.register_spellspace_creation(spellspace.id, spell_id, instance)
                     return
             return

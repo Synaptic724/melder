@@ -1,4 +1,6 @@
 import threading
+from contextvars import ContextVar
+from contextlib import contextmanager
 from typing import Optional, Type, Any, Tuple
 
 # Melder Imports
@@ -16,6 +18,8 @@ from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
+from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 #TODO: @GPT5, please inform Mark that he needs to implement Conduits hooks, for pre- during, and post activations so we can add Aspect Oriented Programming here
 
@@ -66,6 +70,9 @@ class Conduit(Cleanable):
         self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
         self._spellbook: ISpellbook = spellbook
         self._meld: Meld = Meld(creations=self._creations, spellbook=self._spellbook)
+        self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
+            f"_spellspace_stack_{self._id}", default=[]
+        )
 
         # Localized hook map for this conduit.
         # Populated from Configuration using the Spellbook's ID.
@@ -90,6 +97,45 @@ class Conduit(Cleanable):
             f"Conduit initialized (id={self._id}, frame='{self._aetheric_frame}')",
             "__init__"
         )
+
+    # ------------------------------------------------------------------ #
+    # SpellSpace support
+    # ------------------------------------------------------------------ #
+
+    def get_active_spellspace(self) -> Optional[SpellSpace]:
+        stack = self._spellspace_stack.get()
+        if not stack:
+            return None
+        return stack[-1]
+
+    def create_spellspace(self) -> SpellSpace:
+        """
+        Create a SpellSpace bound to this Conduit. Lifecycle is manual unless
+        used via `enter_spellspace`.
+        """
+        return SpellSpace(self)
+
+    @contextmanager
+    def enter_spellspace(self) -> SpellSpace:
+        """
+        Context-managed SpellSpace. Pushes onto the stack, yields it, and
+        cleans it on exit.
+        """
+        space = self.create_spellspace()
+        stack = list(self._spellspace_stack.get())
+        stack.append(space)
+        self._spellspace_stack.set(stack)
+        try:
+            yield space
+        finally:
+            stack = list(self._spellspace_stack.get())
+            if not stack or stack[-1] is not space:
+                raise SpellSpaceScopeError(
+                    "SpellSpace stack corruption detected while exiting."
+                )
+            stack.pop()
+            self._spellspace_stack.set(stack)
+            space.cleanup()
 
 
 
@@ -278,6 +324,8 @@ class Conduit(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            # drop any active spellspace stack
+            self._spellspace_stack.set([])
             if self._conduit_state == ConduitState.lesser:
                 self._cleanup_lesser_conduit()
             elif self._conduit_state == ConduitState.normal:
