@@ -624,6 +624,111 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
 
         return _iter()
 
+    # -------------------------------------------------------------------------
+    # Set operations (union, intersection, etc.)
+    # -------------------------------------------------------------------------
+    def _materialize_other(self, other: Iterable[Any]) -> set[_T]:
+        return set(other if not isinstance(other, WeakConcurrentSet) else other.to_set())
+
+    def isdisjoint(self, other: Iterable[Any]) -> bool:
+        return self.to_set().isdisjoint(self._materialize_other(other))
+
+    def issubset(self, other: Iterable[Any]) -> bool:
+        return self.to_set().issubset(self._materialize_other(other))
+
+    def issuperset(self, other: Iterable[Any]) -> bool:
+        return self.to_set().issuperset(self._materialize_other(other))
+
+    def union(self, *others: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        result = self.to_set()
+        for o in others:
+            result |= self._materialize_other(o)
+        return WeakConcurrentSet(result, auto_prune=self._auto_prune)
+
+    def intersection(self, *others: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        result = self.to_set()
+        for o in others:
+            result &= self._materialize_other(o)
+        return WeakConcurrentSet(result, auto_prune=self._auto_prune)
+
+    def difference(self, *others: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        result = self.to_set()
+        for o in others:
+            result -= self._materialize_other(o)
+        return WeakConcurrentSet(result, auto_prune=self._auto_prune)
+
+    def symmetric_difference(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        result = self.to_set() ^ self._materialize_other(other)
+        return WeakConcurrentSet(result, auto_prune=self._auto_prune)
+
+    def update(self, *others: Iterable[Any]) -> None:
+        self._ensure_mutable()
+        with self._lock:
+            base = self._values_from_nodes(self._set)
+            for o in others:
+                base |= self._materialize_other(o)
+            self._set.clear()
+            for v in base:
+                self._set.add(self._make_node(v))
+
+    def intersection_update(self, *others: Iterable[Any]) -> None:
+        self._ensure_mutable()
+        with self._lock:
+            base = self._values_from_nodes(self._set)
+            for o in others:
+                base &= self._materialize_other(o)
+            self._set.clear()
+            for v in base:
+                self._set.add(self._make_node(v))
+
+    def difference_update(self, *others: Iterable[Any]) -> None:
+        self._ensure_mutable()
+        with self._lock:
+            base = self._values_from_nodes(self._set)
+            for o in others:
+                base -= self._materialize_other(o)
+            self._set.clear()
+            for v in base:
+                self._set.add(self._make_node(v))
+
+    def symmetric_difference_update(self, other: Iterable[Any]) -> None:
+        self._ensure_mutable()
+        with self._lock:
+            base = self._values_from_nodes(self._set)
+            base ^= self._materialize_other(other)
+            self._set.clear()
+            for v in base:
+                self._set.add(self._make_node(v))
+
+    # PEP 584-style operators
+    def __or__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        return self.union(other)
+
+    def __and__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        return self.intersection(other)
+
+    def __sub__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        return self.difference(other)
+
+    def __xor__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        return self.symmetric_difference(other)
+
+    def __ior__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        self.update(other)
+        return self
+
+    def __iand__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        self.intersection_update(other)
+        return self
+
+    def __isub__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        self.difference_update(other)
+        return self
+
+    def __ixor__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        self.symmetric_difference_update(other)
+        return self
+
     def __bool__(self) -> bool:
         """
         Truthiness for the set.
@@ -650,6 +755,21 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             val = node.deref(strict=False)
             values.append(val if val is not None else "<dead>")
         return f"{self.__class__.__name__}({values!r})"
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Equality comparison against another WeakConcurrentSet or plain set-like.
+
+        Live values are compared; dead entries will cause DeadReferenceError unless already pruned.
+        """
+        if isinstance(other, WeakConcurrentSet):
+            return self.to_set() == other.to_set()
+        if isinstance(other, (set, frozenset)):
+            return self.to_set() == set(other)
+        return False
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
 
     # -------------------------------------------------------------------------
     # Higher-order helpers (map / filter / reduce)
@@ -733,6 +853,32 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         if initial is None:
             return _reduce(func, items)
         return _reduce(func, items, initial)
+
+    # -------------------------------------------------------------------------
+    # Set API extensions
+    # -------------------------------------------------------------------------
+    def pop(self) -> _T:
+        """
+        Remove and return an arbitrary live element. Mirrors `set.pop`.
+
+        Raises:
+            KeyError: If the set is empty.
+            TypeError: If the set is frozen.
+            DeadReferenceError: If a dead node is encountered before pruning.
+        """
+        self.check_cleaned()
+        self._ensure_mutable()
+        with self._lock:
+            if not self._set:
+                raise KeyError("pop from an empty WeakConcurrentSet")
+            node = next(iter(self._set))
+            self._set.remove(node)
+            val = node.deref(strict=True)
+            try:
+                node.fire_callbacks()
+            finally:
+                node.cleanup()
+            return val
 
     def batch_update(self, func: Callable[[Set[_T]], None]) -> None:
         """

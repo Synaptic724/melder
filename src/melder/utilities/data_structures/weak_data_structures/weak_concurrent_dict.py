@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import (
     Any,
     Callable,
+    Collection,
     Dict,
     Generic,
     Iterable,
@@ -27,6 +28,105 @@ from melder.utilities.data_structures.weak_data_structures.weak_ref_node import 
 
 _K = TypeVar("_K")
 _V = TypeVar("_V")
+
+
+class _WeakDictKeysView(Collection[_K]):
+    def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
+        self._parent = parent
+
+    def __iter__(self) -> Iterator[_K]:
+        self._parent.check_cleaned()
+        for k, _ in self._parent._snapshot_items():
+            yield k
+
+    def __len__(self) -> int:
+        return len(self._parent)
+
+    def __contains__(self, key: object) -> bool:
+        return key in self._parent
+
+    # Set-like operations
+    def _as_set(self) -> set[_K]:
+        return set(iter(self))
+
+    def __and__(self, other: Iterable[Any]) -> set[_K]:
+        return self._as_set().__and__(set(other))
+
+    def __or__(self, other: Iterable[Any]) -> set[_K]:
+        return self._as_set().__or__(set(other))
+
+    def __sub__(self, other: Iterable[Any]) -> set[_K]:
+        return self._as_set().__sub__(set(other))
+
+    def __xor__(self, other: Iterable[Any]) -> set[_K]:
+        return self._as_set().__xor__(set(other))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({list(self)!r})"
+
+
+class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
+    def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
+        self._parent = parent
+
+    def __iter__(self) -> Iterator[Tuple[_K, _V]]:
+        self._parent.check_cleaned()
+        for k, node in self._parent._snapshot_items():
+            yield (k, node.deref(strict=True))
+
+    def __len__(self) -> int:
+        return len(self._parent)
+
+    def __contains__(self, item: object) -> bool:
+        if not isinstance(item, tuple) or len(item) != 2:
+            return False
+        key, val = item
+        try:
+            current = self._parent[key]  # may raise
+        except Exception:
+            return False
+        return current == val
+
+    # Set-like operations
+    def _as_set(self) -> set[Tuple[_K, _V]]:
+        return set(iter(self))
+
+    def __and__(self, other: Iterable[Any]) -> set[Tuple[_K, _V]]:
+        return self._as_set().__and__(set(other))
+
+    def __or__(self, other: Iterable[Any]) -> set[Tuple[_K, _V]]:
+        return self._as_set().__or__(set(other))
+
+    def __sub__(self, other: Iterable[Any]) -> set[Tuple[_K, _V]]:
+        return self._as_set().__sub__(set(other))
+
+    def __xor__(self, other: Iterable[Any]) -> set[Tuple[_K, _V]]:
+        return self._as_set().__xor__(set(other))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({list(self)!r})"
+
+
+class _WeakDictValuesView(Collection[_V]):
+    def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
+        self._parent = parent
+
+    def __iter__(self) -> Iterator[_V]:
+        self._parent.check_cleaned()
+        for _, node in self._parent._snapshot_items():
+            yield node.deref(strict=True)
+
+    def __len__(self) -> int:
+        return len(self._parent)
+
+    def __contains__(self, value: object) -> bool:
+        for v in self:
+            if v == value:
+                return True
+        return False
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({list(self)!r})"
 
 
 class WeakConcurrentDict(Generic[_K, _V], Cleanable):
@@ -134,6 +234,31 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self._dict: Dict[_K, WeakRefNode[_V]] = {
             k: self._make_node(v) for k, v in raw.items()
         }
+
+    # -------------------------------------------------------------------------
+    # Alt constructors
+    # -------------------------------------------------------------------------
+    @classmethod
+    def fromkeys(
+            cls,
+            keys: Iterable[_K],
+            value: Optional[_V] = None,
+            *,
+            auto_prune: bool = False,
+    ) -> "WeakConcurrentDict[_K, _V]":
+        """
+        Create a WeakConcurrentDict from an iterable of keys, assigning each to the same value.
+
+        Mirrors ``dict.fromkeys`` semantics (including any TypeError raised if the value cannot
+        be weak-referenced).
+
+        Args:
+            keys: Iterable of keys.
+            value: Value to associate with every key.
+            auto_prune: Whether the resulting dict should auto-prune dead entries.
+        """
+        items = [(k, value) for k in keys]
+        return cls(initial=items, auto_prune=auto_prune)
 
     # -------------------------------------------------------------------------
     # Internal node helpers
@@ -836,54 +961,33 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         items = self._snapshot_items()
         return (k for k, _ in items)
 
-    def keys(self) -> List[_K]:
+    def __reversed__(self) -> Iterator[_K]:
         """
-        Return a list of keys (from a snapshot).
+        Iterate over keys in reverse insertion order (snapshot).
 
-        Returns:
-            list[_K]: All keys currently present (including ones whose values
-            may have died if `auto_prune` is False and `prune()` hasn't been
-            called).
+        Mirrors ``dict.__reversed__`` semantics on a snapshot of keys.
         """
         self.check_cleaned()
         items = self._snapshot_items()
-        return [k for k, _ in items]
+        return (k for k, _ in reversed(items))
 
-    def values(self) -> List[_V]:
+    def keys(self) -> Collection[_K]:
         """
-        Return a list of live values (from a snapshot).
-
-        Returns:
-            list[_V]: All live underlying values.
-
-        Raises:
-            DeadReferenceError:
-                If any node in the dict is dead and has not yet been pruned.
+        Return a dynamic keys view (similar to ``dict.keys()``).
         """
-        self.check_cleaned()
-        items = self._snapshot_items()
-        result: List[_V] = []
-        for _, node in items:
-            result.append(node.deref(strict=True))  # may raise
-        return result
+        return _WeakDictKeysView(self)
 
-    def items(self) -> List[Tuple[_K, _V]]:
+    def values(self) -> Collection[_V]:
         """
-        Return a list of (key, value) pairs (from a snapshot).
-
-        Returns:
-            list[tuple[_K, _V]]: All entries with live values.
-
-        Raises:
-            DeadReferenceError:
-                If any node in the dict is dead and has not yet been pruned.
+        Return a dynamic values view (similar to ``dict.values()``).
         """
-        self.check_cleaned()
-        items = self._snapshot_items()
-        result: List[Tuple[_K, _V]] = []
-        for k, node in items:
-            result.append((k, node.deref(strict=True)))  # may raise
-        return result
+        return _WeakDictValuesView(self)
+
+    def items(self) -> Collection[Tuple[_K, _V]]:
+        """
+        Return a dynamic items view (similar to ``dict.items()``).
+        """
+        return _WeakDictItemsView(self)
 
     def to_dict(self) -> Dict[_K, _V]:
         """
@@ -1141,6 +1245,38 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         if isinstance(other, dict):
             return self.to_dict() == other
         return False
+
+    def __or__(self, other: Mapping[_K, _V] | Iterable[Tuple[_K, _V]]) -> "WeakConcurrentDict[_K, _V]":
+        """
+        Merge two mappings/iterables into a new WeakConcurrentDict (PEP 584 style).
+        """
+        self.check_cleaned()
+        if other is None:
+            other = {}
+        merged = list(self.items())
+        # other may be mapping-like or iterable
+        if hasattr(other, "items"):
+            merged.extend(list(other.items()))  # type: ignore[arg-type]
+        else:
+            merged.extend(list(other))  # type: ignore[arg-type]
+        return WeakConcurrentDict(initial=merged, auto_prune=self._auto_prune)
+
+    def __ior__(self, other: Mapping[_K, _V] | Iterable[Tuple[_K, _V]]) -> "WeakConcurrentDict[_K, _V]":
+        """
+        In-place merge (|=) with another mapping/iterable (PEP 584 style).
+        """
+        self.update(other)
+        return self
+
+    def __ror__(self, other: Mapping[_K, _V] | Iterable[Tuple[_K, _V]]) -> "WeakConcurrentDict[_K, _V]":
+        """
+        Right-hand merge to support ``mapping | WeakConcurrentDict`` (PEP 584 style).
+
+        The right-hand operand (``self``) wins on key conflicts, mirroring built-in dict behavior.
+        """
+        # Build from the left operand first, then merge self so our keys win.
+        left = WeakConcurrentDict(initial=other, auto_prune=self._auto_prune)
+        return left.__or__(self)
 
     def __ne__(self, other: object) -> bool:
         """

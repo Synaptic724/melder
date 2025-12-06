@@ -4,6 +4,7 @@ import threading
 import ulid
 from typing import Any, Callable, Optional, List, TypeVar, Generic
 from collections.abc import Iterable, Iterator
+from functools import reduce as _reduce
 
 # Melder Imports
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
@@ -564,6 +565,47 @@ class WeakConcurrentList(Generic[_T], Cleanable):
                     node.cleanup()
             self._list.clear()
 
+    # -------------------------------------------------------------------------
+    # Pickling / deepcopy support
+    # -------------------------------------------------------------------------
+    def __getstate__(self) -> dict:
+        """
+        Support pickling/deepcopy by excluding the lock and weak nodes.
+        """
+        return {
+            "_id": self._id,
+            "_freeze": self._freeze,
+            "_auto_prune": self._auto_prune,
+            "_values": self.to_list(),
+            "_cleaned": self._cleaned,
+        }
+
+    def __setstate__(self, state: dict) -> None:
+        """
+        Restore from pickled/deepcopied state.
+        """
+        self._id = state.get("_id", str(ulid.ULID()))
+        self._freeze = state.get("_freeze", False)
+        self._auto_prune = state.get("_auto_prune", False)
+        self._cleaned = state.get("_cleaned", False)
+        self._lock = threading.RLock()
+        self._list = []
+        if self._cleaned:
+            return
+        for v in state.get("_values", []):
+            self._list.append(self._make_node(v))
+
+    def reverse(self) -> None:
+        """
+        Reverse the list in place (order of nodes), preserving weak semantics.
+        """
+        self.check_cleaned()
+        self._ensure_not_frozen()
+        with self._lock:
+            if self._auto_prune:
+                self._prune_dead_locked()
+            self._list.reverse()
+
     def __len__(self) -> int:
         """
         Returns the number of nodes (dead or alive) in the list.
@@ -581,6 +623,51 @@ class WeakConcurrentList(Generic[_T], Cleanable):
             if self._auto_prune:
                 self._prune_dead_locked()
             return len(self._list)
+
+    def count(self, item: Any) -> int:
+        """
+        Count occurrences of ``item`` among live entries.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._auto_prune:
+                self._prune_dead_locked()
+            total = 0
+            for node in self._list:
+                try:
+                    if node.deref(strict=True) == item:
+                        total += 1
+                except DeadReferenceError:
+                    if self._auto_prune:
+                        continue
+                    raise
+            return total
+
+    def index(self, item: Any, start: int = 0, stop: Optional[int] = None) -> int:
+        """
+        Return first index of ``item`` among live entries.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._auto_prune:
+                self._prune_dead_locked()
+            end = len(self._list) if stop is None else min(stop, len(self._list))
+            for idx in range(start, end):
+                node = self._list[idx]
+                try:
+                    if node.deref(strict=True) == item:
+                        return idx
+                except DeadReferenceError:
+                    if self._auto_prune:
+                        continue
+                    raise
+            raise ValueError(f"{item!r} is not in list")
+
+    def copy(self) -> "WeakConcurrentList[_T]":
+        """
+        Shallow copy containing live values.
+        """
+        return WeakConcurrentList(self.to_list(), auto_prune=self._auto_prune)
 
     def __iter__(self) -> Iterator[_T]:
         """
@@ -606,6 +693,20 @@ class WeakConcurrentList(Generic[_T], Cleanable):
                 yield node.deref(strict=True)
 
         return _iter_values()
+
+    def __reversed__(self) -> Iterator[_T]:
+        """
+        Iterate over live elements in reverse order.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._auto_prune:
+                self._prune_dead_locked()
+            snapshot = list(reversed(self._list))
+        def _rev() -> Iterator[_T]:
+            for node in snapshot:
+                yield node.deref(strict=True)
+        return _rev()
 
     def __contains__(self, item: Any) -> bool:
         """
@@ -685,6 +786,25 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         """
         return len(self) != 0
 
+    def __eq__(self, other: object) -> bool:
+        """
+        Equality comparison against another list/tuple/WeakConcurrentList using live values.
+        """
+        if isinstance(other, WeakConcurrentList):
+            try:
+                return self.to_list() == other.to_list()
+            except DeadReferenceError:
+                return False
+        if isinstance(other, (list, tuple)):
+            try:
+                return self.to_list() == list(other)
+            except DeadReferenceError:
+                return False
+        return False
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
+
     def to_list(self) -> List[_T]:
         """
         Returns a **strong** standard Python list containing only the currently **live** values.
@@ -702,6 +822,27 @@ class WeakConcurrentList(Generic[_T], Cleanable):
                 self._prune_dead_locked()
             # Strict=True ensures DeadReferenceError is raised
             return [node.deref(strict=True) for node in self._list]
+
+    # -------------------------------------------------------------------------
+    # Higher-order helpers
+    # -------------------------------------------------------------------------
+    def map(self, func: Callable[[_T], _T]) -> "WeakConcurrentList[_T]":
+        """
+        Apply ``func`` to each live element and return a new WeakConcurrentList of results.
+        """
+        return WeakConcurrentList((func(v) for v in self.to_list()), auto_prune=self._auto_prune)
+
+    def filter(self, func: Callable[[_T], bool]) -> "WeakConcurrentList[_T]":
+        """
+        Keep elements where ``func(value)`` is True.
+        """
+        return WeakConcurrentList((v for v in self.to_list() if func(v)), auto_prune=self._auto_prune)
+
+    def reduce(self, func: Callable[[Any, _T], Any], initial: Any) -> Any:
+        """
+        Reduce the live elements using ``func`` starting from ``initial``.
+        """
+        return _reduce(func, self.to_list(), initial)
 
     # -------------------------------------------------------------------------
     # Context managers (same pattern as ConcurrentList)

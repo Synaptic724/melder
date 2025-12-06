@@ -149,18 +149,20 @@ def test_thread_safety_basic_lock_usage():
     uow = UnitOfWork(lambda: time.sleep(0.05))
 
     acquired_in_thread = []
+    entered = threading.Event()
 
     def worker():
         with uow:
             acquired_in_thread.append(True)
+            entered.set()
             time.sleep(0.05)
 
     t = threading.Thread(target=worker)
     t.start()
     # Wait for thread to acquire lock
-    time.sleep(0.01)
+    entered.wait(timeout=0.1)
     assert uow._lock.acquire(blocking=False) is False
-    t.join()
+    t.join(timeout=5)
     assert acquired_in_thread == [True]
     # Lock is released after context
     assert uow._lock.acquire(blocking=False) is True
