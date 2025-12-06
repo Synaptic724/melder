@@ -1093,7 +1093,13 @@ class Spellbook(Cleanable):
                     "bind",
                     exc_info=True,
                 )
-                raise RuntimeError(f"Spell with ID {new_spell.spell_id} already exists in the registry.")
+                raise RuntimeError(
+                    "Spell ID collision detected. spell_id is computed from the spell's structural \n"
+                    "fingerprint (e.g., module, qualname, signature, defaults). The existing spell \n"
+                    "with this id is already registered in the Aether for this frame. If you intended \n"
+                    "to register a distinct spell, ensure its structure (or binding/frame/name) differs \n"
+                    "so it produces a unique spell_id."
+                )
 
             self._add_hooks_to_spell(new_spell, **kwargs)
 
