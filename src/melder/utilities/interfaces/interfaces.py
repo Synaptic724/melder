@@ -5507,7 +5507,7 @@ class IDevOpsManager(ICleanable, Protocol):
 
 
 @runtime_checkable
-class IIncidentManager(Protocol, ICleanable):
+class IIncidentManager(ICleanable, Protocol):
     """
     Protocol for the DevOps incident registry.
 
@@ -5561,7 +5561,7 @@ class IIncidentManager(Protocol, ICleanable):
         ...
 
 @runtime_checkable
-class IChangeControlManager(Protocol, ICleanable):
+class IChangeControlManager(ICleanable, Protocol):
     """
     Protocol for the High-level change/release tracker for an Aetheric Frame.
 

@@ -16,7 +16,7 @@ class SafeLogger(Cleanable):
     - Standard loggers drop channel-only kwargs and ignore masking.
     - No getattr on our own classes.
     """
-    __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel", "_id", "_level"]
+    __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel", "_id", "_level", "_level_name"]
     _LEVELS: Dict[str, int] = {
         "notset": logging.NOTSET,
         "debug": logging.DEBUG,

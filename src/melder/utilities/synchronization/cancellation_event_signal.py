@@ -34,7 +34,7 @@ class CancellationEvent(Cleanable):
         signal.cancel()  # all observers see the cancellation almost instantly
     """
 
-    __slots__ = Cleanable.__slots__ + ("_flag",)
+    __slots__ = Cleanable.__slots__ + ["_flag",]
 
     def __init__(self, flag: threading.Event) -> None:
         """
@@ -125,7 +125,7 @@ class CancellationEventSignal(Cleanable):
       burst-style pipeline (e.g. staged resolution compilation).
     """
 
-    __slots__ = Cleanable.__slots__ + ("_flag", "_event")
+    __slots__ = Cleanable.__slots__ + ["_flag", "_event"]
 
     def __init__(self) -> None:
         Cleanable.__init__(self)
