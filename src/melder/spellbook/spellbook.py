@@ -88,6 +88,7 @@ class Spellbook(Cleanable):
         self._configuration_locked: bool = False
         self._configuration: IConfiguration = configuration
         self._initialize_configuration()
+        self._logger: Optional[Any] = None
 
         # Logger setup
         self._initialize_logging(logger)
@@ -103,13 +104,13 @@ class Spellbook(Cleanable):
         self._contracted_versions: Dict[str, Set[str]] = {}
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
 
-        # Binding system
-        self._bind: Bind = Bind(self)
-
         # Spell validator
         self._spell_validator: SpellValidationSystem = SpellValidationSystem()
         # Spell States System
         self._spell_states_system: ISpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
+
+        # Binding system
+        self._bind: Bind = Bind(self)
 
     #region Disposal
 
