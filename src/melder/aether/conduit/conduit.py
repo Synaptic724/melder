@@ -103,6 +103,12 @@ class Conduit(Cleanable):
     # ------------------------------------------------------------------ #
 
     def get_active_spellspace(self) -> Optional[SpellSpace]:
+        """
+        Return the currently active SpellSpace for this Conduit, if any.
+
+        Returns:
+            SpellSpace | None: The top-of-stack SpellSpace, or None if no spellspace is active.
+        """
         stack = self._spellspace_stack.get()
         if not stack:
             return None
@@ -110,16 +116,34 @@ class Conduit(Cleanable):
 
     def create_spellspace(self) -> SpellSpace:
         """
-        Create a SpellSpace bound to this Conduit. Lifecycle is manual unless
-        used via `enter_spellspace`.
+        Create a SpellSpace bound to this Conduit.
+
+        Lifecycle is manual unless used via `enter_spellspace`.
+
+        Returns:
+            SpellSpace: A new SpellSpace owned by this Conduit.
         """
         return SpellSpace(self)
 
     @contextmanager
     def enter_spellspace(self) -> SpellSpace:
         """
-        Context-managed SpellSpace. Pushes onto the stack, yields it, and
-        cleans it on exit.
+        Context-managed SpellSpace. Pushes onto the stack, yields it, and cleans it on exit.
+
+        Usage:
+            with conduit.enter_spellspace() as space:
+                space.meld(...)
+
+        Ensures:
+            - SpellSpace is activated before use (top of stack).
+            - SpellSpace is cleaned on exit, even on exceptions.
+            - Stack integrity is validated to detect misuse.
+
+        Returns:
+            SpellSpace: The newly created, active spellspace for the duration of the context.
+
+        Raises:
+            SpellSpaceScopeError: If stack integrity is violated on exit.
         """
         space = self.create_spellspace()
         stack = list(self._spellspace_stack.get())

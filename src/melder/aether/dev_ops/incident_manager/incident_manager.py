@@ -11,9 +11,14 @@ class IncidentManager(Cleanable):
     """
     DevOps incident registry.
 
-    - Creates and stores Incident objects.
-    - Provides simple lookup/filtering.
-    - Does not enforce any policies; it is purely descriptive.
+    Responsibilities:
+    - Create and own all Incident objects for a frame.
+    - Maintain an in-memory registry (id -> Incident) with simple lookup/filtering.
+    - Provide deterministic, idempotent cleanup of incidents and the registry.
+
+    Scope:
+    - Purely descriptive; no policy or workflow enforcement is done here.
+    - Optimized for diagnostic and tooling use (AI/operators), not for hot-path traffic.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -33,8 +38,8 @@ class IncidentManager(Cleanable):
         """
         Idempotent cleanup.
 
-        Cleans up all tracked Incident objects and the internal registry,
-        then nulls references for GC friendliness.
+        Cleans all tracked Incident objects, clears the registry, and nulls
+        references for GC friendliness. Safe to call multiple times.
         """
         if self._cleaned:
             return
@@ -85,12 +90,24 @@ class IncidentManager(Cleanable):
             details: Optional[Dict[str, Any]] = None,
     ) -> Incident:
         """
-        Create and register a new Incident. Returns the instance so callers
-        can attach it to logs/tests or stash the id.
-        """
-        with self._lock:
-            self.check_cleaned()
+        Create and register a new Incident in this manager.
 
+        Args:
+            kind: Free-form incident kind code (e.g., "validation_failed").
+            severity: IncidentSeverity enum value.
+            summary: Short description of the incident.
+            spell_index_id: Optional lineage id this incident is tied to.
+            root_ids: Optional iterable of root spell ids impacted.
+            details: Optional structured metadata (copied into the Incident).
+
+        Returns:
+            Incident: The newly created incident object (registry-owned).
+
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
             incident_id = self._allocate_id()
             incident = Incident(
                 incident_id=incident_id,
@@ -106,10 +123,19 @@ class IncidentManager(Cleanable):
 
     def get_incident(self, incident_id: str) -> Optional[Incident]:
         """
-        Look up a single incident by id. Returns None if not found.
+        Look up a single incident by id.
+
+        Args:
+            incident_id: Identifier previously returned by create_incident.
+
+        Returns:
+            Incident | None: The matching incident, or None if not found.
+
+        Raises:
+            RuntimeError: If the manager has been cleaned.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             return self._incidents_by_id.get(incident_id)
 
     def list_incidents(
@@ -120,16 +146,21 @@ class IncidentManager(Cleanable):
             kind: Optional[str] = None,
     ) -> List[Incident]:
         """
-        Basic filtering; returns a snapshot list of matching incidents.
+        Return a snapshot list of incidents matching optional filters.
 
-        Filters:
-        - status: only incidents with this IncidentStatus.
-        - spell_index_id: only incidents tied to this SpellIndex.id.
-        - kind: only incidents with this kind string.
+        Args:
+            status: Optional IncidentStatus filter.
+            spell_index_id: Optional lineage id filter.
+            kind: Optional kind string filter.
+
+        Returns:
+            List[Incident]: Snapshot of matching incidents.
+
+        Raises:
+            RuntimeError: If the manager has been cleaned.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
-
             result: List[Incident] = []
             for inc in self._incidents_by_id.values():
                 if status is not None and inc.status is not status:

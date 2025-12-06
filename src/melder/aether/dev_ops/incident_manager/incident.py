@@ -80,7 +80,7 @@ class Incident(Cleanable):
         self._spell_index_id: Optional[str] = spell_index_id
         self._summary: str = summary
         self._root_ids: List[str] = list(root_ids or [])
-        self._details: ConcurrentDict[str, Any] = details or {}
+        self._details: Dict[str, Any] = details or {}
 
     def cleanup(self) -> None:
         """
@@ -122,54 +122,52 @@ class Incident(Cleanable):
     # ---------------------------------------------------------------------
     @property
     def id(self) -> str:
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             return self._id
 
     @property
     def kind(self) -> str:
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             return self._kind
 
     @property
     def severity(self) -> IncidentSeverity:
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             return self._severity
 
     @property
     def status(self) -> IncidentStatus:
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             return self._status
 
     @property
     def spell_index_id(self) -> Optional[str]:
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             return self._spell_index_id
 
     @property
     def root_ids(self) -> List[str]:
         # Return a snapshot; callers can’t mutate internal list.
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
-            # If cleanup ran between check and lock acquisition, _root_ids will be None,
-            # but check_cleaned() would have raised already.
             return list(self._root_ids)
 
     @property
     def summary(self) -> str:
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             return self._summary
 
     @property
     def details(self) -> Dict[str, Any]:
         # Return a snapshot; callers can’t mutate internal dict.
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             return dict(self._details)
 
     # ---------------------------------------------------------------------
@@ -182,8 +180,8 @@ class Incident(Cleanable):
         Does not resolve it; it just records that someone/thing has
         looked at it.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._status = IncidentStatus.acknowledged
 
     def resolve(self) -> None:
@@ -193,8 +191,8 @@ class Incident(Cleanable):
         Higher-level tooling is responsible for deciding what "resolved"
         means (e.g., underlying validation fixed, graph revalidated, etc.).
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._status = IncidentStatus.resolved
 
     def suppress(self) -> None:
@@ -205,6 +203,6 @@ class Incident(Cleanable):
         (e.g., known limitation, intentionally dirty graph) and we do not
         want further noise from it.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._status = IncidentStatus.suppressed

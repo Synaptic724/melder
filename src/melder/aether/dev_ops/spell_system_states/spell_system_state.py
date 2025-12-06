@@ -9,50 +9,35 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 class SpellSystemState(Cleanable):
     """
-    System-level state for a single spell lineage.
-
-    This is intentionally *lightweight* and purely about topology + validity:
+    System-level state for a single spell lineage: topology, validity, and flags.
 
     Identity
     --------
     - `spell_index_id`:
         Lineage identifier (ULID from SpellIndex.id).
-
     - `current_spell_id`:
-        The currently promoted version id for this lineage
-        (e.g., SpellIndex.current; typically a SHA).
+        Currently promoted version id for this lineage (e.g., SpellIndex.current; typically a SHA).
 
     Topology
     --------
     - `direct_dependencies`:
-        Set of dependency ids for this lineage.
-        These ids are deliberately generic "spell ids" so the caller can decide
-        whether they are version ids or lineage ids. The manager is agnostic.
-
+        Set of dependency ids for this lineage. Caller decides whether ids are lineage or version ids.
     - `direct_dependents`:
-        Set of ids for lineages that depend on this lineage. This is the
-        reverse edge view used for "what breaks if this changes?".
+        Reverse edges: lineages that depend on this lineage ("what breaks if this changes?").
 
     Validity / State
     ----------------
     - `validity`:
         Coarse resolution gate (unknown / valid / gated / invalid / disabled).
-
     - `flags`:
-        Fine-grained SpellStateFlag markers describing *why* the lineage is in
-        its current condition (topology changes, contracts, mutation, ops).
-
+        Fine-grained SpellState markers describing *why* the lineage is in its current condition
+        (topology changes, contracts, mutation, ops).
     - `change_reason`:
-        Last SpellStateChangeReason that moved this lineage into its current
-        validity/flag configuration.
-
+        Last SpellStateChangeReason that moved this lineage into its current validity/flags.
     - `transitively_dirty`:
-        True if this lineage is impacted indirectly by changes upstream
-        (dependency_changed closure) and needs a follow-up pass.
-
+        True if impacted indirectly by upstream changes (dependency_changed closure).
     - `last_validated_at`:
-        Optional timestamp (float seconds) of last *successful* structural
-        validation. Caller is responsible for populating it.
+        Optional timestamp (float seconds) of last *successful* structural validation.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -265,6 +250,13 @@ class SpellSystemState(Cleanable):
 
         This is what higher-level helpers (mark_structural_change, etc.) use
         so that state transitions remain consistent and centralized.
+
+        Args:
+            validity: New SpellValidity to assign.
+            change_reason: Optional reason code describing this transition.
+            flags_to_add: Optional iterable of SpellState flags to add.
+            flags_to_remove: Optional iterable of SpellState flags to remove.
+            transitively_dirty: Optional bool to set the transitively_dirty flag.
         """
         self.check_cleaned()
         with self._lock:
@@ -298,6 +290,13 @@ class SpellSystemState(Cleanable):
         Update the currently promoted version id for this lineage.
 
         Caller is responsible for keeping the manager's spell-id index in sync.
+
+        Args:
+            spell_id: New current spell version id (non-empty).
+
+        Raises:
+            ValueError: If spell_id is empty.
+            RuntimeError: If this state object has been cleaned.
         """
         self.check_cleaned()
         if not spell_id:
@@ -311,6 +310,11 @@ class SpellSystemState(Cleanable):
         Replace the direct-dependency set for this lineage.
 
         The manager is responsible for keeping reverse edges up to date.
+
+        Args:
+            dependency_ids: Iterable of dependency ids (falsy entries ignored).
+        Raises:
+            RuntimeError: If this state object has been cleaned.
         """
         self.check_cleaned()
 
@@ -322,6 +326,9 @@ class SpellSystemState(Cleanable):
     def add_dependent(self, index_id: str) -> None:
         """
         Register that another lineage depends on this lineage.
+
+        Args:
+            index_id: Lineage id to add as a dependent.
         """
         self.check_cleaned()
         if not index_id:
@@ -333,6 +340,9 @@ class SpellSystemState(Cleanable):
     def remove_dependent(self, index_id: str) -> None:
         """
         Remove a dependent lineage from this lineage's reverse edges.
+
+        Args:
+            index_id: Lineage id to remove from dependents.
         """
         self.check_cleaned()
         if not index_id:
@@ -352,6 +362,9 @@ class SpellSystemState(Cleanable):
         - New version promoted.
         - Class/method profile changed.
         - Binding semantics changed in a way that affects structure.
+
+        Args:
+            change_reason: Optional reason override; defaults to structure_changed.
         """
         self.check_cleaned()
         if change_reason is None:
@@ -373,6 +386,9 @@ class SpellSystemState(Cleanable):
 
         This does *not* automatically mark it as transitively dirty; the manager
         decides how to propagate closure.
+
+        Args:
+            change_reason: Optional reason override; defaults to dependencies_changed.
         """
         self.check_cleaned()
         if change_reason is None:
@@ -392,6 +408,9 @@ class SpellSystemState(Cleanable):
         Mark this lineage as impacted indirectly by upstream changes.
 
         This is typically called by the manager during impact-closure expansion.
+
+        Args:
+            change_reason: Optional reason override; defaults to dependency_changed.
         """
         self.check_cleaned()
         if change_reason is None:
@@ -418,6 +437,9 @@ class SpellSystemState(Cleanable):
         Note:
         - Contract/mutation/ops flags are *not* cleared here; the subsystems
           that own those lifecycles should flip them explicitly.
+
+        Args:
+            last_validated_at: Timestamp (seconds) of successful validation.
         """
         self.check_cleaned()
         with self._lock:
