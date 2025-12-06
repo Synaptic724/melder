@@ -39,7 +39,8 @@ def test_basic_get_try_get_is_alive():
 
 
 def test_cleanup_idempotent_and_check_cleaned():
-    ref = SyncWeakRef(Dummy(1))
+    target = Dummy(1)
+    ref = SyncWeakRef(target)
     ref.cleanup()
     ref.cleanup()
     assert ref.cleaned is True
@@ -50,31 +51,33 @@ def test_cleanup_idempotent_and_check_cleaned():
 
 
 def test_get_after_cleanup_raises():
-    ref = SyncWeakRef(Dummy(1))
+    target = Dummy(1)
+    ref = SyncWeakRef(target)
     ref.cleanup()
     with pytest.raises(RuntimeError):
         ref.get()
 
 
 def test_get_raises_reference_error_when_dead():
-    ref = SyncWeakRef(Dummy(2))
-    obj = ref.get()
-    del obj
+    target = Dummy(2)
+    ref = SyncWeakRef(target)
+    del target
     _force_collect()
     with pytest.raises(ReferenceError):
         ref.get()
 
 
 def test_try_get_returns_none_when_dead():
-    ref = SyncWeakRef(Dummy(3))
-    obj = ref.try_get()
-    del obj
+    target = Dummy(3)
+    ref = SyncWeakRef(target)
+    del target
     _force_collect()
     assert ref.try_get() is None
 
 
 def test_transform_and_map_apply_function():
-    ref = SyncWeakRef(Dummy(5))
+    target = Dummy(5)
+    ref = SyncWeakRef(target)
     assert ref.transform(lambda d: d.value * 2) == 10
     assert ref.map(lambda d: d.inc()) == 6
 
@@ -109,13 +112,15 @@ def test_swap_returns_previous_if_alive():
 
 
 def test_locked_yields_object_with_lock_held():
-    ref = SyncWeakRef(Dummy(1))
+    target = Dummy(1)
+    ref = SyncWeakRef(target)
     with ref.locked() as obj:
         assert obj is ref.get()
 
 
 def test_repr_contains_state_and_id():
-    ref = SyncWeakRef(Dummy(1))
+    target = Dummy(1)
+    ref = SyncWeakRef(target)
     text = repr(ref)
     assert "SyncWeakRef" in text
     assert "alive" in text
@@ -141,10 +146,10 @@ def test_register_on_collect_and_has_fired():
     def make_ref():
         obj = Dummy(1)
         r = SyncWeakRef(obj, on_collect=on_collect, auto_cleanup=False)
-        return r
+        return r, obj
 
-    ref = make_ref()
-    obj = ref.get()
+    ref, obj = make_ref()
+    # Drop strong reference so GC can collect
     del obj
     _force_collect()
     # Weakref callbacks may be asynchronous; poll briefly
@@ -160,11 +165,10 @@ def test_register_on_collect_and_has_fired():
 def test_auto_cleanup_triggers_on_collect():
     def make_ref():
         obj = Dummy(2)
-        return SyncWeakRef(obj, auto_cleanup=True)
+        return SyncWeakRef(obj, auto_cleanup=True), obj
 
-    ref = make_ref()
-    obj = ref.get()
-    del obj
+    ref, target = make_ref()
+    del target
     _force_collect()
     for _ in range(10):
         if ref.cleaned:
@@ -175,7 +179,8 @@ def test_auto_cleanup_triggers_on_collect():
 
 
 def test_enable_disable_auto_cleanup():
-    ref = SyncWeakRef(Dummy(1))
+    target = Dummy(1)
+    ref = SyncWeakRef(target)
     ref.enable_auto_cleanup()
     assert ref._auto_cleanup is True
     ref.disable_auto_cleanup()
@@ -191,10 +196,10 @@ def test_register_on_collect_replaces_callback():
     def cb2(r):
         calls.append("2")
 
-    ref = SyncWeakRef(Dummy(1))
+    obj = Dummy(1)
+    ref = SyncWeakRef(obj)
     ref.register_on_collect(cb1)
     ref.register_on_collect(cb2)
-    obj = ref.get()
     del obj
     _force_collect()
     for _ in range(10):
@@ -206,8 +211,8 @@ def test_register_on_collect_replaces_callback():
 
 
 def test_has_fired_set_on_callback_without_auto_cleanup():
-    ref = SyncWeakRef(Dummy(5))
-    obj = ref.get()
+    obj = Dummy(5)
+    ref = SyncWeakRef(obj)
     del obj
     _force_collect()
     for _ in range(10):
@@ -226,8 +231,8 @@ def test_cleanup_inside_on_collect_safe():
         r.cleanup()
         cleaned.append(True)
 
-    ref = SyncWeakRef(Dummy(1), on_collect=on_collect)
-    obj = ref.get()
+    obj = Dummy(1)
+    ref = SyncWeakRef(obj, on_collect=on_collect)
     del obj
     _force_collect()
     for _ in range(10):
@@ -240,21 +245,22 @@ def test_cleanup_inside_on_collect_safe():
 
 
 def test_cas_with_dead_target_returns_false():
-    ref = SyncWeakRef(Dummy(1))
-    target = ref.get()
-    del target
+    obj = Dummy(1)
+    ref = SyncWeakRef(obj)
+    del obj
     _force_collect()
     assert ref.cas(Dummy(1), Dummy(2)) is False
 
 
 def test_swap_with_dead_target_returns_none():
-    ref = SyncWeakRef(Dummy(1))
-    target = ref.get()
-    del target
+    obj = Dummy(1)
+    ref = SyncWeakRef(obj)
+    del obj
     _force_collect()
-    prev = ref.swap(Dummy(2))
+    new_target = Dummy(2)
+    prev = ref.swap(new_target)
     assert prev is None
-    assert ref.get().value == 2
+    assert ref.try_get() is new_target
 
 
 def test_try_get_after_cleanup_raises():
@@ -265,9 +271,9 @@ def test_try_get_after_cleanup_raises():
 
 
 def test_transform_raises_reference_error_when_dead():
-    ref = SyncWeakRef(Dummy(7))
-    obj = ref.get()
-    del obj
+    target = Dummy(7)
+    ref = SyncWeakRef(target)
+    del target
     _force_collect()
     with pytest.raises(ReferenceError):
         ref.transform(lambda x: x.value)
@@ -279,4 +285,3 @@ def test_locked_raises_when_cleaned():
     with pytest.raises(RuntimeError):
         with ref.locked():
             pass
-

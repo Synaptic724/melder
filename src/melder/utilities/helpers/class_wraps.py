@@ -1,5 +1,5 @@
-from functools import update_wrapper, _Wrapped
-from typing import Type, Callable, Optional
+from functools import update_wrapper
+from typing import Type, Callable, Optional, Any
 
 
 def class_wraps(decorator_name: Optional[str] = None):
@@ -20,7 +20,7 @@ def class_wraps(decorator_name: Optional[str] = None):
         - Sets ``__is_wrapped__ = True``.
         - Optionally sets ``__decorator_name__`` for inspection.
     """
-    def decorator_wrapper(deco: Callable[[Type], Type]) -> _Wrapped[[type], type, [type], type]:
+    def decorator_wrapper(deco: Callable[[Type], Type]) -> Callable[[Type], Type]:
         def wrapped(cls: Type) -> Type:
             new_cls = deco(cls)
             # new_cls is the actual decorated class we will instantiate

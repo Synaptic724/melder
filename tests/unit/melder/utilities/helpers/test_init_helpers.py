@@ -3,6 +3,7 @@ import pytest
 
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.logger.safe_logger import SafeLogger
+from melder.utilities.interfaces.interfaces import IChannelLogger
 
 
 def test_resolve_safe_logger_accepts_none():
@@ -19,3 +20,24 @@ def test_resolve_safe_logger_wraps_std_logger():
 def test_resolve_safe_logger_rejects_invalid_type():
     with pytest.raises(TypeError):
         InitHelpers.resolve_safe_logger(object())  # type: ignore[arg-type]
+
+
+class _ChannelLoggerStub(IChannelLogger):
+    def cleanup(self):
+        pass
+
+    def debug(self, *args, **kwargs): ...
+    def info(self, *args, **kwargs): ...
+    def warn(self, *args, **kwargs): ...
+    def warning(self, *args, **kwargs): ...
+    def error(self, *args, **kwargs): ...
+    def critical(self, *args, **kwargs): ...
+    def setLevel(self, level): ...
+    @property
+    def level(self): return None
+
+
+def test_resolve_safe_logger_wraps_channel_logger():
+    channel = _ChannelLoggerStub()
+    logger = InitHelpers.resolve_safe_logger(channel)
+    assert isinstance(logger, SafeLogger)
