@@ -319,7 +319,7 @@ class Conduit(Cleanable):
         # Spellbook's ID become owned by this Conduit instance.
         self._conduit_hooks = hook_map
         try:
-            if hasattr(self, "_meld") and self._meld is not None:
+            if self._meld is not None:
                 self._meld.set_meld_hooks(self._conduit_hooks)
         except Exception:
             pass
@@ -337,16 +337,17 @@ class Conduit(Cleanable):
         """
         Public API
 
-        Cleans up this Conduit and all its lesser Conduits.
-
-        Prevents further operation, releases internal references,
-        and unregisters from the Aether.
+        Idempotently clean this Conduit, severing links, tearing down local
+        runtime, and (for normal conduits) unregistering from Aether. This is
+        local teardown only; it never cleans AethericFrame or Aether.
         """
         if self._cleaned:
             return
         with self._lock:
             if self._cleaned:
                 return
+            self._logger.debug("cleanup start", "cleanup")
+            self._fire_conduit_hooks("on_conduit_cleanup_start", self)
             self._cleaned = True
             # drop any active spellspace stack
             self._spellspace_stack.set([])
@@ -357,6 +358,19 @@ class Conduit(Cleanable):
             else:
                 self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                 raise RuntimeError("Conduit state is unknown during cleanup")
+            self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
+
+        # Logger last
+        if self._logger is not None:
+            try:
+                if hasattr(self._logger, "cleanup"):
+                    self._logger.cleanup()
+            except Exception:
+                pass
+            self._logger = None
+
+        # Release lock reference after teardown
+        self._lock = None
 
 
     def _cleanup_lesser_conduit(self):
@@ -365,7 +379,39 @@ class Conduit(Cleanable):
 
         Cleans up a lesser Conduit.
         """
-        pass
+        # Lesser conduits share the parent Spellbook and are not root-registered
+        # in Aether. We tear down local runtime and lineage links, but do not
+        # touch the shared Spellbook/Aether registries.
+        try:
+            if self._meld is not None:
+                self._meld.cleanup()
+        except Exception:
+            self._logger.error("Error cleaning meld", "_cleanup_lesser_conduit", exc_info=True)
+
+        try:
+            if self._conduit_ward is not None:
+                self._conduit_ward.cleanup()
+        except Exception:
+            self._logger.error("Error cleaning conduit ward", "_cleanup_lesser_conduit", exc_info=True)
+
+        self._cleanup_spellspaces()
+
+        try:
+            if self._creations is not None:
+                self._creations.cleanup()
+        except Exception:
+            self._logger.error("Error cleaning creations", "_cleanup_lesser_conduit", exc_info=True)
+
+        if self._conduit_hooks is not None:
+            self._conduit_hooks.clear()
+        # Null internal references
+        self._conduit_hooks = None
+        self._conduit_ward = None
+        self._meld = None
+        self._creations = None
+        self._spellspace_stack = None
+        self._spellbook = None
+        self._configuration = None
 
 
     def _cleanup_normal_conduit(self):
@@ -374,7 +420,79 @@ class Conduit(Cleanable):
 
         Cleans up a normal Conduit.
         """
-        pass
+        # 1) Meld runtime (stop new object creation paths)
+        try:
+            if self._meld is not None:
+                self._meld.cleanup()
+        except Exception:
+            self._logger.error("Error cleaning meld", "_cleanup_normal_conduit", exc_info=True)
+
+        # 2) Ward (contracts + lesser lineage)
+        try:
+            if self._conduit_ward is not None:
+                self._conduit_ward.cleanup()
+        except Exception:
+            self._logger.error("Error cleaning conduit ward", "_cleanup_normal_conduit", exc_info=True)
+
+        # 2.5) Spellspaces (ensure stack is flushed)
+        self._cleanup_spellspaces()
+
+        # 3) Creations
+        try:
+            if self._creations is not None:
+                self._creations.cleanup()
+        except Exception:
+            self._logger.error("Error cleaning creations", "_cleanup_normal_conduit", exc_info=True)
+
+        # 4) Unregister from Aether (spells + root conduit + cloud)
+        try:
+            spell_indices = list(self._spellbook._spells.keys()) if self._spellbook is not None else []
+            if spell_indices:
+                Conduit._aether._remove_spells_from_aether(self._id, set(spell_indices), self._aetheric_frame)
+            Conduit._aether._remove_conduit(self, self._aetheric_frame)
+            if self.__dynamic_environment__ and self._name is not None:
+                Conduit._aether._unregister_conduit_cloud(self, self._aetheric_frame)
+        except Exception as e:
+            self._logger.error(f"Error unregistering from Aether: {e}", "_cleanup_normal_conduit", exc_info=True)
+
+        # 5) Spellbook (owned by normal conduits)
+        try:
+            if self._spellbook is not None:
+                self._spellbook.cleanup()
+        except Exception:
+            self._logger.error("Error cleaning spellbook", "_cleanup_normal_conduit", exc_info=True)
+
+        # 6) Null internal references
+        self._conduit_ward = None
+        self._meld = None
+        self._creations = None
+        if self._conduit_hooks is not None:
+            self._conduit_hooks.clear()
+        self._spellbook = None
+        self._configuration = None
+        self._conduit_hooks = None
+        self._spellspace_stack = None
+        self._aetheric_frame = None
+
+    def _cleanup_spellspaces(self) -> None:
+        """
+        Internal
+
+        Best-effort cleanup of any spellspaces still on the stack.
+        """
+        if self._spellspace_stack is None:
+            return
+        try:
+            stack = list(self._spellspace_stack.get())
+            for space in stack:
+                try:
+                    space.cleanup()
+                except Exception:
+                    self._logger.error("Error cleaning spellspace", "_cleanup_spellspaces", exc_info=True)
+            self._spellspace_stack.set([])
+        except Exception:
+            self._logger.error("Error flushing spellspace stack", "_cleanup_spellspaces", exc_info=True)
+
 
     #endregion Cleanup and Disposal
     #region Context Management
@@ -503,6 +621,32 @@ class Conduit(Cleanable):
         self._logger.debug(f"Registering '{self._name}' into conduit cloud", "register_conduit_cloud")
         Conduit._aether._register_conduit_cloud(conduit, self._aetheric_frame)
 
+    def unregister_conduit_cloud(self, conduit: IConduit):
+        """
+        Public API
+
+        Unregisters a conduit from the dynamic mode registry (ConduitCloud).
+
+        Args:
+            conduit (IConduit): The conduit instance to unregister.
+
+        Raises:
+            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If the conduit is a lesser conduit.
+            RuntimeError: If the Conduit name is not set.
+        """
+        if self.__dynamic_environment__ is False:
+            self._logger.error("unregister_conduit_cloud in non-dynamic env", "unregister_conduit_cloud")
+            raise RuntimeError("Dynamic environment is not enabled. Cannot unregister from the conduit cloud.")
+        if self._conduit_state == ConduitState.lesser:
+            self._logger.error("unregister_conduit_cloud called on lesser conduit", "unregister_conduit_cloud")
+            raise RuntimeError("Lesser conduits cannot unregister from the conduit cloud.")
+        if self._name is None:
+            self._logger.error("unregister_conduit_cloud called without conduit name", "unregister_conduit_cloud")
+            raise RuntimeError("Conduit name is not set. Please set a name before unregistering from the conduit cloud.")
+        self._logger.debug(f"Unregistering '{self._name}' from conduit cloud", "unregister_conduit_cloud")
+        Conduit._aether._unregister_conduit_cloud(conduit, self._aetheric_frame)
+
     def _apply_configuration_flags(self):
         """
         Internal
@@ -537,6 +681,21 @@ class Conduit(Cleanable):
                 raise RuntimeError("Aether is not initialized.")
             self._logger.debug("Adding conduit to Aether", "_add_conduit_to_aether")
             Conduit._aether._add_conduit(self, self._aetheric_frame)
+
+    def _remove_conduit_from_aether(self) -> None:
+        """
+        Internal
+
+        Removes this Conduit from the shared Aether world.
+
+        Raises:
+            RuntimeError: If Aether is not initialized.
+        """
+        if Conduit._aether is None:
+            self._logger.error("Aether is not initialized", "_remove_conduit_from_aether")
+            raise RuntimeError("Aether is not initialized.")
+        self._logger.debug("Removing conduit from Aether", "_remove_conduit_from_aether")
+        Conduit._aether._remove_conduit(self, self._aetheric_frame)
 
 
     def _creations_configuration(self, configuration: IConfiguration) -> Creations | LesserCreations:

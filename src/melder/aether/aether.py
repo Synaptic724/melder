@@ -281,6 +281,32 @@ class Aether(Cleanable):
         conduit_cloud._register_conduit(conduit)
         self._logger.debug(f"Conduit registered with cloud in frame '{aetheric_frame_name}'", "_register_conduit_cloud")
 
+    def _unregister_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
+        """
+        Unregisters a conduit from the ConduitCloud of a specific frame.
+
+        Args:
+            conduit: The conduit to unregister.
+            aetheric_frame_name: The name of the frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+        self._logger.debug(f"Unregistering conduit from cloud in frame '{aetheric_frame_name}'", "_unregister_conduit_cloud")
+
+        if aetheric_frame_name != "default":
+            try:
+                conduit_cloud = self._aetheric_frames[aetheric_frame_name]._conduit_cloud
+            except KeyError:
+                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_unregister_conduit_cloud", exc_info=True)
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            self._ensure_default_frame()
+            conduit_cloud = self._default_frame._conduit_cloud
+
+        conduit_cloud._unregister_conduit(conduit)
+        self._logger.debug(f"Conduit unregistered from cloud in frame '{aetheric_frame_name}'", "_unregister_conduit_cloud")
     def _get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
         """
         Retrieves the ConduitCloud instance from a specific frame.
@@ -706,6 +732,40 @@ class Aether(Cleanable):
         spell_registry[conduit_id] = spell_set
 
         # Critical: update SHA256 version registry
+        frame.refresh_version_registry()
+
+    def _remove_spells_from_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
+                                   aetheric_frame_name: str = "default") -> None:
+        """
+        Unregisters a set of SpellIndex objects for a conduit and refreshes version registry.
+
+        Args:
+            conduit_id (str): The id of the owning conduit.
+            spell_set (Set[SpellIndex]): The set of SpellIndex objects to unregister.
+            aetheric_frame_name (str): The name of the frame.
+        """
+        self.check_cleaned()
+
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            self._ensure_default_frame()
+            frame = self._default_frame
+
+        spell_registry = frame._spell_registry
+
+        if conduit_id not in spell_registry:
+            return
+
+        for spell_index in list(spell_set):
+            try:
+                spell_registry[conduit_id].remove(spell_index)
+            except Exception:
+                pass
+
         frame.refresh_version_registry()
 
 

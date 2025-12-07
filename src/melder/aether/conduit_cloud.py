@@ -107,3 +107,21 @@ class ConduitCloud(Cleanable):
         if conduit.name in self._registry:
             raise ValueError(f"Conduit with name {conduit.name} already exists in the cloud. Please rename conduit to something unique.")
         self._registry[conduit.name] = conduit
+
+    def _unregister_conduit(self, conduit: IConduit):
+        """
+        Removes a named conduit from the cloud. (Internal use)
+
+        Args:
+            conduit (IConduit): The conduit instance to unregister.
+
+        Raises:
+            ValueError: If the conduit has no name or is not registered.
+        """
+        self.check_cleaned()
+        if conduit.name is None:
+            raise ValueError("Conduit name cannot be None for cloud unregistration.")
+
+        removed = self._registry.pop(conduit.name, None)
+        if removed is None:
+            raise ValueError(f"Conduit with name {conduit.name} is not registered in the cloud.")

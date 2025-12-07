@@ -56,15 +56,9 @@ class MeldRuntime(Cleanable):
         "_lock",
     ]
 
-    def __init__(self, logger: Optional[Any] = None) -> None:
+    def __init__(self) -> None:
         """
         Initialize a new `MeldRuntime`.
-
-        Args:
-            logger:
-                Optional logger instance. If provided, it is normalized
-                to a `SafeLogger` via `InitHelpers.resolve_safe_logger`.
-                May be None for silent operation.
         """
         super().__init__()
         self._lock: RLock = RLock()

@@ -137,6 +137,13 @@ class Spellbook(Cleanable):
         # 1) Clean ONLY local spells (not contracted)
         self._cleanup_spells()
 
+        if self._spells is not None:
+            try:
+                self._spells.clear()
+            except Exception as e:
+                self._logger.error(f"Error clearing _spells: {e}", "_cleanup_components", exc_info=True)
+            self._spells = None
+
         # 2) Clean lookup/contracted maps and local maps
         if self._lookup_spells is not None:
             try:

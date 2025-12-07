@@ -224,11 +224,17 @@ class Spell(Cleanable):
             if self._cleaned:
                 return
 
-            if self.dependency_graph is not None and hasattr(self.dependency_graph, "cleanup"):
+            if self.dependency_graph is not None:
                 try:
                     self.dependency_graph.cleanup()
                 except Exception:
                     # Never let cleanup explosions propagate.
+                    pass
+
+            if self.resolution_profile is not None:
+                try:
+                    self.resolution_profile.cleanup()
+                except Exception:
                     pass
 
             # Phase artifacts – deterministically dropped via SpellCrafter.
@@ -240,17 +246,53 @@ class Spell(Cleanable):
                     pass
                 self._crafter = None
 
+            try:
+                if self.spell_index is not None:
+                    self.spell_index.cleanup()
+            except Exception:
+                pass
+
             self._spellbook = None
 
             # Drop references to help GC and enforce immutability after cleanup.
             self._owner_creations = None
             self.user_created_object = None
             self._spell_system_states = None
-            self.pre_hooks = []
-            self.activation_hooks = []
-            self.post_hooks = []
+            if self.pre_hooks is not None:
+                self.pre_hooks.clear()
+            if self.activation_hooks is not None:
+                self.activation_hooks.clear()
+            if self.post_hooks is not None:
+                self.post_hooks.clear()
+            if self.tags is not None and hasattr(self.tags, "clear"):
+                try:
+                    self.tags.clear()
+                except Exception:
+                    pass
+            if isinstance(self.metadata, dict):
+                self.metadata.clear()
+            if isinstance(self.dependencies, list):
+                self.dependencies.clear()
+            self.pre_hooks = None
+            self.activation_hooks = None
+            self.post_hooks = None
+            self.tags = None
+            self.metadata = None
+            self.dependencies = None
+            self.dependency_graph = None
+            self.resolution_profile = None
+            self.profile = None
+            self.spell = None
+            self._key = None
+            self._owner_conduit_id = None
+            self._owner_conduit_name = None
+            self.owned_spell = None
+            self._owner_creations = None
+            self.aetheric_frame = None
+            self.spell_index = None
 
             self._cleaned = True
+        self._lock = None
     #endregion Disposal
 
     #region Context Manager
