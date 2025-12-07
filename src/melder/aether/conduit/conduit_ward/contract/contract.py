@@ -1,7 +1,7 @@
 from typing import Optional, Any, Dict
 from threading import RLock
 # Melder imports
-from melder.aether.conduit.conduit_ward.contract.details import Detail
+from melder.aether.conduit.conduit_ward.contract.details import Detail, DetailReason
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IConduitWard, IConduit, IContract
@@ -150,7 +150,7 @@ class Contract(Cleanable):
             return self._details_b
         raise ValueError("Invalid ward for contract access.")
 
-    def _add(self, ward: IConduitWard, contract_detail: Detail) -> None:
+    def _add(self, ward: IConduitWard, contract_detail: Detail) -> bool:
         """
         Internal
 
@@ -159,8 +159,25 @@ class Contract(Cleanable):
         Args:
             ward: Ward that owns the detail map being updated.
             contract_detail: Detail entry to insert.
+
+        Returns:
+            bool: True if a new Detail was inserted, False if merged into an existing one.
         """
-        self._get_detail_map(ward)[contract_detail.spell_id] = contract_detail
+        detail_map = self._get_detail_map(ward)
+        existing = detail_map.get(contract_detail.spell_id)
+        if existing is not None:
+            # Merge sources if this lineage already exists with the same permissions.
+            if existing.permissions != contract_detail.permissions:
+                raise RuntimeError(
+                    f"Detail already exists for spell_id {contract_detail.spell_id} with different permissions "
+                    f"({existing.permissions.name} != {contract_detail.permissions.name})."
+                )
+            if contract_detail.sources:
+                for root_id in contract_detail.sources:
+                    existing.add_source(root_id)
+            return False
+        detail_map[contract_detail.spell_id] = contract_detail
+        return True
 
     def _remove(self, ward: IConduitWard, spell_id: str) -> None:
         """
@@ -175,6 +192,30 @@ class Contract(Cleanable):
         detail_map = self._get_detail_map(ward)
         if spell_id in detail_map:
             del detail_map[spell_id]
+
+    def _remove_source(self, ward: IConduitWard, spell_id: str, root_spell_id: str | None) -> bool:
+        """
+        Internal
+
+        Remove a specific root spell_id source from a detail. If no sources remain,
+        the detail is removed. Returns True if the detail was deleted.
+        """
+        detail_map = self._get_detail_map(ward)
+        detail = detail_map.get(spell_id)
+        if detail is None:
+            return False
+        # If no root is provided, drop the entire detail.
+        if root_spell_id is None:
+            detail_map.pop(spell_id, None)
+            detail.cleanup()
+            return True
+        # Remove only the source; delete detail if sources empty afterward.
+        should_delete = detail.remove_source(root_spell_id)
+        if should_delete:
+            detail_map.pop(spell_id, None)
+            detail.cleanup()
+            return True
+        return False
 
     def _clear_contract(self):
         """

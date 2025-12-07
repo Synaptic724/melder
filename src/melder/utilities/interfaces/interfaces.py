@@ -2168,6 +2168,9 @@ class IConduitWard(ICleanable, Protocol):
             conduit_id: str = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
+            reason: Any = None,
+            root_spell_id: str | None = None,
+            link_dependencies: bool = False,
     ) -> bool | None:
         """
         Internal
@@ -2205,6 +2208,8 @@ class IConduitWard(ICleanable, Protocol):
             conduit_id: str = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
+            reason: Any = None,
+            link_dependencies: bool = False,
     ) -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
@@ -3297,6 +3302,9 @@ class IConduit(ICleanable, Protocol):
             conduit_id: str = None,
             permissions: str = "create",
             aetheric_frame="default",
+            reason: Any = None,
+            root_spell_id: str | None = None,
+            link_dependencies: bool = False,
     ) -> bool | None:
         """
         Public API
@@ -3332,6 +3340,8 @@ class IConduit(ICleanable, Protocol):
             conduit_id: str = None,
             permissions: str = "create",
             aetheric_frame="default",
+            reason: Any = None,
+            link_dependencies: bool = False,
     ) -> dict:
         """
         Public API
@@ -3363,6 +3373,7 @@ class IConduit(ICleanable, Protocol):
             spell_id: str = None,
             conduit: 'IConduit' = None,
             conduit_id: str = None,
+            root_spell_id: str | None = None,
             aetheric_frame="default",
     ) -> bool | None:
         """
@@ -3378,6 +3389,7 @@ class IConduit(ICleanable, Protocol):
             spell_id (str, optional): The unique ID of the spell to remove.
             conduit (IConduit, optional): The target conduit involved in the contract.
             conduit_id (str, optional): id of the target conduit (used if `conduit` not provided).
+            root_spell_id (str, optional): If provided, only removes the source reference for this root.
             aetheric_frame (str): Optional frame override to resolve the target conduit.
 
         Returns:
@@ -3394,6 +3406,7 @@ class IConduit(ICleanable, Protocol):
             spell_ids: list[str] = None,
             conduit: 'IConduit' = None,
             conduit_id: str = None,
+            root_spell_id: str | None = None,
             aetheric_frame="default",
     ) -> dict:
         """
@@ -3407,6 +3420,7 @@ class IConduit(ICleanable, Protocol):
             spell_ids (list[str], optional): List of spell IDs to remove.
             conduit (IConduit, optional): Target conduit object.
             conduit_id (str, optional): str of target conduit (used if `conduit` is not provided).
+            root_spell_id (str, optional): If provided, only removes the source reference for this root.
             aetheric_frame (str): Optional frame override.
 
         Returns:
@@ -3414,6 +3428,35 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+        """
+        ...
+
+    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: 'IConduit' = None,
+                                   conduit_id: str = None, aetheric_frame: str = "default") -> dict:
+        """
+        Public API
+
+        Removes a root spell_id (and any dependency Details attributed to it) from one
+        contract or all contracts. Orphaned Details trigger contracted spell removal;
+        empty contracts are severed.
+        """
+        ...
+
+    def add_spell_to_contract_with_dependencies(
+            self,
+            *,
+            spell: 'ISpell' = None,
+            spell_id: str = None,
+            conduit: 'IConduit' = None,
+            conduit_id: str = None,
+            permissions: str = "create",
+            aetheric_frame: str = "default",
+    ) -> bool | None:
+        """
+        Public API helper
+
+        Adds a spell to a contract and automatically links its dependencies
+        (recursively) using the same permission level (downgraded to read when needed).
         """
         ...
 

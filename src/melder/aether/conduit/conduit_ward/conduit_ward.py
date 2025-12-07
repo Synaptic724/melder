@@ -1,5 +1,6 @@
 import threading
 from typing import List, Optional, Any, Tuple, Dict
+from melder.utilities.synchronization.safeguard import SafeGuard
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
@@ -10,6 +11,7 @@ from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger, IConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
+from melder.aether.conduit.conduit_ward.contract.details import DetailReason
 
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
@@ -443,6 +445,7 @@ class ConduitWard(Cleanable):
             RuntimeError: If attempting to link to a lesser conduit.
             RuntimeError: If attempting to link a conduit to itself.
             RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If policy forbids initiating outbound links or target forbids inbound links.
         """
         self.check_cleaned()
         if target_conduit._conduit_state == ConduitState.lesser:
@@ -469,6 +472,26 @@ class ConduitWard(Cleanable):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
             raise RuntimeError("Dynamic environment is not enabled. Cannot link conduits.")
+
+        # Policy gating for outbound/inbound directions
+        if self._policy == Policies.inbound_only:
+            self._logger.error(
+                "link: outbound link requested while policy=inbound_only",
+                method_name="_link",
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+            raise RuntimeError("This conduit is inbound_only and cannot initiate outbound links.")
+
+        target_ward = getattr(target_conduit, "_conduit_ward", None)
+        if target_ward is not None and target_ward._policy == Policies.outbound_only:
+            self._logger.error(
+                "link: target rejects inbound links (policy=outbound_only)",
+                method_name="_link",
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+            raise RuntimeError("Target conduit is outbound_only and rejects inbound link requests.")
 
         if target_conduit._conduit_state == ConduitState.normal:
             if self._find_contract(target_conduit):
@@ -512,45 +535,43 @@ class ConduitWard(Cleanable):
         """
         ward_a = self
         ward_b = target_conduit._conduit_ward
-        locks = sorted([ward_a._lock, ward_b._lock], key=id)
-        with locks[0]:
-            with locks[1]:
-                target_id = target_conduit._id
-                if self._find_contract(target_conduit):
-                    self._logger.debug(
-                        f"create_contract: already exists -> {target_id}",
-                        method_name="_create_new_contract",
-                        owner_id=self._id, owner_display=self._display_name,
-                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
-                    return True
-
-                contract = Contract(self, ward_b)
-                self._contracts[contract._id] = contract
-                ward_b._contracts[contract._id] = contract
-                self._initiated_index[target_id] = contract._id
-                ward_b._received_index[self._id] = contract._id
-
-                try:
-                    # Each side needs a contracted-spell bucket keyed by its peer's conduit id.
-                    self._conduit._spellbook._create_link_contract(target_id)
-                    ward_b._conduit._spellbook._create_link_contract(self._id)
-                except Exception as e:
-                    self._logger.error(
-                        f"spellbook link create failed: {e}",
-                        method_name="_create_new_contract", exc_info=True,
-                        owner_id=self._id, owner_display=self._display_name,
-                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
-                    raise
-
-                self._logger.info(
-                    f"create_contract: success id={contract._id} target={target_id}",
+        with SafeGuard(ward_a._lock, ward_b._lock):
+            target_id = target_conduit._id
+            if self._find_contract(target_conduit):
+                self._logger.debug(
+                    f"create_contract: already exists -> {target_id}",
                     method_name="_create_new_contract",
                     owner_id=self._id, owner_display=self._display_name,
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 return True
+
+            contract = Contract(self, ward_b)
+            self._contracts[contract._id] = contract
+            ward_b._contracts[contract._id] = contract
+            self._initiated_index[target_id] = contract._id
+            ward_b._received_index[self._id] = contract._id
+
+            try:
+                # Each side needs a contracted-spell bucket keyed by its peer's conduit id.
+                self._conduit._spellbook._create_link_contract(target_id)
+                ward_b._conduit._spellbook._create_link_contract(self._id)
+            except Exception as e:
+                self._logger.error(
+                    f"spellbook link create failed: {e}",
+                    method_name="_create_new_contract", exc_info=True,
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+                raise
+
+            self._logger.info(
+                f"create_contract: success id={contract._id} target={target_id}",
+                method_name="_create_new_contract",
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+            return True
 
 
     def _find_contract_id(self, target_conduit: IConduit) -> Optional[str]:
@@ -668,24 +689,22 @@ class ConduitWard(Cleanable):
             RuntimeError: If no contract is found to sever.
         """
         self.check_cleaned()
-        locks = sorted([self._lock, target_conduit._conduit_ward._lock], key=id)
-        with locks[0]:
-            with locks[1]:
-                if self._find_contract(target_conduit):
-                    self._logger.debug(
-                        f"sever_link -> {target_conduit._id}",
-                        method_name="_sever_link",
-                        owner_id=self._id, owner_display=self._display_name,
-                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
-                    return self._remove_contract(target_conduit)
-                self._logger.error(
-                    "sever_link: no contract found",
+        with SafeGuard(self._lock, target_conduit._conduit_ward._lock):
+            if self._find_contract(target_conduit):
+                self._logger.debug(
+                    f"sever_link -> {target_conduit._id}",
                     method_name="_sever_link",
                     owner_id=self._id, owner_display=self._display_name,
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
-                raise RuntimeError("No contract found to sever with the target conduit.")
+                return self._remove_contract(target_conduit)
+            self._logger.error(
+                "sever_link: no contract found",
+                method_name="_sever_link",
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+            raise RuntimeError("No contract found to sever with the target conduit.")
 
     def _remove_contract(self, target_conduit: IConduit) -> bool:
         """
@@ -1201,6 +1220,9 @@ class ConduitWard(Cleanable):
             spell: ISpell,
             permissions: Permissions,
             contract_type: ContractTypes,
+            *,
+            reason: DetailReason = DetailReason.other,
+            root_spell_id: str | None = None,
     ) -> Detail:
         """
         Internal
@@ -1212,6 +1234,8 @@ class ConduitWard(Cleanable):
             permissions (Permissions): The permissions applied to this lineage.
             contract_type (ContractTypes): Role of this Detail from the
                 perspective of the ward that will own it.
+            reason (DetailReason): Why this detail is being added.
+            root_spell_id (str | None): Root spell_id responsible for this detail (tracked in sources).
 
         Returns:
             Detail: A new Detail instance.
@@ -1241,12 +1265,23 @@ class ConduitWard(Cleanable):
             raise TypeError(
                 f"Expected ContractTypes enum, got {type(contract_type).__name__}"
             )
+        if not isinstance(reason, DetailReason):
+            self._logger.error(
+                f"_create_detail: reason wrong type {type(reason).__name__}",
+                method_name="_create_detail",
+                owner_id=self._id,
+                owner_display=self._display_name,
+                mask=True,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
+            )
+            raise TypeError(f"Expected DetailReason enum, got {type(reason).__name__}")
 
         spell_index = spell.spell_index
         spell_id = spell.spell_id  # SHA at the moment of contract creation
 
         self._logger.debug(
-            f"_create_detail -> index={spell_index}, spell_id={spell_id}, perms={permissions.name}, type={contract_type.name}",
+            f"_create_detail -> index={spell_index}, spell_id={spell_id}, perms={permissions.name}, type={contract_type.name}, reason={reason.name}",
             method_name="_create_detail",
             owner_id=self._id,
             owner_display=self._display_name,
@@ -1259,6 +1294,8 @@ class ConduitWard(Cleanable):
             spell_id=spell_id,
             permissions=permissions,
             contract_type=contract_type,
+            reason=reason,
+            sources={root_spell_id} if root_spell_id is not None else None,
         )
 
 
@@ -1280,6 +1317,7 @@ class ConduitWard(Cleanable):
             RuntimeError: If the spell is blocked (`Permissions.block`) and policy isn't `whitelist_all`.
             RuntimeError: If the spell is not owned by the proposing conduit.
         """
+        spell_permissions = self._get_spell_permissions(spell)
         if conduit._conduit_ward._policy == Policies.block_all:
             self._logger.error(
                 "check_spell_if_eligible: policy block_all",
@@ -1288,7 +1326,7 @@ class ConduitWard(Cleanable):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
             raise RuntimeError("Cannot contract spells when policy is set to block_all.")
-        if permissions == Permissions.create and spell._permissions != Permissions.create:
+        if permissions == Permissions.create and spell_permissions != Permissions.create:
             self._logger.error(
                 "check_spell_if_eligible: create requested but spell not create",
                 method_name="_check_spell_if_eligible",
@@ -1296,7 +1334,7 @@ class ConduitWard(Cleanable):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
             raise RuntimeError(f"Spell '{spell.__name__}' does not have create permissions, cannot contract with create permissions.")
-        if permissions == Permissions.read and spell._permissions not in (Permissions.read, Permissions.create):
+        if permissions == Permissions.read and spell_permissions not in (Permissions.read, Permissions.create):
             self._logger.error(
                 "check_spell_if_eligible: read requested but spell not read/create",
                 method_name="_check_spell_if_eligible",
@@ -1304,7 +1342,7 @@ class ConduitWard(Cleanable):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
             raise RuntimeError(f"Spell '{spell.__name__}' does not have read permissions, cannot contract with read permissions.")
-        if spell._permissions == Permissions.block and conduit._conduit_ward._policy != Policies.whitelist_all:
+        if spell_permissions == Permissions.block and conduit._conduit_ward._policy != Policies.whitelist_all:
             self._logger.error(
                 "check_spell_if_eligible: spell blocked and not whitelist_all",
                 method_name="_check_spell_if_eligible",
@@ -1336,6 +1374,9 @@ class ConduitWard(Cleanable):
             conduit_id: str = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
+            reason: DetailReason = DetailReason.manual,
+            root_spell_id: str | None = None,
+            link_dependencies: bool = False,
     ) -> bool | None:
         """
         Internal
@@ -1365,6 +1406,8 @@ class ConduitWard(Cleanable):
         """
         self.check_cleaned()
 
+        source_root_id = spell_id if root_spell_id is None else root_spell_id
+
         # Normalize permissions into the enum
         permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
 
@@ -1389,9 +1432,11 @@ class ConduitWard(Cleanable):
             )
 
         # We still use the original spell_id for duplicate detection
-        if contract._check_if_exists_and_permissions(conduit._conduit_ward, spell_id, permissions_enum):
+        existing = contract._check_if_exists(conduit._conduit_ward, spell_id)
+        existing_same_perms = contract._check_if_exists_and_permissions(conduit._conduit_ward, spell_id, permissions_enum)
+        if existing and not existing_same_perms:
             self._logger.error(
-                f"add_spell_to_contract: already exists {spell_id} with same permissions",
+                f"add_spell_to_contract: already exists {spell_id} with different permissions",
                 method_name="_add_spell_to_contract",
                 owner_id=self._id,
                 owner_display=self._display_name,
@@ -1400,7 +1445,7 @@ class ConduitWard(Cleanable):
                 system_groups=self._log_sysgroups,
             )
             raise RuntimeError(
-                f"Spell with ID '{spell_id}' is already contracted in this conduit with these permissions."
+                f"Spell with ID '{spell_id}' is already contracted in this conduit with different permissions."
             )
 
         # Policy + ownership checks remain unchanged
@@ -1410,26 +1455,34 @@ class ConduitWard(Cleanable):
         # a spell that the peer has **received** from us.
         contract_type = ContractTypes.received
 
+        added_new_detail = False
         with contract._lock:
-            detail = self._create_detail(spell, permissions_enum, contract_type)
-            contract._add(conduit._conduit_ward, detail)
-
-        # Inform the peer spellbook about the contracted spell (SpellIndex-based)
-        try:
-            peer_conduit = contract._get_peer(conduit._conduit_ward)._conduit
-            peer_conduit._spellbook._add_contracted_spell(spell, conduit_id)
-        except Exception as e:
-            self._logger.error(
-                f"add_spell_to_contract: spellbook add failed: {e}",
-                method_name="_add_spell_to_contract",
-                exc_info=True,
-                owner_id=self._id,
-                owner_display=self._display_name,
-                mask=True,
-                groups=self._log_groups,
-                system_groups=self._log_sysgroups,
+            detail = self._create_detail(
+                spell,
+                permissions_enum,
+                contract_type,
+                reason=reason,
+                root_spell_id=source_root_id,
             )
-            raise
+            added_new_detail = contract._add(conduit._conduit_ward, detail)
+
+        # Inform the peer spellbook about the contracted spell (SpellIndex-based) only when new
+        if added_new_detail:
+            try:
+                peer_conduit = contract._get_peer(conduit._conduit_ward)._conduit
+                peer_conduit._spellbook._add_contracted_spell(spell, conduit_id)
+            except Exception as e:
+                self._logger.error(
+                    f"add_spell_to_contract: spellbook add failed: {e}",
+                    method_name="_add_spell_to_contract",
+                    exc_info=True,
+                    owner_id=self._id,
+                    owner_display=self._display_name,
+                    mask=True,
+                    groups=self._log_groups,
+                    system_groups=self._log_sysgroups,
+                )
+                raise
 
         self._logger.info(
             f"add_spell_to_contract: success spell_id={spell_id} conduit_id={conduit_id} perms={permissions_enum.name}",
@@ -1440,11 +1493,245 @@ class ConduitWard(Cleanable):
             groups=self._log_groups,
             system_groups=self._log_sysgroups,
         )
+
+        if link_dependencies:
+            try:
+                self._link_spell_dependencies(
+                    root_spell=spell,
+                    root_spell_id=source_root_id,
+                    requested_permissions=permissions_enum,
+                    aetheric_frame=aetheric_frame,
+                )
+            except Exception as e:
+                self._logger.error(
+                    f"add_spell_to_contract: dependency linking failed for root {spell_id}: {e}",
+                    method_name="_add_spell_to_contract",
+                    exc_info=True,
+                    owner_id=self._id,
+                    owner_display=self._display_name,
+                    mask=True,
+                    groups=self._log_groups,
+                    system_groups=self._log_sysgroups,
+                )
+                raise
         return True
+
+    def _get_spell_permissions(self, spell: ISpell) -> Permissions:
+        """
+        Internal helper to normalize spell permissions from either `permissions` or `_permissions`.
+        """
+        perms = getattr(spell, "permissions", None)
+        if perms is None:
+            perms = getattr(spell, "_permissions", None)
+        if perms is None:
+            raise RuntimeError("Spell permissions are undefined.")
+        return EnumHelpers.convert_enum_and_check(perms, Permissions)
+
+    def _has_local_spell_version(self, spell_id: str) -> bool:
+        """
+        Check if this conduit already has the given spell version locally.
+        """
+        book = getattr(self._conduit, "_spellbook", None)
+        if book is None or book._spells is None:
+            return False
+        with book._lock:
+            for idx in book._spells.keys():
+                versions = getattr(idx, "_versions", None)
+                if versions and spell_id in versions:
+                    return True
+        return False
+
+    def _is_contract_empty(self, contract: Contract) -> bool:
+        """
+        Determine if a contract has any remaining details on either side.
+        """
+        return (not contract._details_a) and (not contract._details_b)
+
+    def _remove_root_from_contracts(
+            self,
+            *,
+            root_spell_id: str,
+            conduit: IConduit = None,
+            conduit_id: str = None,
+            aetheric_frame: str = "default",
+    ) -> dict[str, list[str] | dict[str, str]]:
+        """
+        Internal
+
+        Removes a root spell_id source (and any dependency Details attributed to it)
+        from one contract or all contracts. Orphaned Details trigger contracted spell
+        removal and empty contracts are severed.
+        """
+        self.check_cleaned()
+        if not isinstance(root_spell_id, str):
+            raise TypeError("root_spell_id must be a string.")
+
+        # Resolve a specific contract if conduit is provided, else scan all.
+        target_contracts: list[Contract] = []
+        target_peers: list[IConduit] = []
+
+        if conduit is not None or conduit_id is not None:
+            _, resolved_conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
+            contract = self._find_contract(resolved_conduit)
+            if contract is not None:
+                target_contracts.append(contract)
+                target_peers.append(resolved_conduit)
+        else:
+            with self._lock:
+                target_contracts = list(self._contracts.values())
+                target_peers = [c._get_peer(self)._conduit for c in target_contracts if c is not None]
+
+        report = {"success": [], "failed": {}}
+        contracts_to_sever: list[IConduit] = []
+
+        for idx, contract in enumerate(target_contracts):
+            peer_conduit = target_peers[idx] if idx < len(target_peers) else None
+            try:
+                removed_any = False
+                with contract._lock:
+                    for ward in (contract._ward_a, contract._ward_b):
+                        detail_map = contract._get_detail_map(ward)
+                        for spell_id, detail in list(detail_map.items()):
+                            if detail.sources and root_spell_id in detail.sources:
+                                should_delete = detail.remove_source(root_spell_id)
+                                if should_delete:
+                                    detail_map.pop(spell_id, None)
+                                    detail.cleanup()
+                                    # Remove contracted spell from peer spellbook
+                                    try:
+                                        contract._get_peer(ward)._conduit._spellbook._remove_contracted_spell(spell_id, ward._id)
+                                    except Exception as e:
+                                        self._logger.error(
+                                            f"_remove_root_from_contracts: spellbook remove failed for {spell_id}: {e}",
+                                            method_name="_remove_root_from_contracts",
+                                            exc_info=True,
+                                            owner_id=self._id,
+                                            owner_display=self._display_name,
+                                            mask=True,
+                                            groups=self._log_groups,
+                                            system_groups=self._log_sysgroups,
+                                        )
+                                        raise
+                                    removed_any = True
+                if self._is_contract_empty(contract):
+                    contracts_to_sever.append(peer_conduit)
+                if removed_any:
+                    report["success"].append(contract._id)
+            except Exception as e:
+                report["failed"][getattr(contract, "_id", "unknown")] = str(e)
+                self._logger.error(
+                    f"_remove_root_from_contracts: failed for contract {getattr(contract, '_id', 'unknown')}: {e}",
+                    method_name="_remove_root_from_contracts",
+                    exc_info=True,
+                    owner_id=self._id,
+                    owner_display=self._display_name,
+                    mask=True,
+                    groups=self._log_groups,
+                    system_groups=self._log_sysgroups,
+                )
+
+        for peer in contracts_to_sever:
+            if peer is None:
+                continue
+            try:
+                self._remove_contract(peer)
+            except Exception as e:
+                self._logger.error(
+                    f"_remove_root_from_contracts: contract sever failed for peer {getattr(peer, '_id', 'unknown')}: {e}",
+                    method_name="_remove_root_from_contracts",
+                    exc_info=True,
+                    owner_id=self._id,
+                    owner_display=self._display_name,
+                    mask=True,
+                    groups=self._log_groups,
+                    system_groups=self._log_sysgroups,
+                )
+
+        return report
+
+    def _link_spell_dependencies(
+            self,
+            *,
+            root_spell: ISpell,
+            root_spell_id: str,
+            requested_permissions: Permissions,
+            aetheric_frame: str = "default",
+    ) -> None:
+        """
+        Internal
+
+        Link all transitive dependencies for a root spell by contracting them
+        from their owning conduits. Each dependency detail is tagged with
+        DetailReason.dependency and source=root_spell_id for reversible teardown.
+        """
+        deps = getattr(root_spell, "dependencies", None) or []
+        if not deps:
+            return
+
+        visited: set[str] = set()
+
+        def walk(dep_id: str) -> None:
+            if dep_id in visited:
+                return
+            visited.add(dep_id)
+
+            # Already local? nothing to contract.
+            if self._has_local_spell_version(dep_id):
+                return
+
+            owner_conduit = self._conduit.get_conduit_by_spell_id(dep_id, aetheric_frame)
+            if owner_conduit is None:
+                raise RuntimeError(f"Dependency '{dep_id}' owner not found for root '{root_spell_id}'.")
+
+            # If we own it (but earlier check missed), skip contracting.
+            if owner_conduit._id == self._id:
+                return
+
+            # Ensure we have a contract; will honor policy gating inside _link.
+            if not self._find_contract(owner_conduit):
+                self._link(owner_conduit)
+            contract = self._find_contract(owner_conduit)
+            if contract is None:
+                raise RuntimeError(f"Failed to create contract to owner of dependency '{dep_id}'.")
+
+            dep_spell = owner_conduit.get_spell_by_id(dep_id, aetheric_frame)
+            if dep_spell is None:
+                raise RuntimeError(f"Dependency '{dep_id}' not found in owner conduit '{owner_conduit._id}'.")
+
+            dep_permissions = self._get_spell_permissions(dep_spell)
+            # Choose the safer of requested vs spell's own permissions (never elevate beyond spell).
+            if requested_permissions == Permissions.read or dep_permissions == Permissions.read:
+                dep_permissions = Permissions.read
+
+            self._check_spell_if_eligible(dep_spell, owner_conduit, dep_permissions)
+
+            added_new_detail = False
+            with contract._lock:
+                detail = self._create_detail(
+                    dep_spell,
+                    dep_permissions,
+                    ContractTypes.received,
+                    reason=DetailReason.dependency,
+                    root_spell_id=root_spell_id,
+                )
+                added_new_detail = contract._add(owner_conduit._conduit_ward, detail)
+
+            if added_new_detail:
+                borrower_conduit = contract._get_peer(owner_conduit._conduit_ward)._conduit
+                borrower_conduit._spellbook._add_contracted_spell(dep_spell, owner_conduit._id)
+
+            # Recurse through transitive dependencies
+            child_deps = getattr(dep_spell, "dependencies", None) or []
+            for child_dep in child_deps:
+                walk(child_dep)
+
+        for dep in deps:
+            walk(dep)
 
 
     def _add_spells_to_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None, conduit_id: str = None,
-                                permissions: str = "create", aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
+                                permissions: str = "create", aetheric_frame = "default",
+                                reason: DetailReason = DetailReason.manual, link_dependencies: bool = False) -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
 
@@ -1473,8 +1760,16 @@ class ConduitWard(Cleanable):
         )
         for sid in (spell_ids or []):
             try:
-                self._add_spell_to_contract(spell_id=sid, conduit=conduit, conduit_id=conduit_id,
-                                            permissions=permissions, aetheric_frame=aetheric_frame)
+                self._add_spell_to_contract(
+                    spell_id=sid,
+                    conduit=conduit,
+                    conduit_id=conduit_id,
+                    permissions=permissions,
+                    aetheric_frame=aetheric_frame,
+                    reason=reason,
+                    root_spell_id=sid,
+                    link_dependencies=link_dependencies,
+                )
                 report["success"].append(sid)
             except Exception as e:
                 report["failed"][sid] = str(e)
@@ -1493,7 +1788,7 @@ class ConduitWard(Cleanable):
         return report
 
     def _remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
-                                    conduit_id: str = None, aetheric_frame = "default") -> bool | None:
+                                    conduit_id: str = None, root_spell_id: str | None = None, aetheric_frame = "default") -> bool | None:
         """
         Internal
 
@@ -1504,6 +1799,7 @@ class ConduitWard(Cleanable):
             spell_id (str, optional): The unique ID of the spell to remove.
             conduit (IConduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
+            root_spell_id (str, optional): Source root spell_id; if provided, only that source is removed.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:
@@ -1520,19 +1816,10 @@ class ConduitWard(Cleanable):
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
         contract = self._find_contract_by_id(conduit_id)
         if contract is not None:
+            deleted_detail = False
             with contract._lock:
                 if contract._check_if_exists(conduit._conduit_ward, spell_id):
-                    contract._remove(conduit._conduit_ward, spell_id)
-                    try:
-                        contract._get_peer(conduit._conduit_ward)._conduit._spellbook._remove_contracted_spell(spell_id, conduit_id)
-                    except Exception as e:
-                        self._logger.error(
-                            f"remove_spell_from_contract: spellbook remove failed: {e}",
-                            method_name="_remove_spell_from_contract", exc_info=True,
-                            owner_id=self._id, owner_display=self._display_name,
-                            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                        )
-                        raise
+                    deleted_detail = contract._remove_source(conduit._conduit_ward, spell_id, root_spell_id)
                 else:
                     self._logger.error(
                         f"remove_spell_from_contract: spell not in contract ({spell_id})",
@@ -1541,6 +1828,31 @@ class ConduitWard(Cleanable):
                         mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                     )
                     raise RuntimeError(f"Spell with ID '{spell_id}' does not exist in the contract for conduit ID {conduit_id}.")
+
+            if deleted_detail:
+                try:
+                    contract._get_peer(conduit._conduit_ward)._conduit._spellbook._remove_contracted_spell(spell_id, conduit_id)
+                except Exception as e:
+                    self._logger.error(
+                        f"remove_spell_from_contract: spellbook remove failed: {e}",
+                        method_name="_remove_spell_from_contract", exc_info=True,
+                        owner_id=self._id, owner_display=self._display_name,
+                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                    )
+                    raise
+
+            if self._is_contract_empty(contract):
+                try:
+                    self._remove_contract(conduit)
+                except Exception as e:
+                    self._logger.error(
+                        f"remove_spell_from_contract: contract cleanup failed {e}",
+                        method_name="_remove_spell_from_contract",
+                        owner_id=self._id, owner_display=self._display_name,
+                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                    )
+                    raise
+
             self._logger.info(
                 f"remove_spell_from_contract: success {spell_id}",
                 method_name="_remove_spell_from_contract",
@@ -1558,7 +1870,8 @@ class ConduitWard(Cleanable):
 
 
     def _remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
-                                     conduit_id: str = None, aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
+                                     conduit_id: str = None, root_spell_id: str | None = None,
+                                     aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
 
@@ -1586,8 +1899,13 @@ class ConduitWard(Cleanable):
         )
         for sid in (spell_ids or []):
             try:
-                self._remove_spell_from_contract(spell_id=sid, conduit=conduit, conduit_id=conduit_id,
-                                                 aetheric_frame=aetheric_frame)
+                self._remove_spell_from_contract(
+                    spell_id=sid,
+                    conduit=conduit,
+                    conduit_id=conduit_id,
+                    root_spell_id=root_spell_id,
+                    aetheric_frame=aetheric_frame,
+                )
                 report["success"].append(sid)
             except Exception as e:
                 report["failed"][sid] = str(e)

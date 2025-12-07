@@ -11,6 +11,7 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.mutations.mutation_research import MutationResearch
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.dev_ops.dev_ops_manager import DevOpsManager
+from melder.aether.conduit.conduit_cluster import ConduitCluster
 
 
 class AethericFrame(Cleanable):
@@ -60,8 +61,8 @@ class AethericFrame(Cleanable):
         self._version_registry: Dict[str, Set[str]] = {}
 
         # Conduit clusters (grouping by logical name):
-        #   cluster_name -> Set[conduit_id]
-        self._conduit_clusters: Dict[str, Set[str]] = {}
+        #   cluster_name -> ConduitCluster
+        self._conduit_clusters: Dict[str, ConduitCluster] = {}
 
         # Dynamic-mode "cloud" factory for named conduits.
         self._conduit_cloud: ConduitCloud = ConduitCloud(name)
@@ -145,6 +146,11 @@ class AethericFrame(Cleanable):
 
         # Conduit clusters
         if self._conduit_clusters is not None:
+            for cluster in list(self._conduit_clusters.values()):
+                try:
+                    cluster.cleanup()
+                except Exception:
+                    pass
             self._conduit_clusters.clear()
             self._conduit_clusters = None
 

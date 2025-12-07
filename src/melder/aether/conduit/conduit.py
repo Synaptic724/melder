@@ -5,6 +5,7 @@ from typing import Optional, Type, Any, Tuple
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.conduit.conduit_ward.contract.details import DetailReason
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
@@ -1910,7 +1911,8 @@ class Conduit(Cleanable):
 
 
     def add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: str = None,
-                              permissions: str = "create", aetheric_frame = "default") -> bool | None:
+                              permissions: str = "create", aetheric_frame = "default", reason: DetailReason = DetailReason.manual,
+                              root_spell_id: str | None = None, link_dependencies: bool = False) -> bool | None:
         """
         Public API
 
@@ -1936,7 +1938,10 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(f"add_spell_to_contract(spell_id={spell_id}, conduit_id={conduit_id}, perms={permissions})", "add_spell_to_contract")
+        self._logger.debug(
+            f"add_spell_to_contract(spell_id={spell_id}, conduit_id={conduit_id}, perms={permissions}, link_deps={link_dependencies})",
+            "add_spell_to_contract",
+        )
         self._qualify_contracts()
 
         result = self._conduit_ward._add_spell_to_contract(
@@ -1946,6 +1951,9 @@ class Conduit(Cleanable):
             conduit_id=conduit_id,
             permissions=permissions,
             aetheric_frame=aetheric_frame,
+            reason=reason,
+            root_spell_id=root_spell_id,
+            link_dependencies=link_dependencies,
         )
 
         if result:
@@ -1962,7 +1970,8 @@ class Conduit(Cleanable):
 
 
     def add_spells_to_contract(self, spell_ids: list[str], conduit: IConduit = None, conduit_id: str = None,
-                               permissions: str = "create", aetheric_frame = "default") -> dict:
+                               permissions: str = "create", aetheric_frame = "default",
+                               reason: DetailReason = DetailReason.manual, link_dependencies: bool = False) -> dict:
         """
         Public API
 
@@ -1984,7 +1993,10 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(f"add_spells_to_contract(count={len(spell_ids)}, conduit_id={conduit_id}, perms={permissions})", "add_spells_to_contract")
+        self._logger.debug(
+            f"add_spells_to_contract(count={len(spell_ids)}, conduit_id={conduit_id}, perms={permissions}, link_deps={link_dependencies})",
+            "add_spells_to_contract",
+        )
         self._qualify_contracts()
 
         results = self._conduit_ward._add_spells_to_contract(
@@ -1993,6 +2005,8 @@ class Conduit(Cleanable):
             conduit_id=conduit_id,
             permissions=permissions,
             aetheric_frame=aetheric_frame,
+            reason=reason,
+            link_dependencies=link_dependencies,
         )
 
         # Fire hook only if at least one contract addition succeeded.
@@ -2009,7 +2023,7 @@ class Conduit(Cleanable):
 
 
     def remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
-                                   conduit_id: str = None, aetheric_frame = "default") -> bool | None:
+                                   conduit_id: str = None, root_spell_id: str | None = None, aetheric_frame = "default") -> bool | None:
         """
         Public API
 
@@ -2031,7 +2045,10 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(f"remove_spell_from_contract(spell_id={spell_id}, conduit_id={conduit_id})", "remove_spell_from_contract")
+        self._logger.debug(
+            f"remove_spell_from_contract(spell_id={spell_id}, conduit_id={conduit_id}, root_spell_id={root_spell_id})",
+            "remove_spell_from_contract",
+        )
         self._qualify_contracts()
 
         result = self._conduit_ward._remove_spell_from_contract(
@@ -2039,6 +2056,7 @@ class Conduit(Cleanable):
             spell_id=spell_id,
             conduit=conduit,
             conduit_id=conduit_id,
+            root_spell_id=root_spell_id,
             aetheric_frame=aetheric_frame,
         )
 
@@ -2054,7 +2072,7 @@ class Conduit(Cleanable):
         return result
 
     def remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
-                                    conduit_id: str = None, aetheric_frame = "default") -> dict:
+                                    conduit_id: str = None, root_spell_id: str | None = None, aetheric_frame = "default") -> dict:
         """
         Public API
 
@@ -2074,13 +2092,17 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(f"remove_spells_from_contract(count={0 if spell_ids is None else len(spell_ids)}, conduit_id={conduit_id})", "remove_spells_from_contract")
+        self._logger.debug(
+            f"remove_spells_from_contract(count={0 if spell_ids is None else len(spell_ids)}, conduit_id={conduit_id}, root_spell_id={root_spell_id})",
+            "remove_spells_from_contract",
+        )
         self._qualify_contracts()
 
         results = self._conduit_ward._remove_spells_from_contract(
             spell_ids=spell_ids,
             conduit=conduit,
             conduit_id=conduit_id,
+            root_spell_id=root_spell_id,
             aetheric_frame=aetheric_frame,
         )
 
@@ -2094,6 +2116,55 @@ class Conduit(Cleanable):
                 )
 
         return results
+
+    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: IConduit = None,
+                                   conduit_id: str = None, aetheric_frame: str = "default") -> dict:
+        """
+        Public API
+
+        Removes a root spell_id (and any dependency Details attributed to it) from one
+        contract or all contracts. Orphaned Details trigger contracted spell removal;
+        empty contracts are severed.
+        """
+        self._logger.debug(
+            f"remove_root_from_contracts(root_spell_id={root_spell_id}, conduit_id={conduit_id})",
+            "remove_root_from_contracts",
+        )
+        self._qualify_contracts()
+        return self._conduit_ward._remove_root_from_contracts(
+            root_spell_id=root_spell_id,
+            conduit=conduit,
+            conduit_id=conduit_id,
+            aetheric_frame=aetheric_frame,
+        )
+
+    def add_spell_to_contract_with_dependencies(
+            self,
+            *,
+            spell: ISpell = None,
+            spell_id: str = None,
+            conduit: IConduit = None,
+            conduit_id: str = None,
+            permissions: str = "create",
+            aetheric_frame: str = "default",
+    ) -> bool | None:
+        """
+        Public API helper
+
+        Adds a spell to a contract and automatically links its dependencies
+        (recursively) using the same permission level (downgraded to read when needed).
+        """
+        return self.add_spell_to_contract(
+            spell=spell,
+            spell_id=spell_id,
+            conduit=conduit,
+            conduit_id=conduit_id,
+            permissions=permissions,
+            aetheric_frame=aetheric_frame,
+            reason=DetailReason.root,
+            root_spell_id=spell_id,
+            link_dependencies=True,
+        )
 
 
     def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: str = None, aetheric_frame = "default") -> bool | None:
