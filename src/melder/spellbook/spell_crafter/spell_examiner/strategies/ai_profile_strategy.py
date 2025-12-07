@@ -1,6 +1,5 @@
 from __future__ import annotations
 import inspect
-from dataclasses import dataclass
 from typing import Any, Optional, List
 # Melder Imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.class_inspector import ClassInspector
@@ -16,7 +15,6 @@ from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile
 from melder.utilities.interfaces.interfaces import ISpell
 
 
-@dataclass
 class AIProfileStrategy:
     """
     Strategy for building **SpellAIProfile** from a Spell.
@@ -28,8 +26,11 @@ class AIProfileStrategy:
           agent-based reasoning, mutation planning, etc.
     """
 
-    show_dunders: bool = False
-    max_repr: int = 120
+    __slots__ = ("show_dunders", "max_repr")
+
+    def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:
+        self.show_dunders = show_dunders
+        self.max_repr = max_repr
 
     def build_profile(
             self,

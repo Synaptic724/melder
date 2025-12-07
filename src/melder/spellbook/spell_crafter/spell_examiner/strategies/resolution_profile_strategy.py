@@ -1,6 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
-
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import SpellResolutionProfile
 # Melder Imports
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
@@ -9,7 +7,6 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
 from melder.utilities.interfaces.interfaces import ISpell
 
 
-@dataclass
 class ResolutionProfileStrategy:
     """
     Strategy for producing **SpellResolutionProfile** instances from
@@ -18,6 +15,11 @@ class ResolutionProfileStrategy:
     This is where we hook into SpellRequirementsFinder and, later, into
     symbolic graph / frame / validation phases.
     """
+
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        pass
 
     def build_profile(self, spell: ISpell) -> SpellResolutionProfile:
         # Phase 1 – requirements

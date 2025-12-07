@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Optional, Union
 # Melder imports
@@ -40,7 +39,6 @@ class SpellExaminationKind(Enum):
     AI = auto()
 
 
-@dataclass
 class SpellExaminer:
     """
     Facade over the spell–examination strategies.
@@ -52,8 +50,11 @@ class SpellExaminer:
     * AIProfileStrategy             → SpellAIProfile
     """
 
-    show_dunders: bool = False
-    max_repr: int = 120
+    __slots__ = ("show_dunders", "max_repr")
+
+    def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:
+        self.show_dunders = show_dunders
+        self.max_repr = max_repr
 
     # ----------------------------------------------------------------------
     # Binding layer

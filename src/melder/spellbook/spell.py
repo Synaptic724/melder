@@ -237,6 +237,12 @@ class Spell(Cleanable):
                 except Exception:
                     pass
 
+            if self.profile is not None and isinstance(self.profile, Cleanable):
+                try:
+                    self.profile.cleanup()
+                except Exception:
+                    pass
+
             # Phase artifacts – deterministically dropped via SpellCrafter.
             if self._crafter is not None:
                 try:

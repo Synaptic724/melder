@@ -90,6 +90,14 @@ class SpellValidationContext(Cleanable):
             except Exception:
                 pass
 
+        # Clean up owned artifacts if they support deterministic teardown.
+        for artifact in (self.requirements, self.symbolic_graph, self.resolution_frame):
+            if isinstance(artifact, Cleanable):
+                try:
+                    artifact.cleanup()
+                except Exception:
+                    pass
+
         # Drop references to help GC.
         self.spell = None
         self.spellbook = None
@@ -99,7 +107,7 @@ class SpellValidationContext(Cleanable):
         self.scanner = None
         self.cancel_event = None
 
-        # Detach our reference to the issues list without mutating it.
-        self.issues = []
+        # Detach our reference to the shared issues list without mutating it.
+        self.issues = None
 
         self._cleaned = True

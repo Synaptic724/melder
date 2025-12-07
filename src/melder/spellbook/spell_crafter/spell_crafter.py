@@ -175,6 +175,12 @@ class SpellCrafter(Cleanable):
                 except Exception:
                     pass
 
+            if self._resolution_frame is not None and isinstance(self._resolution_frame, Cleanable):
+                try:
+                    self._resolution_frame.cleanup()
+                except Exception:
+                    pass
+
             if self._validation_result_phase4 is not None and isinstance(self._validation_result_phase4, Cleanable):
                 try:
                     self._validation_result_phase4.cleanup()

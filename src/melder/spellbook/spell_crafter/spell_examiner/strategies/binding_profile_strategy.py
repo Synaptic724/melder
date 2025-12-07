@@ -1,6 +1,5 @@
 from __future__ import annotations
 import inspect
-from dataclasses import dataclass
 from typing import Any, List
 # Melder Imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
@@ -9,7 +8,6 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     InstanceBindingProfile, OtherBindingProfile
 
 
-@dataclass
 class BindingProfileStrategy:
     """
     Strategy for producing **binding profiles** from raw user objects.
@@ -18,8 +16,11 @@ class BindingProfileStrategy:
     Spell or any phase artifacts.
     """
 
-    show_dunders: bool = False
-    max_repr: int = 120
+    __slots__ = ("show_dunders", "max_repr")
+
+    def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:
+        self.show_dunders = show_dunders
+        self.max_repr = max_repr
 
     def build_profile(self, candidate: Any) -> SpellBindingProfile:
         if inspect.isclass(candidate):
