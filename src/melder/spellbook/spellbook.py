@@ -10,7 +10,7 @@ from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import ISpellbook, ISpell, IConfiguration, ISpellIndex, ISpellSystemStates
+from melder.utilities.interfaces.interfaces import ISpell, IConfiguration, ISpellIndex, ISpellSystemStates
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
@@ -22,9 +22,6 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
-    SpellStateChangeReason,
-)
 
 #region Spellbook
 class Spellbook(Cleanable):
@@ -1149,7 +1146,7 @@ class Spellbook(Cleanable):
                 f"Binding spell => id={new_spell.spell_id}, key={new_spell._key}",
                 "bind",
             )
-            self._spell_system_states.register_lineage(
+            self._spell_states_system.register_lineage(
                 spell_index=new_spell.spell_index,
                 spell=spell,
             )
@@ -1381,7 +1378,7 @@ class Spellbook(Cleanable):
 
 
 
-    def get_configuration(self) -> IConfiguration:
+    def get_configuration(self) -> 'Configuration':
         """
         Public API
 
@@ -1396,7 +1393,7 @@ class Spellbook(Cleanable):
     #endregion Configuration API
     #region Conduit API
 
-    def create_new_preset_spellbook(self) -> ISpellbook:
+    def create_new_preset_spellbook(self) -> 'Spellbook':
         """
         Internal
 
@@ -1410,7 +1407,7 @@ class Spellbook(Cleanable):
         return Spellbook(self._aetheric_frame, self._configuration)
 
 
-    def conjure(self, policy: Optional[str] = "automatic", name: str = None, conduit_logger: Any | None = None) -> Conduit:
+    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: str = None, conduit_logger: Any | None = None) -> Conduit:
         """
         Public API
 
@@ -1420,9 +1417,10 @@ class Spellbook(Cleanable):
 
         Args:
             policy (str, optional):
-                Determines the spell access control behavior for this conduit.
-                Must match a `Policies` enum member.
-                Defaults to "automatic".
+                Access control policy for this conduit (dynamic-only modes). Must match a `Policies` enum member.
+                Defaults to "default".
+            automatic (bool, optional):
+                If True, operate in automatic (non-dynamic) mode. If False, require `system_state` to be dynamic.
             name (str, optional):
                 An optional name for the conduit.
             conduit_logger (Any, optional):
@@ -1433,16 +1431,15 @@ class Spellbook(Cleanable):
 
         Raises:
             RuntimeError: If this Spellbook has already conjured a Conduit (only one is allowed).
-            RuntimeError: If dynamic policies are used when `system_state` is "automatic".
+            RuntimeError: If dynamic-only policies are used when `system_state` is "automatic" or when `automatic` is True.
             ValueError: If the configuration fails validation or the policy string is invalid.
 
         Policies:
-            - **Automatic Mode** (default policy is `automatic`):
-                * `"automatic"`: Delegates access checks, disables linking.
-            - **Dynamic Mode** (requires `system_state: "dynamic"`):
-                * `"dynamic"`: Enables custom linking and access resolution.
-                * `"whitelist_all"`: Grants access to all local spells.
-                * `"block_all"`: Denies access to all spells unless explicitly whitelisted.
+            - **Automatic mode (automatic=True)**: only `"default"` is allowed (linking disabled).
+            - **Dynamic mode (automatic=False and `system_state` is dynamic)**:
+                * `"default"`: normal per-spell rules.
+                * `"whitelist_all"` / `"block_all"`: override per-spell whitelist behavior.
+                * `"inbound_only"` / `"outbound_only"`: directional link restrictions.
 
         Hook integration
         ----------------
@@ -1493,7 +1490,7 @@ class Spellbook(Cleanable):
             self._run_resolution_phases()
 
             # Validate policy vs system_state and local spell registry
-            self._check_system_state(policy)
+            self._check_system_state(policy, automatic)
             policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
             self._check_all_spells()
 
@@ -1514,6 +1511,7 @@ class Spellbook(Cleanable):
                 configuration=self._configuration,
                 aetheric_frame=self._aetheric_frame,
                 policy=policy_enum,
+                automatic=automatic,
                 logger=conduit_logger,
             )
 
@@ -1547,7 +1545,7 @@ class Spellbook(Cleanable):
 
 
 
-    def _check_system_state(self, policy: str) -> None:
+    def _check_system_state(self, policy: str, automatic: bool) -> None:
         """
         Internal
 
@@ -1555,17 +1553,27 @@ class Spellbook(Cleanable):
 
         Args:
             policy (str): The policy requested for the new Conduit.
+            automatic (bool): Whether to operate in automatic (non-dynamic) mode.
 
         Raises:
-            RuntimeError: If a dynamic policy is requested while `system_state` is set to "automatic".
+            RuntimeError: If a dynamic-only policy is requested while `automatic` is True or `system_state` is automatic.
         """
         self._logger.debug("Checking system_state vs policy", "_check_system_state")
-        if (self._configuration.get_property("system_state") == SystemState.automatic and
-                EnumHelpers.convert_enum_and_check(policy, Policies) != Policies.automatic):
-            self._logger.error("Cannot use dynamic policies in automatic mode.", "_check_system_state", exc_info=True)
+        policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
+
+        # Automatic mode: only default policy is allowed
+        if automatic:
+            if policy_enum != Policies.default:
+                self._logger.error("Dynamic-only policy requested while automatic=True.", "_check_system_state", exc_info=True)
+                raise RuntimeError("Dynamic-only policies are not allowed when automatic mode is requested.")
+            return
+
+        # Dynamic requested: ensure system_state supports it
+        if self._configuration.get_property("system_state") == SystemState.automatic:
+            self._logger.error("Dynamic policy requested while system_state is automatic.", "_check_system_state", exc_info=True)
             raise RuntimeError(
-                "Cannot use dynamic policies in automatic mode. "
-                "Please set system_state to 'dynamic' in the configuration."
+                "Cannot use dynamic policies in automatic system_state. "
+                "Please set system_state to 'dynamic' in the configuration or set automatic=True."
             )
 
     def _define_conduit_into_spells(self, conduit: Conduit) -> None:

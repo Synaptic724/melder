@@ -309,7 +309,7 @@ class ConduitWard(Cleanable):
             if self._parent_conduit is not None and self._conduit_type == ConduitState.lesser and len(self._lesser_conduits) == 0:
                 self._parent_conduit = None
                 self._conduit_type = ConduitState.normal
-                self._policy = Policies.dynamic
+                self._policy = Policies.default
                 self._logger.info(
                     "convert_to_normal: success",
                     method_name="_convert_to_normal_conduit",
@@ -363,22 +363,13 @@ class ConduitWard(Cleanable):
             return policy
 
         with self._lock:
-            if self._conduit_type == ConduitState.lesser:
-                self._logger.debug(
-                    "set_initial_policy -> lesser_conduit",
-                    method_name="_set_initial_policy",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
-                return Policies.lesser_conduit
-            else:
-                self._logger.error(
-                    "set_initial_policy called after policy already set or invalid state",
-                    method_name="_set_initial_policy",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
-                raise RuntimeError("Policy already set. Cannot set policy again.")
+            self._logger.debug(
+                "set_initial_policy -> default",
+                method_name="_set_initial_policy",
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+            return Policies.default
 
     def _set_new_policy(self, policy: str | Policies) -> None:
         """
@@ -395,8 +386,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If dynamic environment is not enabled.
             RuntimeError: If the Conduit is a lesser Conduit.
-            RuntimeError: If attempting to set to `automatic` in dynamic mode.
-            RuntimeError: If attempting to set to `lesser_conduit` on a non-lesser Conduit.
             RuntimeError: If attempting to set to `block_all` or `whitelist_all` while contracts exist.
         """
         self.check_cleaned()
@@ -419,22 +408,6 @@ class ConduitWard(Cleanable):
 
         with self._lock:
             new_policy = EnumHelpers.convert_enum_and_check(policy, Policies)
-            if new_policy == Policies.automatic:
-                self._logger.error(
-                    "set_new_policy: automatic in dynamic env is invalid",
-                    method_name="_set_new_policy",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
-                raise RuntimeError("Cannot set policy to 'automatic' in dynamic mode.")
-            if new_policy == Policies.lesser_conduit and self._conduit_type != ConduitState.lesser:
-                self._logger.error(
-                    "set_new_policy: lesser_conduit on non-lesser",
-                    method_name="_set_new_policy",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
-                raise RuntimeError("Cannot set policy to 'lesser_conduit' on a non-lesser Conduit.")
             if (new_policy == Policies.block_all or new_policy == Policies.whitelist_all) and len(self._contracts) > 0:
                 self._logger.error(
                     "set_new_policy: block/whitelist with existing contracts",

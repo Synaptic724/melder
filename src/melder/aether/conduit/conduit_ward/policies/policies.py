@@ -1,38 +1,18 @@
 from enum import Enum, auto
 
+
 class Policies(Enum):
     """
-    Defines conduit policy behaviors within the conduit ward system.
+    Access policies (evaluated only when system_state is dynamic):
 
-    These policies control how a conduit grants spell access, inherits behavior,
-    and evaluates permissions.
-
-    Available Policies:
-
-    If system mode is 'automatic':
-    - automatic: 🔒 Disables outbound linking.
-                 ✅ Accepts inbound links from lesser conduits only.
-                 🔁 Defers access decisions to static whitelist metadata.
-
-    If system mode is 'dynamic':
-    - dynamic: 🔓 Enables runtime access evaluation and linking.
-               🧠 Supports dynamic permission handlers and spell-level logic.
-
-    - whitelist_all: ✅ Grants access to all local spells.
-                     ⛔ Ignores `meta["whitelist"]` flags.
-                     🔒 Dynamic mode only.
-
-    - block_all: ⛔ Denies all access by default.
-                 ✅ Only allows spells explicitly marked with `meta["whitelist"] = True`.
-                 🔒 Dynamic mode only.
-
-    - lesser_conduit: 🪶 Applies to delegated lesser conduits.
-                      🔗 Does not evaluate policies; inherits access from parent structure.
-                      🚫 Cannot link or modify spellbook.
-                      🧼 Used as a passive scope only.
+    - default: normal per-spell rules/whitelist metadata.
+    - whitelist_all: expose all local spells regardless of per-spell whitelist flags.
+    - block_all: expose only spells explicitly marked with `meta["whitelist"] = True`.
+    - inbound_only: accept inbound links/borrows but do not initiate outbound links.
+    - outbound_only: initiate outbound links but reject inbound link requests.
     """
-    automatic = auto()
-    dynamic = auto()
+    default = auto()
     whitelist_all = auto()
     block_all = auto()
-    lesser_conduit = auto()
+    inbound_only = auto()
+    outbound_only = auto()

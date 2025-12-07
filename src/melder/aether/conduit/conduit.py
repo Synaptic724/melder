@@ -34,7 +34,7 @@ class Conduit(Cleanable):
     _aether = Aether()
 
     def __init__(self, spellbook: ISpellbook, configuration: IConfiguration, conduit_state: ConduitState,
-                 aetheric_frame: str, policy: Policies, name: Optional[str] = None, logger: Any | None = None):
+                 aetheric_frame: str, policy: Policies, automatic: bool = True, name: Optional[str] = None, logger: Any | None = None):
         """
         Public API
 
@@ -53,14 +53,19 @@ class Conduit(Cleanable):
         self._name: str = name
         self.__debugger_mode__: bool = False
         self.__dynamic_environment__: bool = False
+        self._automatic: bool = automatic
         self._aetheric_frame: str = aetheric_frame
-
         # Special Configuration
         if not isinstance(configuration, IConfiguration):
             raise TypeError(f"Expected IConfiguration instance, got {type(configuration).__name__}")
 
         self._configuration: IConfiguration = configuration
         self._logger: ISafeLogger = self._configure_logger(logger, configuration)
+        # Now that configuration/logger are set, apply flags.
+        self._apply_configuration_flags()
+        # Override dynamic environment if caller requested automatic/dynamic explicitly.
+        if automatic is not None:
+            self.__dynamic_environment__ = not automatic
         self._logger.debug(
             f"Conduit __init__ starting (frame='{aetheric_frame}', state={conduit_state.name}, name={name})",
             "__init__"
@@ -79,7 +84,11 @@ class Conduit(Cleanable):
         # Shape: { hook_name: [callables...] }
         self._conduit_hooks: dict[str, list[Any]] | None = None
 
-        self._apply_configuration_flags()
+        self._configure_conduit_state()
+
+        # ID swap: pull any hooks registered under this Spellbook's ID in the
+        # Configuration into this Conduit instance as a local hook map.
+        self._initialize_conduit_hooks()
 
         self._conduit_ward: ConduitWard = ConduitWard(
             conduit=self,
@@ -87,11 +96,6 @@ class Conduit(Cleanable):
             conduit_type=self._conduit_state,
             policy=policy
         )
-        self._configure_conduit_state()
-
-        # ID swap: pull any hooks registered under this Spellbook's ID in the
-        # Configuration into this Conduit instance as a local hook map.
-        self._initialize_conduit_hooks()
 
         self._logger.debug(
             f"Conduit initialized (id={self._id}, frame='{self._aetheric_frame}')",
@@ -981,7 +985,7 @@ class Conduit(Cleanable):
                 configuration=self._configuration,
                 conduit_state=ConduitState.lesser,
                 aetheric_frame=self._aetheric_frame,
-                policy=Policies.lesser_conduit,
+                policy=Policies.default,
                 logger=logger,
             )
             # Provide parent creations reference for delegation of frame-level singletons.
