@@ -36,7 +36,7 @@ class Bind(Cleanable):
     """
     def __init__(self, spellbook: ISpellbook):
         super().__init__()
-        self._spellbook = spellbook
+        self._spellbook: ISpellbook = spellbook
         self._lock = threading.RLock()
 
     def cleanup(self):
