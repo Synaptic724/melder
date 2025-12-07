@@ -9,19 +9,26 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 class Contract(Cleanable):
     """
-    A symmetric contract between two conduit wards.
+    Bidirectional contract between two conduit wards.
 
-    Each contract maintains permission details for both sides independently.
-    There is no directional bias (no initiator or provider); both parties
-    may define what spells they allow the other to use.
+    A Contract is symmetric: both wards keep their own Detail maps describing
+    which lineages are shared and with what permissions. Each side can grant
+    or revoke independently; the contract object simply tracks both views.
 
-    Fields:
-    - _ward_a / _ward_b: The two conduit ward participants in this contract.
-    - _details_a / _details_b: Spell permission maps for each ward's view.
-    - _id: Unique identifier for this contract instance.
+    Attributes:
+        _ward_a / _ward_b: The two participating wards.
+        _details_a / _details_b: Per-ward maps of spell_id -> Detail.
+        _id: Unique identifier for this contract instance.
     """
 
     def __init__(self, ward_a: IConduitWard, ward_b: IConduitWard):
+        """
+        Create a new symmetric contract between two wards.
+
+        Args:
+            ward_a: First participating ward.
+            ward_b: Second participating ward.
+        """
         super().__init__()
         self._lock = RLock()
         self._id: str = IDBuilder.create_id()
@@ -36,9 +43,10 @@ class Contract(Cleanable):
     #region Cleanup
     def cleanup(self):
         """
-        Internal
+        Idempotently tear down this contract and all contained Details.
 
-        Cleanup the contract, clearing its wards and internal details.
+        Clears both wards’ detail maps, nulls ward references, and marks the
+        contract cleaned so it can no longer be used.
         """
         if self._cleaned:
             return
@@ -54,9 +62,7 @@ class Contract(Cleanable):
 
     def _clean_up(self):
         """
-        Internal
-
-        Cleanup and clear all spell details from both sides.
+        Internal helper to cleanup all Detail entries for both wards.
         """
         for detail in self._details_a.values():
             detail.cleanup()
@@ -88,7 +94,16 @@ class Contract(Cleanable):
         """
         Internal
 
-        Return the opposite conduit in this contract.
+        Return the opposite ward participant in this contract.
+
+        Args:
+            ward: The ward requesting its peer.
+
+        Returns:
+            IConduitWard: The other ward in the contract.
+
+        Raises:
+            ValueError: If the ward is not part of this contract.
         """
         if ward is self._ward_a:
             return self._ward_b
@@ -103,10 +118,10 @@ class Contract(Cleanable):
         Helper to find the opposite conduit in a contract based on a known conduit ID.
 
         Args:
-            contract (IContract): The contract to search within.
-            known_id (str): The ID of the known conduit.
+            contract: The contract to search within.
+            known_id: Conduit ID you already know.
         Returns:
-            Optional[IConduit]: The opposite conduit if found, else None.
+            Optional[IConduit]: The peer conduit if found, else None.
         """
         if contract._ward_a._id == known_id:
             return contract._ward_b._conduit
@@ -119,6 +134,15 @@ class Contract(Cleanable):
         Internal
 
         Helper to return the permission map associated with a given ward.
+
+        Args:
+            ward: Ward whose detail map should be returned.
+
+        Returns:
+            Dict[str, Detail]: Map of spell_id -> Detail for the ward.
+
+        Raises:
+            ValueError: If the ward is not part of this contract.
         """
         if ward is self._ward_a:
             return self._details_a
@@ -131,6 +155,10 @@ class Contract(Cleanable):
         Internal
 
         Add a spell-level permission detail to the contract on behalf of the given ward.
+
+        Args:
+            ward: Ward that owns the detail map being updated.
+            contract_detail: Detail entry to insert.
         """
         self._get_detail_map(ward)[contract_detail.spell_id] = contract_detail
 
@@ -139,6 +167,10 @@ class Contract(Cleanable):
         Internal
 
         Remove a spell-level permission detail from the given ward's view.
+
+        Args:
+            ward: Ward whose map should be updated.
+            spell_id: Version ID key to remove.
         """
         detail_map = self._get_detail_map(ward)
         if spell_id in detail_map:

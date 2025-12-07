@@ -14,25 +14,55 @@ from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contrac
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
 # TODO: If a specific policy is set such as blacklist or whitelist, ensure that the spellbook the entire spellbook is managed properly.
-
-##### IMPORTANT NOTE #####
-# TODO: Remember that this entire system is revolved around dynamic spell management. If a core scope that everyone is borrowing from is disposed, how can we handle that situation?
-
+# TODO: Please ensure that locking dynamics properly ensure state management between contracts and to use SafeGuard where we need to in order to ensure we grab all the locks to properly manage state
 
 #region ConduitWard
 class ConduitWard(Cleanable):
     """
-    ConduitWard manages the dynamic linking, lineage, and permission policy
-    for a single conduit within the Melder framework.
+    Control-plane for a single Conduit: contracts, lineage, and policy.
 
-    Key Responsibilities:
-    * **Contract Management:** Maintains thread-safe contracts defining shared spells with other conduits.
-    * **Lineage Tracking:** Handles the tree structure via parent and lesser conduit tracking.
-    * **Policy Enforcement:** Enforces conduit access policies (e.g., whitelist, block, dynamic).
+    ConduitWard is the **relationship manager** for its owning Conduit. It never
+    builds spells itself; instead it coordinates how this conduit relates to
+    others and to its own children.
 
-    Contract Directionality:
-    * `_initiated_index`: Tracks links this conduit has initiated (outbound).
-    * `_received_index`: Tracks links where this conduit has been the provider target (inbound).
+    What it owns
+    ------------
+    - Contract graph: symmetric links to peer conduits, each represented by a
+      `Contract` with per-ward `Detail` maps (spell lineage + permission).
+    - Lineage tree: parent pointer and the set of **lesser conduits** spawned
+      by this conduit (pure ownership; no contract semantics here).
+    - Policy state: the active `Policies` enum guiding dynamic/whitelist/block
+      behaviors and eligibility to form contracts.
+
+    Core indices (all ward-local)
+    -----------------------------
+    - `_initiated_index`: outbound links (target_conduit_id -> contract_id).
+    - `_received_index`: inbound links (source_conduit_id -> contract_id).
+    - `_contracts`: contract_id -> Contract object (symmetric, shared).
+    - `_lesser_conduits`: child conduit_id -> Conduit (lineage only).
+
+    Lifecycle
+    ---------
+    - Link: `_link` / `_create_new_contract` build symmetric contracts and wire
+      Spellbook contract buckets on both sides.
+    - Sever: `_remove_contract` (via `_sever_link` or bulk `_sever_all_linked_conduits`)
+      tears down Spellbook contracted maps and cleans the Contract.
+    - Lesser management: `_link_lesser_conduit` attaches children; cleanup tears
+      them down best-effort.
+    - Cleanup: idempotent, best-effort; severs peer links, cleans lesser tree,
+      clears indices, nulls references.
+
+    Threading
+    ---------
+    - Uses an internal RLock for ward-level critical sections.
+    - Contract creation uses sorted lock ordering between wards to avoid deadlock.
+    - `_remove_contract` assumes the caller serialized access (e.g., via `_sever_link`).
+
+    Ownership boundaries
+    --------------------
+    - Spellbook state is updated only through ward helpers (e.g., `_create_link_contract`,
+      `_sever_link_contract`) so contract teardown stays consistent with spell maps.
+    - Aether/frames are not touched directly; ward concerns are strictly conduit-scope.
     """
     def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies):
         super().__init__()
@@ -81,23 +111,42 @@ class ConduitWard(Cleanable):
         """
         Public API
 
-        Cleanups the conduit ward, preventing any further modifications or operations.
+        Idempotently tear down this ward, its contracts, and lesser lineage.
+
+        Behaviour:
+          - Best-effort sever all peer contracts (uses `_remove_contract`, which updates Spellbook maps).
+          - Cleanup all lesser conduits and clear lineage references.
+          - Null internal state and mark cleaned. Logger metadata is nulled last.
+
+        Returns:
+            None
         """
-        raise NotImplementedError("Cleaning is not implemented yet.")
         if self._cleaned:
             return
         with self._lock:
+            if self._cleaned:
+                return
             self._logger.debug(
                 "cleanup start",
                 method_name="cleanup",
                 owner_id=self._id, owner_display=self._display_name,
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
+
+            # Best-effort sever peer contracts (updates Spellbook links)
             self._clean_up_links()
+
+            # Clean up lesser conduits
             self._clean_up_lesser_conduits_links()
+
+            # Clear lineage/contract state
+            self._parent_conduit = None
+            self._lesser_conduits.clear()
+            self._contracts.clear()
+            self._initiated_index.clear()
+            self._received_index.clear()
             self._conduit = None
             self._dynamic = None
-            self.sever_link(self._parent_conduit_link)
             self._conduit_type = self._conduit_type.cleaned
             self._policy = None
             self._cleaned = True
@@ -108,34 +157,37 @@ class ConduitWard(Cleanable):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
 
-            if self._logger is not None:
-                self._display_name: str = ""
-                self._log_groups.clear()
-                self._log_groups = None
-                self._log_sysgroups.clear()
-                self._log_sysgroups = None
-                self._logger = None
+        # Null logger metadata last (outside lock)
+        if self._logger is not None and hasattr(self._logger, "_cleanup"):
+            self._logger._cleanup()
+        self._logger = None
 
 
     def _clean_up_lesser_conduits_links(self):
         """
         Internal
 
-        Recursively cleans up and removes all linked lesser conduits (children).
+        Recursively clean up and detach all lesser conduits (children).
+
+        Best-effort: errors from child cleanup are logged and do not stop siblings.
+
+        Returns:
+            None
         """
-        raise NotImplementedError("is not implemented yet.")
-        if self._lesser_conduits_links:
-            for lesser_conduit in self._lesser_conduits_links:
-                try:
-                    lesser_conduit.cleanup()
-                except Exception as e:
-                    self._logger.error(
-                        f"cleanup lesser link failed: {e}",
-                        method_name="_clean_up_lesser_conduits_links", exc_info=True,
-                        owner_id=self._id, owner_display=self._display_name,
-                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
-            self._lesser_conduits_links.dispose()
+        if not self._lesser_conduits:
+            return
+
+        for lesser_conduit in list(self._lesser_conduits.values()):
+            try:
+                lesser_conduit.cleanup()
+            except Exception as e:
+                self._logger.error(
+                    f"cleanup lesser link failed: {e}",
+                    method_name="_clean_up_lesser_conduits_links", exc_info=True,
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+        self._lesser_conduits.clear()
         self._logger.debug(
             "_clean_up_lesser_conduits_links done",
             method_name="_clean_up_lesser_conduits_links",
@@ -147,21 +199,15 @@ class ConduitWard(Cleanable):
         """
         Internal
 
-        cleans and disposes of all active external contracts and links.
+        Best-effort sever of all active external contracts and links.
+
+        Delegates to `_sever_all_linked_conduits`, which handles Spellbook
+        contract teardown. No-op if already cleaned.
+
+        Returns:
+            None
         """
-        raise NotImplementedError("is not implemented yet.")
-        if self._conduit_links:
-            for link in self._conduit_links:
-                try:
-                    link.cleanup()
-                except Exception as e:
-                    self._logger.error(
-                        f"cleanup link failed: {e}",
-                        method_name="_clean_up_links", exc_info=True,
-                        owner_id=self._id, owner_display=self._display_name,
-                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
-            self._conduit_links.dispose()
+        self._sever_all_linked_conduits()
         self._logger.debug(
             "_clean_up_links done",
             method_name="_clean_up_links",
@@ -183,7 +229,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        raise NotImplementedError("is not implemented yet.")
         self._logger.debug(
             "cleanup_all_lesser_conduits",
             method_name="cleanup_all_lesser_conduits",
@@ -796,8 +841,8 @@ class ConduitWard(Cleanable):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 return conduit
-            ward = getattr(conduit, "_conduit_ward", None)
-            if ward:
+            ward = conduit._conduit_ward
+            if ward is not None:
                 result = ward._get_lesser_conduit(conduit_id)
                 if result is not None:
                     self._logger.debug(
@@ -965,16 +1010,40 @@ class ConduitWard(Cleanable):
         Internal
 
         Severs all active peer links (contracts) to conduits. Excludes lesser conduits.
+
+        Strategy:
+          - Snapshot peer conduits under the ward lock.
+          - Call `_remove_contract` for each peer (Spellbook link maps are updated there).
+          - Best-effort: failures are logged and do not stop other peers.
+
+        Returns:
+            None
         """
-        self.check_cleaned()
+        if self._cleaned:
+            return
+
+        # Snapshot peers under lock, then sever contracts one by one.
+        peers: list[IConduit] = []
         with self._lock:
-            self._logger.debug(
-                "sever_all_links: not implemented",
-                method_name="_sever_all_linked_conduits",
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
-            raise NotImplementedError("Severing all links is not implemented yet.")
+            if self._cleaned:
+                return
+            peers = [
+                contract._get_peer(self)._conduit
+                for contract in list(self._contracts.values())
+                if contract is not None
+            ]
+
+        for peer_conduit in peers:
+            try:
+                self._remove_contract(peer_conduit)
+            except Exception as e:
+                self._logger.error(
+                    f"sever_all_links: failed for peer {getattr(peer_conduit, '_id', 'unknown')}: {e}",
+                    method_name="_sever_all_linked_conduits",
+                    exc_info=True,
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
 
 
     #endregion Link Management
@@ -1894,7 +1963,7 @@ class ConduitWard(Cleanable):
             for contract in self._contracts.values():
                 peer_ward = contract._get_peer(self)
                 peer_conduit = peer_ward._conduit
-                if getattr(peer_conduit, "_name", None) == conduit_name:
+                if peer_conduit._name == conduit_name:
                     res = self._get_spells_in_contract_by_conduit(peer_ward._id)
                     self._logger.debug(
                         f"get_spells_in_contract_by_conduit_name {conduit_name} -> {'hit' if res else 'miss'}",

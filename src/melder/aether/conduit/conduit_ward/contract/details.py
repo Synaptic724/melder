@@ -10,26 +10,19 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class Detail(Cleanable):
     """
-    Spell-level permission entry inside a Contract.
+    Spell-level permission entry stored inside a Contract.
 
-    This is now **lineage-aware** and direction-aware.
+    A `Detail` records which lineage is being shared, which version was
+    present when the contract was created, and what permission applies.
+    It is lineage-aware (uses `SpellIndex`) and direction-aware (via
+    `contract_type`).
 
-    Fields:
-        spell_index (SpellIndex):
-            The lineage identity for the contracted spell. This does not
-            change when the spell is mutated.
-
-        spell_id (str):
-            The SHA256 version ID **at the time this detail was created**.
-            This is stable and is used as the key inside the Contract's
-            internal maps for compatibility with existing code.
-
-        permissions (Permissions):
-            The granted permission for this spell lineage (read/create/block).
-
-        contract_type (ContractTypes):
-            Whether this entry represents an initiated or received grant
-            from the point of view of the ward that owns the Detail map.
+    Attributes:
+        spell_index (SpellIndex): Lineage identity for the contracted spell.
+        spell_id (str): Version ID captured at contract creation time.
+        permissions (Permissions): Granted permission (read/create/block).
+        contract_type (ContractTypes): Whether this entry was initiated
+            or received from the owning ward’s perspective.
     """
 
     __slots__ = (
@@ -48,6 +41,18 @@ class Detail(Cleanable):
             permissions: Permissions,
             contract_type: ContractTypes,
     ) -> None:
+        """
+        Initialize a contract detail.
+
+        Args:
+            spell_index: Lineage identifier for the contracted spell.
+            spell_id: Version ID (SHA) captured at contract creation time.
+            permissions: Permission granted to this lineage.
+            contract_type: Direction of the grant from the owning ward’s view.
+
+        Raises:
+            TypeError: If any argument is not the expected type.
+        """
         super().__init__()
         self._lock = RLock()
         self._id: str = IDBuilder.create_id()
@@ -79,10 +84,10 @@ class Detail(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Internal
+        Idempotently clear contract metadata and mark this detail cleaned.
 
-        Cleanup this Detail, nullifying sensitive data and marking it
-        as cleaned.
+        Drops references to the lineage, version, permissions, and contract
+        direction so the object cannot be reused after cleanup.
         """
         if self._cleaned:
             return
@@ -108,9 +113,15 @@ class Detail(Cleanable):
 
     def has_version(self, version_id: str) -> bool:
         """
-        Returns True if this Detail's SpellIndex lineage contains the given
-        version SHA in its history.
+        Check whether this lineage contains a specific version SHA.
+
+        Args:
+            version_id: SHA fingerprint to check within the lineage history.
+
+        Returns:
+            bool: True if the lineage advertises the version, else False.
         """
+        self.check_cleaned()
         versions = self.spell_index._versions
         if not versions:
             return False

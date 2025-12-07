@@ -359,9 +359,6 @@ class Conduit(Cleanable):
                 raise RuntimeError("Conduit state is unknown during cleanup")
 
 
-
-
-
     def _cleanup_lesser_conduit(self):
         """
         Internal
