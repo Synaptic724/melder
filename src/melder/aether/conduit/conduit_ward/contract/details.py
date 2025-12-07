@@ -3,26 +3,11 @@ from threading import RLock
 # Melder imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
-from enum import Enum, auto
 from typing import Set
+from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-
-
-class DetailReason(Enum):
-    """
-    Why this Detail was introduced into a contract.
-
-    - root: explicitly linked root spell.
-    - dependency: pulled in because of a root spell dependency.
-    - manual: ad-hoc/manual addition.
-    - other: fallback/unspecified reasons.
-    """
-    root = auto()
-    dependency = auto()
-    manual = auto()
-    other = auto()
 
 
 class Detail(Cleanable):

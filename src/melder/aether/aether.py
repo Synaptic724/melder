@@ -6,7 +6,7 @@ import ulid
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_cluster import ConduitCluster
-from melder.aether.conduit.conduit_ward.contract.details import DetailReason
+from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration, \
     IDevOpsManager, ISpellSystemStates, IIncidentManager, IChangeControlManager
 from melder.utilities.general_base.cleanable import Cleanable
@@ -516,62 +516,40 @@ class Aether(Cleanable):
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
         return clusters[cluster_name]
 
-    def _refresh_shared_roots_for_member(self, cluster: ConduitCluster, member: IConduit) -> None:
+    # ------------------------------------------------------------------
+    # Cluster sharing hooks and helpers
+    # ------------------------------------------------------------------
+    def _on_conduit_joined_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
-        Ensure the cluster registry contains all shareable root SpellIndexes for a member.
-        """
-        shareables = self._get_shareable_spells(member)
-        owner_id = member._id
-        for spell in shareables:
-            cluster.add_shared_spell(owner_id, spell.spell_index)
+        Internal hook: auto-share eligible spells when a conduit joins a cluster.
 
-    def _resolve_spell_from_index(self, conduit: IConduit, spell_index: SpellIndex):
-        """
-        Resolve a Spell object from a conduit given its SpellIndex.
-        """
-        book = getattr(conduit, "_spellbook", None)
-        if book is None or book._spells is None:
-            return None
-        with book._lock:
-            return book._spells.get(spell_index)
+        Args:
+            conduit: The conduit being added to the cluster.
+            cluster_name: Name of the cluster.
+            aetheric_frame_name: Frame name for lookup.
 
-    def _get_shareable_spells(self, conduit: IConduit):
+        Returns:
+            None
         """
-        Return shareable spells from a conduit (existence == unique_per_conduit_cluster or unique).
-        """
-        book = getattr(conduit, "_spellbook", None)
-        if book is None or book._spells is None:
-            return []
-        with book._lock:
-            return [
-                spell for spell in book._spells.values()
-                if getattr(spell, "existence", None) in (Existence.unique_per_conduit_cluster, Existence.unique)
-            ]
+        cluster = self._get_cluster(cluster_name, aetheric_frame_name)
+        frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._default_frame
+        cluster.handle_join(conduit, frame, aetheric_frame_name)
 
-    def _share_cluster_spells(self, cluster: ConduitCluster, owner: IConduit, borrower: IConduit):
+    def _on_conduit_left_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """
-        Ensure borrower has contracts for all of owner's shared roots in this cluster.
+        Internal hook: teardown auto-shared spells when a conduit leaves a cluster.
+
+        Args:
+            conduit: The conduit being removed from the cluster.
+            cluster_name: Name of the cluster.
+            aetheric_frame_name: Frame name for lookup.
+
+        Returns:
+            None
         """
-        owner_id = owner._id
-        indices = cluster.shared_spells.get(owner_id, set())
-        for idx in indices:
-            spell = self._resolve_spell_from_index(owner, idx)
-            if spell is None:
-                continue
-            try:
-                borrower.add_spell_to_contract_with_dependencies(
-                    spell=spell,
-                    conduit=owner,
-                    permissions=getattr(spell, "permissions", "create"),
-                    aetheric_frame=getattr(owner, "_aetheric_frame", "default"),
-                )
-            except Exception as e:
-                self._logger.error(
-                    f"_share_cluster_spells: failed for {spell.spell_id} owner={owner_id} borrower={borrower._id}: {e}",
-                    "_share_cluster_spells",
-                    exc_info=True,
-                )
-                continue
+        cluster = self._get_cluster(cluster_name, aetheric_frame_name)
+        frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._default_frame
+        cluster.handle_leave(conduit, frame, aetheric_frame_name)
 
     def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
         """

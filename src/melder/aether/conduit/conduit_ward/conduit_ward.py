@@ -11,7 +11,7 @@ from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger, IConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
-from melder.aether.conduit.conduit_ward.contract.details import DetailReason
+from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.

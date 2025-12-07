@@ -5,7 +5,7 @@ from typing import Optional, Type, Any, Tuple
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.conduit.conduit_ward.contract.details import DetailReason
+from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
