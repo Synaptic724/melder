@@ -288,7 +288,7 @@ class ChangeControlManager(Cleanable):
         On success, clears dirty flags; on failure, dirty sets remain.
         """
         self.check_cleaned()
-        if cancel_event is not None and getattr(cancel_event, "is_set", False):
+        if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
         with self._lock:
             if not self._dirty_roots or self._revalidate_fn is None:
@@ -317,3 +317,18 @@ class ChangeControlManager(Cleanable):
             if not self._monitor_active:
                 return False
             return root_id in self._dirty_roots
+
+    def describe(self) -> Dict[str, Any]:
+        """
+        Diagnostic snapshot of change-control state.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                "pending_changes": dict(self._pending_changes),
+                "dirty_spells": set(self._dirty_spells),
+                "dirty_roots": set(self._dirty_roots),
+                "component_of": {k: set(v) for k, v in self._component_of.items()},
+                "monitor_active": self._monitor_active,
+                "revalidator_registered": self._revalidate_fn is not None,
+            }

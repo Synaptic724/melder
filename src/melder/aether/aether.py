@@ -1114,4 +1114,12 @@ class Aether(Cleanable):
         self.check_cleaned()
         return self._get_devops_manager(aetheric_frame_name).change_control_manager
 
+    def _revalidate_dirty_roots(self, aetheric_frame_name: str = "default", cancel_event: Any = None) -> None:
+        """
+        Trigger revalidation of dirty roots for the given frame via ChangeControlManager.
+        """
+        self.check_cleaned()
+        devops = self._get_devops_manager(aetheric_frame_name)
+        devops.revalidate_dirty_roots(cancel_event=cancel_event)
+
     #endregion DevOps Management

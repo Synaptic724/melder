@@ -6,6 +6,7 @@ from melder.aether.dev_ops.change_control_manager.change_control_manager import 
 from melder.aether.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpellSystemStates
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 class DevOpsManager(Cleanable):
@@ -88,6 +89,17 @@ class DevOpsManager(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._change_control_manager
+
+    def revalidate_dirty_roots(self, cancel_event: Optional[CancellationEvent] = None) -> None:
+        """
+        Trigger revalidation for all dirty roots using the registered hook.
+        """
+        self.check_cleaned()
+        with self._lock:
+            ccm = self._change_control_manager
+        if ccm is None:
+            return
+        ccm.revalidate_dirty_roots(cancel_event=cancel_event)
 
     @property
     def spell_system_states(self) -> Optional[ISpellSystemStates]:

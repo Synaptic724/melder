@@ -5,22 +5,31 @@ from typing import Any, Dict
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagTargetingEngine
+from melder.spellbook.spell_crafter.dag.dag_index import DagTargetingEngine, DagIndex
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
+from melder.spellbook.spell_crafter.dag.socket_ref import SocketRef
 from melder.utilities.general_base.cleanable import Cleanable
 
 
 class GraphMutator(Cleanable):
     """
-    Runtime helper for applying mutation_override to a root blueprint.
+    Runtime helper for applying mutation overrides to a root blueprint.
 
-    This implementation validates targets against MutationContract sockets and
-    currently returns the underlying blueprint unchanged. It is a scaffold for
-    future graph rewiring logic.
+    Behaviour:
+    - Accepts a mutation_override mapping override_key -> spell_id.
+    - Filters sockets to MutationContract sockets only.
+    - Clones the DAG, rewires targeted edges to the override spell ids, and
+      returns a new RootResolutionBlueprint.
+
+    Invariants:
+    - Root identity is preserved (root_spell_id / root_lineage_id unchanged).
+    - The resulting DAG must remain acyclic (collect_dependency_ids enforces this).
+    - Only mutation sockets are rewired; other sockets remain intact.
+    - New targets are added as nodes but must be valid spell ids upstream.
     """
 
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]

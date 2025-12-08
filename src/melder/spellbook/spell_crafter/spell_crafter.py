@@ -1220,7 +1220,7 @@ class SpellCrafter(Cleanable):
         # register a revalidation hook for dirty roots.
         try:
             spellbook = self._spell._spellbook
-            frame_name = getattr(spellbook, "_aetheric_frame", None)
+            frame_name = spellbook._aetheric_frame
             change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
             if change_control_manager is not None:
                 change_control_manager.rebuild_component_of(root_blueprints)
@@ -1325,24 +1325,53 @@ class SpellCrafter(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Phase 7 – Change-control / component-of index (placeholder).
+        Phase 7 - Change-control wiring.
 
-        Final behavior (AI/Dynamic modes) will be:
-
-        - Build the component-of index mapping `spell_id -> root spell_ids`.
-        - Maintain dirty spell/root sets when mutations or contract changes
-          occur.
-        - Provide the hooks that `Meld` uses to reject dirty roots until
-          revalidation completes.
-
-        This crafter may expose per-spell helpers for Phase 7, but the main
-        logic will live on the frame-level DevOps / SpellSystemStates owner.
-
-        Current implementation: no-op.
+        Behaviour (frame-level, idempotent):
+        - Ensure ChangeControlManager is present for the frame.
+        - Ensure the component-of index is (re)built from the Phase-5 root blueprints.
+        - Ensure the revalidator hook is registered.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
-        # No-op for now; change-control lives at the frame/DevOps layer.
+        self._ensure_change_control_ready()
+
+    def _ensure_change_control_ready(self) -> None:
+        """
+        Internal helper to (re)wire change-control after Phase 5 artifacts exist.
+        """
+        try:
+            spellbook = self._spell._spellbook
+            frame_name = spellbook._aetheric_frame
+            change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
+            if change_control_manager is None:
+                return
+            # Rebuild component-of if we have root blueprints.
+            if self._entire_dag_blueprint_phase5:
+                change_control_manager.rebuild_component_of(self._entire_dag_blueprint_phase5)
+            # Register revalidator if missing.
+            if change_control_manager._revalidate_fn is None:
+                def _revalidate_dirty_roots(dirty_roots: Set[str], cancel_event: Optional[CancellationEvent]) -> None:
+                    scanner = SpellbookScanner(spellbook)
+                    version_to_spell: Dict[str, ISpell] = {}
+                    for spell_index, spell_instance in scanner.iter_spells():
+                        version_to_spell[spell_index.current] = spell_instance
+
+                    for root_id in dirty_roots:
+                        if cancel_event is not None and cancel_event.is_set:
+                            cancel_event.throw_if_set()
+                        spell_instance = version_to_spell.get(root_id)
+                        if spell_instance is None:
+                            continue
+                        crafter = spell_instance._crafter
+                        if crafter is None:
+                            continue
+                        crafter.run_all_phases(cancel_event=cancel_event)
+
+                change_control_manager.set_revalidator(_revalidate_dirty_roots)
+        except Exception:
+            # Change-control is optional; ignore wiring failures.
+            pass
 
 
     # ------------------------------------------------------------------

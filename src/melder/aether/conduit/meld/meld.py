@@ -399,6 +399,21 @@ class Meld(Cleanable):
                 )
             raise SpellbookValidationError([spell])
 
+        # Defensive: block dirty roots under change-control even if validity looks OK.
+        try:
+            spellbook = spell._spellbook
+            frame_name = spellbook._aetheric_frame
+            ccm = spellbook._aether._get_change_control_manager(frame_name)
+            if ccm is not None and ccm.is_root_dirty(spell.spell_index.current):
+                raise MeldExecutionError(
+                    f"Root '{spell.spell_index.current}' is dirty under change-control; revalidation required."
+                )
+        except MeldExecutionError:
+            raise
+        except Exception:
+            # If change-control is unavailable, proceed with existing validity gate.
+            pass
+
         # Extremely defensive: any future enum value → treat as not resolvable.
         raise SpellbookValidationError([spell])
 
