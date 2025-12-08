@@ -23,6 +23,7 @@ from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 
 
 class Meld(Cleanable):
@@ -392,6 +393,10 @@ class Meld(Cleanable):
 
         # invalid / disabled → hard block, no attempt to resolve
         if validity is SpellValidity.invalid or validity is SpellValidity.disabled:
+            if state is not None and SpellState.transfer_in_progress in state.flags:
+                raise SpellbookValidationError(
+                    f"Spell '{spell_id}' is blocked: ownership transfer in progress."
+                )
             raise SpellbookValidationError([spell])
 
         # Extremely defensive: any future enum value → treat as not resolvable.

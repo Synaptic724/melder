@@ -1,0 +1,682 @@
+import threading
+import ulid
+from typing import Any, Dict, List, Set
+
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.utilities.synchronization.safeguard import SafeGuard
+from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
+from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.existence.existence import Existence
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
+
+
+class TransferOfOwnership:
+    """
+    Internal helper to migrate spell stewardship between conduits.
+
+    This performs a preflight (read-only) and an execute step that:
+      - Flips ownership in Aether (SpellIndex -> target).
+      - Updates spellbooks (remove from source, add to target).
+      - Optionally moves creations and owned dependencies.
+      - Handles contracts/clusters via force-unshare or re-pointing.
+      - Marks the spell lineage dirty during transfer to block resolution.
+    """
+
+    def __init__(
+        self,
+        *,
+        source_conduit,
+        target_conduit,
+        spell,
+        move_creations: bool = False,
+        include_dependencies: bool = False,
+        force_unshare: bool = True,
+        invalidate_after_transfer: bool = True,
+        mark_dependencies_dirty: bool = False,
+    ):
+        self.source_conduit = source_conduit
+        self.target_conduit = target_conduit
+        self.spell = spell
+        self.move_creations = move_creations
+        self.include_dependencies = include_dependencies
+        self.force_unshare = force_unshare
+        self.invalidate_after_transfer = invalidate_after_transfer
+        self.mark_dependencies_dirty = mark_dependencies_dirty
+
+        self._locks: List[Any] = []
+        self._aether = type(source_conduit)._aether
+        self._frame_name = source_conduit._aetheric_frame
+        self._preflight_summary: Dict[str, Any] = {}
+        self._change_control_manager = self._aether._get_change_control_manager(self._frame_name)
+        self._incident_manager = self._aether._get_incident_manager(self._frame_name)
+        self._rollback_actions: List[Any] = []
+        self._op_id: str = str(ulid.ULID())
+
+    # ------------------------------------------------------------------
+    # Preflight
+    # ------------------------------------------------------------------
+    def preflight(self) -> Dict[str, Any]:
+        """
+        Read-only analysis of what will be affected by the transfer.
+
+        Returns:
+            dict: summary of owners, borrowers, deps, creations.
+        Raises:
+            RuntimeError: if basic invariants fail (ownership, dynamic mode).
+        """
+        self._assert_dynamic_mode()
+        spell_obj = self._resolve_spell()
+        self._assert_ownership(spell_obj)
+        self._preflight_summary = {
+            "spell_id": spell_obj.spell_id,
+            "spell_index": spell_obj.spell_index,
+            "source": self.source_conduit._id,
+            "target": self.target_conduit._id,
+            "borrowers": self._enumerate_borrowers(spell_obj.spell_id),
+            "dependencies": self._enumerate_dependencies(spell_obj),
+            "creations": self._enumerate_creations(spell_obj),
+            "op_id": self._op_id,
+            "options": {
+                "move_creations": self.move_creations,
+                "include_dependencies": self.include_dependencies,
+                "force_unshare": self.force_unshare,
+                "invalidate_after_transfer": self.invalidate_after_transfer,
+                "mark_dependencies_dirty": self.mark_dependencies_dirty,
+            },
+            "snapshot": self._snapshot_current_state(spell_obj),
+        }
+        self._record_change_intent(self._preflight_summary)
+        if not self.include_dependencies and not self._deps_resolvable_on_target(self._preflight_summary["dependencies"]):
+            raise RuntimeError("Dependencies are not resolvable on target; set include_dependencies=True or fix target.")
+        return self._preflight_summary
+
+    # ------------------------------------------------------------------
+    # Execute
+    # ------------------------------------------------------------------
+    def execute(self) -> None:
+        """
+        Perform the transfer based on preflight/constructor options.
+        """
+        summary = self._preflight_summary or self.preflight()
+        spell_obj = self._resolve_spell()
+
+        try:
+            # Hard block resolution during transfer
+            self._mark_lineage_disabled(spell_obj.spell_index)
+
+            # Minimal critical section: flip registry + spellbooks
+            with SafeGuard(self.source_conduit._lock, self.target_conduit._lock):
+                self._flip_registry_and_spellbooks(spell_obj)
+
+            # Creations
+            if self.move_creations:
+                self._move_creations(spell_obj)
+            else:
+                self._teardown_creations(spell_obj)
+
+            # Contracts/clusters
+            if self.force_unshare:
+                self._unshare_everywhere(summary["borrowers"], spell_obj)
+            else:
+                self._repoint_borrowers(summary["borrowers"], spell_obj)
+
+            # Dependencies
+            if self.include_dependencies:
+                self._transfer_owned_dependencies(summary["dependencies"])
+            elif self.mark_dependencies_dirty:
+                self._dirty_dependencies(summary["dependencies"])
+
+            # After successful transfer, move lineage back to gated/dirty so validation can clear it.
+            if self.invalidate_after_transfer:
+                self._mark_lineage_dirty(spell_obj.spell_index)
+            else:
+                self._lift_disable(spell_obj.spell_index, gated=True)
+        except Exception as exc:
+            # On failure, lift the hard-disable but leave it gated for safety.
+            self._rollback()
+            self._lift_disable(spell_obj.spell_index, gated=True)
+            self._record_incident(summary, exc)
+            raise
+        else:
+            self._clear_change_intent(spell_obj.spell_index)
+        finally:
+            self._rollback_actions.clear()
+
+    # ------------------------------------------------------------------
+    # Internals
+    # ------------------------------------------------------------------
+    def _assert_dynamic_mode(self):
+        if not self.source_conduit.__dynamic_environment__ or not self.target_conduit.__dynamic_environment__:
+            raise RuntimeError("Transfer requires dynamic mode on both source and target.")
+
+    def _resolve_spell(self):
+        # spell may be object, id, or SpellIndex
+        if hasattr(self.spell, "spell_id"):
+            return self.spell
+        if isinstance(self.spell, SpellIndex):
+            idx = self.spell
+            book = self.source_conduit._spellbook
+            with book._lock:
+                return book._spells.get(idx)
+        if isinstance(self.spell, str):
+            return self.source_conduit.get_spell_by_id(self.spell, self._frame_name)
+        raise RuntimeError("Unable to resolve spell for transfer.")
+
+    def _assert_ownership(self, spell_obj):
+        if spell_obj._owner_conduit_id != self.source_conduit._id:
+            raise RuntimeError("Source conduit does not own the spell.")
+
+    def _enumerate_borrowers(self, spell_id: str) -> List[Dict[str, Any]]:
+        borrowers: List[Dict[str, Any]] = []
+        ward = self.source_conduit._conduit_ward
+        # Contracts
+        seen_contracts = set()
+        for contract_id, contract in ward._contracts.items():
+            if contract_id in seen_contracts:
+                continue
+            for detail_map in (contract._details_a, contract._details_b):
+                if spell_id in detail_map:
+                    borrowers.append({"type": "contract", "contract_id": contract._id})
+                    seen_contracts.add(contract_id)
+                    break
+        # Clusters: scan cluster registries
+        frame = self._aether._aetheric_frames.get(self._frame_name, self._aether._default_frame)
+        for cname, cluster in frame._conduit_clusters.items():
+            for owner_id, indices in cluster.shared_spells.items():
+                for idx in indices:
+                    if spell_id in idx._versions or idx._current_id == spell_id:
+                        borrowers.append({"type": "cluster", "cluster": cname, "owner_id": owner_id})
+                        break
+        return borrowers
+
+    def _enumerate_dependencies(self, spell_obj) -> List[str]:
+        return list(spell_obj.dependencies)
+
+    def _enumerate_creations(self, spell_obj) -> Dict[str, Any]:
+        # Placeholder: would inspect creations registry; we return existence info for now
+        return {"existence": spell_obj.existence}
+
+    def _deps_resolvable_on_target(self, deps: List[str]) -> bool:
+        if not deps:
+            return True
+        for dep_id in deps:
+            try:
+                spell = self.target_conduit.get_spell_by_id(dep_id, self._frame_name)
+                if spell is None:
+                    return False
+            except Exception:
+                return False
+        return True
+
+    def _mark_lineage_dirty(self, spell_index: SpellIndex) -> None:
+        """
+        Gate the lineage in SpellSystemStates so callers revalidate before use.
+        """
+        spell_states = self.source_conduit._spellbook._spell_states_system
+        try:
+            spell_states.mark_structural_change(
+                spell_index=spell_index,
+                reason=SpellStateChangeReason.structure_changed,
+            )
+        except Exception:
+            # Best-effort: dirtying is advisory and should not block transfer.
+            pass
+
+    def _mark_lineage_disabled(self, spell_index: SpellIndex) -> None:
+        """
+        Hard-disable the lineage while ownership transfer is in flight.
+        """
+        spell_states = self.source_conduit._spellbook._spell_states_system
+        try:
+            state = spell_states.get_by_index_id(spell_index.id)
+            if state is None:
+                spell_states.register_lineage(spell_index, self.spell)
+                state = spell_states.get_by_index_id(spell_index.id)
+            if state is not None:
+                # Record rollback to previous validity
+                prev_validity = state.validity
+                prev_reason = state.change_reason
+                self._register_rollback(
+                    lambda s=state, v=prev_validity, r=prev_reason: s.set_validity(
+                        v,
+                        change_reason=r,
+                    )
+                )
+                state.set_validity(
+                    SpellValidity.disabled,
+                    change_reason=SpellStateChangeReason.transfer_in_progress,
+                    flags_to_add=[SpellState.transfer_in_progress],
+                )
+        except Exception:
+            pass
+
+    def _register_rollback(self, fn) -> None:
+        """
+        Record a rollback action to run in reverse order on failure.
+        """
+        if fn is not None:
+            self._rollback_actions.append(fn)
+
+    def _rollback(self) -> None:
+        """
+        Execute rollback actions in reverse order.
+        """
+        while self._rollback_actions:
+            fn = self._rollback_actions.pop()
+            try:
+                fn()
+            except Exception:
+                continue
+        try:
+            snapshot = self._preflight_summary.get("snapshot", {})
+            cluster_snapshot = snapshot.get("cluster_shares")
+            if cluster_snapshot:
+                self._restore_cluster_shares(cluster_snapshot, self._resolve_spell())
+        except Exception:
+            pass
+
+    def _rollback_spellbook_move(self, spell_obj, src_book, tgt_book) -> None:
+        """
+        Restore spell ownership in spellbooks to the source.
+        """
+        with tgt_book._lock:
+            tgt_book._spells.pop(spell_obj.spell_index, None)
+            tgt_book._lookup_spells.pop(spell_obj._key, None)
+        with src_book._lock:
+            src_book._spells[spell_obj.spell_index] = spell_obj
+            src_book._lookup_spells[spell_obj._key] = spell_obj.spell_index
+        spell_obj._owner_conduit_id = self.source_conduit._id
+
+    def _rollback_move_creation(self, spell_obj, obj) -> None:
+        """
+        Restore a moved creation back to the source conduit.
+        """
+        try:
+            self.target_conduit._creations.remove(spell_obj)
+            self.source_conduit._creations.add(spell_obj, obj)
+        except Exception:
+            pass
+
+    def _rollback_creations_move(self, spell_id: str, extracted: List[Dict[str, Any]]) -> None:
+        """
+        Undo a bulk creations move from source -> target back to source.
+        """
+        try:
+            # Remove from target
+            tgt_extracted = self.target_conduit._creations.extract_spell_creations(spell_id)
+        except Exception:
+            tgt_extracted = []
+        try:
+            # Restore to source
+            self.source_conduit._creations.restore_spell_creations(spell_id, extracted)
+        except Exception:
+            pass
+
+    def _snapshot_current_state(self, spell_obj) -> Dict[str, Any]:
+        """
+        Snapshot minimal state needed for rollback/idempotence.
+        """
+        snapshot = {
+            "in_target_registry": self._spell_in_registry(self.target_conduit, spell_obj.spell_index),
+            "in_target_spellbook": self._spell_in_spellbook(self.target_conduit, spell_obj),
+            "cluster_shares": self._snapshot_cluster_shares(spell_obj),
+        }
+        return snapshot
+
+    def _spell_in_registry(self, conduit, spell_index: SpellIndex) -> bool:
+        try:
+            frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
+            registry = frame._spell_registry.get(conduit._id, set())
+            return spell_index in registry
+        except Exception:
+            return False
+
+    def _spell_in_spellbook(self, conduit, spell_obj) -> bool:
+        try:
+            with conduit._spellbook._lock:
+                return spell_obj.spell_index in conduit._spellbook._spells
+        except Exception:
+            return False
+
+    def _restore_contract_entry(self, ward, spell_obj, peer, existed_before: bool) -> None:
+        """
+        Restore contract spell entry to prior state.
+        """
+        try:
+            if existed_before:
+                ward._add_spell_to_contract(
+                    spell=spell_obj,
+                    conduit=peer,
+                    conduit_id=peer._id,
+                    permissions=spell_obj.permissions if hasattr(spell_obj, "permissions") else Permissions.read,
+                    reason=DetailReason.manual,
+                    root_spell_id=spell_obj.spell_id,
+                    link_dependencies=False,
+                )
+            else:
+                ward._remove_spell_from_contract(spell_id=spell_obj.spell_id, conduit=peer, conduit_id=peer._id)
+        except Exception:
+            pass
+
+    def _snapshot_cluster_shares(self, spell_obj) -> List[Dict[str, Any]]:
+        """
+        Snapshot cluster shared spell entries for rollback.
+        """
+        shares: List[Dict[str, Any]] = []
+        try:
+            frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
+            for cname, cluster in frame._conduit_clusters.items():
+                for owner_id, indices in cluster.shared_spells.items():
+                    if owner_id != self.source_conduit._id:
+                        continue
+                    for idx in list(indices):
+                        if idx == spell_obj.spell_index:
+                            shares.append({"cluster": cname, "owner_id": owner_id})
+        except Exception:
+            pass
+        return shares
+
+    def _restore_cluster_shares(self, snapshot: List[Dict[str, Any]], spell_obj) -> None:
+        """
+        Restore cluster shared spell entries based on snapshot.
+        """
+        try:
+            frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
+            for entry in snapshot or []:
+                cname = entry.get("cluster")
+                owner_id = entry.get("owner_id")
+                if not cname or not owner_id:
+                    continue
+                cluster = frame._conduit_clusters.get(cname)
+                if cluster is None:
+                    continue
+                if spell_obj.spell_index not in cluster.shared_spells.get(owner_id, set()):
+                    cluster.add_shared_spell(owner_id, spell_obj.spell_index)
+        except Exception:
+            pass
+
+    def _lift_disable(self, spell_index: SpellIndex, gated: bool) -> None:
+        """
+        Remove the hard-disable after transfer completes or fails.
+
+        Args:
+            spell_index: Lineage to update.
+            gated: If True, leave it gated (requires validation). If False, mark unknown.
+        """
+        spell_states = self.source_conduit._spellbook._spell_states_system
+        try:
+            state = spell_states.get_by_index_id(spell_index.id)
+            if state is None:
+                return
+            if gated:
+                state.set_validity(
+                    SpellValidity.gated,
+                    change_reason=SpellStateChangeReason.structure_changed,
+                    flags_to_add=[SpellState.structure_changed],
+                    flags_to_remove=[SpellState.transfer_in_progress],
+                )
+            else:
+                state.set_validity(
+                    SpellValidity.unknown,
+                    change_reason=SpellStateChangeReason.explicit_mark,
+                    transitively_dirty=False,
+                    flags_to_remove=[SpellState.transfer_in_progress],
+                )
+        except Exception:
+            pass
+
+    def _flip_registry_and_spellbooks(self, spell_obj) -> None:
+        # Aether registry: move SpellIndex ownership (idempotent)
+        try:
+            if self._spell_in_registry(self.source_conduit, spell_obj.spell_index):
+                self._aether._remove_spells_from_aether(self.source_conduit._id, {spell_obj.spell_index}, self._frame_name)
+                self._register_rollback(
+                    lambda: self._aether._add_spells_to_aether(self.source_conduit._id, {spell_obj.spell_index}, self._frame_name)
+                )
+            if not self._spell_in_registry(self.target_conduit, spell_obj.spell_index):
+                self._aether._add_spells_to_aether(self.target_conduit._id, {spell_obj.spell_index}, self._frame_name)
+                self._register_rollback(
+                    lambda: self._aether._remove_spells_from_aether(self.target_conduit._id, {spell_obj.spell_index}, self._frame_name)
+                )
+        except Exception as e:
+            raise RuntimeError(f"Failed to flip registry: {e}")
+
+        # Move spell between spellbooks (idempotent)
+        try:
+            src_book = self.source_conduit._spellbook
+            tgt_book = self.target_conduit._spellbook
+            with src_book._lock, tgt_book._lock:
+                src_had = spell_obj.spell_index in src_book._spells
+                tgt_had = spell_obj.spell_index in tgt_book._spells
+                if src_had:
+                    src_book._spells.pop(spell_obj.spell_index, None)
+                    src_book._lookup_spells.pop(spell_obj._key, None)
+                    self._register_rollback(
+                        lambda: self._rollback_spellbook_move(spell_obj, src_book, tgt_book)
+                    )
+                if not tgt_had:
+                    tgt_book._spells[spell_obj.spell_index] = spell_obj
+                    tgt_book._lookup_spells[spell_obj._key] = spell_obj.spell_index
+            spell_obj._owner_conduit_id = self.target_conduit._id
+        except Exception as e:
+            raise RuntimeError(f"Failed to flip spellbooks: {e}")
+
+    def _move_creations(self, spell_obj) -> None:
+        try:
+            creations = self.source_conduit._creations
+            tgt_creations = self.target_conduit._creations
+            extracted = creations.extract_spell_creations(spell_obj.spell_id)
+            if not extracted:
+                return
+            tgt_creations.restore_spell_creations(spell_obj.spell_id, extracted)
+            self._register_rollback(lambda: self._rollback_creations_move(spell_obj.spell_id, extracted))
+        except Exception:
+            pass
+
+    def _teardown_creations(self, spell_obj) -> None:
+        try:
+            creations = self.source_conduit._creations
+            extracted = creations.extract_spell_creations(spell_obj.spell_id)
+            if not extracted:
+                return
+            self._register_rollback(lambda: creations.restore_spell_creations(spell_obj.spell_id, extracted))
+        except Exception:
+            pass
+
+    def _unshare_everywhere(self, borrowers: List[Dict[str, Any]], spell_obj) -> None:
+        for b in borrowers:
+            if b["type"] == "contract":
+                try:
+                    # Contracts are symmetric; removing spells from both sides by spell_id
+                    for contract in self.source_conduit._conduit_ward._contracts.values():
+                        for ward in (contract._ward_a, contract._ward_b):
+                            if contract._check_if_exists(ward, spell_obj.spell_id):
+                                peer = contract._get_peer(ward)._conduit
+                                self._register_rollback(
+                                    lambda w=ward, p=peer: w._add_spell_to_contract(
+                                        spell=spell_obj,
+                                        conduit=p,
+                                        conduit_id=p._id,
+                                        permissions=spell_obj.permissions if hasattr(spell_obj, "permissions") else Permissions.read,
+                                        reason=DetailReason.manual,
+                                        root_spell_id=spell_obj.spell_id,
+                                        link_dependencies=False,
+                                    )
+                                )
+                                ward._remove_spell_from_contract(spell_id=spell_obj.spell_id, conduit=peer, conduit_id=peer._id)
+                except Exception:
+                    continue
+            elif b["type"] == "cluster":
+                # Cluster shares will be handled by contract removals above; nothing additional here
+                continue
+
+    def _repoint_borrowers(self, borrowers: List[Dict[str, Any]], spell_obj) -> None:
+        # Rebuild contracts to point to target
+        for b in borrowers:
+            if b["type"] == "contract":
+                try:
+                    for contract in list(self.source_conduit._conduit_ward._contracts.values()):
+                        for ward in (contract._ward_a, contract._ward_b):
+                            if contract._check_if_exists(ward, spell_obj.spell_id):
+                                peer = contract._get_peer(ward)._conduit
+                                target_ward = self.target_conduit._conduit_ward
+                                peer_ward = peer._conduit_ward
+                                if target_ward._policy == Policies.block_all or target_ward._policy == Policies.inbound_only:
+                                    continue
+                                if peer_ward._policy == Policies.outbound_only:
+                                    continue
+                                try:
+                                    self.target_conduit._conduit_ward._link(peer)
+                                    # Snapshot original presence before mutation
+                                    existed_before = contract._check_if_exists(ward, spell_obj.spell_id)
+                                    self.target_conduit._conduit_ward._add_spell_to_contract(
+                                        spell=spell_obj,
+                                        conduit=peer,
+                                        conduit_id=peer._id,
+                                        permissions=spell_obj.permissions if hasattr(spell_obj, "permissions") else Permissions.read,
+                                        reason=DetailReason.manual,
+                                        root_spell_id=spell_obj.spell_id,
+                                        link_dependencies=True,
+                                    )
+                                    # After successful add, remove from old and register rollbacks
+                                    if existed_before:
+                                        ward._remove_spell_from_contract(spell_id=spell_obj.spell_id, conduit=peer, conduit_id=peer._id)
+                                    self._register_rollback(
+                                        lambda w=ward, p=peer, existed=existed_before: self._restore_contract_entry(
+                                            w, spell_obj, p, existed
+                                        )
+                                    )
+                                    self._register_rollback(
+                                        lambda tw=target_ward, p=peer: tw._remove_spell_from_contract(
+                                            spell_id=spell_obj.spell_id,
+                                            conduit=p,
+                                            conduit_id=p._id,
+                                        )
+                                    )
+                                except Exception:
+                                    # if re-point fails, leave unshared for this peer
+                                    continue
+                except Exception:
+                    continue
+            elif b["type"] == "cluster":
+                # Cluster re-pointing is effectively re-sharing from the target; skip here
+                continue
+
+    def _transfer_owned_dependencies(self, deps: List[str]) -> None:
+        for dep_id in deps:
+            try:
+                dep_spell = self.source_conduit.get_spell_by_id(dep_id, self._frame_name)
+                if dep_spell is None:
+                    continue
+                if dep_spell._owner_conduit_id != self.source_conduit._id:
+                    continue
+                sub_transfer = TransferOfOwnership(
+                    source_conduit=self.source_conduit,
+                    target_conduit=self.target_conduit,
+                    spell=dep_spell,
+                    move_creations=self.move_creations,
+                    include_dependencies=False,  # avoid deep recursion unless explicitly requested
+                    force_unshare=self.force_unshare,
+                    invalidate_after_transfer=self.invalidate_after_transfer,
+                    mark_dependencies_dirty=self.mark_dependencies_dirty,
+                )
+                sub_transfer.execute()
+                # Mark dependency lineage dirty if requested
+                if self.invalidate_after_transfer:
+                    self._mark_lineage_dirty(dep_spell.spell_index)
+            except Exception:
+                continue
+
+    def _dirty_dependencies(self, deps: List[str]) -> None:
+        for dep_id in deps:
+            try:
+                dep_spell = self.source_conduit.get_spell_by_id(dep_id, self._frame_name)
+                if dep_spell is None:
+                    continue
+                self._mark_lineage_dirty(dep_spell.spell_index)
+            except Exception:
+                continue
+
+    # ------------------------------------------------------------------
+    # Change-control / incidents
+    # ------------------------------------------------------------------
+    def _record_change_intent(self, summary: Dict[str, Any]) -> None:
+        """
+        Register a change-control entry describing the pending transfer.
+        """
+        try:
+            existing = self._change_control_manager.get_pending_change(summary["spell_index"].id)
+            if existing and existing.get("op_id") == summary["op_id"]:
+                return
+            self._change_control_manager.register_pending_change(
+                spell_index=summary["spell_index"],
+                reason="ownership_transfer",
+                metadata={
+                    "spell_id": summary["spell_id"],
+                    "source_conduit_id": summary["source"],
+                    "target_conduit_id": summary["target"],
+                    "borrowers": summary["borrowers"],
+                    "dependencies": summary["dependencies"],
+                    "creations": summary["creations"],
+                    "op_id": summary["op_id"],
+                    "options": summary["options"],
+                },
+            )
+        except Exception:
+            # Best-effort; failures here should not block the transfer.
+            pass
+
+    def _clear_change_intent(self, spell_index: SpellIndex) -> None:
+        """
+        Clear any change-control entry after successful transfer.
+        """
+        try:
+            self._change_control_manager.clear_pending_change(spell_index.id)
+        except Exception:
+            pass
+
+    def _record_incident(self, summary: Dict[str, Any], exc: Exception) -> None:
+        """
+        Emit an incident describing a failed or partial transfer.
+        """
+        try:
+            self._incident_manager.create_incident(
+                kind="ownership_transfer_failed",
+                severity=IncidentSeverity.error,
+                summary=str(exc),
+                spell_index_id=summary["spell_index"].id,
+                root_ids=[summary["spell_id"]],
+                details={
+                    "source_conduit_id": summary["source"],
+                    "target_conduit_id": summary["target"],
+                    "borrowers": summary["borrowers"],
+                    "dependencies": summary["dependencies"],
+                    "creations": summary["creations"],
+                    "op_id": summary.get("op_id"),
+                    "options": summary.get("options", {}),
+                },
+            )
+        except Exception:
+            pass
+
+        # If no revalidator is wired, emit a reminder incident.
+        try:
+            if getattr(self._change_control_manager, "_revalidate_fn", None) is None:
+                self._incident_manager.create_incident(
+                    kind="ownership_transfer_needs_revalidation",
+                    severity=IncidentSeverity.warning,
+                    summary="Ownership transfer completed but no revalidator is registered.",
+                    spell_index_id=summary["spell_index"].id,
+                    root_ids=[summary["spell_id"]],
+                    details={
+                        "source_conduit_id": summary["source"],
+                        "target_conduit_id": summary["target"],
+                        "op_id": summary.get("op_id"),
+                    },
+                )
+        except Exception:
+            pass

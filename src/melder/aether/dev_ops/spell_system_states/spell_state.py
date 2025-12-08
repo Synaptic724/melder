@@ -26,3 +26,4 @@ class SpellState(Enum):
     has_open_incident = auto()       # critical/blocking incident open
     anchored_component = auto()      # infra / non-mutable component
     config_missing = auto()          # required config not present
+    transfer_in_progress = auto()    # ownership transfer is actively blocking resolution

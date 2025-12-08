@@ -8,6 +8,7 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -1500,6 +1501,47 @@ class Conduit(Cleanable):
         """
         self.check_cleaned()
         Conduit._aether._refresh_cluster_shares_for_conduit(self, self._aetheric_frame)
+
+    def transfer_spell_ownership(
+            self,
+            *,
+            spell: ISpell | str | SpellIndex,
+            target_conduit: IConduit,
+            move_creations: bool = False,
+            include_dependencies: bool = False,
+            force_unshare: bool = True,
+            invalidate_after_transfer: bool = True,
+            mark_dependencies_dirty: bool = False,
+    ) -> dict:
+        """
+        Public API (dynamic mode)
+
+        Transfer stewardship of a spell to another conduit.
+
+        Args:
+            spell: Spell object, spell_id, or SpellIndex to transfer.
+            target_conduit: The conduit that will become the new steward.
+            move_creations: If True, move creations; else tear them down at source.
+            include_dependencies: If True, transfer owned dependencies as well.
+            force_unshare: If True, strip all contracts/shares for this spell during transfer.
+            invalidate_after_transfer: If True, mark lineage dirty after transfer.
+            mark_dependencies_dirty: If True, mark dependency lineages dirty (even if not moved).
+
+        Returns:
+            dict: Preflight summary of the transfer plan.
+        """
+        self.check_cleaned()
+        if not self.__dynamic_environment__:
+            raise RuntimeError("Ownership transfer requires dynamic mode.")
+        return self._conduit_ward._transfer_spell_ownership(
+            spell=spell,
+            target_conduit=target_conduit,
+            move_creations=move_creations,
+            include_dependencies=include_dependencies,
+            force_unshare=force_unshare,
+            invalidate_after_transfer=invalidate_after_transfer,
+            mark_dependencies_dirty=mark_dependencies_dirty,
+        )
     #endregion Cluster API
     #region Meld
 

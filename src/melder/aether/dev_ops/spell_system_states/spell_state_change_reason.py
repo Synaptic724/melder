@@ -41,6 +41,7 @@ class SpellStateChangeReason(Enum):
     config_missing = auto()         # required config missing / invalid
     config_supplied = auto()        # config fixed / supplied
     anchored_component = auto()     # marked non-mutable infra component
+    transfer_in_progress = auto()   # ownership transfer gate
 
     # Manual / catch-all
     explicit_mark = auto()          # explicitly marked dirty/attention-needed

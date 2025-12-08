@@ -2302,6 +2302,57 @@ class ConduitWard(Cleanable):
         )
         return contracted_conduits if contracted_conduits else None
 
+    #region Ownership Transfer
+    def _transfer_spell_ownership(
+            self,
+            *,
+            spell: ISpell | str | SpellIndex,
+            target_conduit: IConduit,
+            move_creations: bool = False,
+            include_dependencies: bool = False,
+            force_unshare: bool = True,
+            invalidate_after_transfer: bool = True,
+            mark_dependencies_dirty: bool = False,
+    ) -> dict:
+        """
+        Internal
+
+        Transfer stewardship of a spell to another conduit (dynamic mode only).
+
+        This performs a preflight to summarize borrowers/deps/creations, then executes
+        the transfer according to the provided options.
+
+        Args:
+            spell: Spell object, spell_id, or SpellIndex to transfer.
+            target_conduit: The conduit that will become the new steward.
+            move_creations: If True, move creations; else tear them down at source.
+            include_dependencies: If True, transfer owned dependencies as well.
+            force_unshare: If True, strip all contracts/shares for this spell during transfer.
+            invalidate_after_transfer: If True, mark lineage dirty after transfer.
+            mark_dependencies_dirty: If True, mark dependency lineages dirty (even if not moved).
+
+        Returns:
+            dict: Preflight summary of the transfer plan.
+        """
+        from melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership import TransferOfOwnership
+        if not self._dynamic:
+            raise RuntimeError("Ownership transfer requires dynamic mode.")
+
+        transfer = TransferOfOwnership(
+            source_conduit=self._conduit,
+            target_conduit=target_conduit,
+            spell=spell,
+            move_creations=move_creations,
+            include_dependencies=include_dependencies,
+            force_unshare=force_unshare,
+            invalidate_after_transfer=invalidate_after_transfer,
+            mark_dependencies_dirty=mark_dependencies_dirty,
+        )
+        summary = transfer.preflight()
+        transfer.execute()
+        return summary
+    #endregion Ownership Transfer
+
     def _describe_contract(self, conduit_id: str) -> dict:
         """
         Internal

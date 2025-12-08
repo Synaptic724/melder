@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -522,6 +522,83 @@ class Creations(Cleanable):
         if key not in self._many:
             self._many[key] = []
         self._many[key].append(Creation(item))
+
+    # ------------------------------------------------------------------
+    # Extraction / restoration helpers (for transfers)
+    # ------------------------------------------------------------------
+    def extract_spell_creations(self, spell_id: str) -> List[Dict[str, Any]]:
+        """
+        Remove and return all creations associated with a spell_id across all scopes.
+
+        Returns:
+            List[Dict[str, Any]]: Entries of the form:
+                {"scope": str, "creation": Creation, "spellspace_id": Optional[str]}
+        """
+        self.check_cleaned()
+        extracted: List[Dict[str, Any]] = []
+        with self._lock:
+            # Singletons
+            for scope_name, bucket in (
+                ("unique", self._unique),
+                ("unique_per_scope", self._unique_per_scope),
+                ("unique_per_lineage", self._unique_per_lineage),
+                ("unique_per_cluster", self._unique_per_cluster),
+            ):
+                if spell_id in bucket:
+                    creation = bucket.pop(spell_id)
+                    extracted.append({"scope": scope_name, "creation": creation})
+
+            # Many (list)
+            if spell_id in self._many:
+                creations = self._many.pop(spell_id)
+                for creation in creations:
+                    extracted.append({"scope": "many", "creation": creation})
+
+            # Spellspace buckets
+            for spellspace_id, bucket in list(self._spellspace_instances.items()):
+                if spell_id in bucket:
+                    creation = bucket.pop(spell_id)
+                    extracted.append({
+                        "scope": "spellspace",
+                        "spellspace_id": spellspace_id,
+                        "creation": creation,
+                    })
+                    if not bucket:
+                        del self._spellspace_instances[spellspace_id]
+
+        return extracted
+
+    def restore_spell_creations(self, spell_id: str, creations: List[Dict[str, Any]]) -> None:
+        """
+        Restore creations previously extracted via extract_spell_creations.
+        """
+        if not creations:
+            return
+        self.check_cleaned()
+        with self._lock:
+            for entry in creations:
+                scope = entry.get("scope")
+                creation: Creation = entry.get("creation")
+                if creation is None or scope is None:
+                    continue
+                if scope == "unique":
+                    self._unique[spell_id] = creation
+                elif scope == "unique_per_scope":
+                    self._unique_per_scope[spell_id] = creation
+                elif scope == "unique_per_lineage":
+                    self._unique_per_lineage[spell_id] = creation
+                elif scope == "unique_per_cluster":
+                    self._unique_per_cluster[spell_id] = creation
+                elif scope == "many":
+                    if spell_id not in self._many:
+                        self._many[spell_id] = []
+                    self._many[spell_id].append(creation)
+                elif scope == "spellspace":
+                    spellspace_id = entry.get("spellspace_id")
+                    if spellspace_id is None:
+                        continue
+                    bucket = self._spellspace_instances.setdefault(spellspace_id, {})
+                    bucket[spell_id] = creation
 
     # ------------------------------------------------------------------
     # SpellSpace helpers
