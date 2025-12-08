@@ -6,7 +6,6 @@ import ulid
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_cluster import ConduitCluster
-from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration, \
     IDevOpsManager, ISpellSystemStates, IIncidentManager, IChangeControlManager
 from melder.utilities.general_base.cleanable import Cleanable
@@ -622,6 +621,72 @@ class Aether(Cleanable):
         cluster = self._get_cluster(cluster_name, aetheric_frame_name)
         self._logger.debug(f"Retrieved conduits for cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_get_conduits_in_cluster")
         return list(cluster.get_members())
+
+    def _get_clusters_for_conduit(self, conduit_id: str, aetheric_frame_name: str = "default") -> List[str]:
+        """
+        Return cluster names that contain the given conduit_id.
+
+        Args:
+            conduit_id: Target conduit identifier.
+            aetheric_frame_name: Frame name.
+
+        Returns:
+            List[str]: Cluster names containing the conduit.
+        """
+        if aetheric_frame_name != "default":
+            clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
+        else:
+            self._ensure_default_frame()
+            clusters = self._default_frame._conduit_clusters
+        return [name for name, cluster in clusters.items() if conduit_id in cluster.get_members()]
+
+    def _share_new_spell_to_clusters(self, conduit: IConduit, spell: Any, aetheric_frame_name: str = "default") -> None:
+        """
+        Share a newly bound shareable spell from a conduit to its clusters.
+
+        Args:
+            conduit: Owner conduit.
+            spell: Newly bound spell.
+            aetheric_frame_name: Frame name for lookup.
+        """
+        if spell.existence != Existence.unique_per_conduit_cluster:
+            return
+        conduit_id = conduit._id
+        cluster_names = self._get_clusters_for_conduit(conduit_id, aetheric_frame_name)
+        if not cluster_names:
+            return
+        # For each cluster, add to registry and push to peers
+        frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._default_frame
+        for cname in cluster_names:
+            cluster = self._get_cluster(cname, aetheric_frame_name)
+            cluster.add_shared_spell(conduit_id, spell.spell_index)
+            for peer_id in cluster.get_members():
+                if peer_id == conduit_id:
+                    continue
+                peer = frame._conduits.get(peer_id)
+                if peer is None:
+                    continue
+                cluster.share_to_borrower(conduit, peer)
+
+    def _refresh_cluster_shares_for_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default") -> None:
+        """
+        Refresh sharing for an existing conduit across all clusters it belongs to.
+
+        Args:
+            conduit: Target conduit.
+            aetheric_frame_name: Frame name.
+
+        Returns:
+            None
+        """
+        conduit_id = conduit._id
+        cluster_names = self._get_clusters_for_conduit(conduit_id, aetheric_frame_name)
+        if not cluster_names:
+            return
+        frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._default_frame
+        for cname in cluster_names:
+            cluster = self._get_cluster(cname, aetheric_frame_name)
+            cluster.refresh_member_shares(conduit, frame, aetheric_frame_name)
 
     def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
         """

@@ -1446,6 +1446,61 @@ class Conduit(Cleanable):
 
 
     #endregion Spellbook Management API
+    #region Cluster API
+    def create_cluster(self, cluster_name: str) -> None:
+        """
+        Public API
+
+        Create a new conduit cluster in this conduit’s aetheric frame.
+        """
+        self.check_cleaned()
+        Conduit._aether._create_cluster(cluster_name, self._aetheric_frame)
+
+    def delete_cluster(self, cluster_name: str) -> None:
+        """
+        Public API
+
+        Delete an existing conduit cluster in this conduit’s aetheric frame.
+        """
+        self.check_cleaned()
+        Conduit._aether._remove_cluster(cluster_name, self._aetheric_frame)
+
+    def join_cluster(self, cluster_name: str) -> None:
+        """
+        Public API
+
+        Join an existing conduit cluster. Auto-sharing of eligible roots occurs on join.
+        """
+        self.check_cleaned()
+        Conduit._aether._add_conduit_to_cluster(self, cluster_name, self._aetheric_frame)
+
+    def leave_cluster(self, cluster_name: str) -> None:
+        """
+        Public API
+
+        Leave a conduit cluster. Auto-teardown of shared roots occurs on leave.
+        """
+        self.check_cleaned()
+        Conduit._aether._remove_conduit_from_cluster(self, cluster_name, self._aetheric_frame)
+
+    def list_clusters(self) -> list[str]:
+        """
+        Public API
+
+        List cluster names this conduit belongs to in its aetheric frame.
+        """
+        self.check_cleaned()
+        return Conduit._aether._get_clusters_for_conduit(self._id, self._aetheric_frame)
+
+    def refresh_cluster_shares(self) -> None:
+        """
+        Public API
+
+        Refresh sharing of auto-shareable roots for this conduit across all clusters it belongs to.
+        """
+        self.check_cleaned()
+        Conduit._aether._refresh_cluster_shares_for_conduit(self, self._aetheric_frame)
+    #endregion Cluster API
     #region Meld
 
     def meld(

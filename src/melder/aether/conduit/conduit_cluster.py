@@ -217,6 +217,109 @@ class ConduitCluster(Cleanable):
         for spell in shareables:
             self.add_shared_spell(owner_id, spell.spell_index)
 
+    def refresh_member_shares(self, conduit, frame, aetheric_frame_name: str = "default") -> None:
+        """
+        Refresh and (re)share this member's shareable roots with all peers in the cluster.
+
+        Args:
+            conduit: Member conduit whose roots should be refreshed.
+            frame: Owning AethericFrame for conduit lookup.
+            aetheric_frame_name: Frame name for removal calls.
+
+        Returns:
+            None
+        """
+        with self._lock:
+            member_ids = set(self.members)
+        self.refresh_shareable_roots(conduit)
+        for peer_id in member_ids:
+            if peer_id == conduit._id:
+                continue
+            peer = frame._conduits.get(peer_id)
+            if peer is None:
+                continue
+            self.share_to_borrower(conduit, peer)
+            self.share_to_borrower(peer, conduit)
+
+    def add_and_share_spell(self, owner, borrower_frame, spell, aetheric_frame_name: str = "default",
+                            link_dependencies: bool | None = None) -> None:
+        """
+        Explicitly add a spell to the shared set and propagate it to peers.
+
+        Args:
+            owner: Conduit that owns the spell.
+            borrower_frame: AethericFrame for conduit lookup.
+            spell: Spell object to share.
+            aetheric_frame_name: Frame name for removal calls.
+            link_dependencies: Override auto_link_dependencies if provided.
+        """
+        owner_id = owner._id
+        self.add_shared_spell(owner_id, spell.spell_index)
+        # Decide dependency behavior (explicit override beats cluster default)
+        link_deps = self.auto_link_dependencies if link_dependencies is None else bool(link_dependencies)
+
+        with self._lock:
+            member_ids = set(self.members)
+        for peer_id in member_ids:
+            if peer_id == owner_id:
+                continue
+            peer = borrower_frame._conduits.get(peer_id)
+            if peer is None:
+                continue
+            if link_deps:
+                try:
+                    peer.add_spell_to_contract_with_dependencies(
+                        spell=spell,
+                        conduit=owner,
+                        permissions=getattr(spell, "permissions", "create"),
+                        aetheric_frame=aetheric_frame_name,
+                    )
+                except Exception:
+                    continue
+
+    def remove_and_strip_spell(self, owner, borrower_frame, spell, aetheric_frame_name: str = "default") -> None:
+        """
+        Explicitly remove a shared spell from the cluster and strip it from peers.
+
+        Args:
+            owner: Conduit that owns the spell.
+            borrower_frame: AethericFrame for conduit lookup.
+            spell: Spell object to remove.
+            aetheric_frame_name: Frame name for removal calls.
+        """
+        owner_id = owner._id
+        self.remove_shared_spell(owner_id, spell.spell_index)
+
+        with self._lock:
+            member_ids = set(self.members)
+        for peer_id in member_ids:
+            if peer_id == owner_id:
+                continue
+            peer = borrower_frame._conduits.get(peer_id)
+            if peer is None:
+                continue
+            try:
+                peer.remove_root_from_contracts(
+                    root_spell_id=spell.spell_id,
+                    conduit=owner,
+                    aetheric_frame=aetheric_frame_name,
+                )
+            except Exception:
+                continue
+            else:
+                try:
+                    peer.add_spell_to_contract(
+                        spell=spell,
+                        conduit=owner,
+                        permissions=getattr(spell, "permissions", "create"),
+                        aetheric_frame=aetheric_frame_name,
+                        reason=DetailReason.manual,
+                        root_spell_id=spell.spell_id,
+                        link_dependencies=False,
+                    )
+                except Exception:
+                    continue
+
     def share_to_borrower(self, owner, borrower) -> None:
         """
         Contract all shared roots from owner into borrower (with deps if enabled).
@@ -323,3 +426,35 @@ class ConduitCluster(Cleanable):
             return None
         with book._lock:
             return book._spells.get(spell_index)
+
+    # ------------------------------------------------------------------
+    # Configuration / diagnostics
+    # ------------------------------------------------------------------
+    def set_auto_link_dependencies(self, enabled: bool) -> None:
+        """
+        Configure whether dependency closure is auto-contracted when sharing roots.
+
+        Args:
+            enabled: True to include deps, False for roots only.
+        """
+        with self._lock:
+            self.auto_link_dependencies = bool(enabled)
+
+    def describe(self) -> dict:
+        """
+        Return a diagnostic snapshot of the cluster.
+
+        Returns:
+            dict: containing name, auto_link_dependencies, members, shared roots summary.
+        """
+        with self._lock:
+            shared_summary = {
+                owner: [idx.id for idx in indices]
+                for owner, indices in self.shared_spells.items()
+            }
+            return {
+                "name": self._name,
+                "auto_link_dependencies": self.auto_link_dependencies,
+                "members": list(self.members),
+                "shared_spells": shared_summary,
+            }
