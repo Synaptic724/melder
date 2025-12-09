@@ -992,7 +992,7 @@ class Spellbook(Cleanable):
             self,
             *,
             spell,
-            existence: str,
+            existence: str | Existence,
             permissions: str = "create",
             spellframe=None,
             binding_name=None,

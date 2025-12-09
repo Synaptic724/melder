@@ -74,10 +74,10 @@ def test_bind_sets_spell_and_overrides_and_resets_previous():
     [
         ("as_unique", Existence.unique_per_aetheric_frame),
         ("as_many", Existence.many),
-        ("as_unique_per_conduit", Existence.unique_per_aetheric_frame_per_conduit),
-        ("as_unique_per_conduit_cluster", Existence.unique_per_aetheric_frame_per_conduit_cluster),
-        ("as_unique_per_conduit_lineage", Existence.unique_per_aetheric_frame_per_conduit_lineage),
-        ("as_unique_per_spell_space", Existence.unique_per_aetheric_frame_per_spell_space),
+        ("as_unique_per_conduit", Existence.unique_per_conduit),
+        ("as_unique_per_conduit_cluster", Existence.unique_per_conduit_cluster),
+        ("as_unique_per_conduit_lineage", Existence.unique_per_conduit_lineage),
+        ("as_unique_per_spell_space", Existence.unique_per_spell_space),
     ],
 )
 def test_existence_shorthands(method, expected):
@@ -89,8 +89,8 @@ def test_existence_shorthands(method, expected):
 
 def test_with_existence_sets_custom():
     binder, _ = make_binder()
-    binder.bind("spell").with_existence(Existence.unique_per_aetheric_frame_per_conduit_cluster)
-    assert binder._existence == Existence.unique_per_aetheric_frame_per_conduit_cluster
+    binder.bind("spell").with_existence(Existence.unique_per_conduit_cluster)
+    assert binder._existence == Existence.unique_per_conduit_cluster
 
 
 def test_with_permissions_sets_value():
@@ -217,9 +217,9 @@ def test_finalize_after_spellbook_dead_raises():
 
 def test_bind_can_override_defaults_then_finalize():
     binder, book = make_binder(default_existence=Existence.many, default_permissions="read")
-    binder.bind("spell", existence=Existence.unique_per_aetheric_frame_per_conduit, permissions="block").finalize()
+    binder.bind("spell", existence=Existence.unique_per_conduit, permissions="block").finalize()
     call = book.calls[-1]
-    assert call["existence"] == Existence.unique_per_aetheric_frame_per_conduit
+    assert call["existence"] == Existence.unique_per_conduit
     assert call["permissions"] == "block"
 
 
