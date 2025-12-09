@@ -17,7 +17,7 @@ class SpellBinder(Cleanable):
     before committing it to the Spellbook via `finalize()`.
 
     **Core Responsibilities:**
-    1.  **Fluent Configuration:** Accumulate binding parameters (e.g., `.as_unique_per_aetheric_frame()`, `.named()`).
+    1.  **Fluent Configuration:** Accumulate binding parameters (e.g., `.as_unique()`, `.named()`).
     2.  **State Management:** Holds in-flight configuration for exactly one registration at a time.
     3.  **Safe Delegation:** Forwards the final configuration to `Spellbook.bind(...)` only when `finalize()` is called.
 
@@ -27,7 +27,7 @@ class SpellBinder(Cleanable):
 
         # Complex registration with hooks and specific scoping
         binder.bind(MyDatabaseService) \\
-              .as_unique_per_aetheric_frame() \\
+              .as_unique() \\
               .named("primary_db") \\
               .under_spellframe(IDatabase) \\
               .with_pre_hook(connect_db) \\
@@ -214,7 +214,7 @@ class SpellBinder(Cleanable):
 
         This method clears any previous configuration and targets the provided
         `spell`. You can supply arguments immediately or use fluent methods
-        (e.g., `.as_unique_per_aetheric_frame()`) to configure the registration subsequently.
+        (e.g., `.as_unique()`) to configure the registration subsequently.
 
         Args:
             spell (Any):
@@ -271,28 +271,11 @@ class SpellBinder(Cleanable):
 
     def as_unique(self) -> "SpellBinder":
         """
-        Configures the spell as the current **singleton** for the entire Aether.
+        Configures the spell as a **Global Singleton** (Unique per Aetheric Frame).
 
         **Behavior:**
         - Only one instance is created for the entire Aetheric Frame.
-        - Shared by ALL conduits in that frame (Aether-wide singleton wiring is planned separately).
-
-        **Use Case:**
-        - Global configuration managers.
-        - Heavy, thread-safe resources (e.g., Database Connection Pools).
-        - Centralized logging or telemetry services.
-        """
-        self._still_alive()
-        self._existence = Existence.unique
-        return self
-
-    def as_unique_per_aetheric_frame(self) -> "SpellBinder":
-        """
-        Configures the spell as the current **singleton** default (per Aetheric Frame).
-
-        **Behavior:**
-        - Only one instance is created for the entire Aetheric Frame.
-        - Shared by ALL conduits in that frame (Aether-wide singleton wiring is planned separately).
+        - Shared by ALL conduits in that frame.
 
         **Use Case:**
         - Global configuration managers.

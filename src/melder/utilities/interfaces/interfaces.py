@@ -1055,7 +1055,7 @@ class ISpellbook(ICleanable, Protocol):
             binder = spellbook.create_binder()
 
             binder.bind(MyService) \\
-                  .as_unique_per_aetheric_frame() \\
+                  .as_unique() \\
                   .under_spellframe(IMyServiceProtocol) \\
                   .named("primary") \\
                   .with_permissions("create") \\
