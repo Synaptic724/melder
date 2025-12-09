@@ -9,17 +9,6 @@ class Existence(Enum):
     range from per-frame uniqueness to fully dynamic instancing, allowing for precise memory and
     control flow behavior across Aetheric Frames and conduit networks.
     """
-    unique = auto()
-    """
-    A **true Aether-level singleton** (one instance per Aether).
-
-    - Intended scope: a single instance shared by every frame/conduit in the owning Aether.
-    - Ownership/cleanup: managed centrally by Aether (planned wiring; current hot-path reuse
-      is still per-frame via ``unique_per_aetheric_frame``).
-    - Suitable for truly global services (e.g., process-wide config/telemetry) once the
-      Aether registry is hooked in.
-    """
-
     unique_per_aetheric_frame = auto()
     """
     One instance per **Aetheric Frame**.
