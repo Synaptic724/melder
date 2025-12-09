@@ -11,10 +11,13 @@ class Existence(Enum):
     """
     unique = auto()
     """
-    A traditional singleton: one instance for the entire application.
-    - Only a single instance exists globally.
-    - All conduits and frames share the same instance.
-    - Suitable for truly global services (e.g., logging, configuration).
+    A **true Aether-level singleton** (one instance per Aether).
+
+    - Intended scope: a single instance shared by every frame/conduit in the owning Aether.
+    - Ownership/cleanup: managed centrally by Aether (planned wiring; current hot-path reuse
+      is still per-frame via ``unique_per_aetheric_frame``).
+    - Suitable for truly global services (e.g., process-wide config/telemetry) once the
+      Aether registry is hooked in.
     """
 
     unique_per_aetheric_frame = auto()
@@ -25,8 +28,9 @@ class Existence(Enum):
     equivalent to a traditional singleton unless multiple frames are defined.
 
     - Behaves like a traditional singleton, but scoped to the current Aetheric Frame.
-    - All conduits within the same frame share the same instance.
-    - Ideal for global services within a single system (e.g., config, orchestrators).
+    - All conduits within the same frame share the same instance (current default singleton behavior).
+    - Ideal for frame-local global services (e.g., config, orchestrators) while full
+      Aether-level singleton support is being wired.
     """
 
     unique_per_conduit = auto()
