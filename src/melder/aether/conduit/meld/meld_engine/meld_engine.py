@@ -437,20 +437,20 @@ class MeldEngine(Cleanable):
             if existence is Existence.unique_per_aetheric_frame:
                 found = creations._unique_per_aetheric_frame.get(spell_id)
                 return found.value if found is not None else None
-            if existence is Existence.unique_per_aetheric_frame_per_conduit:
+            if existence is Existence.unique_per_conduit:
                 found = creations._unique_per_scope.get(spell_id)
                 return found.value if found is not None else None
-            if existence is Existence.unique_per_aetheric_frame_per_conduit_cluster:
+            if existence is Existence.unique_per_conduit_cluster:
                 found = creations._unique_per_cluster.get(spell_id)
                 return found.value if found is not None else None
-            if existence is Existence.unique_per_aetheric_frame_per_conduit_lineage:
+            if existence is Existence.unique_per_conduit_lineage:
                 found = creations._unique_per_lineage.get(spell_id)
                 return found.value if found is not None else None
-            if existence is Existence.unique_per_aetheric_frame_per_spell_space:
+            if existence is Existence.unique_per_spell_space:
                 spellspace = creations._conduit.get_active_spellspace()
                 if spellspace is None:
                     raise SpellSpaceScopeError(
-                        "Existence.unique_per_aetheric_frame_per_spell_space requires an active SpellSpace. "
+                        "Existence.unique_per_spell_space requires an active SpellSpace. "
                         "Use 'with conduit.enter_spellspace()' when melding."
                     )
                 if spellspace.owner_conduit is not creations._conduit:
@@ -462,7 +462,7 @@ class MeldEngine(Cleanable):
             return None
 
         if isinstance(creations, LesserCreations):
-            if existence is Existence.unique_per_aetheric_frame_per_conduit:
+            if existence is Existence.unique_per_conduit:
                 found = creations._unique_per_scope.get(spell_id)
                 return found.value if found is not None else None
             parent_creations = creations._parent_creations
@@ -470,17 +470,17 @@ class MeldEngine(Cleanable):
                 if existence is Existence.unique_per_aetheric_frame:
                     found = parent_creations._unique_per_aetheric_frame.get(spell_id)
                     return found.value if found is not None else None
-                if existence is Existence.unique_per_aetheric_frame_per_conduit_cluster:
+                if existence is Existence.unique_per_conduit_cluster:
                     found = parent_creations._unique_per_cluster.get(spell_id)
                     return found.value if found is not None else None
-                if existence is Existence.unique_per_aetheric_frame_per_conduit_lineage:
+                if existence is Existence.unique_per_conduit_lineage:
                     found = parent_creations._unique_per_lineage.get(spell_id)
                     return found.value if found is not None else None
-                if existence is Existence.unique_per_aetheric_frame_per_spell_space:
+                if existence is Existence.unique_per_spell_space:
                     spellspace = creations._conduit.get_active_spellspace()
                     if spellspace is None:
                         raise SpellSpaceScopeError(
-                            "Existence.unique_per_aetheric_frame_per_spell_space requires an active SpellSpace. "
+                            "Existence.unique_per_spell_space requires an active SpellSpace. "
                             "Use 'with conduit.enter_spellspace()' when melding."
                         )
                     if spellspace.owner_conduit is not creations._conduit:
@@ -502,23 +502,23 @@ class MeldEngine(Cleanable):
             if existence is Existence.unique_per_aetheric_frame:
                 creations.add_unique_per_aetheric_frame(spell_id, instance)
                 return
-            if existence is Existence.unique_per_aetheric_frame_per_conduit:
+            if existence is Existence.unique_per_conduit:
                 creations.add_unique_per_scope(spell_id, instance)
                 return
             if existence is Existence.many:
                 creations.add_many(spell_id, instance)
                 return
-            if existence is Existence.unique_per_aetheric_frame_per_conduit_cluster:
+            if existence is Existence.unique_per_conduit_cluster:
                 creations.add_unique_per_cluster(spell_id, instance)
                 return
-            if existence is Existence.unique_per_aetheric_frame_per_conduit_lineage:
+            if existence is Existence.unique_per_conduit_lineage:
                 creations.add_unique_per_lineage(spell_id, instance)
                 return
-            if existence is Existence.unique_per_aetheric_frame_per_spell_space:
+            if existence is Existence.unique_per_spell_space:
                 spellspace = creations._conduit.get_active_spellspace()
                 if spellspace is None:
                     raise SpellSpaceScopeError(
-                        "Existence.unique_per_aetheric_frame_per_spell_space requires an active SpellSpace. "
+                        "Existence.unique_per_spell_space requires an active SpellSpace. "
                         "Use 'with conduit.enter_spellspace()' when melding."
                     )
                 if spellspace.owner_conduit is not creations._conduit:
@@ -530,7 +530,7 @@ class MeldEngine(Cleanable):
             return
 
         if isinstance(creations, LesserCreations):
-            if existence is Existence.unique_per_aetheric_frame_per_conduit:
+            if existence is Existence.unique_per_conduit:
                 creations.add_unique_per_scope(spell_id, instance)
                 return
             if existence is Existence.many:
@@ -541,17 +541,17 @@ class MeldEngine(Cleanable):
                 if existence is Existence.unique_per_aetheric_frame:
                     parent_creations.add_unique_per_aetheric_frame(spell_id, instance)
                     return
-                if existence is Existence.unique_per_aetheric_frame_per_conduit_cluster:
+                if existence is Existence.unique_per_conduit_cluster:
                     parent_creations.add_unique_per_cluster(spell_id, instance)
                     return
-                if existence is Existence.unique_per_aetheric_frame_per_conduit_lineage:
+                if existence is Existence.unique_per_conduit_lineage:
                     parent_creations.add_unique_per_lineage(spell_id, instance)
                     return
-                if existence is Existence.unique_per_aetheric_frame_per_spell_space:
+                if existence is Existence.unique_per_spell_space:
                     spellspace = creations._conduit.get_active_spellspace()
                     if spellspace is None:
                         raise SpellSpaceScopeError(
-                            "Existence.unique_per_aetheric_frame_per_spell_space requires an active SpellSpace. "
+                            "Existence.unique_per_spell_space requires an active SpellSpace. "
                             "Use 'with conduit.enter_spellspace()' when melding."
                         )
                     if spellspace.owner_conduit is not creations._conduit:
