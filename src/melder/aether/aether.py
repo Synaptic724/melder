@@ -649,7 +649,7 @@ class Aether(Cleanable):
             spell: Newly bound spell.
             aetheric_frame_name: Frame name for lookup.
         """
-        if spell.existence != Existence.unique_per_conduit_cluster:
+        if spell.existence != Existence.unique_per_aetheric_frame_per_conduit_cluster:
             return
         conduit_id = conduit._id
         cluster_names = self._get_clusters_for_conduit(conduit_id, aetheric_frame_name)

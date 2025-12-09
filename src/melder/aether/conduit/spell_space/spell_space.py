@@ -8,7 +8,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class SpellSpace(Cleanable):
     """
-    Scope handle for `Existence.unique_per_spell_space`.
+    Scope handle for `Existence.unique_per_aetheric_frame_per_spell_space`.
 
     Responsibilities:
     - Track identity/version for a spellspace scope owned by a Conduit.
