@@ -9,15 +9,8 @@ class Existence(Enum):
     range from per-frame uniqueness to fully dynamic instancing, allowing for precise memory and
     control flow behavior across Aetheric Frames and conduit networks.
     """
-    unique = auto()
-    """
-    A traditional singleton: one instance for the entire application.
-    - Only a single instance exists globally.
-    - All conduits and frames share the same instance.
-    - Suitable for truly global services (e.g., logging, configuration).
-    """
 
-    unique_per_aetheric_frame = auto()
+    unique = auto()
     """
     One instance per **Aetheric Frame**.
 

@@ -407,7 +407,7 @@ class ConduitCluster(Cleanable):
         with book._lock:
             return [
                 spell for spell in book._spells.values()
-                if hasattr(spell, "existence") and spell.existence == Existence.unique_per_aetheric_frame_per_conduit_cluster
+                if hasattr(spell, "existence") and spell.existence == Existence.unique_per_conduit_cluster
             ]
 
     def _resolve_spell_from_index(self, conduit, spell_index: SpellIndex):

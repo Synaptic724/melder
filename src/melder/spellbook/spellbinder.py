@@ -56,7 +56,7 @@ class SpellBinder(Cleanable):
             self,
             spellbook: ISpellbook,
             *,
-            default_existence: Existence = Existence.unique_per_aetheric_frame,
+            default_existence: Existence = Existence.unique,
             default_permissions: str = "create",
     ) -> None:
         """
@@ -68,7 +68,7 @@ class SpellBinder(Cleanable):
                 book to prevent reference cycles.
             default_existence (Existence):
                 The default lifecycle scope to use if one is not explicitly
-                set during a chain. Defaults to `Existence.unique_per_aetheric_frame`.
+                set during a chain. Defaults to `Existence.unique`.
             default_permissions (str):
                 The default permission level ("create", "read", "block") to use
                 if not explicitly set. Defaults to "create".
@@ -283,7 +283,7 @@ class SpellBinder(Cleanable):
         - Centralized logging or telemetry services.
         """
         self._still_alive()
-        self._existence = Existence.unique_per_aetheric_frame
+        self._existence = Existence.unique
         return self
 
     def as_many(self) -> "SpellBinder":
@@ -317,7 +317,7 @@ class SpellBinder(Cleanable):
         - Is isolating "sub-applications" from one another.
         """
         self._still_alive()
-        self._existence = Existence.unique_per_aetheric_frame_per_conduit
+        self._existence = Existence.unique_per_conduit
         return self
 
     def as_unique_per_conduit_cluster(self) -> "SpellBinder":
@@ -333,7 +333,7 @@ class SpellBinder(Cleanable):
         - Grouping related services that need shared state but shouldn't leak globally.
         """
         self._still_alive()
-        self._existence = Existence.unique_per_aetheric_frame_per_conduit_cluster
+        self._existence = Existence.unique_per_conduit_cluster
         return self
 
     def as_unique_per_conduit_lineage(self) -> "SpellBinder":
@@ -349,7 +349,7 @@ class SpellBinder(Cleanable):
         - Sharing configuration overrides down a specific branch of the graph.
         """
         self._still_alive()
-        self._existence = Existence.unique_per_aetheric_frame_per_conduit_lineage
+        self._existence = Existence.unique_per_conduit_lineage
         return self
 
     def as_unique_per_spell_space(self) -> "SpellBinder":
@@ -366,7 +366,7 @@ class SpellBinder(Cleanable):
         - "Unit of Work" patterns where objects must live for a transaction duration.
         """
         self._still_alive()
-        self._existence = Existence.unique_per_aetheric_frame_per_spell_space
+        self._existence = Existence.unique_per_spell_space
         return self
 
     # ------------------------------------------------------------------
