@@ -222,7 +222,7 @@ class Conduit(Cleanable):
         - This helper is intended for spells that were bound with an already-
           constructed instance (existing-object spells).
         - These spells are treated as **singletons** for this Conduit and
-          must use `Existence.unique_per_aetheric_frame`.
+          must use `Existence.unique`.
         - The instance is registered under `spell.spell_id` via
           `Creations.add_unique(...)`.
 
@@ -243,14 +243,14 @@ class Conduit(Cleanable):
 
         # Existing-object spells are semantically singletons in Melder.
         existence: Existence = spell.existence
-        if existence is not Existence.unique_per_aetheric_frame:
+        if existence is not Existence.unique:
             self._logger.error(
                 f"_register_to_creations: existing-object spell {spell.spell_id} "
-                f"has unsupported existence={existence}; expected Existence.unique_per_aetheric_frame.",
+                f"has unsupported existence={existence}; expected Existence.unique.",
                 "_register_to_creations",
             )
             raise RuntimeError(
-                "Existing-object spells must use Existence.unique_per_aetheric_frame when "
+                "Existing-object spells must use Existence.unique when "
                 "registered into Creations."
             )
 
@@ -1266,7 +1266,7 @@ class Conduit(Cleanable):
     def create_binder(
             self,
             *,
-            default_existence: Existence = Existence.unique_per_aetheric_frame,
+            default_existence: Existence = Existence.unique,
             default_permissions: str = "create",
     ) -> 'SpellBinder':
         """
@@ -1344,7 +1344,7 @@ class Conduit(Cleanable):
 
         🔄 Existence (spell lifecycle):
             Determines how the spell instance is managed (singleton, transient, etc.).
-            Use `Existence.unique_per_aetheric_frame`, `Existence.many`, etc., for fine-grained control.
+            Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
 
         📦 Spellframe (optional):
             Logical namespace or grouping label.

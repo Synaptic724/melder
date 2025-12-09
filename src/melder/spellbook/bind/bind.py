@@ -84,7 +84,7 @@ class Bind(Cleanable):
             spell (Any, optional): The class, function, or existing object to bind. Required for direct usage.
             spellframe (Optional[Any]): Logical interface or Protocol used as the DI contract / grouping key.
             binding_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
-            existence (Existence): The lifecycle scope for this spell (default is `Existence.unique_per_aetheric_frame`).
+            existence (Existence): The lifecycle scope for this spell (default is `Existence.unique`).
 
         Returns:
             Union[Spell, Any]:
@@ -345,8 +345,8 @@ class Bind(Cleanable):
         Raises:
             ValueError: If the binding violates any rule:
                 - Lambda/method bound without a required binding name.
-                - Method/lambda spells bound with an existence type other than `Existence.unique_per_aetheric_frame`.
-                - Existing-object spells bound with an existence type other than `Existence.unique_per_aetheric_frame`.
+                - Method/lambda spells bound with an existence type other than `Existence.unique`.
+                - Existing-object spells bound with an existence type other than `Existence.unique`.
                 - Invalid `existence` type provided.
         """
         # Validate that existence is a valid Existence member
@@ -356,7 +356,7 @@ class Bind(Cleanable):
             )
 
         # ------------------------------------------------------------------
-        # Existing-object spells: must be Existence.unique_per_aetheric_frame (global singleton)
+        # Existing-object spells: must be Existence.unique (global singleton)
         # ------------------------------------------------------------------
         #
         # Existing creations are pre-instantiated and cannot participate in any
@@ -364,9 +364,9 @@ class Bind(Cleanable):
         # Aetheric Frame. If the caller tries to bind an existing object with
         # any other existence type, we fail fast.
         #
-        if isinstance(profile, (InstanceBindingProfile, OtherBindingProfile)) and existence is not Existence.unique_per_aetheric_frame:
+        if isinstance(profile, (InstanceBindingProfile, OtherBindingProfile)) and existence is not Existence.unique:
             raise ValueError(
-                "Existing-object spells must use Existence.unique_per_aetheric_frame. "
+                "Existing-object spells must use Existence.unique. "
                 "Pre-created instances are always treated as singletons and "
                 "cannot be bound with other lifecycle modes."
             )
@@ -389,8 +389,8 @@ class Bind(Cleanable):
                 )
 
             # Methods / lambdas are forced to unique existence
-            if existence is not Existence.unique_per_aetheric_frame:
-                raise ValueError("Method and lambda spells must use Existence.unique_per_aetheric_frame.")
+            if existence is not Existence.unique:
+                raise ValueError("Method and lambda spells must use Existence.unique.")
 
     @staticmethod
     def _existence_check(existence: Existence):
