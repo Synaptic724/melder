@@ -1,9 +1,22 @@
-"""Auto-generated placeholder test to mirror src structure.
-Tests will be replaced with real coverage when available.
-"""
-import importlib
+import pytest
 
-MODULE_PATH = "melder.utilities.custom_exceptions.phase_execution_error"
+from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.phase_scheduler_error import PhaseSchedulerError
 
-def test_import_module():
-    importlib.import_module(MODULE_PATH)
+
+def test_phase_execution_error_includes_phase_and_errors():
+    errors = [ValueError("oops"), RuntimeError("boom")]
+    err = PhaseExecutionError("bootstrap", errors)
+
+    assert isinstance(err, PhaseSchedulerError)
+    assert err.phase_name == "bootstrap"
+    assert err.errors == errors
+
+    text = str(err)
+    assert "bootstrap" in text
+    assert "2 error(s)" in text
+
+
+def test_phase_execution_error_raises():
+    with pytest.raises(PhaseExecutionError):
+        raise PhaseExecutionError("phase", [])

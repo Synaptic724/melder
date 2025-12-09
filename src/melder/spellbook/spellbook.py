@@ -942,7 +942,7 @@ class Spellbook(Cleanable):
     def create_binder(
             self,
             *,
-            default_existence: Existence = Existence.unique,
+            default_existence: Existence = Existence.unique_per_aetheric_frame,
             default_permissions: str = "create",
     ) -> SpellBinder:
         """
@@ -1030,7 +1030,7 @@ class Spellbook(Cleanable):
 
         🔄 Existence (spell lifecycle):
             Determines how the spell instance is managed (singleton, transient, etc.).
-            Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
+            Use `Existence.unique_per_aetheric_frame`, `Existence.many`, etc., for fine-grained control.
 
         📦 Spellframe (optional):
             Logical namespace or grouping label.
