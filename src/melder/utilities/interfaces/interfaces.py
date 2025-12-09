@@ -966,7 +966,7 @@ class ISpellbook(ICleanable, Protocol):
     def bind(
             self,
             spell: Any,
-            existence: str,
+            existence: str | Existence,
             *,
             permissions: str = "create",
             spellframe: Any = None,

@@ -992,7 +992,7 @@ class Spellbook(Cleanable):
             self,
             *,
             spell,
-            existence: str,
+            existence: str | Existence,
             permissions: str = "create",
             spellframe=None,
             binding_name=None,
@@ -1078,7 +1078,6 @@ class Spellbook(Cleanable):
             RuntimeError: If the spell is already bound in the registry.
             TypeError: If invalid hook types are provided.
         """
-        self._logger.debug("bind()", "bind")
         try:
             permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
             existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
