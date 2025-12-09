@@ -70,7 +70,7 @@ class ICreations(ICleanable, Protocol):
     Manages all instantiated objects within a Conduit (Normal Scope).
 
     This manager is responsible for tracking object instances based on their lifecycle
-    (`unique`, `unique_per_scope`, `many`, etc.) and enforcing resource disposal upon cleaning.
+    (`unique_per_aetheric_frame`, `unique_per_scope`, `many`, etc.) and enforcing resource disposal upon cleaning.
 
     **Key Responsibilities:**
       * Storage and lifecycle management of created objects.
@@ -81,7 +81,7 @@ class ICreations(ICleanable, Protocol):
     # Attributes
     # -----------------
     _lock: RLock
-    _unique: 'ConcurrentDict[str, object]'
+    _unique_per_aetheric_frame: 'ConcurrentDict[str, object]'
     _unique_per_scope: 'ConcurrentDict[str, object]'
     _many: 'ConcurrentDict[str, ConcurrentList[object]]'
     _unique_per_lineage: 'ConcurrentDict[str, object]'
@@ -93,11 +93,11 @@ class ICreations(ICleanable, Protocol):
     # -----------------
     # Methods
     # -----------------
-    def _cleanup_unique(self) -> List[Exception]:
+    def _cleanup_unique_per_aetheric_frame(self) -> List[Exception]:
         """
         Internal
 
-        Disposes of all objects registered under the `unique` existence scope.
+        Disposes of all objects registered under the `unique_per_aetheric_frame` existence scope.
 
         Returns:
             List[Exception]: List of any cleanup errors encountered.
@@ -188,9 +188,9 @@ class ICreations(ICleanable, Protocol):
         """
         ...
 
-    def add_unique(self, key: str, item: object) -> None:
+    def add_unique_per_aetheric_frame(self, key: str, item: object) -> None:
         """
-        Adds a singleton object instance to the `unique` scope.
+        Adds a singleton object instance to the `unique_per_aetheric_frame` scope.
 
         Args:
             key (str): Unique identifier (Spell ID).
@@ -198,7 +198,7 @@ class ICreations(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique` scope.
+            ValueError: If the key already exists in the `unique_per_aetheric_frame` scope.
         """
         ...
 

@@ -224,7 +224,7 @@ class Conduit(Cleanable):
         - These spells are treated as **singletons** for this Conduit and
           must use `Existence.unique_per_aetheric_frame`.
         - The instance is registered under `spell.spell_id` via
-          `Creations.add_unique(...)`.
+          `Creations.add_unique_per_aetheric_frame(...)`.
 
         This is primarily used during the conjure flow when a Conduit is
         first wired into its Spellbook and needs to prime its Creations
@@ -255,7 +255,7 @@ class Conduit(Cleanable):
             )
 
         spell_id: str = spell.spell_id
-        creations.add_unique(spell_id, instance)
+        creations.add_unique_per_aetheric_frame(spell_id, instance)
 
 
 

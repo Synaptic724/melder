@@ -899,7 +899,7 @@ class Meld(Cleanable):
         # --- Check Normal Conduit Creations (Creations) ---
         if isinstance(creations, Creations):
             if existence is Existence.unique_per_aetheric_frame:
-                creation = creations._unique.get(spell_id)
+                creation = creations._unique_per_aetheric_frame.get(spell_id)
                 return creation.value if creation is not None else None
 
             if existence is Existence.unique_per_aetheric_frame_per_conduit:
@@ -940,7 +940,7 @@ class Meld(Cleanable):
             parent_creations = creations._parent_creations
             if isinstance(parent_creations, Creations):
                 if existence is Existence.unique_per_aetheric_frame:
-                    found = parent_creations._unique.get(spell_id)
+                    found = parent_creations._unique_per_aetheric_frame.get(spell_id)
                     return found.value if found is not None else None
                 if existence is Existence.unique_per_aetheric_frame_per_conduit_cluster:
                     found = parent_creations._unique_per_cluster.get(spell_id)
@@ -1111,7 +1111,7 @@ class Meld(Cleanable):
         spell_id: str = spell.spell_id
 
         if existence is Existence.unique_per_aetheric_frame:
-            creations.add_unique(spell_id, instance)
+            creations.add_unique_per_aetheric_frame(spell_id, instance)
             return
 
         if existence is Existence.unique_per_aetheric_frame_per_conduit:
@@ -1185,7 +1185,7 @@ class Meld(Cleanable):
         parent_creations = creations._parent_creations
         if isinstance(parent_creations, Creations):
             if existence is Existence.unique_per_aetheric_frame:
-                parent_creations.add_unique(spell_id, instance)
+                parent_creations.add_unique_per_aetheric_frame(spell_id, instance)
                 return
             if existence is Existence.unique_per_aetheric_frame_per_conduit_cluster:
                 parent_creations.add_unique_per_cluster(spell_id, instance)
