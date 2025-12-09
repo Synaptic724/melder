@@ -14,7 +14,7 @@ class Creations(Cleanable):
     Manages all instantiated objects within a Conduit (Normal Scope).
 
     This manager is responsible for tracking object instances based on their lifecycle
-    (`unique_per_aetheric_frame`, `unique_per_scope`, `many`, etc.) and enforcing resource disposal upon cleaning.
+    (`unique`, `unique_per_scope`, `many`, etc.) and enforcing resource disposal upon cleaning.
 
     **Key Responsibilities:**
       * Storage and lifecycle management of created objects.
@@ -49,7 +49,7 @@ class Creations(Cleanable):
         self._logger = conduit._logger
 
         # Internal storage for created objects by lifecycle scope
-        self._unique_per_aetheric_frame: Dict[str, Creation] = {}
+        self._unique: Dict[str, Creation] = {}
         self._unique_per_scope: Dict[str, Creation] = {}
         self._many: Dict[str, List[Creation]] = {}
         self._unique_per_lineage: Dict[str, Creation] = {}
@@ -91,10 +91,10 @@ class Creations(Cleanable):
 
             # Single try/except around the whole sequence (per request)
             try:
-                self._logger.debug("_cleanup_unique_per_aetheric_frame()", method_name="cleanup", mask=True,
+                self._logger.debug("_cleanup_unique()", method_name="cleanup", mask=True,
                                    owner_id=self._id, owner_display=self._display_name,
                                    groups=self._log_groups, system_groups=self._log_sysgroups)
-                errors.extend(self._cleanup_unique_per_aetheric_frame())
+                errors.extend(self._cleanup_unique())
 
                 self._logger.debug("_cleanup_unique_per_scope()", method_name="cleanup", mask=True,
                                    owner_id=self._id, owner_display=self._display_name,
@@ -128,7 +128,7 @@ class Creations(Cleanable):
                 errors.append(e)
 
             # Null internal refs last
-            self._unique_per_aetheric_frame = None
+            self._unique = None
             self._unique_per_scope = None
             self._many = None
             self._unique_per_lineage = None
@@ -158,24 +158,24 @@ class Creations(Cleanable):
                 self._log_sysgroups = None
                 self._logger = None
 
-    def _cleanup_unique_per_aetheric_frame(self) -> List[Exception]:
+    def _cleanup_unique(self) -> List[Exception]:
         """
         Internal
 
-        Disposes of all objects registered under the `unique_per_aetheric_frame` existence scope.
+        Disposes of all objects registered under the `unique` existence scope.
 
         Returns:
             List[Exception]: List of any cleanup errors encountered.
         """
         errors: List[Exception] = []
-        for _, item in self._unique_per_aetheric_frame.items():
+        for _, item in self._unique.items():
             if item is not None:
                 maybe_error = self._attempt_cleanup(item.value)
                 if maybe_error:
                     errors.append(maybe_error)
                 item.cleanup()
-        self._unique_per_aetheric_frame.clear()
-        self._logger.debug(f"_cleanup_unique_per_aetheric_frame: errors={len(errors)}", method_name="_cleanup_unique_per_aetheric_frame", mask=True,
+        self._unique.clear()
+        self._logger.debug(f"_cleanup_unique: errors={len(errors)}", method_name="_cleanup_unique", mask=True,
                            owner_id=self._id, owner_display=self._display_name,
                            groups=self._log_groups, system_groups=self._log_sysgroups)
         return errors
@@ -410,9 +410,9 @@ class Creations(Cleanable):
             groups=self._log_groups, system_groups=self._log_sysgroups,
         )
 
-    def add_unique_per_aetheric_frame(self, key: str, item: object) -> None:
+    def add_unique(self, key: str, item: object) -> None:
         """
-        Adds a singleton object instance to the `unique_per_aetheric_frame` scope.
+        Adds a singleton object instance to the `unique` scope.
 
         Args:
             key (UUID): Unique identifier (Spell ID).
@@ -420,18 +420,18 @@ class Creations(Cleanable):
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique_per_aetheric_frame` scope.
+            ValueError: If the key already exists in the `unique` scope.
         """
         self.check_cleaned()
-        self._logger.debug(f"add_unique_per_aetheric_frame: key={key}", method_name="add_unique_per_aetheric_frame", mask=True,
+        self._logger.debug(f"add_unique: key={key}", method_name="add_unique", mask=True,
                            owner_id=self._id, owner_display=self._display_name,
                            groups=self._log_groups, system_groups=self._log_sysgroups)
-        if key in self._unique_per_aetheric_frame:
-            self._logger.error(f"add_unique_per_aetheric_frame: duplicate key={key}", method_name="add_unique_per_aetheric_frame", mask=True,
+        if key in self._unique:
+            self._logger.error(f"add_unique: duplicate key={key}", method_name="add_unique", mask=True,
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
-            raise ValueError(f"Key {key} already exists in unique_per_aetheric_frame objects.")
-        self._unique_per_aetheric_frame[key] = Creation(item)
+            raise ValueError(f"Key {key} already exists in unique objects.")
+        self._unique[key] = Creation(item)
 
     def add_unique_per_lineage(self, key: str, item: object) -> None:
         """
@@ -539,7 +539,7 @@ class Creations(Cleanable):
         with self._lock:
             # Singletons
             for scope_name, bucket in (
-                ("unique_per_aetheric_frame", self._unique_per_aetheric_frame),
+                ("unique", self._unique),
                 ("unique_per_scope", self._unique_per_scope),
                 ("unique_per_lineage", self._unique_per_lineage),
                 ("unique_per_cluster", self._unique_per_cluster),
@@ -581,8 +581,8 @@ class Creations(Cleanable):
                 creation: Creation = entry.get("creation")
                 if creation is None or scope is None:
                     continue
-                if scope == "unique_per_aetheric_frame":
-                    self._unique_per_aetheric_frame[spell_id] = creation
+                if scope == "unique":
+                    self._unique[spell_id] = creation
                 elif scope == "unique_per_scope":
                     self._unique_per_scope[spell_id] = creation
                 elif scope == "unique_per_lineage":

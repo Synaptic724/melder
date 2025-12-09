@@ -435,7 +435,7 @@ class MeldEngine(Cleanable):
 
         if isinstance(creations, Creations):
             if existence is Existence.unique_per_aetheric_frame:
-                found = creations._unique_per_aetheric_frame.get(spell_id)
+                found = creations._unique.get(spell_id)
                 return found.value if found is not None else None
             if existence is Existence.unique_per_aetheric_frame_per_conduit:
                 found = creations._unique_per_scope.get(spell_id)
@@ -468,7 +468,7 @@ class MeldEngine(Cleanable):
             parent_creations = creations._parent_creations
             if isinstance(parent_creations, Creations):
                 if existence is Existence.unique_per_aetheric_frame:
-                    found = parent_creations._unique_per_aetheric_frame.get(spell_id)
+                    found = parent_creations._unique.get(spell_id)
                     return found.value if found is not None else None
                 if existence is Existence.unique_per_aetheric_frame_per_conduit_cluster:
                     found = parent_creations._unique_per_cluster.get(spell_id)
@@ -500,7 +500,7 @@ class MeldEngine(Cleanable):
 
         if isinstance(creations, Creations):
             if existence is Existence.unique_per_aetheric_frame:
-                creations.add_unique_per_aetheric_frame(spell_id, instance)
+                creations.add_unique(spell_id, instance)
                 return
             if existence is Existence.unique_per_aetheric_frame_per_conduit:
                 creations.add_unique_per_scope(spell_id, instance)
@@ -539,7 +539,7 @@ class MeldEngine(Cleanable):
             parent_creations = creations._parent_creations
             if isinstance(parent_creations, Creations):
                 if existence is Existence.unique_per_aetheric_frame:
-                    parent_creations.add_unique_per_aetheric_frame(spell_id, instance)
+                    parent_creations.add_unique(spell_id, instance)
                     return
                 if existence is Existence.unique_per_aetheric_frame_per_conduit_cluster:
                     parent_creations.add_unique_per_cluster(spell_id, instance)
