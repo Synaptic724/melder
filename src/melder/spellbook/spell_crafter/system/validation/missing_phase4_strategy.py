@@ -1,7 +1,6 @@
 from __future__ import annotations
-
 from typing import Dict, List, Optional, Set
-
+# Melder imports
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -20,7 +19,6 @@ class MissingPhase4Strategy(SpellSystemValidationStrategy):
     """
     Flags any spell in a root DAG that lacks Phase-4 validation results.
     """
-
     __slots__ = []
 
     def run(

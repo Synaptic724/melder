@@ -1,7 +1,8 @@
 from __future__ import annotations
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional
-
+# Melder Imports
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -12,7 +13,7 @@ class SpellBindingKind(Enum):
     This is intentionally small and orthogonal to SpellType – it answers
     "what raw object did the user give us" before we project into SpellType.
     """
-
+    __melder_internal__ = _mrg.sentinel
     CLASS = auto()
     CALLABLE = auto()
     INSTANCE = auto()
@@ -21,7 +22,7 @@ class SpellBindingKind(Enum):
 
 class SpellBindingProfile(Cleanable):
     """Base class for all binding profiles."""
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["kind", "original_object"]
 
     def __init__(self, kind: SpellBindingKind, original_object: Any) -> None:
@@ -44,7 +45,7 @@ class ClassBindingProfile(SpellBindingProfile):
     Enough to fingerprint, reason about protocol compatibility, and produce diagnostics.
     Very shallow per-method view (names only), no deep inspection.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
         "name",
         "qualname",
@@ -119,7 +120,7 @@ class CallableParameterBindingSummary:
     """
     Minimal binding-time view of a single callable parameter (for fingerprint/diagnostics).
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = ["name", "kind", "default_repr", "annotation_repr"]
 
     def __init__(
@@ -137,7 +138,7 @@ class CallableParameterBindingSummary:
 
 class CallableBindingProfile(SpellBindingProfile):
     """Binding-time view of a function / method / lambda spell candidate."""
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
         "name",
         "qualname",
@@ -209,7 +210,7 @@ class InstanceBindingProfile(SpellBindingProfile):
     """
     Binding-time view of an existing object instance bound as an EXISTING_CREATION spell.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
         "type_name",
         "module",
@@ -241,7 +242,7 @@ class InstanceBindingProfile(SpellBindingProfile):
 
 class OtherBindingProfile(SpellBindingProfile):
     """Fallback binding profile for anything that does not fit normal shapes."""
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
         "type_name",
         "module",

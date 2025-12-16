@@ -1,16 +1,12 @@
-# melder/spellbook/spell_crafter/blueprints/root_resolution_blueprint.py
-
 from __future__ import annotations
-
 from typing import Iterable, List, Optional, Sequence
-
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
 from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class RootResolutionBlueprint(Cleanable):
     """
@@ -33,7 +29,7 @@ class RootResolutionBlueprint(Cleanable):
             Lineage ULID of the root spell (spell.spell_index.id). Optional metadata
             for DevOps / change-control; graph logic is always version-id based.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_root_spell_id",
         "_root_lineage_id",

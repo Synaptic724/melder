@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ResolutionFrame(Cleanable):
     """
@@ -24,7 +24,7 @@ class ResolutionFrame(Cleanable):
     It does NOT know about graph structure or spell details; it only stores values
     keyed by ids/names decided by SpellCrafter/DAG builder.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, overrides: Optional[Dict[str, Any]] = None) -> None:
         super().__init__()
         self._id: str = IDBuilder.create_id()

@@ -2,6 +2,7 @@ from typing import Any, Optional, Union, Tuple
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class MutationContract(Cleanable):
     """
@@ -57,7 +58,7 @@ class MutationContract(Cleanable):
         binding scenarios, the agent can provide or update these payloads over
         time to steer experiments without changing the host’s __init__ signature.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["spell", "spellframe", "binding_name", "spell_override", "late_binding"]
 
     def __init__(

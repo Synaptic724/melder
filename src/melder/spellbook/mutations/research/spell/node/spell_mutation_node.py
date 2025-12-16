@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellMutationNode(Cleanable):
     """
@@ -17,7 +17,7 @@ class SpellMutationNode(Cleanable):
         `_spell_id` is expected to be the concrete spell version identifier
         (e.g., SHA256) at the time this node was created.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(
             self,
             spell_id: str,

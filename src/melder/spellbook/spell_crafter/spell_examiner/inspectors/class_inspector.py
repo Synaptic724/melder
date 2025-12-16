@@ -3,7 +3,7 @@ from inspect import Parameter
 from typing import Any, Dict, Type
 # Melder imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #region ClassInspector
 class ClassInspector:
@@ -13,6 +13,7 @@ class ClassInspector:
     Collects metadata, source information, member details (attributes, methods),
     and protocol implementation checks. (GC info removed).
     """
+    __melder_internal__ = _mrg.sentinel
     utility = InspectorUtility
     def __init__(
             self,

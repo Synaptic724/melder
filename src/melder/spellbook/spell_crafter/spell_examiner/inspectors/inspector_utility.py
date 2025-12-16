@@ -1,8 +1,10 @@
 import inspect
 from typing import Any, Optional
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #region InspectorUtility
 class InspectorUtility:
+    __melder_internal__ = _mrg.sentinel
     @staticmethod
     def safe_repr(obj: Any, max_len: int = 120) -> str:
         """

@@ -7,7 +7,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.interfaces.interfaces import ISpell
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class MeldContext(Cleanable):
     """
@@ -48,7 +48,7 @@ class MeldContext(Cleanable):
     This class does **not** perform any DI or DAG work itself – it is
     purely a container for per-call configuration and wiring.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_root_spell",

@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SystemState(Enum):
     """
@@ -17,5 +17,6 @@ class SystemState(Enum):
     and custom spell access decisions.
 
     """
+    __melder_internal__ = _mrg.sentinel
     automatic = auto()
     dynamic = auto()

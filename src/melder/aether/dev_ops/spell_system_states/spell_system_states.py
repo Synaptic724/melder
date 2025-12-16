@@ -6,7 +6,7 @@ from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSy
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex, ISpellSystemStates
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSystemStates(Cleanable):
     """
@@ -32,7 +32,7 @@ class SpellSystemStates(Cleanable):
         * `consume_dirty_lineages(...)` to get a worklist
         * `compute_impact_closure(...)` to fan out impacted lineages
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_frame",

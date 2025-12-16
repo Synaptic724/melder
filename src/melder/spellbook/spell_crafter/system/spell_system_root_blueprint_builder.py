@@ -18,6 +18,7 @@ from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot impor
 from melder.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellLocalTopology,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSystemRootBlueprintBuilder:
     """
@@ -36,7 +37,7 @@ class SpellSystemRootBlueprintBuilder:
               - param_name and socket_kind on edges are left unset (None).
           Socket metadata and DagIndex are overlaid in later Phase-5 steps.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__: list[str] = []
 
     def build_root_blueprints(

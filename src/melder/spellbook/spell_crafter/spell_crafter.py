@@ -48,7 +48,7 @@ from melder.spellbook.spell_crafter.system.validation.graph_consistency_strategy
 from melder.spellbook.spell_crafter.system.validation.missing_phase4_strategy import MissingPhase4Strategy
 from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import RootViabilityStrategy
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import SocketRefSanityStrategy
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellCrafter(Cleanable):
     """
@@ -85,7 +85,7 @@ class SpellCrafter(Cleanable):
         * :class:`SpellSymbolicGraph.spell_id`
         * :class:`SpellSymbolicDependency.spell_id`
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell",

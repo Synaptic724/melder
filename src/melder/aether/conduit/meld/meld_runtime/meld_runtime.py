@@ -1,9 +1,9 @@
 from __future__ import annotations
 from threading import RLock
 from typing import Any, Optional, Dict
-
-from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 # Melder Imports
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell
 from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
@@ -51,7 +51,7 @@ class MeldRuntime(Cleanable):
     or Existence semantics; those remain in `Meld`. The runtime only
     focuses on "given this spell and this context, build me the object".
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
     ]

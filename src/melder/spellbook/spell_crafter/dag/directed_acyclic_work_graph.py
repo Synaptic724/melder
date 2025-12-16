@@ -5,6 +5,7 @@ from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class DirectedAcyclicWorkGraph(Cleanable):
     """
@@ -28,7 +29,7 @@ class DirectedAcyclicWorkGraph(Cleanable):
 
     It is intentionally not a general-purpose runtime workflow engine.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self) -> None:
         super().__init__()
         self._id: str = IDBuilder.create_id()

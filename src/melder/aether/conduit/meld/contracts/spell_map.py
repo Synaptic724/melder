@@ -1,9 +1,8 @@
 from typing import Any, Optional, Union, Tuple
-
-from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellMap(Cleanable):
     """
@@ -69,7 +68,7 @@ class SpellMap(Cleanable):
               `binding_name`. This is the SpellMap equivalent of type-hint DI by
               Protocol / frame with an explicit binding name.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["spell", "spellframe", "binding_name", "spell_override"]
 
     def __init__(

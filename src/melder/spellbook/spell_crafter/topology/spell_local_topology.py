@@ -4,7 +4,7 @@ from typing import Sequence, Tuple, Dict, List, Optional
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 @dataclass(frozen=True)
 class SpellSocketDescriptor:
@@ -47,6 +47,7 @@ class SpellSocketDescriptor:
             For contract / mutation sockets that are not yet resolved, this
             will typically be an empty tuple.
     """
+    __melder_internal__ = _mrg.sentinel
     spell_id: str
     param_name: str
     position: int
@@ -66,7 +67,7 @@ class SpellLocalTopology(Cleanable):
     during SpellCrafter Phase 3 and handed to :class:`SpellSystemStates`
     for aggregation, change-control, and eventual blueprint building.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",
         "_sockets",

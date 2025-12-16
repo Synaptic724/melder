@@ -22,6 +22,8 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 
 #region Spellbook
 class Spellbook(Cleanable):
@@ -67,6 +69,7 @@ class Spellbook(Cleanable):
         * Configuration is locked automatically upon conjuring.
         * If configuration is already shared via an Aether frame, it will be reused.
     """
+    __melder_internal__ = _mrg.sentinel
     _aether = Aether()
     def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None,
                  logger: Any | None = None):
@@ -383,7 +386,7 @@ class Spellbook(Cleanable):
             return
         aether = Spellbook._aether
         try:
-            if getattr(aether, "_logger", None) is not None and getattr(aether._logger, "_logger", None) is None:
+            if aether._logger is not None and getattr(aether._logger, "_logger", None) is None:
                 aether_logger = cfg.get_logger_for(aether)
                 aether._logger = InitHelpers.resolve_safe_logger(aether_logger)
                 self._logger.debug("Upgraded Aether logger from null to real", "_upgrade_aether_logger_if_possible")

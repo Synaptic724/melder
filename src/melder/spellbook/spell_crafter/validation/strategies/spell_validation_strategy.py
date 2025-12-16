@@ -1,5 +1,5 @@
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellValidationStrategy(Cleanable):
     """
@@ -15,7 +15,7 @@ class SpellValidationStrategy(Cleanable):
     * Prefer appending issues instead of raising; raising is reserved for
       truly unrecoverable situations.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_name",
         "_description",

@@ -7,7 +7,7 @@ from melder.aether.dev_ops.incident_manager.incident_manager import IncidentMana
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class DevOpsManager(Cleanable):
     """
@@ -21,7 +21,7 @@ class DevOpsManager(Cleanable):
     This is the place higher-level tools / AI consult when they want to
     understand or manipulate the health and changes of a frame.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_system_states",

@@ -7,7 +7,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.mutations.research.research import Research
 from melder.utilities.interfaces.interfaces import IAethericFrame
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class MutationResearch(Cleanable):
     """
@@ -16,7 +16,7 @@ class MutationResearch(Cleanable):
     - **Role:** Coordinates and tracks `Research` sessions anchored to specific spell lineages (`SpellIndex`).
     - **Entrypoints:** Provides convenience methods to start new mutation flows for spells or creations.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, aetheric_frame: IAethericFrame) -> None:
         """
         Initializes the MutationResearch manager.

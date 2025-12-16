@@ -8,7 +8,7 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Detail(Cleanable):
     """
@@ -26,7 +26,7 @@ class Detail(Cleanable):
         contract_type (ContractTypes): Whether this entry was initiated
             or received from the owning ward’s perspective.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_lock",
         "_id",

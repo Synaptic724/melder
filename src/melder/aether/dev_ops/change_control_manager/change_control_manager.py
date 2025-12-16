@@ -6,7 +6,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpellIndex, IChangeControlManager  # for identity / lineage
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ChangeControlManager(Cleanable):
     """
@@ -29,7 +29,7 @@ class ChangeControlManager(Cleanable):
         - Inner dict : free-form metadata for that lineage's pending change
                        (e.g. "reason", "ticket_id", "workspace_id", etc.)
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_system_states",

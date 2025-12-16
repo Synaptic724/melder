@@ -6,6 +6,7 @@ from melder.aether.dev_ops.incident_manager.incident import Incident
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class IncidentManager(Cleanable):
     """
@@ -20,7 +21,7 @@ class IncidentManager(Cleanable):
     - Purely descriptive; no policy or workflow enforcement is done here.
     - Optimized for diagnostic and tooling use (AI/operators), not for hot-path traffic.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_incidents_by_id",

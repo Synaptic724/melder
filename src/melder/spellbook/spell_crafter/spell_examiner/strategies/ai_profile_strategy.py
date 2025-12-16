@@ -13,7 +13,7 @@ from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_st
 from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import \
     ResolutionProfileStrategy
 from melder.utilities.interfaces.interfaces import ISpell
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class AIProfileStrategy:
     """
@@ -25,7 +25,7 @@ class AIProfileStrategy:
         * It packages everything into a SpellAIProfile suitable for
           agent-based reasoning, mutation planning, etc.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = ("show_dunders", "max_repr")
 
     def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:

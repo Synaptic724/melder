@@ -21,7 +21,7 @@ from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile
 from melder.spellbook.spell_crafter.spell_examiner.strategies.ai_profile_strategy import (
     AIProfileStrategy,
 )
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellExaminationKind(Enum):
     """
@@ -33,7 +33,7 @@ class SpellExaminationKind(Enum):
     * AI         – Heavy, AI–oriented profile that merges binding + resolution +
                    deep reflection profiles (ClassProfile / MethodProfile).
     """
-
+    __melder_internal__ = _mrg.sentinel
     BINDING = auto()
     RESOLUTION = auto()
     AI = auto()
@@ -49,7 +49,7 @@ class SpellExaminer:
     * ResolutionProfileStrategy     → SpellResolutionProfile
     * AIProfileStrategy             → SpellAIProfile
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = ("show_dunders", "max_repr")
 
     def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:

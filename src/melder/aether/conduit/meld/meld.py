@@ -17,7 +17,7 @@ from melder.utilities.custom_exceptions.hook_execution_error import HookExecutio
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 # Creations types
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
@@ -60,7 +60,7 @@ class Meld(Cleanable):
     7.  **Execute Post-Cast Hooks:** Runs hooks that execute *after* activation.
     8.  **Return Instance:** Returns the final, resolved instance.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(
             self,
             creations: ILesserCreations | ICreations,

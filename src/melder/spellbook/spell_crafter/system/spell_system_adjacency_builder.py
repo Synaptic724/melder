@@ -3,7 +3,7 @@ from typing import Dict, Iterable, Optional, Set
 # Melder imports
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import SpellSystemAdjacencySnapshot
 from melder.utilities.interfaces.interfaces import ISpellSystemStates
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSystemAdjacencyBuilder:
     """
@@ -20,7 +20,7 @@ class SpellSystemAdjacencyBuilder:
     All higher-level semantics (RootResolutionBlueprints, Phase 6
     validation, etc.) sit on top of this structural snapshot.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = []
 
     @staticmethod

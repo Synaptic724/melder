@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellStateChangeReason(Enum):
     """
@@ -9,7 +9,7 @@ class SpellStateChangeReason(Enum):
     surface in logs / TOON snapshots / incidents. Detailed context can live in
     SpellSystemState fields (booleans, counters, etc.).
     """
-
+    __melder_internal__ = _mrg.sentinel
     # Registrations / bindings
     new_lineage = auto()            # first time this lineage was registered
     register_or_rebind = auto()     # new Spell bound to existing lineage

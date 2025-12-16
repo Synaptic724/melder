@@ -1,11 +1,11 @@
 from __future__ import annotations
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import SpellResolutionProfile
 # Melder Imports
+from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import SpellResolutionProfile
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
 from melder.utilities.interfaces.interfaces import ISpell
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ResolutionProfileStrategy:
     """
@@ -15,7 +15,7 @@ class ResolutionProfileStrategy:
     This is where we hook into SpellRequirementsFinder and, later, into
     symbolic graph / frame / validation phases.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = ()
 
     def __init__(self) -> None:

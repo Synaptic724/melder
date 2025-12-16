@@ -7,7 +7,7 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.par
 )
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellParameterRequirement(Cleanable):
     """
@@ -29,7 +29,7 @@ class SpellParameterRequirement(Cleanable):
         * How DI *might* satisfy it (via type-hint, SpellMap, collection).
         * Optionality and element type info for collections.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",

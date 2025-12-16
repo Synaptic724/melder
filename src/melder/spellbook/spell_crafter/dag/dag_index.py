@@ -1,8 +1,7 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Dict, List, Iterable, Callable, Sequence, Tuple, Optional
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
 from melder.utilities.general_base.cleanable import Cleanable
@@ -29,7 +28,7 @@ class SocketRef:
         socket_kind:
             The logical kind of socket – normal DI, SpellContract, MutationContract.
     """
-
+    __melder_internal__ = _mrg.sentinel
     node_id: str
     param_name: str
     param_path: Tuple[str, ...]
@@ -48,7 +47,7 @@ class DagIndex(Cleanable):
     This is the shared substrate for `spell_override` and `mutation_override`
     targeting. It is intentionally dumb: no graph logic, no Melder awareness.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_by_exact_path", "_by_name"]
 
     def __init__(self) -> None:
@@ -127,7 +126,7 @@ class DagTargetingEngine(Cleanable):
     It does *not* know about Melder, SpellCrafter, or contracts – a caller
     provides a `filter_fn` to constrain which sockets are eligible.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_index",]
 
     def __init__(self, index: DagIndex) -> None:
@@ -251,7 +250,7 @@ class DagIndexBuilder:
     Phases 5–7 will extend this to walk the full system blueprint and assign
     deep param paths (``\"orchestrator>order_service>repo\"`` style).
     """
-
+    __melder_internal__ = _mrg.sentinel
     @staticmethod
     def build_shallow(
             owner_spell_id: str,

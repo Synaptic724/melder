@@ -4,6 +4,7 @@ from threading import RLock
 from typing import Any, Dict, MutableMapping, Optional, Sequence
 
 # Melder Imports
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.interfaces.interfaces import ISpell, ICreations
@@ -37,7 +38,7 @@ class MeldEngine(Cleanable):
     If no blueprint is present, it falls back to single-node construction using
     the root spell and per-call overrides.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_context",

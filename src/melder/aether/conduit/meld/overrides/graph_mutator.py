@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 from typing import Any, Dict
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagTargetingEngine, DagIndex
+from melder.spellbook.spell_crafter.dag.dag_index import DagTargetingEngine, DagIndex, SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.dag.socket_ref import SocketRef
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -31,7 +30,7 @@ class GraphMutator(Cleanable):
     - Only mutation sockets are rewired; other sockets remain intact.
     - New targets are added as nodes but must be valid spell ids upstream.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
 
     def __init__(self, blueprint: RootResolutionBlueprint) -> None:

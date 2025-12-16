@@ -4,7 +4,7 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ConduitCluster(Cleanable):
     """
@@ -22,7 +22,7 @@ class ConduitCluster(Cleanable):
         auto_link_dependencies: When True, dependency closure is auto-contracted along
             with each root; when False, only roots are linked (advanced/debug use).
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_lock",
         "_name",
@@ -401,7 +401,7 @@ class ConduitCluster(Cleanable):
         Returns:
             list: Shareable spell objects.
         """
-        book = conduit._spellbook if hasattr(conduit, "_spellbook") else None
+        book = conduit._spellbook
         if book is None or book._spells is None:
             return []
         with book._lock:
@@ -421,7 +421,7 @@ class ConduitCluster(Cleanable):
         Returns:
             Spell | None: The spell if found.
         """
-        book = conduit._spellbook if hasattr(conduit, "_spellbook") else None
+        book = conduit._spellbook
         if book is None or book._spells is None:
             return None
         with book._lock:

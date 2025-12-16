@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class DetailReason(Enum):
     """
@@ -10,7 +10,7 @@ class DetailReason(Enum):
     - manual: ad-hoc/manual addition.
     - other: fallback/unspecified reasons.
     """
-
+    __melder_internal__ = _mrg.sentinel
     root = auto()
     dependency = auto()
     manual = auto()

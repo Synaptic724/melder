@@ -22,6 +22,7 @@ from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #TODO: @GPT5, please inform Mark that he needs to implement Conduits hooks, for pre- during, and post activations so we can add Aspect Oriented Programming here
 
@@ -34,7 +35,7 @@ class Conduit(Cleanable):
     and manage the lifecycle of services registered inside itself.
     """
     _aether = Aether()
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, spellbook: ISpellbook, configuration: IConfiguration, conduit_state: ConduitState,
                  aetheric_frame: str, policy: Policies, automatic: bool = True, name: Optional[str] = None, logger: Any | None = None):
         """
@@ -1135,7 +1136,7 @@ class Conduit(Cleanable):
                 result = None
                 for spell_index, spell in owner._spellbook._spells.items():
                     # SpellIndex is responsible for telling us whether it owns this version
-                    if spell_index.has_version and spell_index.has_version(spell_id):
+                    if spell_index.has_version(spell_id):
                         result = spell
                         break
 

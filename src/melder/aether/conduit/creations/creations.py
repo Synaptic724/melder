@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Any
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.aether.conduit.creations.creation import Creation
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #TODO: Create a creations object to encapsulate the objects under my control.
 
@@ -20,7 +20,7 @@ class Creations(Cleanable):
       * Storage and lifecycle management of created objects.
       * Controlled resource disposal via `ICleanable` or configured cleanup methods.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, disposal_enabled: bool, disposal_method_names: List[str], conduit: IConduit):
         """
         Initialize a new Creations manager.

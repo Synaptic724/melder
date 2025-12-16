@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from enum import IntEnum
 from typing import Any, Dict, List
 
@@ -12,6 +12,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 
 class _Specificity(IntEnum):
+    __melder_internal__ = _mrg.sentinel
     PATH = 3
     UNIQUE = 2
     BROADCAST = 1
@@ -27,7 +28,7 @@ class SpellOverrider(Cleanable):
       * UNIQUE:     ``*param``  (exactly one match required)
       * BROADCAST:  ``**param`` (one or more matches required)
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
 
     def __init__(self, blueprint: RootResolutionBlueprint) -> None:

@@ -1,12 +1,12 @@
 from typing import Any, Dict, List, Optional
-
+# Melder Imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import MethodProfile
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ClassProfile(Cleanable):
     """Structured, IDE-friendly representation of ClassInspector output."""
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "name",
         "qualname",

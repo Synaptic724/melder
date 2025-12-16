@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Dict, Iterable, Optional, Set
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SpellSystemAdjacencySnapshot(Cleanable):
@@ -24,7 +24,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
       built once from SpellSystemStates and then treated as immutable
       structural metadata.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_dependencies",
         "_reverse_dependencies",

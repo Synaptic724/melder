@@ -6,7 +6,7 @@ from melder.spellbook.mutations.research.spell.node.spell_mutation_node import S
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ResearchSpell(Cleanable):
     """
@@ -19,7 +19,7 @@ class ResearchSpell(Cleanable):
 
     NOTE: This line is scoped within a single Research session.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, spell_id: str, *, name: Optional[str] = None) -> None:
         """
         Initializes a ResearchSpell line.

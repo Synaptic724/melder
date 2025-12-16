@@ -11,6 +11,7 @@ from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, ICha
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame import AethericFrame
 from melder.utilities.helpers.init_helpers import InitHelpers
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Aether(Cleanable):
     """
@@ -25,6 +26,7 @@ class Aether(Cleanable):
     parts of the melder system to interact with the global state in a
     thread-safe manner.
     """
+    __melder_internal__ = _mrg.sentinel
     _instance = None
     _lock = RLock()
     _initialized = False

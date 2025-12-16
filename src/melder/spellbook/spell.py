@@ -1,9 +1,8 @@
 from __future__ import annotations
-
 from typing import Optional, List, Any, Callable
 import ulid
 from threading import RLock
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionProfile,
@@ -116,7 +115,7 @@ class Spell(Cleanable):
         - Dependency graphs, resolution frames, and resolution profiles are produced
           by the Resolution / Meld layer; `Spell` itself does not execute resolution.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(
             self,
             spell: Any,

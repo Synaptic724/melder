@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Policies(Enum):
     """
@@ -11,6 +11,7 @@ class Policies(Enum):
     - inbound_only: accept inbound links/borrows but do not initiate outbound links.
     - outbound_only: initiate outbound links but reject inbound link requests.
     """
+    __melder_internal__ = _mrg.sentinel
     default = auto()
     whitelist_all = auto()
     block_all = auto()

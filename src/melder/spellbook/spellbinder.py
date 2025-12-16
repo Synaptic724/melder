@@ -1,12 +1,11 @@
 from __future__ import annotations
-
 from typing import Any, Optional, Callable
 # Melder Imports
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.interfaces import ISpellbook
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellBinder(Cleanable):
     """
@@ -39,7 +38,7 @@ class SpellBinder(Cleanable):
     Calling `finalize()` automatically clears the internal state, making the
     binder ready for the next `bind(...)` call.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_weak_spellbook",
         "_default_existence",

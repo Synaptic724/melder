@@ -1,9 +1,9 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Tuple
-
+# Melder Imports
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class TargetSpecKind(Enum):
     """
@@ -15,7 +15,7 @@ class TargetSpecKind(Enum):
     * UNIQUE    -> unique-by-name wildcard: ``"*repo"``.
     * BROADCAST -> broadcast-by-name wildcard: ``"**logger"``.
     """
-
+    __melder_internal__ = _mrg.sentinel
     PATH = auto()
     UNIQUE = auto()
     BROADCAST = auto()
@@ -40,7 +40,7 @@ class TargetSpec:
             The parameter name used for UNIQUE / BROADCAST specs (e.g. ``"logger"``).
             ``None`` for PATH specs.
     """
-
+    __melder_internal__ = _mrg.sentinel
     kind: TargetSpecKind
     path: Tuple[str, ...] | None = None
     param_name: str | None = None

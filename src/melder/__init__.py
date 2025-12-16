@@ -12,6 +12,9 @@ from src.melder.__version__ import __version__ as base_version
 from src.melder.__author__ import CREATOR as __author__
 from src.melder.__license__ import __license__
 from src.melder.__description__ import __description__
+from melder.__melder_registration_guard__ import MelderRegistrationGuard
+# Eagerly instantiate the registration guard at package import time (internal use).
+__melder_registration_guard__ = MelderRegistrationGuard()
 
 DEBUG_MODE = True
 
@@ -31,7 +34,7 @@ __all__ = [
     "__version__",
     "__author__",
     "__license__",
-    "__description__"
+    "__description__",
 ]
 
 def _detect_nogil_mode() -> None:

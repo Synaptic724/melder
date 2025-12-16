@@ -1,9 +1,10 @@
 from enum import Enum, auto
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 class SpellType(Enum):
     """
     Enum for different types of spells.
     """
+    __melder_internal__ = _mrg.sentinel
     #Classes
     SPELL = auto()
     SPELL_WITH_SPELLFRAME = auto()

@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SpellState(Enum):
@@ -8,7 +9,7 @@ class SpellState(Enum):
     These are orthogonal markers explaining **why** a lineage is in a
     particular validity state, and what kind of follow-up work is needed.
     """
-
+    __melder_internal__ = _mrg.sentinel
     # Topology / graph-level
     new_lineage = auto()             # first time we see this lineage
     structure_changed = auto()       # profile / wiring changed

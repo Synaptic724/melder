@@ -3,6 +3,7 @@ import ulid
 from typing import Any
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Creation(Cleanable):
     """
@@ -13,7 +14,7 @@ class Creation(Cleanable):
     - Encapsulate the underlying Python object.
     - Allow Creations/LesserCreations to manage disposal.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_id",
         "_value",

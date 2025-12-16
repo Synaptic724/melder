@@ -1,9 +1,8 @@
 from typing import Any, Optional, Union, Tuple
-
-from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellContract(Cleanable):
     """
@@ -76,7 +75,7 @@ class SpellContract(Cleanable):
     ✅ Use SpellMap for normal, in-Conduit DI.
     ─────────────────────────────────────────────
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["spell", "spellframe", "binding_name", "spell_override"]
 
     def __init__(

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from enum import Enum, auto
 from typing import Any, Dict, Optional
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 
 
 class SystemDiagnosticSeverity(Enum):
     """Severity bucket for system-level validation diagnostics."""
-
+    __melder_internal__ = _mrg.sentinel
     ERROR = auto()
     WARNING = auto()
 
@@ -20,7 +20,7 @@ class SystemDiagnostic(Cleanable):
     Uses the Cleanable pattern so cached diagnostics can be deterministically
     torn down when no longer needed.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_code",
         "_message",

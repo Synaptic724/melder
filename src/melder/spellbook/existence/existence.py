@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Existence(Enum):
     """
@@ -9,7 +9,7 @@ class Existence(Enum):
     range from per-frame uniqueness to fully dynamic instancing, allowing for precise memory and
     control flow behavior across Aetheric Frames and conduit networks.
     """
-
+    __melder_internal__ = _mrg.sentinel
     unique = auto()
     """
     One instance per **Aetheric Frame**.

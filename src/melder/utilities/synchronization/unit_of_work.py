@@ -5,6 +5,7 @@ from typing import Any, Optional, Dict, Callable, Tuple
 from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class UnitOfWork(Cleanable, Future):
@@ -52,7 +53,7 @@ class UnitOfWork(Cleanable, Future):
         - Subsequent guarded operations will fail via :meth:`check_cleaned` or by
           detecting that the lock is None.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_func",
         "_args",

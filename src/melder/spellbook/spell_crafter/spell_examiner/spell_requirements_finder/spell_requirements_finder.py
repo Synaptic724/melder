@@ -20,7 +20,7 @@ from melder.aether.conduit.meld.contracts.mutation_contract import MutationContr
 from melder.utilities.interfaces.interfaces import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellRequirementsFinder(Cleanable):
     """
@@ -58,7 +58,7 @@ class SpellRequirementsFinder(Cleanable):
     canonical identity for all Phase 1+ artifacts (requirements, symbolic graphs,
     DAG nodes, etc.).
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spell",
         "_requirements",

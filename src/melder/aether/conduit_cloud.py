@@ -4,7 +4,7 @@ import ulid
 # Melder imports
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ConduitCloud(Cleanable):
@@ -23,6 +23,7 @@ class ConduitCloud(Cleanable):
         _name (str): The name of the frame this cloud belongs to.
         _registry (Dict): A map of `conduit_name` to `IConduit` instance.
     """
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, name: str):
         """
         Initializes the ConduitCloud.

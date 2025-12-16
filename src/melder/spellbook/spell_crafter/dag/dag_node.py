@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Set
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class DagNode(Cleanable):
     """
@@ -25,7 +25,7 @@ class DagNode(Cleanable):
         - Dependencies model "must be created before me".
         - The DAG object is responsible for computing a topological order.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, key: str, payload: Any | None = None) -> None:
         """
         Initializes a new DagNode.

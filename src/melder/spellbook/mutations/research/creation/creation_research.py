@@ -6,6 +6,7 @@ from melder.spellbook.mutations.research.creation.node.creation_mutation_node im
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ResearchCreation(Cleanable):
     """
@@ -18,7 +19,7 @@ class ResearchCreation(Cleanable):
 
     NOTE: This line is scoped under a Research session, tied to the lineage of a specific SpellIndex.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, creation_id: str, *, name: Optional[str] = None) -> None:
         """
         Initializes a ResearchCreation line.

@@ -5,7 +5,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSystemState(Cleanable):
     """
@@ -39,7 +39,7 @@ class SpellSystemState(Cleanable):
     - `last_validated_at`:
         Optional timestamp (float seconds) of last *successful* structural validation.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_index_id",

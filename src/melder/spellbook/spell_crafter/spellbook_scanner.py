@@ -4,7 +4,7 @@ from typing import Any, Dict, Iterator, Optional, Tuple
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpellbook, ISpellIndex, ISpell
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellbookScanner(Cleanable):
     """
@@ -22,7 +22,7 @@ class SpellbookScanner(Cleanable):
     This is intentionally not exposed to users – it is an internal utility for
     the resolution / meld pipeline.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spellbook",
         "_lock",

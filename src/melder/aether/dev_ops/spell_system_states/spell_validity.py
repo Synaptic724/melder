@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellValidity(Enum):
     """
@@ -26,6 +26,7 @@ class SpellValidity(Enum):
         Explicitly turned off by policy. Hard "do not resolve" regardless of
         other flags.
     """
+    __melder_internal__ = _mrg.sentinel
     unknown = auto()
     valid = auto()
     gated = auto()

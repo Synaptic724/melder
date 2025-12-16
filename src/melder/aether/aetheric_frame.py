@@ -12,7 +12,7 @@ from melder.spellbook.mutations.mutation_research import MutationResearch
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.conduit.conduit_cluster import ConduitCluster
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class AethericFrame(Cleanable):
     """
@@ -30,7 +30,7 @@ class AethericFrame(Cleanable):
 
     This object is thread-safe.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, name: str) -> None:
         """
         Initialize a new AethericFrame.

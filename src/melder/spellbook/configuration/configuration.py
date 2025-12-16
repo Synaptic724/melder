@@ -9,7 +9,7 @@ from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import IConfiguration
 from melder.utilities.helpers.package import Pack
 from melder.utilities.logger.std_logger_factory import StdLoggerFactory
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Configuration(Cleanable):
     """
@@ -23,6 +23,7 @@ class Configuration(Cleanable):
     This object should only be configured once and then frozen to prevent any further changes,
     enforcing idempotent laws across the system. Thread-safe operations are ensured with RLock.
     """
+    __melder_internal__ = _mrg.sentinel
     _ALLOWED_HOOKS = (
         # Meld pipeline hooks
         "on_meld_pre_resolve",

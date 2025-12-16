@@ -3,7 +3,7 @@ import threading
 from typing import List, Optional
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSymbolicGraph(Cleanable):
     """
@@ -36,7 +36,7 @@ class SpellSymbolicGraph(Cleanable):
 
     Those concerns belong to Phase 3 (local frame / DAG) and Phase 4 (validation).
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",

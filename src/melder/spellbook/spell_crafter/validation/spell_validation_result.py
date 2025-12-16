@@ -1,7 +1,7 @@
 from typing import Optional, List
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellValidationResult(Cleanable):
     """
@@ -16,7 +16,7 @@ class SpellValidationResult(Cleanable):
     issues:
         All issues (errors + warnings) discovered by the validation strategies.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell_id",
         "spell_name",

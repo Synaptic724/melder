@@ -7,6 +7,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IConduitWard, IConduit, IContract
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Contract(Cleanable):
     """
@@ -21,6 +22,7 @@ class Contract(Cleanable):
         _details_a / _details_b: Per-ward maps of spell_id -> Detail.
         _id: Unique identifier for this contract instance.
     """
+    __melder_internal__ = _mrg.sentinel
 
     def __init__(self, ward_a: IConduitWard, ward_b: IConduitWard):
         """

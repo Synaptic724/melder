@@ -1,7 +1,7 @@
 from typing import Optional, List
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellValidationContext(Cleanable):
     """
@@ -29,7 +29,7 @@ class SpellValidationContext(Cleanable):
     issues:
         Shared, mutable list that all strategies append issues into.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell",
         "spellbook",

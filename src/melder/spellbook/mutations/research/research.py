@@ -7,7 +7,7 @@ from melder.spellbook.mutations.research.spell.spell_research import ResearchSpe
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.spellbook.bind.spell_index import SpellIndex
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Research(Cleanable):
     """
@@ -17,7 +17,7 @@ class Research(Cleanable):
     - **Root Version:** `_root_version` captures the concrete version (SHA256) when this session started.
     - **Contents:** Owns multiple spell research lines (`ResearchSpell`) and creation research lines (`ResearchCreation`) associated with that lineage.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(
             self,
             target_index: SpellIndex,

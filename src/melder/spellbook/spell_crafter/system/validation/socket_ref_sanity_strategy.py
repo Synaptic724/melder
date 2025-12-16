@@ -1,7 +1,6 @@
 from __future__ import annotations
-
 from typing import Dict, List, Set, Optional
-
+# Melder imports
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -25,7 +24,6 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
       * Every socket_ref is reachable via dag_index by path and by name.
       * Every dag_index entry corresponds to a socket_ref present on the blueprint.
     """
-
     def run(
             self,
             *,

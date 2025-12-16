@@ -9,6 +9,7 @@ from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.spell import Spell
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import SpellExaminer
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
@@ -34,6 +35,7 @@ class Bind(Cleanable):
     4.  **Registration:** Creating the final `Spell` object, which encapsulates the component
         and its metadata for resolution and dependency injection.
     """
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, spellbook: ISpellbook):
         super().__init__()
         self._spellbook: ISpellbook = spellbook
@@ -162,6 +164,9 @@ class Bind(Cleanable):
                   without name, etc.).
         """
         with self._lock:
+            # 0. Block registration of Melder internal objects/classes.
+            _mrg.assert_allowed(spell, context="bind")
+
             # ------------------------------------------------------------------
             # 1. Reject Protocols as concrete spells
             # ------------------------------------------------------------------

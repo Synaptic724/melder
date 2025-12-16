@@ -1,13 +1,13 @@
 from __future__ import annotations
 from typing import Any, Optional
-
+# Melder Imports
 from melder.spellbook.spell import Spell
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import ClassProfile
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import MethodProfile
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import SpellBindingProfile
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import SpellResolutionProfile
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellAIProfile(Cleanable):
     """
@@ -22,7 +22,7 @@ class SpellAIProfile(Cleanable):
 
     It is a live object graph, not a serialization.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell",
         "binding_profile",

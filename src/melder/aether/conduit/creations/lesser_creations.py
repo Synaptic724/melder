@@ -5,6 +5,7 @@ from typing import List, Optional, Dict
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IConduit
 from melder.aether.conduit.creations.creation import Creation
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class LesserCreations(Cleanable):
     """
@@ -18,7 +19,7 @@ class LesserCreations(Cleanable):
       * Storage and disposal of local-scope objects.
       * Providing a snapshot of local objects for transfer during an upgrade.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, disposal_enabled: bool, disposal_method_names: List[str], conduit: IConduit, parent_creations=None):
         """
         Initialize a new LesserCreations manager.

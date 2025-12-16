@@ -2,7 +2,7 @@ import threading
 import ulid
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellIndex(Cleanable):
     """
@@ -17,7 +17,7 @@ class SpellIndex(Cleanable):
     - The version pointer can be safely updated (mutated) in a thread-safe
       manner without breaking its location in a dictionary.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_id",          # The immutable ULID. Used for hashing and equality.
         "_current_id",  # The mutable pointer to the active version (e.g., a SHA256).

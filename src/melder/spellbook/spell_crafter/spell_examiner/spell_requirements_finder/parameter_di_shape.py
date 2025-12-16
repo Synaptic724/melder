@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ParameterDIShape(Enum):
     """
@@ -43,7 +43,7 @@ class ParameterDIShape(Enum):
         the parameter expects a mutation lineage matching the contract.
 
     """
-
+    __melder_internal__ = _mrg.sentinel
     IGNORE = auto()
     PLAIN = auto()
     SINGLE_BY_ANNOTATION = auto()

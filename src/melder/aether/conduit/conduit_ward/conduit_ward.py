@@ -12,7 +12,7 @@ from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpel
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
 # TODO: If a specific policy is set such as blacklist or whitelist, ensure that the spellbook the entire spellbook is managed properly.
@@ -66,6 +66,7 @@ class ConduitWard(Cleanable):
       `_sever_link_contract`) so contract teardown stays consistent with spell maps.
     - Aether/frames are not touched directly; ward concerns are strictly conduit-scope.
     """
+    __melder_internal__ = _mrg.sentinel
     def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies):
         super().__init__()
         self._lock: threading.RLock  = threading.RLock()

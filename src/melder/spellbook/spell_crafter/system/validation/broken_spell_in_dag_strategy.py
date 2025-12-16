@@ -15,12 +15,10 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
 )
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-
 class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
     """
     Flags any root blueprint that contains a spell broken at Phase 4.
     """
-
     __slots__ = []
 
     def run(

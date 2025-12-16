@@ -1,7 +1,6 @@
 from __future__ import annotations
-
 from typing import Dict, List, Optional, Set
-
+# Melder imports
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -15,12 +14,10 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
 )
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-
 class CycleDetectionStrategy(SpellSystemValidationStrategy):
     """
     Detect cycles in the system dependency graph using SpellSystemIndex edges.
     """
-
     __slots__ = []
 
     def run(
