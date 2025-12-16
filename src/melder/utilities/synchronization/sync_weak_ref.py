@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import ulid
 
 # Command Ops imports
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.general_base.isync import ISync
 
@@ -81,6 +82,7 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
                 "_phantom_fired",
             ]
     )
+    __melder_internal__ = _mrg.sentinel
 
     # ------------------------------------------------------------------
     # Construction

@@ -3,6 +3,7 @@ import threading
 from typing import Dict, Iterable, Optional
 
 # Melder Imports
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -35,7 +36,7 @@ class StdLoggerFactory(Cleanable):
       factory drives changes through `SafeLogger.set_level(...)` / `.set_level_by_name(...)` so internal
       thresholds stay consistent.
     """
-
+    __melder_internal__ = _mrg.sentinel
     __slots__ = (
         *Cleanable.__slots__,
         "_lock",

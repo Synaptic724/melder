@@ -1,6 +1,7 @@
 import threading
 from typing import Iterable, Optional, Sequence, Any
 # Melder Imports
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 
 class SafeGuard(Cleanable):
@@ -13,6 +14,7 @@ class SafeGuard(Cleanable):
       If any acquire fails, releases everything already acquired and raises TimeoutError.
     - Re-entrant friendly (RLock is naturally fine).
     """
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_locks", "_acquired", "_timeout", "_one_time_use", "_cleanup_lock"]
 
     def __init__(self, *locks: Any, timeout: Optional[float] = None, one_time_use: bool = True):
