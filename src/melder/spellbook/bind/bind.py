@@ -166,6 +166,12 @@ class Bind(Cleanable):
         with self._lock:
             # 0. Block registration of Melder internal objects/classes.
             _mrg.assert_allowed(spell, context="bind")
+            # 0.1 Reject modules outright.
+            if inspect.ismodule(spell):
+                mod_name = getattr(spell, "__name__", repr(spell))
+                raise TypeError(
+                    f"Cannot bind module '{mod_name}'. Provide a class/function/object instead."
+                )
 
             # ------------------------------------------------------------------
             # 1. Reject Protocols as concrete spells

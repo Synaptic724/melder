@@ -68,11 +68,18 @@ This is not optional. For **all public classes and public methods**, write docst
 * Avoid touching large numbers of files in one change unless explicitly requested.
 * When a large change is required, group it by a clear boundary (module/dir) and apply a consistent rule.
 
-### 6) No Module-Level Functions or Globals
+### 6) Module Scope: Constants + Pure Helpers Only
 
-* Avoid module-level functions and module-level state.
-* Prefer instance-bound methods, classes, and locally-scoped helpers.
-* If an existing module already uses module-level helpers and you must add one, **ask first**.
+* Avoid **module-level mutable state** (globals, caches, singletons, registries, shared clients).
+* Prefer **instance-bound** methods/classes for anything with **ownership/lifecycle** (deps, logging, concurrency, cleanup, configuration).
+* **Allowed at module scope**:
+
+  * constants / sentinels
+  * small immutable lookup tables
+  * **pure functions** (no side effects, no hidden state, deterministic)
+* If a helper is **not obviously pure/stateless** or would introduce **shared state**, **ask first**.
+* If an existing module already uses module-level helpers, you may follow the pattern, but **do not add new module globals** without asking.
+
 
 ### 7) No `print()` — Use the Library’s Logging Pattern
 
