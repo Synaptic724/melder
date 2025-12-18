@@ -37,6 +37,12 @@ class SpellBinder(Cleanable):
     A single `SpellBinder` instance can be reused for multiple registrations.
     Calling `finalize()` automatically clears the internal state, making the
     binder ready for the next `bind(...)` call.
+
+    Guardrails:
+    - Only one registration can be active at a time; every `bind(...)` call resets any in-flight state.
+    - All fluent methods guard with `_still_alive` and raise `RuntimeError` if the binder has been cleaned or its Spellbook weakref is dead.
+    - This helper is not thread-safe; use one binder per thread or serialize access.
+    - `cleanup()` is idempotent but permanently invalidates the binder for further use.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = (
@@ -64,13 +70,17 @@ class SpellBinder(Cleanable):
         Args:
             spellbook (ISpellbook):
                 The target Spellbook. The binder holds a weak reference to this
-                book to prevent reference cycles.
+                book to prevent reference cycles. If the Spellbook is collected or
+                cleaned, future binder calls will raise via `_still_alive()`.
             default_existence (Existence):
                 The default lifecycle scope to use if one is not explicitly
                 set during a chain. Defaults to `Existence.unique`.
             default_permissions (str):
                 The default permission level ("create", "read", "block") to use
                 if not explicitly set. Defaults to "create".
+
+        Raises:
+            ValueError: If `spellbook` is None.
         """
         # 1. Initialize Base (Sets self._cleaned = False)
         Cleanable.__init__(self)
@@ -98,7 +108,8 @@ class SpellBinder(Cleanable):
         Deterministically cleans up the SpellBinder.
 
         Releases the weak reference to the Spellbook and clears all internal
-        state. After cleanup, this instance cannot be used.
+        state. After cleanup, this instance cannot be used; subsequent API calls
+        will fail via `_still_alive()`. The method is idempotent.
         """
         if self._cleaned:
             return
@@ -125,6 +136,9 @@ class SpellBinder(Cleanable):
         """
         Internal guard ensuring the binder and its target Spellbook are valid.
 
+        Every public-facing fluent method calls this before mutating state so
+        that stale weak references or post-cleanup usage is detected early.
+
         Raises:
             RuntimeError: If the binder is cleaned or the Spellbook is dead.
         """
@@ -147,7 +161,10 @@ class SpellBinder(Cleanable):
         Resets the in-flight registration state to defaults.
 
         This is called automatically after `finalize()` to prepare the binder
-        for the next `bind(...)` call.
+        for the next `bind(...)` call, and at the start of `bind(...)` to drop
+        any unfinished configuration. It restores existence/permissions to the
+        defaults provided at construction, clears hook kwargs, and enforces
+        liveness via `_still_alive()`.
         """
         self._still_alive()
         self._spell = None
@@ -160,6 +177,9 @@ class SpellBinder(Cleanable):
     def _require_spell_selected(self) -> None:
         """
         Validates that a spell target has been selected.
+
+        This is invoked by `finalize()` to ensure a prior `bind(...)` call
+        successfully set `_spell`.
 
         Raises:
             RuntimeError: If `finalize()` is called before `bind(...)`.
@@ -180,6 +200,9 @@ class SpellBinder(Cleanable):
 
         Returns:
             list: The mutable list of hooks for that key.
+
+        Raises:
+            TypeError: If an unexpected non-list value is already stored under the key.
         """
         self._still_alive()
         existing = self._kwargs.get(key)
@@ -215,6 +238,12 @@ class SpellBinder(Cleanable):
         `spell`. You can supply arguments immediately or use fluent methods
         (e.g., `.as_unique()`) to configure the registration subsequently.
 
+        Calling `bind(...)` always discards any un-finalized state from a prior
+        chain and reinitializes existence/permissions to the defaults captured
+        at construction. Additional `kwargs` are merged into the binder's
+        passthrough payload (later sent to `Spellbook.bind`); later calls
+        overwrite earlier keys.
+
         Args:
             spell (Any):
                 The class, function, or object to register.
@@ -231,6 +260,9 @@ class SpellBinder(Cleanable):
 
         Returns:
             SpellBinder: Self, to enable fluent chaining.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is no longer alive.
         """
         self._still_alive()
 
@@ -263,6 +295,9 @@ class SpellBinder(Cleanable):
 
         Use this if you need a specific existence mode not covered by the
         convenience methods below (e.g., a custom extension).
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._existence = existence
@@ -280,6 +315,9 @@ class SpellBinder(Cleanable):
         - Global configuration managers.
         - Heavy, thread-safe resources (e.g., Database Connection Pools).
         - Centralized logging or telemetry services.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._existence = Existence.unique
@@ -297,6 +335,9 @@ class SpellBinder(Cleanable):
         - Lightweight, stateless objects.
         - Request-specific data holders.
         - Objects that are cheap to create and should not be shared.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._existence = Existence.many
@@ -314,6 +355,9 @@ class SpellBinder(Cleanable):
         - Conduit-local caches.
         - Services that maintain state specific to a specific module or plugin.
         - Is isolating "sub-applications" from one another.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._existence = Existence.unique_per_conduit
@@ -330,6 +374,9 @@ class SpellBinder(Cleanable):
         **Use Case:**
         - Sharing resources across a specific subsystem (e.g., "AuthCluster").
         - Grouping related services that need shared state but shouldn't leak globally.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._existence = Existence.unique_per_conduit_cluster
@@ -346,6 +393,9 @@ class SpellBinder(Cleanable):
         **Use Case:**
         - Context propagation in a specific execution tree.
         - Sharing configuration overrides down a specific branch of the graph.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._existence = Existence.unique_per_conduit_lineage
@@ -363,6 +413,9 @@ class SpellBinder(Cleanable):
         - Per-request handling (e.g., HTTP Request context).
         - Batch processing jobs where state must be cleared between batches.
         - "Unit of Work" patterns where objects must live for a transaction duration.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._existence = Existence.unique_per_spell_space
@@ -379,6 +432,9 @@ class SpellBinder(Cleanable):
         **"create" (Default):** Other conduits can see and instantiate this spell.
         **"read":** Other conduits can use an existing instance but cannot create new ones.
         **"block":** Only the owning conduit can use this spell (private).
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._permissions = permissions
@@ -393,6 +449,9 @@ class SpellBinder(Cleanable):
 
         Args:
             spellframe (Any): The Protocol, Abstract Base Class, or String key.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._spellframe = spellframe
@@ -404,6 +463,9 @@ class SpellBinder(Cleanable):
 
         Useful when you have multiple implementations of the same Interface
         (e.g., "primary_db", "replica_db") and need to disambiguate them.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         self._binding_name = binding_name
@@ -415,6 +477,11 @@ class SpellBinder(Cleanable):
 
         This acts as a catch-all for advanced or future parameters that might
         not have dedicated fluent methods yet.
+
+        Later calls override existing keys in the passthrough payload.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         if kwargs:
@@ -431,6 +498,12 @@ class SpellBinder(Cleanable):
 
         Executed *before* the object is instantiated.
         Useful for validation, logging, or setting up thread-local context.
+
+        Hooks are appended in call order; callability is validated later by
+        `Spellbook.bind(...)` when the registration is finalized.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         hooks = self._ensure_hook_list("pre_hooks")
@@ -438,7 +511,15 @@ class SpellBinder(Cleanable):
         return self
 
     def with_pre_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
-        """Adds multiple Pre-Cast Hooks at once."""
+        """
+        Adds multiple Pre-Cast Hooks at once, preserving the provided order.
+
+        An empty invocation is a no-op. Hook callability is validated later by
+        `Spellbook.bind(...)`.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+        """
         self._still_alive()
         if not hooks:
             return self
@@ -453,6 +534,12 @@ class SpellBinder(Cleanable):
         Executed *during* instantiation (or immediately after).
         Useful for setter injection, initialization logic, or wiring up event listeners.
         Receives the instance as an argument.
+
+        Hooks are appended in call order; callability is validated later by
+        `Spellbook.bind(...)`.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         hooks = self._ensure_hook_list("activation_hooks")
@@ -460,7 +547,15 @@ class SpellBinder(Cleanable):
         return self
 
     def with_activation_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
-        """Adds multiple Activation Hooks at once."""
+        """
+        Adds multiple Activation Hooks at once, preserving the provided order.
+
+        An empty invocation is a no-op. Hook callability is validated later by
+        `Spellbook.bind(...)`.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+        """
         self._still_alive()
         if not hooks:
             return self
@@ -474,6 +569,12 @@ class SpellBinder(Cleanable):
 
         Executed *after* the object is fully ready and returned to the system.
         Useful for final validation or registration with external systems.
+
+        Hooks are appended in call order; callability is validated later by
+        `Spellbook.bind(...)`.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
         self._still_alive()
         hooks = self._ensure_hook_list("post_hooks")
@@ -481,7 +582,15 @@ class SpellBinder(Cleanable):
         return self
 
     def with_post_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
-        """Adds multiple Post-Cast Hooks at once."""
+        """
+        Adds multiple Post-Cast Hooks at once, preserving the provided order.
+
+        An empty invocation is a no-op. Hook callability is validated later by
+        `Spellbook.bind(...)`.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+        """
         self._still_alive()
         if not hooks:
             return self
@@ -504,12 +613,15 @@ class SpellBinder(Cleanable):
         1. Validates that a spell was actually selected via `.bind()`.
         2. Performs the binding in the Spellbook.
         3. **Resets** the binder's state, allowing it to be reused for the next spell.
+        4. Propagates any hook lists/kwargs collected during chaining directly to `Spellbook.bind(...)`.
 
         Returns:
             str: The unique SHA256 `spell_id` of the registered spell.
 
         Raises:
             RuntimeError: If called without first calling `.bind()`.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            Exception: Any error raised by `Spellbook.bind(...)` (e.g., duplicate spell ID, invalid hooks).
         """
         self._require_spell_selected()
 

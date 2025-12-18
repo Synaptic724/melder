@@ -157,7 +157,6 @@ For repo-wide mechanical edits (e.g., “add this import everywhere”, “add a
 ### 14) Banned / Disallowed Patterns
 
 * **Never use `type: ignore`.**
-* **Never import `RLock` directly.**
 
 ---
 
@@ -197,6 +196,65 @@ Ask for explicit confirmation if any of these are true:
 * You want to change public API shape or semantics.
 * You want to introduce new dependencies or tooling.
 * You want to change formatting across files.
+
+---
+
+## Testing Discipline (Pytest, Unit-First, Integration-Second)
+
+Quality is enforced through tests. **All changes must be accompanied by tests** unless explicitly exempted.
+
+### 1) Preferred Framework: `pytest`
+
+* Use `pytest` as the default test runner.
+* Use fixtures for setup/teardown and dependency injection.
+* Keep tests deterministic: no reliance on wall-clock time, network, or external services unless explicitly marked and scoped as integration tests.
+
+### 2) Unit Tests First (Mock + Isolated)
+
+The default approach is **mocked / isolated unit tests**:
+
+* **Mock external boundaries** (I/O, filesystem, network, subprocesses, clocks, OS calls, databases, thread scheduling, random sources).
+* Validate **contracts** (inputs/outputs/raises), **invariants**, and **side effects** (including cleanup ordering) at the smallest reasonable unit.
+* Prefer **contract-level assertions** over implementation-detail assertions.
+* Avoid flakiness: tests must run reliably on repeated runs.
+
+### 3) Integration Tests Second (Only When Needed)
+
+Integration tests are required when behavior cannot be proven safely via mocks/unit tests.
+
+Use integration tests when at least one is true:
+
+* The correctness depends on real interactions across multiple components (e.g., concurrency scheduling, orchestration behavior, serializer/codec correctness across layers).
+* Mocking would require re-implementing the system under test or would make the test meaningless.
+* The integration is the contract (e.g., plugin wiring, adapter boundaries, real concurrency primitives).
+
+Rules for integration tests:
+
+* Keep them **scoped**: integrate only the minimal set of real components needed.
+* Make them **explicit**: use clear naming and markers (e.g., `@pytest.mark.integration`) if the repo uses them.
+* Ensure they remain **repeatable** and not environment-dependent unless explicitly documented.
+
+### 4) Coverage Target: 95%+ (Non-Negotiable)
+
+* Target **≥ 95% line coverage** across the library.
+* Coverage must not be “gamed” (no meaningless tests whose only purpose is to execute lines).
+* Focus coverage on:
+
+  * public API contracts
+  * critical branching logic
+  * error paths
+  * lifecycle/cleanup behavior
+  * concurrency-sensitive behavior (as testable)
+
+If a component cannot reasonably hit the coverage target (rare), document the reason and the mitigation (e.g., integration coverage, property tests, or explicit exclusion with rationale) **and ask before applying exclusions**.
+
+### 5) Truthful Validation Reporting
+
+When reporting validation status:
+
+* Only claim unit/integration/coverage runs if you actually ran them.
+* If not run, say **“Not run.”**
+* If recommending commands, be specific and repo-consistent (e.g., `pytest`, `pytest -q`, `pytest -m integration`, `pytest --cov`, etc.), but do not invent a workflow that contradicts repository docs.
 
 ---
 

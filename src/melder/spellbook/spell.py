@@ -134,6 +134,31 @@ class Spell(Cleanable):
             *args: Any,
             **kwargs: Any,
     ):
+        """
+        Internal constructor for a bound Spell record.
+
+        Args:
+            spell (Any): The underlying callable/class/instance being registered.
+            spell_index (SpellIndex): Lineage/version tracker for this spell.
+            spellframe (Optional[Any]): Logical frame/contract used to scope the spell.
+            binding_name (Optional[str]): Optional binding key used to disambiguate spells under the same frame.
+            spell_name (str): Resolved name for the spell (qualname or type name).
+            existence (Existence): Lifecycle policy for instantiation/sharing semantics.
+            spell_type (SpellType): Classification of the spell (class/method/lambda/existing-creation variants).
+            spell_id (str): SHA256 fingerprint for this spell's structural identity.
+            permissions (Permissions): Access policy for other conduits.
+            aetheric_frame (str): Aether frame identifier this spell belongs to.
+            profile (Optional[Any]): Binding/introspection profile attached by the examiner.
+            existing_object (Optional[object]): Pre-created instance for EXISTING_CREATION* spell types.
+            spellbook (Optional[ISpellbook]): Back-reference to the owning spellbook for coordination.
+            *args: Optional positional metadata tags.
+            **kwargs: Optional keyword metadata map attached to this spell.
+
+        Notes:
+            - Thread-safe configuration/cleanup is guarded by an internal RLock.
+            - The canonical lookup key is normalized immediately via `SpellInputUtils`.
+            - Validation of inputs (existence, permissions, profile shape) is expected to be enforced upstream by the Bind pipeline.
+        """
         super().__init__()
         self._lock = RLock()
         self._id: str = str(ulid.ULID())  # Unique internal ID for tracking
@@ -216,6 +241,11 @@ class Spell(Cleanable):
 
         Runtime resolution and instance lifecycle are owned by the Resolution / Meld layer,
         not by this class.
+
+        Notes:
+            - Idempotent: subsequent calls are safe and no-op after the first run.
+            - Thread-safe: guarded by an internal RLock to avoid concurrent cleanup races.
+            - Defensive: cleanup of child artifacts swallows exceptions to ensure teardown completes.
         """
         if self._cleaned:
             return
@@ -319,6 +349,11 @@ class Spell(Cleanable):
     #endregion Context Manager
 
     def __repr__(self) -> str:
+        """
+        Return a concise, human-readable representation of the spell including name,
+        binding, frame, and SHA256-derived spell ID. Used primarily for diagnostics
+        and logging.
+        """
         frame = self.spellframe.__name__ if self.spellframe else type(self.spell).__name__
         return (
             f"Spell(name={self.spell_name}, binding={self.binding_name or '__default__'}, "
@@ -554,19 +589,24 @@ class Spell(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Convenience helper to run **all compiler / resolution phases**
-        (Phase 1–4) for this spell, in order.
+        Convenience helper to run **all compiler / resolution phases** for this spell, in order.
 
-        Currently, this means:
+        Phases executed via the :class:`SpellCrafter`:
 
             1. Requirements extraction.
-            2. Symbolic graph construction (placeholder).
-            3. Local resolution frame / DAG (placeholder).
-            4. Validation (placeholder).
+            2. Symbolic graph construction.
+            3. Local resolution frame / DAG construction.
+            4. Validation.
+            5. System graph construction.
+            6. System validation.
+            7. Publish/finalization.
 
         Each phase honours the optional :class:`CancellationEvent`. If the
         event is set, the underlying phase methods will raise via
         ``cancel_event.throw_if_set()``.
+
+        Raises:
+            Exception: Propagates exceptions raised by the underlying phases.
         """
         self.check_cleaned()
         crafter = self._ensure_crafter()
