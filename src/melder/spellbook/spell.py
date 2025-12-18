@@ -354,7 +354,10 @@ class Spell(Cleanable):
         binding, frame, and SHA256-derived spell ID. Used primarily for diagnostics
         and logging.
         """
-        frame = self.spellframe.__name__ if self.spellframe else type(self.spell).__name__
+        if self.spellframe:
+            frame = getattr(self.spellframe, "__name__", str(self.spellframe))
+        else:
+            frame = type(self.spell).__name__
         return (
             f"Spell(name={self.spell_name}, binding={self.binding_name or '__default__'}, "
             f"frame={frame}, SHA256={self.spell_id})"
