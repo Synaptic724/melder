@@ -158,6 +158,9 @@ For repo-wide mechanical edits (e.g., “add this import everywhere”, “add a
 ### 14) Banned / Disallowed Patterns
 
 * **Never use `type: ignore`.**
+* **Never use `# noqa`.**
+* **Never use `eval()` or `exec()`**.
+* **Never use wildcard imports** (e.g., `from module import *`).
 
 ---
 
