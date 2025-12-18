@@ -30,7 +30,7 @@ def test_dag_index_iter_all_sockets_dedupes():
 def test_dag_index_cleanup_blocks_access():
     index = DagIndex()
     index.cleanup()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AttributeError):
         index.add_socket(SocketRef("n1", "p", ("p",), SocketKind.NORMAL))
 
 
@@ -90,6 +90,35 @@ def test_dag_targeting_validates_spec_and_filter():
         engine.resolve(TargetSpec(kind=TargetSpecKind.PATH, path=("a",), param_name=None), None)  # type: ignore[arg-type]
 
 
+def test_dag_targeting_missing_param_name_errors():
+    index = DagIndex()
+    engine = DagTargetingEngine(index)
+    path_spec = TargetSpec(kind=TargetSpecKind.PATH, path=(), param_name=None)
+    with pytest.raises(RuntimeError):
+        engine.resolve(path_spec, lambda r: True)
+
+    unique_spec = TargetSpec(kind=TargetSpecKind.UNIQUE, path=None, param_name=None)
+    with pytest.raises(RuntimeError):
+        engine.resolve(unique_spec, lambda r: True)
+
+    broadcast_spec = TargetSpec(kind=TargetSpecKind.BROADCAST, path=None, param_name=None)
+    with pytest.raises(RuntimeError):
+        engine.resolve(broadcast_spec, lambda r: True)
+
+
+def test_dag_targeting_unknown_kind_raises_runtime():
+    index = DagIndex()
+    engine = DagTargetingEngine(index)
+
+    class DummySpec:
+        kind = object()
+        path = None
+        param_name = None
+
+    with pytest.raises(RuntimeError):
+        engine.resolve(DummySpec(), lambda r: True)  # type: ignore[arg-type]
+
+
 def test_dag_index_builder_shallow_builds_refs():
     class DummySocket:
         def __init__(self, name, kind):
@@ -102,3 +131,18 @@ def test_dag_index_builder_shallow_builds_refs():
     assert paths == {"a", "b"}
     with pytest.raises(ValueError):
         DagIndexBuilder.build_shallow(None, sockets)  # type: ignore[arg-type]
+
+
+def test_dag_index_builder_empty_sockets_returns_empty_index():
+    index = DagIndexBuilder.build_shallow("owner", [])
+    assert list(index.iter_all_sockets()) == []
+
+
+def test_dag_targeting_cleanup_nulls_index_and_is_idempotent():
+    index = DagIndex()
+    engine = DagTargetingEngine(index)
+    engine.cleanup()
+    engine.cleanup()
+    assert engine.cleaned
+    with pytest.raises(AttributeError):
+        engine.resolve(TargetSpec(kind=TargetSpecKind.PATH, path=("a",), param_name=None), lambda r: True)
