@@ -87,8 +87,9 @@ class Spellbook(Cleanable):
         # Configuration state
         self._configuration_locked: bool = False
         self._configuration: IConfiguration = configuration
+        # Temporary logger for configuration init; will be replaced in _initialize_logging.
+        self._logger: Optional[Any] = InitHelpers.resolve_safe_logger(None)
         self._initialize_configuration()
-        self._logger: Optional[Any] = None
 
         # Logger setup
         self._initialize_logging(logger)

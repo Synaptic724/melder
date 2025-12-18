@@ -256,6 +256,15 @@ When reporting validation status:
 * If not run, say **“Not run.”**
 * If recommending commands, be specific and repo-consistent (e.g., `pytest`, `pytest -q`, `pytest -m integration`, `pytest --cov`, etc.), but do not invent a workflow that contradicts repository docs.
 
+### 6) Fixing Broken Base Code
+
+If you encounter mistakes when you are testing the code (bugs, docstring errors, missing cleanup, etc.):
+
+* Bring them up as issues rather than fixing them silently.
+* If you have explicit permission to fix them, follow all the above rules (docstrings, cleanup, testing, etc.).
+* Do not fix unrelated mistakes outside your declared scope but raise them for review.
+* If the mistakes block your work, explain the situation and ask for guidance.
+
 ---
 
 ## Summary

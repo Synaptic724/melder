@@ -1,14 +1,14 @@
 import threading
 from typing import List, Optional, Any, Tuple, Dict
-from melder.utilities.synchronization.safeguard import SafeGuard
-
 # Melder Imports
+from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger, IConfiguration
+from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger, IConfiguration, \
+    ISpellIndex
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -2307,7 +2307,7 @@ class ConduitWard(Cleanable):
     def _transfer_spell_ownership(
             self,
             *,
-            spell: ISpell | str | SpellIndex,
+            spell: ISpell | str | ISpellIndex,
             target_conduit: IConduit,
             move_creations: bool = False,
             include_dependencies: bool = False,
