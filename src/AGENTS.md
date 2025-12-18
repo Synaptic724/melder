@@ -93,6 +93,7 @@ If we **own the file/module** and the attribute names are visible in the code, d
 
 * Use direct access (`obj.attr`).
 * Handle `None` explicitly where appropriate.
+* If you genuinely need to handle a missing attribute on an external/optional dependency, **call it directly and catch `AttributeError`** instead of probing with `hasattr`. This keeps owned-code contracts strict while still being safe when the contract is ambiguous or external.
 
 `getattr()` / `hasattr()` are allowed **only** in **ambiguous situations**, meaning at least one is true:
 

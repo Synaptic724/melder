@@ -93,6 +93,7 @@ class Bind(Cleanable):
                 - If used as a decorator, returns the decorated object.
                 - If used as a direct call, returns the newly created `Spell` instance.
         """
+        self.check_cleaned()
         if spell is None:
             # Decorator usage
             def decorator(obj):
@@ -163,6 +164,7 @@ class Bind(Cleanable):
                 - If the binding is otherwise invalid (existence errors, lambda
                   without name, etc.).
         """
+        self.check_cleaned()
         with self._lock:
             # 0. Block registration of Melder internal objects/classes.
             _mrg.assert_allowed(spell, context="bind")

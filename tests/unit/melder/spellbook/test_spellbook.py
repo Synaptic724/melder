@@ -66,6 +66,9 @@ class DummySpellIndex:
     def cleanup(self):
         self.cleaned = True
 
+    def has_version(self, version_id):
+        return version_id in self._versions
+
 
 class DummyConduit:
     def __init__(self, cid="cid", name="cname"):
@@ -79,13 +82,15 @@ class DummyConduit:
 
 
 class DummyConfig:
-    def __init__(self, hooks=None, logger_factory=None, system_state=None):
+    def __init__(self, hooks=None, logger_factory=None, system_state=None, frozen=False, validate_ok=True):
         self._hooks = hooks or {}
         self._logger_factory = logger_factory
         self._logger_for = {}
         self._system_state = system_state or SystemState.automatic
         self.cleaned = False
         self._aether_frame = "default"
+        self._frozen = frozen
+        self._validate_ok = validate_ok
 
     def get_hooks(self, sid):
         return self._hooks
@@ -101,6 +106,12 @@ class DummyConfig:
         if name == "system_state":
             return self._system_state
         return None
+
+    def validate(self):
+        return self._validate_ok
+
+    def freeze(self):
+        self._frozen = True
 
     def cleanup(self):
         self.cleaned = True
@@ -480,9 +491,7 @@ def test_get_conjure_hook_map_returns_map():
     cfg = DummyConfig(hooks=hooks)
     sb = Spellbook(configuration=cfg)
     sb._logger = DummySafeLogger()
-    # Current implementation returns None even when hooks exist because the initial
-    # truthy check exits early. Guard that this does not raise.
-    assert sb._get_conjure_hook_map() is None
+    assert sb._get_conjure_hook_map() == hooks
 
 
 def test_fire_conjure_hooks_executes_and_swallows_errors():
@@ -677,20 +686,22 @@ def test_fire_conjure_hooks_noop_variants(hook_map, hook_name, expected_calls):
 
 
 @pytest.mark.parametrize(
-    "hooks",
+    "hooks,expected_none",
     [
-        {},
-        {"on_conduit_pre_created": []},
-        {"on_conduit_pre_created": [lambda: None]},
+        ({}, True),
+        ({"on_conduit_pre_created": []}, False),
+        ({"on_conduit_pre_created": [lambda: None]}, False),
     ],
 )
-def test_get_conjure_hook_map_variants(hooks):
+def test_get_conjure_hook_map_variants(hooks, expected_none):
     cfg = DummyConfig(hooks=hooks)
     sb = Spellbook(configuration=cfg)
     sb._logger = DummySafeLogger()
     result = sb._get_conjure_hook_map()
-    # Implementation currently returns None when hooks are present but truthy check short-circuits.
-    assert result is None
+    if expected_none:
+        assert result is None
+    else:
+        assert result == hooks
 
 
 @pytest.mark.parametrize(
@@ -1004,9 +1015,9 @@ def test_set_policy_state_flags(policy):
     elif policy == Policies.whitelist_all:
         assert getattr(sb, "_whitelist_all_spells", False) is True
     else:
-        # default policy should leave flags untouched/absent
-        assert not hasattr(sb, "_block_all_spells")
-        assert not hasattr(sb, "_whitelist_all_spells")
+        # default policy should clear flags
+        assert getattr(sb, "_block_all_spells", False) is False
+        assert getattr(sb, "_whitelist_all_spells", False) is False
 
 
 def test_find_spell_returns_none_for_missing():
@@ -1035,8 +1046,7 @@ def test_cleanup_spells_cleans_index_even_when_spell_raises():
     sb._spells = {idx: spell}
     sb._logger = DummySafeLogger()
     sb._cleanup_spells()
-    # Spell index is not cleaned by _cleanup_spells; ensure we at least survive the error path.
-    assert idx.cleaned is False
+    assert idx.cleaned is True
 
 
 def test_cleanup_components_idempotent():
@@ -1095,3 +1105,285 @@ def test_phase_factories_return_distinct_labels_per_spell():
     scheduler = DummyPhaseScheduler(sb, None)
     req_units = sb._phase_requirements_factory(scheduler)
     assert {u["label"] for u in req_units} == {"requirements:a", "requirements:b"}
+
+
+def test_set_policy_state_resets_flags_on_default():
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._lock = type("DL", (), {"__enter__": lambda s: None, "__exit__": lambda s, a, b, c: None})()
+    sb._set_policy_state(Policies.block_all)
+    assert getattr(sb, "_block_all_spells", False) is True
+    sb._set_policy_state(Policies.default)
+    assert getattr(sb, "_block_all_spells", False) is False
+    assert getattr(sb, "_whitelist_all_spells", False) is False
+
+
+def test_check_all_spells_raises_on_duplicate(monkeypatch):
+    sb = Spellbook()
+    idx = DummySpellIndex(versions={"dup"})
+    sb._spells = {idx: DummySpell()}
+    sb._logger = DummySafeLogger()
+
+    def fake_check_for_spell(version_id, frame):
+        return True
+
+    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", fake_check_for_spell)
+    with pytest.raises(RuntimeError):
+        sb._check_all_spells()
+
+
+def test_check_all_spells_passes_when_unique(monkeypatch):
+    sb = Spellbook()
+    idx = DummySpellIndex(versions={"unique"})
+    sb._spells = {idx: DummySpell()}
+    sb._logger = DummySafeLogger()
+
+    def fake_check_for_spell(version_id, frame):
+        return False
+
+    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", fake_check_for_spell)
+    sb._check_all_spells()
+
+
+def test_find_contracted_spell_by_id_finds_match():
+    sb = Spellbook()
+    spell = DummySpell(spell_id="id1")
+    idx = DummySpellIndex(versions={"v1"})
+    sb._contracted_spells = {"c": {idx: spell}}
+    assert sb._find_contracted_spell_by_id("v1", "c") is spell
+
+
+def test_find_contracted_spell_by_id_returns_none_when_missing():
+    sb = Spellbook()
+    sb._contracted_spells = {"c": {DummySpellIndex(versions={"v1"}): DummySpell()}}
+    assert sb._find_contracted_spell_by_id("v2", "c") is None
+
+
+def test_find_contracted_spell_by_id_returns_none_for_unknown_conduit():
+    sb = Spellbook()
+    sb._contracted_spells = {"c": {DummySpellIndex(versions={"v1"}): DummySpell()}}
+    assert sb._find_contracted_spell_by_id("v1", "missing") is None
+
+
+def test_create_link_contract_initializes_maps():
+    sb = Spellbook()
+    sb._contracted_spells = {}
+    sb._lookup_contracted_spells = {}
+    sb._contracted_versions = {}
+    sb._create_link_contract("cid")
+    assert "cid" in sb._contracted_spells
+    assert "cid" in sb._lookup_contracted_spells
+    assert "cid" in sb._contracted_versions
+
+
+def test_inspect_spell_returns_none_on_missing(monkeypatch):
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._bind = types.SimpleNamespace(spell_id_inspector=lambda s: "id")
+    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", lambda *_: False)
+    assert sb.inspect_spell(DummySpell()) is None
+
+
+def test_inspect_spell_returns_id_when_found(monkeypatch):
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._bind = types.SimpleNamespace(spell_id_inspector=lambda s: "id")
+    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", lambda *_: True)
+    assert sb.inspect_spell(DummySpell()) == "id"
+
+
+def test_validate_and_freeze_configuration_happy_path():
+    cfg = DummyConfig(frozen=False, validate_ok=True)
+    sb = Spellbook(configuration=cfg)
+    sb._logger = DummySafeLogger()
+    sb._configuration = cfg
+    sb._validate_and_freeze_configuration()
+    assert sb._configuration_locked is True
+    assert cfg._frozen is True
+
+
+def test_validate_and_freeze_configuration_missing_raises():
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._configuration = None
+    with pytest.raises(RuntimeError):
+        sb._validate_and_freeze_configuration()
+
+
+def test_validate_and_freeze_configuration_frozen_short_circuits():
+    cfg = DummyConfig(frozen=True)
+    sb = Spellbook(configuration=cfg)
+    sb._logger = DummySafeLogger()
+    sb._configuration = cfg
+    sb._configuration_locked = False
+    sb._validate_and_freeze_configuration()
+    assert sb._configuration_locked is True
+
+
+def test_validate_and_freeze_configuration_validation_failure_raises():
+    cfg = DummyConfig(frozen=False, validate_ok=False)
+    sb = Spellbook(configuration=cfg)
+    sb._logger = DummySafeLogger()
+    sb._configuration = cfg
+    with pytest.raises(ValueError):
+        sb._validate_and_freeze_configuration()
+
+
+def test_run_resolution_phases_cleans_scheduler_on_success(monkeypatch):
+    sb = Spellbook()
+    sb._spells = {DummySpellIndex(): DummySpell()}
+    scheduler = DummyPhaseScheduler(sb, None)
+    scheduler.cleaned = False
+    sb._logger = DummySafeLogger()
+    # Patch constructor to return our scheduler so we can check cleaned flag.
+    import melder.spellbook.spellbook as spellbook_module
+    monkeypatch.setattr(spellbook_module, "PhaseScheduler", lambda *a, **k: scheduler)
+    results = sb._run_resolution_phases()
+    assert "requirements" in results
+    assert scheduler.cleaned is True
+
+
+def test_conjure_hooks_fire_in_order(monkeypatch):
+    hooks_called = []
+
+    def hook(name):
+        hooks_called.append(name)
+
+        cfg = DummyConfig(
+            hooks={
+                "on_conduit_pre_created": [lambda: hook("pre")],
+                "on_conduit_post_created": [lambda _: hook("post")],
+                "on_conduit_activated": [lambda _: hook("activated")],
+            }
+        )
+    sb = Spellbook(configuration=cfg)
+    sb._logger = DummySafeLogger()
+    spell = DummySpell()
+    sb._spells = {DummySpellIndex(): spell}
+    # Minimal conduit that satisfies conjure expectations
+    class DummyConduitObj:
+        def __init__(self):
+            self._id = "cid"
+            self._name = "cname"
+            self._creations = {}
+
+        def cleanup(self):
+            pass
+
+    # Patch binder and crafter expectations that conjure touches
+    sb._bind = types.SimpleNamespace(build_conduit=lambda *a, **k: DummyConduitObj())
+    sb._validate_and_freeze_configuration = lambda: None
+    sb._check_all_spells = lambda: None
+    sb._logger = DummySafeLogger()
+    # Replace Conduit with a lightweight stub to avoid interface checks.
+    class StubConduit:
+        def __init__(self, spellbook, name, conduit_state, configuration, aetheric_frame, policy, automatic, logger):
+            self._id = "cid"
+            self._name = "cname"
+            self._creations = {}
+
+        def cleanup(self):
+            pass
+
+    import melder.spellbook.spellbook as spellbook_module
+    monkeypatch.setattr(spellbook_module, "Conduit", StubConduit)
+    # Stub binder to avoid building a real conduit; return the stub directly.
+    sb._bind.build_conduit = lambda *a, **k: StubConduit(None, None, None, None, None, None, None)
+    sb.conjure()
+    assert hooks_called == ["pre", "activated", "post"]
+
+
+def test_run_resolution_phases_propagates_phase_exception(monkeypatch):
+    class ExecScheduler(DummyPhaseScheduler):
+        def run_all_phases(self):
+            # Execute each unit of work to simulate real scheduling.
+            for factory in self.phases.values():
+                units = factory()
+                for unit in units:
+                    func = unit["func"]
+                    args = unit["args"]
+                    func(*args)
+            return {}
+
+    class BadSpell(DummySpell):
+        def run_phase_requirements(self, cancel_event):
+            raise RuntimeError("boom")
+
+    sb = Spellbook()
+    sb._spells = {DummySpellIndex(): BadSpell()}
+    sb._logger = DummySafeLogger()
+    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", ExecScheduler)
+    with pytest.raises(RuntimeError):
+        sb._run_resolution_phases()
+
+
+def test_conjure_sets_conduit_and_marks_conjured(monkeypatch):
+    sb = Spellbook(configuration=DummyConfig())
+    sb._logger = DummySafeLogger()
+    sb._spells = {DummySpellIndex(): DummySpell()}
+
+    class NoopScheduler(DummyPhaseScheduler):
+        def run_all_phases(self):
+            return {}
+        def cleanup(self):
+            self.cleaned = True
+
+    class StubConduit:
+        def __init__(self, *a, **k):
+            self._id = "cid"
+            self._name = "cname"
+            self._creations = {}
+        def cleanup(self):
+            pass
+
+    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", NoopScheduler)
+    monkeypatch.setattr("melder.spellbook.spellbook.Conduit", StubConduit)
+    sb._validate_and_freeze_configuration = lambda: None
+    sb._bind_configuration_to_aether = lambda: None
+    sb.conjure()
+    assert sb._conjured is True
+    assert isinstance(sb._conduit, StubConduit)
+
+
+def test_conjure_twice_raises(monkeypatch):
+    sb = Spellbook(configuration=DummyConfig())
+    sb._logger = DummySafeLogger()
+    sb._spells = {DummySpellIndex(): DummySpell()}
+
+    class NoopScheduler(DummyPhaseScheduler):
+        def run_all_phases(self):
+            return {}
+    class StubConduit:
+        def __init__(self, *a, **k):
+            self._id = "cid"
+            self._name = "cname"
+            self._creations = {}
+        def cleanup(self):
+            pass
+
+    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", NoopScheduler)
+    monkeypatch.setattr("melder.spellbook.spellbook.Conduit", StubConduit)
+    sb._validate_and_freeze_configuration = lambda: None
+    sb._bind_configuration_to_aether = lambda: None
+    sb.conjure()
+    with pytest.raises(RuntimeError):
+        sb.conjure()
+
+
+def test_refresh_local_spell_versions_thread_safe():
+    sb = Spellbook()
+    idx = DummySpellIndex(versions={"v1", "v2"})
+    sb._spells = {idx: DummySpell()}
+    sb._spell_versions = set()
+    sb._logger = DummySafeLogger()
+
+    def worker():
+        sb._refresh_local_spell_versions()
+
+    threads = [threading.Thread(target=worker) for _ in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert sb._spell_versions == {"v1", "v2"}

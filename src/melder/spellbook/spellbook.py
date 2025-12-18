@@ -211,12 +211,16 @@ class Spellbook(Cleanable):
             return
 
         items = list(self._spells.items())
-        for spell_id, spell in items:
-            self._logger.debug(f"Cleaning local spell '{spell_id}'", "_cleanup_spells")
+        for spell_index, spell in items:
+            self._logger.debug(f"Cleaning local spell '{spell_index}'", "_cleanup_spells")
             try:
                 spell.cleanup()
             except Exception as e:
-                self._logger.error(f"Error cleaning spell '{spell_id}': {e}", "_cleanup_spells", exc_info=True)
+                self._logger.error(f"Error cleaning spell '{spell_index}': {e}", "_cleanup_spells", exc_info=True)
+            try:
+                spell_index.cleanup()
+            except Exception as e:
+                self._logger.error(f"Error cleaning spell index '{spell_index}': {e}", "_cleanup_spells", exc_info=True)
 
 
     # -------------------------
@@ -1339,21 +1343,25 @@ class Spellbook(Cleanable):
 
             if not self._configuration.validate():
                 self._logger.error(
-                    "Configuration validation failed",
+                    "Configuration validation failed.",
                     "_validate_and_freeze_configuration",
                     exc_info=True,
                 )
-                raise ValueError("Invalid configuration. Please check your settings.")
+                raise ValueError("Configuration validation failed.")
 
             self._configuration.freeze()
             self._configuration_locked = True
 
             self._logger.debug(
-                "Configuration frozen (locked=True)",
+                "Configuration validated and frozen; locking configuration.",
                 "_validate_and_freeze_configuration",
             )
-        except Exception:
-            # Do not auto-clear properties here; configuration is user-owned.
+        except Exception as e:
+            self._logger.error(
+                f"Error validating/freezing configuration: {e}",
+                "_validate_and_freeze_configuration",
+                exc_info=True,
+            )
             raise
 
 
@@ -1658,6 +1666,10 @@ class Spellbook(Cleanable):
             elif policy == Policies.block_all:
                 self._block_all_spells = True
                 self._whitelist_all_spells = False
+            else:
+                # Default: clear any prior flags
+                self._block_all_spells = False
+                self._whitelist_all_spells = False
 
 #endregion Conduit API
 
@@ -1691,17 +1703,15 @@ class Spellbook(Cleanable):
             )
             return None
 
-        # Configuration may not yet support hooks.
-        if self._configuration.get_hooks(self._id):
+        try:
+            hook_map = self._configuration.get_hooks(self._id)
+        except AttributeError:
             self._logger.debug(
                 "_get_conjure_hook_map: configuration has no get_hooks(spellbook_id); "
                 "skipping conjure hooks",
                 "_get_conjure_hook_map",
             )
             return None
-
-        try:
-            hook_map = self._configuration.get_hooks(self._id)
         except Exception as e:
             self._logger.error(
                 f"_get_conjure_hook_map failed: {e}",
