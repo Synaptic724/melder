@@ -291,7 +291,7 @@ class Configuration(Cleanable):
         """
         Ensures the phase scheduler worker count is a valid integer >= 1.
         """
-        workers = self._properties.get("phase_scheduler_workers")
+        workers = self._properties.get("phase_scheduler_workers_per_spellbook")
 
         if not isinstance(workers, int) or workers < 1:
             raise ValueError("phase_scheduler_workers must be a positive integer >= 1.")
@@ -412,15 +412,19 @@ class Configuration(Cleanable):
             RuntimeError: If the configuration is cleaned.
         """
         self.check_cleaned()
-        self._properties.update({
-            "system_state": self._convert_enum_if_needed("system_state", "automatic"),
+        defaults = {
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
             "phase_scheduler_workers_per_spellbook": 5,
             "ai_native_enabled": False,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
-        })
+        }
+        if "system_state" not in self._properties:
+            defaults["system_state"] = self._convert_enum_if_needed("system_state", "automatic")
+        for key, value in defaults.items():
+            if key not in self._properties:
+                self._properties[key] = value
 
     def has_logger_factory(self) -> bool:
         """Return True if a logger factory has been set."""
@@ -486,7 +490,7 @@ class Configuration(Cleanable):
         with self._lock:
             per_spellbook = self._hooks.get(spellbook_id)
             if per_spellbook is None:
-                per_spellbook = Dict[str, list[Callable[..., Any]]]()
+                per_spellbook = {}
                 self._hooks[spellbook_id] = per_spellbook
 
             hooks_list = per_spellbook.get(hook_name)
@@ -866,7 +870,8 @@ class Configuration(Cleanable):
 
         Load defaults and set dynamic state, returning `self`.
         """
-        return self.with_defaults().with_system_state("dynamic")
+        self.set_property("system_state", "dynamic")
+        return self.with_defaults()
 
     def automatic_defaults(self) -> IConfiguration:
         """
@@ -874,4 +879,5 @@ class Configuration(Cleanable):
 
         Load defaults and set automatic state, returning `self`.
         """
-        return self.with_defaults().with_system_state("automatic")
+        self.set_property("system_state", "automatic")
+        return self.with_defaults()
