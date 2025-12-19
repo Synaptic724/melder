@@ -22,6 +22,11 @@ from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 
 
+class _StubSpellbook:
+    def __init__(self):
+        self._spell_system_states = object()
+
+
 def _spell():
     return Spell(
         spell=object(),
@@ -34,6 +39,7 @@ def _spell():
         spell_id="id",
         permissions=Permissions.read,
         aetheric_frame="frame",
+        spellbook=_StubSpellbook(),
     )
 
 
@@ -268,3 +274,48 @@ def test_examine_binding_with_spell_and_raw_targets(monkeypatch):
     spell = _spell()
     assert examiner.examine(raw, SpellExaminationKind.BINDING) == ("bp", raw)
     assert examiner.examine(spell, SpellExaminationKind.BINDING) == ("bp", spell.spell)
+
+
+def test_binding_strategy_exception_bubbles(monkeypatch):
+    def boom(self, obj):
+        raise RuntimeError("bind-fail")
+
+    monkeypatch.setattr(BindingProfileStrategy, "build_profile", boom, raising=True)
+    examiner = SpellExaminer()
+    with pytest.raises(RuntimeError, match="bind-fail"):
+        examiner.binding_profile_for_object(object())
+
+
+def test_ai_strategy_exception_bubbles(monkeypatch):
+    def boom(self, spell, binding_profile=None, resolution_profile=None):
+        raise RuntimeError("ai-fail")
+
+    monkeypatch.setattr(AIProfileStrategy, "build_profile", boom, raising=True)
+    examiner = SpellExaminer()
+    with pytest.raises(RuntimeError, match="ai-fail"):
+        examiner.ai_profile_for_spell(_spell())
+
+
+def test_ai_strategy_instance_is_fresh_per_call(monkeypatch):
+    instances = []
+
+    class FakeAI(AIProfileStrategy):
+        def __init__(self, show_dunders=False, max_repr=0):
+            instances.append(self)
+
+        def build_profile(self, spell, binding_profile=None, resolution_profile=None):
+            return id(self)
+
+    monkeypatch.setattr(
+        "melder.spellbook.spell_crafter.spell_examiner.spell_examiner.AIProfileStrategy",
+        FakeAI,
+        raising=True,
+    )
+
+    examiner = SpellExaminer()
+    spell = _spell()
+    first = examiner.ai_profile_for_spell(spell)
+    second = examiner.ai_profile_for_spell(spell)
+
+    assert len(instances) == 2
+    assert first != second
