@@ -1,0 +1,151 @@
+import pytest
+
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+    ParameterDIShape,
+)
+from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
+    SpellSymbolicDependency,
+)
+
+
+def _dep(**overrides):
+    defaults = dict(
+        spell_version_id="v1",
+        param_name="p",
+        position=2,
+        di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
+        is_optional=False,
+        target_annotation=str,
+        is_collection=False,
+        spellmap_default=None,
+    )
+    defaults.update(overrides)
+    return SpellSymbolicDependency(**defaults)
+
+
+@pytest.mark.parametrize("bad_id", [None, "", 0])
+def test_init_rejects_invalid_spell_version_id(bad_id):
+    with pytest.raises(ValueError):
+        _dep(spell_version_id=bad_id)
+
+
+# Whitespace-only names are allowed by the implementation; only falsy names are rejected.
+@pytest.mark.parametrize("bad_name", [None, ""])
+def test_init_rejects_invalid_param_name(bad_name):
+    with pytest.raises(ValueError):
+        _dep(param_name=bad_name)
+
+
+def test_fields_are_exposed_via_properties():
+    dep = _dep(
+        spell_version_id="spell-123",
+        param_name="dep_param",
+        position=1,
+        di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+        is_optional=True,
+        target_annotation="Frame",
+        is_collection=True,
+        spellmap_default="default-map",
+    )
+
+    assert dep.spell_id == "spell-123"
+    assert dep.param_name == "dep_param"
+    assert dep.position == 1
+    assert dep.di_shape is ParameterDIShape.SPELLMAP_DEFAULT
+    assert dep.is_optional is True
+    assert dep.target_annotation == "Frame"
+    assert dep.is_collection is True
+    assert dep.spellmap_default == "default-map"
+
+
+def test_is_collection_flag_tracks_di_shape_independently():
+    dep = _dep(di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION, is_collection=False)
+    assert dep.di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION
+    # The code does not derive is_collection; it honors the constructor flag.
+    assert dep.is_collection is False
+
+
+def test_cleanup_nulls_fields_and_blocks_access():
+    dep = _dep()
+    dep.cleanup()
+
+    assert dep._cleaned is True  # noqa: SLF001
+    assert dep._lock is None  # noqa: SLF001
+    with pytest.raises(RuntimeError):
+        _ = dep.spell_id
+    with pytest.raises(RuntimeError):
+        _ = dep.param_name
+    with pytest.raises(RuntimeError):
+        _ = dep.di_shape
+    with pytest.raises(RuntimeError):
+        _ = dep.spellmap_default
+
+
+def test_cleanup_is_idempotent():
+    dep = _dep()
+    dep.cleanup()
+    dep.cleanup()  # second call should be a no-op
+    assert dep._cleaned is True  # noqa: SLF001
+
+
+@pytest.mark.parametrize(
+    "target_annotation,is_collection",
+    [
+        (None, False),
+        ("Frame", False),
+        (int, True),
+    ],
+)
+def test_target_annotation_and_collection_flags_survive_roundtrip(target_annotation, is_collection):
+    dep = _dep(target_annotation=target_annotation, is_collection=is_collection)
+    assert dep.target_annotation == target_annotation
+    assert dep.is_collection is is_collection
+
+
+def test_position_allows_negative_values_without_validation():
+    dep = _dep(position=-5)
+    assert dep.position == -5
+
+
+def test_accepts_arbitrary_truthy_spell_id_and_preserves_reference():
+    sentinel = object()
+    dep = _dep(spell_version_id=sentinel)
+    assert dep.spell_id is sentinel
+
+
+def test_whitespace_param_name_is_preserved():
+    dep = _dep(param_name="   spaced   ")
+    assert dep.param_name == "   spaced   "
+
+
+def test_defaults_set_expected_flags_and_none_values():
+    dep = _dep()
+    assert dep.is_optional is False
+    assert dep.spellmap_default is None
+    assert dep.target_annotation is str
+
+
+@pytest.mark.parametrize("prop", ["spell_id", "param_name", "position", "di_shape", "is_optional", "target_annotation", "is_collection", "spellmap_default"])
+def test_access_after_cleanup_raises(prop):
+    dep = _dep()
+    dep.cleanup()
+    with pytest.raises(RuntimeError):
+        getattr(dep, prop)
+
+
+def test_cleanup_resets_fields_to_safe_defaults():
+    dep = _dep(
+        is_optional=True,
+        target_annotation="X",
+        is_collection=True,
+        spellmap_default="map",
+    )
+    dep.cleanup()
+    assert dep._spell_id is None  # noqa: SLF001
+    assert dep._param_name is None  # noqa: SLF001
+    assert dep._position == -1  # noqa: SLF001
+    assert dep._di_shape is None  # noqa: SLF001
+    assert dep._is_optional is False  # noqa: SLF001
+    assert dep._target_annotation is None  # noqa: SLF001
+    assert dep._is_collection is False  # noqa: SLF001
+    assert dep._spellmap_default is None  # noqa: SLF001

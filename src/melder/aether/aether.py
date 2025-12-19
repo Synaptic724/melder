@@ -43,6 +43,10 @@ class Aether(Cleanable):
         """Initializes the Aether singleton, creating the 'default' frame."""
         if not Aether._initialized:
             super().__init__()
+            # Initialize potentially nullable fields early for safe cleanup
+            self._aetheric_frames = None
+            self._default_frame = None
+
             Aether._initialized = True
 
             self._id: str = str(ulid.ULID())
@@ -66,10 +70,16 @@ class Aether(Cleanable):
                 return
             try:
                 self._cleaned = True
-                self.cleanup_aetheric_frames() # This will clean each individual frame
+                if self._aetheric_frames is not None:
+                    self.cleanup_aetheric_frames() # This will clean each individual frame
+                    self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
+                    self._aetheric_frames = None
+                
                 self._default_frame = None
-                self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
-                self._aetheric_frames = None
+                
+                # Reset Singleton state to allow re-initialization (e.g. in tests)
+                Aether._instance = None
+                Aether._initialized = False
             except Exception as e:
                 self._logger.error(f"Error cleaning up Aether: {e}", "cleanup", exc_info=True)
                 raise

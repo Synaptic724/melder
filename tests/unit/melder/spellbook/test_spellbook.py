@@ -1249,13 +1249,13 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
     def hook(name):
         hooks_called.append(name)
 
-        cfg = DummyConfig(
-            hooks={
-                "on_conduit_pre_created": [lambda: hook("pre")],
-                "on_conduit_post_created": [lambda _: hook("post")],
-                "on_conduit_activated": [lambda _: hook("activated")],
-            }
-        )
+    cfg = DummyConfig(
+        hooks={
+            "on_conduit_pre_created": [lambda: hook("pre")],
+            "on_conduit_post_created": [lambda _: hook("post")],
+            "on_conduit_activated": [lambda _: hook("activated")],
+        }
+    )
     sb = Spellbook(configuration=cfg)
     sb._logger = DummySafeLogger()
     spell = DummySpell()
