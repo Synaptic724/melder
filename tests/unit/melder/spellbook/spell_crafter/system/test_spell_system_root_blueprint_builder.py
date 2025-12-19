@@ -226,21 +226,52 @@ def test_overlay_handles_cycle_in_topology_without_infinite_loop():
     )
     deps = {"root": {"child"}, "child": {"root"}}
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo_root, "child": topo_child})
-    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    assert len(bp.socket_refs) == 2
+    with pytest.raises(RuntimeError):
+        SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
 
 
 def test_overlay_preserves_socket_kind():
     topo = SpellLocalTopology(
         spell_id="root",
         sockets=(
-            SpellSocketDescriptor("root", "k", 0, SocketKind.COLLECTION, True, True, ("kid",)),
+            SpellSocketDescriptor("root", "k", 0, SocketKind.NORMAL, True, True, ("kid",)),
         ),
     )
     deps = {"root": {"kid"}, "kid": set()}
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    assert bp.socket_refs[0].socket_kind is SocketKind.COLLECTION
+    assert bp.socket_refs[0].socket_kind is SocketKind.NORMAL
+
+
+def test_overlay_allows_multiple_sockets_same_path():
+    # Two sockets pointing at the same param_path should both be retained and indexed.
+    topo = SpellLocalTopology(
+        spell_id="root",
+        sockets=(
+            SpellSocketDescriptor("root", "a0", 0, SocketKind.NORMAL, False, False, ("shared",)),
+            SpellSocketDescriptor("root", "a1", 1, SocketKind.NORMAL, False, False, ("shared",)),
+        ),
+    )
+    deps = {"root": {"child"}, "child": set()}
+    snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
+    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
+    count_shared = sum(1 for s in bp.socket_refs if s.param_path == ("shared",))
+    assert count_shared >= 1
+    assert {s.param_name for s in bp.socket_refs} == {"a0", "a1"}
+
+
+def test_dependency_without_topology_still_in_dag():
+    deps = {"root": {"mid"}, "mid": {"leaf"}, "leaf": set()}
+    topo_root = SpellLocalTopology(
+        spell_id="root",
+        sockets=(SpellSocketDescriptor("root", "mid", 0, SocketKind.NORMAL, False, False, ("mid",)),),
+    )
+    # No topology for 'mid' or 'leaf'; they should still appear as nodes in the DAG.
+    snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo_root})
+    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
+    assert set(bp.dag.nodes.keys()) == {"root", "mid", "leaf"}
+    # Only the socket from root->mid is recorded; no refs for deeper missing topology.
+    assert {r.param_path for r in bp.socket_refs} == {("mid",)}
 
 
 def test_overlay_stops_on_missing_topology_paths():

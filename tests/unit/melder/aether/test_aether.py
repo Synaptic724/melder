@@ -1,4 +1,3 @@
-
 import pytest
 import threading
 from unittest.mock import MagicMock, patch, ANY
@@ -820,13 +819,30 @@ def test_get_conduits_in_cluster_validates_frame_exists(aether_with_mocks):
         a._get_conduits_in_cluster("c1", "missing_frame")
 
 def test_get_clusters_for_conduit_validates_frame_exists(aether_with_mocks):
-    """_get_clusters_for_conduit raises KeyError/ValueError if frame missing (KeyError currently)."""
+    """_get_clusters_for_conduit raises KeyError if frame missing (unwrapped access)."""
     a = aether_with_mocks
-    # The implementation accesses dict directly, so KeyError is expected unless wrapped.
-    # Current code raises KeyError for frame lookup in _get_clusters_for_conduit directly?
-    # No, implementation accesses self._aetheric_frames[name].
     with pytest.raises(KeyError):
         a._get_clusters_for_conduit("cid", "missing_frame")
+
+def test_share_new_spell_to_clusters_validates_frame_exists(aether_with_mocks):
+    """_share_new_spell_to_clusters raises KeyError if frame missing (unwrapped access)."""
+    a = aether_with_mocks
+    conduit = MagicMock()
+    conduit._id = "c1"
+    spell = MagicMock()
+    spell.existence = Existence.unique_per_conduit_cluster
+    
+    with pytest.raises(KeyError):
+        a._share_new_spell_to_clusters(conduit, spell, "missing_frame")
+
+def test_refresh_cluster_shares_for_conduit_validates_frame_exists(aether_with_mocks):
+    """_refresh_cluster_shares_for_conduit raises KeyError if frame missing (unwrapped access)."""
+    a = aether_with_mocks
+    conduit = MagicMock()
+    conduit._id = "c1"
+    
+    with pytest.raises(KeyError):
+        a._refresh_cluster_shares_for_conduit(conduit, "missing_frame")
 
 def test_share_new_spell_to_clusters_no_clusters(aether_with_mocks):
     """If no clusters for conduit, sharing does nothing."""
