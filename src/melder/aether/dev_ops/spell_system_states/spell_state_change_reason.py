@@ -35,6 +35,10 @@ class SpellStateChangeReason(Enum):
     mutation_candidate = auto()         # lineage now backed by a candidate build
     mutation_quarantined = auto()       # candidate or lineage quarantined
 
+    # Validation
+    validation_passed = auto()       # latest validation cycle succeeded
+    validation_failed = auto()       # validation surfaced errors / gating
+
     # Ops / incidents / config
     incident_opened = auto()        # critical incident opened for this lineage
     incident_resolved = auto()      # last known incident resolved

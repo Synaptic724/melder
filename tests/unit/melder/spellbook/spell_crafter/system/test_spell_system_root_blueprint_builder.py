@@ -248,16 +248,16 @@ def test_overlay_allows_multiple_sockets_same_path():
     topo = SpellLocalTopology(
         spell_id="root",
         sockets=(
-            SpellSocketDescriptor("root", "a0", 0, SocketKind.NORMAL, False, False, ("shared",)),
-            SpellSocketDescriptor("root", "a1", 1, SocketKind.NORMAL, False, False, ("shared",)),
+            SpellSocketDescriptor("root", "shared", 0, SocketKind.NORMAL, False, False, ()),
+            SpellSocketDescriptor("root", "shared", 1, SocketKind.NORMAL, False, False, ()),
         ),
     )
     deps = {"root": {"child"}, "child": set()}
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    count_shared = sum(1 for s in bp.socket_refs if s.param_path == ("shared",))
-    assert count_shared >= 1
-    assert {s.param_name for s in bp.socket_refs} == {"a0", "a1"}
+    shared_refs = [s for s in bp.socket_refs if s.param_path == ("shared",)]
+    assert len(shared_refs) == 2
+    assert {s.param_name for s in shared_refs} == {"shared"}
 
 
 def test_dependency_without_topology_still_in_dag():
