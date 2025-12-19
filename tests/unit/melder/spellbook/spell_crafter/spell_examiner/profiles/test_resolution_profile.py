@@ -14,16 +14,22 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 
 class _CleanableStub(Cleanable):
+    __slots__ = Cleanable.__slots__ + ["cleaned_calls"]
+
     def __init__(self):
         super().__init__()
-        self.cleaned = False
+        self.cleaned_calls = 0
 
     def cleanup(self):
-        self.cleaned = True
-        super().cleanup()
+        if self._cleaned:
+            return
+        self.cleaned_calls += 1
+        self._cleaned = True
 
 
 class _Boom(Cleanable):
+    __slots__ = Cleanable.__slots__
+
     def cleanup(self):
         raise RuntimeError("boom")
 
@@ -54,7 +60,9 @@ def test_symbolic_graph_copies_inputs_and_cleans_children():
     assert graph.nodes is not None and len(graph.nodes) == 2
     assert graph.edges is not None and len(graph.edges) == 1
     graph.cleanup()
-    assert n1.cleaned and n2.cleaned and e1.cleaned
+    assert (getattr(n1, "cleaned", False) or n1.cleaned_calls > 0)
+    assert (getattr(n2, "cleaned", False) or n2.cleaned_calls > 0)
+    assert (getattr(e1, "cleaned", False) or e1.cleaned_calls > 0)
     assert graph.nodes is None and graph.edges is None and graph.spell_id is None
 
 
@@ -86,7 +94,8 @@ def test_validation_result_cleanup_cascades():
     warn = _CleanableStub()
     result = SpellValidationResult(is_valid=False, errors=[err], warnings=[warn])
     result.cleanup()
-    assert err.cleaned and warn.cleaned
+    assert (getattr(err, "cleaned", False) or err.cleaned_calls > 0)
+    assert (getattr(warn, "cleaned", False) or warn.cleaned_calls > 0)
     assert result.errors is None and result.warnings is None
 
 
@@ -110,7 +119,7 @@ def test_resolution_profile_fields_and_cleanup():
     assert profile.binding_name == "bind"
     profile.cleanup()
     for stub in (reqs, sym, frame, val):
-        assert stub.cleaned
+        assert getattr(stub, "cleaned", False) or stub.cleaned_calls > 0
     assert profile.requirements is None
     assert profile.symbolic_graph is None
     assert profile.resolution_frame is None

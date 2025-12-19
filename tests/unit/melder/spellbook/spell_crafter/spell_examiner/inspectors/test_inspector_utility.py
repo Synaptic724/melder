@@ -17,7 +17,8 @@ def test_safe_repr_truncates_and_reports_length():
     result = InspectorUtility.safe_repr(payload, max_len=25)
     # should include ellipsis and the original length metadata
     assert result.startswith("'xxxxx")
-    assert "... (len 200)" in result
+    # length reported includes the surrounding quotes InspectorUtility adds
+    assert "... (len 202)" in result
     # the truncation should respect the defensive lower bound of 10 chars
     assert len(result) <= 25
 

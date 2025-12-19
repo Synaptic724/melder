@@ -32,16 +32,22 @@ def _make_spell():
 
 
 class _CleanableStub(Cleanable):
+    __slots__ = Cleanable.__slots__ + ["cleaned_calls"]
+
     def __init__(self):
         super().__init__()
-        self.cleaned = False
+        self.cleaned_calls = 0
 
     def cleanup(self):
-        self.cleaned = True
-        super().cleanup()
+        if self._cleaned:
+            return
+        self.cleaned_calls += 1
+        self._cleaned = True
 
 
 class _BoomCleanable(Cleanable):
+    __slots__ = Cleanable.__slots__
+
     def cleanup(self):
         raise RuntimeError("boom")
 
@@ -86,7 +92,7 @@ def test_cleanup_cascades_and_nulls_references():
     profile.cleanup()
 
     for stub in (binding, resolution, class_prof, callable_prof):
-        assert stub.cleaned is True
+        assert getattr(stub, "cleaned", False) or stub.cleaned_calls > 0
     assert profile.spell is None
     assert profile.binding_profile is None
     assert profile.resolution_profile is None
