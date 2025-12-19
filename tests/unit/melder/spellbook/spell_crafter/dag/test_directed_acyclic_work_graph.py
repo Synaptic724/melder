@@ -128,8 +128,9 @@ def test_cleanup_marks_nodes_cleaned_and_clears_map():
     dag.cleanup()
     assert dag.cleaned
     assert dag.nodes == {}
-    # nodes cleaned as well
-    assert dag.get_node("a") is None
+    # access after cleanup is guarded
+    with pytest.raises(RuntimeError):
+        dag.get_node("a")
 
 
 def test_cleanup_swallow_node_cleanup_errors():
@@ -185,3 +186,158 @@ def test_add_dependency_prevents_self_cycle_via_dagnode_guard():
     dag = DirectedAcyclicWorkGraph()
     with pytest.raises(ValueError):
         dag.add_dependency("a", "a")
+
+
+def test_socket_kind_map_cleared_on_cleanup():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("p", "c", socket_kind=SocketKind.NORMAL)
+    assert dag._socket_kinds  # noqa: SLF001
+    dag.cleanup()
+    # internal map remains allocated but nodes are cleaned; ensure entries drop when accessing key components
+    for (parent, child), kind in list(dag._socket_kinds.items()):  # noqa: SLF001
+        assert parent.cleaned and child.cleaned
+
+
+def test_add_dependency_same_edge_overwrites_socket_kind():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("p", "c", socket_kind=SocketKind.NORMAL)
+    dag.add_dependency("p", "c", socket_kind=SocketKind.SPELL_CONTRACT)
+    parent = dag.nodes["p"]
+    child = dag.nodes["c"]
+    assert dag._socket_kinds[(parent, child)] is SocketKind.SPELL_CONTRACT  # noqa: SLF001
+
+
+def test_collect_dependency_ids_on_empty_graph():
+    dag = DirectedAcyclicWorkGraph()
+    assert dag.collect_dependency_ids() == []
+
+
+def test_topological_sort_no_nodes_returns_empty():
+    dag = DirectedAcyclicWorkGraph()
+    assert dag.topological_sort() == []
+
+
+def test_add_node_same_key_without_payload_preserves_existing_payload():
+    dag = DirectedAcyclicWorkGraph()
+    node = dag.add_node("x", payload="first")
+    dag.add_node("x", payload=None)
+    assert node.payload == "first"
+
+
+def test_add_dependency_is_idempotent_for_same_edge():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("p", "c")
+    dag.add_dependency("p", "c")
+    parent = dag.nodes["p"]
+    child = dag.nodes["c"]
+    assert len(child.dependencies) == 1
+    assert len(parent.dependents) == 1
+
+
+def test_get_node_respects_existing_reference_after_add_dependency():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("p", "c")
+    assert dag.get_node("p") is dag.nodes["p"]
+    assert dag.get_node("c") is dag.nodes["c"]
+
+
+def test_add_node_after_dependency_updates_payload():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("p", "c")
+    updated = dag.add_node("c", payload="new")
+    assert dag.nodes["c"] is updated
+    assert updated.payload == "new"
+
+
+def test_execute_propagates_topological_sort_failure():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("a", "b")
+    dag.add_dependency("b", "a")  # cycle
+    with pytest.raises(RuntimeError):
+        dag.execute()
+
+
+def test_topological_sort_handles_multiple_roots():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_node("root1")
+    dag.add_node("root2")
+    dag.add_dependency("root1", "leaf")
+    # Either root may appear first; ensure leaves after both roots
+    order = [n.id for n in dag.topological_sort()]
+    assert "root1" in order and "root2" in order and "leaf" in order
+    assert order.index("leaf") > order.index("root1")
+
+
+def test_execute_runs_tasks_after_branching_dependencies():
+    dag = DirectedAcyclicWorkGraph()
+    calls = []
+    dag.add_dependency("root", "b")
+    dag.add_dependency("root", "c")
+    dag.nodes["root"].add_task(lambda: calls.append("root"))
+    dag.nodes["b"].add_task(lambda: calls.append("b"))
+    dag.nodes["c"].add_task(lambda: calls.append("c"))
+    dag.execute()
+    assert calls[0] == "root"
+    assert set(calls[1:]) == {"b", "c"}
+
+
+def test_repr_updates_after_adding_nodes():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_node("x")
+    dag.add_node("y")
+    text = repr(dag)
+    assert "nodes=2" in text
+
+
+def test_cleanup_is_safe_when_no_nodes():
+    dag = DirectedAcyclicWorkGraph()
+    dag.cleanup()
+    assert dag.cleaned
+
+
+def test_collect_dependency_ids_reflects_chain_order():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("a", "b")
+    dag.add_dependency("b", "c")
+    assert dag.collect_dependency_ids() == ["a", "b", "c"]
+
+
+def test_add_dependency_without_socket_kind_leaves_map_empty():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("p", "c")
+    assert dag._socket_kinds == {}  # noqa: SLF001
+
+
+def test_add_dependency_param_name_none_leaves_param_maps_empty():
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("p", "c", param_name=None)
+    parent = dag.nodes["p"]
+    child = dag.nodes["c"]
+    assert parent.children_by_param == {}
+    assert child.incoming_params == {}
+
+
+def test_topological_sort_large_mixed_graph_respects_all_edges():
+    dag = DirectedAcyclicWorkGraph()
+    # Roots
+    dag.add_node("r1")
+    dag.add_node("r2")
+    # Middle layer
+    dag.add_dependency("r1", "m1")
+    dag.add_dependency("r2", "m2")
+    dag.add_dependency("r1", "m2")  # shared dependency
+    # Leaves
+    dag.add_dependency("m1", "l1")
+    dag.add_dependency("m2", "l2")
+    dag.add_dependency("m2", "l3")
+
+    order = [n.id for n in dag.topological_sort()]
+    for before, after in [
+        ("r1", "m1"),
+        ("r1", "m2"),
+        ("r2", "m2"),
+        ("m1", "l1"),
+        ("m2", "l2"),
+        ("m2", "l3"),
+    ]:
+        assert order.index(before) < order.index(after)

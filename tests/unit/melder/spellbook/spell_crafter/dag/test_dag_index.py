@@ -207,6 +207,16 @@ def test_get_by_name_is_case_sensitive():
     assert index.get_by_name("Name") == [upper]
 
 
+def test_iter_all_sockets_after_get_calls_still_dedupes():
+    index = DagIndex()
+    ref = _ref("n1", "p", ("p",))
+    index.add_socket(ref)
+    # call getters first
+    index.get_by_exact_path(("p",))
+    index.get_by_name("p")
+    assert list(index.iter_all_sockets()) == [ref]
+
+
 def test_get_by_exact_path_returns_all_matching_sockets_same_path():
     index = DagIndex()
     a = _ref("n1", "a", ("shared",))

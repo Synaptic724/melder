@@ -19,6 +19,15 @@ def test_parse_unique_and_broadcast_variants():
     assert broadcast.param_name == "repo"
 
 
+def test_parse_trims_param_names_and_paths():
+    unique = TargetSpec.parse("* logger ")
+    broadcast = TargetSpec.parse("** repo ")
+    path = TargetSpec.parse(" a > b > c ")
+    assert unique.param_name == "logger"
+    assert broadcast.param_name == "repo"
+    assert path.path == ("a", "b", "c")
+
+
 @pytest.mark.parametrize(
     "raw",
     [None, "", "   ", "*", "**", ">", ">>>"],

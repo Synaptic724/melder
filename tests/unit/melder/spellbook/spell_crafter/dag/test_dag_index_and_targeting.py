@@ -119,6 +119,25 @@ def test_dag_targeting_unknown_kind_raises_runtime():
         engine.resolve(DummySpec(), lambda r: True)  # type: ignore[arg-type]
 
 
+def test_dag_targeting_filter_can_remove_all_candidates():
+    index = DagIndex()
+    ref = SocketRef("n1", "p", ("a",), SocketKind.NORMAL)
+    index.add_socket(ref)
+    engine = DagTargetingEngine(index)
+
+    spec_path = TargetSpec(kind=TargetSpecKind.PATH, path=("a",), param_name=None)
+    with pytest.raises(RuntimeError):
+        engine.resolve(spec_path, lambda r: False)
+
+    spec_unique = TargetSpec(kind=TargetSpecKind.UNIQUE, path=None, param_name="p")
+    with pytest.raises(RuntimeError):
+        engine.resolve(spec_unique, lambda r: False)
+
+    spec_broadcast = TargetSpec(kind=TargetSpecKind.BROADCAST, path=None, param_name="p")
+    with pytest.raises(RuntimeError):
+        engine.resolve(spec_broadcast, lambda r: False)
+
+
 def test_dag_index_builder_shallow_builds_refs():
     class DummySocket:
         def __init__(self, name, kind):
