@@ -262,7 +262,7 @@ class Creations(Cleanable):
         for _, items in self._many.items():
             for item in items:
                 if item is not None:
-                    maybe_error = self._attempt_cleanup(item)
+                    maybe_error = self._attempt_cleanup(item.value)
                     if maybe_error:
                         errors.append(maybe_error)
                     item.cleanup()

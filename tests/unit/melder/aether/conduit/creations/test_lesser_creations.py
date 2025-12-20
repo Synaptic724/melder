@@ -532,6 +532,15 @@ def test_register_spellspace_creation_allows_reuse_after_clear(make_lesser_creat
     assert creations.get_spellspace_creation("ss-1", "spell-1") is not None
 
 
+def test_get_spellspace_creation_after_cleanup_raises_runtimeerror(make_lesser_creations):
+    """Verify get_spellspace_creation rejects access after cleanup."""
+    creations, _ = make_lesser_creations()
+    creations.cleanup()
+
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        creations.get_spellspace_creation("ss-1", "spell-1")
+
+
 # -----------------
 # Cleanup behavior
 # -----------------
@@ -615,17 +624,12 @@ def test_cleanup_is_thread_safe_for_concurrent_calls(make_lesser_creations):
 
 
 # -----------------
-# transfer_data_and_clear (known broken behavior)
+# transfer_data_and_clear
 # -----------------
 
 
-@pytest.mark.xfail(
-    reason=(
-            "Known bug: transfer_data_and_clear logs after cleanup() nulls _logger; "
-            "intended contract is: return snapshot (Creation wrappers) and clean the manager."
-    )
-)
 def test_transfer_data_and_clear_should_return_snapshot_and_clean_when_fixed(make_lesser_creations):
+    """Verify transfer_data_and_clear returns snapshot data and cleans the manager."""
     creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
     obj_u = object()
     obj_m = object()

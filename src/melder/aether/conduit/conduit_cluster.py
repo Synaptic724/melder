@@ -142,7 +142,7 @@ class ConduitCluster(Cleanable):
     # ------------------------------------------------------------------
     # Share helpers (operate on live conduit objects)
     # ------------------------------------------------------------------
-    def handle_join(self, conduit, frame, aetheric_frame_name: str = "default") -> None:
+    def handle_join(self, conduit, frame) -> None:
         """
         Add a member and auto-share all roots between the new member and existing peers.
 
@@ -190,7 +190,7 @@ class ConduitCluster(Cleanable):
         with self._lock:
             self.members.discard(conduit._id)
             member_ids = set(self.members)
-            self.shared_spells.pop(conduit._id, None)
+            leaver_id = conduit._id
 
         peers = [frame._conduits.get(cid) for cid in member_ids if frame._conduits.get(cid) is not None]
 
@@ -201,6 +201,9 @@ class ConduitCluster(Cleanable):
         # Remove spells peers owned from this conduit
         for peer in peers:
             self.remove_shared_from_borrower(peer, conduit, aetheric_frame_name)
+
+        with self._lock:
+            self.shared_spells.pop(leaver_id, None)
 
     def refresh_shareable_roots(self, owner) -> None:
         """
@@ -217,7 +220,7 @@ class ConduitCluster(Cleanable):
         for spell in shareables:
             self.add_shared_spell(owner_id, spell.spell_index)
 
-    def refresh_member_shares(self, conduit, frame, aetheric_frame_name: str = "default") -> None:
+    def refresh_member_shares(self, conduit, frame) -> None:
         """
         Refresh and (re)share this member's shareable roots with all peers in the cluster.
 
@@ -267,12 +270,16 @@ class ConduitCluster(Cleanable):
             if peer is None:
                 continue
             if link_deps:
+                cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 try:
-                    peer.add_spell_to_contract_with_dependencies(
+                    peer.add_spell_to_contract(
                         spell=spell,
                         conduit=owner,
                         permissions=getattr(spell, "permissions", "create"),
                         aetheric_frame=aetheric_frame_name,
+                        reason=DetailReason.root,
+                        root_spell_id=cluster_root_id,
+                        link_dependencies=True,
                     )
                 except Exception:
                     continue
@@ -299,8 +306,9 @@ class ConduitCluster(Cleanable):
             if peer is None:
                 continue
             try:
+                cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 peer.remove_root_from_contracts(
-                    root_spell_id=spell.spell_id,
+                    root_spell_id=cluster_root_id,
                     conduit=owner,
                     aetheric_frame=aetheric_frame_name,
                 )
@@ -340,23 +348,16 @@ class ConduitCluster(Cleanable):
             if spell is None:
                 continue
             try:
-                if link_deps:
-                    borrower.add_spell_to_contract_with_dependencies(
-                        spell=spell,
-                        conduit=owner,
-                        permissions=getattr(spell, "permissions", "create"),
-                        aetheric_frame=getattr(owner, "_aetheric_frame", "default"),
-                    )
-                else:
-                    borrower.add_spell_to_contract(
-                        spell=spell,
-                        conduit=owner,
-                        permissions=getattr(spell, "permissions", "create"),
-                        aetheric_frame=getattr(owner, "_aetheric_frame", "default"),
-                        reason=DetailReason.root,
-                        root_spell_id=spell.spell_id,
-                        link_dependencies=False,
-                    )
+                cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
+                borrower.add_spell_to_contract(
+                    spell=spell,
+                    conduit=owner,
+                    permissions=getattr(spell, "permissions", "create"),
+                    aetheric_frame=getattr(owner, "_aetheric_frame", "default"),
+                    reason=DetailReason.root,
+                    root_spell_id=cluster_root_id,
+                    link_dependencies=link_deps,
+                )
             except Exception:
                 continue
 
@@ -380,8 +381,9 @@ class ConduitCluster(Cleanable):
             if spell is None:
                 continue
             try:
+                cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 borrower.remove_root_from_contracts(
-                    root_spell_id=spell.spell_id,
+                    root_spell_id=cluster_root_id,
                     conduit=owner,
                     aetheric_frame=aetheric_frame,
                 )
@@ -439,6 +441,23 @@ class ConduitCluster(Cleanable):
         """
         with self._lock:
             self.auto_link_dependencies = bool(enabled)
+
+    def _cluster_root_id(self, owner_id: str, spell_id: str) -> str:
+        """
+        Build a cluster-scoped root spell identifier for contract sources.
+
+        This tag allows the cluster to remove only the contracts it created
+        without disrupting pre-existing manual links that may share the same
+        spell root.
+
+        Args:
+            owner_id: Conduit id that owns the shared spell.
+            spell_id: Spell version id for the shared root.
+
+        Returns:
+            str: Deterministic cluster-scoped root identifier.
+        """
+        return f"cluster:{self._name}:{owner_id}:{spell_id}"
 
     def describe(self) -> dict:
         """

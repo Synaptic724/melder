@@ -314,12 +314,20 @@ class LesserCreations(Cleanable):
             dict: A dictionary containing copies of the internal state (`unique_per_scope` and `many`).
         """
         self.check_cleaned()
-        self._logger.debug(
-            "transfer_data_and_clear: begin",
-            method_name="transfer_data_and_clear", mask=True,
-            owner_id=self._id, owner_display=self._display_name,
-            groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
+        logger = self._logger
+        log_kwargs = {
+            "method_name": "transfer_data_and_clear",
+            "mask": True,
+            "owner_id": self._id,
+            "owner_display": self._display_name,
+            "groups": self._log_groups,
+            "system_groups": self._log_sysgroups,
+        }
+        if logger is not None:
+            logger.debug(
+                "transfer_data_and_clear: begin",
+                **log_kwargs,
+            )
 
         try:
             data = {
@@ -327,23 +335,21 @@ class LesserCreations(Cleanable):
                 "many": self._many.copy()
             }
         finally:
-            self._logger.debug(
-                "transfer_data_and_clear: clearing internal containers",
-                method_name="transfer_data_and_clear", mask=True,
-                owner_id=self._id, owner_display=self._display_name,
-                groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
+            if logger is not None:
+                logger.debug(
+                    "transfer_data_and_clear: clearing internal containers",
+                    **log_kwargs,
+                )
             self._unique_per_scope.clear()
             self._many.clear()
             # Use cleanup() to finalize & null refs
             self.cleanup()
 
-        self._logger.debug(
-            "transfer_data_and_clear: complete",
-            method_name="transfer_data_and_clear", mask=True,
-            owner_id=self._id, owner_display=self._display_name,
-            groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
+        if logger is not None:
+            logger.debug(
+                "transfer_data_and_clear: complete",
+                **log_kwargs,
+            )
         return data
 
 
