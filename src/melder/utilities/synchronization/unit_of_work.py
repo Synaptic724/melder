@@ -286,16 +286,14 @@ class UnitOfWork(Cleanable, Future):
                 self.set_exception(exc)
                 raise exc
 
-        # ---- Execute underlying callable OUTSIDE the lock ----
-        # (This is intentional: avoid holding the lock across user code.)
-        try:
-            result = self._func(*self._args, **self._kwargs)
-        except BaseException as exc:
-            self.set_exception(exc)
-            raise
-        else:
-            self.set_result(result)
-            return result
+            try:
+                result = self._func(*self._args, **self._kwargs)
+            except BaseException as exc:
+                self.set_exception(exc)
+                raise
+            else:
+                self.set_result(result)
+                return result
 
 
     def __call__(self) -> Any:
