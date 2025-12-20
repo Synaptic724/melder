@@ -46,10 +46,12 @@ class Creation(Cleanable):
         if self._cleaned:
             return
 
-        self._cleaned = True
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._value = None   # Underlying object is not disposed here.
         self._lock = None
-        self._value = None   # Underlying object is not disposed here.
-
     @property
     def id(self) -> str:
         """Return the ULID identity for this creation."""
