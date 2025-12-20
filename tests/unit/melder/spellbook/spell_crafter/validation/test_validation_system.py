@@ -1,9 +1,1291 @@
-"""Auto-generated placeholder test to mirror src structure.
-Tests will be replaced with real coverage when available.
-"""
-import importlib
+from __future__ import annotations
 
-MODULE_PATH = "melder.spellbook.spell_crafter.validation.validation_system"
+from dataclasses import dataclass
 
-def test_import_module():
-    importlib.import_module(MODULE_PATH)
+import pytest
+
+import melder.spellbook.spell_crafter.validation.validation_system as validation_system_module
+from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
+    SpellValidationIssue,
+)
+from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import (
+    SpellValidationStrategy,
+)
+from melder.spellbook.spell_crafter.validation.validation_system import (
+    SpellValidationSystem,
+)
+
+
+@dataclass
+class _SpellIndexStub:
+    """
+    Purpose:
+        Provide a minimal SpellIndex stub with a current id.
+    Contract:
+        Stores the current spell id without validation.
+    Attributes:
+        current: Current spell id string.
+    """
+    current: str
+
+
+class _SpellStub:
+    """
+    Purpose:
+        Provide a minimal spell stub for validation system tests.
+    Contract:
+        Exposes spell_index, spell_name, and optional _spellbook.
+    """
+
+    def __init__(
+        self,
+        *,
+        spell_id: str = "spell-id",
+        spell_name: str = "spell-name",
+        spellbook: object | None = None,
+        include_spellbook: bool = True,
+    ) -> None:
+        """
+        Purpose:
+            Initialize a spell stub with optional spellbook attachment.
+        Contract:
+            Creates spell_index with the provided spell_id.
+        Args:
+            spell_id: Spell id assigned to spell_index.current.
+            spell_name: Spell name string.
+            spellbook: Spellbook object or None.
+            include_spellbook: Whether to set the _spellbook attribute.
+        Returns:
+            None.
+        """
+        self.spell_index = _SpellIndexStub(spell_id)
+        self.spell_name = spell_name
+        if include_spellbook:
+            self._spellbook = spellbook
+
+
+class _CancelStub:
+    """
+    Purpose:
+        Provide a minimal cancellation event stub for tests.
+    Contract:
+        Raises the configured exception when is_set is True.
+    """
+
+    def __init__(self, *, is_set: bool = True, exc: Exception | None = None) -> None:
+        """
+        Purpose:
+            Initialize the stub with a fixed cancellation state.
+        Contract:
+            Stores the provided state and exception for later use.
+        Args:
+            is_set: Whether cancellation is active.
+            exc: Optional exception to raise; defaults to RuntimeError.
+        Returns:
+            None.
+        """
+        self._is_set = is_set
+        self._exc = exc or RuntimeError("cancelled")
+
+    @property
+    def is_set(self) -> bool:
+        """
+        Purpose:
+            Report whether cancellation is currently active.
+        Contract:
+            Returns the value provided at initialization.
+        Returns:
+            bool: True when cancellation is active.
+        """
+        return self._is_set
+
+    def throw_if_set(self) -> None:
+        """
+        Purpose:
+            Raise the configured exception when cancellation is active.
+        Contract:
+            Raises only when is_set is True.
+        Raises:
+            Exception: The configured cancellation exception.
+        """
+        if self.is_set:
+            raise self._exc
+
+
+class _ToggleCancel:
+    """
+    Purpose:
+        Toggle cancellation state on the second is_set check.
+    Contract:
+        Raises once the second check is performed.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize the toggle state.
+        Contract:
+            Starts with cancellation disabled for the first check.
+        Returns:
+            None.
+        """
+        self._checks = 0
+
+    @property
+    def is_set(self) -> bool:
+        """
+        Purpose:
+            Toggle to cancelled on the second check.
+        Contract:
+            Returns False on first check, True thereafter.
+        Returns:
+            bool: True once cancellation should be honored.
+        """
+        self._checks += 1
+        return self._checks > 1
+
+    def throw_if_set(self) -> None:
+        """
+        Purpose:
+            Raise once cancellation has been toggled on.
+        Contract:
+            Raises RuntimeError when cancellation is active.
+        Raises:
+            RuntimeError: When cancellation has been toggled on.
+        """
+        if self._checks > 1:
+            raise RuntimeError("cancelled")
+
+
+class _ContextStub:
+    """
+    Purpose:
+        Provide a minimal context stub to verify cleanup behavior.
+    Contract:
+        Records cleanup calls and exposes provided attributes.
+    """
+
+    last_instance: "_ContextStub | None" = None
+
+    def __init__(
+        self,
+        *,
+        spell: object,
+        spellbook: object | None,
+        requirements: object | None,
+        symbolic_graph: object | None,
+        resolution_frame: object | None,
+        scanner: object | None,
+        cancel_event: object | None,
+        issues: list,
+    ) -> None:
+        """
+        Purpose:
+            Store the provided context attributes for later inspection.
+        Contract:
+            Records the most recent instance for test assertions.
+        Args:
+            spell: Spell object under validation.
+            spellbook: Owning spellbook, if any.
+            requirements: Phase 1 requirements artifact.
+            symbolic_graph: Phase 2 symbolic graph.
+            resolution_frame: Phase 3 resolution frame.
+            scanner: SpellbookScanner instance or None.
+            cancel_event: Cancellation event or None.
+            issues: Shared issues list.
+        Returns:
+            None.
+        """
+        self.spell = spell
+        self.spellbook = spellbook
+        self.requirements = requirements
+        self.symbolic_graph = symbolic_graph
+        self.resolution_frame = resolution_frame
+        self.scanner = scanner
+        self.cancel_event = cancel_event
+        self.issues = issues
+        self.cleanup_calls = 0
+        self.cleaned = False
+        _ContextStub.last_instance = self
+
+    def cleanup(self) -> None:
+        """
+        Purpose:
+            Record cleanup calls and mark the context as cleaned.
+        Contract:
+            Increments cleanup_calls and sets cleaned to True.
+        Returns:
+            None.
+        """
+        self.cleanup_calls += 1
+        self.cleaned = True
+
+
+class _ScannerStub:
+    """
+    Purpose:
+        Provide a SpellbookScanner stub to track creation and cleanup.
+    Contract:
+        Records the provided spellbook and cleanup calls.
+    """
+
+    created: list["_ScannerStub"] = []
+
+    def __init__(self, spellbook: object) -> None:
+        """
+        Purpose:
+            Record the provided spellbook on construction.
+        Contract:
+            Appends the instance to the created list.
+        Args:
+            spellbook: Spellbook object used for scanning.
+        Returns:
+            None.
+        """
+        self.spellbook = spellbook
+        self.cleanup_calls = 0
+        _ScannerStub.created.append(self)
+
+    def cleanup(self) -> None:
+        """
+        Purpose:
+            Record cleanup calls for verification.
+        Contract:
+            Increments cleanup_calls on each invocation.
+        Returns:
+            None.
+        """
+        self.cleanup_calls += 1
+
+
+class _EmptyNameStrategy:
+    """
+    Purpose:
+        Provide a strategy stub with an empty name for validation tests.
+    Contract:
+        Exposes name as an empty string.
+    """
+
+    name = ""
+
+    def validate(self, context: object) -> None:
+        """
+        Purpose:
+            No-op validate method to satisfy the expected interface.
+        Contract:
+            Does not mutate context or raise.
+        Args:
+            context: SpellValidationContext instance.
+        Returns:
+            None.
+        """
+        return None
+
+
+class _NoCleanupStrategy:
+    """
+    Purpose:
+        Provide a strategy stub without a cleanup method.
+    Contract:
+        Exposes a name attribute and validate method only.
+    """
+
+    def __init__(self, name: str = "no-cleanup") -> None:
+        """
+        Purpose:
+            Initialize the strategy with a stable name.
+        Contract:
+            Stores the name and resets call counters.
+        Args:
+            name: Strategy name string.
+        Returns:
+            None.
+        """
+        self.name = name
+        self.validate_calls = 0
+
+    def validate(self, context: object) -> None:
+        """
+        Purpose:
+            Record that validation was invoked.
+        Contract:
+            Increments validate_calls.
+        Args:
+            context: SpellValidationContext instance.
+        Returns:
+            None.
+        """
+        self.validate_calls += 1
+
+
+class _RecordingStrategy(SpellValidationStrategy):
+    """
+    Purpose:
+        Record validation calls and optionally append issues or raise.
+    Contract:
+        Captures context snapshots and preserves issue list references.
+    """
+
+    def __init__(
+        self,
+        *,
+        name: str = "recording",
+        issue: SpellValidationIssue | None = None,
+        raise_on_validate: bool = False,
+        on_validate: callable | None = None,
+    ) -> None:
+        """
+        Purpose:
+            Initialize the recording strategy.
+        Contract:
+            Stores options for issue appending and exception raising.
+        Args:
+            name: Strategy name string.
+            issue: Optional issue to append during validate.
+            raise_on_validate: Whether validate should raise.
+            on_validate: Optional callback invoked during validate.
+        Returns:
+            None.
+        """
+        super().__init__(name=name)
+        self.calls: int = 0
+        self.context_snapshots: list[dict[str, object]] = []
+        self.issues_ref: list | None = None
+        self._issue = issue
+        self._raise_on_validate = raise_on_validate
+        self._on_validate = on_validate
+
+    def validate(self, context: object) -> None:
+        """
+        Purpose:
+            Record the context and apply configured behaviors.
+        Contract:
+            - Captures context fields.
+            - Appends issue when configured.
+            - Raises when configured.
+        Args:
+            context: SpellValidationContext instance.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: When raise_on_validate is True.
+        """
+        self.calls += 1
+        snapshot = {
+            "spell": context.spell,
+            "spellbook": context.spellbook,
+            "requirements": context.requirements,
+            "symbolic_graph": context.symbolic_graph,
+            "resolution_frame": context.resolution_frame,
+            "scanner": context.scanner,
+            "cancel_event": context.cancel_event,
+            "issues": context.issues,
+        }
+        self.context_snapshots.append(snapshot)
+        if self.issues_ref is None:
+            self.issues_ref = context.issues
+        if self._on_validate is not None:
+            self._on_validate()
+        if self._issue is not None:
+            context.issues.append(self._issue)
+        if self._raise_on_validate:
+            raise RuntimeError("strategy boom")
+
+
+class _CleanupStrategy(SpellValidationStrategy):
+    """
+    Purpose:
+        Track cleanup calls for unregister_strategy tests.
+    Contract:
+        Increments cleanup_calls and honors base cleanup behavior.
+    """
+
+    def __init__(self, name: str = "cleanup") -> None:
+        """
+        Purpose:
+            Initialize the cleanup-tracking strategy.
+        Contract:
+            Resets cleanup_calls to zero.
+        Args:
+            name: Strategy name string.
+        Returns:
+            None.
+        """
+        super().__init__(name=name)
+        self.cleanup_calls = 0
+
+    def validate(self, context: object) -> None:
+        """
+        Purpose:
+            No-op validate method for cleanup testing.
+        Contract:
+            Does not mutate context or raise.
+        Args:
+            context: SpellValidationContext instance.
+        Returns:
+            None.
+        """
+        return None
+
+    def cleanup(self) -> None:
+        """
+        Purpose:
+            Record cleanup calls and delegate to base cleanup.
+        Contract:
+            Increments cleanup_calls and marks cleaned.
+        Returns:
+            None.
+        """
+        self.cleanup_calls += 1
+        super().cleanup()
+
+
+class _RaisingCleanupStrategy(SpellValidationStrategy):
+    """
+    Purpose:
+        Provide a strategy that raises during cleanup.
+    Contract:
+        cleanup raises RuntimeError when invoked.
+    """
+
+    def __init__(self, name: str = "raising-cleanup") -> None:
+        """
+        Purpose:
+            Initialize the raising cleanup strategy.
+        Contract:
+            Stores the provided name via base constructor.
+        Args:
+            name: Strategy name string.
+        Returns:
+            None.
+        """
+        super().__init__(name=name)
+
+    def validate(self, context: object) -> None:
+        """
+        Purpose:
+            No-op validate method for cleanup testing.
+        Contract:
+            Does not mutate context or raise.
+        Args:
+            context: SpellValidationContext instance.
+        Returns:
+            None.
+        """
+        return None
+
+    def cleanup(self) -> None:
+        """
+        Purpose:
+            Raise to simulate cleanup failure.
+        Contract:
+            Always raises RuntimeError.
+        Raises:
+            RuntimeError: Unconditional cleanup error.
+        """
+        raise RuntimeError("cleanup boom")
+
+
+class _TestValidationSystem(SpellValidationSystem):
+    """
+    Purpose:
+        SpellValidationSystem variant with builtin registration disabled.
+    Contract:
+        Does not auto-register any strategies on initialization.
+    """
+
+    def _register_builtin_strategies(self) -> None:
+        """
+        Purpose:
+            Override builtin registration for test control.
+        Contract:
+            Leaves the strategy registry empty.
+        Returns:
+            None.
+        """
+        return None
+
+
+def _make_spell(
+    *,
+    spell_id: str = "spell-id",
+    spell_name: str = "spell-name",
+    spellbook: object | None = None,
+    include_spellbook: bool = True,
+) -> _SpellStub:
+    """
+    Purpose:
+        Build a spell stub with configurable identifiers and spellbook link.
+    Contract:
+        Returns a _SpellStub with the provided attributes.
+    Args:
+        spell_id: Spell id assigned to spell_index.current.
+        spell_name: Spell name string.
+        spellbook: Spellbook object or None.
+        include_spellbook: Whether to set the _spellbook attribute.
+    Returns:
+        _SpellStub: The configured spell stub.
+    """
+    return _SpellStub(
+        spell_id=spell_id,
+        spell_name=spell_name,
+        spellbook=spellbook,
+        include_spellbook=include_spellbook,
+    )
+
+
+def test_init_registers_builtin_strategies() -> None:
+    """
+    Purpose:
+        Ensure the default system registers built-in strategies.
+    Contract:
+        Built-in strategy names are present in the registry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any built-in strategy is missing.
+    """
+    system = SpellValidationSystem()
+    names = {strategy.name for strategy in system.iter_strategies()}
+    expected = {
+        "resolution_frame_presence",
+        "dangling_dependencies",
+        "self_dependency",
+        "circular_dependency",
+        "required_holes",
+        "duplicate_spell_name",
+    }
+    assert expected.issubset(names)
+    assert len(names) >= len(expected)
+
+
+def test_register_strategy_rejects_none() -> None:
+    """
+    Purpose:
+        Ensure registering a None strategy raises ValueError.
+    Contract:
+        register_strategy rejects None inputs.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ValueError is not raised.
+    """
+    system = _TestValidationSystem()
+    with pytest.raises(ValueError, match="strategy"):
+        system.register_strategy(None)
+
+
+def test_register_strategy_rejects_empty_name() -> None:
+    """
+    Purpose:
+        Ensure strategies with empty names are rejected.
+    Contract:
+        register_strategy raises ValueError for empty names.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ValueError is not raised.
+    """
+    system = _TestValidationSystem()
+    with pytest.raises(ValueError, match="strategy.name"):
+        system.register_strategy(_EmptyNameStrategy())
+
+
+def test_register_strategy_replaces_existing() -> None:
+    """
+    Purpose:
+        Verify registering a strategy with the same name replaces the prior one.
+    Contract:
+        Only the latest strategy is retained under the shared name.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the replacement does not occur.
+    """
+    system = _TestValidationSystem()
+    first = _RecordingStrategy(name="dup")
+    second = _RecordingStrategy(name="dup")
+    system.register_strategy(first)
+    system.register_strategy(second)
+    strategies = system.iter_strategies()
+    assert len(strategies) == 1
+    assert strategies[0] is second
+
+
+def test_unregister_strategy_rejects_empty_name() -> None:
+    """
+    Purpose:
+        Ensure unregister rejects empty names.
+    Contract:
+        unregister_strategy raises ValueError for empty name inputs.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ValueError is not raised.
+    """
+    system = _TestValidationSystem()
+    with pytest.raises(ValueError, match="name"):
+        system.unregister_strategy("")
+
+
+def test_unregister_strategy_removes_strategy() -> None:
+    """
+    Purpose:
+        Verify unregister removes a registered strategy.
+    Contract:
+        Strategy list becomes empty after removal.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the strategy remains registered.
+    """
+    system = _TestValidationSystem()
+    strategy = _RecordingStrategy(name="to-remove")
+    system.register_strategy(strategy)
+    system.unregister_strategy("to-remove")
+    assert system.iter_strategies() == []
+
+
+def test_unregister_strategy_calls_cleanup() -> None:
+    """
+    Purpose:
+        Ensure unregister invokes strategy cleanup when present.
+    Contract:
+        cleanup is called exactly once on unregister.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup is not called.
+    """
+    system = _TestValidationSystem()
+    strategy = _CleanupStrategy(name="cleanup")
+    system.register_strategy(strategy)
+    system.unregister_strategy("cleanup")
+    assert strategy.cleanup_calls == 1
+
+
+def test_unregister_strategy_swallows_cleanup_errors() -> None:
+    """
+    Purpose:
+        Confirm unregister suppresses cleanup exceptions.
+    Contract:
+        unregister completes even if cleanup raises.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If unregister raises or strategy remains.
+    """
+    system = _TestValidationSystem()
+    strategy = _RaisingCleanupStrategy(name="boom")
+    system.register_strategy(strategy)
+    system.unregister_strategy("boom")
+    assert system.iter_strategies() == []
+
+
+def test_unregister_strategy_without_cleanup_method() -> None:
+    """
+    Purpose:
+        Verify unregister works for strategies without cleanup methods.
+    Contract:
+        Strategy is removed without error.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If unregister raises or strategy remains.
+    """
+    system = _TestValidationSystem()
+    strategy = _NoCleanupStrategy(name="no-cleanup")
+    system.register_strategy(strategy)
+    system.unregister_strategy("no-cleanup")
+    assert system.iter_strategies() == []
+
+
+def test_iter_strategies_returns_snapshot() -> None:
+    """
+    Purpose:
+        Ensure iter_strategies returns a copy of the registry.
+    Contract:
+        Mutating the returned list does not affect the registry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If registry is mutated by list changes.
+    """
+    system = _TestValidationSystem()
+    strategy = _RecordingStrategy(name="snap")
+    system.register_strategy(strategy)
+    snapshot = system.iter_strategies()
+    snapshot.clear()
+    assert system.iter_strategies() == [strategy]
+
+
+def test_validate_spell_requires_spell() -> None:
+    """
+    Purpose:
+        Ensure validate_spell rejects a None spell.
+    Contract:
+        Raises ValueError when spell is None.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ValueError is not raised.
+    """
+    system = _TestValidationSystem()
+    with pytest.raises(ValueError, match="spell"):
+        system.validate_spell(
+            spell=None,
+            requirements=None,
+            symbolic_graph=None,
+            resolution_frame=None,
+        )
+
+
+def test_validate_spell_returns_result_with_spell_id_and_name() -> None:
+    """
+    Purpose:
+        Verify validate_spell returns a result with spell id and name.
+    Contract:
+        Result fields match the spell's current id and name.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If result fields do not match.
+    """
+    system = _TestValidationSystem()
+    spell = _make_spell(spell_id="sid", spell_name="sname", spellbook=None)
+    result = system.validate_spell(
+        spell=spell,
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert result.spell_id == "sid"
+    assert result.spell_name == "sname"
+    assert result.issues == []
+
+
+def test_validate_spell_runs_all_strategies() -> None:
+    """
+    Purpose:
+        Ensure all registered strategies are invoked.
+    Contract:
+        Each strategy validate runs once.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any strategy is not called.
+    """
+    system = _TestValidationSystem()
+    first = _RecordingStrategy(name="first")
+    second = _RecordingStrategy(name="second")
+    system.register_strategy(first)
+    system.register_strategy(second)
+    system.validate_spell(
+        spell=_make_spell(),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert first.calls == 1
+    assert second.calls == 1
+
+
+def test_validate_spell_passes_context_fields_to_strategy(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        Verify context fields are populated as expected for strategies.
+    Contract:
+        Context fields match the supplied spell and artifacts.
+    Args:
+        monkeypatch: Pytest fixture for patching SpellbookScanner.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any context field is incorrect.
+    """
+    monkeypatch.setattr(validation_system_module, "SpellbookScanner", _ScannerStub)
+    _ScannerStub.created.clear()
+    system = _TestValidationSystem()
+    issue = SpellValidationIssue("warning", "W", "warn")
+    strategy = _RecordingStrategy(name="rec", issue=issue)
+    system.register_strategy(strategy)
+    spellbook = object()
+    requirements = object()
+    symbolic_graph = object()
+    resolution_frame = object()
+    cancel_event = object()
+    spell = _make_spell(
+        spellbook=spellbook,
+        include_spellbook=True,
+    )
+
+    system.validate_spell(
+        spell=spell,
+        requirements=requirements,
+        symbolic_graph=symbolic_graph,
+        resolution_frame=resolution_frame,
+        cancel_event=cancel_event,
+    )
+
+    snapshot = strategy.context_snapshots[0]
+    assert snapshot["spell"] is spell
+    assert snapshot["spellbook"] is spellbook
+    assert snapshot["requirements"] is requirements
+    assert snapshot["symbolic_graph"] is symbolic_graph
+    assert snapshot["resolution_frame"] is resolution_frame
+    assert snapshot["cancel_event"] is cancel_event
+    assert isinstance(snapshot["scanner"], _ScannerStub)
+    assert snapshot["issues"] is strategy.issues_ref
+
+
+def test_validate_spell_appends_issues_to_result() -> None:
+    """
+    Purpose:
+        Ensure issues appended by strategies appear in the result.
+    Contract:
+        Result issues list contains the appended issue and matches the shared list.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If issues are missing or list references differ.
+    """
+    system = _TestValidationSystem()
+    issue = SpellValidationIssue("error", "E", "err")
+    strategy = _RecordingStrategy(name="rec", issue=issue)
+    system.register_strategy(strategy)
+    result = system.validate_spell(
+        spell=_make_spell(),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert issue in result.issues
+    assert result.issues is strategy.issues_ref
+
+
+def test_validate_spell_cancellation_preempts_strategies() -> None:
+    """
+    Purpose:
+        Ensure cancellation is honored before strategy execution.
+    Contract:
+        Raises cancellation exception and no strategy runs.
+    Returns:
+        None.
+    Raises:
+        RuntimeError: When cancellation is signaled.
+    """
+    system = _TestValidationSystem()
+    strategy = _RecordingStrategy(name="rec")
+    system.register_strategy(strategy)
+    with pytest.raises(RuntimeError, match="cancelled"):
+        system.validate_spell(
+            spell=_make_spell(),
+            requirements=None,
+            symbolic_graph=None,
+            resolution_frame=None,
+            cancel_event=_CancelStub(is_set=True),
+        )
+    assert strategy.calls == 0
+
+
+def test_validate_spell_cancellation_between_strategies() -> None:
+    """
+    Purpose:
+        Verify cancellation stops processing between strategies.
+    Contract:
+        First strategy runs, second is blocked by cancellation.
+    Returns:
+        None.
+    Raises:
+        RuntimeError: When cancellation is toggled on.
+    """
+    system = _TestValidationSystem()
+    first = _RecordingStrategy(name="first")
+    second = _RecordingStrategy(name="second")
+    system.register_strategy(first)
+    system.register_strategy(second)
+    with pytest.raises(RuntimeError, match="cancelled"):
+        system.validate_spell(
+            spell=_make_spell(),
+            requirements=None,
+            symbolic_graph=None,
+            resolution_frame=None,
+            cancel_event=_ToggleCancel(),
+        )
+    assert first.calls == 1
+    assert second.calls == 0
+
+
+def test_validate_spell_propagates_strategy_exception() -> None:
+    """
+    Purpose:
+        Ensure strategy exceptions propagate out of validate_spell.
+    Contract:
+        RuntimeError from strategy is not swallowed.
+    Returns:
+        None.
+    Raises:
+        RuntimeError: When the strategy raises.
+    """
+    system = _TestValidationSystem()
+    strategy = _RecordingStrategy(name="boom", raise_on_validate=True)
+    system.register_strategy(strategy)
+    with pytest.raises(RuntimeError, match="strategy boom"):
+        system.validate_spell(
+            spell=_make_spell(),
+            requirements=None,
+            symbolic_graph=None,
+            resolution_frame=None,
+        )
+
+
+def test_validate_spell_cleanup_context_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        Ensure context cleanup runs even when a strategy raises.
+    Contract:
+        Context cleanup is invoked once before exception propagates.
+    Args:
+        monkeypatch: Pytest fixture for patching SpellValidationContext.
+    Returns:
+        None.
+    Raises:
+        RuntimeError: When the strategy raises.
+    """
+    monkeypatch.setattr(validation_system_module, "SpellValidationContext", _ContextStub)
+    system = _TestValidationSystem()
+    strategy = _RecordingStrategy(name="boom", raise_on_validate=True)
+    system.register_strategy(strategy)
+    with pytest.raises(RuntimeError, match="strategy boom"):
+        system.validate_spell(
+            spell=_make_spell(),
+            requirements=None,
+            symbolic_graph=None,
+            resolution_frame=None,
+        )
+    assert _ContextStub.last_instance is not None
+    assert _ContextStub.last_instance.cleaned is True
+    assert _ContextStub.last_instance.cleanup_calls == 1
+
+
+def test_validate_spell_with_spellbook_creates_scanner(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        Verify SpellbookScanner is created and cleaned when spellbook is present.
+    Contract:
+        Scanner records the spellbook and cleanup is invoked once.
+    Args:
+        monkeypatch: Pytest fixture for patching SpellbookScanner.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If scanner was not created or cleaned.
+    """
+    monkeypatch.setattr(validation_system_module, "SpellbookScanner", _ScannerStub)
+    _ScannerStub.created.clear()
+    system = _TestValidationSystem()
+    system.register_strategy(_RecordingStrategy(name="rec"))
+    spellbook = object()
+    system.validate_spell(
+        spell=_make_spell(spellbook=spellbook, include_spellbook=True),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert len(_ScannerStub.created) == 1
+    scanner = _ScannerStub.created[0]
+    assert scanner.spellbook is spellbook
+    assert scanner.cleanup_calls == 1
+
+
+def test_validate_spell_without_spellbook_attribute_skips_scanner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Ensure missing _spellbook attribute prevents scanner creation.
+    Contract:
+        Validation succeeds without invoking SpellbookScanner.
+    Args:
+        monkeypatch: Pytest fixture for patching SpellbookScanner.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If SpellbookScanner is invoked.
+    """
+    class _BoomScanner:
+        """
+        Purpose:
+            Raise if constructed to detect unintended scanner creation.
+        Contract:
+            __init__ always raises RuntimeError.
+        """
+
+        def __init__(self, spellbook: object) -> None:
+            """
+            Purpose:
+                Raise immediately to fail the test if called.
+            Contract:
+                Always raises RuntimeError.
+            Raises:
+                RuntimeError: Unconditional init error.
+            """
+            raise RuntimeError("scanner should not be created")
+
+    class _SpellNoSpellbook:
+        """
+        Purpose:
+            Spell stub without a _spellbook attribute.
+        Contract:
+            Exposes spell_index and spell_name only.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize spell id and name for validation.
+            Contract:
+                Sets spell_index.current and spell_name.
+            Returns:
+                None.
+            """
+            self.spell_index = _SpellIndexStub("sid")
+            self.spell_name = "sname"
+
+    monkeypatch.setattr(validation_system_module, "SpellbookScanner", _BoomScanner)
+    system = _TestValidationSystem()
+    result = system.validate_spell(
+        spell=_SpellNoSpellbook(),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert result.spell_id == "sid"
+
+
+def test_validate_spell_with_spellbook_none_skips_scanner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Ensure a None spellbook does not trigger scanner creation.
+    Contract:
+        Validation succeeds without invoking SpellbookScanner.
+    Args:
+        monkeypatch: Pytest fixture for patching SpellbookScanner.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If SpellbookScanner is invoked.
+    """
+    class _BoomScanner:
+        """
+        Purpose:
+            Raise if constructed to detect unintended scanner creation.
+        Contract:
+            __init__ always raises RuntimeError.
+        """
+
+        def __init__(self, spellbook: object) -> None:
+            """
+            Purpose:
+                Raise immediately to fail the test if called.
+            Contract:
+                Always raises RuntimeError.
+            Raises:
+                RuntimeError: Unconditional init error.
+            """
+            raise RuntimeError("scanner should not be created")
+
+    monkeypatch.setattr(validation_system_module, "SpellbookScanner", _BoomScanner)
+    system = _TestValidationSystem()
+    result = system.validate_spell(
+        spell=_make_spell(spellbook=None, include_spellbook=True),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert result.spell_id == "spell-id"
+
+
+def test_cleanup_clears_strategies_and_marks_cleaned() -> None:
+    """
+    Purpose:
+        Verify cleanup clears strategies and marks the system as cleaned.
+    Contract:
+        _strategies is empty and _lock is None after cleanup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup does not clear state.
+    """
+    system = _TestValidationSystem()
+    system.register_strategy(_RecordingStrategy(name="rec"))
+    system.cleanup()
+    assert system.cleaned is True
+    assert system._strategies == {}
+    assert system._lock is None
+
+
+def test_cleanup_is_idempotent() -> None:
+    """
+    Purpose:
+        Ensure cleanup can be called multiple times safely.
+    Contract:
+        Second cleanup call does not raise and state remains cleaned.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup is not idempotent.
+    """
+    system = _TestValidationSystem()
+    system.cleanup()
+    system.cleanup()
+    assert system.cleaned is True
+    assert system._lock is None
+
+
+def test_validate_spell_after_cleanup_raises() -> None:
+    """
+    Purpose:
+        Ensure validate_spell rejects calls after cleanup.
+    Contract:
+        Raises RuntimeError when system is cleaned.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If RuntimeError is not raised.
+    """
+    system = _TestValidationSystem()
+    system.cleanup()
+    with pytest.raises(RuntimeError, match="cleaned"):
+        system.validate_spell(
+            spell=_make_spell(),
+            requirements=None,
+            symbolic_graph=None,
+            resolution_frame=None,
+        )
+
+
+def test_register_strategy_after_cleanup_raises() -> None:
+    """
+    Purpose:
+        Ensure register_strategy rejects calls after cleanup.
+    Contract:
+        Raises RuntimeError when system is cleaned.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If RuntimeError is not raised.
+    """
+    system = _TestValidationSystem()
+    system.cleanup()
+    with pytest.raises(RuntimeError, match="cleaned"):
+        system.register_strategy(_RecordingStrategy(name="rec"))
+
+
+def test_iter_strategies_after_cleanup_raises() -> None:
+    """
+    Purpose:
+        Ensure iter_strategies rejects calls after cleanup.
+    Contract:
+        Raises RuntimeError when system is cleaned.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If RuntimeError is not raised.
+    """
+    system = _TestValidationSystem()
+    system.cleanup()
+    with pytest.raises(RuntimeError, match="cleaned"):
+        system.iter_strategies()
+
+
+def test_unregister_strategy_after_cleanup_raises() -> None:
+    """
+    Purpose:
+        Ensure unregister_strategy rejects calls after cleanup.
+    Contract:
+        Raises RuntimeError when system is cleaned.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If RuntimeError is not raised.
+    """
+    system = _TestValidationSystem()
+    system.cleanup()
+    with pytest.raises(RuntimeError, match="cleaned"):
+        system.unregister_strategy("any")
+
+
+def test_validate_spell_uses_strategy_snapshot() -> None:
+    """
+    Purpose:
+        Confirm strategies registered during validation do not run in the same call.
+    Contract:
+        Newly registered strategy runs only on the next validation call.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If strategy runs in the same call.
+    """
+    system = _TestValidationSystem()
+    second = _RecordingStrategy(name="second")
+
+    def register_second() -> None:
+        """
+        Purpose:
+            Register the second strategy during validation.
+        Contract:
+            Adds the second strategy to the system.
+        Returns:
+            None.
+        """
+        system.register_strategy(second)
+
+    first = _RecordingStrategy(name="first", on_validate=register_second)
+    system.register_strategy(first)
+
+    system.validate_spell(
+        spell=_make_spell(),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert first.calls == 1
+    assert second.calls == 0
+
+    system.validate_spell(
+        spell=_make_spell(),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert second.calls == 1
+
+
+def test_validate_spell_cleanup_context_on_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        Ensure context cleanup runs on successful validation.
+    Contract:
+        Context cleanup is invoked once after validation.
+    Args:
+        monkeypatch: Pytest fixture for patching SpellValidationContext.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup is not called.
+    """
+    monkeypatch.setattr(validation_system_module, "SpellValidationContext", _ContextStub)
+    system = _TestValidationSystem()
+    system.register_strategy(_RecordingStrategy(name="rec"))
+    system.validate_spell(
+        spell=_make_spell(),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert _ContextStub.last_instance is not None
+    assert _ContextStub.last_instance.cleaned is True
+    assert _ContextStub.last_instance.cleanup_calls == 1
