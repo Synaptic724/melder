@@ -16,7 +16,23 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class CycleDetectionStrategy(SpellSystemValidationStrategy):
     """
-    Detect cycles in the system dependency graph using SpellSystemIndex edges.
+    Detect cycles in the system dependency graph described by SpellSystemIndex.
+
+    Purpose:
+        Identify whether any dependency cycle exists and emit a single
+        "cycle_detected" diagnostic when one is found.
+
+    Contract:
+        - Does not mutate the index or its nodes.
+        - Appends at most one diagnostic for any cycle presence.
+        - Honors cancel_event by delegating to cancel_event.throw_if_set()
+          during traversal.
+
+    Threading:
+        Stateless; safe for concurrent use when inputs are not shared.
+
+    Lifecycle:
+        No owned resources; no cleanup required.
     """
     __slots__ = []
 
@@ -30,6 +46,41 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
             diagnostics: List[SystemDiagnostic],
             cancel_event: Optional[CancellationEvent],
     ) -> None:
+        """
+        Detect dependency cycles across SpellSystemIndex nodes.
+
+        Purpose:
+            Run a Kahn-style topological traversal to determine whether the
+            dependency graph is acyclic.
+
+        Contract:
+            - Appends a single "cycle_detected" error diagnostic if any cycle exists.
+            - Leaves diagnostics unchanged when no cycle is present.
+            - Does not mutate the index or nodes.
+            - Checks cancel_event during traversal and propagates its exception.
+
+        Args:
+            index: Spell system index to scan; must not be None.
+            blueprints: Phase-5 blueprints (unused by this strategy).
+            phase4_results: Phase-4 results (unused by this strategy).
+            broken_spell_ids: Broken spell ids (unused by this strategy).
+            diagnostics: Mutable list that receives diagnostics.
+            cancel_event: Optional cancellation signal.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: If index is None.
+            Exception: Propagates any exception raised by cancel_event.throw_if_set()
+                when cancellation is signaled.
+
+        Threading:
+            Stateless; callers must synchronize shared inputs (e.g., diagnostics).
+
+        Lifecycle:
+            No owned resources; no cleanup required.
+        """
         if index is None:
             raise ValueError("index must not be None.")
 
@@ -52,7 +103,7 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
         visited = 0
 
         while idx < len(queue):
-            if cancel_event is not None and cancel_event.is_set:
+            if cancel_event is not None:
                 cancel_event.throw_if_set()
             current = queue[idx]
             idx += 1
