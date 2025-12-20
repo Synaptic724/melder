@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
+import threading
 from threading import RLock
 
 from melder.aether.conduit.conduit_ward.contract.details import Detail
@@ -63,7 +64,7 @@ def test_detail_init_success(mock_spell_index, mock_permissions, mock_contract_t
     assert detail.contract_type == mock_contract_type
     assert detail.reason == mock_detail_reason
     assert detail.sources == {"root_a", "root_b"}
-    assert isinstance(detail._lock, RLock)
+    assert isinstance(detail._lock, threading.RLock)
     assert not detail._cleaned
     assert detail._id is not None
 
