@@ -64,21 +64,42 @@ def aether_with_mocks(mock_frame_cls):
 # ----------------------------------------------------------------------
 
 def test_singleton_identity():
-    """Multiple instantiations return the exact same object."""
+    """
+    Verify `Aether` enforces the Singleton pattern.
+
+    Contract:
+    - Multiple calls to `Aether()` must return the exact same instance reference.
+    - `id()` checks must match.
+    """
     a1 = Aether()
     a2 = Aether()
     assert a1 is a2
     assert id(a1) == id(a2)
 
 def test_initialization_creates_default_frame(mock_frame_cls):
-    """Initializing Aether creates a 'default' AethericFrame."""
+    """
+    Verify initialization automatically creates the 'default' frame.
+
+    Contract:
+    - `_aetheric_frames` must contain "default".
+    - `_default_frame` property must point to this frame.
+    - AethericFrame constructor must be called with "default".
+    """
     a = Aether()
     assert "default" in a._aetheric_frames
     mock_frame_cls.assert_called_with("default")
     assert a._default_frame is mock_frame_cls.return_value
 
 def test_cleanup_clears_state(aether_with_mocks):
-    """cleanup() removes all frames and references and resets singleton."""
+    """
+    Verify `cleanup` resets the singleton for re-use/shutdown.
+
+    Contract:
+    - All frames are removed and cleaned.
+    - `_aetheric_frames` is set to None.
+    - `_default_frame` is set to None.
+    - Singleton instance reference (`Aether._instance`) is cleared to allow fresh tests.
+    """
     a = aether_with_mocks
     default_frame = a._default_frame
     
@@ -129,7 +150,13 @@ def test_internal_lock_integrity():
 # ----------------------------------------------------------------------
 
 def test_cleanup_specific_frame(aether_with_mocks):
-    """cleanup_frame() removes the specified frame and cleans it."""
+    """
+    Verify `cleanup_frame` correctly removes and cleans a targeted frame.
+
+    Contract:
+    - The frame object's `cleanup()` method is called.
+    - The frame is removed from the internal registry.
+    """
     a = aether_with_mocks
     mock_custom = MagicMock()
     a._aetheric_frames["custom"] = mock_custom
@@ -156,7 +183,12 @@ def test_cleanup_frame_not_found(aether_with_mocks):
     a.cleanup_frame("non_existent")
 
 def test_cleanup_frame_handles_concurrent_removal(aether_with_mocks):
-    """If frame is removed concurrently after check, should handle None."""
+    """
+    Verify robustness against concurrent frame removal.
+
+    Contract:
+    - If a frame is present during check but removed before cleanup, no error is raised.
+    """
     a = aether_with_mocks
     a.cleanup_frame("missing")
 
@@ -192,7 +224,12 @@ def test_cleanup_aetheric_frames_tolerant_of_errors(aether_with_mocks):
 # ----------------------------------------------------------------------
 
 def test_add_conduit_delegates_to_default(aether_with_mocks):
-    """_add_conduit calls the default frame's conduit management."""
+    """
+    Verify `_add_conduit` delegates to the default frame.
+
+    Contract:
+    - If no frame name is provided, the conduit is added to the default frame's registry.
+    """
     a = aether_with_mocks
     frame_mock = a._default_frame
     conduits_dict = {}
@@ -324,7 +361,12 @@ def test_get_conduit_cloud(aether_with_mocks):
 # ----------------------------------------------------------------------
 
 def test_bind_configuration(aether_with_mocks):
-    """_bind_configuration sets property on frame."""
+    """
+    Verify `_bind_configuration` attaches configuration to the frame.
+
+    Contract:
+    - The configuration object is stored on the target frame's `_configuration` field.
+    """
     a = aether_with_mocks
     frame_mock = a._default_frame
     config = MagicMock()
@@ -333,7 +375,9 @@ def test_bind_configuration(aether_with_mocks):
     assert frame_mock._configuration is config
 
 def test_get_configuration(aether_with_mocks):
-    """_get_configuration retrieves property from frame."""
+    """
+    Verify `_get_configuration` retrieves configuration from the frame.
+    """
     a = aether_with_mocks
     frame_mock = a._default_frame
     expected = MagicMock()
@@ -731,7 +775,12 @@ def test_cleanup_failure_logging(mock_frame_cls):
 # ----------------------------------------------------------------------
 
 def test_revalidate_dirty_roots_delegates(aether_with_mocks):
-    """_revalidate_dirty_roots calls devops manager."""
+    """
+    Verify `_revalidate_dirty_roots` triggers the devops revalidator.
+
+    Contract:
+    - DevOpsManager.revalidate_dirty_roots is called via the frame.
+    """
     a = aether_with_mocks
     mock_devops = MagicMock()
     a._default_frame._dev_ops_manager = mock_devops

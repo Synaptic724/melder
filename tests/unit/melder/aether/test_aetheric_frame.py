@@ -35,7 +35,16 @@ def frame(mock_dependencies):
 # ----------------------------------------------------------------------
 
 def test_init_success(mock_dependencies):
-    """Test successful initialization sets name and creates components."""
+    """
+    Verify successful initialization sets name and creates components.
+
+    Contract:
+    - Name is set.
+    - ID is generated.
+    - Lock is created.
+    - All sub-managers (cloud, mr, sss, dom) are instantiated using mocks.
+    - Registries start empty.
+    """
     f = AethericFrame("my_frame")
     assert f.name == "my_frame"
     assert f._id is not None
@@ -68,7 +77,13 @@ def test_init_none_name_raises():
 # ----------------------------------------------------------------------
 
 def test_context_manager_acquires_lock(frame):
-    """Test __enter__ and __exit__ manage the lock."""
+    """
+    Verify `__enter__` and `__exit__` manage the internal lock.
+
+    Contract:
+    - Entering the context acquires the lock.
+    - Exiting the context releases the lock.
+    """
     # We can verify lock behavior by spying or checking locked status if possible.
     # RLock doesn't expose 'locked()' easily, but we can verify usage.
     with frame as f:
@@ -89,7 +104,13 @@ def test_context_manager_raises_if_cleaned(frame):
 # ----------------------------------------------------------------------
 
 def test_cleanup_clears_registries(frame):
-    """Test cleanup empties all dictionaries."""
+    """
+    Verify `cleanup` empties all internal data structures.
+
+    Contract:
+    - All registry dictionaries are set to None.
+    - The cleaned flag is set to True.
+    """
     # Populate some dummy data
     frame._conduits["c1"] = MagicMock()
     frame._spell_registry["c1"] = set()
@@ -105,7 +126,13 @@ def test_cleanup_clears_registries(frame):
     assert frame._cleaned is True
 
 def test_cleanup_calls_subcomponent_cleanup(frame):
-    """Test cleanup delegates to child objects."""
+    """
+    Verify `cleanup` delegates to child objects.
+
+    Contract:
+    - `cleanup()` is called on all owned managers (cloud, mr, sss, dom).
+    - `cleanup()` is called on all owned conduits and clusters.
+    """
     # Sub-components are mocks from fixture
     cloud = frame._conduit_cloud
     mr = frame._mutation_research
@@ -133,7 +160,14 @@ def test_cleanup_idempotent(frame):
     assert frame._cleaned is True
 
 def test_cleanup_nulls_properties(frame):
-    """Test cleanup sets internal references to None."""
+    """
+    Verify `cleanup` sets internal references to None.
+
+    Contract:
+    - All manager references are nulled.
+    - Configuration and identity fields are nulled.
+    - Lock is nulled.
+    """
     frame.cleanup()
     assert frame._conduit_cloud is None
     assert frame._mutation_research is None
@@ -185,7 +219,13 @@ def test_refresh_version_registry_empty(frame):
     assert frame._version_registry == {}
 
 def test_refresh_version_registry_populated(frame):
-    """Test refresh correctly aggregates versions from SpellIndex objects."""
+    """
+    Verify `refresh_version_registry` aggregates versions correctly.
+
+    Contract:
+    - Iterates over all SpellIndexes in `_spell_registry`.
+    - Populates `_version_registry` mapping conduit_id -> set of version strings.
+    """
     si1 = MagicMock(spec=SpellIndex)
     si1.get_all_versions.return_value = {"v1", "v2"}
     
@@ -203,7 +243,12 @@ def test_refresh_version_registry_populated(frame):
     assert frame._version_registry["c2"] == {"v3"}
 
 def test_has_version_true(frame):
-    """Test has_version returns True if present."""
+    """
+    Verify `has_version` returns True for existing versions.
+
+    Contract:
+    - Checks membership in any of the version sets in `_version_registry`.
+    """
     frame._version_registry = {"c1": {"v1", "v2"}}
     assert frame.has_version("v1") is True
 
@@ -242,7 +287,13 @@ def test_get_all_versions_none_registry(frame):
     assert frame.get_all_versions() == set()
 
 def test_find_and_return_spell_index_found(frame):
-    """Test finding a SpellIndex by version."""
+    """
+    Verify `find_and_return_spell_index` locates the correct SpellIndex.
+
+    Contract:
+    - Scans all registered SpellIndexes.
+    - Returns the first instance that contains the requested version ID.
+    """
     si = MagicMock(spec=SpellIndex)
     si.get_all_versions.return_value = {"target_v"}
     frame._spell_registry = {"c1": {si}}
@@ -267,9 +318,75 @@ def test_find_and_return_spell_index_none_registry(frame):
     frame._spell_registry = None
     assert frame.find_and_return_spell_index("v1") is None
 
-# ----------------------------------------------------------------------
-# 6. Edge Cases & Safety
-# ----------------------------------------------------------------------
+def test_refresh_version_registry_merges_duplicates(frame):
+    """
+    Test that if multiple conduits/indexes claim version, it's merged.
+
+    Contract:
+    - Duplicate versions across different conduits/indexes are allowed in the global set.
+    - Per-conduit registries maintain their own view.
+    """
+    si1 = MagicMock(spec=SpellIndex)
+    si1.get_all_versions.return_value = {"v1"}
+    
+    si2 = MagicMock(spec=SpellIndex)
+    si2.get_all_versions.return_value = {"v1", "v2"}
+    
+    frame._spell_registry = {
+        "c1": {si1},
+        "c2": {si2}
+    }
+    
+    frame.refresh_version_registry()
+    
+    # Check c1
+    assert frame._version_registry["c1"] == {"v1"}
+    # Check c2
+    assert frame._version_registry["c2"] == {"v1", "v2"}
+    
+    # Global view should have v1 and v2
+    assert frame.get_all_versions() == {"v1", "v2"}
+
+def test_find_and_return_spell_index_first_match(frame):
+    """
+    Test that find returns the first match it encounters.
+
+    Contract:
+    - If multiple SpellIndexes contain the version, any valid match is returned.
+    """
+    si1 = MagicMock(spec=SpellIndex)
+    si1.get_all_versions.return_value = {"v1"}
+    
+    si2 = MagicMock(spec=SpellIndex)
+    si2.get_all_versions.return_value = {"v1"} # Duplicate
+    
+    frame._spell_registry = {
+        "c1": {si1, si2}
+    }
+    
+    # We can't guarantee order in a set, but we ensure it returns ONE of them
+    found = frame.find_and_return_spell_index("v1")
+    assert found in (si1, si2)
+
+def test_cleanup_handles_none_registries_gracefully(frame):
+    """
+    Test cleanup doesn't crash if internal dicts are already None.
+
+    Contract:
+    - Robustness check: calling cleanup on partially-initialized or corrupted object is safe.
+    """
+    frame._conduits = None
+    frame._spell_registry = None
+    frame._version_registry = None
+    frame._conduit_clusters = None
+    
+    # Should not raise
+    frame.cleanup()
+    assert frame._cleaned
+    
+    # ----------------------------------------------------------------------
+    # 6. Edge Cases & Safety
+    # ----------------------------------------------------------------------
 
 def test_refresh_version_registry_safe_if_none(frame):
     """Test refresh is no-op if spell registry is None."""

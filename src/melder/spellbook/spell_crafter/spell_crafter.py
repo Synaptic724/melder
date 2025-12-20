@@ -102,6 +102,8 @@ class SpellCrafter(Cleanable):
         "_is_broken",
         "_entire_dag_blueprint_phase5",
         "_spell_validator",
+        "_spell_system_states",
+        "_spellbook_scanner",
     ]
 
     def __init__(self, spell: ISpell) -> None:
@@ -220,6 +222,8 @@ class SpellCrafter(Cleanable):
             self._spellbook_scanner = None
             # Resolution frame is a lightweight summary; just drop it.
             self._resolution_frame = None
+            self._root_blueprint_phase5 = None
+            self._spell_system_index_phase5 = None
             self._entire_dag_blueprint_phase5 = None
             self._requirements = None
             self._symbolic_graph = None

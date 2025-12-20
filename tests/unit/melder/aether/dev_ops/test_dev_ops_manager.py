@@ -44,7 +44,14 @@ def manager(mock_dependencies, mock_sss):
 # ----------------------------------------------------------------------
 
 def test_init_success(manager, mock_dependencies, mock_sss):
-    """Verify successful initialization creates all sub-managers."""
+    """
+    Verify successful initialization wires up all components.
+
+    Contract:
+    - IncidentManager is instantiated.
+    - ChangeControlManager is instantiated with the provided SpellSystemStates.
+    - Internal state is set correctly (not cleaned, locked).
+    """
     # Verify sub-managers were instantiated
     mock_dependencies["IncidentManager"].assert_called_once()
     mock_dependencies["ChangeControlManager"].assert_called_once_with(spell_system_states=mock_sss)
@@ -56,16 +63,16 @@ def test_init_success(manager, mock_dependencies, mock_sss):
     assert not manager._cleaned
 
 def test_init_validates_sss_not_none():
-    """Verify ValueError is raised if spell_system_states is None."""
+    """Verify ValueError if `spell_system_states` dependency is missing."""
     with pytest.raises(ValueError, match="cannot be None"):
         DevOpsManager(None)
 
 def test_init_creates_lock(manager):
-    """Verify a new RLock is created."""
+    """Verify an RLock is created for thread safety."""
     assert isinstance(manager._lock, type(threading.RLock()))
 
 def test_init_sets_sentinel(manager):
-    """Verify the registration guard sentinel is present."""
+    """Verify the registration guard sentinel is present (library requirement)."""
     from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
     assert manager.__melder_internal__ is _mrg.sentinel
 
@@ -79,17 +86,22 @@ def test_init_slots_usage(manager):
 # ----------------------------------------------------------------------
 
 def test_prop_incident_manager_success(manager, mock_dependencies):
-    """Verify property returns the incident manager."""
+    """Verify property returns the initialized incident manager."""
     assert manager.incident_manager is mock_dependencies["mock_im"]
 
 def test_prop_incident_manager_raises_if_cleaned(manager):
-    """Verify accessing property after cleanup raises RuntimeError."""
+    """Verify accessing incident_manager after cleanup raises RuntimeError."""
     manager.cleanup()
     with pytest.raises(RuntimeError):
         _ = manager.incident_manager
 
 def test_prop_incident_manager_thread_safety(manager):
-    """Verify property access acquires the lock."""
+    """
+    Verify property access is thread-safe.
+
+    Contract:
+    - Accessing the property MUST acquire the internal lock.
+    """
     # Mock the lock to verify acquire/release
     with patch.object(manager, "_lock") as mock_lock:
         _ = manager.incident_manager
@@ -101,17 +113,17 @@ def test_prop_incident_manager_thread_safety(manager):
 # ----------------------------------------------------------------------
 
 def test_prop_ccm_success(manager, mock_dependencies):
-    """Verify property returns the change control manager."""
+    """Verify property returns the initialized change control manager."""
     assert manager.change_control_manager is mock_dependencies["mock_ccm"]
 
 def test_prop_ccm_raises_if_cleaned(manager):
-    """Verify accessing property after cleanup raises RuntimeError."""
+    """Verify accessing change_control_manager after cleanup raises RuntimeError."""
     manager.cleanup()
     with pytest.raises(RuntimeError):
         _ = manager.change_control_manager
 
 def test_prop_ccm_thread_safety(manager):
-    """Verify property access acquires the lock."""
+    """Verify property access is thread-safe (acquires lock)."""
     with patch.object(manager, "_lock") as mock_lock:
         _ = manager.change_control_manager
         mock_lock.__enter__.assert_called()
@@ -122,17 +134,17 @@ def test_prop_ccm_thread_safety(manager):
 # ----------------------------------------------------------------------
 
 def test_prop_sss_success(manager, mock_sss):
-    """Verify property returns the spell system states."""
+    """Verify property returns the injected spell system states."""
     assert manager.spell_system_states is mock_sss
 
 def test_prop_sss_raises_if_cleaned(manager):
-    """Verify accessing property after cleanup raises RuntimeError."""
+    """Verify accessing spell_system_states after cleanup raises RuntimeError."""
     manager.cleanup()
     with pytest.raises(RuntimeError):
         _ = manager.spell_system_states
 
 def test_prop_sss_thread_safety(manager):
-    """Verify property access acquires the lock."""
+    """Verify property access is thread-safe (acquires lock)."""
     with patch.object(manager, "_lock") as mock_lock:
         _ = manager.spell_system_states
         mock_lock.__enter__.assert_called()
@@ -143,26 +155,31 @@ def test_prop_sss_thread_safety(manager):
 # ----------------------------------------------------------------------
 
 def test_revalidate_delegates_to_ccm(manager, mock_dependencies):
-    """Verify revalidate_dirty_roots calls CCM method."""
+    """
+    Verify `revalidate_dirty_roots` delegates to ChangeControlManager.
+
+    Contract:
+    - Calls `ccm.revalidate_dirty_roots(cancel_event=None)` by default.
+    """
     mock_ccm = mock_dependencies["mock_ccm"]
     manager.revalidate_dirty_roots()
     mock_ccm.revalidate_dirty_roots.assert_called_once_with(cancel_event=None)
 
 def test_revalidate_passes_cancel_event(manager, mock_dependencies):
-    """Verify cancel_event is passed through."""
+    """Verify cancel_event is passed through to CCM."""
     mock_ccm = mock_dependencies["mock_ccm"]
     event = MagicMock(spec=CancellationEvent)
     manager.revalidate_dirty_roots(cancel_event=event)
     mock_ccm.revalidate_dirty_roots.assert_called_once_with(cancel_event=event)
 
 def test_revalidate_raises_if_cleaned(manager):
-    """Verify method raises if manager is cleaned."""
+    """Verify method raises RuntimeError if manager is cleaned."""
     manager.cleanup()
     with pytest.raises(RuntimeError):
         manager.revalidate_dirty_roots()
 
 def test_revalidate_thread_safety(manager):
-    """Verify method acquires lock."""
+    """Verify method acquires lock during execution."""
     with patch.object(manager, "_lock") as mock_lock:
         manager.revalidate_dirty_roots()
         mock_lock.__enter__.assert_called()
@@ -179,12 +196,26 @@ def test_revalidate_safe_if_ccm_none(manager):
     # Should not raise AttributeError
     manager.revalidate_dirty_roots()
 
+def test_revalidate_propagates_exceptions(manager, mock_dependencies):
+    """Verify exceptions from CCM are propagated (not swallowed)."""
+    mock_dependencies["mock_ccm"].revalidate_dirty_roots.side_effect = ValueError("Boom")
+    with pytest.raises(ValueError, match="Boom"):
+        manager.revalidate_dirty_roots()
+
 # ----------------------------------------------------------------------
 # 6. Cleanup Tests
 # ----------------------------------------------------------------------
 
 def test_cleanup_basic(manager, mock_dependencies, mock_sss):
-    """Verify cleanup calls cleanup on all children."""
+    """
+    Verify `cleanup` cascades to all owned components.
+
+    Contract:
+    - IncidentManager.cleanup() is called.
+    - ChangeControlManager.cleanup() is called.
+    - SpellSystemStates.cleanup() is called.
+    - Manager is marked cleaned.
+    """
     mock_im = mock_dependencies["mock_im"]
     mock_ccm = mock_dependencies["mock_ccm"]
     
@@ -196,7 +227,13 @@ def test_cleanup_basic(manager, mock_dependencies, mock_sss):
     assert manager._cleaned
 
 def test_cleanup_clears_references(manager):
-    """Verify cleanup sets internal references to None."""
+    """
+    Verify `cleanup` nulls all internal references.
+
+    Contract:
+    - All manager fields are set to None to assist GC.
+    - The lock is released/nulled.
+    """
     manager.cleanup()
     assert manager._incident_manager is None
     assert manager._change_control_manager is None
@@ -204,7 +241,13 @@ def test_cleanup_clears_references(manager):
     assert manager._lock is None
 
 def test_cleanup_is_idempotent(manager, mock_dependencies):
-    """Verify cleanup can be called multiple times safely."""
+    """
+    Verify `cleanup` is safe to call multiple times.
+
+    Contract:
+    - Subsequent calls do not re-trigger sub-cleanups.
+    - No exceptions are raised.
+    """
     mock_im = mock_dependencies["mock_im"]
     manager.cleanup()
     manager.cleanup()
@@ -224,15 +267,16 @@ def test_cleanup_handles_none_children(manager):
 def test_cleanup_propagates_exceptions(manager, mock_dependencies):
     """
     Verify that if a child cleanup raises, it propagates up.
-    The current implementation does NOT wrap child cleanups in try/except.
+    
+    Note: Ideally cleanup should be safe, but if a child crashes hard,
+    we want to know about it unless explicitly suppressed.
     """
     mock_dependencies["mock_im"].cleanup.side_effect = RuntimeError("Cleanup fail")
     
     with pytest.raises(RuntimeError, match="Cleanup fail"):
         manager.cleanup()
         
-    # Verify state is still dirty? Or partial?
-    # The implementation sets `self._cleaned = True` BEFORE child cleanups.
+    # Verify state is still marked clean (attempted)
     assert manager._cleaned
 
 def test_cleanup_uses_lock(manager):

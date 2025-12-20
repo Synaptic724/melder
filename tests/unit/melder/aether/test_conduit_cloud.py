@@ -33,8 +33,13 @@ def mock_conduit():
 
 def test_init(conduit_cloud):
     """
-    Test initialization of ConduitCloud.
-    Verifies that the name is set, registry is empty, lock is created, and id is generated.
+    Verify initialization sets up the cloud correctly.
+
+    Contract:
+    - Name is stored.
+    - Registry is initialized empty.
+    - Lock and ID are created.
+    - Cleaned flag is False.
     """
     assert conduit_cloud._name == "test_frame"
     assert conduit_cloud._registry == {}
@@ -44,7 +49,10 @@ def test_init(conduit_cloud):
 
 def test_register_conduit_success(conduit_cloud, mock_conduit):
     """
-    Test successful registration of a conduit.
+    Verify successful registration of a conduit.
+
+    Contract:
+    - The conduit is stored in the internal registry by name.
     """
     conduit_cloud._register_conduit(mock_conduit)
     assert "test_conduit" in conduit_cloud._registry
@@ -71,7 +79,10 @@ def test_register_conduit_none_name_raises(conduit_cloud):
 
 def test_get_conduit_success(conduit_cloud, mock_conduit):
     """
-    Test retrieval of a registered conduit by name.
+    Verify retrieval of a registered conduit.
+
+    Contract:
+    - `get_conduit` returns the exact instance registered with the name.
     """
     conduit_cloud._register_conduit(mock_conduit)
     result = conduit_cloud.get_conduit("test_conduit")
@@ -111,7 +122,12 @@ def test_unregister_conduit_none_name_raises(conduit_cloud):
 
 def test_cleanup_clears_registry(conduit_cloud, mock_conduit):
     """
-    Test that cleanup clears the registry and sets the cleaned flag.
+    Verify cleanup resets internal state.
+
+    Contract:
+    - Registry is cleared/nulled.
+    - Cleaned flag is True.
+    - Lock is nulled.
     """
     conduit_cloud._register_conduit(mock_conduit)
     conduit_cloud.cleanup()
@@ -137,8 +153,10 @@ def test_context_manager(conduit_cloud):
 
 def test_methods_raise_after_cleanup(conduit_cloud, mock_conduit):
     """
-    Test that methods raise RuntimeError after cleanup.
-    Each method call is wrapped in its own raises block to ensure all are executed.
+    Verify public methods raise RuntimeError after cleanup.
+
+    Contract:
+    - All functional methods must guard against use-after-free.
     """
     conduit_cloud.cleanup()
     
