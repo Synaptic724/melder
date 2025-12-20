@@ -115,9 +115,9 @@ class _CancelStub:
 class _ToggleCancel:
     """
     Purpose:
-        Toggle cancellation state on the second is_set check.
+        Toggle cancellation state on the third is_set check.
     Contract:
-        Raises once the second check is performed.
+        Raises once the third check is performed.
     """
 
     def __init__(self) -> None:
@@ -125,7 +125,7 @@ class _ToggleCancel:
         Purpose:
             Initialize the toggle state.
         Contract:
-            Starts with cancellation disabled for the first check.
+            Starts with cancellation disabled for the first two checks.
         Returns:
             None.
         """
@@ -135,14 +135,14 @@ class _ToggleCancel:
     def is_set(self) -> bool:
         """
         Purpose:
-            Toggle to cancelled on the second check.
+            Toggle to cancelled on the third check.
         Contract:
-            Returns False on first check, True thereafter.
+            Returns False on first two checks, True thereafter.
         Returns:
             bool: True once cancellation should be honored.
         """
         self._checks += 1
-        return self._checks > 1
+        return self._checks > 2
 
     def throw_if_set(self) -> None:
         """
@@ -153,7 +153,7 @@ class _ToggleCancel:
         Raises:
             RuntimeError: When cancellation has been toggled on.
         """
-        if self._checks > 1:
+        if self._checks > 2:
             raise RuntimeError("cancelled")
 
 
@@ -813,7 +813,7 @@ def test_validate_spell_passes_context_fields_to_strategy(monkeypatch: pytest.Mo
     requirements = object()
     symbolic_graph = object()
     resolution_frame = object()
-    cancel_event = object()
+    cancel_event = _CancelStub(is_set=False)
     spell = _make_spell(
         spellbook=spellbook,
         include_spellbook=True,
