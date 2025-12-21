@@ -1178,7 +1178,7 @@ class SpellCrafter(Cleanable):
             lineage_id: Optional[str] = None
             state = self._spell_system_states.get_by_spell_id(spell_id)
             if state is not None:
-                lineage_id = state.lineage_id
+                lineage_id = state.spell_index_id
 
             node = SpellSystemNode(spell_id=spell_id, lineage_id=lineage_id)
             node.add_dependencies(deps)

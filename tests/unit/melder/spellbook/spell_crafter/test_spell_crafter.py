@@ -307,7 +307,7 @@ class _SpellSystemStateStub:
     Purpose:
         Provide a minimal spell system state for adjacency snapshots.
     Contract:
-        Exposes current_spell_id, direct_dependencies, and lineage_id.
+        Exposes current_spell_id, direct_dependencies, and spell_index_id.
     """
 
     def __init__(
@@ -315,7 +315,7 @@ class _SpellSystemStateStub:
         *,
         current_spell_id: str,
         direct_dependencies: Iterable[str] | None = None,
-        lineage_id: str | None = None,
+        spell_index_id: str | None = None,
     ) -> None:
         """
         Purpose:
@@ -325,13 +325,13 @@ class _SpellSystemStateStub:
         Args:
             current_spell_id: Current spell id string.
             direct_dependencies: Optional dependency ids.
-            lineage_id: Optional lineage id.
+            spell_index_id: Optional lineage id.
         Returns:
             None.
         """
         self.current_spell_id = current_spell_id
         self.direct_dependencies = set(direct_dependencies or [])
-        self.lineage_id = lineage_id
+        self.spell_index_id = spell_index_id
 
 
 class _SpellSystemStatesStub:
@@ -3330,12 +3330,12 @@ def test_run_phase_root_blueprints_builds_index_and_attaches(
             _SpellSystemStateStub(
                 current_spell_id="root",
                 direct_dependencies={"dep"},
-                lineage_id="lineage-root",
+                spell_index_id="lineage-root",
             ),
             _SpellSystemStateStub(
                 current_spell_id="dep",
                 direct_dependencies=set(),
-                lineage_id="lineage-dep",
+                spell_index_id="lineage-dep",
             ),
         ]
     )

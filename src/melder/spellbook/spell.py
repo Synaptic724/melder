@@ -587,6 +587,187 @@ class Spell(Cleanable):
 
     #endregion Configuration
     #region Resolution Phases
+    def run_phase_requirements(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 1 - Requirements extraction (facade).
+
+        Delegates to the SpellCrafter to analyze constructor requirements
+        and capture dependency metadata for this spell.
+
+        Contract:
+            - Requires a live Spell (not cleaned).
+            - Does not return a value; artifacts are stored on the crafter.
+            - Does not execute any later phases.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_requirements(cancel_event=cancel_event)
+
+    def run_phase_symbolic_graph(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 2 - Symbolic graph construction (facade).
+
+        Delegates to the SpellCrafter to build the symbolic dependency graph
+        for this spell from Phase 1 requirements.
+
+        Contract:
+            - Requires Phase 1 to have completed successfully.
+            - Does not return a value; artifacts are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
+
+    def run_phase_local_frame(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 3 - Local resolution frame / DAG (facade).
+
+        Delegates to the SpellCrafter to resolve dependencies against the
+        Spellbook and build the local resolution frame.
+
+        Contract:
+            - Requires Phases 1 and 2 to have completed successfully.
+            - Does not return a value; artifacts are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_local_frame(cancel_event=cancel_event)
+
+    def run_phase_validation(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 4 - Per-spell validation (facade).
+
+        Delegates to the SpellCrafter to validate this spell's Phase 1-3
+        artifacts and set validated/broken flags.
+
+        Contract:
+            - Requires Phases 1-3 to have completed successfully.
+            - Does not return a value; results are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_validation(cancel_event=cancel_event)
+
+    def run_phase_root_blueprints(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 5 - Root blueprint construction (facade).
+
+        Delegates to the SpellCrafter to build system-level DAG blueprints
+        and a SpellSystemIndex for the current frame.
+
+        Contract:
+            - Requires Phase 4 to have completed successfully.
+            - Does not return a value; artifacts are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_root_blueprints(cancel_event=cancel_event)
+
+    def run_phase_system_validation(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 6 - System-level validation (facade).
+
+        Delegates to the SpellCrafter to validate system-level DAG integrity
+        and update lineage validity states.
+
+        Contract:
+            - Requires Phase 5 to have completed successfully.
+            - Does not return a value; results are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_system_validation(cancel_event=cancel_event)
+
+    def run_phase_change_control(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 7 - Change-control wiring (facade).
+
+        Delegates to the SpellCrafter to ensure change-control wiring and
+        component-of indexing are prepared for this frame.
+
+        Contract:
+            - Requires Phase 5 artifacts to be available.
+            - Does not return a value; wiring occurs inside the crafter.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_change_control(cancel_event=cancel_event)
+
     def run_all_phases(
             self,
             cancel_event: Optional[CancellationEvent] = None,
@@ -600,9 +781,9 @@ class Spell(Cleanable):
             2. Symbolic graph construction.
             3. Local resolution frame / DAG construction.
             4. Validation.
-            5. System graph construction.
+            5. Root blueprint construction.
             6. System validation.
-            7. Publish/finalization.
+            7. Change-control wiring.
 
         Each phase honours the optional :class:`CancellationEvent`. If the
         event is set, the underlying phase methods will raise via
@@ -618,9 +799,9 @@ class Spell(Cleanable):
         crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
         crafter.run_phase_local_frame(cancel_event=cancel_event)
         crafter.run_phase_validation(cancel_event=cancel_event)
-        crafter.run_phase_system_graph(cancel_event=cancel_event)
+        crafter.run_phase_root_blueprints(cancel_event=cancel_event)
         crafter.run_phase_system_validation(cancel_event=cancel_event)
-        crafter.run_phase_publish(cancel_event=cancel_event)
+        crafter.run_phase_change_control(cancel_event=cancel_event)
 
 
     #endregion Resolution Phases

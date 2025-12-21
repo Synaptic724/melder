@@ -116,6 +116,45 @@ class DummySpell:
         """
         return ("validation", self.spell_id, cancel_event)
 
+    def run_phase_root_blueprints(self, cancel_event):
+        """
+        Purpose:
+            Provide a deterministic Phase 5 marker for tests.
+        Contract:
+            Returns a tuple containing phase name, spell id, and cancel event.
+        Args:
+            cancel_event: Cancellation event forwarded by the scheduler.
+        Returns:
+            tuple[str, str, object]: Phase marker tuple.
+        """
+        return ("root_blueprints", self.spell_id, cancel_event)
+
+    def run_phase_system_validation(self, cancel_event):
+        """
+        Purpose:
+            Provide a deterministic Phase 6 marker for tests.
+        Contract:
+            Returns a tuple containing phase name, spell id, and cancel event.
+        Args:
+            cancel_event: Cancellation event forwarded by the scheduler.
+        Returns:
+            tuple[str, str, object]: Phase marker tuple.
+        """
+        return ("system_validation", self.spell_id, cancel_event)
+
+    def run_phase_change_control(self, cancel_event):
+        """
+        Purpose:
+            Provide a deterministic Phase 7 marker for tests.
+        Contract:
+            Returns a tuple containing phase name, spell id, and cancel event.
+        Args:
+            cancel_event: Cancellation event forwarded by the scheduler.
+        Returns:
+            tuple[str, str, object]: Phase marker tuple.
+        """
+        return ("change_control", self.spell_id, cancel_event)
+
     def _add_owned_conduit(self, cid, cname=None, creations=None):
         """
         Purpose:
@@ -1107,10 +1146,16 @@ def test_phase_factories_build_units_and_label():
     sym_units = sb._phase_symbolic_graph_factory(scheduler)
     loc_units = sb._phase_local_frame_factory(scheduler)
     val_units = sb._phase_validation_factory(scheduler)
+    root_units = sb._phase_root_blueprints_factory(scheduler)
+    sys_units = sb._phase_system_validation_factory(scheduler)
+    change_units = sb._phase_change_control_factory(scheduler)
     assert req_units[0]["label"] == "requirements:x"
     assert sym_units[0]["label"] == "symbolic_graph:x"
     assert loc_units[0]["label"] == "local_frame:x"
     assert val_units[0]["label"] == "validation:x"
+    assert root_units[0]["label"] == "root_blueprints:x"
+    assert sys_units[0]["label"] == "system_validation:x"
+    assert change_units[0]["label"] == "change_control:x"
 
 
 def test_phase_factories_guard_cleaned():
@@ -1149,7 +1194,15 @@ def test_run_resolution_phases_success(monkeypatch):
     sb._spells = {DummySpellIndex(): spell}
     sb._logger = DummySafeLogger()
     results = sb._run_resolution_phases()
-    assert set(results.keys()) == {"requirements", "symbolic_graph", "local_frame", "validation"}
+    assert set(results.keys()) == {
+        "requirements",
+        "symbolic_graph",
+        "local_frame",
+        "validation",
+        "root_blueprints",
+        "system_validation",
+        "change_control",
+    }
     assert isinstance(sb._spell_validator, DummySpellValidationSystem)
 
 
@@ -1850,6 +1903,9 @@ def test_phase_factories_return_empty_when_no_spells():
     assert sb._phase_symbolic_graph_factory(scheduler) == []
     assert sb._phase_local_frame_factory(scheduler) == []
     assert sb._phase_validation_factory(scheduler) == []
+    assert sb._phase_root_blueprints_factory(scheduler) == []
+    assert sb._phase_system_validation_factory(scheduler) == []
+    assert sb._phase_change_control_factory(scheduler) == []
 
 
 def test_run_resolution_phases_with_multiple_spells():
@@ -1869,7 +1925,15 @@ def test_run_resolution_phases_with_multiple_spells():
     sb._spells = {DummySpellIndex(sid="a"): spell1, DummySpellIndex(sid="b"): spell2}
     sb._logger = DummySafeLogger()
     results = sb._run_resolution_phases()
-    assert set(results.keys()) == {"requirements", "symbolic_graph", "local_frame", "validation"}
+    assert set(results.keys()) == {
+        "requirements",
+        "symbolic_graph",
+        "local_frame",
+        "validation",
+        "root_blueprints",
+        "system_validation",
+        "change_control",
+    }
 
 
 def test_find_contracted_spell_raises_when_missing():
@@ -2469,6 +2533,9 @@ def test_phase_factories_metadata_contains_spell_id():
         sb._phase_symbolic_graph_factory(scheduler),
         sb._phase_local_frame_factory(scheduler),
         sb._phase_validation_factory(scheduler),
+        sb._phase_root_blueprints_factory(scheduler),
+        sb._phase_system_validation_factory(scheduler),
+        sb._phase_change_control_factory(scheduler),
     ):
         assert units[0]["metadata"]["spell_id"] == "abc"
 

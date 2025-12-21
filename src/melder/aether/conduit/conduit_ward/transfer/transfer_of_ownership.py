@@ -290,7 +290,7 @@ class TransferOfOwnership:
         Args:
             spell_index: Lineage to mark as structurally changed.
         """
-        spell_states = self.source_conduit._spellbook._spell_states_system
+        spell_states = self.source_conduit._spellbook._spell_system_states
         try:
             spell_states.mark_structural_change(
                 spell_index=spell_index,
@@ -307,7 +307,7 @@ class TransferOfOwnership:
         Args:
             spell_index: Lineage to disable.
         """
-        spell_states = self.source_conduit._spellbook._spell_states_system
+        spell_states = self.source_conduit._spellbook._spell_system_states
         try:
             state = spell_states.get_by_index_id(spell_index.id)
             if state is None:
@@ -537,7 +537,7 @@ class TransferOfOwnership:
             spell_index: Lineage to update.
             gated: If True, leave it gated (requires validation). If False, mark unknown.
         """
-        spell_states = self.source_conduit._spellbook._spell_states_system
+        spell_states = self.source_conduit._spellbook._spell_system_states
         try:
             state = spell_states.get_by_index_id(spell_index.id)
             if state is None:

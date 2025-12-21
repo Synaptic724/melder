@@ -108,7 +108,7 @@ class Spellbook(Cleanable):
         # Spell validator
         self._spell_validator: SpellValidationSystem = SpellValidationSystem()
         # Spell States System
-        self._spell_states_system: ISpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
+        self._spell_system_states: ISpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
 
         # Binding system
         self._bind: Bind = Bind(self)
@@ -236,7 +236,7 @@ class Spellbook(Cleanable):
         self._id = None
         self._conduit = None
         self._conjured = None
-        self._spell_states_system = None
+        self._spell_system_states = None
         self._configuration_locked = None
 
         # Lock: just null it (no getattr/hasattr)
@@ -1153,7 +1153,7 @@ class Spellbook(Cleanable):
                 f"Binding spell => id={new_spell.spell_id}, key={new_spell._key}",
                 "bind",
             )
-            self._spell_states_system.register_lineage(
+            self._spell_system_states.register_lineage(
                 spell_index=new_spell.spell_index,
                 spell=spell,
             )
@@ -1808,6 +1808,22 @@ class Spellbook(Cleanable):
                Final per-spell validation over the assembled metadata
                and frames.
 
+        5. ``"root_blueprints"``:
+               Build frame-level root blueprints and the SpellSystemIndex
+               from Phase 1-4 artifacts.
+
+        6. ``"system_validation"``:
+               Validate the system-level DAG and update lineage validity
+               across the frame.
+
+        7. ``"change_control"``:
+               Wire change-control and component-of indices for the frame.
+
+        Notes:
+            Phases 5-7 are **frame-level** operations. They are scheduled
+            once using a representative "lead" spell after per-spell phases
+            have completed.
+
         All work is executed via :class:`UnitOfWork` on a shared worker pool
         sized by the Configuration's
         ``phase_scheduler_workers_per_spellbook`` property. Each unit
@@ -1863,6 +1879,18 @@ class Spellbook(Cleanable):
             scheduler.register_phase(
                 "validation",
                 lambda: self._phase_validation_factory(scheduler),
+            )
+            scheduler.register_phase(
+                "root_blueprints",
+                lambda: self._phase_root_blueprints_factory(scheduler),
+            )
+            scheduler.register_phase(
+                "system_validation",
+                lambda: self._phase_system_validation_factory(scheduler),
+            )
+            scheduler.register_phase(
+                "change_control",
+                lambda: self._phase_change_control_factory(scheduler),
             )
 
             results = scheduler.run_all_phases()
@@ -2049,6 +2077,96 @@ class Spellbook(Cleanable):
             )
 
         return units
+
+    def _phase_root_blueprints_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **root_blueprints** phase.
+
+        This phase is frame-level and must run exactly once after Phase 4.
+        We schedule a single unit of work against a representative lead spell.
+
+        Expected spell surface:
+
+            ``spell.run_phase_root_blueprints(cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        if not self._spells:
+            return []
+
+        lead_spell = next(iter(self._spells.values()))
+        return [
+            scheduler.create_unit_of_work(
+                func=lead_spell.run_phase_root_blueprints,
+                args=(scheduler.cancel_event,),
+                label=f"root_blueprints:{lead_spell.spell_id}",
+                metadata={
+                    "phase": "root_blueprints",
+                    "spell_id": lead_spell.spell_id,
+                },
+            )
+        ]
+
+    def _phase_system_validation_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **system_validation** phase.
+
+        This phase validates the system-level DAG for the frame and runs
+        once after Phase 5 artifacts have been constructed.
+
+        Expected spell surface:
+
+            ``spell.run_phase_system_validation(cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        if not self._spells:
+            return []
+
+        lead_spell = next(iter(self._spells.values()))
+        return [
+            scheduler.create_unit_of_work(
+                func=lead_spell.run_phase_system_validation,
+                args=(scheduler.cancel_event,),
+                label=f"system_validation:{lead_spell.spell_id}",
+                metadata={
+                    "phase": "system_validation",
+                    "spell_id": lead_spell.spell_id,
+                },
+            )
+        ]
+
+    def _phase_change_control_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **change_control** phase.
+
+        This phase wires change-control hooks and component-of indices for
+        the frame once Phase 5 artifacts exist.
+
+        Expected spell surface:
+
+            ``spell.run_phase_change_control(cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        if not self._spells:
+            return []
+
+        lead_spell = next(iter(self._spells.values()))
+        return [
+            scheduler.create_unit_of_work(
+                func=lead_spell.run_phase_change_control,
+                args=(scheduler.cancel_event,),
+                label=f"change_control:{lead_spell.spell_id}",
+                metadata={
+                    "phase": "change_control",
+                    "spell_id": lead_spell.spell_id,
+                },
+            )
+        ]
 #endregion
 
 #endregion Resolution Phases

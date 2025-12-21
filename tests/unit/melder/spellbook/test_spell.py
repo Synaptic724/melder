@@ -282,7 +282,21 @@ class _Disposable:
 
 
 class _DummyCrafter:
+    """
+    Purpose:
+        Provide a SpellCrafter stub for phase sequencing tests.
+    Contract:
+        Records phase invocation order and captures cancel events.
+    """
     def __init__(self):
+        """
+        Purpose:
+            Initialize tracking state for phase calls.
+        Contract:
+            Sets phase output placeholders and call tracking fields.
+        Returns:
+            None.
+        """
         self.calls: list[str] = []
         self.seen_cancel_events = []
         self.requirements = "req"
@@ -294,34 +308,112 @@ class _DummyCrafter:
         self.is_broken = False
 
     def run_phase_requirements(self, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 1 invocation.
+        Contract:
+            Appends the phase name and stores the cancel event.
+        Args:
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
         self.calls.append("requirements")
         self.seen_cancel_events.append(cancel_event)
 
     def run_phase_symbolic_graph(self, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 2 invocation.
+        Contract:
+            Appends the phase name and stores the cancel event.
+        Args:
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
         self.calls.append("symbolic_graph")
         self.seen_cancel_events.append(cancel_event)
 
     def run_phase_local_frame(self, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 3 invocation.
+        Contract:
+            Appends the phase name and stores the cancel event.
+        Args:
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
         self.calls.append("local_frame")
         self.seen_cancel_events.append(cancel_event)
 
     def run_phase_validation(self, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 4 invocation.
+        Contract:
+            Appends the phase name and stores the cancel event.
+        Args:
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
         self.calls.append("validation")
         self.seen_cancel_events.append(cancel_event)
 
-    def run_phase_system_graph(self, cancel_event=None):
-        self.calls.append("system_graph")
+    def run_phase_root_blueprints(self, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 5 invocation.
+        Contract:
+            Appends the phase name and stores the cancel event.
+        Args:
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
+        self.calls.append("root_blueprints")
         self.seen_cancel_events.append(cancel_event)
 
     def run_phase_system_validation(self, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 6 invocation.
+        Contract:
+            Appends the phase name and stores the cancel event.
+        Args:
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
         self.calls.append("system_validation")
         self.seen_cancel_events.append(cancel_event)
 
-    def run_phase_publish(self, cancel_event=None):
-        self.calls.append("publish")
+    def run_phase_change_control(self, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 7 invocation.
+        Contract:
+            Appends the phase name and stores the cancel event.
+        Args:
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
+        self.calls.append("change_control")
         self.seen_cancel_events.append(cancel_event)
 
     def cleanup(self):
+        """
+        Purpose:
+            Track cleanup invocation.
+        Contract:
+            Appends "cleanup" to the calls list.
+        Returns:
+            None.
+        """
         self.calls.append("cleanup")
 
 
@@ -594,9 +686,9 @@ def test_run_all_phases_invokes_crafter_in_order():
         "symbolic_graph",
         "local_frame",
         "validation",
-        "system_graph",
+        "root_blueprints",
         "system_validation",
-        "publish",
+        "change_control",
     ]
     assert all(ev is cancel_event for ev in crafter.seen_cancel_events)
 

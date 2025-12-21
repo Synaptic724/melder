@@ -466,7 +466,7 @@ class FakeSpellbook:
         self._lock = threading.RLock()
         self._spells: Dict[SpellIndex, Any] = {}
         self._lookup_spells: Dict[str, SpellIndex] = {}
-        self._spell_states_system = states_system
+        self._spell_system_states = states_system
 
 
 class FakeConduitWard:
