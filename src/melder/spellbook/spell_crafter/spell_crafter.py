@@ -58,7 +58,7 @@ class SpellCrafter(Cleanable):
     phases for a single :class:`Spell`:
 
         1. Requirements (signature ? SpellRequirements)
-        2. Symbolic graph (requirements ? symbolic DI edges)
+        2. Symbolic graph (requirements ? symbolic constructor sockets)
         3. Local frame / DAG (symbolic graph + Spellbook ? executable frame)
         4. Validation (frame + policies ? validated / broken flags)
 
@@ -549,7 +549,8 @@ class SpellCrafter(Cleanable):
         Map a symbolic dependency's DI shape into a SocketKind.
 
         NORMAL:
-            Regular DI parameter (annotation, SpellMap, collection).
+            Regular DI parameter (annotation, SpellMap, collection) or a
+            plain constructor socket.
         SPELL_CONTRACT:
             SpellContract socket – must be satisfied by a provider.
         MUTATION_CONTRACT:
@@ -686,8 +687,9 @@ class SpellCrafter(Cleanable):
         Responsibilities:
             * Consume Phase 1 requirements and construct a
               :class:`SpellSymbolicGraph` describing all constructor sockets.
-            * Create one :class:`SpellSymbolicDependency` per DI parameter,
-              including:
+            * Create one :class:`SpellSymbolicDependency` per constructor
+              parameter that should be represented as a socket, including:
+                  - plain (caller-supplied) parameters,
                   - normal DI sockets (single, collection, SpellMap),
                   - SpellContract sockets,
                   - MutationContract sockets.
@@ -720,15 +722,16 @@ class SpellCrafter(Cleanable):
         for param in self._requirements.parameters:
             di_shape: ParameterDIShape = param.di_shape
 
-            # Only shapes that participate in the symbolic DI graph.
+            # Only shapes that participate in the symbolic socket graph.
             if di_shape not in (
                     ParameterDIShape.SINGLE_BY_ANNOTATION,
                     ParameterDIShape.COLLECTION_BY_ANNOTATION,
                     ParameterDIShape.SPELLMAP_DEFAULT,
+                    ParameterDIShape.PLAIN,
                     ParameterDIShape.SPELL_CONTRACT,
                     ParameterDIShape.MUTATION_CONTRACT,
             ):
-                # Shapes like IGNORE/PLAIN do not participate in DI edges.
+                # Shapes like IGNORE do not participate in sockets.
                 continue
 
             # Map shape ? symbolic metadata.
@@ -745,6 +748,11 @@ class SpellCrafter(Cleanable):
             elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
                 target_annotation = param.collection_element_annotation
                 is_collection = True
+                spellmap_default = None
+
+            elif di_shape is ParameterDIShape.PLAIN:
+                target_annotation = param.annotation
+                is_collection = False
                 spellmap_default = None
 
             elif di_shape is ParameterDIShape.SPELL_CONTRACT:
@@ -813,8 +821,8 @@ class SpellCrafter(Cleanable):
               symbolic graph.
             * Look up any concrete targets via ``socket_targets`` using
               ``(param_name, position)``. Normal DI sockets may have one or
-              many targets; contract and mutation sockets will typically have
-              none at this phase.
+              many targets; contract, mutation, and plain sockets will
+              typically have none at this phase.
             * Create a :class:`SpellSocketDescriptor` for that parameter.
 
         The resulting :class:`SpellLocalTopology` is a per-spell, constructor-
@@ -943,7 +951,7 @@ class SpellCrafter(Cleanable):
                     dep=dep,
                 )
             else:
-                # SpellContract / MutationContract and any future shapes
+                # SpellContract / MutationContract / PLAIN and any future shapes
                 # are currently metadata-only at the DAG level. They still
                 # participate in local topology below.
                 resolved = {}
@@ -1019,6 +1027,9 @@ class SpellCrafter(Cleanable):
               this phase:
                   - they appear in the symbolic graph and topology,
                   - they do **not** produce DAG edges or bound targets yet.
+            * Plain parameters are **metadata-only** at this phase:
+                  - they appear in the symbolic graph and topology,
+                  - they do **not** produce DAG edges or bound targets.
 
         Contracts:
             * Phases 1 and 2 must already have completed successfully. If

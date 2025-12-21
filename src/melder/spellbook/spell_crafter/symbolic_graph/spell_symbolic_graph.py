@@ -9,7 +9,7 @@ class SpellSymbolicGraph(Cleanable):
     """
     Phase 2 **per-spell symbolic graph**.
 
-    This represents a spell's DI requirements as a *set of edges* with no
+    This represents a spell's constructor sockets as a *set of edges* with no
     concrete spell IDs yet. Think of it as a mid-level, versioned description
     of “what this spell wants”, without binding to specific implementations.
 
@@ -25,7 +25,7 @@ class SpellSymbolicGraph(Cleanable):
     Contents
     --------
     * ``dependencies`` – list of :class:`SpellSymbolicDependency` objects,
-      one per DI-relevant parameter.
+      one per constructor socket represented in the symbolic graph.
 
     What it does *not* contain
     --------------------------
@@ -105,13 +105,16 @@ class SpellSymbolicGraph(Cleanable):
     @property
     def dependencies(self) -> List['SpellSymbolicDependency']:
         """
-        All DI edges for this spell.
+        All constructor sockets for this spell.
 
-        Each edge corresponds to a parameter that actually drives DI:
+        Each edge corresponds to a parameter represented in Phase 2:
 
             * SINGLE_BY_ANNOTATION
             * COLLECTION_BY_ANNOTATION
             * SPELLMAP_DEFAULT
+            * SPELL_CONTRACT
+            * MUTATION_CONTRACT
+            * PLAIN
 
         Returns:
             list[SpellSymbolicDependency]: A shallow copy of the underlying

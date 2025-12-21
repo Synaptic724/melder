@@ -10,15 +10,15 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class SpellSymbolicDependency(Cleanable):
     """
-    Phase 2 representation of a **single DI edge** for a spell.
+    Phase 2 representation of a **single constructor socket** for a spell.
 
     Conceptually:
 
         “For spell version V, parameter P has DI shape X and wants type T
         (or SpellMap M).”
 
-    This is a *symbolic* edge, not yet tied to concrete spell IDs. Later phases
-    (local frame / DAG builder) will interpret these edges against the Spellbook.
+    This is a *symbolic* socket, not yet tied to concrete spell IDs. Later phases
+    (local frame / DAG builder) will interpret these sockets against the Spellbook.
 
     Identity
     --------
@@ -47,6 +47,8 @@ class SpellSymbolicDependency(Cleanable):
     target_annotation:
         For SINGLE/COLLECTION shapes, the annotation (or element annotation)
         used as the DI key in later phases (class, Protocol, string, etc.).
+        For PLAIN shapes, this records the raw annotation (often a builtin
+        type or None) for diagnostics and override targeting.
 
     is_collection:
         True if this dependency represents a collection-of-implementations

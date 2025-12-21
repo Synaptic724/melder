@@ -30,7 +30,7 @@ class SpellSocketDescriptor:
         socket_kind:
             The logical kind of socket:
 
-            * NORMAL           – standard DI edge.
+            * NORMAL           – standard DI edge or plain parameter socket.
             * SPELL_CONTRACT   – cross-conduit spell contract socket.
             * MUTATION_CONTRACT – mutation contract socket.
 

@@ -1,11 +1,10 @@
-from __future__ import annotations
-
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
 @pytest.fixture(autouse=True)
@@ -106,7 +105,7 @@ def test_meld_overrides_unique_targets_dependency() -> None:
         Contract:
             Stores the supplied label for assertions.
         """
-        def __init__(self, label: str) -> None:
+        def __init__(self, label: str = "default") -> None:
             """
             Purpose:
                 Capture a label for assertions.
@@ -162,5 +161,458 @@ def test_meld_overrides_unique_targets_dependency() -> None:
             spell_override={"*dep": override_dep},
         )
         assert instance.dep is override_dep
+    finally:
+        conduit.cleanup()
+
+
+def test_meld_overrides_path_targets_nested_dependency_param() -> None:
+    """
+    Purpose:
+        Validate path overrides can target nested dependency parameters.
+    Contract:
+        - A path of "dep>label" targets the dependency's label socket.
+        - The nested dependency receives the overridden label value.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the nested override does not apply.
+    """
+    class _Dependency:
+        """
+        Purpose:
+            Provide a dependency spell with a required plain parameter.
+        Contract:
+            Stores the label supplied to the constructor.
+        """
+        def __init__(self, label: str) -> None:
+            """
+            Purpose:
+                Capture the label for assertions.
+            Contract:
+                Stores the label on the instance.
+            Args:
+                label: Label passed by the override.
+            Returns:
+                None.
+            """
+            self.label = label
+
+    class _Service:
+        """
+        Purpose:
+            Provide a service spell that depends on _Dependency.
+        Contract:
+            Stores the dependency instance for assertions.
+        """
+        def __init__(self, dep: _Dependency) -> None:
+            """
+            Purpose:
+                Capture the dependency for assertions.
+            Contract:
+                Stores the dependency on the instance.
+            Args:
+                dep: Dependency resolved by the DI system.
+            Returns:
+                None.
+            """
+            self.dep = dep
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_Dependency,
+        existence=Existence.many,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_Service,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(
+            spell=service_id,
+            spell_override={"dep>label": "nested"},
+        )
+        assert instance.dep.label == "nested"
+    finally:
+        conduit.cleanup()
+
+
+def test_meld_overrides_broadcast_targets_multiple_labels() -> None:
+    """
+    Purpose:
+        Validate broadcast overrides apply to all matching socket names.
+    Contract:
+        - "**label" targets every label socket in the root DAG.
+        - Both dependencies receive the broadcast label override.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the broadcast override does not apply.
+    """
+    class _DepA:
+        """
+        Purpose:
+            Provide a dependency spell with a label parameter.
+        Contract:
+            Stores the label supplied to the constructor.
+        """
+        def __init__(self, label: str) -> None:
+            """
+            Purpose:
+                Capture the label for assertions.
+            Contract:
+                Stores the label on the instance.
+            Args:
+                label: Label supplied by the override.
+            Returns:
+                None.
+            """
+            self.label = label
+
+    class _DepB:
+        """
+        Purpose:
+            Provide a second dependency spell with a label parameter.
+        Contract:
+            Stores the label supplied to the constructor.
+        """
+        def __init__(self, label: str) -> None:
+            """
+            Purpose:
+                Capture the label for assertions.
+            Contract:
+                Stores the label on the instance.
+            Args:
+                label: Label supplied by the override.
+            Returns:
+                None.
+            """
+            self.label = label
+
+    class _Service:
+        """
+        Purpose:
+            Provide a service spell with two labeled dependencies.
+        Contract:
+            Stores both dependencies for assertions.
+        """
+        def __init__(self, dep_a: _DepA, dep_b: _DepB) -> None:
+            """
+            Purpose:
+                Capture dependencies for assertions.
+            Contract:
+                Stores both dependencies on the instance.
+            Args:
+                dep_a: First dependency instance.
+                dep_b: Second dependency instance.
+            Returns:
+                None.
+            """
+            self.dep_a = dep_a
+            self.dep_b = dep_b
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_DepA,
+        existence=Existence.many,
+        permissions="create",
+    )
+    spellbook.bind(
+        spell=_DepB,
+        existence=Existence.many,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_Service,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(
+            spell=service_id,
+            spell_override={"**label": "shared"},
+        )
+        assert instance.dep_a.label == "shared"
+        assert instance.dep_b.label == "shared"
+    finally:
+        conduit.cleanup()
+
+
+def test_meld_overrides_path_precedes_broadcast_for_root_params() -> None:
+    """
+    Purpose:
+        Validate PATH overrides take precedence over BROADCAST overrides.
+    Contract:
+        - A root PATH override wins over a broadcast override for that socket.
+        - Broadcast continues to apply to other matching sockets.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If precedence is not respected.
+    """
+    class _Dependency:
+        """
+        Purpose:
+            Provide a dependency spell with a label parameter.
+        Contract:
+            Stores the label supplied to the constructor.
+        """
+        def __init__(self, label: str) -> None:
+            """
+            Purpose:
+                Capture the label for assertions.
+            Contract:
+                Stores the label on the instance.
+            Args:
+                label: Label supplied by the override.
+            Returns:
+                None.
+            """
+            self.label = label
+
+    class _Service:
+        """
+        Purpose:
+            Provide a service spell with a root label and a dependency.
+        Contract:
+            Stores both the root label and the dependency instance.
+        """
+        def __init__(self, label: str, dep: _Dependency) -> None:
+            """
+            Purpose:
+                Capture the label and dependency for assertions.
+            Contract:
+                Stores the label and dependency on the instance.
+            Args:
+                label: Root label assigned to the service.
+                dep: Dependency resolved by the DI system.
+            Returns:
+                None.
+            """
+            self.label = label
+            self.dep = dep
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_Dependency,
+        existence=Existence.many,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_Service,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(
+            spell=service_id,
+            spell_override={
+                "**label": "broadcast",
+                "label": "root",
+            },
+        )
+        assert instance.label == "root"
+        assert instance.dep.label == "broadcast"
+    finally:
+        conduit.cleanup()
+
+
+def test_meld_overrides_unique_raises_on_multiple_matches() -> None:
+    """
+    Purpose:
+        Validate unique overrides raise when multiple sockets match.
+    Contract:
+        - Using "*label" with multiple label sockets raises MeldExecutionError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the unique override does not raise.
+    """
+    class _DepA:
+        """
+        Purpose:
+            Provide a dependency spell with a label parameter.
+        Contract:
+            Stores the label supplied to the constructor.
+        """
+        def __init__(self, label: str) -> None:
+            """
+            Purpose:
+                Capture the label for assertions.
+            Contract:
+                Stores the label on the instance.
+            Args:
+                label: Label supplied by the constructor.
+            Returns:
+                None.
+            """
+            self.label = label
+
+    class _DepB:
+        """
+        Purpose:
+            Provide a second dependency spell with a label parameter.
+        Contract:
+            Stores the label supplied to the constructor.
+        """
+        def __init__(self, label: str) -> None:
+            """
+            Purpose:
+                Capture the label for assertions.
+            Contract:
+                Stores the label on the instance.
+            Args:
+                label: Label supplied by the constructor.
+            Returns:
+                None.
+            """
+            self.label = label
+
+    class _Service:
+        """
+        Purpose:
+            Provide a service spell with two labeled dependencies.
+        Contract:
+            Stores both dependencies for assertions.
+        """
+        def __init__(self, dep_a: _DepA, dep_b: _DepB) -> None:
+            """
+            Purpose:
+                Capture dependencies for assertions.
+            Contract:
+                Stores both dependencies on the instance.
+            Args:
+                dep_a: First dependency instance.
+                dep_b: Second dependency instance.
+            Returns:
+                None.
+            """
+            self.dep_a = dep_a
+            self.dep_b = dep_b
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_DepA,
+        existence=Existence.many,
+        permissions="create",
+    )
+    spellbook.bind(
+        spell=_DepB,
+        existence=Existence.many,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_Service,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        with pytest.raises(
+            MeldExecutionError,
+            match=r"Unique override '\*label' matched 2 sockets; expected exactly one\.",
+        ):
+            conduit.meld(
+                spell=service_id,
+                spell_override={"*label": "override"},
+            )
+    finally:
+        conduit.cleanup()
+
+
+def test_meld_overrides_broadcast_raises_when_missing_param() -> None:
+    """
+    Purpose:
+        Validate broadcast overrides raise when no sockets match.
+    Contract:
+        - Using "**missing" without a matching socket raises MeldExecutionError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the broadcast override does not raise.
+    """
+    class _Dependency:
+        """
+        Purpose:
+            Provide a dependency spell without a matching socket.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the dependency marker.
+            Contract:
+                Sets marker to "dep".
+            Returns:
+                None.
+            """
+            self.marker = "dep"
+
+    class _Service:
+        """
+        Purpose:
+            Provide a service spell that depends on _Dependency.
+        Contract:
+            Stores the dependency instance for assertions.
+        """
+        def __init__(self, dep: _Dependency) -> None:
+            """
+            Purpose:
+                Capture the dependency for assertions.
+            Contract:
+                Stores the dependency on the instance.
+            Args:
+                dep: Dependency resolved by the DI system.
+            Returns:
+                None.
+            """
+            self.dep = dep
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_Dependency,
+        existence=Existence.many,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_Service,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        with pytest.raises(
+            MeldExecutionError,
+            match=r"No sockets found for broadcast override '\*\*missing'\.",
+        ):
+            conduit.meld(
+                spell=service_id,
+                spell_override={"**missing": "value"},
+            )
     finally:
         conduit.cleanup()

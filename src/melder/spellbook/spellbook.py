@@ -1913,14 +1913,14 @@ class Spellbook(Cleanable):
                     broken_spells.append(spell)
 
             if broken_spells:
+                broken_spell_ids = [spell.spell_id for spell in broken_spells]
+                broken_spell_names = [spell.spell_name for spell in broken_spells]
                 self._logger.error(
                     "Spellbook resolution pipeline completed with broken spells; "
-                    "raising SpellbookValidationError.",
+                    f"raising SpellbookValidationError. "
+                    f"broken_spell_ids={broken_spell_ids}, "
+                    f"broken_spell_names={broken_spell_names}",
                     "_run_resolution_phases",
-                    extra={
-                        "broken_spell_ids": [s.spell_id for s in broken_spells],
-                        "broken_spell_names": [s.spell_name for s in broken_spells],
-                    },
                 )
                 raise SpellbookValidationError(broken_spells)
 

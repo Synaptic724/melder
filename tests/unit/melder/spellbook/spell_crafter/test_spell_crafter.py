@@ -2428,6 +2428,7 @@ def test_resolve_spellmap_default_frame_binding_multiple_raises() -> None:
 @pytest.mark.parametrize(
     "di_shape,expected",
     [
+        (ParameterDIShape.PLAIN, SocketKind.NORMAL),
         (ParameterDIShape.SINGLE_BY_ANNOTATION, SocketKind.NORMAL),
         (ParameterDIShape.COLLECTION_BY_ANNOTATION, SocketKind.NORMAL),
         (ParameterDIShape.SPELLMAP_DEFAULT, SocketKind.NORMAL),
@@ -2605,16 +2606,16 @@ def test_run_phase_symbolic_graph_builds_dependencies(
     assert dep.spellmap_default is spellmap_default
 
 
-def test_run_phase_symbolic_graph_skips_plain_and_ignore() -> None:
+def test_run_phase_symbolic_graph_includes_plain_and_skips_ignore() -> None:
     """
     Purpose:
-        Ensure Phase 2 ignores non-DI parameter shapes.
+        Ensure Phase 2 includes plain parameters and skips ignored ones.
     Contract:
-        IGNORE and PLAIN parameters do not produce dependencies.
+        PLAIN parameters become symbolic dependencies while IGNORE does not.
     Returns:
         None.
     Raises:
-        AssertionError: If skipped shapes appear in the symbolic graph.
+        AssertionError: If plain parameters are skipped or ignore is included.
     """
     crafter, _, _ = _build_spell_and_crafter()
     plain_param = _ParamStub(
@@ -2622,6 +2623,7 @@ def test_run_phase_symbolic_graph_skips_plain_and_ignore() -> None:
         position=0,
         di_shape=ParameterDIShape.PLAIN,
         is_optional=False,
+        annotation=int,
     )
     ignore_param = _ParamStub(
         name="ignore",
@@ -2633,7 +2635,16 @@ def test_run_phase_symbolic_graph_skips_plain_and_ignore() -> None:
 
     crafter.run_phase_symbolic_graph(cancel_event=None)
 
-    assert crafter.symbolic_graph.dependencies == []
+    deps = crafter.symbolic_graph.dependencies
+    assert len(deps) == 1
+    dep = deps[0]
+    assert dep.param_name == "plain"
+    assert dep.position == 0
+    assert dep.di_shape is ParameterDIShape.PLAIN
+    assert dep.is_optional is False
+    assert dep.is_collection is False
+    assert dep.target_annotation is int
+    assert dep.spellmap_default is None
 
 
 @pytest.mark.parametrize(
