@@ -7,11 +7,15 @@ SUPPORTED_TICKET_ITEMS: Dict[str, tuple[str, ...]] = {
     "A1": (
         "test_meld_by_spell_id_resolves_class_instance",
         "test_bind_conjure_and_meld_existing_creation",
+        "test_meld_by_spell_id_resolves_class_instance_unique",
+        "test_meld_by_spell_id_resolves_existing_instance_identity",
     ),
     "A2": (
         "test_meld_by_class_with_binding_name_resolves",
         "test_meld_by_class_default_binding_resolves_instance",
         "test_meld_by_function_default_binding_resolves_instance",
+        "test_meld_by_class_with_binding_name_resolves_specific",
+        "test_meld_by_function_with_binding_name_resolves_instance",
     ),
     "A3": (
         "test_meld_by_protocol_spellframe_resolves",
@@ -20,14 +24,17 @@ SUPPORTED_TICKET_ITEMS: Dict[str, tuple[str, ...]] = {
     "A5": (
         "test_meld_overrides_path_targets_root_params",
         "test_meld_overrides_unique_targets_dependency",
+        "test_meld_by_class_with_spell_override_dict_applies_kwargs",
     ),
     "B1": (
         "test_bind_conjure_and_meld_resolves_direct_dependency",
         "test_type_hint_di_by_concrete_class_resolves_dependency",
+        "test_type_hint_di_by_concrete_class_reuses_unique_dependency",
     ),
     "B2": (
         "test_type_hint_di_by_protocol_resolves_dependency",
         "test_type_hint_di_by_protocol_resolves_dependency_secondary",
+        "test_type_hint_di_by_protocol_reuses_unique_dependency",
     ),
     "B3": (
         "test_spellmap_default_explicit_class_resolves_dependency",
@@ -44,14 +51,17 @@ SUPPORTED_TICKET_ITEMS: Dict[str, tuple[str, ...]] = {
     "C1": (
         "test_collection_di_by_list_frame_injects_all",
         "test_collection_di_by_protocol_includes_all_bindings",
+        "test_collection_di_by_list_protocol_includes_all_bindings",
     ),
     "D1": (
         "test_spellmap_default_explicit_class_resolves_dependency",
         "test_spellmap_default_with_protocol_spell_resolves_dependency",
+        "test_spellmap_default_explicit_class_with_binding_name_resolves",
     ),
     "D2": (
         "test_spellmap_default_frame_only_resolves_dependency",
         "test_spellmap_default_frame_and_binding_resolves_dependency",
+        "test_spellmap_default_frame_only_string_resolves",
     ),
     "E1": (
         "test_bind_rejects_module_as_spell",
