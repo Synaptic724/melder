@@ -394,9 +394,7 @@ class Meld(Cleanable):
         # invalid / disabled → hard block, no attempt to resolve
         if validity is SpellValidity.invalid or validity is SpellValidity.disabled:
             if state is not None and SpellState.transfer_in_progress in state.flags:
-                raise SpellbookValidationError(
-                    f"Spell '{spell_id}' is blocked: ownership transfer in progress."
-                )
+                raise SpellbookValidationError([spell])
             raise SpellbookValidationError([spell])
 
         # Defensive: block dirty roots under change-control even if validity looks OK.
