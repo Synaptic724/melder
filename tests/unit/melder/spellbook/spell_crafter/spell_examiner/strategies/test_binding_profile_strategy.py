@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+import inspect
+
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     SpellBindingKind,
     ClassBindingProfile,
@@ -30,6 +33,47 @@ class _SampleService:
         return value
 
 
+class _DunderService:
+    """
+    Purpose:
+        Provide a class with dunder methods for filtering tests.
+    Contract:
+        Exposes __str__ and a normal method for method_names checks.
+    """
+    def __str__(self) -> str:
+        """
+        Purpose:
+            Provide a dunder method for inspection filters.
+        Contract:
+            Returns a fixed string representation.
+        Returns:
+            str: Fixed string representation.
+        """
+        return "dunder"
+
+    def ping(self) -> str:
+        """
+        Purpose:
+            Provide a normal method for inspection filters.
+        Contract:
+            Returns a fixed string.
+        Returns:
+            str: Fixed response string.
+        """
+        return "pong"
+
+
+@dataclass
+class _DataclassService:
+    """
+    Purpose:
+        Provide a dataclass for dunder inclusion tests.
+    Contract:
+        Dataclass-generated __init__ should be present in __dict__.
+    """
+    value: int
+
+
 def _sample_function(value: int, other: int = 2) -> int:
     """
     Purpose:
@@ -43,6 +87,20 @@ def _sample_function(value: int, other: int = 2) -> int:
         int: Sum of value and other.
     """
     return value + other
+
+
+def _abstract_function(value: int) -> int:
+    """
+    Purpose:
+        Provide an abstract-marked callable for binding profile tests.
+    Contract:
+        Returns the input value.
+    Args:
+        value: Input value.
+    Returns:
+        int: The same value passed in.
+    """
+    return value
 
 
 def test_binding_profile_strategy_builds_class_profile() -> None:
@@ -81,7 +139,8 @@ def test_binding_profile_strategy_builds_callable_profile() -> None:
     assert isinstance(profile, CallableBindingProfile)
     assert profile.kind is SpellBindingKind.CALLABLE
     assert profile.signature is not None
-    assert "other=2" in profile.signature
+    assert "other" in profile.signature
+    assert " = 2" in profile.signature
 
 
 def test_binding_profile_strategy_builds_instance_profile() -> None:
@@ -102,3 +161,92 @@ def test_binding_profile_strategy_builds_instance_profile() -> None:
     assert isinstance(profile, InstanceBindingProfile)
     assert profile.kind is SpellBindingKind.INSTANCE
     assert profile.type_name == "_SampleService"
+
+
+def test_binding_profile_strategy_filters_dunders_when_hidden() -> None:
+    """
+    Purpose:
+        Ensure dunder methods are excluded when show_dunders is False.
+    Contract:
+        __str__ is omitted while normal methods are preserved.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dunder filtering does not behave as expected.
+    """
+    strategy = BindingProfileStrategy(show_dunders=False)
+    profile = strategy.build_profile(_DunderService)
+
+    assert "__str__" not in profile.method_names
+    assert "ping" in profile.method_names
+
+
+def test_binding_profile_strategy_includes_dunders_when_enabled() -> None:
+    """
+    Purpose:
+        Ensure dunder methods are included when show_dunders is True.
+    Contract:
+        __str__ appears in the method names when dunders are enabled.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dunder inclusion does not behave as expected.
+    """
+    strategy = BindingProfileStrategy(show_dunders=True)
+    profile = strategy.build_profile(_DunderService)
+
+    assert "__str__" in profile.method_names
+
+
+def test_binding_profile_strategy_includes_dataclass_init() -> None:
+    """
+    Purpose:
+        Verify dataclass __init__ is retained when dunders are hidden.
+    Contract:
+        Dataclass-generated __init__ should be present in method_names.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If __init__ is missing for dataclass types.
+    """
+    strategy = BindingProfileStrategy(show_dunders=False)
+    profile = strategy.build_profile(_DataclassService)
+
+    assert "__init__" in profile.method_names
+
+
+def test_binding_profile_strategy_detects_lambda_function() -> None:
+    """
+    Purpose:
+        Ensure lambda candidates are marked as lambda_function.
+    Contract:
+        CallableBindingProfile.lambda_function is True for lambdas.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the lambda flag is not set.
+    """
+    strategy = BindingProfileStrategy()
+    profile = strategy.build_profile(lambda value: value)
+
+    assert isinstance(profile, CallableBindingProfile)
+    assert profile.lambda_function is True
+
+
+def test_binding_profile_strategy_abstract_flag_matches_inspect() -> None:
+    """
+    Purpose:
+        Verify abstract flag mirrors inspect.isabstract for callables.
+    Contract:
+        CallableBindingProfile.abstract matches inspect.isabstract(effective).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the abstract flag diverges from inspect.isabstract.
+    """
+    _abstract_function.__isabstractmethod__ = True
+    strategy = BindingProfileStrategy()
+    profile = strategy.build_profile(_abstract_function)
+
+    assert isinstance(profile, CallableBindingProfile)
+    assert profile.abstract is inspect.isabstract(_abstract_function)
