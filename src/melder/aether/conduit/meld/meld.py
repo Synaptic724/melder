@@ -53,8 +53,8 @@ class Meld(Cleanable):
     5.  **Instantiate/Register (if needed):**
         * If no instance is found, dispatches to a spell-type specific path (e.g.,
             for `EXISTING_CREATION` spells) to obtain a new instance.
-        * Existing-creation spells are registered here; factory spells are
-          registered by the runtime engine to capture DAG node instances.
+        * Registers the new instance with the `Creations` manager based on its
+            `Existence` mode.
     6.  **Execute Activation Hooks:** Runs hooks that operate on the newly resolved/reused
         instance, passing the instance as a context argument.
     7.  **Execute Post-Cast Hooks:** Runs hooks that execute *after* activation.
@@ -404,9 +404,7 @@ class Meld(Cleanable):
             frame_name = spellbook._aetheric_frame
             ccm = spellbook._aether._get_change_control_manager(frame_name)
             if ccm is not None and ccm.is_root_dirty(spell.spell_index.current):
-                raise MeldExecutionError(
-                    f"Root '{spell.spell_index.current}' is dirty under change-control; revalidation required."
-                )
+                raise MeldExecutionError(spell_id=spell.spell_index.current, spell_name=spell.spell_name, message=f"Root '{spell.spell_index.current}' is dirty under change-control; revalidation required.")
         except MeldExecutionError:
             raise
         except Exception:
@@ -576,7 +574,9 @@ class Meld(Cleanable):
                 deriving the logical spell key.
             spell_name:
                 Optional explicit spell name to use when deriving the
-                logical identity key. Used only if ``spell`` is not a string.
+                logical identity key. When provided without an explicit
+                ``spell`` or ``spellframe``, this name is treated as the
+                logical frame key for resolution.
             spellframe:
                 Optional spellframe / Protocol / interface used as part of
                 the DI identity. If ``None``, the spell’s own type/name is
@@ -605,9 +605,17 @@ class Meld(Cleanable):
 
         # Decide what we use as "spell" for name-based resolution:
         # - if we have a concrete spell object (class/function), use that
-        # - else if we have a spell_name string, use that
+        # - else if we have a spell_name string and no spellframe, resolve by name
         # - else spell remains None and spellframe must be non-None
         spell_for_name = spell
+        if spell_for_name is None and spell_name is not None and spellframe is None:
+            frame_key, bind_key = SpellInputUtils.make_spell_key_from_parts(
+                spellframe=None,
+                spell_name=spell_name,
+                binding_name=binding_name,
+            )
+            lookup_key = (frame_key, bind_key)
+            return self._resolve_spell_by_lookup_key(lookup_key)
         if spell_for_name is None and spell_name is not None:
             spell_for_name = spell_name
 
@@ -985,8 +993,7 @@ class Meld(Cleanable):
 
             * Class / method / lambda spells:
                   Delegate to the DAG-based `MeldRuntime` / `MeldEngine` stack
-                  using a per-call `MeldContext` seeded with `overrides`. The
-                  runtime is responsible for registering factory spell instances.
+                  using a per-call `MeldContext` seeded with `overrides`.
 
             * Anything else:
                   Raises a `RuntimeError` indicating an unsupported SpellType.

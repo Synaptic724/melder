@@ -82,6 +82,10 @@ class MutationContract(Cleanable):
 
             binding_name:
                 Optional binding name to disambiguate under the same frame.
+                When provided, this name is normalized via
+                ``SpellInputUtils.normalize_binding_name`` so comparisons are
+                case-insensitive. When None, the binding name remains None so
+                default-binding semantics remain intact.
 
             spell_override:
                 Optional override payload to apply when this mutation contract
@@ -106,7 +110,11 @@ class MutationContract(Cleanable):
         super().__init__()
         self.spell = spell
         self.spellframe = spellframe
-        self.binding_name = binding_name
+        self.binding_name = (
+            SpellInputUtils.normalize_binding_name(binding_name)
+            if binding_name is not None
+            else None
+        )
         self.spell_override = spell_override if spell_override is not None else {}
         self.late_binding = late_binding
 
@@ -145,6 +153,9 @@ class MutationContract(Cleanable):
 
         Used by mutation-aware resolution when deciding how to locate or
         declare the underlying mutation socket.
+        Notes:
+            - If a binding name was provided at construction time, it is
+              normalized for case-insensitive matching.
         """
         return (self.spell, self.spellframe, self.binding_name)
 

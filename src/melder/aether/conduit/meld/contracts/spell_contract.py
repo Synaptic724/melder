@@ -112,7 +112,8 @@ class SpellContract(Cleanable):
             binding_name:
                 Optional binding name used to disambiguate multiple providers
                 under the same frame. Normalized via SpellInputUtils so the
-                contract is stable and case-insensitive.
+                contract is stable and case-insensitive. When None, the binding
+                name remains None so default-binding semantics remain intact.
 
             spell_override:
                 Optional positional/keyword override payload that should be
@@ -137,7 +138,11 @@ class SpellContract(Cleanable):
 
         self.spell = spell
         self.spellframe = spellframe
-        self.binding_name = binding_name
+        self.binding_name = (
+            SpellInputUtils.normalize_binding_name(binding_name)
+            if binding_name is not None
+            else None
+        )
         # Keep a concrete container so we can distinguish “no override” vs
         # “empty override” at higher layers if needed.
         self.spell_override = spell_override if spell_override is not None else {}
@@ -187,6 +192,8 @@ class SpellContract(Cleanable):
             - When `spell` is present, it is part of the contract descriptor but
               does *not* imply immediate resolution – the provider may live in
               another Conduit.
+            - If a binding name was provided at construction time, it is
+              normalized for case-insensitive matching.
         """
         return (self.spell, self.spellframe, self.binding_name)
 

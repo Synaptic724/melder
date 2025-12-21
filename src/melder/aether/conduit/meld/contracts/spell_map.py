@@ -119,9 +119,10 @@ class SpellMap(Cleanable):
                 Optional named binding used to disambiguate multiple spells
                 under the same frame. None means “use the default binding”.
 
-                The effective key always normalizes this name via
+                When provided, this name is normalized via
                 ``SpellInputUtils.normalize_binding_name`` so comparisons are
-                case-insensitive.
+                case-insensitive. When None, the binding name remains None so
+                Spellbook default-binding semantics remain intact.
 
             spell_override:
                 Optional positional/keyword override payload passed through
@@ -149,7 +150,11 @@ class SpellMap(Cleanable):
         super().__init__()
         self.spell = spell
         self.spellframe = spellframe
-        self.binding_name = binding_name
+        self.binding_name = (
+            SpellInputUtils.normalize_binding_name(binding_name)
+            if binding_name is not None
+            else None
+        )
         # Keep a concrete container for overrides; consumers can distinguish
         # "no override" vs "empty override" based on how they interpret this.
         self.spell_override = spell_override if spell_override is not None else {}
@@ -203,6 +208,8 @@ class SpellMap(Cleanable):
               and `binding_name` participate in the key derivation.
             - For fully explicit SpellMaps, both `spell` and `spellframe`
               can be used by higher layers (e.g., to enforce contracts).
+            - If a binding name was provided at construction time, it is
+              normalized for case-insensitive matching.
         """
         return (self.spell, self.spellframe, self.binding_name)
 

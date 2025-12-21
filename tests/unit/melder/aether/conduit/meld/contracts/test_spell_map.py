@@ -72,6 +72,24 @@ def test_init_accepts_spell_frame_binding() -> None:
     assert mapping.binding_name == "primary"
 
 
+def test_init_normalizes_binding_name_when_provided() -> None:
+    """
+    Verify SpellMap normalizes binding names when provided.
+
+    Contract:
+        - binding_name is lowercased for case-insensitive matching.
+
+    Raises:
+        AssertionError: If binding_name is not normalized.
+    """
+    mapping = SpellMap(
+        spell="alpha",
+        spellframe="frame",
+        binding_name="Primary",
+    )
+    assert mapping.binding_name == "primary"
+
+
 def test_default_override_is_distinct_dict() -> None:
     """
     Verify default overrides are independent per instance.
