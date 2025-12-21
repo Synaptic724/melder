@@ -167,7 +167,7 @@ class MeldRuntime(Cleanable):
         # Change-control dirty-root gating
         try:
             spellbook = spell._spellbook
-            aether = getattr(spellbook, "_aether", None)
+            aether = spellbook._aether
             if aether is not None:
                 manager = aether._get_change_control_manager(spell.aetheric_frame)
                 if manager is not None and manager.is_root_dirty(spell.spell_index.current):
