@@ -37,7 +37,7 @@ def test_meld_overrides_dict_applies_kwargs() -> None:
         Validate dictionary overrides are applied as keyword arguments.
     Contract:
         - spell_override dict maps onto constructor kwargs.
-        - Instance fields reflect the provided override values.
+        - Instance captures the provided override mapping.
     Returns:
         None.
     Raises:
@@ -46,24 +46,22 @@ def test_meld_overrides_dict_applies_kwargs() -> None:
     class _Service:
         """
         Purpose:
-            Provide a class spell with keyword-configured fields.
+            Provide a class spell that records keyword overrides.
         Contract:
-            Stores the provided value and label on the instance.
+            Stores the provided keyword arguments on the instance.
         """
-        def __init__(self, value: int, label: str) -> None:
+        def __init__(self, **kwargs) -> None:
             """
             Purpose:
                 Capture override arguments for assertions.
             Contract:
-                Sets value and label fields from arguments.
+                Stores provided keyword arguments on the instance.
             Args:
-                value: Required numeric value.
-                label: Required label string.
+                **kwargs: Keyword overrides passed by meld.
             Returns:
                 None.
             """
-            self.value = value
-            self.label = label
+            self.kwargs = dict(kwargs)
 
     spellbook = Spellbook()
     config = spellbook.get_configuration()
@@ -81,8 +79,7 @@ def test_meld_overrides_dict_applies_kwargs() -> None:
             spell=spell_id,
             spell_override={"value": 7, "label": "dict"},
         )
-        assert instance.value == 7
-        assert instance.label == "dict"
+        assert instance.kwargs == {"value": 7, "label": "dict"}
     finally:
         conduit.cleanup()
 
@@ -93,7 +90,7 @@ def test_meld_overrides_list_applies_args() -> None:
         Validate list overrides are applied as positional arguments.
     Contract:
         - spell_override list maps onto constructor positional args.
-        - Instance fields reflect the provided positional values.
+        - Instance captures the provided positional values.
     Returns:
         None.
     Raises:
@@ -102,24 +99,22 @@ def test_meld_overrides_list_applies_args() -> None:
     class _Service:
         """
         Purpose:
-            Provide a class spell with positional parameters.
+            Provide a class spell that records positional overrides.
         Contract:
-            Stores the provided value and label on the instance.
+            Stores the provided positional arguments on the instance.
         """
-        def __init__(self, value: int, label: str) -> None:
+        def __init__(self, *args) -> None:
             """
             Purpose:
                 Capture positional arguments for assertions.
             Contract:
-                Sets value and label fields from arguments.
+                Stores provided positional arguments on the instance.
             Args:
-                value: Required numeric value.
-                label: Required label string.
+                *args: Positional overrides passed by meld.
             Returns:
                 None.
             """
-            self.value = value
-            self.label = label
+            self.args = args
 
     spellbook = Spellbook()
     config = spellbook.get_configuration()
@@ -137,7 +132,6 @@ def test_meld_overrides_list_applies_args() -> None:
             spell=spell_id,
             spell_override=[13, "list"],
         )
-        assert instance.value == 13
-        assert instance.label == "list"
+        assert instance.args == (13, "list")
     finally:
         conduit.cleanup()
