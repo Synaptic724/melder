@@ -31,13 +31,13 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def test_meld_overrides_dict_applies_kwargs() -> None:
+def test_meld_overrides_path_targets_root_params() -> None:
     """
     Purpose:
-        Validate dictionary overrides are applied as keyword arguments.
+        Validate path overrides target root constructor parameters.
     Contract:
-        - spell_override dict maps onto constructor kwargs.
-        - Instance captures the provided override mapping.
+        - spell_override path keys map onto root constructor parameters.
+        - Instance fields reflect the provided override values.
     Returns:
         None.
     Raises:
@@ -46,22 +46,24 @@ def test_meld_overrides_dict_applies_kwargs() -> None:
     class _Service:
         """
         Purpose:
-            Provide a class spell that records keyword overrides.
+            Provide a class spell with explicit constructor parameters.
         Contract:
-            Stores the provided keyword arguments on the instance.
+            Stores constructor arguments for assertions.
         """
-        def __init__(self, **kwargs) -> None:
+        def __init__(self, value: int, label: str) -> None:
             """
             Purpose:
-                Capture override arguments for assertions.
+                Capture constructor arguments for assertions.
             Contract:
-                Stores provided keyword arguments on the instance.
+                Stores value and label on the instance.
             Args:
-                **kwargs: Keyword overrides passed by meld.
+                value: Numeric value passed to the constructor.
+                label: String label passed to the constructor.
             Returns:
                 None.
             """
-            self.kwargs = dict(kwargs)
+            self.value = value
+            self.label = label
 
     spellbook = Spellbook()
     config = spellbook.get_configuration()
@@ -79,47 +81,73 @@ def test_meld_overrides_dict_applies_kwargs() -> None:
             spell=spell_id,
             spell_override={"value": 7, "label": "dict"},
         )
-        assert instance.kwargs == {"value": 7, "label": "dict"}
+        assert instance.value == 7
+        assert instance.label == "dict"
     finally:
         conduit.cleanup()
 
 
-def test_meld_overrides_list_applies_args() -> None:
+def test_meld_overrides_unique_targets_dependency() -> None:
     """
     Purpose:
-        Validate list overrides are applied as positional arguments.
+        Validate unique overrides target a dependency socket by name.
     Contract:
-        - spell_override list maps onto constructor positional args.
-        - Instance captures the provided positional values.
+        - spell_override uses "*param" to target a single dependency.
+        - Instance receives the overridden dependency object.
     Returns:
         None.
     Raises:
         AssertionError: If positional overrides are not applied.
     """
-    class _Service:
+    class _Dependency:
         """
         Purpose:
-            Provide a class spell that records positional overrides.
+            Provide a dependency spell that can be overridden.
         Contract:
-            Stores the provided positional arguments on the instance.
+            Stores the supplied label for assertions.
         """
-        def __init__(self, *args) -> None:
+        def __init__(self, label: str) -> None:
             """
             Purpose:
-                Capture positional arguments for assertions.
+                Capture a label for assertions.
             Contract:
-                Stores provided positional arguments on the instance.
+                Stores the label on the instance.
             Args:
-                *args: Positional overrides passed by meld.
+                label: Label assigned to the dependency.
             Returns:
                 None.
             """
-            self.args = args
+            self.label = label
+
+    class _Service:
+        """
+        Purpose:
+            Provide a class spell that depends on a single dependency.
+        Contract:
+            Stores the dependency instance for assertions.
+        """
+        def __init__(self, dep: _Dependency) -> None:
+            """
+            Purpose:
+                Capture the dependency for assertions.
+            Contract:
+                Stores the dependency on the instance.
+            Args:
+                dep: Dependency resolved by the DI system.
+            Returns:
+                None.
+            """
+            self.dep = dep
 
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
+    spellbook.bind(
+        spell=_Dependency,
+        existence=Existence.many,
+        permissions="create",
+    )
     spell_id = spellbook.bind(
         spell=_Service,
         existence=Existence.many,
@@ -128,10 +156,11 @@ def test_meld_overrides_list_applies_args() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
+        override_dep = _Dependency(label="override")
         instance = conduit.meld(
             spell=spell_id,
-            spell_override=[13, "list"],
+            spell_override={"*dep": override_dep},
         )
-        assert instance.args == (13, "list")
+        assert instance.dep is override_dep
     finally:
         conduit.cleanup()

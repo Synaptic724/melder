@@ -1809,20 +1809,20 @@ class Spellbook(Cleanable):
                and frames.
 
         5. ``"root_blueprints"``:
-               Build frame-level root blueprints and the SpellSystemIndex
-               from Phase 1-4 artifacts.
+                Build frame-level root blueprints and the SpellSystemIndex
+                from Phase 1-4 artifacts.
 
         6. ``"system_validation"``:
-               Validate the system-level DAG and update lineage validity
-               across the frame.
+                Validate the system-level DAG and update lineage validity
+                across the frame.
 
         7. ``"change_control"``:
-               Wire change-control and component-of indices for the frame.
+                Wire change-control and component-of indices for the frame.
 
         Notes:
-            Phases 5-7 are **frame-level** operations. They are scheduled
-            once using a representative "lead" spell after per-spell phases
-            have completed.
+            Phases 5-7 are **frame-level** operations. We schedule these
+            for every local spell to keep per-spell validation state
+            consistent with the frame-level artifacts.
 
         All work is executed via :class:`UnitOfWork` on a shared worker pool
         sized by the Configuration's
@@ -2084,8 +2084,9 @@ class Spellbook(Cleanable):
 
         Build :class:`UnitOfWork` instances for the **root_blueprints** phase.
 
-        This phase is frame-level and must run exactly once after Phase 4.
-        We schedule a single unit of work against a representative lead spell.
+        This phase is frame-level and must run after Phase 4. We schedule
+        a unit of work for each local spell so that each spell's crafter
+        receives the frame-level artifacts.
 
         Expected spell surface:
 
@@ -2095,18 +2096,20 @@ class Spellbook(Cleanable):
         if not self._spells:
             return []
 
-        lead_spell = next(iter(self._spells.values()))
-        return [
-            scheduler.create_unit_of_work(
-                func=lead_spell.run_phase_root_blueprints,
-                args=(scheduler.cancel_event,),
-                label=f"root_blueprints:{lead_spell.spell_id}",
-                metadata={
-                    "phase": "root_blueprints",
-                    "spell_id": lead_spell.spell_id,
-                },
+        units: List['UnitOfWork'] = []
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_root_blueprints,
+                    args=(scheduler.cancel_event,),
+                    label=f"root_blueprints:{spell.spell_id}",
+                    metadata={
+                        "phase": "root_blueprints",
+                        "spell_id": spell.spell_id,
+                    },
+                )
             )
-        ]
+        return units
 
     def _phase_system_validation_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
         """
@@ -2115,7 +2118,8 @@ class Spellbook(Cleanable):
         Build :class:`UnitOfWork` instances for the **system_validation** phase.
 
         This phase validates the system-level DAG for the frame and runs
-        once after Phase 5 artifacts have been constructed.
+        after Phase 5 artifacts have been constructed. We schedule work
+        for every local spell to keep per-spell validation state aligned.
 
         Expected spell surface:
 
@@ -2125,18 +2129,20 @@ class Spellbook(Cleanable):
         if not self._spells:
             return []
 
-        lead_spell = next(iter(self._spells.values()))
-        return [
-            scheduler.create_unit_of_work(
-                func=lead_spell.run_phase_system_validation,
-                args=(scheduler.cancel_event,),
-                label=f"system_validation:{lead_spell.spell_id}",
-                metadata={
-                    "phase": "system_validation",
-                    "spell_id": lead_spell.spell_id,
-                },
+        units: List['UnitOfWork'] = []
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_system_validation,
+                    args=(scheduler.cancel_event,),
+                    label=f"system_validation:{spell.spell_id}",
+                    metadata={
+                        "phase": "system_validation",
+                        "spell_id": spell.spell_id,
+                    },
+                )
             )
-        ]
+        return units
 
     def _phase_change_control_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
         """
@@ -2145,7 +2151,8 @@ class Spellbook(Cleanable):
         Build :class:`UnitOfWork` instances for the **change_control** phase.
 
         This phase wires change-control hooks and component-of indices for
-        the frame once Phase 5 artifacts exist.
+        the frame once Phase 5 artifacts exist. We schedule work for every
+        local spell to keep per-spell wiring consistent.
 
         Expected spell surface:
 
@@ -2155,18 +2162,20 @@ class Spellbook(Cleanable):
         if not self._spells:
             return []
 
-        lead_spell = next(iter(self._spells.values()))
-        return [
-            scheduler.create_unit_of_work(
-                func=lead_spell.run_phase_change_control,
-                args=(scheduler.cancel_event,),
-                label=f"change_control:{lead_spell.spell_id}",
-                metadata={
-                    "phase": "change_control",
-                    "spell_id": lead_spell.spell_id,
-                },
+        units: List['UnitOfWork'] = []
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_change_control,
+                    args=(scheduler.cancel_event,),
+                    label=f"change_control:{spell.spell_id}",
+                    metadata={
+                        "phase": "change_control",
+                        "spell_id": spell.spell_id,
+                    },
+                )
             )
-        ]
+        return units
 #endregion
 
 #endregion Resolution Phases
