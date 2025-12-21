@@ -1,9 +1,17 @@
-"""Auto-generated placeholder test to mirror src structure.
-Tests will be replaced with real coverage when available.
-"""
-import importlib
+from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
-MODULE_PATH = "melder.utilities.custom_exceptions.spell_space_scope_error"
 
-def test_import_module():
-    importlib.import_module(MODULE_PATH)
+def test_spell_space_scope_error_preserves_message() -> None:
+    """
+    Purpose:
+        Confirm SpellSpaceScopeError is a RuntimeError with message preserved.
+    Contract:
+        The error instance is a RuntimeError and echoes the message.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If type or message is incorrect.
+    """
+    error = SpellSpaceScopeError("missing spell space")
+    assert isinstance(error, RuntimeError)
+    assert str(error) == "missing spell space"

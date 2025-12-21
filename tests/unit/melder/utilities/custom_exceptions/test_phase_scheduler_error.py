@@ -1,9 +1,17 @@
-"""Auto-generated placeholder test to mirror src structure.
-Tests will be replaced with real coverage when available.
-"""
-import importlib
+from melder.utilities.custom_exceptions.phase_scheduler_error import PhaseSchedulerError
 
-MODULE_PATH = "melder.utilities.custom_exceptions.phase_scheduler_error"
 
-def test_import_module():
-    importlib.import_module(MODULE_PATH)
+def test_phase_scheduler_error_preserves_message() -> None:
+    """
+    Purpose:
+        Confirm PhaseSchedulerError keeps the provided message.
+    Contract:
+        The error is a RuntimeError with the same string payload.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the message is not preserved.
+    """
+    error = PhaseSchedulerError("scheduler failed")
+    assert isinstance(error, RuntimeError)
+    assert str(error) == "scheduler failed"

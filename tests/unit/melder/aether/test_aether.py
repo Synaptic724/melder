@@ -115,6 +115,28 @@ def test_cleanup_clears_state(aether_with_mocks):
     assert a2 is not a
     assert a2._cleaned is False
 
+def test_reset_singleton_for_tests_creates_fresh_instance():
+    """
+    Purpose:
+        Verify the test reset helper clears singleton state.
+    Contract:
+        Aether._reset_singleton_for_tests forces the next Aether() to reinitialize.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the reset does not replace the instance.
+    """
+    first = Aether()
+    first_id = id(first)
+
+    Aether._reset_singleton_for_tests()
+
+    second = Aether()
+    assert second is not first
+    assert id(second) != first_id
+    assert second._cleaned is False
+    assert second._default_frame is not None
+
 def test_cleanup_is_idempotent(aether_with_mocks):
     """Calling cleanup() multiple times is safe."""
     a = aether_with_mocks

@@ -6,6 +6,7 @@ from typing import MutableMapping, cast
 
 import pytest
 
+from melder.aether.aether import Aether
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -607,6 +608,24 @@ class DummySpellValidationSystem:
 
 
 # Monkeypatch helpers -------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_tests():
+    """
+    Purpose:
+        Ensure Spellbook tests do not share cleaned Aether state.
+    Contract:
+        Resets the Aether singleton and rebinds Spellbook._aether before and
+        after each test.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    Spellbook._aether = Aether()
+    yield
+    Aether._reset_singleton_for_tests()
+    Spellbook._aether = Aether()
 
 
 @pytest.fixture(autouse=True)

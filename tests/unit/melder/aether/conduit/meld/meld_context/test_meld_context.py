@@ -13,6 +13,23 @@ from melder.utilities.synchronization.cancellation_event_signal import (
 )
 
 
+class _ChannelLoggerStub:
+    """
+    Minimal stub that satisfies IChannelLogger structural checks.
+
+    This provides all protocol attributes and a setLevel method so SafeLogger
+    can initialize without raising.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize the stub with protocol attributes and a setLevel hook.
+        """
+        for name in IChannelLogger.__protocol_attrs__:
+            setattr(self, name, MagicMock())
+        self.setLevel = MagicMock()
+
+
 def _make_root_spell(
     *,
     creations: Any = None,
@@ -376,7 +393,7 @@ def test_channel_logger_is_wrapped_safelogger() -> None:
         AssertionError: If IChannelLogger inputs are rejected or unwrapped.
     """
     root_spell = _make_root_spell(creations=object())
-    channel_logger = MagicMock(spec=IChannelLogger)
+    channel_logger = _ChannelLoggerStub()
     context = MeldContext(root_spell=root_spell, logger=channel_logger)
     try:
         assert isinstance(context.logger, SafeLogger)

@@ -1,9 +1,17 @@
-"""Auto-generated placeholder test to mirror src structure.
-Tests will be replaced with real coverage when available.
-"""
-import importlib
+from melder.utilities.custom_exceptions.empty_error import Empty
 
-MODULE_PATH = "melder.utilities.custom_exceptions.empty_error"
 
-def test_import_module():
-    importlib.import_module(MODULE_PATH)
+def test_empty_error_inherits_exception_and_preserves_message() -> None:
+    """
+    Purpose:
+        Confirm Empty is an Exception subclass with a preserved message.
+    Contract:
+        The error instance is an Exception and echoes the message string.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If inheritance or message does not match.
+    """
+    error = Empty("container empty")
+    assert isinstance(error, Exception)
+    assert str(error) == "container empty"

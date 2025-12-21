@@ -89,6 +89,44 @@ class Aether(Cleanable):
                 self._logger.cleanup()
             self._logger = None
 
+    @classmethod
+    def _reset_singleton_for_tests(cls) -> None:
+        """
+        Reset the Aether singleton for test isolation.
+
+        Purpose:
+            Provide a deterministic way for tests to discard any existing
+            singleton instance and force re-initialization on next use.
+
+        Contract:
+            - If an instance exists, cleanup() is invoked to release resources.
+            - _instance and _initialized are cleared so Aether() creates a fresh instance.
+            - This method does not create a new instance.
+
+        Returns:
+            None.
+
+        Raises:
+            Exception: Propagates any exception raised by cleanup().
+
+        Threading:
+            Acquires the class-level lock to serialize singleton resets.
+
+        Lifecycle:
+            Triggers normal cleanup semantics on the current instance, including
+            frame cleanup and logger teardown.
+        """
+        with cls._lock:
+            instance = cls._instance
+            if instance is None:
+                cls._initialized = False
+                return
+            try:
+                instance.cleanup()
+            finally:
+                cls._instance = None
+                cls._initialized = False
+
     def _ensure_default_frame(self) -> None:
         """
         Raise a clear error if the default frame is unavailable.
