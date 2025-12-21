@@ -31,39 +31,45 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def test_bind_conjure_and_meld_function_spell_unique() -> None:
+def test_bind_conjure_and_meld_class_spell_many() -> None:
     """
     Purpose:
-        Validate bind -> conjure -> meld for a function spell using unique existence.
+        Validate bind -> conjure -> meld for a class spell using many existence.
     Contract:
-        - The first meld call executes the function.
-        - Existence.unique reuses the same instance on subsequent melds.
+        - Each meld call constructs a fresh instance.
+        - Existence.many does not reuse instances across melds.
     Returns:
         None.
     Raises:
-        AssertionError: If the function is not invoked or reuse fails.
+        AssertionError: If instances are reused or constructors are not invoked.
     """
-    calls: list[str] = []
+    init_calls: list[str] = []
 
-    def _factory() -> object:
+    class _Service:
         """
         Purpose:
-            Provide a function spell that creates a new object.
+            Provide a class spell that records construction.
         Contract:
-            Records each invocation and returns a unique object.
-        Returns:
-            object: Newly created object instance.
+            Appends a marker on each initialization.
         """
-        calls.append("called")
-        return object()
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Record construction for integration assertions.
+            Contract:
+                Appends a marker to init_calls.
+            Returns:
+                None.
+            """
+            init_calls.append("init")
 
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     spell_id = spellbook.bind(
-        spell=_factory,
-        existence=Existence.unique,
+        spell=_Service,
+        existence=Existence.many,
         permissions="create",
     )
 
@@ -71,7 +77,7 @@ def test_bind_conjure_and_meld_function_spell_unique() -> None:
     try:
         first = conduit.meld(spell=spell_id)
         second = conduit.meld(spell=spell_id)
-        assert first is second
-        assert calls == ["called"]
+        assert first is not second
+        assert init_calls == ["init", "init"]
     finally:
         conduit.cleanup()

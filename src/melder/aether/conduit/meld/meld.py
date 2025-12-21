@@ -53,8 +53,8 @@ class Meld(Cleanable):
     5.  **Instantiate/Register (if needed):**
         * If no instance is found, dispatches to a spell-type specific path (e.g.,
             for `EXISTING_CREATION` spells) to obtain a new instance.
-        * Registers the new instance with the `Creations` manager based on its
-            `Existence` mode.
+        * Existing-creation spells are registered here; factory spells are
+          registered by the runtime engine to capture DAG node instances.
     6.  **Execute Activation Hooks:** Runs hooks that operate on the newly resolved/reused
         instance, passing the instance as a context argument.
     7.  **Execute Post-Cast Hooks:** Runs hooks that execute *after* activation.
@@ -249,33 +249,32 @@ class Meld(Cleanable):
                 ID resolution, unsupported Creations manager, or attempting to
                 meld a broken spell).
         """
-        with self._lock:
-            # Basic contract: we need at least *one* identity source.
-            if spell is None and spellframe is None and spell_name is None:
-                raise ValueError(
-                    "[MELD] meld(...) requires at least one of "
-                    "`spell_name`, `spell`, or `spellframe`."
-                )
-
-            # 1) Normalize per-call overrides into a stable dict shape.
-            override_map = self._normalize_spell_override(spell_override)
-
-            # 2) Resolve the spell object from the Spellbook / SpellIndex.
-            target_spell = self._resolve_spell(
-                spell=spell,
-                spell_name=spell_name,
-                spellframe=spellframe,
-                binding_name=binding_name,
+        # Basic contract: we need at least *one* identity source.
+        if spell is None and spellframe is None and spell_name is None:
+            raise ValueError(
+                "[MELD] meld(...) requires at least one of "
+                "`spell_name`, `spell`, or `spellframe`."
             )
 
-            # 1.5) SpellSystemState / SpellValidity gate + lazy revalidation.
-            self._ensure_lineage_resolvable(target_spell)
+        # 1) Normalize per-call overrides into a stable dict shape.
+        override_map = self._normalize_spell_override(spell_override)
 
-            # 3) Defensive guard: never attempt to meld a broken spell.
-            if target_spell.is_broken:
-                raise RuntimeError(
-                    f"[MELD] Cannot meld broken spell: {target_spell}."
-                )
+        # 2) Resolve the spell object from the Spellbook / SpellIndex.
+        target_spell = self._resolve_spell(
+            spell=spell,
+            spell_name=spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
+
+        # 1.5) SpellSystemState / SpellValidity gate + lazy revalidation.
+        self._ensure_lineage_resolvable(target_spell)
+
+        # 3) Defensive guard: never attempt to meld a broken spell.
+        if target_spell.is_broken:
+            raise RuntimeError(
+                f"[MELD] Cannot meld broken spell: {target_spell}."
+            )
 
         # 4) Respect SpellSystemState / SpellValidity gate (if DevOps is wired).
         self._gated_validation_required(target_spell)
@@ -284,17 +283,19 @@ class Meld(Cleanable):
         self._execute_hooks(target_spell.pre_hooks, "pre_cast")
         self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
-        # 6) Try to reuse an existing creation based on Existence + creations type.
-        instance = self._get_existing_creation(target_spell)
+        with self._lock:
+            # 6) Try to reuse an existing creation based on Existence + creations type.
+            instance = self._get_existing_creation(target_spell)
 
-        # 7) If no existing instance, construct a new one via the spell-type path
-        #    and register it into the appropriate creations bucket.
-        if instance is None:
-            instance = self._meld_by_spell_type(target_spell, override_map)
-            self._register_spell(target_spell, instance)
-            # Activation hooks fire only when the instance is newly created.
-            self._execute_activation_hooks(target_spell.activation_hooks, instance)
-            self._fire_meld_hooks("on_meld_activation", target_spell, instance)
+            # 7) If no existing instance, construct a new one via the spell-type path
+            #    and register it into the appropriate creations bucket.
+            if instance is None:
+                instance = self._meld_by_spell_type(target_spell, override_map)
+                if target_spell.is_existing_creation:
+                    self._register_spell(target_spell, instance)
+                # Activation hooks fire only when the instance is newly created.
+                self._execute_activation_hooks(target_spell.activation_hooks, instance)
+                self._fire_meld_hooks("on_meld_activation", target_spell, instance)
 
         # 8) Execute post-cast hooks (still no arguments for now).
         self._execute_hooks(target_spell.post_hooks, "post_cast")
@@ -984,7 +985,8 @@ class Meld(Cleanable):
 
             * Class / method / lambda spells:
                   Delegate to the DAG-based `MeldRuntime` / `MeldEngine` stack
-                  using a per-call `MeldContext` seeded with `overrides`.
+                  using a per-call `MeldContext` seeded with `overrides`. The
+                  runtime is responsible for registering factory spell instances.
 
             * Anything else:
                   Raises a `RuntimeError` indicating an unsupported SpellType.

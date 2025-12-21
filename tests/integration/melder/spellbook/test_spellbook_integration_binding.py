@@ -31,65 +31,83 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def test_bind_conjure_and_meld_method_spell_unique() -> None:
+def test_bind_and_meld_resolves_by_spellframe_and_binding_name() -> None:
     """
     Purpose:
-        Validate bind -> conjure -> meld for a bound method spell using unique existence.
+        Validate spellframe + binding_name resolution for multiple bindings.
     Contract:
-        - The bound method is invoked once for the first meld.
-        - Existence.unique reuses the same instance on subsequent melds.
+        - Two bindings under the same frame resolve by binding name.
+        - Existing-creation spells return the bound instances.
     Returns:
         None.
     Raises:
-        AssertionError: If method calls or reuse behavior is incorrect.
+        AssertionError: If resolution returns the wrong instance.
     """
-    class _Service:
+    class _ServiceA:
         """
         Purpose:
-            Provide a class with a bound method for integration binding.
+            Provide a class used for existing-object binding name "a".
         Contract:
-            The method returns a new object each call and tracks call count.
+            Stores a stable marker for verification.
         """
         def __init__(self) -> None:
             """
             Purpose:
-                Initialize the service call counter.
+                Initialize the service with a marker.
             Contract:
-                Starts the call count at zero.
+                Sets marker to "A".
             Returns:
                 None.
             """
-            self.calls: int = 0
+            self.marker = "A"
 
-        def build(self) -> object:
+    class _ServiceB:
+        """
+        Purpose:
+            Provide a class used for existing-object binding name "b".
+        Contract:
+            Stores a stable marker for verification.
+        """
+        def __init__(self) -> None:
             """
             Purpose:
-                Produce a new object instance for each call.
+                Initialize the service with a marker.
             Contract:
-                Increments call count and returns a unique object.
+                Sets marker to "B".
             Returns:
-                object: Newly created object instance.
+                None.
             """
-            self.calls += 1
-            return object()
-
-    service = _Service()
+            self.marker = "B"
 
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    spell_id = spellbook.bind(
-        spell=service.build,
+    instance_a = _ServiceA()
+    instance_b = _ServiceB()
+
+    spellbook.bind(
+        spell=instance_a,
         existence=Existence.unique,
         permissions="create",
+        spellframe="svc",
+        binding_name="a",
+    )
+    spellbook.bind(
+        spell=instance_b,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe="svc",
+        binding_name="b",
     )
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
-        assert first is second
-        assert service.calls == 1
+        resolved_a = conduit.meld(spellframe="svc", binding_name="a")
+        resolved_b = conduit.meld(spellframe="svc", binding_name="b")
+        assert resolved_a is instance_a
+        assert resolved_b is instance_b
+        assert resolved_a.marker == "A"
+        assert resolved_b.marker == "B"
     finally:
         conduit.cleanup()

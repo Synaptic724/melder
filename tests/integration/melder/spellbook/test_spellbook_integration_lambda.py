@@ -31,13 +31,13 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def test_bind_conjure_and_meld_lambda_spell_many() -> None:
+def test_bind_conjure_and_meld_lambda_spell_unique() -> None:
     """
     Purpose:
-        Validate bind -> conjure -> meld for a lambda spell using many existence.
+        Validate bind -> conjure -> meld for a lambda spell using unique existence.
     Contract:
-        - Each meld call executes the lambda.
-        - Existence.many returns a new object per invocation.
+        - The first meld call executes the lambda.
+        - Existence.unique reuses the same instance on subsequent melds.
     Returns:
         None.
     Raises:
@@ -52,15 +52,16 @@ def test_bind_conjure_and_meld_lambda_spell_many() -> None:
 
     spell_id = spellbook.bind(
         spell=lambda_spell,
-        existence=Existence.many,
+        existence=Existence.unique,
         permissions="create",
+        binding_name="lambda_spell",
     )
 
     conduit = spellbook.conjure(name="root")
     try:
         first = conduit.meld(spell=spell_id)
         second = conduit.meld(spell=spell_id)
-        assert first is not second
-        assert calls == ["called", "called"]
+        assert first is second
+        assert calls == ["called"]
     finally:
         conduit.cleanup()

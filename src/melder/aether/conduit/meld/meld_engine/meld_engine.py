@@ -195,7 +195,8 @@ class MeldEngine(Cleanable):
         Execute the meld call and return the constructed root instance.
 
         Executes the deep DAG in topological order using the RootResolutionBlueprint
-        when available. Falls back to single-node construction if no blueprint is set.
+        when available. Falls back to single-node construction if no blueprint is set,
+        and registers the root instance into creations for reuse.
         """
         self.check_cleaned()
 
@@ -206,6 +207,7 @@ class MeldEngine(Cleanable):
         # If we have a deep blueprint, walk it; otherwise fall back to root-only.
         if self._blueprint is None:
             instance = self._construct_root_only()
+            self._register_spell(self._root_spell, instance)
             self._store_result(self._root_spell.spell_index.current, instance)
             return instance
 
