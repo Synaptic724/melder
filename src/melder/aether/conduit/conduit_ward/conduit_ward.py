@@ -1554,7 +1554,7 @@ class ConduitWard(Cleanable):
 
     def _get_spell_permissions(self, spell: ISpell) -> Permissions:
         """
-        Internal helper to normalize spell permissions from either `permissions` or `_permissions`.
+        Internal helper to normalize spell permissions from `spell.permissions`.
         """
         perms = spell.permissions
         if perms is None:

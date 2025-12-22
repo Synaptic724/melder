@@ -17,7 +17,8 @@ class MeldContext(Cleanable):
     captures everything the runtime/engine need to execute that call:
 
         * The **root spell** being activated.
-        * The **creations container** representing the current Conduit scope.
+        * The **owner creations container** for shared existences.
+        * The **caller creations container** for per-conduit existences.
         * Normalized **per-call overrides** (from `spell_override`).
         * Optional **cancellation** signal.
         * Optional **logger** (wrapped as a `SafeLogger`).
@@ -38,7 +39,8 @@ class MeldContext(Cleanable):
     1. `Meld.meld(...)` decides a new root instance is required.
     2. `Meld` creates a `MeldContext` with:
            - `root_spell`
-           - Conduit's creations object
+           - caller creations (current Conduit scope)
+           - owner creations (spell owner Conduit scope)
            - Normalized overrides map
            - (optionally) cancel event, logger, conduit metadata
     3. `MeldRuntime.execute(context)` is called.
@@ -53,6 +55,8 @@ class MeldContext(Cleanable):
         "_lock",
         "_root_spell",
         "_creations",
+        "_owner_creations",
+        "_caller_creations",
         "_overrides",
         "_cancel_event",
         "_logger",
@@ -68,7 +72,39 @@ class MeldContext(Cleanable):
             overrides: Optional[Mapping[str, Any]] = None,
             cancel_event: Optional[CancellationEvent] = None,
             logger: Optional[Any] = None,
+            caller_creations: Optional[Any] = None,
     ) -> None:
+        """
+        Initialize a per-call context for Meld runtime execution.
+
+        Purpose:
+            Capture all per-call data needed by the runtime/engine,
+            including the root spell, creations scopes, and overrides.
+
+        Contract:
+            - root_spell must not be None.
+            - owner creations are sourced from root_spell._owner_creations.
+            - caller creations default to owner creations when not provided.
+            - overrides are copied into a mutable mapping for this call.
+            - cleanup() must deterministically drop all references.
+
+        Args:
+            root_spell:
+                The root ISpell being activated for this meld call.
+            overrides:
+                Optional per-call override mapping (keyword overrides or
+                "__args__" positional overrides).
+            cancel_event:
+                Optional CancellationEvent to support cooperative cancellation.
+            logger:
+                Optional logger object; normalized to SafeLogger when provided.
+            caller_creations:
+                Optional creations container representing the current Conduit
+                scope that initiated the meld call.
+
+        Raises:
+            ValueError: If root_spell is None.
+        """
         super().__init__()
 
         if root_spell is None:
@@ -76,7 +112,13 @@ class MeldContext(Cleanable):
 
         self._lock: RLock = RLock()
         self._root_spell: ISpell = root_spell
-        self._creations: Any = self._root_spell._owner_creations
+        self._owner_creations: Any = self._root_spell._owner_creations
+        self._caller_creations: Any = (
+            caller_creations
+            if caller_creations is not None
+            else self._owner_creations
+        )
+        self._creations: Any = self._owner_creations
 
         # Normalized, per-call override map (never mutated in place by
         # the runtime; callers may mutate the dict they get back).
@@ -123,6 +165,8 @@ class MeldContext(Cleanable):
 
             self._root_spell = None
             self._creations = None
+            self._owner_creations = None
+            self._caller_creations = None
             self._overrides.clear()
             self._cancel_event = None
             self._logger = None
@@ -145,12 +189,36 @@ class MeldContext(Cleanable):
     @property
     def creations(self) -> Any:
         """
-        The Conduit-scope creations container.
+        The owner creations container for this meld call.
 
         This is typically a `Creations` or `LesserCreations` instance and
         is treated as an opaque handle by the runtime/engine.
+
+        For per-conduit lifetimes, use :meth:`caller_creations` instead.
         """
         return self._creations
+
+    @property
+    def owner_creations(self) -> Any:
+        """
+        The creations container owned by the root spell's owning Conduit.
+
+        This is the authoritative scope for shared lifetimes such as
+        `Existence.unique`, `Existence.unique_per_conduit_cluster`, and
+        `Existence.unique_per_conduit_lineage`.
+        """
+        return self._owner_creations
+
+    @property
+    def caller_creations(self) -> Any:
+        """
+        The creations container for the Conduit that initiated this meld call.
+
+        This is the authoritative scope for per-conduit lifetimes such as
+        `Existence.unique_per_conduit`, `Existence.many`, and
+        `Existence.unique_per_spell_space`.
+        """
+        return self._caller_creations
 
     @property
     def overrides(self) -> MutableMapping[str, Any]:

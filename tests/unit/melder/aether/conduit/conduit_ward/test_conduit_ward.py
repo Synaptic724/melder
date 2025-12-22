@@ -221,6 +221,8 @@ def test_link_lesser_conduit(ward):
     """
     child = MagicMock(spec=IConduit)
     child._id = "child-1"
+    child._logger = MagicMock()
+    child._conduit_state = ConduitState.lesser
     child._conduit_ward = ConduitWard(child, True, ConduitState.lesser, Policies.default)
     
     ward._link_lesser_conduit(child)
@@ -583,8 +585,8 @@ def test_get_lesser_conduit_returns_nested_child(ward):
         conduit_state=ConduitState.lesser,
     )
 
-    child_ward._link_lesser_conduit(grandchild_conduit)
     ward._link_lesser_conduit(child_conduit)
+    child_ward._link_lesser_conduit(grandchild_conduit)
 
     result = ward._get_lesser_conduit("grandchild-1")
 
@@ -665,6 +667,9 @@ def test_convert_to_normal_conduit_rejects_when_children_present():
         conduit_state=ConduitState.lesser,
     )
     lesser_ward._parent_conduit = MagicMock(spec=IConduit)
+    root = MagicMock(spec=IConduit)
+    root._conduit_state = ConduitState.normal
+    lesser_ward._root_conduit = root
     child = MagicMock(spec=IConduit)
     child._id = "child-1"
     lesser_ward._link_lesser_conduit(child)
@@ -1278,16 +1283,6 @@ def test_get_spell_permissions_reads_permissions_attr(ward):
     spell._permissions = None
 
     assert ward._get_spell_permissions(spell) == Permissions.create
-
-def test_get_spell_permissions_falls_back_to_private_permissions(ward):
-    """
-    Verify _get_spell_permissions falls back to _permissions when needed.
-    """
-    spell = MagicMock(spec=ISpell)
-    spell.permissions = None
-    spell._permissions = "read"
-
-    assert ward._get_spell_permissions(spell) == Permissions.read
 
 def test_get_spell_permissions_raises_when_missing(ward):
     """

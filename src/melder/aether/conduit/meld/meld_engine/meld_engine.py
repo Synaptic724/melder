@@ -424,16 +424,56 @@ class MeldEngine(Cleanable):
     def _store_result(self, node_id: str, value: Any) -> None:
         self._frame.set_result(node_id, value)
 
+    def _select_creations_for_spell(self, spell: ISpell) -> Any:
+        """
+        Internal
+
+        Select the appropriate creations container for reuse/registration.
+
+        Contract:
+            - Per-conduit lifetimes use the caller creations container.
+            - Shared lifetimes use the owner creations container.
+            - If the preferred container is None, fall back to the other.
+
+        Args:
+            spell: The spell whose Existence determines selection.
+
+        Returns:
+            The selected creations container, or None if neither is available.
+        """
+        existence: Existence = spell.existence
+        caller_creations = self._context.caller_creations
+        owner_creations = self._context.owner_creations
+
+        if existence in (
+                Existence.unique_per_conduit,
+                Existence.many,
+                Existence.unique_per_spell_space,
+        ):
+            if caller_creations is not None:
+                return caller_creations
+            return owner_creations
+
+        if owner_creations is not None:
+            return owner_creations
+        return caller_creations
+
     def _get_existing_creation(self, spell: ISpell) -> Optional[Any]:
         """
         Attempt reuse from creations manager based on Existence.
+
+        Selection:
+            - Uses caller creations for per-conduit lifetimes.
+            - Uses owner creations for shared lifetimes.
         """
-        creations = self._context.creations
+        creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
 
         # many never reuses
         if existence is Existence.many:
+            return None
+        if creations is None:
             return None
 
         if isinstance(creations, Creations):
@@ -497,9 +537,27 @@ class MeldEngine(Cleanable):
         return None
 
     def _register_spell(self, spell: ISpell, instance: Any) -> None:
-        creations = self._context.creations
+        """
+        Register a constructed instance into the appropriate creations container.
+
+        Contract:
+            - Per-conduit lifetimes register against the caller creations container.
+            - Shared lifetimes register against the owner creations container.
+            - Unknown creations containers are treated as no-ops.
+
+        Args:
+            spell: The spell that produced the instance.
+            instance: The newly constructed instance to register.
+
+        Returns:
+            None.
+        """
+        creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
+
+        if creations is None:
+            return None
 
         if isinstance(creations, Creations):
             if existence is Existence.unique:

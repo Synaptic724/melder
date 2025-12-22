@@ -142,14 +142,14 @@ class ConduitCluster(Cleanable):
     # ------------------------------------------------------------------
     # Share helpers (operate on live conduit objects)
     # ------------------------------------------------------------------
-    def handle_join(self, conduit, frame) -> None:
+    def handle_join(self, conduit, frame, aetheric_frame_name: str = "default") -> None:
         """
         Add a member and auto-share all roots between the new member and existing peers.
 
         Args:
             conduit: The conduit joining the cluster.
             frame: The owning AethericFrame (provides conduit lookup).
-            aetheric_frame_name: Frame name (for teardown calls).
+            aetheric_frame_name: Frame name for compatibility with Aether hooks.
 
         Returns:
             None
@@ -220,14 +220,14 @@ class ConduitCluster(Cleanable):
         for spell in shareables:
             self.add_shared_spell(owner_id, spell.spell_index)
 
-    def refresh_member_shares(self, conduit, frame) -> None:
+    def refresh_member_shares(self, conduit, frame, aetheric_frame_name: str = "default") -> None:
         """
         Refresh and (re)share this member's shareable roots with all peers in the cluster.
 
         Args:
             conduit: Member conduit whose roots should be refreshed.
             frame: Owning AethericFrame for conduit lookup.
-            aetheric_frame_name: Frame name for removal calls.
+            aetheric_frame_name: Frame name for compatibility with Aether hooks.
 
         Returns:
             None

@@ -524,7 +524,8 @@ class Meld(Cleanable):
 
         The context binds together:
             - The root spell to be constructed.
-            - The current Conduit’s creations manager.
+            - The caller Conduit's creations manager.
+            - The owner Conduit's creations manager (from the spell).
             - Any normalized per-call overrides (constructor/factory args).
 
         This object is passed into the `MeldRuntime` / `MeldEngine` stack and
@@ -544,7 +545,11 @@ class Meld(Cleanable):
         """
         # Positional construction keeps us insulated from minor signature changes
         # in MeldContext as long as (root_spell, creations, overrides) stay first.
-        return MeldContext(root_spell=spell, overrides=overrides)
+        return MeldContext(
+            root_spell=spell,
+            overrides=overrides,
+            caller_creations=self._creations,
+        )
 
 
     def _resolve_spell(

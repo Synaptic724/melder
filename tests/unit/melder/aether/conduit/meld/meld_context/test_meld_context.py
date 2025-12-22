@@ -98,6 +98,7 @@ def test_creations_property_returns_owner_creations() -> None:
 
     Contract:
         - creations returns root_spell._owner_creations.
+        - owner_creations returns root_spell._owner_creations.
 
     Raises:
         AssertionError: If creations does not match the spell's owner creations.
@@ -107,6 +108,51 @@ def test_creations_property_returns_owner_creations() -> None:
     context = MeldContext(root_spell=root_spell)
     try:
         assert context.creations is creations
+        assert context.owner_creations is creations
+    finally:
+        context.cleanup()
+
+
+def test_caller_creations_defaults_to_owner_creations() -> None:
+    """
+    Verify caller_creations defaults to owner creations when not provided.
+
+    Contract:
+        - caller_creations returns the same object as owner_creations by default.
+
+    Raises:
+        AssertionError: If caller_creations does not default to owner_creations.
+    """
+    creations = object()
+    root_spell = _make_root_spell(creations=creations)
+    context = MeldContext(root_spell=root_spell)
+    try:
+        assert context.caller_creations is creations
+    finally:
+        context.cleanup()
+
+
+def test_caller_creations_uses_explicit_value() -> None:
+    """
+    Verify caller_creations uses the explicit value when provided.
+
+    Contract:
+        - caller_creations returns the provided object.
+        - owner_creations remains bound to root_spell._owner_creations.
+
+    Raises:
+        AssertionError: If caller_creations does not reflect the explicit value.
+    """
+    owner_creations = object()
+    caller_creations = object()
+    root_spell = _make_root_spell(creations=owner_creations)
+    context = MeldContext(
+        root_spell=root_spell,
+        caller_creations=caller_creations,
+    )
+    try:
+        assert context.owner_creations is owner_creations
+        assert context.caller_creations is caller_creations
     finally:
         context.cleanup()
 
@@ -434,6 +480,8 @@ def test_cleanup_clears_fields_and_marks_cleaned() -> None:
     assert context.cleaned is True
     assert context.root_spell is None
     assert context.creations is None
+    assert context.owner_creations is None
+    assert context.caller_creations is None
     assert context.overrides == {}
     assert context.cancel_event is None
     assert context.logger is None

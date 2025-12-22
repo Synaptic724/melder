@@ -181,18 +181,34 @@ def _make_blueprint(
     )
 
 
-def _make_context(creations: Any, cancel_event: Any | None = None) -> SimpleNamespace:
+def _make_context(
+    creations: Any,
+    cancel_event: Any | None = None,
+    caller_creations: Any | None = None,
+    owner_creations: Any | None = None,
+) -> SimpleNamespace:
     """
     Build a minimal context stub used by MeldEngine.
 
     Args:
         creations: Creations or LesserCreations instance.
         cancel_event: Optional cancellation event stub.
+        caller_creations: Optional caller creations override.
+        owner_creations: Optional owner creations override.
 
     Returns:
         SimpleNamespace: Context stub with expected attributes.
     """
-    return SimpleNamespace(creations=creations, cancel_event=cancel_event)
+    if caller_creations is None:
+        caller_creations = creations
+    if owner_creations is None:
+        owner_creations = creations
+    return SimpleNamespace(
+        creations=owner_creations,
+        owner_creations=owner_creations,
+        caller_creations=caller_creations,
+        cancel_event=cancel_event,
+    )
 
 
 def _make_spell(
@@ -248,6 +264,8 @@ def _make_engine(
     *,
     root_spell: Optional[SimpleNamespace] = None,
     creations: Any = None,
+    caller_creations: Any | None = None,
+    owner_creations: Any | None = None,
     frame: Optional[ResolutionFrame] = None,
     blueprint: Optional[RootResolutionBlueprint] = None,
     override_map: Optional[dict[SocketRef, Any]] = None,
@@ -267,7 +285,12 @@ def _make_engine(
         creations = SimpleNamespace()
     if frame is None:
         frame = ResolutionFrame()
-    context = _make_context(creations=creations, cancel_event=cancel_event)
+    context = _make_context(
+        creations=creations,
+        cancel_event=cancel_event,
+        caller_creations=caller_creations,
+        owner_creations=owner_creations,
+    )
     engine = MeldEngine(
         context=context,
         root_spell=root_spell,
@@ -804,6 +827,28 @@ def test_get_existing_creation_returns_unique_from_creations() -> None:
     assert engine._get_existing_creation(spell) is instance
 
 
+def test_get_existing_creation_prefers_caller_for_unique_per_conduit() -> None:
+    """
+    Verify per-conduit reuse prefers caller creations over owner creations.
+
+    Contract:
+        - unique_per_conduit reuse checks caller creations first.
+    """
+    caller_creations, _ = _make_creations(conduit_id="caller")
+    owner_creations, _ = _make_creations(conduit_id="owner")
+    caller_instance = object()
+    owner_instance = object()
+    caller_creations.add_unique_per_scope("spell-1", caller_instance)
+    owner_creations.add_unique_per_scope("spell-1", owner_instance)
+    engine, _, _ = _make_engine(
+        creations=caller_creations,
+        caller_creations=caller_creations,
+        owner_creations=owner_creations,
+    )
+    spell = _make_spell(spell_id="spell-1", existence=Existence.unique_per_conduit)
+    assert engine._get_existing_creation(spell) is caller_instance
+
+
 def test_get_existing_creation_returns_unique_per_conduit_from_creations() -> None:
     """
     Verify unique-per-conduit creations are reused.
@@ -817,6 +862,28 @@ def test_get_existing_creation_returns_unique_per_conduit_from_creations() -> No
     engine, _, _ = _make_engine(creations=creations)
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique_per_conduit)
     assert engine._get_existing_creation(spell) is instance
+
+
+def test_get_existing_creation_prefers_owner_for_unique() -> None:
+    """
+    Verify shared reuse prefers owner creations over caller creations.
+
+    Contract:
+        - unique reuse checks owner creations first.
+    """
+    caller_creations, _ = _make_creations(conduit_id="caller")
+    owner_creations, _ = _make_creations(conduit_id="owner")
+    caller_instance = object()
+    owner_instance = object()
+    caller_creations.add_unique("spell-1", caller_instance)
+    owner_creations.add_unique("spell-1", owner_instance)
+    engine, _, _ = _make_engine(
+        creations=caller_creations,
+        caller_creations=caller_creations,
+        owner_creations=owner_creations,
+    )
+    spell = _make_spell(spell_id="spell-1", existence=Existence.unique)
+    assert engine._get_existing_creation(spell) is owner_instance
 
 
 def test_get_existing_creation_returns_unique_per_cluster_from_creations() -> None:
