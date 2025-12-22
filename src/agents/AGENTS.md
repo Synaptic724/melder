@@ -438,3 +438,9 @@ If you find mistakes while writing tests (bugs, incorrect docstrings, missing cl
 * Initialize explicitly, then clean up deterministically.
 * Logger teardown last.
 * Tests must buy real confidence — attribute checks are bottom-tier.
+
+---
+
+## Test Mocks Skills
+
+For reusable test-only classes and helpers, see `tests/mocks/SKILLS.MD`.

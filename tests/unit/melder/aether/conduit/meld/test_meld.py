@@ -855,7 +855,7 @@ def test_meld_creates_instance_and_runs_activation_hooks() -> None:
     Verify meld creation path runs activation hooks and registration.
 
     Contract:
-        - new instance path calls meld_by_spell_type and register_spell.
+        - new instance path calls meld_by_spell_type.
         - activation hooks receive the created instance.
         - pre and post hooks still execute.
     """
@@ -893,7 +893,7 @@ def test_meld_creates_instance_and_runs_activation_hooks() -> None:
     assert meld.meld(spell="spell-1", spell_override=[1, 2]) == "created"
     assert events == ["pre", "activation:created", "post"]
     meld._meld_by_spell_type.assert_called_once_with(spell, {"__args__": [1, 2]})
-    meld._register_spell.assert_called_once_with(spell, "created")
+    meld._register_spell.assert_not_called()
 
 
 def test_meld_by_spell_type_existing_creation_returns_object() -> None:

@@ -33,6 +33,7 @@ class ConduitWard(Cleanable):
       `Contract` with per-ward `Detail` maps (spell lineage + permission).
     - Lineage tree: parent pointer and the set of **lesser conduits** spawned
       by this conduit (pure ownership; no contract semantics here).
+    - Root pointer: the **normal conduit** at the top of this lineage tree.
     - Policy state: the active `Policies` enum guiding dynamic/whitelist/block
       behaviors and eligibility to form contracts.
 
@@ -90,6 +91,9 @@ class ConduitWard(Cleanable):
 
         # Lineage Links
         self._parent_conduit: IConduit | None = None
+        self._root_conduit: IConduit | None = (
+            conduit if conduit_type == ConduitState.normal else None
+        )
         self._lesser_conduits: Dict[str, IConduit] = {} # [Lesser ConduitID] -> Lesser Conduit
 
         try:
@@ -144,6 +148,7 @@ class ConduitWard(Cleanable):
 
             # Clear lineage/contract state
             self._parent_conduit = None
+            self._root_conduit = None
             self._lesser_conduits.clear()
             self._contracts.clear()
             self._initiated_index.clear()
@@ -274,6 +279,16 @@ class ConduitWard(Cleanable):
 
     #endregion Context Manager
     #region Properties
+    @property
+    def root_conduit(self) -> Optional[IConduit]:
+        """
+        Return the root (normal) conduit for this lineage.
+
+        For normal conduits, this is the conduit itself. For lesser conduits,
+        this is the owning root conduit that defines the root scope.
+        """
+        self.check_cleaned()
+        return self._root_conduit
     #endregion Properties
 
     #region Conduit Ward Configuration
@@ -311,6 +326,7 @@ class ConduitWard(Cleanable):
                 raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
             if self._parent_conduit is not None and self._conduit_type == ConduitState.lesser and len(self._lesser_conduits) == 0:
                 self._parent_conduit = None
+                self._root_conduit = self._conduit
                 self._conduit_type = ConduitState.normal
                 self._policy = Policies.default
                 self._logger.info(
@@ -802,6 +818,13 @@ class ConduitWard(Cleanable):
         with self._lock:
             self._lesser_conduits[lesser_conduit._id] = lesser_conduit
             lesser_conduit._parent_conduit = self._conduit
+            try:
+                child_ward = lesser_conduit._conduit_ward
+            except Exception:
+                child_ward = None
+            if child_ward is not None:
+                root_conduit = self._root_conduit or self._conduit
+                child_ward._root_conduit = root_conduit
         self._logger.info(
             f"link_lesser: {lesser_conduit._id}",
             method_name="_link_lesser_conduit",
@@ -1521,9 +1544,7 @@ class ConduitWard(Cleanable):
         """
         Internal helper to normalize spell permissions from either `permissions` or `_permissions`.
         """
-        perms = getattr(spell, "permissions", None)
-        if perms is None:
-            perms = getattr(spell, "_permissions", None)
+        perms = spell.permissions
         if perms is None:
             raise RuntimeError("Spell permissions are undefined.")
         return EnumHelpers.convert_enum_and_check(perms, Permissions)
@@ -1532,12 +1553,12 @@ class ConduitWard(Cleanable):
         """
         Check if this conduit already has the given spell version locally.
         """
-        book = getattr(self._conduit, "_spellbook", None)
+        book = self._conduit._spellbook
         if book is None or book._spells is None:
             return False
         with book._lock:
             for idx in book._spells.keys():
-                versions = getattr(idx, "_versions", None)
+                versions = idx._versions
                 if versions and spell_id in versions:
                     return True
         return False

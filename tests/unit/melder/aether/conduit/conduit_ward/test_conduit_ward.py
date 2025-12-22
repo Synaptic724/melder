@@ -82,6 +82,7 @@ def test_init_sets_default_policy_if_none(mock_conduit):
     """Verify None policy defaults to Policies.default."""
     w = ConduitWard(mock_conduit, True, ConduitState.normal, None)
     assert w._policy == Policies.default
+    assert w.root_conduit is mock_conduit
 
 # ----------------------------------------------------------------------
 # 2. Cleanup
@@ -220,11 +221,13 @@ def test_link_lesser_conduit(ward):
     """
     child = MagicMock(spec=IConduit)
     child._id = "child-1"
+    child._conduit_ward = ConduitWard(child, True, ConduitState.lesser, Policies.default)
     
     ward._link_lesser_conduit(child)
     
     assert "child-1" in ward._lesser_conduits
     assert child._parent_conduit == ward._conduit
+    assert child._conduit_ward.root_conduit == ward._conduit
 
 def test_get_lesser_conduit_recursive(ward):
     """
@@ -238,6 +241,23 @@ def test_get_lesser_conduit_recursive(ward):
     
     assert ward._get_lesser_conduit("child-1") is child
     assert ward._get_lesser_conduit("missing") is None
+
+
+def test_convert_to_normal_sets_root_conduit() -> None:
+    """
+    Verify converting a lesser conduit to normal updates the root scope.
+    """
+    conduit, ward = _make_conduit_with_ward(
+        "conduit-l1",
+        dynamic=True,
+        conduit_state=ConduitState.lesser,
+    )
+    ward._parent_conduit = MagicMock(spec=IConduit)
+
+    ward._convert_to_normal_conduit()
+
+    assert ward._conduit_type == ConduitState.normal
+    assert ward.root_conduit is conduit
 
 # ----------------------------------------------------------------------
 # 6. Spell Eligibility & Contracting

@@ -1700,6 +1700,7 @@ class IConduitWard(ICleanable, Protocol):
     _received_index: 'ConcurrentDict[str, str]'
     _contracts: 'ConcurrentDict[str, Contract]'
     _parent_conduit: Optional['IConduit']
+    _root_conduit: Optional['IConduit']
     _lesser_conduits: 'ConcurrentDict[str, IConduit]'
     _lock: Any
 
@@ -1762,6 +1763,13 @@ class IConduitWard(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Conduit Ward Configuration
     # ------------------------------------------------------------------
+    @property
+    def root_conduit(self) -> Optional['IConduit']:
+        """
+        Return the root (normal) conduit for this lineage.
+        """
+        ...
+
     def _convert_to_normal_conduit(self) -> None:
         """
         Internal
