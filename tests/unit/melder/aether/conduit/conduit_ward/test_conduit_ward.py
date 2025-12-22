@@ -229,6 +229,89 @@ def test_link_lesser_conduit(ward):
     assert child._parent_conduit == ward._conduit
     assert child._conduit_ward.root_conduit == ward._conduit
 
+
+def test_link_lesser_conduit_requires_root_conduit() -> None:
+    """
+    Verify lesser lineage linking requires a root conduit.
+
+    Contract:
+        - Lesser wards must have a root conduit bound before linking children.
+        - Missing root raises a RuntimeError.
+    """
+    parent = MagicMock(spec=IConduit)
+    parent._id = "parent-1"
+    parent._logger = MagicMock()
+    parent._conduit_state = ConduitState.lesser
+    parent_ward = ConduitWard(parent, True, ConduitState.lesser, Policies.default)
+    parent._conduit_ward = parent_ward
+
+    child = MagicMock(spec=IConduit)
+    child._id = "child-1"
+
+    with pytest.raises(RuntimeError, match="Root conduit is not set"):
+        parent_ward._link_lesser_conduit(child)
+
+
+def test_link_lesser_conduit_rejects_non_normal_root() -> None:
+    """
+    Verify lesser lineage linking rejects non-normal root conduits.
+
+    Contract:
+        - Root conduits must be normal.
+        - Non-normal roots raise a RuntimeError.
+    """
+    parent = MagicMock(spec=IConduit)
+    parent._id = "parent-2"
+    parent._logger = MagicMock()
+    parent._conduit_state = ConduitState.lesser
+    parent_ward = ConduitWard(parent, True, ConduitState.lesser, Policies.default)
+    parent._conduit_ward = parent_ward
+
+    root = MagicMock(spec=IConduit)
+    root._id = "root-1"
+    root._conduit_state = ConduitState.lesser
+    parent_ward._root_conduit = root
+
+    child = MagicMock(spec=IConduit)
+    child._id = "child-2"
+
+    with pytest.raises(RuntimeError, match="Root conduit must be a normal conduit"):
+        parent_ward._link_lesser_conduit(child)
+
+
+def test_link_lesser_conduit_propagates_root_from_lesser_lineage() -> None:
+    """
+    Verify lesser lineage linking propagates the root conduit to children.
+
+    Contract:
+        - Child wards inherit the same root conduit used by the parent ward.
+        - The parent-child linkage is recorded in the lineage map.
+    """
+    root = MagicMock(spec=IConduit)
+    root._id = "root-1"
+    root._logger = MagicMock()
+    root._conduit_state = ConduitState.normal
+
+    parent = MagicMock(spec=IConduit)
+    parent._id = "parent-3"
+    parent._logger = MagicMock()
+    parent._conduit_state = ConduitState.lesser
+    parent_ward = ConduitWard(parent, True, ConduitState.lesser, Policies.default)
+    parent._conduit_ward = parent_ward
+    parent_ward._root_conduit = root
+
+    child = MagicMock(spec=IConduit)
+    child._id = "child-3"
+    child._logger = MagicMock()
+    child._conduit_state = ConduitState.lesser
+    child._conduit_ward = ConduitWard(child, True, ConduitState.lesser, Policies.default)
+
+    parent_ward._link_lesser_conduit(child)
+
+    assert child._parent_conduit == parent
+    assert "child-3" in parent_ward._lesser_conduits
+    assert child._conduit_ward.root_conduit == root
+
 def test_get_lesser_conduit_recursive(ward):
     """
     Verify finding a nested lesser conduit.
@@ -255,6 +338,7 @@ def test_convert_to_normal_sets_root_conduit() -> None:
     ward._parent_conduit = MagicMock(spec=IConduit)
 
     ward._convert_to_normal_conduit()
+    conduit._conduit_state = ConduitState.normal
 
     assert ward._conduit_type == ConduitState.normal
     assert ward.root_conduit is conduit

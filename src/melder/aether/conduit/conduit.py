@@ -992,30 +992,23 @@ class Conduit(Cleanable):
                 logger=logger,
             )
             # Provide root-scope creations for delegation of frame-level singletons.
-            try:
-                root_conduit = None
-                try:
-                    if self._conduit_ward is not None:
-                        root_conduit = getattr(self._conduit_ward, "root_conduit", None)
-                except Exception:
-                    root_conduit = None
-                if root_conduit is None and self._conduit_state == ConduitState.normal:
-                    root_conduit = self
-                root_creations = None
-                try:
-                    if root_conduit is not None:
-                        root_creations = root_conduit._creations
-                except Exception:
-                    root_creations = None
-                if isinstance(root_creations, Creations):
-                    new_conduit._parent_creations = root_creations
-                    try:
-                        if isinstance(new_conduit._creations, LesserCreations):
-                            new_conduit._creations._parent_creations = root_creations
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+            if self._conduit_state == ConduitState.normal:
+                root_conduit = self
+            else:
+                if self._conduit_ward is None:
+                    raise RuntimeError("Root conduit is not set for this lineage.")
+                root_conduit = self._conduit_ward.root_conduit
+            if root_conduit is None:
+                raise RuntimeError("Root conduit is not set for this lineage.")
+            if root_conduit._conduit_state != ConduitState.normal:
+                raise RuntimeError("Root conduit must be a normal conduit.")
+            root_creations = root_conduit._creations
+            if isinstance(root_creations, Creations):
+                new_conduit._parent_creations = root_creations
+                if isinstance(new_conduit._creations, LesserCreations):
+                    new_conduit._creations._parent_creations = root_creations
+            if new_conduit._conduit_ward is not None:
+                new_conduit._conduit_ward._root_conduit = root_conduit
 
             # Fire activation hook with the new conduit instance.
             self._fire_conduit_hooks(

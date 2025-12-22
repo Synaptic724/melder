@@ -288,7 +288,12 @@ class ConduitWard(Cleanable):
         this is the owning root conduit that defines the root scope.
         """
         self.check_cleaned()
-        return self._root_conduit
+        root_conduit = self._root_conduit
+        if root_conduit is None:
+            raise RuntimeError("Root conduit is not set for this lineage.")
+        if root_conduit._conduit_state != ConduitState.normal:
+            raise RuntimeError("Root conduit must be a normal conduit.")
+        return root_conduit
     #endregion Properties
 
     #region Conduit Ward Configuration
@@ -815,6 +820,14 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
+        if self._conduit_type == ConduitState.normal:
+            root_conduit = self._conduit
+        else:
+            root_conduit = self._root_conduit
+        if root_conduit is None:
+            raise RuntimeError("Root conduit is not set for this lineage.")
+        if root_conduit._conduit_state != ConduitState.normal:
+            raise RuntimeError("Root conduit must be a normal conduit.")
         with self._lock:
             self._lesser_conduits[lesser_conduit._id] = lesser_conduit
             lesser_conduit._parent_conduit = self._conduit
@@ -823,7 +836,6 @@ class ConduitWard(Cleanable):
             except Exception:
                 child_ward = None
             if child_ward is not None:
-                root_conduit = self._root_conduit or self._conduit
                 child_ward._root_conduit = root_conduit
         self._logger.info(
             f"link_lesser: {lesser_conduit._id}",

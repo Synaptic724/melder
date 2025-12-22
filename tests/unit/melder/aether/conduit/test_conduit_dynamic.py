@@ -5,6 +5,7 @@ import pytest
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.creations.lesser_creations import LesserCreations
 
 
 def test_create_lesser_conduit_fires_hooks_and_links(
@@ -81,6 +82,31 @@ def test_create_lesser_conduit_fires_hooks_and_links(
         assert child._conduit_state == ConduitState.lesser
     finally:
         child.cleanup()
+
+
+def test_nested_lesser_conduits_share_root_creations(
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify nested lesser conduits inherit the root scope lineage.
+
+    Contract:
+        - Both lesser conduits reference the root creations.
+        - Both lesser wards point back to the root conduit.
+    """
+    first = conduit_normal.create_lesser_conduit()
+    second = first.create_lesser_conduit()
+    try:
+        assert isinstance(first._creations, LesserCreations)
+        assert isinstance(second._creations, LesserCreations)
+        assert first._creations._parent_creations is conduit_normal._creations
+        assert second._creations._parent_creations is conduit_normal._creations
+        assert second._parent_creations is conduit_normal._creations
+        assert first._conduit_ward.root_conduit is conduit_normal
+        assert second._conduit_ward.root_conduit is conduit_normal
+    finally:
+        second.cleanup()
+        first.cleanup()
 
 
 def test_set_new_policy_raises_when_not_dynamic(conduit_normal: Conduit) -> None:

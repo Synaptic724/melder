@@ -1767,6 +1767,9 @@ class IConduitWard(ICleanable, Protocol):
     def root_conduit(self) -> Optional['IConduit']:
         """
         Return the root (normal) conduit for this lineage.
+
+        Raises:
+            RuntimeError: If the root conduit is missing or not normal.
         """
         ...
 
