@@ -1,3 +1,4 @@
+from threading import Barrier, Lock, RLock, Thread
 from types import SimpleNamespace
 from typing import Any, Iterable, Optional
 from unittest.mock import MagicMock
@@ -95,6 +96,47 @@ class _SystemStatesStub:
         return self._mapping.get(spell_id)
 
 
+class _TrackingLock:
+    """
+    Simple re-entrant lock that exposes a locked flag for tests.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize the tracking lock.
+        """
+        self._lock = RLock()
+        self._count = 0
+
+    def acquire(self) -> None:
+        """
+        Acquire the underlying lock and update the count.
+        """
+        self._lock.acquire()
+        self._count += 1
+
+    def release(self) -> None:
+        """
+        Release the underlying lock and update the count.
+        """
+        self._count -= 1
+        self._lock.release()
+
+    def __enter__(self) -> "_TrackingLock":
+        self.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.release()
+
+    @property
+    def locked(self) -> bool:
+        """
+        Return True when the lock is currently held.
+        """
+        return self._count > 0
+
+
 def _make_socket(param_name: str, target_ids: Iterable[str]) -> SimpleNamespace:
     """
     Build a socket-like object for topology stubs.
@@ -186,6 +228,7 @@ def _make_context(
     cancel_event: Any | None = None,
     caller_creations: Any | None = None,
     owner_creations: Any | None = None,
+    caller_creations_lock_held: bool = False,
 ) -> SimpleNamespace:
     """
     Build a minimal context stub used by MeldEngine.
@@ -195,6 +238,7 @@ def _make_context(
         cancel_event: Optional cancellation event stub.
         caller_creations: Optional caller creations override.
         owner_creations: Optional owner creations override.
+        caller_creations_lock_held: Flag indicating the caller creations lock is held.
 
     Returns:
         SimpleNamespace: Context stub with expected attributes.
@@ -207,6 +251,7 @@ def _make_context(
         creations=owner_creations,
         owner_creations=owner_creations,
         caller_creations=caller_creations,
+        caller_creations_lock_held=caller_creations_lock_held,
         cancel_event=cancel_event,
     )
 
@@ -222,6 +267,7 @@ def _make_spell(
     is_lambda_spell: bool = False,
     is_existing_creation: bool = False,
     user_created_object: Any = None,
+    owner_creations: Any | None = None,
 ) -> SimpleNamespace:
     """
     Build a minimal spell stub with attributes used by MeldEngine.
@@ -236,6 +282,7 @@ def _make_spell(
         is_lambda_spell: True when the spell is callable as a lambda factory.
         is_existing_creation: True when spell wraps a pre-created object.
         user_created_object: Optional object for existing-creation spells.
+        owner_creations: Optional owner creations container for shared lifetimes.
 
     Returns:
         SimpleNamespace: Spell-like object with the required attributes.
@@ -257,6 +304,8 @@ def _make_spell(
         is_lambda_spell=is_lambda_spell,
         is_existing_creation=is_existing_creation,
         user_created_object=user_created_object,
+        _owner_creations=owner_creations,
+        _lock=RLock(),
     )
 
 
@@ -266,6 +315,7 @@ def _make_engine(
     creations: Any = None,
     caller_creations: Any | None = None,
     owner_creations: Any | None = None,
+    caller_creations_lock_held: bool = False,
     frame: Optional[ResolutionFrame] = None,
     blueprint: Optional[RootResolutionBlueprint] = None,
     override_map: Optional[dict[SocketRef, Any]] = None,
@@ -276,13 +326,16 @@ def _make_engine(
     """
     Build a MeldEngine with default stubs for testing.
 
+    Defaults:
+        - Uses a real Creations container so locking paths are exercised.
+
     Returns:
         Tuple of (engine, root_spell, frame) for assertions.
     """
     if root_spell is None:
         root_spell = _make_spell(spell_id="root", spell=lambda **_: "root")
     if creations is None:
-        creations = SimpleNamespace()
+        creations, _ = _make_creations()
     if frame is None:
         frame = ResolutionFrame()
     context = _make_context(
@@ -290,6 +343,7 @@ def _make_engine(
         cancel_event=cancel_event,
         caller_creations=caller_creations,
         owner_creations=owner_creations,
+        caller_creations_lock_held=caller_creations_lock_held,
     )
     engine = MeldEngine(
         context=context,
@@ -488,6 +542,105 @@ def test_run_root_only_returns_value_and_stores_result() -> None:
     result = engine.run()
     assert result == "root-value"
     assert frame.get_result(root_spell.spell_index.current) == "root-value"
+
+
+def test_run_root_only_unique_per_conduit_holds_creations_lock() -> None:
+    """
+    Verify unique_per_conduit holds the caller creations lock during construction.
+
+    Contract:
+        - creations lock is held while the root spell callable runs.
+    """
+    creations, _ = _make_creations()
+    creations_lock = _TrackingLock()
+    creations._lock = creations_lock
+
+    def build() -> str:
+        assert creations_lock.locked is True
+        return "root-value"
+
+    root_spell = _make_spell(
+        spell_id="root",
+        spell=build,
+        existence=Existence.unique_per_conduit,
+    )
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        creations=creations,
+        caller_creations=creations,
+    )
+    assert engine.run() == "root-value"
+
+
+def test_run_root_only_shared_unique_holds_spell_lock() -> None:
+    """
+    Verify shared unique existence holds the spell lock during construction.
+
+    Contract:
+        - spell lock is held while the root spell callable runs.
+        - creations lock is not held during construction.
+    """
+    creations, _ = _make_creations()
+    creations_lock = _TrackingLock()
+    creations._lock = creations_lock
+    spell_lock = _TrackingLock()
+
+    def build() -> str:
+        assert spell_lock.locked is True
+        assert creations_lock.locked is False
+        return "root-value"
+
+    root_spell = _make_spell(
+        spell_id="root",
+        spell=build,
+        existence=Existence.unique,
+        owner_creations=creations,
+    )
+    root_spell._lock = spell_lock
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        creations=creations,
+        caller_creations=creations,
+        owner_creations=creations,
+    )
+    assert engine.run() == "root-value"
+
+
+def test_run_root_only_skips_spell_lock_when_caller_creations_lock_held() -> None:
+    """
+    Verify shared unique skips the spell lock when caller creations are held.
+
+    Contract:
+        - spell lock is not acquired when caller_creations_lock_held is True
+          and the spell resolves against the same creations container.
+        - creations lock remains held during construction.
+    """
+    creations, _ = _make_creations()
+    creations_lock = _TrackingLock()
+    creations._lock = creations_lock
+    spell_lock = _TrackingLock()
+
+    def build() -> str:
+        assert spell_lock.locked is False
+        assert creations_lock.locked is True
+        return "root-value"
+
+    root_spell = _make_spell(
+        spell_id="root",
+        spell=build,
+        existence=Existence.unique,
+        owner_creations=creations,
+    )
+    root_spell._lock = spell_lock
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        creations=creations,
+        caller_creations=creations,
+        owner_creations=creations,
+        caller_creations_lock_held=True,
+    )
+    with creations._lock:
+        assert engine.run() == "root-value"
 
 
 def test_run_root_only_uses_args_and_kwargs_overrides() -> None:
@@ -1635,3 +1788,230 @@ def test_construct_root_only_accepts_tuple_args() -> None:
     frame = ResolutionFrame(overrides={"__args__": (1, 2)})
     engine, _, _ = _make_engine(root_spell=root_spell, frame=frame)
     assert engine._construct_root_only() == (1, 2)
+
+
+def test_resolve_spell_instance_shared_unique_concurrent_reuses_single_creation() -> None:
+    """
+    Verify shared unique existence constructs once under concurrent callers.
+
+    Contract:
+        - only one instance is constructed.
+        - both callers receive the same instance.
+    """
+    creations, _ = _make_creations()
+    engine, _, _ = _make_engine(
+        creations=creations,
+        caller_creations=creations,
+        owner_creations=creations,
+    )
+    spell = _make_spell(
+        spell_id="spell-1",
+        existence=Existence.unique,
+        owner_creations=creations,
+    )
+    barrier = Barrier(2)
+    lock = Lock()
+    results: list[tuple[Any, bool]] = []
+    errors: list[Exception] = []
+    construct_calls = 0
+
+    def construct() -> object:
+        nonlocal construct_calls
+        with lock:
+            construct_calls += 1
+        return object()
+
+    def worker() -> None:
+        try:
+            barrier.wait(timeout=5)
+            instance, created = engine._resolve_spell_instance(
+                spell,
+                construct_fn=construct,
+            )
+            with lock:
+                results.append((instance, created))
+        except Exception as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [Thread(target=worker) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+    assert construct_calls == 1
+    assert len(results) == 2
+    instances = {id(instance) for instance, _ in results}
+    assert len(instances) == 1
+    assert sum(1 for _, created in results if created) == 1
+
+
+def test_resolve_spell_instance_unique_per_conduit_concurrent_reuses_single_creation() -> None:
+    """
+    Verify unique_per_conduit constructs once per conduit under concurrency.
+
+    Contract:
+        - only one instance is constructed for the caller creations.
+        - both callers receive the same instance.
+    """
+    creations, _ = _make_creations()
+    engine, _, _ = _make_engine(creations=creations)
+    spell = _make_spell(
+        spell_id="spell-1",
+        existence=Existence.unique_per_conduit,
+        owner_creations=creations,
+    )
+    barrier = Barrier(2)
+    lock = Lock()
+    results: list[tuple[Any, bool]] = []
+    errors: list[Exception] = []
+    construct_calls = 0
+
+    def construct() -> object:
+        nonlocal construct_calls
+        with lock:
+            construct_calls += 1
+        return object()
+
+    def worker() -> None:
+        try:
+            barrier.wait(timeout=5)
+            instance, created = engine._resolve_spell_instance(
+                spell,
+                construct_fn=construct,
+            )
+            with lock:
+                results.append((instance, created))
+        except Exception as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [Thread(target=worker) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+    assert construct_calls == 1
+    assert len(results) == 2
+    instances = {id(instance) for instance, _ in results}
+    assert len(instances) == 1
+    assert sum(1 for _, created in results if created) == 1
+
+
+def test_resolve_spell_instance_many_concurrent_creates_distinct_instances() -> None:
+    """
+    Verify Existence.many constructs distinct instances under concurrency.
+
+    Contract:
+        - each caller receives a new instance.
+        - all calls report created=True.
+    """
+    creations, _ = _make_creations()
+    engine, _, _ = _make_engine(creations=creations)
+    spell = _make_spell(
+        spell_id="spell-1",
+        existence=Existence.many,
+        owner_creations=creations,
+    )
+    barrier = Barrier(2)
+    lock = Lock()
+    results: list[tuple[Any, bool]] = []
+    errors: list[Exception] = []
+
+    def construct() -> object:
+        return object()
+
+    def worker() -> None:
+        try:
+            barrier.wait(timeout=5)
+            instance, created = engine._resolve_spell_instance(
+                spell,
+                construct_fn=construct,
+            )
+            with lock:
+                results.append((instance, created))
+        except Exception as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [Thread(target=worker) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+    assert len(results) == 2
+    instances = {id(instance) for instance, _ in results}
+    assert len(instances) == 2
+    assert all(created for _, created in results)
+    creations_snapshot = creations.extract_spell_creations("spell-1")
+    assert len(creations_snapshot) == 2
+
+
+def test_resolve_spell_instance_shared_unique_prefers_owner_creations() -> None:
+    """
+    Verify shared unique uses owner creations when caller differs.
+
+    Contract:
+        - instance registers in owner creations for shared lifetimes.
+        - caller creations remain unchanged.
+    """
+    caller_creations, _ = _make_creations(conduit_id="caller")
+    owner_creations, _ = _make_creations(conduit_id="owner")
+    engine, _, _ = _make_engine(
+        creations=caller_creations,
+        caller_creations=caller_creations,
+        owner_creations=owner_creations,
+    )
+    spell = _make_spell(
+        spell_id="spell-1",
+        existence=Existence.unique,
+        owner_creations=owner_creations,
+    )
+    instance, created = engine._resolve_spell_instance(
+        spell,
+        construct_fn=lambda: object(),
+    )
+    assert created is True
+    owner_snapshot = owner_creations.extract_spell_creations("spell-1")
+    caller_snapshot = caller_creations.extract_spell_creations("spell-1")
+    assert len(owner_snapshot) == 1
+    assert owner_snapshot[0]["creation"].value is instance
+    assert caller_snapshot == []
+
+
+def test_resolve_spell_instance_shared_unique_skips_spell_lock_when_caller_lock_held() -> None:
+    """
+    Verify shared unique skips the spell lock when caller lock is already held.
+
+    Contract:
+        - spell lock is not acquired when caller_creations_lock_held is True.
+    """
+    creations, _ = _make_creations()
+    engine, _, _ = _make_engine(
+        creations=creations,
+        caller_creations=creations,
+        owner_creations=creations,
+        caller_creations_lock_held=True,
+    )
+    spell = _make_spell(
+        spell_id="spell-1",
+        existence=Existence.unique,
+        owner_creations=creations,
+    )
+    spell._lock = MagicMock()
+
+    instance, created = engine._resolve_spell_instance(
+        spell,
+        construct_fn=lambda: object(),
+    )
+
+    assert created is True
+    assert spell._lock.__enter__.called is False
+    creations_snapshot = creations.extract_spell_creations("spell-1")
+    assert creations_snapshot[0]["creation"].value is instance

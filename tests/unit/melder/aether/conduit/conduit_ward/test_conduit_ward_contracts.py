@@ -1181,20 +1181,15 @@ def test_add_spell_to_contract_raises_when_no_contract(
 def test_add_spell_to_contract_raises_on_mismatched_spell_id(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
-    """Verify mismatched spell_id and inspected id raises. The contract should not be modified."""
+    """Verify mismatched spell_id and spell identity raises. The contract should not be modified."""
     owner, borrower = linked_pair
     spell = _register_spell(owner, "spell-25", permissions=Permissions.create)
-
-    def mismatch_inspect_spell(spell: FakeSpell, aetheric_frame: str = "default") -> str | None:
-        """Return a mismatched spell id to force a validation error."""
-        return "mismatched-id"
-
-    borrower.inspect_spell = mismatch_inspect_spell
+    mismatched_id = "mismatched-id"
 
     with pytest.raises(RuntimeError, match="does not match inspected"):
         borrower._conduit_ward._add_spell_to_contract(
             spell=spell,
-            spell_id=spell.spell_id,
+            spell_id=mismatched_id,
             conduit=owner,
             permissions="create",
         )

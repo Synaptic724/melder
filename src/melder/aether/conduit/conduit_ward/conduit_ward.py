@@ -1087,6 +1087,10 @@ class ConduitWard(Cleanable):
 
         Validation and resolution helper: ensures both a spell ID and its corresponding spell object are available.
 
+        Contract:
+            - If `spell` is an ISpell instance, this uses `spell.spell_id` directly.
+            - If `spell` is a raw object, the ID is resolved via `inspect_spell`.
+
         Args:
             spell (ISpell, optional): The spell object.
             spell_id (str, optional): The unique ID of the spell.
@@ -1137,17 +1141,28 @@ class ConduitWard(Cleanable):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 raise TypeError(f"Expected ISpell instance, got {type(spell).__name__}")
-            spell_id = self._conduit.inspect_spell(spell, aetheric_frame)
+            spell_id = spell.spell_id
             if spell_id is None:
                 self._logger.error(
-                    "check_spell_id_and_spell: inspect spell id failed",
+                    "check_spell_id_and_spell: spell has no spell_id",
                     method_name="_check_spell_id_and_spell",
                     owner_id=self._id, owner_display=self._display_name,
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 raise RuntimeError("Could not determine spell_id from spell.")
 
-        inspected_id = self._conduit.inspect_spell(spell, aetheric_frame)
+        if isinstance(spell, ISpell):
+            inspected_id = spell.spell_id
+            if inspected_id is None:
+                self._logger.error(
+                    "check_spell_id_and_spell: spell has no spell_id",
+                    method_name="_check_spell_id_and_spell",
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+                raise RuntimeError("Could not determine spell_id from spell.")
+        else:
+            inspected_id = self._conduit.inspect_spell(spell, aetheric_frame)
         if spell_id != inspected_id:
             self._logger.error(
                 f"check_spell_id_and_spell: mismatch provided={spell_id} inspected={inspected_id}",

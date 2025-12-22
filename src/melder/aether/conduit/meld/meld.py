@@ -283,19 +283,14 @@ class Meld(Cleanable):
         self._execute_hooks(target_spell.pre_hooks, "pre_cast")
         self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
-        with self._lock:
-            # 6) Try to reuse an existing creation based on Existence + creations type.
-            instance = self._get_existing_creation(target_spell)
-
-            # 7) If no existing instance, construct a new one via the spell-type path
-            #    and register it into the appropriate creations bucket.
-            if instance is None:
-                instance = self._meld_by_spell_type(target_spell, override_map)
-                if target_spell.is_existing_creation:
-                    self._register_spell(target_spell, instance)
-                # Activation hooks fire only when the instance is newly created.
-                self._execute_activation_hooks(target_spell.activation_hooks, instance)
-                self._fire_meld_hooks("on_meld_activation", target_spell, instance)
+        instance, created = self._resolve_instance_with_locks(
+            target_spell,
+            override_map,
+        )
+        if created:
+            # Activation hooks fire only when the instance is newly created.
+            self._execute_activation_hooks(target_spell.activation_hooks, instance)
+            self._fire_meld_hooks("on_meld_activation", target_spell, instance)
 
         # 8) Execute post-cast hooks (still no arguments for now).
         self._execute_hooks(target_spell.post_hooks, "post_cast")
@@ -516,6 +511,7 @@ class Meld(Cleanable):
             self,
             spell: ISpell,
             overrides: Optional[dict[str, Any]],
+            caller_creations_lock_held: bool = False,
     ) -> MeldContext:
         """
         Internal
@@ -538,6 +534,9 @@ class Meld(Cleanable):
                 Normalized per-call overrides produced by
                 :meth:`_normalize_spell_override`, or ``None`` if no overrides
                 were supplied.
+            caller_creations_lock_held:
+                True if the caller creations lock is already held by the
+                invoking thread during runtime execution.
 
         Returns:
             MeldContext:
@@ -549,6 +548,7 @@ class Meld(Cleanable):
             root_spell=spell,
             overrides=overrides,
             caller_creations=self._creations,
+            caller_creations_lock_held=caller_creations_lock_held,
         )
 
 
@@ -888,19 +888,145 @@ class Meld(Cleanable):
     # ----------------------------------------------------------------------
     # Existing creation reuse
     # ----------------------------------------------------------------------
-    def _get_existing_creation(self, spell: ISpell) -> Optional[Any]:
+    def _select_creations_for_spell(self, spell: ISpell) -> Any:
+        """
+        Internal
+
+        Select the appropriate creations container for reuse/registration.
+
+        Contract:
+            - Per-conduit lifetimes use the caller creations container.
+            - Shared lifetimes use the owner creations container.
+            - If the preferred container is None, fall back to the other.
+
+        Args:
+            spell: The spell whose Existence determines selection.
+
+        Returns:
+            The selected creations container, or None if neither is available.
+        """
+        existence: Existence = spell.existence
+        caller_creations = self._creations
+        owner_creations = spell._owner_creations
+
+        if existence in (
+                Existence.unique_per_conduit,
+                Existence.many,
+                Existence.unique_per_spell_space,
+        ):
+            if caller_creations is not None:
+                return caller_creations
+            return owner_creations
+
+        if owner_creations is not None:
+            return owner_creations
+        return caller_creations
+
+    def _resolve_instance_with_locks(
+            self,
+            spell: ISpell,
+            overrides: Optional[dict[str, Any]],
+    ) -> tuple[Any, bool]:
+        """
+        Internal
+
+        Resolve a spell instance while enforcing per-existence locking rules.
+
+        Contract:
+            - Per-conduit existences hold the caller creations lock across
+              check -> construct -> register.
+            - Shared existences hold the spell lock across the same flow and
+              use the creations lock only for map access.
+            - Existence.many always constructs and registers without reuse.
+
+        Args:
+            spell:
+                The resolved spell configuration object.
+            overrides:
+                Normalized per-call overrides, or None.
+
+        Returns:
+            tuple[Any, bool]:
+                (instance, created) where created is True only when this call
+                constructs and registers a new instance.
+        """
+        creations = self._select_creations_for_spell(spell)
+        existence: Existence = spell.existence
+        instance: Any = None
+        created = False
+
+        if existence is Existence.many:
+            instance = self._meld_by_spell_type(
+                spell,
+                overrides,
+                caller_creations_lock_held=False,
+            )
+            if spell.is_existing_creation and creations is not None:
+                with creations._lock:
+                    self._register_spell(spell, instance, creations)
+            return instance, True
+
+        if existence in (
+                Existence.unique_per_conduit,
+                Existence.unique_per_spell_space,
+        ):
+            if creations is None:
+                raise RuntimeError(
+                    "[MELD] Caller creations are required for per-conduit existences."
+                )
+            with creations._lock:
+                instance = self._get_existing_creation(spell, creations)
+                if instance is None:
+                    instance = self._meld_by_spell_type(
+                        spell,
+                        overrides,
+                        caller_creations_lock_held=True,
+                    )
+                    if spell.is_existing_creation:
+                        self._register_spell(spell, instance, creations)
+                    created = True
+            return instance, created
+
+        with spell._lock:
+            if creations is not None:
+                with creations._lock:
+                    instance = self._get_existing_creation(spell, creations)
+            else:
+                instance = self._get_existing_creation(spell, None)
+
+            if instance is None:
+                instance = self._meld_by_spell_type(
+                    spell,
+                    overrides,
+                    caller_creations_lock_held=False,
+                )
+                if spell.is_existing_creation and creations is not None:
+                    with creations._lock:
+                        self._register_spell(spell, instance, creations)
+                created = True
+
+        return instance, created
+
+    def _get_existing_creation(
+            self,
+            spell: ISpell,
+            creations: Any | None = None,
+    ) -> Optional[Any]:
         """
         Attempts to retrieve a cached instance from the `Creations` manager
         based on the spell's `Existence` lifecycle mode.
 
         Args:
             spell (ISpell): The resolved Spell configuration object.
+            creations (Any | None): Optional creations container override.
+                If None, the selection follows `_select_creations_for_spell`.
 
         Returns:
             Optional[Any]: The existing component instance if found and reuse is
                            permitted by the Existence mode, otherwise **None**.
         """
-        creations = self._creations
+        if creations is None:
+            creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
 
@@ -986,6 +1112,8 @@ class Meld(Cleanable):
             self,
             spell: ISpell,
             overrides: Optional[dict[str, Any]],
+            *,
+            caller_creations_lock_held: bool = False,
     ) -> Any:
         """
         Obtain a new component instance based on the Spell's canonical `SpellType`.
@@ -1009,6 +1137,9 @@ class Meld(Cleanable):
             overrides:
                 Normalized per-call overrides (or ``None``), as produced by
                 :meth:`_normalize_spell_override`.
+            caller_creations_lock_held:
+                True if the caller creations lock is already held by the
+                invoking thread during runtime execution.
 
         Returns:
             Any:
@@ -1041,7 +1172,11 @@ class Meld(Cleanable):
             raise RuntimeError("[MELD] MeldRuntime is not configured on this Meld instance.")
 
         if spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell:
-            context = self._create_meld_context(spell, overrides)
+            context = self._create_meld_context(
+                spell,
+                overrides,
+                caller_creations_lock_held=caller_creations_lock_held,
+            )
             try:
                 return self._runtime.execute(context)
             finally:
@@ -1059,7 +1194,12 @@ class Meld(Cleanable):
 # ----------------------------------------------------------------------
 # Registration Helpers (New Structure)
 # ----------------------------------------------------------------------
-    def _register_spell(self, spell: ISpell, instance: Any) -> None:
+    def _register_spell(
+            self,
+            spell: ISpell,
+            instance: Any,
+            creations: Any | None = None,
+    ) -> None:
         """
         Registers a newly obtained component instance with the Creations system,
         adhering to the spell's `Existence` mode.
@@ -1070,6 +1210,8 @@ class Meld(Cleanable):
         Args:
             spell (ISpell): The resolved Spell configuration object.
             instance (Any): The newly created component instance.
+            creations (Any | None): Optional creations container override.
+                If None, the selection follows `_select_creations_for_spell`.
 
         Returns:
             None.
@@ -1079,18 +1221,19 @@ class Meld(Cleanable):
             RuntimeError: Propagated from helpers, or raised if the creations manager
                           type itself is unsupported.
         """
-        creations = self._creations
+        if creations is None:
+            creations = self._select_creations_for_spell(spell)
 
         # --- Dispatch based on Creations Manager Type ---
 
         # Normal conduit: full Creations manager
         if isinstance(creations, Creations):
-            self._register_to_creations(spell, instance)
+            self._register_to_creations(spell, instance, creations)
             return
 
         # LesserConduit: LesserCreations manager
         if isinstance(creations, LesserCreations):
-            self._register_to_lesser_creations(spell, instance)
+            self._register_to_lesser_creations(spell, instance, creations)
             return
 
         # Unknown creations manager type
@@ -1098,7 +1241,12 @@ class Meld(Cleanable):
             f"[MELD] Unsupported creations manager type: {type(creations).__name__}"
         )
 
-    def _register_to_creations(self, spell: ISpell, instance: Any) -> None:
+    def _register_to_creations(
+            self,
+            spell: ISpell,
+            instance: Any,
+            creations: ICreations,
+    ) -> None:
         """
         Handles registration for the full Creations manager (used by a normal Conduit).
 
@@ -1108,6 +1256,7 @@ class Meld(Cleanable):
         Args:
             spell (ISpell): The resolved Spell configuration object.
             instance (Any): The newly created component instance.
+            creations (ICreations): Target creations container for registration.
 
         Returns:
             None.
@@ -1118,7 +1267,6 @@ class Meld(Cleanable):
             RuntimeError: If an unsupported Existence mode is encountered for
                           the Creations manager.
         """
-        creations: ICreations = self._creations  # Type narrowed by caller
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
 
@@ -1163,7 +1311,12 @@ class Meld(Cleanable):
         )
 
 
-    def _register_to_lesser_creations(self, spell: ISpell, instance: Any) -> None:
+    def _register_to_lesser_creations(
+            self,
+            spell: ISpell,
+            instance: Any,
+            creations: ILesserCreations,
+    ) -> None:
         """
         Handles registration for the LesserCreations manager (used by a LesserConduit).
 
@@ -1173,6 +1326,7 @@ class Meld(Cleanable):
         Args:
             spell (ISpell): The resolved Spell configuration object.
             instance (Any): The newly created component instance.
+            creations (ILesserCreations): Target creations container for registration.
 
         Returns:
             None.
@@ -1181,7 +1335,6 @@ class Meld(Cleanable):
             RuntimeError: If an Existence mode other than `unique_per_conduit` or
                           `many` is attempted in a LesserConduit context.
         """
-        creations: ILesserCreations = self._creations  # Type narrowed by caller
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
 

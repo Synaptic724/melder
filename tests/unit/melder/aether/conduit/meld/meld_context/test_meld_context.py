@@ -157,6 +157,45 @@ def test_caller_creations_uses_explicit_value() -> None:
         context.cleanup()
 
 
+def test_caller_creations_lock_held_defaults_false() -> None:
+    """
+    Verify caller_creations_lock_held defaults to False.
+
+    Contract:
+        - caller_creations_lock_held is False when not provided.
+
+    Raises:
+        AssertionError: If the default is not False.
+    """
+    root_spell = _make_root_spell(creations=object())
+    context = MeldContext(root_spell=root_spell)
+    try:
+        assert context.caller_creations_lock_held is False
+    finally:
+        context.cleanup()
+
+
+def test_caller_creations_lock_held_is_stored() -> None:
+    """
+    Verify caller_creations_lock_held preserves explicit values.
+
+    Contract:
+        - caller_creations_lock_held returns the provided boolean.
+
+    Raises:
+        AssertionError: If the flag does not match the input.
+    """
+    root_spell = _make_root_spell(creations=object())
+    context = MeldContext(
+        root_spell=root_spell,
+        caller_creations_lock_held=True,
+    )
+    try:
+        assert context.caller_creations_lock_held is True
+    finally:
+        context.cleanup()
+
+
 def test_conduit_id_property_returns_value() -> None:
     """
     Verify conduit_id property returns the owner conduit id.
@@ -482,6 +521,7 @@ def test_cleanup_clears_fields_and_marks_cleaned() -> None:
     assert context.creations is None
     assert context.owner_creations is None
     assert context.caller_creations is None
+    assert context.caller_creations_lock_held is False
     assert context.overrides == {}
     assert context.cancel_event is None
     assert context.logger is None

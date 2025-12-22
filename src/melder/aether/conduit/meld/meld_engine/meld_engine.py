@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from threading import RLock
-from typing import Any, Dict, MutableMapping, Optional, Sequence
+from typing import Any, Dict, MutableMapping, Optional, Sequence, Callable
 
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -206,8 +206,10 @@ class MeldEngine(Cleanable):
 
         # If we have a deep blueprint, walk it; otherwise fall back to root-only.
         if self._blueprint is None:
-            instance = self._construct_root_only()
-            self._register_spell(self._root_spell, instance)
+            instance, _ = self._resolve_spell_instance(
+                self._root_spell,
+                construct_fn=self._construct_root_only,
+            )
             self._store_result(self._root_spell.spell_index.current, instance)
             return instance
 
@@ -226,18 +228,18 @@ class MeldEngine(Cleanable):
                     message=f"Spell with id '{node_id}' not found in spellbook for meld.",
                 )
 
-            existing = self._get_existing_creation(spell)
-            if existing is not None:
-                self._store_result(node_id, existing)
-                continue
+            def _construct_node() -> Any:
+                kwargs = self._build_kwargs_for_node(
+                    node_id=node_id,
+                    dag=dag,
+                    override_map=self._override_map,
+                )
+                return self._construct_spell(spell, kwargs)
 
-            kwargs = self._build_kwargs_for_node(
-                node_id=node_id,
-                dag=dag,
-                override_map=self._override_map,
+            instance, _ = self._resolve_spell_instance(
+                spell,
+                construct_fn=_construct_node,
             )
-            instance = self._construct_spell(spell, kwargs)
-            self._register_spell(spell, instance)
             self._store_result(node_id, instance)
 
         root_id = self._root_spell.spell_index.current
@@ -424,6 +426,120 @@ class MeldEngine(Cleanable):
     def _store_result(self, node_id: str, value: Any) -> None:
         self._frame.set_result(node_id, value)
 
+    def _should_use_spell_lock(self, spell: ISpell, creations: Any) -> bool:
+        """
+        Internal
+
+        Decide whether a shared existence should acquire the spell lock.
+
+        Contract:
+            - Shared existences normally take the spell lock.
+            - If the caller creations lock is already held and the shared
+              existence resolves against the same creations container, the
+              spell lock is skipped to avoid lock inversion.
+        """
+        if spell.existence not in (
+                Existence.unique,
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        ):
+            return False
+
+        if (
+                self._context.caller_creations_lock_held
+                and creations is self._context.caller_creations
+        ):
+            return False
+
+        return True
+
+    def _resolve_spell_instance(
+            self,
+            spell: ISpell,
+            *,
+            construct_fn: Callable[[], Any],
+    ) -> tuple[Any, bool]:
+        """
+        Internal
+
+        Resolve a spell instance while enforcing per-existence locking rules.
+
+        Contract:
+            - Per-conduit existences hold the caller creations lock across
+              check -> construct -> register.
+            - Shared existences hold the spell lock across the same flow and
+              use the creations lock only for map access.
+            - When the caller creations lock is already held for the same
+              container, shared existences skip the spell lock to avoid
+              lock inversion.
+            - Existence.many always constructs and registers without reuse.
+
+        Args:
+            spell: The spell being resolved.
+            construct_fn: Callable that performs construction when needed.
+
+        Returns:
+            tuple[Any, bool]:
+                (instance, created) where created is True only when this call
+                constructs and registers a new instance.
+        """
+        creations = self._select_creations_for_spell(spell)
+        existence: Existence = spell.existence
+        instance: Any = None
+        created = False
+
+        if existence is Existence.many:
+            instance = construct_fn()
+            if creations is not None:
+                with creations._lock:
+                    self._register_spell(spell, instance, creations)
+            return instance, True
+
+        if existence in (
+                Existence.unique_per_conduit,
+                Existence.unique_per_spell_space,
+        ):
+            if creations is None:
+                instance = construct_fn()
+                return instance, True
+            with creations._lock:
+                instance = self._get_existing_creation(spell, creations)
+                if instance is None:
+                    instance = construct_fn()
+                    self._register_spell(spell, instance, creations)
+                    created = True
+            return instance, created
+
+        use_spell_lock = self._should_use_spell_lock(spell, creations)
+        if use_spell_lock:
+            with spell._lock:
+                if creations is not None:
+                    with creations._lock:
+                        instance = self._get_existing_creation(spell, creations)
+                else:
+                    instance = self._get_existing_creation(spell, None)
+
+                if instance is None:
+                    instance = construct_fn()
+                    if creations is not None:
+                        with creations._lock:
+                            self._register_spell(spell, instance, creations)
+                    created = True
+            return instance, created
+
+        if creations is None:
+            instance = construct_fn()
+            return instance, True
+
+        with creations._lock:
+            instance = self._get_existing_creation(spell, creations)
+            if instance is None:
+                instance = construct_fn()
+                self._register_spell(spell, instance, creations)
+                created = True
+
+        return instance, created
+
     def _select_creations_for_spell(self, spell: ISpell) -> Any:
         """
         Internal
@@ -432,7 +548,8 @@ class MeldEngine(Cleanable):
 
         Contract:
             - Per-conduit lifetimes use the caller creations container.
-            - Shared lifetimes use the owner creations container.
+            - Shared lifetimes use the spell's owner creations when available,
+              otherwise fall back to the context owner creations container.
             - If the preferred container is None, fall back to the other.
 
         Args:
@@ -443,7 +560,9 @@ class MeldEngine(Cleanable):
         """
         existence: Existence = spell.existence
         caller_creations = self._context.caller_creations
-        owner_creations = self._context.owner_creations
+        owner_creations = spell._owner_creations
+        if owner_creations is None:
+            owner_creations = self._context.owner_creations
 
         if existence in (
                 Existence.unique_per_conduit,
@@ -458,7 +577,11 @@ class MeldEngine(Cleanable):
             return owner_creations
         return caller_creations
 
-    def _get_existing_creation(self, spell: ISpell) -> Optional[Any]:
+    def _get_existing_creation(
+            self,
+            spell: ISpell,
+            creations: Any | None = None,
+    ) -> Optional[Any]:
         """
         Attempt reuse from creations manager based on Existence.
 
@@ -466,7 +589,8 @@ class MeldEngine(Cleanable):
             - Uses caller creations for per-conduit lifetimes.
             - Uses owner creations for shared lifetimes.
         """
-        creations = self._select_creations_for_spell(spell)
+        if creations is None:
+            creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
 
@@ -536,7 +660,12 @@ class MeldEngine(Cleanable):
 
         return None
 
-    def _register_spell(self, spell: ISpell, instance: Any) -> None:
+    def _register_spell(
+            self,
+            spell: ISpell,
+            instance: Any,
+            creations: Any | None = None,
+    ) -> None:
         """
         Register a constructed instance into the appropriate creations container.
 
@@ -548,11 +677,14 @@ class MeldEngine(Cleanable):
         Args:
             spell: The spell that produced the instance.
             instance: The newly constructed instance to register.
+            creations: Optional creations container override. If None, selection
+                follows `_select_creations_for_spell`.
 
         Returns:
             None.
         """
-        creations = self._select_creations_for_spell(spell)
+        if creations is None:
+            creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
 

@@ -1,4 +1,5 @@
 """Contract tests for Meld resolution, gating, and activation flow."""
+from threading import RLock
 from typing import Any, Callable, Iterable
 from unittest.mock import MagicMock
 
@@ -72,6 +73,47 @@ class _SystemStateStub:
         self.set_validity_calls.append(value)
 
 
+class _TrackingLock:
+    """
+    Simple re-entrant lock that exposes a locked flag for tests.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize the tracking lock.
+        """
+        self._lock = RLock()
+        self._count = 0
+
+    def acquire(self) -> None:
+        """
+        Acquire the underlying lock and update the count.
+        """
+        self._lock.acquire()
+        self._count += 1
+
+    def release(self) -> None:
+        """
+        Release the underlying lock and update the count.
+        """
+        self._count -= 1
+        self._lock.release()
+
+    def __enter__(self) -> "_TrackingLock":
+        self.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.release()
+
+    @property
+    def locked(self) -> bool:
+        """
+        Return True when the lock is currently held.
+        """
+        return self._count > 0
+
+
 class _SpellStub:
     """
     Minimal spell stub with fields used by Meld.
@@ -143,6 +185,7 @@ class _SpellStub:
         self._owner_conduit_name = owner_conduit_name
         self.aetheric_frame = aetheric_frame
         self.spell_type = spell_type
+        self._lock = RLock()
         self.pre_hooks: list[Callable[..., Any]] = []
         self.activation_hooks: list[Callable[..., Any]] = []
         self.post_hooks: list[Callable[..., Any]] = []
@@ -892,8 +935,80 @@ def test_meld_creates_instance_and_runs_activation_hooks() -> None:
 
     assert meld.meld(spell="spell-1", spell_override=[1, 2]) == "created"
     assert events == ["pre", "activation:created", "post"]
-    meld._meld_by_spell_type.assert_called_once_with(spell, {"__args__": [1, 2]})
+    meld._meld_by_spell_type.assert_called_once_with(
+        spell,
+        {"__args__": [1, 2]},
+        caller_creations_lock_held=False,
+    )
     meld._register_spell.assert_not_called()
+
+
+def test_meld_unique_per_conduit_holds_creations_lock_during_construct() -> None:
+    """
+    Verify unique_per_conduit holds the caller creations lock during construction.
+
+    Contract:
+        - creations lock is held while _meld_by_spell_type runs.
+        - caller_creations_lock_held is True for runtime invocations.
+    """
+    creations, _ = _make_creations()
+    creations_lock = _TrackingLock()
+    creations._lock = creations_lock
+    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_conduit)
+    spell._lock = _TrackingLock()
+    meld = _make_meld(creations=creations)
+    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._get_existing_creation = MagicMock(return_value=None)
+
+    def _construct(
+        _spell: _SpellStub,
+        _overrides: dict[str, Any] | None,
+        *,
+        caller_creations_lock_held: bool = False,
+    ) -> str:
+        assert creations_lock.locked is True
+        assert caller_creations_lock_held is True
+        return "created"
+
+    meld._meld_by_spell_type = MagicMock(side_effect=_construct)
+    meld._register_spell = MagicMock()
+
+    assert meld.meld(spell="spell-1") == "created"
+
+
+def test_meld_shared_unique_holds_spell_lock_during_construct() -> None:
+    """
+    Verify shared unique existence holds the spell lock during construction.
+
+    Contract:
+        - spell lock is held while _meld_by_spell_type runs.
+        - creations lock is not held during construction.
+    """
+    creations, _ = _make_creations()
+    creations_lock = _TrackingLock()
+    creations._lock = creations_lock
+    spell_lock = _TrackingLock()
+    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique)
+    spell._lock = spell_lock
+    meld = _make_meld(creations=creations)
+    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._get_existing_creation = MagicMock(return_value=None)
+
+    def _construct(
+        _spell: _SpellStub,
+        _overrides: dict[str, Any] | None,
+        *,
+        caller_creations_lock_held: bool = False,
+    ) -> str:
+        assert spell_lock.locked is True
+        assert creations_lock.locked is False
+        assert caller_creations_lock_held is False
+        return "created"
+
+    meld._meld_by_spell_type = MagicMock(side_effect=_construct)
+    meld._register_spell = MagicMock()
+
+    assert meld.meld(spell="spell-1") == "created"
 
 
 def test_meld_by_spell_type_existing_creation_returns_object() -> None:

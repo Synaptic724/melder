@@ -7,6 +7,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.interfaces.interfaces import ISpell
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from tests.mocks.spellbook.core_classes import BasicService
 
@@ -206,6 +207,10 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
     Purpose:
         Validate Existence.unique_per_conduit_cluster shares across a cluster.
     Contract:
+        - Bound spell_id resolves to a local spell after conjure.
+        - Resolved spell objects implement the ISpell protocol.
+        - Borrower can resolve the spell by ID and inspect the bound target.
+        - Borrower receives a contracted spell entry after cluster refresh.
         - Two conduits in the same cluster resolve the same instance.
     Returns:
         None.
@@ -227,16 +232,166 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
     borrower_book = Spellbook()
     borrower = borrower_book.conjure(automatic=False, name="borrower")
 
+    owner_spell = owner.get_spell_by_id(spell_id)
+    assert owner_spell is not None
+    assert owner_spell.spell_id == spell_id
+    assert isinstance(owner_spell, ISpell)
+    assert any(spell_index.has_version(spell_id) for spell_index in owner_book.spells.keys())
+
+    borrower_spell = borrower.get_spell_by_id(spell_id)
+    assert borrower_spell is not None
+    assert borrower_spell.spell_id == spell_id
+    assert isinstance(borrower_spell, ISpell)
+
+    inspected_wrapper_id = borrower.inspect_spell(owner_spell)
+    inspected_target_id = borrower.inspect_spell(owner_spell.spell)
+    assert inspected_target_id == spell_id
+
     owner.link(borrower)
     owner.create_cluster("cluster-a")
     owner.join_cluster("cluster-a")
     borrower.join_cluster("cluster-a")
     owner.refresh_cluster_shares()
 
+    spell_in_contracts = borrower.get_spell_in_contracts(spell_id)
+    spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
+
+    contracted_spells = borrower_book.contracted_spells.get(owner._id)
+    assert contracted_spells is not None
+    assert any(spell_index.has_version(spell_id) for spell_index in contracted_spells.keys()), (
+        f"Expected spell_id in contracted keys. "
+        f"inspected_wrapper_id={inspected_wrapper_id}, "
+        f"inspected_target_id={inspected_target_id}, "
+        f"spell_in_contracts={spell_in_contracts}, "
+        f"spells_by_conduit={spells_by_conduit}"
+    )
+    assert any(spell.spell_id == spell_id for spell in contracted_spells.values()), (
+        f"Expected spell_id in contracted values. "
+        f"inspected_wrapper_id={inspected_wrapper_id}, "
+        f"inspected_target_id={inspected_target_id}, "
+        f"spell_in_contracts={spell_in_contracts}, "
+        f"spells_by_conduit={spells_by_conduit}"
+    )
+
     try:
         owner_instance = owner.meld(spell=spell_id)
         borrower_instance = borrower.meld(spell=spell_id)
         assert owner_instance is borrower_instance
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_contract_by_spell_id_dynamic_link() -> None:
+    """
+    Purpose:
+        Validate dynamic link contracts using a spell_id.
+    Contract:
+        - Borrower can contract a spell by spell_id after link.
+        - Contracted spell appears in borrower contract lookups.
+        - Borrower can meld the contracted spell.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the contract is not established or resolution fails.
+    """
+    configuration = Configuration()
+    configuration.dynamic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    owner_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+
+    borrower_book = Spellbook()
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+
+    owner.link(borrower)
+    try:
+        borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner, permissions="create")
+
+        spell_in_contracts = borrower.get_spell_in_contracts(spell_id)
+        assert spell_in_contracts is not None
+        contracted_conduit_id, contracted_spell = spell_in_contracts
+        assert contracted_conduit_id == owner._id
+        assert isinstance(contracted_spell, ISpell)
+        assert contracted_spell.spell_id == spell_id
+
+        contracted_spells = borrower_book.contracted_spells.get(owner._id)
+        assert contracted_spells is not None
+        assert any(spell_index.has_version(spell_id) for spell_index in contracted_spells.keys())
+        assert any(spell.spell_id == spell_id for spell in contracted_spells.values())
+
+        instance = borrower.meld(spell=spell_id)
+        assert isinstance(instance, BasicService)
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_contract_by_spell_object_dynamic_link() -> None:
+    """
+    Purpose:
+        Validate dynamic link contracts using a spell object.
+    Contract:
+        - Borrower can contract a spell by ISpell after link.
+        - Contracted spell appears in borrower contract lookups.
+        - Borrower can meld the contracted spell by spell_id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the contract is not established or resolution fails.
+    """
+    configuration = Configuration()
+    configuration.dynamic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    owner_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+
+    borrower_book = Spellbook()
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+
+    owner_spell = owner.get_spell_by_id(spell_id)
+    assert owner_spell is not None
+    assert isinstance(owner_spell, ISpell)
+    inspected_wrapper_id = borrower.inspect_spell(owner_spell)
+    inspected_target_id = borrower.inspect_spell(owner_spell.spell)
+    assert inspected_target_id == spell_id
+
+    owner.link(borrower)
+    try:
+        borrower.add_spell_to_contract(spell=owner_spell, conduit=owner, permissions="create")
+
+        spell_in_contracts = borrower.get_spell_in_contracts(spell_id)
+        assert spell_in_contracts is not None
+        contracted_conduit_id, contracted_spell = spell_in_contracts
+        assert contracted_conduit_id == owner._id
+        assert isinstance(contracted_spell, ISpell)
+        assert contracted_spell.spell_id == spell_id
+
+        contracted_spells = borrower_book.contracted_spells.get(owner._id)
+        assert contracted_spells is not None
+        assert any(spell_index.has_version(spell_id) for spell_index in contracted_spells.keys()), (
+            f"Expected spell_id in contracted keys. inspected_wrapper_id={inspected_wrapper_id}, "
+            f"inspected_target_id={inspected_target_id}, spell_in_contracts={spell_in_contracts}"
+        )
+        assert any(spell.spell_id == spell_id for spell in contracted_spells.values()), (
+            f"Expected spell_id in contracted values. inspected_wrapper_id={inspected_wrapper_id}, "
+            f"inspected_target_id={inspected_target_id}, spell_in_contracts={spell_in_contracts}"
+        )
+
+        instance = borrower.meld(spell=spell_id)
+        assert isinstance(instance, BasicService)
     finally:
         borrower.cleanup()
         owner.cleanup()

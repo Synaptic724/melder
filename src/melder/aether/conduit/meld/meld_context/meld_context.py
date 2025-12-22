@@ -19,6 +19,7 @@ class MeldContext(Cleanable):
         * The **root spell** being activated.
         * The **owner creations container** for shared existences.
         * The **caller creations container** for per-conduit existences.
+        * Whether the caller creations lock is already held for this call.
         * Normalized **per-call overrides** (from `spell_override`).
         * Optional **cancellation** signal.
         * Optional **logger** (wrapped as a `SafeLogger`).
@@ -57,6 +58,7 @@ class MeldContext(Cleanable):
         "_creations",
         "_owner_creations",
         "_caller_creations",
+        "_caller_creations_lock_held",
         "_overrides",
         "_cancel_event",
         "_logger",
@@ -73,6 +75,7 @@ class MeldContext(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
             logger: Optional[Any] = None,
             caller_creations: Optional[Any] = None,
+            caller_creations_lock_held: bool = False,
     ) -> None:
         """
         Initialize a per-call context for Meld runtime execution.
@@ -85,6 +88,8 @@ class MeldContext(Cleanable):
             - root_spell must not be None.
             - owner creations are sourced from root_spell._owner_creations.
             - caller creations default to owner creations when not provided.
+            - caller_creations_lock_held indicates whether the caller creations
+              lock is already held by the calling thread when the runtime runs.
             - overrides are copied into a mutable mapping for this call.
             - cleanup() must deterministically drop all references.
 
@@ -101,6 +106,11 @@ class MeldContext(Cleanable):
             caller_creations:
                 Optional creations container representing the current Conduit
                 scope that initiated the meld call.
+            caller_creations_lock_held:
+                True if the caller creations lock is already held by the
+                invoking thread for the duration of this context. This allows
+                the engine to avoid lock inversion when resolving shared
+                existences under a caller-scoped lock.
 
         Raises:
             ValueError: If root_spell is None.
@@ -119,6 +129,7 @@ class MeldContext(Cleanable):
             else self._owner_creations
         )
         self._creations: Any = self._owner_creations
+        self._caller_creations_lock_held: bool = bool(caller_creations_lock_held)
 
         # Normalized, per-call override map (never mutated in place by
         # the runtime; callers may mutate the dict they get back).
@@ -167,6 +178,7 @@ class MeldContext(Cleanable):
             self._creations = None
             self._owner_creations = None
             self._caller_creations = None
+            self._caller_creations_lock_held = False
             self._overrides.clear()
             self._cancel_event = None
             self._logger = None
@@ -219,6 +231,17 @@ class MeldContext(Cleanable):
         `Existence.unique_per_spell_space`.
         """
         return self._caller_creations
+
+    @property
+    def caller_creations_lock_held(self) -> bool:
+        """
+        Whether the caller creations lock is already held by the invoking thread.
+
+        This is used by the engine to avoid lock inversion when a caller-scoped
+        lock wraps runtime execution and shared existences resolve against the
+        same creations container.
+        """
+        return self._caller_creations_lock_held
 
     @property
     def overrides(self) -> MutableMapping[str, Any]:

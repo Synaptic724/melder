@@ -428,6 +428,7 @@ class ISpell(ICleanable, Protocol):
     # Arbitrary metadata
     tags: 'ConcurrentList'
     metadata: 'ConcurrentDict'
+    _mutation_override: dict
 
     # Dependency graph + requirements
     dependency_graph: Any
@@ -453,6 +454,7 @@ class ISpell(ICleanable, Protocol):
     post_hooks: 'ConcurrentList[Callable[..., Any]]'
 
     _spell_system_states: 'ISpellSystemStates'
+    _key: Tuple[str, str]
 
     # ------------------------------------------------------------------
     # Key property
@@ -485,6 +487,76 @@ class ISpell(ICleanable, Protocol):
             SpellSystemState | None:
                 The state object if SpellSystemStates is available and this
                 spell has a registered lineage; otherwise None.
+        """
+        ...
+
+
+    # ------------------------------------------------------------------
+    # Mutation override (graph overlay) API
+    # ------------------------------------------------------------------
+    @property
+    def mutation_override(self) -> dict:
+        """
+        Current mutation override payload for this Spell's DAG.
+
+        This is a *structural overlay* that the mutation pipeline can apply
+        to the spell's DI shape in Dynamic / AI-native mode. It is conceptually
+        separate from normal SpellMap overrides:
+
+        - SpellMap.spell_override -> per-call / per-site DI override.
+        - Spell.mutation_override -> per-spell *graph* overlay used by the
+          MutationContract / mutation hub.
+
+        Semantics:
+            - An empty dict (`{}`) is treated as "no active overlay" by
+              default. The higher-level mutation system may refine this
+              distinction later (e.g., between "no overlay" and "explicit
+              empty override") but at the Spell level we simply expose the
+              raw payload.
+        """
+        ...
+
+    @property
+    def has_mutation_override(self) -> bool:
+        """
+        Whether this Spell currently has a non-empty mutation overlay.
+
+        This is a convenience for Dynamic / AI-native flows that want a quick
+        check before doing more expensive revalidation or graph rebuilds.
+        """
+        ...
+
+    def apply_mutation_override(self, override: Optional[dict]) -> None:
+        """
+        Apply or update the DAG-level mutation override for this Spell.
+
+        Instead, it:
+
+        - Updates the local overlay payload; and
+        - Marks the Spell's lineage as structurally changed via
+          SpellSystemStates (if available), using a mutation_contract_*
+          change reason.
+
+        The actual rebuild / revalidation of the system graph is expected to
+        be driven by the Phase 5-7 pipelines and the mutation hub.
+
+        Args:
+            override:
+                New overlay payload. `None` or `{}` clears the overlay and
+                leaves this Spell in a "no active mutation overlay" state.
+        """
+        ...
+
+    def clear_mutation_override(self) -> None:
+        """
+        Clear any active mutation overlay for this Spell.
+
+        This resets the local overlay payload back to the default empty dict,
+        and, if SpellSystemStates is available, marks the lineage as having
+        rolled back a mutation.
+
+        The actual effect on the compiled/system DAG is owned by the higher-
+        level mutation / validation pipelines.
         """
         ...
 
@@ -607,6 +679,44 @@ class ISpell(ICleanable, Protocol):
         ...
 
     @property
+    def symbolic_graph(self) -> Optional["SpellSymbolicGraph"]:
+        """
+        Phase 2 symbolic graph for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_symbolic_graph` via :class:`SpellCrafter`.
+        """
+        ...
+
+    @property
+    def resolution_frame(self) -> Any:
+        """
+        Phase 3 local resolution frame / DAG for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_local_frame` via :class:`SpellCrafter`.
+        Concrete type is intentionally opaque here; callers should treat it as
+        an internal resolution artifact.
+        """
+        ...
+
+    @property
+    def validation_result_phase4(self) -> Any:
+        """
+        Phase 4 validation result for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
+        """
+        ...
+
+    @property
+    def validation_result_phase6(self) -> Any:
+        """
+        Phase 6 validation result for this spell, if it has been computed.
+
+        This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
+        """
+        ...
+
+    @property
     def validated(self) -> bool:
         """
         True if the validation phase has run and marked this spell as validated.
@@ -706,20 +816,93 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
+    def run_phase_root_blueprints(
+            self,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> None:
+        """
+        Phase 5 - Root blueprint construction (facade).
+
+        Delegates to the SpellCrafter to build system-level DAG blueprints
+        and a SpellSystemIndex for the current frame.
+
+        Contract:
+            - Requires Phase 4 to have completed successfully.
+            - Does not return a value; artifacts are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def run_phase_system_validation(
+            self,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> None:
+        """
+        Phase 6 - System-level validation (facade).
+
+        Delegates to the SpellCrafter to validate system-level DAG integrity
+        and update lineage validity states.
+
+        Contract:
+            - Requires Phase 5 to have completed successfully.
+            - Does not return a value; results are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def run_phase_change_control(
+            self,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> None:
+        """
+        Phase 7 - Change-control wiring (facade).
+
+        Delegates to the SpellCrafter to ensure change-control wiring and
+        component-of indexing are prepared for this frame.
+
+        Contract:
+            - Requires Phase 5 artifacts to be available.
+            - Does not return a value; wiring occurs inside the crafter.
+
+        Args:
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        ...
+
     def run_all_phases(
             self,
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Convenience helper to run **all compiler / resolution phases**
-        (Phase 1–4) for this spell, in order.
+        Convenience helper to run **all compiler / resolution phases** for this spell, in order.
 
-        Currently this means:
+        Phases executed via the :class:`SpellCrafter`:
 
             1. Requirements extraction.
             2. Symbolic graph construction.
-            3. Local resolution frame / DAG.
+            3. Local resolution frame / DAG construction.
             4. Validation.
+            5. Root blueprint construction.
+            6. System validation.
+            7. Change-control wiring.
 
         Each phase honours the optional :class:`CancellationEvent`. If the
         event is set, the underlying phase methods will raise via
