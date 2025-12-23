@@ -11,6 +11,7 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpac
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicLogger
 from tests.mocks.spellbook.core_classes import BasicService
+from tests.mocks.spellbook.factories import BuiltArtifact
 
 
 @pytest.fixture(autouse=True)
@@ -129,6 +130,39 @@ def test_conduit_public_api_context_manager_allows_meld() -> None:
             instance = ctx.meld(spell=spell_id)
             assert isinstance(instance, BasicService)
         assert isinstance(conduit.meld(spell=spell_id), BasicService)
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_meld_with_spell_override_round_trip() -> None:
+    """
+    Purpose:
+        Validate meld applies spell_override payloads for root parameters.
+    Contract:
+        - spell_override overrides the root constructor parameter.
+        - Returned instance reflects the override marker.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If overrides are not applied.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spell_id = spellbook.bind(
+        spell=BuiltArtifact,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(
+            spell=spell_id,
+            spell_override={"marker": "override"},
+        )
+        assert isinstance(instance, BuiltArtifact)
+        assert instance.marker == "override"
     finally:
         conduit.cleanup()
 

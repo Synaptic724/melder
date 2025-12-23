@@ -744,33 +744,30 @@ def test_logger_access(aether_with_mocks):
     assert a.logger is new_logger
 
 def test_safe_logger_usage():
-    """Verify Aether uses SafeLogger methods correctly by inspecting underlying mock."""
+    """
+    Purpose:
+        Verify Aether wraps the configured logger with SafeLogger.
+    Contract:
+        - Setting a logger installs the SafeLogger wrapper.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the SafeLogger wrapper is not attached.
+    """
     mock_logger = MagicMock()
-    
+
     with patch("melder.utilities.helpers.init_helpers.InitHelpers.resolve_safe_logger") as mock_resolver:
         mock_safe = MagicMock()
         mock_safe._logger = mock_logger
         mock_resolver.return_value = mock_safe
-        
+
         # Instantiate empty, then set logger manually to avoid __new__ args issue.
         a = Aether()
         a.logger = mock_logger
-        
+
         # Verify internal setter updated _logger
         # Note: a.logger property returns the raw logger, a._logger is the SafeLogger wrapper.
-        assert a._logger is mock_safe 
-
-        # Now verify logging (without assuming a._get_frame exists on Aether)
-        # Aether doesn't expose _get_frame, it uses _aetheric_frames dict directly.
-        
-        # We need to trigger a method that logs.
-        # _add_conduit logs debug.
-        with patch("melder.aether.aether.AethericFrame"):
-             # Ensure default frame exists (it is created in __init__)
-             # Call method that logs
-             a._logger.debug("Test", "method") 
-        
-        assert mock_safe.debug.called
+        assert a._logger is mock_safe
 
 def test_cleanup_failure_logging(mock_frame_cls):
     """If a frame fails to clean, error is logged."""

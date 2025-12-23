@@ -182,6 +182,35 @@ def test_conduit_get_spell_permissions_handles_missing_spell() -> None:
         conduit.cleanup()
 
 
+def test_conduit_get_conduit_by_id_name_missing_raises() -> None:
+    """
+    Purpose:
+        Validate conduit lookup helpers raise for missing id and name.
+    Contract:
+        - get_conduit_by_id raises ValueError when id is missing.
+        - get_conduit_by_name raises ValueError when name is missing.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If missing lookups do not raise.
+    """
+    spellbook = Spellbook(configuration=_make_configuration())
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        with pytest.raises(ValueError, match="not found"):
+            conduit.get_conduit_by_id("missing-id")
+        with pytest.raises(ValueError, match="not found"):
+            conduit.get_conduit_by_name("missing-name")
+    finally:
+        conduit.cleanup()
+
+
 def test_conduit_refresh_cluster_shares_noop_without_membership() -> None:
     """
     Purpose:

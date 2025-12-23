@@ -862,21 +862,43 @@ def test_add_unique_duplicate_logs_error(logger: DummyLogger, normal_conduit: Fa
 
 
 def test_cleanup_logs_begin_and_complete(logger: DummyLogger, normal_conduit: FakeConduit) -> None:
+    """
+    Purpose:
+        Verify cleanup no longer emits debug logs after debug stripping.
+    Contract:
+        - A clean cleanup path records no debug events.
+    Args:
+        logger: Fixture logger capturing emitted events.
+        normal_conduit: Conduit fixture used to initialize Creations.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any debug events are recorded.
+    """
     creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
     creations.cleanup()
 
-    msgs = [m for (_lvl, m, _kw) in logger.events]
-    assert "cleanup: begin" in msgs
-    assert "cleanup: complete" in msgs
+    assert not logger.events
 
 
 def test_attempt_cleanup_logs_no_method_matched(logger: DummyLogger, normal_conduit: FakeConduit) -> None:
+    """
+    Purpose:
+        Verify missing disposal methods do not emit debug logs.
+    Contract:
+        - _attempt_cleanup returns None and records no debug events when no method matches.
+    Args:
+        logger: Fixture logger capturing emitted events.
+        normal_conduit: Conduit fixture used to initialize Creations.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any debug events are recorded.
+    """
     creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
 
     class NoDisposal:
         pass
 
     assert creations._attempt_cleanup(NoDisposal()) is None
-
-    msgs = [m for (_lvl, m, _kw) in logger.events]
-    assert "_attempt_cleanup: no disposal method matched; noop" in msgs
+    assert not logger.events

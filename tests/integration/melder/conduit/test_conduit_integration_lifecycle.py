@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Iterable
+
 import pytest
 
 from melder.aether.aether import Aether
@@ -9,6 +11,10 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
+from tests.mocks.spellbook.deep_layers import Depth3Layer2A
+from tests.mocks.spellbook.deep_layers import Depth3Layer2B
+from tests.mocks.spellbook.deep_layers import Depth3Root
+from tests.mocks.spellbook.deep_layers import get_depth_3_classes
 
 
 @pytest.fixture(autouse=True)
@@ -50,6 +56,35 @@ def _make_dynamic_configuration(workers: int = 1) -> Configuration:
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return configuration
+
+
+def _bind_graph(
+    spellbook: Spellbook,
+    classes: Iterable[type],
+    *,
+    existence: Existence,
+) -> dict[type, str]:
+    """
+    Purpose:
+        Bind a dependency graph into the spellbook for integration tests.
+    Contract:
+        - Each class is bound with the requested Existence.
+        - Returns a mapping of class -> spell_id.
+    Args:
+        spellbook: Target spellbook for bindings.
+        classes: Classes to bind in dependency order.
+        existence: Existence mode to apply to each binding.
+    Returns:
+        dict[type, str]: Mapping of class to spell_id.
+    """
+    spell_ids: dict[type, str] = {}
+    for cls in classes:
+        spell_ids[cls] = spellbook.bind(
+            spell=cls,
+            existence=existence,
+            permissions="create",
+        )
+    return spell_ids
 
 
 def test_conduit_cleanup_is_idempotent_and_blocks_meld() -> None:
@@ -218,6 +253,51 @@ def test_conduit_transfer_spell_ownership_moves_registry_and_meld() -> None:
         owner.cleanup()
 
 
+def test_conduit_transfer_spell_ownership_with_dependencies() -> None:
+    """
+    Purpose:
+        Validate ownership transfer includes direct dependencies when requested.
+    Contract:
+        - transfer_spell_ownership returns direct dependency spell ids in summary.
+        - Root and direct dependency ownership moves to the target conduit.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dependency transfer does not update ownership.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    depth3_ids = _bind_graph(
+        owner_book,
+        get_depth_3_classes(),
+        existence=Existence.unique,
+    )
+    target_book = Spellbook(configuration=configuration)
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    target = target_book.conjure(automatic=False, name="target")
+    try:
+        owner.meld(spell=depth3_ids[Depth3Root])
+
+        summary = owner.transfer_spell_ownership(
+            spell=depth3_ids[Depth3Root],
+            target_conduit=target,
+            include_dependencies=True,
+        )
+
+        expected_deps = {
+            depth3_ids[Depth3Layer2A],
+            depth3_ids[Depth3Layer2B],
+        }
+        assert set(summary["dependencies"]) == expected_deps
+        assert owner.get_conduit_by_spell_id(depth3_ids[Depth3Root]) is target
+        assert owner.get_conduit_by_spell_id(depth3_ids[Depth3Layer2A]) is target
+        assert owner.get_conduit_by_spell_id(depth3_ids[Depth3Layer2B]) is target
+    finally:
+        target.cleanup()
+        owner.cleanup()
+
+
 def test_conduit_find_contracted_spell_returns_contract_entry() -> None:
     """
     Purpose:
@@ -253,6 +333,50 @@ def test_conduit_find_contracted_spell_returns_contract_entry() -> None:
         assert contracted is not None
         assert contracted.spell_id == spell_id
         assert borrower.find_contracted_spell("missing-spell") is None
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_find_contracted_spell_returns_none_after_remove() -> None:
+    """
+    Purpose:
+        Validate find_contracted_spell returns None after removal.
+    Contract:
+        - Contracted spells resolve before removal.
+        - Removed spell ids return None after removal.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If removal does not clear contracted lookups.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    borrower_book = Spellbook(configuration=configuration)
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        assert owner.link(borrower) is True
+        assert borrower.add_spell_to_contract(
+            spell_id=spell_id,
+            conduit=owner,
+            permissions="create",
+        ) is True
+
+        assert borrower.find_contracted_spell(spell_id) is not None
+
+        assert borrower.remove_spell_from_contract(
+            spell_id=spell_id,
+            conduit=owner,
+        ) is True
+        assert borrower.find_contracted_spell(spell_id) is None
+        assert borrower.get_spell_in_contracts(spell_id) is None
     finally:
         borrower.cleanup()
         owner.cleanup()
