@@ -1,0 +1,166 @@
+from __future__ import annotations
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spellbook import Spellbook
+from tests.mocks.spellbook.core_classes import BasicConfig
+from tests.mocks.spellbook.core_classes import BasicService
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_integration() -> None:
+    """
+    Purpose:
+        Ensure integration tests start with a clean Aether singleton.
+    Contract:
+        - Resets the Aether singleton before the test runs.
+        - Rebinds Spellbook._aether and Conduit._aether to the new instance.
+        - Resets the singleton again after the test for isolation.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _make_configuration(
+    *,
+    aether_frame: str = "default",
+    dynamic: bool = False,
+    workers: int = 1,
+) -> Configuration:
+    """
+    Purpose:
+        Create a configuration for Aether integration tests.
+    Contract:
+        - system_state is set to automatic or dynamic.
+        - phase_scheduler_workers_per_spellbook is set.
+    Args:
+        dynamic: Whether to use dynamic defaults.
+        workers: Scheduler workers per spellbook.
+    Returns:
+        Configuration: Configured instance.
+    """
+    configuration = Configuration(aether_frame=aether_frame)
+    if dynamic:
+        configuration.dynamic_defaults()
+    else:
+        configuration.automatic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
+    return configuration
+
+
+def test_aether_cluster_membership_tracks_conduits() -> None:
+    """
+    Purpose:
+        Validate cluster membership list tracking via Aether APIs.
+    Contract:
+        - Added conduits appear in the cluster membership list.
+        - Cluster lists are discoverable per conduit id.
+        - Removing a conduit updates membership and cluster lists.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If membership tracking is incorrect.
+    """
+    aether = Aether()
+    frame_name = "frame-membership"
+    aether._ensure_frame(frame_name)
+    aether._create_cluster("cluster-a", frame_name)
+
+    book_a = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_configuration(aether_frame=frame_name),
+    )
+    book_b = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_configuration(aether_frame=frame_name),
+    )
+    book_a.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    book_b.bind(
+        spell=BasicConfig,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(name="root-a")
+    conduit_b = book_b.conjure(name="root-b")
+    try:
+        aether._add_conduit_to_cluster(conduit_a, "cluster-a", frame_name)
+        aether._add_conduit_to_cluster(conduit_b, "cluster-a", frame_name)
+
+        members = set(aether._get_conduits_in_cluster("cluster-a", frame_name))
+        assert members == {conduit_a.id, conduit_b.id}
+
+        clusters_a = set(aether._get_clusters_for_conduit(conduit_a.id, frame_name))
+        clusters_b = set(aether._get_clusters_for_conduit(conduit_b.id, frame_name))
+        assert clusters_a == {"cluster-a"}
+        assert clusters_b == {"cluster-a"}
+
+        aether._remove_conduit_from_cluster(conduit_b, "cluster-a", frame_name)
+        members = set(aether._get_conduits_in_cluster("cluster-a", frame_name))
+        assert members == {conduit_a.id}
+
+        clusters_b = set(aether._get_clusters_for_conduit(conduit_b.id, frame_name))
+        assert clusters_b == set()
+    finally:
+        conduit_b.cleanup()
+        conduit_a.cleanup()
+        book_b.cleanup()
+        book_a.cleanup()
+
+
+def test_aether_cluster_lookup_missing_cluster_raises() -> None:
+    """
+    Purpose:
+        Validate cluster lookups raise when the cluster is missing.
+    Contract:
+        - Missing cluster queries raise ValueError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If missing-cluster lookups do not raise.
+    """
+    aether = Aether()
+    frame_name = "frame-missing-cluster"
+    aether._ensure_frame(frame_name)
+    with pytest.raises(ValueError, match="does not exist"):
+        aether._get_conduits_in_cluster("missing", frame_name)
+    with pytest.raises(ValueError, match="does not exist"):
+        aether._remove_conduit_from_cluster(
+            conduit=object(),
+            cluster_name="missing",
+            aetheric_frame_name=frame_name,
+        )
+
+
+def test_aether_get_clusters_for_conduit_empty_when_none() -> None:
+    """
+    Purpose:
+        Validate get_clusters_for_conduit returns empty when no clusters exist.
+    Contract:
+        - Empty list is returned for unknown conduit ids.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a non-empty list is returned.
+    """
+    aether = Aether()
+    frame_name = "frame-empty-clusters"
+    aether._ensure_frame(frame_name)
+    clusters = aether._get_clusters_for_conduit("missing-id", frame_name)
+    assert clusters == []
