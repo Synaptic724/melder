@@ -192,7 +192,7 @@ def test_aether_cluster_lifecycle_create_get_remove() -> None:
 
     aether._create_cluster("cluster-a", frame_name)
     cluster = aether._get_cluster("cluster-a", frame_name)
-    assert cluster.name == "cluster-a"
+    assert cluster._name == "cluster-a"
     with pytest.raises(ValueError, match="already exists"):
         aether._create_cluster("cluster-a", frame_name)
 
