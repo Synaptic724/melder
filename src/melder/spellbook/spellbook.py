@@ -119,7 +119,8 @@ class Spellbook(Cleanable):
     #region Disposal
 
     def cleanup(self) -> None:
-        self._logger.debug("Cleaning Spellbook", "cleanup")
+        if self._logger is not None:
+            self._logger.debug("Cleaning Spellbook", "cleanup")
 
         if self._cleaned:
             return

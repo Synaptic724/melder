@@ -1,0 +1,359 @@
+from __future__ import annotations
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
+from tests.mocks.spellbook.core_classes import BasicConfig
+from tests.mocks.spellbook.core_classes import BasicLogger
+from tests.mocks.spellbook.core_classes import BasicService
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_integration() -> None:
+    """
+    Purpose:
+        Ensure integration tests start with a clean Aether singleton.
+    Contract:
+        - Resets the Aether singleton before the test runs.
+        - Rebinds Spellbook._aether and Conduit._aether to the new instance.
+        - Resets the singleton again after the test for isolation.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def test_conduit_public_api_id_name_and_repr() -> None:
+    """
+    Purpose:
+        Validate Conduit id, name, and repr formatting.
+    Contract:
+        - id is a non-empty string.
+        - name matches the conjure name.
+        - repr includes the name and id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If identity or representation fields are missing.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        assert isinstance(conduit.id, str)
+        assert conduit.id != ""
+        assert conduit.name == "root"
+        rep = repr(conduit)
+        assert "Conduit name=root" in rep
+        assert conduit.id in rep
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_public_api_name_setter_blocks_rename() -> None:
+    """
+    Purpose:
+        Validate name can be set once and cannot be renamed.
+    Contract:
+        - name can be assigned once when unset.
+        - reassigning raises RuntimeError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If rename is allowed.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure()
+    try:
+        assert conduit.name is None
+        conduit.name = "root"
+        assert conduit.name == "root"
+        with pytest.raises(RuntimeError, match="Conduit name is set"):
+            conduit.name = "rename"
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_public_api_context_manager_allows_meld() -> None:
+    """
+    Purpose:
+        Validate the Conduit context manager does not block meld.
+    Contract:
+        - Meld works inside the context manager.
+        - Meld works after the context exits.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If meld fails inside or outside the context.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        with conduit as ctx:
+            instance = ctx.meld(spell=spell_id)
+            assert isinstance(instance, BasicService)
+        assert isinstance(conduit.meld(spell=spell_id), BasicService)
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_public_api_spellspace_lifecycle() -> None:
+    """
+    Purpose:
+        Validate spellspace lifecycle and active scope behavior.
+    Contract:
+        - get_active_spellspace returns None when inactive.
+        - create_spellspace produces an inactive spellspace that cannot meld.
+        - enter_spellspace activates a spellspace for meld.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If spellspace lifecycle behavior is incorrect.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_spell_space,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        assert conduit.get_active_spellspace() is None
+
+        inactive = conduit.create_spellspace()
+        with pytest.raises(SpellSpaceScopeError, match="active scope"):
+            inactive.meld(spell=spell_id)
+
+        with conduit.enter_spellspace() as active:
+            assert conduit.get_active_spellspace() is active
+            instance = active.meld(spell=spell_id)
+            assert isinstance(instance, BasicService)
+
+        assert conduit.get_active_spellspace() is None
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_public_api_spell_lookup_helpers() -> None:
+    """
+    Purpose:
+        Validate Conduit spell lookup helpers resolve local spell metadata.
+    Contract:
+        - get_spell_by_id returns the local spell wrapper.
+        - find_spell_id and find_spell_key resolve known spells.
+        - inspect_spell returns the registered spell id.
+        - check_spell_id returns True for known spell ids.
+        - get_spell_permissions resolves the bound permissions.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lookup helpers fail to resolve.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        spell = conduit.get_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.spell_id == spell_id
+
+        resolved_id = conduit.find_spell_id("BasicService", BasicService.__name__, "__default__")
+        assert resolved_id == spell_id
+
+        spell_key = conduit.find_spell_key("BasicService", BasicService.__name__, "__default__")
+        assert spell_key is not None
+
+        assert conduit.inspect_spell(BasicService) == spell_id
+        assert conduit.check_spell_id(spell_id) is True
+        assert conduit.get_spell_permissions(spell_id) == "create"
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_public_api_bind_and_binder_register_spells() -> None:
+    """
+    Purpose:
+        Validate Conduit bind and create_binder delegate to the Spellbook.
+    Contract:
+        - Conduit.bind registers spells after conjure.
+        - Conduit.create_binder binds spells via fluent API.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If binding via Conduit fails.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        config_id = conduit.bind(
+            spell=BasicConfig,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        logger_id = conduit.create_binder().bind(BasicLogger).as_unique().finalize()
+
+        assert isinstance(conduit.meld(spell=config_id), BasicConfig)
+        assert isinstance(conduit.meld(spell=logger_id), BasicLogger)
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_public_api_cleanup_lesser_conduits() -> None:
+    """
+    Purpose:
+        Validate cleanup_lesser_conduits clears child conduits.
+    Contract:
+        - Lesser conduits become unusable after cleanup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lesser conduits remain usable after cleanup.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    lesser = conduit.create_lesser_conduit()
+    try:
+        conduit.cleanup_lesser_conduits()
+        with pytest.raises(RuntimeError, match="cleaned"):
+            lesser.meld(spell=spell_id)
+        assert conduit.get_lesser_conduit(lesser.id) is None
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_public_api_bind_rejects_lesser_conduit() -> None:
+    """
+    Purpose:
+        Validate lesser conduits cannot bind spells.
+    Contract:
+        - bind on a lesser conduit raises RuntimeError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lesser bind is allowed.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    lesser = conduit.create_lesser_conduit()
+    try:
+        with pytest.raises(RuntimeError, match="Only normal conduits"):
+            lesser.bind(
+                spell=BasicConfig,
+                existence=Existence.unique,
+                permissions="create",
+            )
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_public_api_get_conduit_by_id_name_and_spell_id() -> None:
+    """
+    Purpose:
+        Validate Aether lookup helpers resolve conduits by id, name, and spell ownership.
+    Contract:
+        - get_conduit_by_id returns the target conduit.
+        - get_conduit_by_name returns the target conduit.
+        - get_conduit_by_spell_id returns the spell owner conduit.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If Aether lookup helpers fail.
+    """
+    configuration = Configuration()
+    configuration.load_default_dictionary()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook_a = Spellbook(configuration=configuration)
+    spell_id_a = spellbook_a.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    spellbook_b = Spellbook(configuration=configuration)
+    spell_id_b = spellbook_b.bind(
+        spell=BasicConfig,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit_a = spellbook_a.conjure(name="root-a")
+    conduit_b = spellbook_b.conjure(name="root-b")
+    try:
+        assert conduit_a.get_conduit_by_id(conduit_b.id) is conduit_b
+        assert conduit_a.get_conduit_by_name("root-b") is conduit_b
+        assert conduit_a.get_conduit_by_spell_id(spell_id_b) is conduit_b
+        assert conduit_b.get_conduit_by_spell_id(spell_id_a) is conduit_a
+    finally:
+        conduit_b.cleanup()
+        conduit_a.cleanup()
