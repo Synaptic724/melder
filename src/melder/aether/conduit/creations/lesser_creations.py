@@ -59,12 +59,6 @@ class LesserCreations(Cleanable):
         self._disposal_enabled: bool = disposal_enabled
         self._disposal_method_names: List = disposal_method_names or []
 
-        self._logger.debug(
-            f"__init__: disposal_enabled={disposal_enabled}, methods={self._disposal_method_names}",
-            method_name="__init__", mask=True,
-            owner_id=self._id, owner_display=self._display_name,
-            groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
 
     #region Destructor
 
@@ -84,36 +78,12 @@ class LesserCreations(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._logger.debug(
-                "cleanup: begin",
-                method_name="cleanup", mask=True,
-                owner_id=self._id, owner_display=self._display_name,
-                groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
             errors: List[Exception] = []
             # Single try/except for the whole sequence
             try:
-                self._logger.debug(
-                    "_cleanup_unique_per_scope()",
-                    method_name="cleanup", mask=True,
-                    owner_id=self._id, owner_display=self._display_name,
-                    groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 errors.extend(self._cleanup_unique_per_scope())
 
-                self._logger.debug(
-                    "_cleanup_many()",
-                    method_name="cleanup", mask=True,
-                    owner_id=self._id, owner_display=self._display_name,
-                    groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 errors.extend(self._cleanup_many())
-                self._logger.debug(
-                    "_cleanup_spellspace_instances()",
-                    method_name="cleanup", mask=True,
-                    owner_id=self._id, owner_display=self._display_name,
-                    groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 errors.extend(self._cleanup_spellspace_instances())
             except Exception as e:
                 self._logger.error(
@@ -141,12 +111,6 @@ class LesserCreations(Cleanable):
                 )
                 raise ExceptionGroup("Errors occurred during cleanup", errors)
 
-            self._logger.debug(
-                "cleanup: complete",
-                method_name="cleanup", mask=True,
-                owner_id=self._id, owner_display=self._display_name,
-                groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
 
             if self._logger is not None:
                 self._display_name: str = ""
@@ -173,12 +137,6 @@ class LesserCreations(Cleanable):
                     errors.append(maybe_error)
                 item.cleanup()
         self._unique_per_scope.clear()
-        self._logger.debug(
-            f"_cleanup_unique_per_scope: errors={len(errors)}",
-            method_name="_cleanup_unique_per_scope", mask=True,
-            owner_id=self._id, owner_display=self._display_name,
-            groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return errors
 
     def _cleanup_many(self) -> List[Exception]:
@@ -200,12 +158,6 @@ class LesserCreations(Cleanable):
                     item.cleanup()
             items.clear()
         self._many.clear()
-        self._logger.debug(
-            f"_cleanup_many: errors={len(errors)}",
-            method_name="_cleanup_many", mask=True,
-            owner_id=self._id, owner_display=self._display_name,
-            groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return errors
 
     def _cleanup_spellspace_instances(self) -> List[Exception]:
@@ -227,15 +179,6 @@ class LesserCreations(Cleanable):
                     item.cleanup()
             bucket.clear()
         self._spellspace_instances.clear()
-        self._logger.debug(
-            f"_cleanup_spellspace_instances: errors={len(errors)}",
-            method_name="_cleanup_spellspace_instances",
-            mask=True,
-            owner_id=self._id,
-            owner_display=self._display_name,
-            groups=self._log_groups,
-            system_groups=self._log_sysgroups,
-        )
         return errors
 
     def _attempt_cleanup(self, item: object) -> Optional[Exception]:
@@ -262,24 +205,12 @@ class LesserCreations(Cleanable):
             return None
 
         if not self._disposal_enabled:
-            self._logger.debug(
-                "_attempt_cleanup: disposal disabled; skipping",
-                method_name="_attempt_cleanup", mask=True,
-                owner_id=self._id, owner_display=self._display_name,
-                groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
             return None
 
         for method_name in self._disposal_method_names:
             if hasattr(item, method_name):
                 method = getattr(item, method_name, None)
                 if callable(method):
-                    self._logger.debug(
-                        f"_attempt_cleanup: calling '{method_name}' on {type(item).__name__}",
-                        method_name="_attempt_cleanup", mask=True,
-                        owner_id=self._id, owner_display=self._display_name,
-                        groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
                     try:
                         method()
                         return None
@@ -292,12 +223,6 @@ class LesserCreations(Cleanable):
                         )
                         return RuntimeError(f"Failed to dispose object {item} using method '{method_name}': {ex}")
 
-        self._logger.debug(
-            "_attempt_cleanup: no disposal method matched; noop",
-            method_name="_attempt_cleanup", mask=True,
-            owner_id=self._id, owner_display=self._display_name,
-            groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return None
 
 
@@ -324,10 +249,7 @@ class LesserCreations(Cleanable):
             "system_groups": self._log_sysgroups,
         }
         if logger is not None:
-            logger.debug(
-                "transfer_data_and_clear: begin",
-                **log_kwargs,
-            )
+            pass
 
         try:
             data = {
@@ -336,20 +258,14 @@ class LesserCreations(Cleanable):
             }
         finally:
             if logger is not None:
-                logger.debug(
-                    "transfer_data_and_clear: clearing internal containers",
-                    **log_kwargs,
-                )
+                pass
             self._unique_per_scope.clear()
             self._many.clear()
             # Use cleanup() to finalize & null refs
             self.cleanup()
 
         if logger is not None:
-            logger.debug(
-                "transfer_data_and_clear: complete",
-                **log_kwargs,
-            )
+            pass
         return data
 
 
@@ -366,12 +282,6 @@ class LesserCreations(Cleanable):
             ValueError: If the key already exists in the `unique_per_scope` scope.
         """
         self.check_cleaned()
-        self._logger.debug(
-            f"add_unique_per_scope: key={key}",
-            method_name="add_unique_per_scope", mask=True,
-            owner_id=self._id, owner_display=self._display_name,
-            groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         if key in self._unique_per_scope:
             self._logger.error(
                 f"add_unique_per_scope: duplicate key={key}",
@@ -396,12 +306,6 @@ class LesserCreations(Cleanable):
             RuntimeError: If the Creations manager is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug(
-            f"add_many: key={key}",
-            method_name="add_many", mask=True,
-            owner_id=self._id, owner_display=self._display_name,
-            groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         if key not in self._many:
             self._many[key] = []
         self._many[key].append(Creation(item))

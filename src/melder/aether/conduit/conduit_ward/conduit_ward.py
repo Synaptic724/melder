@@ -98,12 +98,6 @@ class ConduitWard(Cleanable):
 
         try:
             self._policy = self._set_initial_policy(policy)
-            self._logger.debug(
-                f"ConduitWard init id={self._id} type={self._conduit_type.name} dynamic={self._dynamic}",
-                method_name="__init__",
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
         except Exception as e:
             self._logger.error(
                 f"ConduitWard init failed: {e}",
@@ -133,12 +127,6 @@ class ConduitWard(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-            self._logger.debug(
-                "cleanup start",
-                method_name="cleanup",
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
 
             # Best-effort sever peer contracts (updates Spellbook links)
             self._clean_up_links()
@@ -196,12 +184,6 @@ class ConduitWard(Cleanable):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
         self._lesser_conduits.clear()
-        self._logger.debug(
-            "_clean_up_lesser_conduits_links done",
-            method_name="_clean_up_lesser_conduits_links",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
 
     def _clean_up_links(self):
         """
@@ -216,12 +198,6 @@ class ConduitWard(Cleanable):
             None
         """
         self._sever_all_linked_conduits()
-        self._logger.debug(
-            "_clean_up_links done",
-            method_name="_clean_up_links",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
 
 
     def cleanup_all_lesser_conduits(self) -> None:
@@ -237,12 +213,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug(
-            "cleanup_all_lesser_conduits",
-            method_name="cleanup_all_lesser_conduits",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         with self._lock:
             for conduit in self._lesser_conduits.values():
                 try:
@@ -378,21 +348,9 @@ class ConduitWard(Cleanable):
                 )
                 raise TypeError(f"Expected Policies enum instance, got {type(policy).__name__}")
             self._policy_set = True
-            self._logger.debug(
-                f"set_initial_policy -> {policy.name}",
-                method_name="_set_initial_policy",
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
             return policy
 
         with self._lock:
-            self._logger.debug(
-                "set_initial_policy -> default",
-                method_name="_set_initial_policy",
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
             return Policies.default
 
     def _set_new_policy(self, policy: str | Policies) -> None:
@@ -517,19 +475,7 @@ class ConduitWard(Cleanable):
 
         if target_conduit._conduit_state == ConduitState.normal:
             if self._find_contract(target_conduit):
-                self._logger.debug(
-                    f"link: already linked -> {target_conduit._id}",
-                    method_name="_link",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 return True
-            self._logger.debug(
-                f"link: creating contract -> {target_conduit._id}",
-                method_name="_link",
-                owner_id=self._id, owner_display=self._display_name,
-                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-            )
             return self._create_new_contract(target_conduit)
 
         self._logger.error(
@@ -560,12 +506,6 @@ class ConduitWard(Cleanable):
         with SafeGuard(ward_a._lock, ward_b._lock):
             target_id = target_conduit._id
             if self._find_contract(target_conduit):
-                self._logger.debug(
-                    f"create_contract: already exists -> {target_id}",
-                    method_name="_create_new_contract",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 return True
 
             contract = Contract(self, ward_b)
@@ -624,12 +564,6 @@ class ConduitWard(Cleanable):
         initiated_contract = self._initiated_index.get(target_conduit._conduit_ward._id, None)
         received_contract = self._received_index.get(target_conduit._conduit_ward._id, None)
         cid = initiated_contract if initiated_contract is not None else received_contract
-        self._logger.debug(
-            f"find_contract_id -> {cid}",
-            method_name="_find_contract_id",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return cid
 
     def _find_contract(self, target_conduit: IConduit) -> Optional[Contract]:
@@ -660,12 +594,6 @@ class ConduitWard(Cleanable):
         peer_id = target_conduit._conduit_ward._id
         contract_id = self._initiated_index.get(peer_id) or self._received_index.get(peer_id)
         contract = self._contracts.get(contract_id)
-        self._logger.debug(
-            f"find_contract peer={peer_id} -> {'hit' if contract else 'miss'}",
-            method_name="_find_contract",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return contract
 
     def _find_contract_by_id(self, conduit_id: str) -> Optional[Contract]:
@@ -686,12 +614,6 @@ class ConduitWard(Cleanable):
         self.check_cleaned()
         check_id = self._initiated_index.get(conduit_id) or self._received_index.get(conduit_id)
         contract = self._contracts.get(check_id)
-        self._logger.debug(
-            f"find_contract_by_id {conduit_id} -> {'hit' if contract else 'miss'}",
-            method_name="_find_contract_by_id",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return contract
 
     def _sever_link(self, target_conduit: IConduit) -> bool:
@@ -713,12 +635,6 @@ class ConduitWard(Cleanable):
         self.check_cleaned()
         with SafeGuard(self._lock, target_conduit._conduit_ward._lock):
             if self._find_contract(target_conduit):
-                self._logger.debug(
-                    f"sever_link -> {target_conduit._id}",
-                    method_name="_sever_link",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 return self._remove_contract(target_conduit)
             self._logger.error(
                 "sever_link: no contract found",
@@ -797,12 +713,6 @@ class ConduitWard(Cleanable):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 return True
-        self._logger.debug(
-            "remove_contract: no-op (no contract)",
-            method_name="_remove_contract",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return False
 
     def _link_lesser_conduit(self, lesser_conduit: IConduit):
@@ -863,30 +773,12 @@ class ConduitWard(Cleanable):
         self.check_cleaned()
         for conduit in self._lesser_conduits.values():
             if conduit._id == conduit_id:
-                self._logger.debug(
-                    f"get_lesser_conduit {conduit_id} -> hit",
-                    method_name="_get_lesser_conduit",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 return conduit
             ward = conduit._conduit_ward
             if ward is not None:
                 result = ward._get_lesser_conduit(conduit_id)
                 if result is not None:
-                    self._logger.debug(
-                        f"get_lesser_conduit {conduit_id} -> hit (nested)",
-                        method_name="_get_lesser_conduit",
-                        owner_id=self._id, owner_display=self._display_name,
-                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
                     return result
-        self._logger.debug(
-            f"get_lesser_conduit {conduit_id} -> miss",
-            method_name="_get_lesser_conduit",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return None
 
     def _get_links(self) -> List[IConduit]:
@@ -902,12 +794,6 @@ class ConduitWard(Cleanable):
             initiated = [self._get_initiated_conduit(cid) for cid in self._initiated_index.keys()]
             received = [self._get_provider_conduit(cid) for cid in self._received_index.keys()]
             result = [c for c in initiated + received if c is not None]
-        self._logger.debug(
-            f"get_links -> {len(result)}",
-            method_name="_get_links",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return result
 
 
@@ -928,12 +814,6 @@ class ConduitWard(Cleanable):
             conduit for conduit_id in self._initiated_index.keys()
             if (conduit := self._get_initiated_conduit(conduit_id)) is not None
         ]
-        self._logger.debug(
-            f"get_initiated_conduits -> {len(result)}",
-            method_name="_get_initiated_conduits",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return result
 
 
@@ -954,12 +834,6 @@ class ConduitWard(Cleanable):
             conduit for conduit_id in self._received_index.keys()
             if (conduit := self._get_provider_conduit(conduit_id)) is not None
         ]
-        self._logger.debug(
-            f"get_provider_conduits -> {len(result)}",
-            method_name="_get_provider_conduits",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return result
 
     def _get_initiated_conduit(self, conduit_id: str) -> Optional[IConduit]:
@@ -983,19 +857,7 @@ class ConduitWard(Cleanable):
             contract = self._contracts.get(contract_id, None)
             if contract is not None:
                 res = contract._ward_b._conduit if conduit_id == contract._ward_b._id else contract._ward_a._conduit
-                self._logger.debug(
-                    f"get_initiated_conduit {conduit_id} -> {'hit' if res else 'miss'}",
-                    method_name="_get_initiated_conduit",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 return res
-        self._logger.debug(
-            f"get_initiated_conduit {conduit_id} -> miss",
-            method_name="_get_initiated_conduit",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return None
 
     def _get_provider_conduit(self, conduit_id: str) -> Optional[IConduit]:
@@ -1019,19 +881,7 @@ class ConduitWard(Cleanable):
             contract = self._contracts.get(contract_id, None)
             if contract is not None:
                 res = contract._ward_b._conduit if conduit_id == contract._ward_b._id else contract._ward_a._conduit
-                self._logger.debug(
-                    f"get_provider_conduit {conduit_id} -> {'hit' if res else 'miss'}",
-                    method_name="_get_provider_conduit",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 return res
-        self._logger.debug(
-            f"get_provider_conduit {conduit_id} -> miss",
-            method_name="_get_provider_conduit",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return None
 
     def _sever_all_linked_conduits(self) -> None:
@@ -1172,12 +1022,6 @@ class ConduitWard(Cleanable):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
             raise RuntimeError(f"Provided spell_id '{spell_id}' does not match inspected ID '{inspected_id}'.")
-        self._logger.debug(
-            f"check_spell_id_and_spell -> {spell_id}",
-            method_name="_check_spell_id_and_spell",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return spell_id, spell
 
 
@@ -1259,12 +1103,6 @@ class ConduitWard(Cleanable):
             )
             raise RuntimeError(
                 f"Provided conduit_id '{conduit_id}' does not match conduit internal ID '{inspected_id}'.")
-        self._logger.debug(
-            f"check_conduit_id_and_conduit -> {conduit_id}",
-            method_name="_check_conduit_id_and_conduit",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return conduit_id, conduit
 
     def _create_detail(
@@ -1332,15 +1170,6 @@ class ConduitWard(Cleanable):
         spell_index = spell.spell_index
         spell_id = spell.spell_id  # SHA at the moment of contract creation
 
-        self._logger.debug(
-            f"_create_detail -> index={spell_index}, spell_id={spell_id}, perms={permissions.name}, type={contract_type.name}, reason={reason.name}",
-            method_name="_create_detail",
-            owner_id=self._id,
-            owner_display=self._display_name,
-            mask=True,
-            groups=self._log_groups,
-            system_groups=self._log_sysgroups,
-        )
         return Detail(
             spell_index=spell_index,
             spell_id=spell_id,
@@ -1410,12 +1239,6 @@ class ConduitWard(Cleanable):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
             raise RuntimeError(f"Spell '{spell.__name__}' is not owned by this conduit, cannot contract it.")
-        self._logger.debug(
-            f"check_spell_if_eligible ok: {getattr(spell,'__name__',type(spell).__name__)}",
-            method_name="_check_spell_if_eligible",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
 
     def _add_spell_to_contract(
             self,
@@ -1802,12 +1625,6 @@ class ConduitWard(Cleanable):
         """
         self.check_cleaned()
         report = {"success": [], "failed": {}}
-        self._logger.debug(
-            f"add_spells_to_contract start count={0 if spell_ids is None else len(spell_ids)}",
-            method_name="_add_spells_to_contract",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         for sid in (spell_ids or []):
             try:
                 self._add_spell_to_contract(
@@ -1941,12 +1758,6 @@ class ConduitWard(Cleanable):
         """
         self.check_cleaned()
         report = {"success": [], "failed": {}}
-        self._logger.debug(
-            f"remove_spells_from_contract start count={0 if spell_ids is None else len(spell_ids)}",
-            method_name="_remove_spells_from_contract",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         for sid in (spell_ids or []):
             try:
                 self._remove_spell_from_contract(
@@ -2119,15 +1930,6 @@ class ConduitWard(Cleanable):
                         )
                         raise RuntimeError(f"Failed to inspect contract {contract_id}: {e}")
 
-        self._logger.debug(
-            f"get_all_spells_in_contracts -> {len(spells_in_contracts)} peers",
-            method_name="_get_all_spells_in_contracts",
-            owner_id=self._id,
-            owner_display=self._display_name,
-            mask=True,
-            groups=self._log_groups,
-            system_groups=self._log_sysgroups,
-        )
         return spells_in_contracts if spells_in_contracts else None
 
 
@@ -2183,26 +1985,8 @@ class ConduitWard(Cleanable):
                         )
                         return None
 
-                    self._logger.debug(
-                        f"get_spell_in_contracts {spell_id} -> hit {peer_ward._id}",
-                        method_name="_get_spell_in_contracts",
-                        owner_id=self._id,
-                        owner_display=self._display_name,
-                        mask=True,
-                        groups=self._log_groups,
-                        system_groups=self._log_sysgroups,
-                    )
                     return peer_ward._id, spell
 
-        self._logger.debug(
-            f"get_spell_in_contracts {spell_id} -> miss",
-            method_name="_get_spell_in_contracts",
-            owner_id=self._id,
-            owner_display=self._display_name,
-            mask=True,
-            groups=self._log_groups,
-            system_groups=self._log_sysgroups,
-        )
         return None
 
 
@@ -2231,12 +2015,6 @@ class ConduitWard(Cleanable):
         with self._lock:
             contract = self._find_contract_by_id(conduit_id)
             if not contract:
-                self._logger.debug(
-                    f"get_spells_in_contract_by_conduit {conduit_id} -> no contract",
-                    method_name="_get_spells_in_contract_by_conduit",
-                    owner_id=self._id, owner_display=self._display_name,
-                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                )
                 return None
 
             spells_result: dict[str, list[tuple[str, ISpell]]] = {"inbound": [], "outbound": []}
@@ -2263,12 +2041,6 @@ class ConduitWard(Cleanable):
                 if spell is not None:
                     spells_result["outbound"].append((sid, spell))
 
-        self._logger.debug(
-            f"get_spells_in_contract_by_conduit {conduit_id} -> inbound={len(spells_result['inbound'])} outbound={len(spells_result['outbound'])}",
-            method_name="_get_spells_in_contract_by_conduit",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return spells_result if spells_result["inbound"] or spells_result["outbound"] else None
 
 
@@ -2306,20 +2078,8 @@ class ConduitWard(Cleanable):
                 peer_conduit = peer_ward._conduit
                 if peer_conduit._name == conduit_name:
                     res = self._get_spells_in_contract_by_conduit(peer_ward._id)
-                    self._logger.debug(
-                        f"get_spells_in_contract_by_conduit_name {conduit_name} -> {'hit' if res else 'miss'}",
-                        method_name="_get_spells_in_contract_by_conduit_name",
-                        owner_id=self._id, owner_display=self._display_name,
-                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
                     return res
 
-        self._logger.debug(
-            f"get_spells_in_contract_by_conduit_name {conduit_name} -> miss",
-            method_name="_get_spells_in_contract_by_conduit_name",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return None
 
     def _get_contracted_conduits(self) -> list[Tuple[str, IConduit]] | None:
@@ -2344,12 +2104,6 @@ class ConduitWard(Cleanable):
                 peer_ward = contract._get_peer(self)
                 peer_conduit = peer_ward._conduit
                 contracted_conduits.append((peer_ward._id, peer_conduit))
-        self._logger.debug(
-            f"get_contracted_conduits -> {len(contracted_conduits)}",
-            method_name="_get_contracted_conduits",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return contracted_conduits if contracted_conduits else None
 
     #region Ownership Transfer
@@ -2447,12 +2201,6 @@ class ConduitWard(Cleanable):
                     for sid, detail in detail_map.items()
                 ]
             }
-        self._logger.debug(
-            f"_describe_contract {conduit_id} -> count={result['spell_count']}",
-            method_name="_describe_contract",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return result
 
     def _validate_contracts_and_define(self) -> dict[str, bool]:
@@ -2508,12 +2256,6 @@ class ConduitWard(Cleanable):
                     results[contract_id] = valid
                 except Exception:
                     results[contract_id] = False
-        self._logger.debug(
-            f"_validate_contracts_and_define -> ok={sum(1 for v in results.values() if v)} / total={len(results)}",
-            method_name="_validate_contracts_and_define",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return results
 
 
@@ -2537,12 +2279,6 @@ class ConduitWard(Cleanable):
         self.check_cleaned()
         results = self._validate_contracts_and_define()
         ok = all(results.values()) if results else False
-        self._logger.debug(
-            f"_validate_received_contracts -> {ok}",
-            method_name="_validate_received_contracts",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
         return ok
 
 #endregion Spellbinding API

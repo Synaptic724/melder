@@ -120,7 +120,7 @@ class Spellbook(Cleanable):
 
     def cleanup(self) -> None:
         if self._logger is not None:
-            self._logger.debug("Cleaning Spellbook", "cleanup")
+            pass
 
         if self._cleaned:
             return
@@ -180,7 +180,6 @@ class Spellbook(Cleanable):
 
         # 3) cleanup configuration
         if self._configuration is not None:
-            self._logger.debug("Cleaning configuration", "_cleanup_components")
             try:
                 self._configuration.cleanup()
             except Exception as e:
@@ -208,7 +207,6 @@ class Spellbook(Cleanable):
                 self._logger.error(f"Error cleaning spell validator: {e}", "_cleanup_components", exc_info=True)
             self._spell_validator = None
 
-        self._logger.debug("Spellbook component cleanup complete", "_cleanup_components")
 
     def _cleanup_spells(self) -> None:
         if self._spells is None:
@@ -216,7 +214,6 @@ class Spellbook(Cleanable):
 
         items = list(self._spells.items())
         for spell_index, spell in items:
-            self._logger.debug(f"Cleaning local spell '{spell_index}'", "_cleanup_spells")
             try:
                 spell.cleanup()
             except Exception as e:
@@ -232,7 +229,6 @@ class Spellbook(Cleanable):
     # -------------------------
 
     def _cleanup_core(self) -> None:
-        self._logger.debug("Final teardown: nullifying references and disposing logger", "_cleanup_core")
 
         # Nullify high-level refs (no try/catch for simple None assignments)
         self._bind = None
@@ -249,7 +245,7 @@ class Spellbook(Cleanable):
         # Destroy logger LAST
         if self._logger is not None:
             try:
-                self._logger.debug("Cleaning logger", "_cleanup_core")
+                pass
             except Exception:
                 pass  # if logger is already busted, skip the debug
             try:
@@ -290,7 +286,6 @@ class Spellbook(Cleanable):
         This is useful after bulk mutation or research operations that may
         have changed the version lists on SpellIndex instances.
         """
-        self._logger.debug("Refreshing local spell version cache", "_refresh_local_spell_versions")
 
         with self._lock:
             if self._spell_versions is None or self._spells is None:
@@ -317,7 +312,6 @@ class Spellbook(Cleanable):
               ConcurrentSet[str] in `_contracted_versions` containing all
               version IDs (SHA256) for that conduit’s spells.
         """
-        self._logger.debug("Refreshing contracted spell version caches", "_refresh_contracted_sp_versions")
 
         with self._lock:
             if self._contracted_spells is None or self._contracted_versions is None:
@@ -344,7 +338,6 @@ class Spellbook(Cleanable):
         Convenience method to refresh both local and contracted
         spell version caches in one call.
         """
-        self._logger.debug("Refreshing all spell version caches", "_refresh_all_spell_versions")
         self._refresh_local_spell_versions()
         self._refresh_contracted_spell_versions()
 
@@ -374,7 +367,6 @@ class Spellbook(Cleanable):
                 self._logger = InitHelpers.resolve_safe_logger(cfg.get_logger_for(self))
             else:
                 self._logger = InitHelpers.resolve_safe_logger(None)
-            self._logger.debug(f"Spellbook[{self._id}] logger initialized", "_initialize_logging")
             self._upgrade_aether_logger_if_possible()
         except Exception as e:
             # fallback to silent logger if anything blows up
@@ -398,7 +390,6 @@ class Spellbook(Cleanable):
             if aether._logger is not None and getattr(aether._logger, "_logger", None) is None:
                 aether_logger = cfg.get_logger_for(aether)
                 aether._logger = InitHelpers.resolve_safe_logger(aether_logger)
-                self._logger.debug("Upgraded Aether logger from null to real", "_upgrade_aether_logger_if_possible")
         except Exception as e:
             self._logger.error(f"Failed to upgrade Aether logger: {e}", "_upgrade_aether_logger_if_possible", exc_info=True)
 
@@ -471,10 +462,6 @@ class Spellbook(Cleanable):
                 If the spell with the given index is not found in the
                 local spellbook.
         """
-        self._logger.debug(
-            f"get_spell_permissions(spell_index={spell_index})",
-            "get_spell_permissions",
-        )
         spell = self._find_spell(spell_index)
         if spell:
             return spell.permissions.name
@@ -500,7 +487,6 @@ class Spellbook(Cleanable):
                 The spell object if found, else ``None``.
         """
         spell = self._spells.get(spell_index)
-        self._logger.debug(f"_find_spell({spell_index}) -> {spell is not None}", "_find_spell")
         return spell
 
     def _find_contracted_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
@@ -518,7 +504,6 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If the contracted spell with the given ID is not found.
         """
-        self._logger.debug(f"_find_contracted_spell({spell_index})", "_find_contracted_spell")
         for contracted_spells in self._contracted_spells.values():
             if spell_index in contracted_spells:
                 return contracted_spells[spell_index]
@@ -536,7 +521,6 @@ class Spellbook(Cleanable):
         """
         with self._lock:
             count = len(self._spells) if self._spells else 0
-        self._logger.debug(f"_find_spell_count -> {count}", "_find_spell_count")
         return count
 
     def _find_contracted_spell_count(self) -> int:
@@ -550,7 +534,6 @@ class Spellbook(Cleanable):
         """
         with self._lock:
             count = len(self._contracted_spells) if self._contracted_spells else 0
-        self._logger.debug(f"_find_contracted_spell_count -> {count}", "_find_contracted_spell_count")
         return count
 
 
@@ -574,10 +557,6 @@ class Spellbook(Cleanable):
             RuntimeError: If the spell is not found in the spellbook (local or contracted).
         """
         key = self._make_spell_key(spellframe, spell_name, binding_name)
-        self._logger.debug(
-            f"find_spell_id(frame={spellframe}, name={spell_name}, bind={binding_name})",
-            "find_spell_id",
-        )
         if key in self._lookup_spells:
             return self._lookup_spells[key]
         for contracted_spells in self._lookup_contracted_spells.values():
@@ -605,7 +584,6 @@ class Spellbook(Cleanable):
             spell_name=spell_name,
             binding_name=binding_name,
         )
-        self._logger.debug(f"_make_spell_key -> {(frame_key, bind_key)}", "_make_spell_key")
         return frame_key, bind_key
 
     def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
@@ -628,7 +606,6 @@ class Spellbook(Cleanable):
             RuntimeError: If the spell key is not found (local or contracted).
         """
         key = self._make_spell_key(spellframe, spell_name, binding_name)
-        self._logger.debug(f"find_spell_key(frame={spellframe}, name={spell_name}, bind={binding_name})", "find_spell_key")
         if key in self._lookup_spells:
             return key
         for contracted_spells in self._lookup_contracted_spells.values():
@@ -652,12 +629,10 @@ class Spellbook(Cleanable):
         Returns:
             Optional[str]: The unique SHA256 ID of the spell if it is registered in the Aether, else None.
         """
-        self._logger.debug("inspect_spell()", "inspect_spell")
         with self._lock:
             try:
                 spell_id = self._bind.spell_id_inspector(spell)
                 found = Spellbook._aether._check_for_spell(spell_id, aetheric_frame)
-                self._logger.debug(f"inspect_spell -> id={spell_id}, registered={found}", "inspect_spell")
                 return spell_id if found else None
             except Exception as e:
                 self._logger.error(f"Failed to inspect spell: {e}", "inspect_spell", exc_info=True)
@@ -674,7 +649,6 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If a spell ID is found to be duplicated in the Aether.
         """
-        self._logger.debug("Verifying local spells are not already in Aether", "_check_all_spells")
         with self._lock:
             for spell_index in self._spells.keys():
                 for spell_version_id in spell_index._versions:
@@ -700,10 +674,6 @@ class Spellbook(Cleanable):
         Returns:
             Optional[ISpell]: The resolved spell, or None if not found.
         """
-        self._logger.debug(
-            f"_find_contracted_spell_by_id(spell_id={spell_id}, conduit_id={conduit_id})",
-            "_find_contracted_spell_by_id",
-        )
 
         # Pull the map of SpellIndex → ISpell for this conduit
         spell_map = self._contracted_spells.get(conduit_id)
@@ -736,7 +706,6 @@ class Spellbook(Cleanable):
             RuntimeError: If the contract structure is found in one map but not the others
                           (inconsistent state).
         """
-        self._logger.debug(f"_create_link_contract(conduit_id={conduit_id})", "_create_link_contract")
 
         a_exists = conduit_id in self._contracted_spells
         b_exists = conduit_id in self._lookup_contracted_spells
@@ -773,7 +742,6 @@ class Spellbook(Cleanable):
             RuntimeError: If the contract structure is found in some maps but not all
                           (inconsistent cleanup).
         """
-        self._logger.debug(f"_remove_link_contract(conduit_id={conduit_id})", "_remove_link_contract")
 
         a_exists = conduit_id in self._contracted_spells
         b_exists = conduit_id in self._lookup_contracted_spells
@@ -806,10 +774,6 @@ class Spellbook(Cleanable):
             spell (ISpell): The spell object to add.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
         """
-        self._logger.debug(
-            f"_add_contracted_spell(spell_id={spell.spell_id}, conduit_id={conduit_id})",
-            "_add_contracted_spell",
-        )
 
         with self._lock:
             if conduit_id not in self._contracted_spells:
@@ -842,10 +806,6 @@ class Spellbook(Cleanable):
             spell_id (str): The version SHA of the spell to remove.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
         """
-        self._logger.debug(
-            f"_remove_contracted_spell(spell_id={spell_id}, conduit_id={conduit_id})",
-            "_remove_contracted_spell",
-        )
 
         with self._lock:
             spell_map = self._contracted_spells.get(conduit_id)
@@ -902,10 +862,6 @@ class Spellbook(Cleanable):
         Args:
             conduit_id (str): The ID of the peer conduit whose contracted spells are to be cleared
         """
-        self._logger.debug(
-            f"_clear_contracted_spells_for_conduit(conduit_id={conduit_id})",
-            "_clear_contracted_spells_for_conduit",
-        )
 
         with self._lock:
             if (
@@ -935,10 +891,6 @@ class Spellbook(Cleanable):
         Args:
             conduit_id (str): The ID of the peer conduit whose contract is to be severed
         """
-        self._logger.debug(
-            f"_sever_link_contract(conduit_id={conduit_id})",
-            "_sever_link_contract",
-        )
 
         # 1) Clear all contracted spells but keep the structure (verifies existence)
         self._clear_contracted_spells_for_conduit(conduit_id)
@@ -1132,31 +1084,28 @@ class Spellbook(Cleanable):
                 else:
                     self._spell_versions.add(new_spell.spell_id)
 
-            # If a Conduit already exists, and this is an existing-object spell,
-            # eagerly register it into Creations as a unique instance.
-            if (
-                self._conjured
-                and self._conduit is not None
-                and new_spell.user_created_object is not None
-            ):
-                try:
-                    self._conduit._register_to_creations(new_spell, new_spell.user_created_object)
-                    self._logger.debug(
-                        f"Eagerly registered existing-object spell into Creations: spell_id={new_spell.spell_id}",
-                        "bind",
-                    )
-                except Exception as reg_err:
-                    self._logger.error(
-                        f"Failed to register existing-object spell into Creations "
-                        f"(spell_id={new_spell.spell_id}): {reg_err}",
-                        "bind",
-                        exc_info=True,
-                    )
+            # If a Conduit already exists, stamp ownership metadata for the new spell.
+            # Existing-object spells are also eagerly registered into Creations.
+            if self._conjured and self._conduit is not None:
+                new_spell._add_owned_conduit(
+                    self._conduit._id,
+                    self._conduit._name,
+                    self._conduit._creations,
+                )
+                if new_spell.user_created_object is not None:
+                    try:
+                        self._conduit._register_to_creations(
+                            new_spell,
+                            new_spell.user_created_object,
+                        )
+                    except Exception as reg_err:
+                        self._logger.error(
+                            f"Failed to register existing-object spell into Creations "
+                            f"(spell_id={new_spell.spell_id}): {reg_err}",
+                            "bind",
+                            exc_info=True,
+                        )
 
-            self._logger.debug(
-                f"Binding spell => id={new_spell.spell_id}, key={new_spell._key}",
-                "bind",
-            )
             self._spell_system_states.register_lineage(
                 spell_index=new_spell.spell_index,
                 spell=spell,
@@ -1185,7 +1134,6 @@ class Spellbook(Cleanable):
         Raises:
             TypeError: If any provided hook is not callable.
         """
-        self._logger.debug(f"_add_hooks_to_spell(id={getattr(spell, 'spell_id', 'N/A')})", "_add_hooks_to_spell")
         if not isinstance(spell, ISpell):
             self._logger.error("spell must be an instance of Spell.", "_add_hooks_to_spell", exc_info=True)
             raise TypeError("spell must be an instance of Spell.")
@@ -1208,7 +1156,6 @@ class Spellbook(Cleanable):
                         self._logger.error("post_hooks must be a list of callables.", "_add_hooks_to_spell", exc_info=True)
                         raise TypeError("post_hooks must be a list of callables.")
                 spell.post_hooks = kwargs["post_hooks"]
-        self._logger.debug("Hooks attached", "_add_hooks_to_spell")
 
     #endregion Binding API
     #region Configuration API
@@ -1237,10 +1184,6 @@ class Spellbook(Cleanable):
 
                 self._configuration = aether_config
                 self._configuration_locked = True
-                self._logger.debug(
-                    "Adopted configuration from Aether (locked=True)",
-                    "_initialize_configuration",
-                )
                 return
 
             # No configuration registered in Aether yet
@@ -1255,20 +1198,12 @@ class Spellbook(Cleanable):
                     raise RuntimeError("Configuration name does not match the aetheric frame.")
 
                 self._configuration_locked = False
-                self._logger.debug(
-                    "Using provided configuration (locked=False)",
-                    "_initialize_configuration",
-                )
                 return
 
             # No config in Aether and none provided: create a fresh one and load defaults.
             self._configuration = Configuration(self._aetheric_frame)
             self._configuration.load_default_dictionary()
             self._configuration_locked = False
-            self._logger.debug(
-                "Created new Configuration with defaults (locked=False)",
-                "_initialize_configuration",
-            )
         except Exception as e:
             self._logger.error(
                 f"Failed to initialize configuration: {e}",
@@ -1339,17 +1274,9 @@ class Spellbook(Cleanable):
         # If configuration is already frozen, just mark locked and return.
         if self._configuration._frozen:
             self._configuration_locked = True
-            self._logger.debug(
-                "Configuration already frozen; marking locked=True",
-                "_validate_and_freeze_configuration",
-            )
             return
 
         try:
-            self._logger.debug(
-                "Validating configuration",
-                "_validate_and_freeze_configuration",
-            )
 
             if not self._configuration.validate():
                 self._logger.error(
@@ -1362,10 +1289,6 @@ class Spellbook(Cleanable):
             self._configuration.freeze()
             self._configuration_locked = True
 
-            self._logger.debug(
-                "Configuration validated and frozen; locking configuration.",
-                "_validate_and_freeze_configuration",
-            )
         except Exception as e:
             self._logger.error(
                 f"Error validating/freezing configuration: {e}",
@@ -1385,10 +1308,6 @@ class Spellbook(Cleanable):
         """
         try:
             Spellbook._aether._bind_configuration(self._configuration, self._aetheric_frame)
-            self._logger.debug(
-                f"Bound configuration to Aether frame '{self._aetheric_frame}'",
-                "_bind_configuration_to_aether",
-            )
         except Exception as e:
             self._logger.error(
                 f"Failed to bind configuration to Aether: {e}",
@@ -1408,7 +1327,6 @@ class Spellbook(Cleanable):
         Returns:
             Configuration: The configuration instance.
         """
-        self._logger.debug("get_configuration()", "get_configuration")
         return self._configuration
 
     #endregion Configuration API
@@ -1486,7 +1404,6 @@ class Spellbook(Cleanable):
             - act  : (conduit,)
             - post : (conduit,)
         """
-        self._logger.debug(f"Conjuring Conduit(name={name}, policy={policy})", "conjure")
 
         with self._lock:
             if self._conjured:
@@ -1501,10 +1418,6 @@ class Spellbook(Cleanable):
             if not self.is_configuration_locked():
                 self._validate_and_freeze_configuration()
                 self._bind_configuration_to_aether()
-                self._logger.debug(
-                    "Configuration validated, frozen and bound from conjure()",
-                    "conjure",
-                )
 
             # Run the multi-phase resolution pipeline (requirements, graphs, frames, validation)
             # This uses PhaseScheduler + UnitOfWork and cooperates via the shared CancellationEvent.
@@ -1557,10 +1470,6 @@ class Spellbook(Cleanable):
                 conduit,
             )
 
-            self._logger.debug(
-                f"Conduit created => id={conduit._id}, name={conduit._name}",
-                "conjure",
-            )
             return conduit
 
 
@@ -1579,7 +1488,6 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If a dynamic-only policy is requested while `automatic` is True or `system_state` is automatic.
         """
-        self._logger.debug("Checking system_state vs policy", "_check_system_state")
         policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
 
         # Automatic mode: only default policy is allowed
@@ -1625,10 +1533,6 @@ class Spellbook(Cleanable):
         all existing-object spells are already present in the Creations store
         under their normal singleton semantics.
         """
-        self._logger.debug(
-            "Linking conduit metadata into local spells (and priming existing creations)",
-            "_define_conduit_into_spells",
-        )
 
         with self._lock:
             for spell in self._spells.values():
@@ -1640,10 +1544,6 @@ class Spellbook(Cleanable):
                     if spell.user_created_object is not None:
                         try:
                             conduit._register_to_creations(spell, spell.user_created_object)
-                            self._logger.debug(
-                                f"Primed existing creation for spell_id={spell.spell_id}",
-                                "_define_conduit_into_spells",
-                            )
                         except Exception as reg_err:
                             self._logger.error(
                                 f"Failed to register existing creation for spell_id={spell.spell_id}: {reg_err}",
@@ -1707,20 +1607,11 @@ class Spellbook(Cleanable):
                 The hook map if available and non-empty, otherwise None.
         """
         if self._configuration is None:
-            self._logger.debug(
-                "_get_conjure_hook_map: no configuration; skipping conjure hooks",
-                "_get_conjure_hook_map",
-            )
             return None
 
         try:
             hook_map = self._configuration.get_hooks(self._id)
         except AttributeError:
-            self._logger.debug(
-                "_get_conjure_hook_map: configuration has no get_hooks(spellbook_id); "
-                "skipping conjure hooks",
-                "_get_conjure_hook_map",
-            )
             return None
         except Exception as e:
             self._logger.error(
@@ -1731,11 +1622,6 @@ class Spellbook(Cleanable):
             return None
 
         if not hook_map:
-            self._logger.debug(
-                f"_get_conjure_hook_map: no hooks registered for spellbook_id={self._id}; "
-                "nothing to attach for conjure.",
-                "_get_conjure_hook_map",
-            )
             return None
 
         return hook_map
@@ -1861,10 +1747,6 @@ class Spellbook(Cleanable):
                 validation phase.
         """
         self.check_cleaned()
-        self._logger.debug(
-            "Starting Spellbook resolution pipeline via PhaseScheduler",
-            "_run_resolution_phases",
-        )
 
         scheduler = PhaseScheduler(
             spellbook=self,
@@ -1934,10 +1816,6 @@ class Spellbook(Cleanable):
                 )
                 raise SpellbookValidationError(broken_spells)
 
-            self._logger.debug(
-                "Spellbook resolution pipeline completed successfully",
-                "_run_resolution_phases",
-            )
             return results
         finally:
             # Deterministic teardown of the scheduler regardless of success/failure.

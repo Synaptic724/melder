@@ -13,7 +13,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration, \
-    ISafeLogger
+    ISafeLogger, ISpellSpace
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.meld import Meld
@@ -69,10 +69,6 @@ class Conduit(Cleanable):
         # Override dynamic environment if caller requested automatic/dynamic explicitly.
         if automatic is not None:
             self.__dynamic_environment__ = not automatic
-        self._logger.debug(
-            f"Conduit __init__ starting (frame='{aetheric_frame}', state={conduit_state.name}, name={name})",
-            "__init__"
-        )
 
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
@@ -101,16 +97,12 @@ class Conduit(Cleanable):
             policy=policy
         )
 
-        self._logger.debug(
-            f"Conduit initialized (id={self._id}, frame='{self._aetheric_frame}')",
-            "__init__"
-        )
 
     # ------------------------------------------------------------------ #
     # SpellSpace support
     # ------------------------------------------------------------------ #
 
-    def get_active_spellspace(self) -> Optional[SpellSpace]:
+    def get_active_spellspace(self) -> Optional["SpellSpace"]:
         """
         Return the currently active SpellSpace for this Conduit, if any.
 
@@ -122,11 +114,17 @@ class Conduit(Cleanable):
             return None
         return stack[-1]
 
-    def create_spellspace(self) -> SpellSpace:
+    def create_spellspace(self) -> "SpellSpace":
         """
         Create a SpellSpace bound to this Conduit.
 
-        Lifecycle is manual unless used via `enter_spellspace`.
+        Purpose:
+            Create a new spellspace scope owned by this Conduit and register
+            it for cleanup bookkeeping.
+        Contract:
+            - Returns a new SpellSpace owned by this Conduit.
+            - The SpellSpace is registered in the spellspace registry.
+            - Lifecycle is manual unless used via `enter_spellspace`.
 
         Returns:
             SpellSpace: A new SpellSpace owned by this Conduit.
@@ -135,14 +133,19 @@ class Conduit(Cleanable):
         self._register_spellspace(space)
         return space
 
-    def _register_spellspace(self, space: SpellSpace) -> None:
+    def _register_spellspace(self, space: ISpellSpace) -> None:
         """
         Internal
 
         Track a SpellSpace for cleanup bookkeeping.
 
+        Contract:
+            - No-op if the spellspace, registry, or lock is unavailable.
+            - Adds the spellspace to the registry if present.
+            - Safe to call multiple times for the same spellspace.
+
         Args:
-            space (SpellSpace): The spellspace to track.
+            space (ISpellSpace): The spellspace to track.
         """
         if space is None:
             return
@@ -155,14 +158,19 @@ class Conduit(Cleanable):
             if self._spellspace_registry is not None:
                 self._spellspace_registry.add(space)
 
-    def _unregister_spellspace(self, space: SpellSpace) -> None:
+    def _unregister_spellspace(self, space: ISpellSpace) -> None:
         """
         Internal
 
         Remove a SpellSpace from cleanup bookkeeping.
 
+        Contract:
+            - No-op if the spellspace, registry, or lock is unavailable.
+            - Removes the spellspace from the registry if present.
+            - Safe to call multiple times for the same spellspace.
+
         Args:
-            space (SpellSpace): The spellspace to untrack.
+            space (ISpellSpace): The spellspace to untrack.
         """
         if space is None:
             return
@@ -176,7 +184,7 @@ class Conduit(Cleanable):
                 self._spellspace_registry.discard(space)
 
     @contextmanager
-    def enter_spellspace(self) -> SpellSpace:
+    def enter_spellspace(self) -> "SpellSpace":
         """
         Context-managed SpellSpace. Pushes onto the stack, yields it, and cleans it on exit.
 
@@ -240,11 +248,9 @@ class Conduit(Cleanable):
         """
         if self._conduit_state == ConduitState.normal:
             try:
-                self._logger.debug("Registering normal conduit into Aether", "__init__")
                 self._add_conduit_to_aether()
                 self._add_spells_to_aether()
                 if self.__dynamic_environment__ and self._name is not None:
-                    self._logger.debug(f"Registering conduit in cloud as '{self._name}'", "__init__")
                     Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
             except Exception as e:
                 self._logger.error(f"Normal conduit registration failed: {e}", "__init__", exc_info=True)
@@ -329,40 +335,21 @@ class Conduit(Cleanable):
         """
         # Lesser conduits do not own their own hook sets.
         if self._conduit_state != ConduitState.normal:
-            self._logger.debug(
-                "_initialize_conduit_hooks: skipping for non-normal conduit",
-                "_initialize_conduit_hooks",
-            )
             return
 
         # Spellbook must expose an `id` (ISpellbook contract).
         try:
             spellbook_id = self._spellbook._id
         except AttributeError:
-            self._logger.debug(
-                "_initialize_conduit_hooks: Spellbook has no 'id' attribute; "
-                "skipping hook attachment.",
-                "_initialize_conduit_hooks",
-            )
             return
 
         # Configuration may or may not support the hook registry yet.
         try:
             hook_map = self._configuration.get_hooks(spellbook_id)
         except AttributeError:
-            self._logger.debug(
-                "_initialize_conduit_hooks: Configuration has no get_hooks(spellbook_id); "
-                "skipping hook attachment.",
-                "_initialize_conduit_hooks",
-            )
             return
 
         if not hook_map:
-            self._logger.debug(
-                f"_initialize_conduit_hooks: no hooks registered for spellbook_id={spellbook_id}; "
-                "nothing to attach.",
-                "_initialize_conduit_hooks",
-            )
             return
 
         # At this point we conceptually "swap IDs": hooks registered under the
@@ -374,11 +361,6 @@ class Conduit(Cleanable):
         except Exception:
             pass
 
-        self._logger.debug(
-            f"_initialize_conduit_hooks: attached {len(hook_map)} hook groups "
-            f"from spellbook_id={spellbook_id} to conduit_id={self._id}",
-            "_initialize_conduit_hooks",
-        )
 
 
 
@@ -401,7 +383,6 @@ class Conduit(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-            self._logger.debug("cleanup start", "cleanup")
             self._fire_conduit_hooks("on_conduit_cleanup_start", self)
             cleanup_complete_hooks: list[Callable[..., Any]] | None = None
             if self._conduit_hooks is not None:
@@ -661,7 +642,6 @@ class Conduit(Cleanable):
         if self._name is not None:
             self._logger.error("Attempt to rename conduit after name set", "name")
             raise RuntimeError("Conduit name is set.")
-        self._logger.debug(f"Conduit named '{name}'", "name")
         self._name = name
 
     #endregion
@@ -693,7 +673,6 @@ class Conduit(Cleanable):
         if self._name is None:
             self._logger.error("register_conduit_cloud called without conduit name", "register_conduit_cloud")
             raise RuntimeError("Conduit name is not set. Please set a name before registering in the conduit cloud.")
-        self._logger.debug(f"Registering '{self._name}' into conduit cloud", "register_conduit_cloud")
         Conduit._aether._register_conduit_cloud(conduit, self._aetheric_frame)
 
     def unregister_conduit_cloud(self, conduit: IConduit):
@@ -719,7 +698,6 @@ class Conduit(Cleanable):
         if self._name is None:
             self._logger.error("unregister_conduit_cloud called without conduit name", "unregister_conduit_cloud")
             raise RuntimeError("Conduit name is not set. Please set a name before unregistering from the conduit cloud.")
-        self._logger.debug(f"Unregistering '{self._name}' from conduit cloud", "unregister_conduit_cloud")
         Conduit._aether._unregister_conduit_cloud(conduit, self._aetheric_frame)
 
     def _apply_configuration_flags(self):
@@ -733,10 +711,6 @@ class Conduit(Cleanable):
             state = self._configuration.get_property("system_state")
             self.__dynamic_environment__ = (state == SystemState.dynamic)
             self.__debugger_mode__ = bool(self._configuration.get_property("debugging"))
-            self._logger.debug(
-                f"_apply_configuration_flags: system_state={state.name}, dynamic={self.__dynamic_environment__}, debugging={self.__debugger_mode__}",
-                "_apply_configuration_flags"
-            )
         except Exception as e:
             self._logger.error(f"_apply_configuration_flags failed: {e}", "__init__", exc_info=True)
             raise
@@ -754,7 +728,6 @@ class Conduit(Cleanable):
             if Conduit._aether is None:
                 self._logger.error("Aether is not initialized", "_add_conduit_to_aether")
                 raise RuntimeError("Aether is not initialized.")
-            self._logger.debug("Adding conduit to Aether", "_add_conduit_to_aether")
             Conduit._aether._add_conduit(self, self._aetheric_frame)
 
     def _remove_conduit_from_aether(self) -> None:
@@ -769,7 +742,6 @@ class Conduit(Cleanable):
         if Conduit._aether is None:
             self._logger.error("Aether is not initialized", "_remove_conduit_from_aether")
             raise RuntimeError("Aether is not initialized.")
-        self._logger.debug("Removing conduit from Aether", "_remove_conduit_from_aether")
         Conduit._aether._remove_conduit(self, self._aetheric_frame)
 
 
@@ -789,7 +761,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit state is unknown.
         """
         if self._conduit_state == ConduitState.lesser:
-            self._logger.debug("Selecting LesserCreations", "_creations_configuration")
             return LesserCreations(
                 disposal_enabled=configuration.get_property("disposal"),
                 disposal_method_names=configuration.get_property("disposal_method_names"),
@@ -797,7 +768,6 @@ class Conduit(Cleanable):
                 parent_creations=getattr(self, "_parent_creations", None),
             )
         if self._conduit_state == ConduitState.normal:
-            self._logger.debug("Selecting Creations", "_creations_configuration")
             return Creations(disposal_enabled=configuration.get_property("disposal"),
                              disposal_method_names=configuration.get_property("disposal_method_names"), conduit=self)
         self._logger.error("Unknown Conduit state", "_creations_configuration")
@@ -928,7 +898,6 @@ class Conduit(Cleanable):
                 (frozen configuration, unknown hook names, non-callables, etc.).
         """
         with self._lock:
-            self._logger.debug("upgrade_to_normal start", "upgrade_to_normal")
             if not self.__dynamic_environment__:
                 self._logger.error("upgrade_to_normal in non-dynamic env", "upgrade_to_normal")
                 raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
@@ -978,7 +947,6 @@ class Conduit(Cleanable):
                 self._logger.error(f"upgrade_to_normal failed: {e}", "upgrade_to_normal", exc_info=True)
                 raise
 
-        self._logger.debug("upgrade_to_normal complete", "upgrade_to_normal")
 
 
 
@@ -998,7 +966,6 @@ class Conduit(Cleanable):
         if not self.__dynamic_environment__:
             self._logger.error("set_new_policy in non-dynamic env", "set_new_policy")
             raise RuntimeError("Dynamic environment is not enabled. Cannot set new policy.")
-        self._logger.debug(f"set_new_policy -> {policy}", "set_new_policy")
         with self._lock:
             self._conduit_ward._set_new_policy(policy)
 
@@ -1041,7 +1008,6 @@ class Conduit(Cleanable):
             RuntimeError: If the parent Conduit is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug("Creating lesser conduit", "create_lesser_conduit")
 
         with self._lock:
             # 1) Pre-create hook on the parent, if any.
@@ -1095,7 +1061,6 @@ class Conduit(Cleanable):
                 new_conduit,  # child_conduit
             )
 
-        self._logger.debug("Lesser conduit created and linked", "create_lesser_conduit")
         return new_conduit
 
 
@@ -1122,10 +1087,6 @@ class Conduit(Cleanable):
 
         # NOTE: these are SpellIndex objects, not raw version SHA strings
         spell_indices = list(self._spellbook._spells.keys())
-        self._logger.debug(
-            f"Registering {len(spell_indices)} local spell lineages into Aether",
-            "_add_spells_to_aether",
-        )
 
         spell_set = set(spell_indices)
         Conduit._aether._add_spells_to_aether(self._id, spell_set, self._aetheric_frame)
@@ -1151,7 +1112,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug(f"Resolve owner for spell_id={spell_id}", "get_conduit_by_spell_id")
         with self._lock:
             return Conduit._aether._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
 
@@ -1175,7 +1135,6 @@ class Conduit(Cleanable):
         with self._lock:
             raw = Conduit._aether._check_for_spell(spell_id, aetheric_frame_name)
             found = bool(raw)
-        self._logger.debug(f"check_spell_id spell_id={spell_id} -> {found}", "check_spell_id")
         return found
 
 
@@ -1216,10 +1175,6 @@ class Conduit(Cleanable):
                         result = spell
                         break
 
-        self._logger.debug(
-            f"get_spell_by_id spell_id={spell_id} -> {'hit' if result else 'miss'}",
-            "get_spell_by_id",
-        )
         return result
 
 
@@ -1274,10 +1229,6 @@ class Conduit(Cleanable):
             ValueError: If the spell is not found in the spellbook.
         """
         self.check_cleaned()
-        self._logger.debug(
-            f"find_spell_id(frame={spellframe}, name={spell_name}, binding={binding_name})",
-            "find_spell_id",
-        )
 
         # This will raise RuntimeError if the key is not found; we translate to ValueError
         try:
@@ -1314,7 +1265,6 @@ class Conduit(Cleanable):
             ValueError: If the spell is not found in the spellbook.
         """
         self.check_cleaned()
-        self._logger.debug(f"find_spell_key(frame={spellframe}, name={spell_name}, binding={binding_name})", "find_spell_key")
         spell_key = self._spellbook.find_spell_key(spellframe, spell_name, binding_name)
         if not spell_key:
             self._logger.error(f"Spell key for '{spell_name}' not found", "find_spell_key")
@@ -1473,10 +1423,6 @@ class Conduit(Cleanable):
         if not self._conduit_state == ConduitState.normal:
             self._logger.error("bind called when conduit not normal", "bind")
             raise RuntimeError("Only normal conduits can bind spells.")
-        self._logger.debug(
-            f"bind(spell={getattr(spell, '__name__', type(spell).__name__)}, existence={existence}, permissions={permissions}, frame={spellframe}, binding={binding_name})",
-            "bind"
-        )
         with self._lock:
             return self._spellbook.bind(
                 spell=spell,
@@ -1519,10 +1465,6 @@ class Conduit(Cleanable):
 
         if target_spell is not None:
             perms = target_spell.permissions.name
-            self._logger.debug(
-                f"get_spell_permissions spell_id={spell_id} -> {perms}",
-                "get_spell_permissions",
-            )
             return perms
 
         self._logger.error(f"Spell with ID {spell_id} not found", "get_spell_permissions")
@@ -1722,11 +1664,6 @@ class Conduit(Cleanable):
                 "provided to Conduit.meld()."
             )
 
-        self._logger.debug(
-            f"meld(spell_name={spell_name!r}, spell={spell!r}, "
-            f"frame={spellframe!r}, binding={binding_name!r})",
-            "meld",
-        )
 
         self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
@@ -1769,7 +1706,6 @@ class Conduit(Cleanable):
         if not self.__dynamic_environment__:
             self._logger.error("get_conduit_cloud in non-dynamic env", "get_conduit_cloud")
             raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
-        self._logger.debug("get_conduit_cloud", "get_conduit_cloud")
         return Conduit._aether._get_conduit_cloud(self._aetheric_frame)
 
     #endregion Conduit Cloud
@@ -1798,7 +1734,6 @@ class Conduit(Cleanable):
             raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
         if aetheric_frame == "default":
             aetheric_frame = self._aetheric_frame
-        self._logger.debug(f"get_conduit_by_id id={conduit_id}", "get_conduit_by_id")
         with self._lock:
             return Conduit._aether._get_conduit_by_id(conduit_id, aetheric_frame)
 
@@ -1825,7 +1760,6 @@ class Conduit(Cleanable):
             raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
         if aetheric_frame == "default":
             aetheric_frame = self._aetheric_frame
-        self._logger.debug(f"get_conduit_by_name name='{name}'", "get_conduit_by_name")
         with self._lock:
             return Conduit._aether._get_conduit_by_name(name, aetheric_frame)
     #endregion Aether API
@@ -1865,7 +1799,6 @@ class Conduit(Cleanable):
         if not target_conduit._id:
             self._logger.error("link target has no valid creation context", "link")
             raise RuntimeError("Target conduit does not have a valid creation context.")
-        self._logger.debug(f"link -> target={target_conduit._id}", "link")
 
         with self._lock:
             linked = self._conduit_ward._link(target_conduit)
@@ -1907,7 +1840,6 @@ class Conduit(Cleanable):
         if not self.__dynamic_environment__:
             self._logger.error("sever_link in non-dynamic env", "sever_link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
-        self._logger.debug(f"sever_link target={target_conduit._id}", "sever_link")
 
         with self._lock:
             unlinked = self._conduit_ward._sever_link(target_conduit)
@@ -1941,7 +1873,6 @@ class Conduit(Cleanable):
         if not self.__dynamic_environment__:
             self._logger.error("get_links in non-dynamic env", "get_links")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
-        self._logger.debug("get_links", "get_links")
         with self._lock:
             return self._conduit_ward._get_links()
 
@@ -1961,7 +1892,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug(f"get_lesser_conduit id={conduit_id}", "get_lesser_conduit")
         with self._lock:
             return self._conduit_ward._get_lesser_conduit(conduit_id)
 
@@ -1985,7 +1915,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug(f"get_initiated_conduit id={conduit_id}", "get_initiated_conduit")
         with self._lock:
             return self._conduit_ward._get_initiated_conduit(conduit_id)
 
@@ -2009,7 +1938,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug(f"get_provider_conduit id={conduit_id}", "get_provider_conduit")
         with self._lock:
             return self._conduit_ward._get_provider_conduit(conduit_id)
 
@@ -2029,7 +1957,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug("get_initiated_conduits", "get_initiated_conduits")
         with self._lock:
             return self._conduit_ward._get_initiated_conduits()
 
@@ -2048,7 +1975,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug("get_provider_conduits", "get_provider_conduits")
         with self._lock:
             return self._conduit_ward._get_provider_conduits()
 
@@ -2065,7 +1991,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        self._logger.debug("cleanup_lesser_conduits", "cleanup_lesser_conduits")
         self._conduit_ward.cleanup_all_lesser_conduits()
 
     #endregion Conduit Ward API
@@ -2119,10 +2044,6 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(
-            f"add_spell_to_contract(spell_id={spell_id}, conduit_id={conduit_id}, perms={permissions}, link_deps={link_dependencies})",
-            "add_spell_to_contract",
-        )
         self._qualify_contracts()
 
         result = self._conduit_ward._add_spell_to_contract(
@@ -2174,10 +2095,6 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(
-            f"add_spells_to_contract(count={len(spell_ids)}, conduit_id={conduit_id}, perms={permissions}, link_deps={link_dependencies})",
-            "add_spells_to_contract",
-        )
         self._qualify_contracts()
 
         report = self._conduit_ward._add_spells_to_contract(
@@ -2238,10 +2155,6 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(
-            f"remove_spell_from_contract(spell_id={spell_id}, conduit_id={conduit_id}, root_spell_id={root_spell_id})",
-            "remove_spell_from_contract",
-        )
         self._qualify_contracts()
 
         result = self._conduit_ward._remove_spell_from_contract(
@@ -2285,10 +2198,6 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(
-            f"remove_spells_from_contract(count={0 if spell_ids is None else len(spell_ids)}, conduit_id={conduit_id}, root_spell_id={root_spell_id})",
-            "remove_spells_from_contract",
-        )
         self._qualify_contracts()
 
         report = self._conduit_ward._remove_spells_from_contract(
@@ -2331,10 +2240,6 @@ class Conduit(Cleanable):
         contract or all contracts. Orphaned Details trigger contracted spell removal;
         empty contracts are severed.
         """
-        self._logger.debug(
-            f"remove_root_from_contracts(root_spell_id={root_spell_id}, conduit_id={conduit_id})",
-            "remove_root_from_contracts",
-        )
         self._qualify_contracts()
         return self._conduit_ward._remove_root_from_contracts(
             root_spell_id=root_spell_id,
@@ -2392,7 +2297,6 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(f"_remove_all_spells_from_contract(conduit_id={conduit_id})", "_remove_all_spells_from_contract")
         self._qualify_contracts()
 
         result = self._conduit_ward._remove_all_spells_from_contract(
@@ -2432,7 +2336,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `validate` is not a boolean.
         """
-        self._logger.debug(f"get_all_spells_in_contracts(validate={validate})", "get_all_spells_in_contracts")
         self._qualify_contracts()
         if not isinstance(validate, bool):
             self._logger.error("validate must be bool", "get_all_spells_in_contracts")
@@ -2458,7 +2361,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `spell_id` is not a string.
         """
-        self._logger.debug(f"get_spell_in_contracts(spell_id={spell_id})", "get_spell_in_contracts")
         self._qualify_contracts()
         if not isinstance(spell_id, str):
             self._logger.error("spell_id must be str", "get_spell_in_contracts")
@@ -2484,7 +2386,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `conduit_id` is not a str.
         """
-        self._logger.debug(f"get_spells_in_contract_by_conduit(conduit_id={conduit_id})", "get_spells_in_contract_by_conduit")
         self._qualify_contracts()
         if not isinstance(conduit_id, str):
             self._logger.error("conduit_id must be id", "get_spells_in_contract_by_conduit")
@@ -2509,7 +2410,6 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `conduit_name` is not a string.
         """
-        self._logger.debug(f"get_spells_in_contract_by_conduit_name(name='{conduit_name}')", "get_spells_in_contract_by_conduit_name")
         self._qualify_contracts()
         if not isinstance(conduit_name, str):
             self._logger.error("conduit_name must be str", "get_spells_in_contract_by_conduit_name")
@@ -2531,7 +2431,6 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug("get_contracted_conduits", "get_contracted_conduits")
         self._qualify_contracts()
         return self._conduit_ward._get_contracted_conduits()
 
@@ -2554,7 +2453,6 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug(f"_describe_contract(conduit_id={conduit_id})", "_describe_contract")
         self._qualify_contracts()
         return self._conduit_ward._describe_contract(conduit_id)
 
@@ -2575,7 +2473,6 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug("validate_contracts_and_define", "validate_contracts_and_define")
         self._qualify_contracts()
         return self._conduit_ward._validate_contracts_and_define()
 
@@ -2595,7 +2492,6 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
         """
-        self._logger.debug("validate_received_contracts", "validate_received_contracts")
         self._qualify_contracts()
         return self._conduit_ward._validate_received_contracts()
 
@@ -2636,7 +2532,6 @@ class Conduit(Cleanable):
             raise RuntimeError("Dynamic environment is not enabled. MutationResearch is unavailable.")
 
         # Pull from Aether
-        self._logger.debug("Fetching MutationResearch for this conduit/frame", "get_mutation_research")
         return Conduit._aether._get_mutation_research(self._aetheric_frame)
 
 #endregion Mutation Research

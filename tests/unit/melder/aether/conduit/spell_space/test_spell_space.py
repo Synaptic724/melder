@@ -46,6 +46,18 @@ class _ConduitStub:
         """Return the currently active spellspace (or None)."""
         return self._active_spellspace
 
+    def _unregister_spellspace(self, space: SpellSpace) -> None:
+        """
+        Internal
+
+        Clear the active spellspace reference if it matches.
+
+        Args:
+            space: The spellspace instance to unregister.
+        """
+        if self._active_spellspace is space:
+            self._active_spellspace = None
+
     @property
     def meld_calls(self) -> list[dict[str, Any]]:
         """Return the recorded meld call arguments for assertions."""

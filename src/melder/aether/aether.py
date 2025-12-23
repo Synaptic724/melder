@@ -199,11 +199,9 @@ class Aether(Cleanable):
         """
         Signs all aetheric frames and their contents.
         """
-        self._logger.debug("Cleaning all aetheric frames...", "cleanup_aetheric_frames")
 
         for frame_name, frame in self._aetheric_frames.items():
             try:
-                self._logger.debug(f"Cleaning frame '{frame_name}'", "cleanup_aetheric_frames")
                 frame.cleanup()
             except Exception as e:
                 # Tolerant behavior: log and continue
@@ -299,10 +297,6 @@ class Aether(Cleanable):
             if aetheric_frame_name == "default":
                 self._default_frame = frame
 
-            self._logger.debug(
-                f"Created AethericFrame '{aetheric_frame_name}'",
-                "_ensure_frame",
-            )
             return frame
 
 
@@ -318,7 +312,6 @@ class Aether(Cleanable):
             ValueError: If the specified frame does not exist.
         """
         self.check_cleaned()
-        self._logger.debug(f"Binding configuration to frame '{aetheric_frame_name}'", "_bind_configuration")
 
         with self._lock:
             if aetheric_frame_name != "default":
@@ -331,7 +324,6 @@ class Aether(Cleanable):
                 self._ensure_default_frame()
                 self._default_frame._configuration = configuration
 
-        self._logger.debug(f"Configuration bound to frame '{aetheric_frame_name}'", "_bind_configuration")
 
     def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional[IConfiguration]:
         """
@@ -357,7 +349,6 @@ class Aether(Cleanable):
             self._ensure_default_frame()
             cfg = self._default_frame._configuration
 
-        self._logger.debug(f"Retrieved configuration from frame '{aetheric_frame_name}'", "_get_configuration")
         return cfg
 
     # endregion Configuration
@@ -375,7 +366,6 @@ class Aether(Cleanable):
             ValueError: If the specified frame does not exist.
         """
         self.check_cleaned()
-        self._logger.debug(f"Registering conduit with cloud in frame '{aetheric_frame_name}'", "_register_conduit_cloud")
 
         if aetheric_frame_name != "default":
             try:
@@ -388,7 +378,6 @@ class Aether(Cleanable):
             conduit_cloud = self._default_frame._conduit_cloud
 
         conduit_cloud._register_conduit(conduit)
-        self._logger.debug(f"Conduit registered with cloud in frame '{aetheric_frame_name}'", "_register_conduit_cloud")
 
     def _unregister_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
@@ -402,7 +391,6 @@ class Aether(Cleanable):
             ValueError: If the specified frame does not exist.
         """
         self.check_cleaned()
-        self._logger.debug(f"Unregistering conduit from cloud in frame '{aetheric_frame_name}'", "_unregister_conduit_cloud")
 
         if aetheric_frame_name != "default":
             try:
@@ -415,7 +403,6 @@ class Aether(Cleanable):
             conduit_cloud = self._default_frame._conduit_cloud
 
         conduit_cloud._unregister_conduit(conduit)
-        self._logger.debug(f"Conduit unregistered from cloud in frame '{aetheric_frame_name}'", "_unregister_conduit_cloud")
     def _get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
         """
         Retrieves the ConduitCloud instance from a specific frame.
@@ -440,7 +427,6 @@ class Aether(Cleanable):
             self._ensure_default_frame()
             cloud = self._default_frame._conduit_cloud
 
-        self._logger.debug(f"Retrieved conduit cloud for frame '{aetheric_frame_name}'", "_get_conduit_cloud")
         return cloud
 
     def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
@@ -470,7 +456,6 @@ class Aether(Cleanable):
 
         for conduit in conduits.values():
             if conduit.name == name:
-                self._logger.debug(f"Found conduit by name '{name}' in frame '{aetheric_frame_name}'", "_get_conduit_by_name")
                 return conduit
 
         self._logger.error(f"Conduit with name {name} not found.", "_get_conduit_by_name", exc_info=True)
@@ -502,7 +487,6 @@ class Aether(Cleanable):
             conduits = self._default_frame._conduits
 
         if signature in conduits:
-            self._logger.debug(f"Found conduit by id '{signature}' in frame '{aetheric_frame_name}'", "_get_conduit_by_id")
             return conduits[signature]
 
         self._logger.error(f"Conduit with signature {signature} not found.", "_get_conduit_by_id", exc_info=True)
@@ -520,7 +504,6 @@ class Aether(Cleanable):
             ValueError: If the frame does not exist or the conduit ID already exists.
         """
         self.check_cleaned()
-        self._logger.debug(f"Adding conduit to frame '{aetheric_frame_name}'", "_add_conduit")
 
         if aetheric_frame_name != "default":
             try:
@@ -538,7 +521,6 @@ class Aether(Cleanable):
             raise ValueError(f"Conduit with ID {cid} already exists.")
 
         conduits[cid] = conduit
-        self._logger.debug(f"Conduit '{cid}' added to frame '{aetheric_frame_name}'", "_add_conduit")
 
     def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
@@ -552,7 +534,6 @@ class Aether(Cleanable):
             ValueError: If the frame does not exist or the conduit is not found.
         """
         self.check_cleaned()
-        self._logger.debug(f"Removing conduit from frame '{aetheric_frame_name}'", "_remove_conduit")
 
         if aetheric_frame_name != "default":
             try:
@@ -570,7 +551,6 @@ class Aether(Cleanable):
             self._logger.error(f"Conduit with ID {conduit_id} does not exist.", "_remove_conduit", exc_info=True)
             raise ValueError(f"Conduit with ID {conduit_id} does not exist.")
 
-        self._logger.debug(f"Conduit '{conduit_id}' removed from frame '{aetheric_frame_name}'", "_remove_conduit")
 
     def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = "default"):
         """
@@ -584,7 +564,6 @@ class Aether(Cleanable):
             ValueError: If the frame does not exist or the cluster name is taken.
         """
         self.check_cleaned()
-        self._logger.debug(f"Creating cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_create_cluster")
 
         if aetheric_frame_name != "default":
             try:
@@ -601,7 +580,6 @@ class Aether(Cleanable):
             raise ValueError(f"Cluster with name {cluster_name} already exists.")
 
         conduit_clusters[cluster_name] = ConduitCluster(cluster_name)
-        self._logger.debug(f"Cluster '{cluster_name}' created in frame '{aetheric_frame_name}'", "_create_cluster")
 
     def _remove_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> None:
         """
@@ -615,7 +593,6 @@ class Aether(Cleanable):
             ValueError: If the frame does not exist or the cluster is missing.
         """
         self.check_cleaned()
-        self._logger.debug(f"Removing cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_remove_cluster")
 
         if aetheric_frame_name != "default":
             try:
@@ -637,7 +614,6 @@ class Aether(Cleanable):
         except Exception:
             self._logger.error(f"Cluster cleanup failed for '{cluster_name}'", "_remove_cluster", exc_info=True)
 
-        self._logger.debug(f"Cluster '{cluster_name}' removed from frame '{aetheric_frame_name}'", "_remove_cluster")
 
     def _get_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> ConduitCluster:
         """
@@ -706,12 +682,10 @@ class Aether(Cleanable):
             ValueError: If the frame or cluster does not exist.
         """
         self.check_cleaned()
-        self._logger.debug(f"Adding conduit to cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_add_conduit_to_cluster")
 
         cluster = self._get_cluster(cluster_name, aetheric_frame_name)
         conduit_id = conduit._id
         cluster.add_member(conduit_id)
-        self._logger.debug(f"Conduit '{conduit_id}' added to cluster '{cluster_name}'", "_add_conduit_to_cluster")
         try:
             self._on_conduit_joined_cluster(conduit, cluster_name, aetheric_frame_name)
         except Exception as e:
@@ -730,7 +704,6 @@ class Aether(Cleanable):
             ValueError: If the frame or cluster does not exist.
         """
         self.check_cleaned()
-        self._logger.debug(f"Removing conduit from cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_remove_conduit_from_cluster")
 
         cluster = self._get_cluster(cluster_name, aetheric_frame_name)
         conduit_id = conduit._id
@@ -740,7 +713,6 @@ class Aether(Cleanable):
             self._logger.error(f"Error removing conduit '{conduit_id}' from cluster '{cluster_name}': {e}", "_remove_conduit_from_cluster", exc_info=True)
             raise
 
-        self._logger.debug(f"Conduit '{conduit_id}' removed from cluster '{cluster_name}'", "_remove_conduit_from_cluster")
         try:
             self._on_conduit_left_cluster(conduit, cluster_name, aetheric_frame_name)
         except Exception as e:
@@ -762,7 +734,6 @@ class Aether(Cleanable):
         """
         self.check_cleaned()
         cluster = self._get_cluster(cluster_name, aetheric_frame_name)
-        self._logger.debug(f"Retrieved conduits for cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_get_conduits_in_cluster")
         return list(cluster.get_members())
 
     def _get_clusters_for_conduit(self, conduit_id: str, aetheric_frame_name: str = "default") -> List[str]:
@@ -865,11 +836,6 @@ class Aether(Cleanable):
         for conduit_id, spell_set in spell_registry.items():
             for spell_index in spell_set:
                 if spell_index.has_version(spell_id):
-                    self._logger.debug(
-                        f"Found conduit '{conduit_id}' owning version '{spell_id}' "
-                        f"under SpellIndex '{spell_index.id}'",
-                        "_get_conduit_by_spell_id"
-                    )
                     return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
 
         self._logger.error(
@@ -917,16 +883,8 @@ class Aether(Cleanable):
         # Fast O(1-ish) lookup via cached version_registry
         found = frame.has_version(spell_id)
         if found is True:
-            self._logger.debug(
-                f"Check for spell version '{spell_id}' in frame '{aetheric_frame_name}': {found}",
-                "_check_for_spell"
-            )
             return frame.find_and_return_spell_index(spell_id)
         else:
-            self._logger.debug(
-                f"Check for spell version '{spell_id}' in frame '{aetheric_frame_name}': {found}",
-                "_check_for_spell"
-            )
             return None
 
     def _add_spells_to_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
@@ -1104,10 +1062,6 @@ class Aether(Cleanable):
             frame = self._default_frame
 
         frame.refresh_version_registry()
-        self._logger.debug(
-            f"Refreshed version registry for frame '{aetheric_frame_name}'",
-            "_refresh_version_registry"
-        )
 
     def _get_all_spell_versions(self, aetheric_frame_name: str = "default") -> set[str]:
         """
@@ -1132,10 +1086,6 @@ class Aether(Cleanable):
             frame = self._default_frame
 
         versions = frame.get_all_versions()
-        self._logger.debug(
-            f"Collected {len(versions)} spell versions from frame '{aetheric_frame_name}'",
-            "_get_all_spell_versions"
-        )
         return versions
 
     # endregion Spell Management

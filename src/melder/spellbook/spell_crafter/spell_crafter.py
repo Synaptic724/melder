@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 import threading
-from typing import Any, Optional, List, Dict, Tuple, Set
+from typing import Any, Optional, List, Dict, Tuple, Set, Union
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -873,7 +873,9 @@ class SpellCrafter(Cleanable):
             requirements: SpellRequirements,
             graph: SpellSymbolicGraph,
             cancellation_event: CancellationEvent,
-    ) -> DirectedAcyclicWorkGraph:
+            *,
+            return_dependencies: bool = False,
+    ) -> Union[DirectedAcyclicWorkGraph, Tuple[DirectedAcyclicWorkGraph, List[str]]]:
         """
         Internal helper for Phase 3.
 
@@ -899,6 +901,8 @@ class SpellCrafter(Cleanable):
             * This helper does **not** mutate the Spell object. All artifacts
               (DAG, topology, dependency ids) remain in this SpellCrafter and
               SpellSystemStates.
+            * If ``return_dependencies`` is True, returns a tuple of
+              ``(dag, dependency_spell_ids)``; otherwise returns only the DAG.
             * SpellContract and MutationContract sockets take part in the
               symbolic graph and topology, but do not produce DAG edges or
               concrete targets at this stage.
@@ -990,6 +994,9 @@ class SpellCrafter(Cleanable):
                 topology,
             )
 
+        if return_dependencies:
+            return dag, dependency_spell_ids
+
         return dag
 
 
@@ -1038,9 +1045,9 @@ class SpellCrafter(Cleanable):
               instead of auto-running earlier phases.
             * Assumes the bound Spell is attached to a Spellbook; the internal
               SpellbookScanner is created against that Spellbook.
-            * Stores the local DAG and a :class:`SpellResolutionFrame`
-              internally on this SpellCrafter. These artifacts are not pushed
-              into the Spell; full, frame-level DAGs are owned by later phases.
+            * Stores the local DAG and direct dependency list on the Spell via
+              :meth:`Spell._add_build_details`, and keeps a
+              :class:`SpellResolutionFrame` internally on this SpellCrafter.
             * Does not return a value; callers rely on:
                   - ``self._resolution_frame`` for ordering, and
                   - SpellSystemStates for dependencies and topology.
@@ -1055,10 +1062,11 @@ class SpellCrafter(Cleanable):
             )
 
 
-        dag = self._build_local_frame_dag(
+        dag, dependency_spell_ids = self._build_local_frame_dag(
             requirements=self._requirements,
             graph=self._symbolic_graph,
             cancellation_event=cancel_event,
+            return_dependencies=True,
         )
 
         # Topological order of node ids (deps first, then root).
@@ -1068,6 +1076,17 @@ class SpellCrafter(Cleanable):
             spell_id=self._spell.spell_index.current,
             ordered_node_ids=ordered_node_ids,
         )
+
+        # Persist dependency metadata on the Spell for validation and contract linking.
+        unique_dependencies = list(dict.fromkeys(dependency_spell_ids))
+        try:
+            self._spell._add_build_details(
+                dag=dag,
+                dependencies=unique_dependencies,
+            )
+        except AttributeError:
+            # Test stubs may not implement the build-details hook.
+            pass
 
     # ------------------------------------------------------------------
     # Phase 4 – Validation
