@@ -116,6 +116,8 @@ class FakeSpellStatesSystem:
             spell_index: SpellIndex identifying the lineage.
             spell: Spell object associated with the lineage.
         """
+        if spell_index.id in self._states:
+            return
         self._states[spell_index.id] = FakeState(
             validity=SpellValidity.unknown,
             change_reason=SpellStateChangeReason.new_lineage,
@@ -392,6 +394,17 @@ class FakeAether:
         frame = self._aetheric_frames[frame_name]
         frame._spell_registry.setdefault(conduit_id, set()).update(indices)
 
+    def _register_single_spell_index(self, conduit_id: str, spell_index: SpellIndex, frame_name: str) -> None:
+        """
+        Register a single spell index for a conduit.
+
+        Args:
+            conduit_id: Conduit id owning the index.
+            spell_index: SpellIndex to register.
+            frame_name: Frame name for the registry.
+        """
+        self._add_spells_to_aether(conduit_id, {spell_index}, frame_name)
+
     def _remove_spells_from_aether(self, conduit_id: str, indices: set[SpellIndex], frame_name: str) -> None:
         """
         Remove spell indices from the registry for a conduit.
@@ -403,6 +416,17 @@ class FakeAether:
         """
         frame = self._aetheric_frames[frame_name]
         frame._spell_registry.setdefault(conduit_id, set()).difference_update(indices)
+
+    def _remove_single_spell_index(self, conduit_id: str, spell_index: SpellIndex, frame_name: str) -> None:
+        """
+        Remove a single spell index for a conduit.
+
+        Args:
+            conduit_id: Conduit id owning the index.
+            spell_index: SpellIndex to remove.
+            frame_name: Frame name for the registry.
+        """
+        self._remove_spells_from_aether(conduit_id, {spell_index}, frame_name)
 
 
 class FakeSpellbook:
@@ -517,6 +541,7 @@ class FakeConduit:
         self,
         conduit_id: str,
         *,
+        name: Optional[str] = None,
         frame_name: str,
         spellbook: FakeSpellbook,
         creations: FakeCreations,
@@ -528,6 +553,7 @@ class FakeConduit:
 
         Args:
             conduit_id: Unique conduit id.
+            name: Optional conduit name.
             frame_name: Aetheric frame name.
             spellbook: Spellbook storage.
             creations: Creations store.
@@ -535,6 +561,7 @@ class FakeConduit:
             dynamic: Dynamic environment flag.
         """
         self._id = conduit_id
+        self._name = name
         self._aetheric_frame = frame_name
         self.__dynamic_environment__ = dynamic
         self._spellbook = spellbook
@@ -651,15 +678,42 @@ def build_spell(
     """
     if dependencies is None:
         dependencies = []
-    return SimpleNamespace(
+    spell = SimpleNamespace(
         spell_id=spell_id,
         spell_index=spell_index,
         _owner_conduit_id=owner_id,
+        _owner_conduit_name=None,
+        _owner_creations=None,
+        owned_spell=False,
+        _spellbook=None,
+        _spell_system_states=None,
+        _crafter=None,
         _key=f"key-{spell_id}",
         dependencies=list(dependencies),
         existence=existence,
         permissions=permissions,
     )
+
+    def _add_owned_conduit(
+        conduit_id: str,
+        conduit_name: Optional[str] = None,
+        creations: Any = None,
+    ) -> None:
+        """
+        Record conduit ownership for the test spell.
+
+        Args:
+            conduit_id: Conduit id that owns the spell.
+            conduit_name: Optional conduit name.
+            creations: Optional creations container for ownership.
+        """
+        spell._owner_conduit_id = conduit_id
+        spell._owner_conduit_name = conduit_name
+        spell._owner_creations = creations
+        spell.owned_spell = True
+
+    spell._add_owned_conduit = _add_owned_conduit
+    return spell
 
 
 def build_environment(

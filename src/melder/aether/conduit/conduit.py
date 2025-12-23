@@ -989,6 +989,7 @@ class Conduit(Cleanable):
                 conduit_state=ConduitState.lesser,
                 aetheric_frame=self._aetheric_frame,
                 policy=Policies.default,
+                automatic=self._automatic,
                 logger=logger,
             )
             # Provide root-scope creations for delegation of frame-level singletons.
@@ -1409,7 +1410,14 @@ class Conduit(Cleanable):
             "bind"
         )
         with self._lock:
-            return self._spellbook.bind(spell=spell, existence=existence, spellframe=spellframe, binding_name=binding_name, permissions=permissions, **kwargs)
+            return self._spellbook.bind(
+                spell=spell,
+                existence=existence,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                permissions=permissions,
+                **kwargs,
+            )
 
 
     def get_spell_permissions(self, spell_id: str) -> Optional[str]:
@@ -2104,7 +2112,7 @@ class Conduit(Cleanable):
         )
         self._qualify_contracts()
 
-        results = self._conduit_ward._add_spells_to_contract(
+        report = self._conduit_ward._add_spells_to_contract(
             spell_ids=spell_ids,
             conduit=conduit,
             conduit_id=conduit_id,
@@ -2114,8 +2122,20 @@ class Conduit(Cleanable):
             link_dependencies=link_dependencies,
         )
 
+        normalized: dict[str, bool] = {}
+        if isinstance(report, dict):
+            if "success" in report and "failed" in report:
+                for spell_id in report["success"]:
+                    normalized[spell_id] = True
+                for spell_id in report["failed"].keys():
+                    normalized.setdefault(spell_id, False)
+            elif all(isinstance(value, bool) for value in report.values()):
+                normalized = dict(report)
+            else:
+                normalized = {spell_id: bool(value) for spell_id, value in report.items()}
+
         # Fire hook only if at least one contract addition succeeded.
-        if results and any(results.values()):
+        if normalized and any(value is True for value in normalized.values()):
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
             if peer is not None:
                 self._fire_conduit_hooks(
@@ -2124,7 +2144,7 @@ class Conduit(Cleanable):
                     peer,
                 )
 
-        return results
+        return normalized
 
 
     def remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
@@ -2203,7 +2223,7 @@ class Conduit(Cleanable):
         )
         self._qualify_contracts()
 
-        results = self._conduit_ward._remove_spells_from_contract(
+        report = self._conduit_ward._remove_spells_from_contract(
             spell_ids=spell_ids,
             conduit=conduit,
             conduit_id=conduit_id,
@@ -2211,7 +2231,19 @@ class Conduit(Cleanable):
             aetheric_frame=aetheric_frame,
         )
 
-        if results and any(results.values()):
+        normalized: dict[str, bool] = {}
+        if isinstance(report, dict):
+            if "success" in report and "failed" in report:
+                for spell_id in report["success"]:
+                    normalized[spell_id] = True
+                for spell_id in report["failed"].keys():
+                    normalized.setdefault(spell_id, False)
+            elif all(isinstance(value, bool) for value in report.values()):
+                normalized = dict(report)
+            else:
+                normalized = {spell_id: bool(value) for spell_id, value in report.items()}
+
+        if normalized and any(value is True for value in normalized.values()):
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
             if peer is not None:
                 self._fire_conduit_hooks(
@@ -2220,7 +2252,7 @@ class Conduit(Cleanable):
                     peer,
                 )
 
-        return results
+        return normalized
 
     def remove_root_from_contracts(self, *, root_spell_id: str, conduit: IConduit = None,
                                    conduit_id: str = None, aetheric_frame: str = "default") -> dict:

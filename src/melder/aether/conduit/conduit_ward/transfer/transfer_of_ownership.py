@@ -571,14 +571,30 @@ class TransferOfOwnership:
         # Aether registry: move SpellIndex ownership (idempotent)
         try:
             if self._spell_in_registry(self.source_conduit, spell_obj.spell_index):
-                self._aether._remove_spells_from_aether(self.source_conduit._id, {spell_obj.spell_index}, self._frame_name)
+                self._aether._remove_single_spell_index(
+                    self.source_conduit._id,
+                    spell_obj.spell_index,
+                    self._frame_name,
+                )
                 self._register_rollback(
-                    lambda: self._aether._add_spells_to_aether(self.source_conduit._id, {spell_obj.spell_index}, self._frame_name)
+                    lambda: self._aether._register_single_spell_index(
+                        self.source_conduit._id,
+                        spell_obj.spell_index,
+                        self._frame_name,
+                    )
                 )
             if not self._spell_in_registry(self.target_conduit, spell_obj.spell_index):
-                self._aether._add_spells_to_aether(self.target_conduit._id, {spell_obj.spell_index}, self._frame_name)
+                self._aether._register_single_spell_index(
+                    self.target_conduit._id,
+                    spell_obj.spell_index,
+                    self._frame_name,
+                )
                 self._register_rollback(
-                    lambda: self._aether._remove_spells_from_aether(self.target_conduit._id, {spell_obj.spell_index}, self._frame_name)
+                    lambda: self._aether._remove_single_spell_index(
+                        self.target_conduit._id,
+                        spell_obj.spell_index,
+                        self._frame_name,
+                    )
                 )
         except Exception as e:
             raise RuntimeError(f"Failed to flip registry: {e}")
@@ -599,7 +615,22 @@ class TransferOfOwnership:
                 if not tgt_had:
                     tgt_book._spells[spell_obj.spell_index] = spell_obj
                     tgt_book._lookup_spells[spell_obj._key] = spell_obj.spell_index
-            spell_obj._owner_conduit_id = self.target_conduit._id
+                if spell_obj._spellbook is not tgt_book:
+                    spell_obj._spellbook = tgt_book
+                    spell_obj._spell_system_states = tgt_book._spell_system_states
+                    spell_obj._crafter = None
+                    try:
+                        tgt_book._spell_system_states.register_lineage(
+                            spell_index=spell_obj.spell_index,
+                            spell=spell_obj,
+                        )
+                    except Exception:
+                        pass
+            spell_obj._add_owned_conduit(
+                self.target_conduit._id,
+                self.target_conduit._name,
+                self.target_conduit._creations,
+            )
         except Exception as e:
             raise RuntimeError(f"Failed to flip spellbooks: {e}")
 

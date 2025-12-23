@@ -603,6 +603,42 @@ class Aether(Cleanable):
         conduit_clusters[cluster_name] = ConduitCluster(cluster_name)
         self._logger.debug(f"Cluster '{cluster_name}' created in frame '{aetheric_frame_name}'", "_create_cluster")
 
+    def _remove_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> None:
+        """
+        Removes an existing conduit cluster within a frame. (Internal use)
+
+        Args:
+            cluster_name (str): The name of the cluster to remove.
+            aetheric_frame_name (str): The name of the frame.
+
+        Raises:
+            ValueError: If the frame does not exist or the cluster is missing.
+        """
+        self.check_cleaned()
+        self._logger.debug(f"Removing cluster '{cluster_name}' in frame '{aetheric_frame_name}'", "_remove_cluster")
+
+        if aetheric_frame_name != "default":
+            try:
+                conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
+            except KeyError:
+                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_remove_cluster", exc_info=True)
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            self._ensure_default_frame()
+            conduit_clusters = self._default_frame._conduit_clusters
+
+        cluster = conduit_clusters.pop(cluster_name, None)
+        if cluster is None:
+            self._logger.error(f"Cluster with name {cluster_name} does not exist.", "_remove_cluster", exc_info=True)
+            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
+
+        try:
+            cluster.cleanup()
+        except Exception:
+            self._logger.error(f"Cluster cleanup failed for '{cluster_name}'", "_remove_cluster", exc_info=True)
+
+        self._logger.debug(f"Cluster '{cluster_name}' removed from frame '{aetheric_frame_name}'", "_remove_cluster")
+
     def _get_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> ConduitCluster:
         """
         Internal helper to fetch a ConduitCluster by name and frame.

@@ -1161,6 +1161,12 @@ class Spellbook(Cleanable):
                 spell_index=new_spell.spell_index,
                 spell=spell,
             )
+            if self._conjured and self._conduit is not None:
+                Spellbook._aether._register_single_spell_index(
+                    self._conduit._id,
+                    new_spell.spell_index,
+                    self._aetheric_frame,
+                )
             return new_spell.spell_id
         except Exception as e:
             self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)

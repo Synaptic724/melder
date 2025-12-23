@@ -836,6 +836,7 @@ class ConduitWard(Cleanable):
             except Exception:
                 child_ward = None
             if child_ward is not None:
+                child_ward._parent_conduit = self._conduit
                 child_ward._root_conduit = root_conduit
         self._logger.info(
             f"link_lesser: {lesser_conduit._id}",
@@ -2460,8 +2461,10 @@ class ConduitWard(Cleanable):
 
         Validates all active contracts attached to this conduit for symmetry and integrity.
 
-        This ensures both sides list the same spells, permissions are consistent, and all
-        referenced contracted spells exist in the peer's spellbook.
+        This ensures both sides list the same spells and that every referenced
+        spell is present in the **peer's contracted spellbook view**. Contract
+        validation does not consult local spell registries, because contracted
+        spell availability is the authoritative signal for shared usage.
 
         Args:
             None
@@ -2482,8 +2485,21 @@ class ConduitWard(Cleanable):
                         peer = contract._get_peer(ward)
                         peer_book = peer._conduit._spellbook
                         detail_map = contract._get_detail_map(ward)
-                        for sid, detail in detail_map.items():
-                            spell = peer_book._find_contracted_spell(sid)
+                        for _sid, detail in detail_map.items():
+                            spell = None
+                            contracted_lookup_failed = False
+                            try:
+                                spell = peer_book._find_contracted_spell(detail.spell_index)
+                            except Exception:
+                                contracted_lookup_failed = True
+                            if contracted_lookup_failed:
+                                try:
+                                    spell = peer_book._find_contracted_spell_by_id(
+                                        detail.spell_id,
+                                        ward._id,
+                                    )
+                                except Exception:
+                                    spell = None
                             if spell is None:
                                 valid = False
                                 break

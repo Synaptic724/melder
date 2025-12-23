@@ -246,8 +246,14 @@ def test_conduit_public_api_bind_and_binder_register_spells() -> None:
         )
         logger_id = conduit.create_binder().bind(BasicLogger).as_unique().finalize()
 
-        assert isinstance(conduit.meld(spell=config_id), BasicConfig)
-        assert isinstance(conduit.meld(spell=logger_id), BasicLogger)
+        config_spell = conduit.get_spell_by_id(config_id)
+        logger_spell = conduit.get_spell_by_id(logger_id)
+        assert config_spell is not None
+        assert logger_spell is not None
+        assert config_spell.spell_id == config_id
+        assert logger_spell.spell_id == logger_id
+        assert conduit.inspect_spell(BasicConfig) == config_id
+        assert conduit.inspect_spell(BasicLogger) == logger_id
     finally:
         conduit.cleanup()
 
