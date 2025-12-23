@@ -116,6 +116,53 @@ def test_conduit_cleanup_is_idempotent_and_blocks_meld() -> None:
         conduit.meld(spell=spell_id)
 
 
+def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
+    """
+    Purpose:
+        Ensure cleanup removes a conduit from Aether lookups and conduit cloud.
+    Contract:
+        - Conduit lookups by id, name, and spell id succeed before cleanup.
+        - After cleanup, lookups raise and the conduit cloud no longer resolves the conduit.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup does not unregister the conduit.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    observer_book = Spellbook(configuration=configuration)
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    observer = observer_book.conjure(automatic=False, name="observer")
+    try:
+        owner_name = owner.name
+        cloud = observer.get_conduit_cloud()
+
+        assert observer.get_conduit_by_id(owner.id) is owner
+        assert observer.get_conduit_by_name(owner_name) is owner
+        assert observer.get_conduit_by_spell_id(spell_id) is owner
+        assert cloud.get_conduit(owner_name) is owner
+
+        owner.cleanup()
+
+        with pytest.raises(ValueError, match="not found"):
+            observer.get_conduit_by_id(owner.id)
+        with pytest.raises(ValueError, match="not found"):
+            observer.get_conduit_by_name(owner_name)
+        with pytest.raises(ValueError, match="Spell version"):
+            observer.get_conduit_by_spell_id(spell_id)
+        with pytest.raises(ValueError, match="not found"):
+            cloud.get_conduit(owner_name)
+    finally:
+        observer.cleanup()
+        owner.cleanup()
+
+
 def test_conduit_meld_requires_identifier() -> None:
     """
     Purpose:

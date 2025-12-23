@@ -164,3 +164,27 @@ def test_conduit_cleanup_cleans_orphaned_spellspaces() -> None:
     conduit.cleanup()
     assert space.cleaned is True
     assert space.owner_conduit is None
+
+
+def test_conduit_cleanup_cleans_registered_spellspaces() -> None:
+    """
+    Purpose:
+        Ensure cleanup flushes spellspaces registered outside the stack.
+    Contract:
+        - cleanup calls SpellSpace.cleanup for registered spellspaces.
+        - Registered spellspaces drop their owner reference.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If registry cleanup does not clean spellspaces.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    conduit = spellbook.conjure(name="root")
+    space = conduit.create_spellspace()
+
+    conduit.cleanup()
+
+    assert space.cleaned is True
+    assert space.owner_conduit is None
