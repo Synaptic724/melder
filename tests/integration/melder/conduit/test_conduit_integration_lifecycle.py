@@ -163,6 +163,91 @@ def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
         owner.cleanup()
 
 
+def test_conduit_cleanup_severs_links_and_clears_contracts() -> None:
+    """
+    Purpose:
+        Ensure cleanup severs links and clears contracted spells for peers.
+    Contract:
+        - Borrower sees link and contracted spell before owner cleanup.
+        - Borrower no longer sees link or contracted spell after owner cleanup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup does not sever links or clear contracts.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    borrower_book = Spellbook(configuration=configuration)
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner_id = owner.id
+    try:
+        assert owner.link(borrower) is True
+        assert borrower.add_spell_to_contract(
+            spell_id=spell_id,
+            conduit=owner,
+            permissions="create",
+        ) is True
+
+        assert borrower.find_contracted_spell(spell_id) is not None
+        assert borrower.get_spells_in_contract_by_conduit(owner_id) is not None
+        assert any(link.id == owner_id for link in borrower.get_links())
+
+        owner.cleanup()
+
+        assert borrower.find_contracted_spell(spell_id) is None
+        assert borrower.get_spells_in_contract_by_conduit(owner_id) is None
+        assert all(link.id != owner_id for link in borrower.get_links())
+        assert borrower_book.contracted_spells.get(owner_id) is None
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_cleanup_cleans_lesser_conduits() -> None:
+    """
+    Purpose:
+        Validate root cleanup cascades to lesser conduits.
+    Contract:
+        - Cleaning the root conduit cleans lesser and nested lesser conduits.
+        - Cleaned lesser conduits reject meld usage.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup does not cascade to lessers.
+    """
+    configuration = _make_dynamic_configuration()
+    spellbook = Spellbook(configuration=configuration)
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    root = spellbook.conjure(automatic=False, name="root")
+    lesser = root.create_lesser_conduit()
+    nested = lesser.create_lesser_conduit()
+    try:
+        root.cleanup()
+
+        assert lesser.cleaned is True
+        assert nested.cleaned is True
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            lesser.meld(spell=spell_id)
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            nested.meld(spell=spell_id)
+    finally:
+        nested.cleanup()
+        lesser.cleanup()
+        root.cleanup()
+
+
 def test_conduit_meld_requires_identifier() -> None:
     """
     Purpose:

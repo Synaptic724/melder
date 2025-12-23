@@ -277,3 +277,87 @@ def test_conduit_hooks_fire_for_meld_link_contract_and_cleanup() -> None:
     assert len(contract_removed_calls) == 1
     assert len(cleanup_start_calls) == 1
     assert len(cleanup_complete_calls) == 1
+
+
+def test_conduit_hooks_fire_for_lesser_conduit_creation() -> None:
+    """
+    Purpose:
+        Validate lesser conduit creation hooks fire with expected arguments.
+    Contract:
+        - on_conduit_pre_created receives the parent conduit.
+        - on_conduit_activated receives the new lesser conduit.
+        - on_conduit_post_created receives parent and lesser conduits.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If creation hooks are not fired as expected.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+
+    pre_calls: list[tuple[object, ...]] = []
+    activated_calls: list[tuple[object, ...]] = []
+    post_calls: list[tuple[object, ...]] = []
+
+    def on_conduit_pre_created(*args: object) -> None:
+        """
+        Purpose:
+            Record pre-created hook calls.
+        Contract:
+            Captures the arguments for assertions.
+        Args:
+            *args: Hook arguments supplied by Conduit.
+        Returns:
+            None.
+        """
+        pre_calls.append(args)
+
+    def on_conduit_activated(*args: object) -> None:
+        """
+        Purpose:
+            Record activated hook calls.
+        Contract:
+            Captures the arguments for assertions.
+        Args:
+            *args: Hook arguments supplied by Conduit.
+        Returns:
+            None.
+        """
+        activated_calls.append(args)
+
+    def on_conduit_post_created(*args: object) -> None:
+        """
+        Purpose:
+            Record post-created hook calls.
+        Contract:
+            Captures the arguments for assertions.
+        Args:
+            *args: Hook arguments supplied by Conduit.
+        Returns:
+            None.
+        """
+        post_calls.append(args)
+
+    configuration.add_hook(owner_book.id, "on_conduit_pre_created", on_conduit_pre_created)
+    configuration.add_hook(owner_book.id, "on_conduit_activated", on_conduit_activated)
+    configuration.add_hook(owner_book.id, "on_conduit_post_created", on_conduit_post_created)
+
+    owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    pre_calls.clear()
+    activated_calls.clear()
+    post_calls.clear()
+    lesser = None
+    try:
+        lesser = owner.create_lesser_conduit()
+        assert pre_calls == [(owner,)]
+        assert activated_calls == [(lesser,)]
+        assert post_calls == [(owner, lesser)]
+    finally:
+        if lesser is not None:
+            lesser.cleanup()
+        owner.cleanup()
