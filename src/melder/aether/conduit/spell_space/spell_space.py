@@ -43,12 +43,16 @@ class SpellSpace(Cleanable):
         Idempotent:
         - Calls reset() (best-effort) to clear spellspace-bound instances.
         - Drops the owner reference.
+        - Unregisters from the owner Conduit cleanup registry.
         """
         if self._cleaned:
             return
         try:
             self.reset()
         finally:
+            owner = self._owner_conduit
+            if owner is not None:
+                owner._unregister_spellspace(self)
             self._owner_conduit = None
             self._cleaned = True
 

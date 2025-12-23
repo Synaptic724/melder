@@ -1,7 +1,7 @@
 import threading
 from contextvars import ContextVar
 from contextlib import contextmanager
-from typing import Optional, Type, Any, Tuple
+from typing import Optional, Type, Any, Tuple, Callable
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -81,6 +81,7 @@ class Conduit(Cleanable):
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
             f"_spellspace_stack_{self._id}", default=[]
         )
+        self._spellspace_registry: set[SpellSpace] = set()
 
         # Localized hook map for this conduit.
         # Populated from Configuration using the Spellbook's ID.
@@ -130,7 +131,49 @@ class Conduit(Cleanable):
         Returns:
             SpellSpace: A new SpellSpace owned by this Conduit.
         """
-        return SpellSpace(self)
+        space = SpellSpace(self)
+        self._register_spellspace(space)
+        return space
+
+    def _register_spellspace(self, space: SpellSpace) -> None:
+        """
+        Internal
+
+        Track a SpellSpace for cleanup bookkeeping.
+
+        Args:
+            space (SpellSpace): The spellspace to track.
+        """
+        if space is None:
+            return
+        if self._spellspace_registry is None:
+            return
+        lock = self._lock
+        if lock is None:
+            return
+        with lock:
+            if self._spellspace_registry is not None:
+                self._spellspace_registry.add(space)
+
+    def _unregister_spellspace(self, space: SpellSpace) -> None:
+        """
+        Internal
+
+        Remove a SpellSpace from cleanup bookkeeping.
+
+        Args:
+            space (SpellSpace): The spellspace to untrack.
+        """
+        if space is None:
+            return
+        if self._spellspace_registry is None:
+            return
+        lock = self._lock
+        if lock is None:
+            return
+        with lock:
+            if self._spellspace_registry is not None:
+                self._spellspace_registry.discard(space)
 
     @contextmanager
     def enter_spellspace(self) -> SpellSpace:
@@ -347,6 +390,11 @@ class Conduit(Cleanable):
         Idempotently clean this Conduit, severing links, tearing down local
         runtime, and (for normal conduits) unregistering from Aether. This is
         local teardown only; it never cleans AethericFrame or Aether.
+
+        Hook integration:
+            - on_conduit_cleanup_start fires before teardown begins.
+            - on_conduit_cleanup_complete fires after teardown completes,
+              even if the Spellbook cleanup clears the Configuration hook registry.
         """
         if self._cleaned:
             return
@@ -355,9 +403,12 @@ class Conduit(Cleanable):
                 return
             self._logger.debug("cleanup start", "cleanup")
             self._fire_conduit_hooks("on_conduit_cleanup_start", self)
+            cleanup_complete_hooks: list[Callable[..., Any]] | None = None
+            if self._conduit_hooks is not None:
+                hook_list = self._conduit_hooks.get("on_conduit_cleanup_complete")
+                if hook_list:
+                    cleanup_complete_hooks = list(hook_list)
             self._cleaned = True
-            # drop any active spellspace stack
-            self._spellspace_stack.set([])
             if self._conduit_state == ConduitState.lesser:
                 self._cleanup_lesser_conduit()
             elif self._conduit_state == ConduitState.normal:
@@ -365,7 +416,21 @@ class Conduit(Cleanable):
             else:
                 self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                 raise RuntimeError("Conduit state is unknown during cleanup")
-            self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
+            if cleanup_complete_hooks is None:
+                self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
+            else:
+                for hook in cleanup_complete_hooks:
+                    try:
+                        hook(self)
+                    except Exception as e:
+                        self._logger.error(
+                            f"Error while executing hook 'on_conduit_cleanup_complete': {e}",
+                            "_fire_conduit_hooks",
+                            exc_info=True,
+                        )
+            if self._conduit_hooks is not None:
+                self._conduit_hooks.clear()
+            self._conduit_hooks = None
 
         # Logger last
         if self._logger is not None:
@@ -409,14 +474,12 @@ class Conduit(Cleanable):
         except Exception:
             self._logger.error("Error cleaning creations", "_cleanup_lesser_conduit", exc_info=True)
 
-        if self._conduit_hooks is not None:
-            self._conduit_hooks.clear()
         # Null internal references
-        self._conduit_hooks = None
         self._conduit_ward = None
         self._meld = None
         self._creations = None
         self._spellspace_stack = None
+        self._spellspace_registry = None
         self._spellbook = None
         self._configuration = None
 
@@ -473,12 +536,10 @@ class Conduit(Cleanable):
         self._conduit_ward = None
         self._meld = None
         self._creations = None
-        if self._conduit_hooks is not None:
-            self._conduit_hooks.clear()
         self._spellbook = None
         self._configuration = None
-        self._conduit_hooks = None
         self._spellspace_stack = None
+        self._spellspace_registry = None
         self._aetheric_frame = None
 
     def _cleanup_spellspaces(self) -> None:
@@ -497,6 +558,13 @@ class Conduit(Cleanable):
                 except Exception:
                     self._logger.error("Error cleaning spellspace", "_cleanup_spellspaces", exc_info=True)
             self._spellspace_stack.set([])
+            if self._spellspace_registry is not None:
+                for space in list(self._spellspace_registry):
+                    try:
+                        space.cleanup()
+                    except Exception:
+                        self._logger.error("Error cleaning spellspace", "_cleanup_spellspaces", exc_info=True)
+                self._spellspace_registry.clear()
         except Exception:
             self._logger.error("Error flushing spellspace stack", "_cleanup_spellspaces", exc_info=True)
 
