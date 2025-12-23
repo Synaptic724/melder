@@ -20,6 +20,8 @@ from tests.mocks.spellbook.deep_layers import (
     get_depth_7_classes,
     get_depth_9_classes,
 )
+from tests.mocks.spellbook.core_classes import BasicConfig
+from tests.mocks.spellbook.core_classes import BasicService
 
 
 @pytest.fixture(autouse=True)
@@ -45,20 +47,31 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def _make_dynamic_spellbook(*, workers: int = 4) -> Spellbook:
+def _make_dynamic_spellbook(
+    *,
+    workers: int = 4,
+    configuration: Configuration | None = None,
+) -> Spellbook:
     """
     Purpose:
         Build a spellbook configured for dynamic concurrency tests.
     Contract:
-        - Applies dynamic defaults and sets the phase scheduler workers.
+        - Reuses the Aether configuration when present to avoid mismatches.
+        - Applies dynamic defaults for fresh configurations.
+        - Sets the phase scheduler workers for concurrency coverage when mutable.
     Args:
         workers: Scheduler worker count for the spellbook.
+        configuration: Optional configuration override to reuse across spellbooks.
     Returns:
         Spellbook: Configured spellbook instance.
     """
-    configuration = Configuration()
-    configuration.dynamic_defaults()
-    configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
+    if configuration is None:
+        configuration = Aether()._get_configuration("default")
+    if configuration is None:
+        configuration = Configuration()
+        configuration.dynamic_defaults()
+    if not configuration._frozen:
+        configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return Spellbook(configuration=configuration)
 
 
@@ -184,6 +197,58 @@ def _assert_depth9_root(root: Depth9Root) -> None:
     assert leaf_b is root.right.left.left.left.left.left.left.right
 
 
+def _assert_basic_service(instance: Any) -> None:
+    """
+    Purpose:
+        Validate BasicService instances for concurrency tests.
+    Contract:
+        - Instance must be BasicService.
+    Args:
+        instance: Object returned from meld.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the instance is not BasicService.
+    """
+    assert isinstance(instance, BasicService)
+
+
+def _assert_basic_config(instance: Any) -> None:
+    """
+    Purpose:
+        Validate BasicConfig instances for concurrency tests.
+    Contract:
+        - Instance must be BasicConfig.
+    Args:
+        instance: Object returned from meld.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the instance is not BasicConfig.
+    """
+    assert isinstance(instance, BasicConfig)
+
+
+def _get_inbound_spell_ids(
+    spells_by_conduit: dict[str, list[tuple[str, Any]]],
+) -> list[str]:
+    """
+    Purpose:
+        Extract inbound spell IDs from a contract snapshot.
+    Contract:
+        - Returns spell IDs from inbound entries only.
+        - Preserves duplicates so callers can assert idempotence.
+    Args:
+        spells_by_conduit: Contract snapshot keyed by inbound/outbound.
+    Returns:
+        list[str]: Spell IDs found in inbound entries.
+    """
+    inbound_ids: list[str] = []
+    for spell_id, _spell in spells_by_conduit.get("inbound", []):
+        inbound_ids.append(spell_id)
+    return inbound_ids
+
+
 def _run_concurrent_melds(
     *,
     tasks: list[tuple[str, Conduit, str, Callable[[Any], None]]],
@@ -251,6 +316,57 @@ def _run_concurrent_melds(
 
     assert errors == []
     return results
+
+
+def _run_concurrent_calls(
+    *,
+    functions: list[Callable[[], Any]],
+    timeout: float = 5.0,
+) -> tuple[list[Any], list[Exception]]:
+    """
+    Purpose:
+        Execute concurrent callables and collect results/errors.
+    Contract:
+        - All functions begin execution after the barrier.
+        - Any raised exception is returned for assertions.
+    Args:
+        functions: Callables to run concurrently.
+        timeout: Barrier timeout in seconds.
+    Returns:
+        tuple[list[Any], list[Exception]]: (results, errors).
+    """
+    barrier = Barrier(len(functions))
+    lock = Lock()
+    results: list[Any] = []
+    errors: list[Exception] = []
+
+    def worker(fn: Callable[[], Any]) -> None:
+        """
+        Purpose:
+            Run a single callable under barrier synchronization.
+        Contract:
+            - Captures results and errors for the caller.
+        Args:
+            fn: Callable to execute.
+        Returns:
+            None.
+        """
+        try:
+            barrier.wait(timeout=timeout)
+            result = fn()
+            with lock:
+                results.append(result)
+        except Exception as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [Thread(target=worker, args=(fn,)) for fn in functions]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    return results, errors
 
 
 def test_conduit_linked_concurrent_meld_across_four_conduits() -> None:
@@ -442,4 +558,970 @@ def test_conduit_concurrent_meld_across_linked_conduits_isolated_per_conduit() -
     finally:
         for borrower in borrowers:
             borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_instance() -> None:
+    """
+    Purpose:
+        Stress concurrent melds across a cluster for unique_per_conduit_cluster.
+    Contract:
+        - Conduits in the same cluster resolve the same instance.
+        - Concurrent calls do not produce duplicate instances.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If instances diverge or concurrency fails.
+    """
+    owner_book = _make_dynamic_spellbook()
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower_books = [
+        _make_dynamic_spellbook(),
+        _make_dynamic_spellbook(),
+        _make_dynamic_spellbook(),
+    ]
+    borrowers = [
+        borrower_books[0].conjure(automatic=False, name="borrower-1"),
+        borrower_books[1].conjure(automatic=False, name="borrower-2"),
+        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+    ]
+    try:
+        for borrower in borrowers:
+            owner.link(borrower)
+        owner.create_cluster("cluster-hard")
+        owner.join_cluster("cluster-hard")
+        for borrower in borrowers:
+            borrower.join_cluster("cluster-hard")
+        owner.refresh_cluster_shares()
+
+        barrier = Barrier(4)
+        lock = Lock()
+        results: list[Any] = []
+        errors: list[Exception] = []
+
+        def worker(conduit: Conduit) -> None:
+            """
+            Purpose:
+                Meld a shared spell concurrently in a cluster.
+            Contract:
+                - Records the resolved instance.
+            Args:
+                conduit: Conduit executing the meld.
+            Returns:
+                None.
+            """
+            try:
+                barrier.wait(timeout=5)
+                instance = conduit.meld(spell=spell_id)
+                with lock:
+                    results.append(instance)
+            except Exception as exc:
+                with lock:
+                    errors.append(exc)
+
+        threads = [Thread(target=worker, args=(owner,))]
+        threads.extend(Thread(target=worker, args=(borrower,)) for borrower in borrowers)
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert errors == []
+        assert len(results) == 4
+        assert len({id(instance) for instance in results}) == 1
+        assert isinstance(results[0], BasicService)
+    finally:
+        for borrower in borrowers:
+            borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_concurrent_contract_additions_idempotent() -> None:
+    """
+    Purpose:
+        Stress concurrent contract additions for the same spell.
+    Contract:
+        - Concurrent adds do not create duplicate contract entries.
+        - Root spell remains contracted after concurrent adds.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If duplicate entries appear or adds fail.
+    """
+    owner_book = _make_dynamic_spellbook()
+    depth3_ids = _bind_graph(
+        owner_book,
+        get_depth_3_classes(),
+        existence=Existence.unique,
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower_book = _make_dynamic_spellbook()
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        barrier = Barrier(4)
+        lock = Lock()
+        errors: list[Exception] = []
+
+        def worker() -> None:
+            """
+            Purpose:
+                Concurrently attempt to add the same spell to a contract.
+            Contract:
+                - Any exception is captured for assertions.
+            Returns:
+                None.
+            """
+            try:
+                barrier.wait(timeout=5)
+                borrower.add_spell_to_contract(
+                    spell_id=depth3_ids[Depth3Root],
+                    conduit=owner,
+                    permissions="create",
+                    link_dependencies=True,
+                )
+            except Exception as exc:
+                with lock:
+                    errors.append(exc)
+
+        threads = [Thread(target=worker) for _ in range(4)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert errors == []
+        spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
+        assert spells_by_conduit is not None
+        inbound_ids = _get_inbound_spell_ids(spells_by_conduit)
+        assert inbound_ids.count(depth3_ids[Depth3Root]) == 1
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_lineage_concurrent_meld_unique_per_conduit_lineage_shared_instance() -> None:
+    """
+    Purpose:
+        Stress concurrent melds across a conduit lineage.
+    Contract:
+        - Root and lesser conduits resolve the same instance.
+        - Concurrent calls do not produce duplicate instances.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lineage sharing fails or concurrency errors occur.
+    """
+    spellbook = _make_dynamic_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_lineage,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    lesser = conduit.create_lesser_conduit()
+    nested = lesser.create_lesser_conduit()
+    barrier = Barrier(3)
+    lock = Lock()
+    results: list[Any] = []
+    errors: list[Exception] = []
+
+    def worker(target: Conduit) -> None:
+        """
+        Purpose:
+            Meld the lineage-shared spell concurrently.
+        Contract:
+            - Records the resolved instance.
+        Args:
+            target: Conduit executing the meld.
+        Returns:
+            None.
+        """
+        try:
+            barrier.wait(timeout=5)
+            instance = target.meld(spell=spell_id)
+            with lock:
+                results.append(instance)
+        except Exception as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [
+        Thread(target=worker, args=(conduit,)),
+        Thread(target=worker, args=(lesser,)),
+        Thread(target=worker, args=(nested,)),
+    ]
+    try:
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        assert errors == []
+        assert len(results) == 3
+        assert len({id(instance) for instance in results}) == 1
+        assert isinstance(results[0], BasicService)
+    finally:
+        nested.cleanup()
+        lesser.cleanup()
+        conduit.cleanup()
+
+
+def test_conduit_concurrent_shared_unique_contract_reuses_owner_instance() -> None:
+    """
+    Purpose:
+        Stress concurrent melds across linked conduits for shared unique.
+    Contract:
+        - Owner and borrower resolve the same instance.
+        - Concurrent calls do not create duplicates.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If shared-unique reuse fails.
+    """
+    owner_book = _make_dynamic_spellbook()
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower_book = _make_dynamic_spellbook()
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        borrower.add_spell_to_contract(
+            spell_id=spell_id,
+            conduit=owner,
+            permissions="create",
+        )
+        barrier = Barrier(2)
+        lock = Lock()
+        results: list[Any] = []
+        errors: list[Exception] = []
+
+        def worker(target: Conduit) -> None:
+            """
+            Purpose:
+                Meld a shared unique spell concurrently.
+            Contract:
+                - Records the resolved instance.
+            Args:
+                target: Conduit executing the meld.
+            Returns:
+                None.
+            """
+            try:
+                barrier.wait(timeout=5)
+                instance = target.meld(spell=spell_id)
+                with lock:
+                    results.append(instance)
+            except Exception as exc:
+                with lock:
+                    errors.append(exc)
+
+        threads = [
+            Thread(target=worker, args=(owner,)),
+            Thread(target=worker, args=(borrower,)),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert errors == []
+        assert len(results) == 2
+        assert len({id(instance) for instance in results}) == 1
+        assert isinstance(results[0], BasicService)
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_unique_per_conduit_lineage_isolated_across_lineages_concurrent() -> None:
+    """
+    Purpose:
+        Stress concurrent melds across two independent lineages.
+    Contract:
+        - Each lineage reuses its own instance.
+        - Lineages do not share instances across roots.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lineage isolation fails.
+    """
+    spellbook_a = _make_dynamic_spellbook()
+    spell_id_a = spellbook_a.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_lineage,
+        permissions="create",
+    )
+    configuration = spellbook_a.get_configuration()
+    spellbook_b = _make_dynamic_spellbook(configuration=configuration)
+    spell_id_b = spellbook_b.bind(
+        spell=BasicConfig,
+        existence=Existence.unique_per_conduit_lineage,
+        permissions="create",
+    )
+    root_a = spellbook_a.conjure(name="root-a")
+    root_b = spellbook_b.conjure(name="root-b")
+    lesser_a = root_a.create_lesser_conduit()
+    lesser_b = root_b.create_lesser_conduit()
+    try:
+        tasks = [
+            ("root-a", root_a, spell_id_a, _assert_basic_service),
+            ("lesser-a", lesser_a, spell_id_a, _assert_basic_service),
+            ("root-b", root_b, spell_id_b, _assert_basic_config),
+            ("lesser-b", lesser_b, spell_id_b, _assert_basic_config),
+        ]
+        results = _run_concurrent_melds(tasks=tasks)
+        instance_a = results["root-a"]
+        instance_b = results["root-b"]
+        assert instance_a is results["lesser-a"]
+        assert instance_b is results["lesser-b"]
+        assert instance_a is not instance_b
+    finally:
+        lesser_a.cleanup()
+        root_a.cleanup()
+        lesser_b.cleanup()
+        root_b.cleanup()
+
+
+def test_conduit_cluster_concurrent_meld_two_clusters_isolated() -> None:
+    """
+    Purpose:
+        Stress concurrent melds across two distinct clusters.
+    Contract:
+        - Conduits within a cluster share the instance.
+        - Conduits across clusters do not share instances.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cluster isolation fails.
+    """
+    cluster_a_owner_book = _make_dynamic_spellbook()
+    spell_id_a = cluster_a_owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    configuration = cluster_a_owner_book.get_configuration()
+    cluster_b_owner_book = _make_dynamic_spellbook(configuration=configuration)
+    spell_id_b = cluster_b_owner_book.bind(
+        spell=BasicConfig,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    cluster_a_peer_book = _make_dynamic_spellbook(configuration=configuration)
+    cluster_b_peer_book = _make_dynamic_spellbook(configuration=configuration)
+    cluster_a_owner = cluster_a_owner_book.conjure(
+        automatic=False,
+        name="cluster-a-owner",
+    )
+    cluster_a_peer = cluster_a_peer_book.conjure(
+        automatic=False,
+        name="cluster-a-peer",
+    )
+    cluster_b_owner = cluster_b_owner_book.conjure(
+        automatic=False,
+        name="cluster-b-owner",
+    )
+    cluster_b_peer = cluster_b_peer_book.conjure(
+        automatic=False,
+        name="cluster-b-peer",
+    )
+    try:
+        cluster_a_owner.link(cluster_a_peer)
+        cluster_b_owner.link(cluster_b_peer)
+
+        cluster_a_owner.create_cluster("cluster-a")
+        cluster_a_owner.join_cluster("cluster-a")
+        cluster_a_peer.join_cluster("cluster-a")
+        cluster_b_owner.create_cluster("cluster-b")
+        cluster_b_owner.join_cluster("cluster-b")
+        cluster_b_peer.join_cluster("cluster-b")
+        cluster_a_owner.refresh_cluster_shares()
+        cluster_b_owner.refresh_cluster_shares()
+
+        tasks = [
+            ("cluster-a-owner", cluster_a_owner, spell_id_a, _assert_basic_service),
+            ("cluster-a-peer", cluster_a_peer, spell_id_a, _assert_basic_service),
+            ("cluster-b-owner", cluster_b_owner, spell_id_b, _assert_basic_config),
+            ("cluster-b-peer", cluster_b_peer, spell_id_b, _assert_basic_config),
+        ]
+        results = _run_concurrent_melds(tasks=tasks)
+        assert results["cluster-a-owner"] is results["cluster-a-peer"]
+        assert results["cluster-b-owner"] is results["cluster-b-peer"]
+        assert results["cluster-a-owner"] is not results["cluster-b-owner"]
+    finally:
+        cluster_a_peer.cleanup()
+        cluster_a_owner.cleanup()
+        cluster_b_peer.cleanup()
+        cluster_b_owner.cleanup()
+
+
+def test_conduit_concurrent_contract_additions_multiple_spells() -> None:
+    """
+    Purpose:
+        Stress concurrent contract additions for multiple spell roots.
+    Contract:
+        - Each root spell is contracted once.
+        - No errors occur under concurrent additions.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If contract additions fail.
+    """
+    owner_book = _make_dynamic_spellbook()
+    depth3_ids = _bind_graph(
+        owner_book,
+        get_depth_3_classes(),
+        existence=Existence.unique,
+    )
+    depth5_ids = _bind_graph(
+        owner_book,
+        get_depth_5_classes(),
+        existence=Existence.unique,
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower_book = _make_dynamic_spellbook()
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+
+        def add_depth3() -> None:
+            """
+            Purpose:
+                Contract the depth-3 root spell.
+            Contract:
+                - Adds the root spell to the contract.
+            Returns:
+                None.
+            """
+            borrower.add_spell_to_contract(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
+
+        def add_depth5() -> None:
+            """
+            Purpose:
+                Contract the depth-5 root spell.
+            Contract:
+                - Adds the root spell to the contract.
+            Returns:
+                None.
+            """
+            borrower.add_spell_to_contract(
+                spell_id=depth5_ids[Depth5Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
+
+        _results, errors = _run_concurrent_calls(functions=[add_depth3, add_depth5])
+        assert errors == []
+        spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
+        assert spells_by_conduit is not None
+        inbound_ids = _get_inbound_spell_ids(spells_by_conduit)
+        assert inbound_ids.count(depth3_ids[Depth3Root]) == 1
+        assert inbound_ids.count(depth5_ids[Depth5Root]) == 1
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_concurrent_contract_additions_same_spell_multiple_borrowers() -> None:
+    """
+    Purpose:
+        Stress concurrent contract additions for the same spell across borrowers.
+    Contract:
+        - Each borrower contracts the spell once.
+        - No errors occur under concurrent additions.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any borrower lacks the contract.
+    """
+    owner_book = _make_dynamic_spellbook()
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower_books = [
+        _make_dynamic_spellbook(),
+        _make_dynamic_spellbook(),
+        _make_dynamic_spellbook(),
+    ]
+    borrowers = [
+        borrower_books[0].conjure(automatic=False, name="borrower-1"),
+        borrower_books[1].conjure(automatic=False, name="borrower-2"),
+        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+    ]
+    try:
+        for borrower in borrowers:
+            owner.link(borrower)
+
+        def add_for(borrower: Conduit) -> Callable[[], None]:
+            """
+            Purpose:
+                Build a callable that contracts the spell for a borrower.
+            Contract:
+                - Adds the spell to the borrower's contract.
+            Args:
+                borrower: Target borrower conduit.
+            Returns:
+                Callable[[], None]: Contracting function.
+            """
+            def _add() -> None:
+                """
+                Purpose:
+                    Contract the shared spell for a borrower.
+                Contract:
+                    - Adds the spell to the contract.
+                Returns:
+                    None.
+                """
+                borrower.add_spell_to_contract(
+                    spell_id=spell_id,
+                    conduit=owner,
+                    permissions="create",
+                )
+            return _add
+
+        functions = [add_for(borrower) for borrower in borrowers]
+        _results, errors = _run_concurrent_calls(functions=functions)
+        assert errors == []
+        for borrower in borrowers:
+            spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
+            assert spells_by_conduit is not None
+            inbound_ids = _get_inbound_spell_ids(spells_by_conduit)
+            assert inbound_ids.count(spell_id) == 1
+    finally:
+        for borrower in borrowers:
+            borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_concurrent_meld_many_across_borrowers_distinct_instances() -> None:
+    """
+    Purpose:
+        Stress concurrent melds for Existence.many across borrowers.
+    Contract:
+        - Each meld returns a distinct instance.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If instances are reused.
+    """
+    owner_book = _make_dynamic_spellbook()
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower_books = [
+        _make_dynamic_spellbook(),
+        _make_dynamic_spellbook(),
+        _make_dynamic_spellbook(),
+    ]
+    borrowers = [
+        borrower_books[0].conjure(automatic=False, name="borrower-1"),
+        borrower_books[1].conjure(automatic=False, name="borrower-2"),
+        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+    ]
+    try:
+        for borrower in borrowers:
+            owner.link(borrower)
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
+
+        def meld_owner() -> BasicService:
+            """
+            Purpose:
+                Meld the many spell from the owner conduit.
+            Contract:
+                - Returns a new BasicService instance.
+            Returns:
+                BasicService: New instance.
+            """
+            instance = owner.meld(spell=spell_id)
+            _assert_basic_service(instance)
+            return instance
+
+        def meld_borrower(borrower: Conduit) -> Callable[[], BasicService]:
+            """
+            Purpose:
+                Build a callable that melds the many spell from a borrower.
+            Contract:
+                - Returns a new BasicService instance.
+            Args:
+                borrower: Borrower conduit.
+            Returns:
+                Callable[[], BasicService]: Meld function.
+            """
+            def _meld() -> BasicService:
+                """
+                Purpose:
+                    Meld the many spell from a borrower conduit.
+                Contract:
+                    - Returns a new BasicService instance.
+                Returns:
+                    BasicService: New instance.
+                """
+                instance = borrower.meld(spell=spell_id)
+                _assert_basic_service(instance)
+                return instance
+            return _meld
+
+        functions = [meld_owner]
+        functions.extend(meld_borrower(borrower) for borrower in borrowers)
+        results, errors = _run_concurrent_calls(functions=functions)
+        assert errors == []
+        assert len({id(instance) for instance in results}) == 4
+    finally:
+        for borrower in borrowers:
+            borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_concurrent_meld_unique_across_multiple_borrowers_shared_instance() -> None:
+    """
+    Purpose:
+        Stress concurrent melds for shared unique across multiple borrowers.
+    Contract:
+        - All conduits resolve the same instance.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If shared reuse fails.
+    """
+    owner_book = _make_dynamic_spellbook()
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower_books = [
+        _make_dynamic_spellbook(),
+        _make_dynamic_spellbook(),
+        _make_dynamic_spellbook(),
+    ]
+    borrowers = [
+        borrower_books[0].conjure(automatic=False, name="borrower-1"),
+        borrower_books[1].conjure(automatic=False, name="borrower-2"),
+        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+    ]
+    try:
+        for borrower in borrowers:
+            owner.link(borrower)
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
+
+        def meld_owner() -> BasicService:
+            """
+            Purpose:
+                Meld the shared unique spell from the owner conduit.
+            Contract:
+                - Returns the shared BasicService instance.
+            Returns:
+                BasicService: Shared instance.
+            """
+            instance = owner.meld(spell=spell_id)
+            _assert_basic_service(instance)
+            return instance
+
+        def meld_borrower(borrower: Conduit) -> Callable[[], BasicService]:
+            """
+            Purpose:
+                Build a callable that melds shared unique from a borrower.
+            Contract:
+                - Returns the shared BasicService instance.
+            Args:
+                borrower: Borrower conduit.
+            Returns:
+                Callable[[], BasicService]: Meld function.
+            """
+            def _meld() -> BasicService:
+                """
+                Purpose:
+                    Meld the shared unique spell from a borrower.
+                Contract:
+                    - Returns the shared BasicService instance.
+                Returns:
+                    BasicService: Shared instance.
+                """
+                instance = borrower.meld(spell=spell_id)
+                _assert_basic_service(instance)
+                return instance
+            return _meld
+
+        functions = [meld_owner]
+        functions.extend(meld_borrower(borrower) for borrower in borrowers)
+        results, errors = _run_concurrent_calls(functions=functions)
+        assert errors == []
+        assert len({id(instance) for instance in results}) == 1
+    finally:
+        for borrower in borrowers:
+            borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_concurrent_meld_mixed_spells_same_conduit() -> None:
+    """
+    Purpose:
+        Stress concurrent melds for mixed spells in the same conduit.
+    Contract:
+        - Each spell reuses its own instance under contention.
+        - Mixed spell instances do not collide.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If reuse or isolation fails.
+    """
+    spellbook = _make_dynamic_spellbook()
+    depth3_ids = _bind_graph(
+        spellbook,
+        get_depth_3_classes(),
+        existence=Existence.unique_per_conduit,
+    )
+    basic_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        def meld_basic() -> BasicService:
+            """
+            Purpose:
+                Meld BasicService in the conduit.
+            Contract:
+                - Returns the shared BasicService instance.
+            Returns:
+                BasicService: Shared instance.
+            """
+            instance = conduit.meld(spell=basic_id)
+            _assert_basic_service(instance)
+            return instance
+
+        def meld_depth3() -> Depth3Root:
+            """
+            Purpose:
+                Meld Depth3Root in the conduit.
+            Contract:
+                - Returns the shared Depth3Root instance.
+            Returns:
+                Depth3Root: Shared instance.
+            """
+            root = conduit.meld(spell=depth3_ids[Depth3Root])
+            _assert_depth3_root(root)
+            return root
+
+        functions = [meld_basic, meld_basic, meld_depth3, meld_depth3]
+        results, errors = _run_concurrent_calls(functions=functions)
+        assert errors == []
+        basics = [result for result in results if isinstance(result, BasicService)]
+        roots = [result for result in results if isinstance(result, Depth3Root)]
+        assert len(basics) == 2
+        assert len(roots) == 2
+        assert len({id(instance) for instance in basics}) == 1
+        assert len({id(instance) for instance in roots}) == 1
+        assert basics[0] is not roots[0]
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_concurrent_link_separate_pairs() -> None:
+    """
+    Purpose:
+        Stress concurrent linking across separate conduit pairs.
+    Contract:
+        - Each pair links successfully without interference.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If linking fails.
+    """
+    book_a = _make_dynamic_spellbook()
+    configuration = book_a.get_configuration()
+    book_b = _make_dynamic_spellbook(configuration=configuration)
+    book_c = _make_dynamic_spellbook(configuration=configuration)
+    book_d = _make_dynamic_spellbook(configuration=configuration)
+    conduit_a = book_a.conjure(automatic=False, name="conduit-a")
+    conduit_b = book_b.conjure(automatic=False, name="conduit-b")
+    conduit_c = book_c.conjure(automatic=False, name="conduit-c")
+    conduit_d = book_d.conjure(automatic=False, name="conduit-d")
+    try:
+        def link_ab() -> bool:
+            """
+            Purpose:
+                Link conduit A to conduit B.
+            Contract:
+                - Returns True on successful link.
+            Returns:
+                bool: Link result.
+            """
+            return conduit_a.link(conduit_b)
+
+        def link_cd() -> bool:
+            """
+            Purpose:
+                Link conduit C to conduit D.
+            Contract:
+                - Returns True on successful link.
+            Returns:
+                bool: Link result.
+            """
+            return conduit_c.link(conduit_d)
+
+        results, errors = _run_concurrent_calls(functions=[link_ab, link_cd])
+        assert errors == []
+        assert len(results) == 2
+        assert all(result is True for result in results)
+        contracted_a = conduit_a.get_contracted_conduits()
+        contracted_c = conduit_c.get_contracted_conduits()
+        assert contracted_a is not None
+        assert contracted_c is not None
+        assert any(conduit_id == conduit_b._id for conduit_id, _ in contracted_a)
+        assert any(conduit_id == conduit_d._id for conduit_id, _ in contracted_c)
+    finally:
+        conduit_b.cleanup()
+        conduit_a.cleanup()
+        conduit_d.cleanup()
+        conduit_c.cleanup()
+
+
+def test_conduit_concurrent_meld_repeated_rounds_unique_per_conduit() -> None:
+    """
+    Purpose:
+        Stress repeated rounds of concurrent melds in a single conduit.
+    Contract:
+        - Each round reuses the same instance.
+        - No errors occur across rounds.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If reuse fails across rounds.
+    """
+    spellbook = _make_dynamic_spellbook()
+    depth3_ids = _bind_graph(
+        spellbook,
+        get_depth_3_classes(),
+        existence=Existence.unique_per_conduit,
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        def meld_root() -> Depth3Root:
+            """
+            Purpose:
+                Meld the depth-3 root in the conduit.
+            Contract:
+                - Returns the shared Depth3Root instance.
+            Returns:
+                Depth3Root: Shared instance.
+            """
+            root = conduit.meld(spell=depth3_ids[Depth3Root])
+            _assert_depth3_root(root)
+            return root
+
+        shared_instance: Depth3Root | None = None
+        for _round in range(3):
+            results, errors = _run_concurrent_calls(
+                functions=[meld_root, meld_root, meld_root, meld_root],
+            )
+            assert errors == []
+            assert len({id(root) for root in results}) == 1
+            if shared_instance is None:
+                shared_instance = results[0]
+            assert results[0] is shared_instance
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_concurrent_bulk_contract_additions() -> None:
+    """
+    Purpose:
+        Stress concurrent bulk contract additions for multiple spell IDs.
+    Contract:
+        - All spell IDs are contracted without duplication.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any spell ID is missing from contracts.
+    """
+    owner_book = _make_dynamic_spellbook()
+    depth3_ids = _bind_graph(
+        owner_book,
+        get_depth_3_classes(),
+        existence=Existence.unique,
+    )
+    depth5_ids = _bind_graph(
+        owner_book,
+        get_depth_5_classes(),
+        existence=Existence.unique,
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower_book = _make_dynamic_spellbook()
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        spell_ids_a = [depth3_ids[Depth3Root], depth5_ids[Depth5Root]]
+        spell_ids_b = [depth3_ids[Depth3Root]]
+
+        def add_batch_a() -> dict[str, bool]:
+            """
+            Purpose:
+                Contract the first batch of spell IDs.
+            Contract:
+                - Adds each spell id to the contract.
+            Returns:
+                dict[str, bool]: Result mapping from add_spells_to_contract.
+            """
+            return borrower.add_spells_to_contract(
+                spell_ids=spell_ids_a,
+                conduit=owner,
+                permissions="create",
+            )
+
+        def add_batch_b() -> dict[str, bool]:
+            """
+            Purpose:
+                Contract the second batch of spell IDs.
+            Contract:
+                - Adds each spell id to the contract.
+            Returns:
+                dict[str, bool]: Result mapping from add_spells_to_contract.
+            """
+            return borrower.add_spells_to_contract(
+                spell_ids=spell_ids_b,
+                conduit=owner,
+                permissions="create",
+            )
+
+        _results, errors = _run_concurrent_calls(functions=[add_batch_a, add_batch_b])
+        assert errors == []
+        spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
+        assert spells_by_conduit is not None
+        inbound_ids = _get_inbound_spell_ids(spells_by_conduit)
+        assert inbound_ids.count(depth3_ids[Depth3Root]) == 1
+        assert inbound_ids.count(depth5_ids[Depth5Root]) == 1
+    finally:
+        borrower.cleanup()
         owner.cleanup()

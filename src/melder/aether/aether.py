@@ -248,6 +248,63 @@ class Aether(Cleanable):
         """
         self._logger = InitHelpers.resolve_safe_logger(value)
 
+    def _ensure_frame(self, aetheric_frame_name: str = "default") -> AethericFrame:
+        """
+        Internal
+
+        Ensure an AethericFrame exists for the given name, creating it if missing.
+
+        Purpose:
+            Provide a single, thread-safe creation path for named frames so
+            Spellbooks can initialize against a new frame without raising.
+
+        Contract:
+            - Returns the existing frame when it already exists.
+            - Creates and registers a new frame when absent.
+            - Does not mutate the default frame pointer unless the name is "default".
+
+        Args:
+            aetheric_frame_name: The frame name to ensure exists.
+
+        Returns:
+            AethericFrame: The existing or newly created frame.
+
+        Raises:
+            RuntimeError: If the Aether is cleaned or its frame registry is unavailable.
+            ValueError: If the frame name is invalid for frame construction.
+
+        Threading:
+            Acquires the Aether lock to serialize frame creation.
+
+        Lifecycle:
+            The created frame is owned by Aether and will be cleaned by Aether.cleanup().
+        """
+        self.check_cleaned()
+        if not isinstance(aetheric_frame_name, str):
+            raise TypeError("aetheric_frame_name must be a string.")
+
+        if self._aetheric_frames is None:
+            raise RuntimeError("Aether frame registry is unavailable.")
+
+        with self._lock:
+            if self._aetheric_frames is None:
+                raise RuntimeError("Aether frame registry is unavailable.")
+
+            frame = self._aetheric_frames.get(aetheric_frame_name)
+            if frame is not None:
+                return frame
+
+            frame = AethericFrame(aetheric_frame_name)
+            self._aetheric_frames[aetheric_frame_name] = frame
+            if aetheric_frame_name == "default":
+                self._default_frame = frame
+
+            self._logger.debug(
+                f"Created AethericFrame '{aetheric_frame_name}'",
+                "_ensure_frame",
+            )
+            return frame
+
 
     def _bind_configuration(self, configuration, aetheric_frame_name: str = "default") -> None:
         """

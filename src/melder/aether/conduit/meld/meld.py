@@ -327,6 +327,9 @@ class Meld(Cleanable):
 
         - If validity is INVALID or DISABLED:
             → raise SpellbookValidationError immediately.
+        Threading:
+            - Uses the per-spell lock (`spell._lock`) to serialize revalidation
+              when validity is UNKNOWN or GATED, preventing concurrent phase runs.
         """
         state = spell.system_state
         if state is None:
@@ -338,20 +341,24 @@ class Meld(Cleanable):
             return
 
         # At this point we know: state is not None and validity ∈ {unknown, gated}.
-        spell.run_all_phases()
+        with spell._lock:
+            if not self._gated_validation_required(spell):
+                return
 
-        # If the crafter thinks it's broken, we hard-pin to invalid and bail.
-        if spell.is_broken:
-            state.set_validity(SpellValidity.invalid)
-            raise SpellbookValidationError([spell])
+            spell.run_all_phases()
 
-        # Re-read state in case your validation pipeline swapped the object
-        # or mutated validity.
-        refreshed_state = spell.system_state
+            # If the crafter thinks it's broken, we hard-pin to invalid and bail.
+            if spell.is_broken:
+                state.set_validity(SpellValidity.invalid)
+                raise SpellbookValidationError([spell])
 
-        # One chance: after revalidation, the lineage must be VALID.
-        if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
-            raise SpellbookValidationError([spell])
+            # Re-read state in case your validation pipeline swapped the object
+            # or mutated validity.
+            refreshed_state = spell.system_state
+
+            # One chance: after revalidation, the lineage must be VALID.
+            if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
+                raise SpellbookValidationError([spell])
 
 
     def _gated_validation_required(self, spell: ISpell) -> bool:

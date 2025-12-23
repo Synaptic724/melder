@@ -898,7 +898,7 @@ class _AdjacencySnapshotStub:
     Purpose:
         Provide a minimal adjacency snapshot for Phase 5 tests.
     Contract:
-        Exposes dependencies and root_spell_ids attributes.
+        Exposes dependencies, root_spell_ids, and topologies attributes.
     """
 
     def __init__(
@@ -906,20 +906,23 @@ class _AdjacencySnapshotStub:
         *,
         dependencies: dict[str, set[str]],
         root_spell_ids: set[str],
+        topologies: dict[str, Any] | None = None,
     ) -> None:
         """
         Purpose:
             Initialize the snapshot stub.
         Contract:
-            Stores the provided dependencies and root ids.
+            Stores the provided dependencies, root ids, and topologies.
         Args:
             dependencies: Mapping of spell id to dependency ids.
             root_spell_ids: Set of root spell ids.
+            topologies: Optional mapping of spell id to topology stubs.
         Returns:
             None.
         """
         self.dependencies = dependencies
         self.root_spell_ids = root_spell_ids
+        self.topologies = topologies if topologies is not None else {}
 
 
 class _RootBlueprintStub:
@@ -1641,7 +1644,15 @@ def test_notify_dependencies_updated_skips_when_missing(
     Raises:
         AssertionError: If update calls are recorded unexpectedly.
     """
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, spell, _ = _build_spell_and_crafter(spell_system_states=states)
 
     if drop_states:
@@ -1678,7 +1689,15 @@ def test_notify_dependencies_updated_passes_dependencies(
     Raises:
         AssertionError: If update call metadata is incorrect.
     """
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, spell, _ = _build_spell_and_crafter(spell_system_states=states)
 
     crafter._notify_dependencies_updated(dependency_ids)
@@ -2991,7 +3010,15 @@ def test_build_local_frame_dag_ignores_contract_shapes(
     Raises:
         AssertionError: If contract sockets create DAG edges.
     """
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, spell, _ = _build_spell_and_crafter(spell_system_states=states)
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
@@ -3041,7 +3068,15 @@ def test_build_local_frame_dag_updates_states(
     Raises:
         AssertionError: If state updates are missing or incorrect.
     """
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, spell, _ = _build_spell_and_crafter(spell_system_states=states)
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
@@ -3296,7 +3331,15 @@ def test_run_phase_root_blueprints_requires_phase4(
     Raises:
         AssertionError: If Phase 4 gating behavior is incorrect.
     """
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, _, _ = _build_spell_and_crafter(spell_system_states=states)
 
     crafter._validated_phase4 = False
@@ -3308,7 +3351,7 @@ def test_run_phase_root_blueprints_requires_phase4(
             crafter.run_phase_root_blueprints(cancel_event=None)
         return
 
-    snapshot = _AdjacencySnapshotStub(dependencies={}, root_spell_ids=set())
+    snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids=set())
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = {}
 
@@ -3404,7 +3447,15 @@ def test_run_phase_root_blueprints_skips_missing_root_spell(
     Raises:
         AssertionError: If missing roots cause attachment or errors.
     """
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, _, _ = _build_spell_and_crafter(spell_system_states=states)
     crafter._validated_phase4 = True
     crafter._validation_result_phase4 = object()
@@ -3440,7 +3491,15 @@ def test_run_phase_root_blueprints_uses_existing_scanner(
     Raises:
         AssertionError: If a new scanner is created unexpectedly.
     """
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, spell, _ = _build_spell_and_crafter(spell_system_states=states)
     crafter._validated_phase4 = True
     crafter._validation_result_phase4 = object()
@@ -3448,7 +3507,7 @@ def test_run_phase_root_blueprints_uses_existing_scanner(
     existing_scanner = _SpellbookScannerStub(spell._spellbook)
     crafter._spellbook_scanner = existing_scanner
 
-    snapshot = _AdjacencySnapshotStub(dependencies={}, root_spell_ids=set())
+    snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids=set())
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = {}
     _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
@@ -3479,7 +3538,15 @@ def test_run_phase_root_blueprints_change_control_wires_revalidator(
     """
     manager = _ChangeControlManagerStub()
     aether = _AetherStub(manager=manager)
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, spell, _ = _build_spell_and_crafter(
         spell_system_states=states,
         aether=aether,
@@ -3522,7 +3589,15 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
     """
     manager = _ChangeControlManagerStub()
     aether = _AetherStub(manager=manager)
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, spell, _ = _build_spell_and_crafter(
         spell_system_states=states,
         aether=aether,
@@ -3530,7 +3605,7 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
     crafter._validated_phase4 = True
     crafter._validation_result_phase4 = object()
 
-    snapshot = _AdjacencySnapshotStub(dependencies={}, root_spell_ids={"root"})
+    snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids={"root"})
     blueprints = {"root": _RootBlueprintStub("root")}
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = blueprints
@@ -3588,7 +3663,15 @@ def test_run_phase_root_blueprints_swallow_change_control_errors(
         AssertionError: If exceptions propagate from change control wiring.
     """
     aether = _AetherStub(raise_on_get=True)
-    states = _SpellSystemStatesStub()
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="root",
+                direct_dependencies=set(),
+                spell_index_id="lineage-root",
+            ),
+        ]
+    )
     crafter, spell, _ = _build_spell_and_crafter(
         spell_system_states=states,
         aether=aether,
@@ -3596,7 +3679,7 @@ def test_run_phase_root_blueprints_swallow_change_control_errors(
     crafter._validated_phase4 = True
     crafter._validation_result_phase4 = object()
 
-    snapshot = _AdjacencySnapshotStub(dependencies={}, root_spell_ids=set())
+    snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids=set())
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = {}
     _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]

@@ -15,6 +15,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
     SpellResolutionFrame,
 )
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import SpellSystemAdjacencyBuilder
+from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import SpellSystemAdjacencySnapshot
 from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
 from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import SpellSystemRootBlueprintBuilder
 from melder.spellbook.spell_types.spell_types import SpellType
@@ -1145,8 +1146,9 @@ class SpellCrafter(Cleanable):
         Phase 5 entrypoint.
 
         Builds deep DAG blueprints (RootResolutionBlueprints) and a frame-level
-        SpellSystemIndex. This step uses only *existing* Phase 1–4 artifacts;
-        no new discovery occurs.
+        SpellSystemIndex. This step uses only *existing* Phase 1-4 artifacts;
+        no new discovery occurs. The resulting DAGs and index are scoped to
+        spells visible to the current Spellbook (local + contracted).
 
         Args:
             cancel_event:
@@ -1174,16 +1176,33 @@ class SpellCrafter(Cleanable):
 
         self._throw_if_cancelled(cancel_event)
 
-        # --- 2. Build deep DAGs for all roots ------------------------------
-        root_builder = SpellSystemRootBlueprintBuilder()
-        root_blueprints = root_builder.build_root_blueprints(snapshot)
+        # --- 2. Filter to spellbook-visible spells -------------------------
+        visible_spell_ids: Set[str] = set()
+        version_to_spell: Dict[str, ISpell] = {}
+        if self._spellbook_scanner is None:
+            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
+        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
+            spell_id = spell_index.current
+            visible_spell_ids.add(spell_id)
+            version_to_spell[spell_id] = spell_instance
+
+        filtered_snapshot = self._filter_snapshot_to_visible_spells(
+            snapshot=snapshot,
+            visible_spell_ids=visible_spell_ids,
+        )
 
         self._throw_if_cancelled(cancel_event)
 
-        # --- 3. Construct system-level index -------------------------------
+        # --- 3. Build deep DAGs for visible roots --------------------------
+        root_builder = SpellSystemRootBlueprintBuilder()
+        root_blueprints = root_builder.build_root_blueprints(filtered_snapshot)
+
+        self._throw_if_cancelled(cancel_event)
+
+        # --- 4. Construct system-level index -------------------------------
         system_index = SpellSystemIndex()
 
-        for spell_id, deps in snapshot.dependencies.items():
+        for spell_id, deps in filtered_snapshot.dependencies.items():
             self._throw_if_cancelled(cancel_event)
 
             lineage_id: Optional[str] = None
@@ -1194,20 +1213,10 @@ class SpellCrafter(Cleanable):
             node = SpellSystemNode(spell_id=spell_id, lineage_id=lineage_id)
             node.add_dependencies(deps)
 
-            if spell_id in snapshot.root_spell_ids:
+            if spell_id in filtered_snapshot.root_spell_ids:
                 node.is_root = True
 
             system_index.upsert_node(node)
-
-        # --- 4. Build a version-id -> Spell lookup via SpellbookScanner ----
-        version_to_spell: Dict[str, ISpell] = {}
-
-        # We scan once, then reuse the lookup for all roots.
-        if self._spellbook_scanner is None:
-            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
-        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
-            # SpellIndex exposes all known versions (current + historical).
-            version_to_spell[spell_index.current] = spell_instance
 
         # --- 5. Attach artifacts to root SpellCrafters ---------------------
         for root_id, blueprint in root_blueprints.items():
@@ -1269,6 +1278,78 @@ class SpellCrafter(Cleanable):
         except Exception:
             # Change control is optional; ignore if unavailable.
             pass
+
+    def _filter_snapshot_to_visible_spells(
+            self,
+            *,
+            snapshot: SpellSystemAdjacencySnapshot,
+            visible_spell_ids: Set[str],
+    ) -> SpellSystemAdjacencySnapshot:
+        """
+        Internal
+
+        Filter a frame-wide adjacency snapshot to spells visible in this Spellbook.
+
+        Purpose:
+            Ensure Phase-5/6 validation only considers spells that the current
+            Spellbook can resolve (local + contracted).
+        Contract:
+            - Dependencies outside the visible set are excluded.
+            - Root spell ids are recomputed for the filtered graph.
+            - Topologies are retained only for visible spell ids.
+        Args:
+            snapshot:
+                Frame-wide SpellSystemAdjacencySnapshot to filter.
+            visible_spell_ids:
+                Version ids visible to this Spellbook.
+        Returns:
+            SpellSystemAdjacencySnapshot:
+                A filtered snapshot scoped to the provided spell ids.
+        Raises:
+            ValueError:
+                If snapshot or visible_spell_ids is None.
+        """
+        self.check_cleaned()
+        if snapshot is None:
+            raise ValueError("snapshot must not be None.")
+        if visible_spell_ids is None:
+            raise ValueError("visible_spell_ids must not be None.")
+
+        all_spell_ids: Set[str] = set(visible_spell_ids)
+        dependencies: Dict[str, Set[str]] = {}
+        reverse_dependencies: Dict[str, Set[str]] = {}
+        topologies: Dict[str, "SpellLocalTopology"] = {}
+
+        for spell_id in all_spell_ids:
+            deps = snapshot.dependencies.get(spell_id)
+            if deps is None:
+                dep_set = set()
+            else:
+                dep_set = {dep_id for dep_id in deps if dep_id in all_spell_ids}
+            dependencies[spell_id] = dep_set
+            for dep_id in dep_set:
+                parents_for_dep = reverse_dependencies.get(dep_id)
+                if parents_for_dep is None:
+                    parents_for_dep = set()
+                    reverse_dependencies[dep_id] = parents_for_dep
+                parents_for_dep.add(spell_id)
+
+            topology = snapshot.topologies.get(spell_id)
+            if topology is not None:
+                topologies[spell_id] = topology
+
+        all_dependency_ids: Set[str] = set()
+        for dep_set in dependencies.values():
+            all_dependency_ids.update(dep_set)
+        root_spell_ids = all_spell_ids.difference(all_dependency_ids)
+
+        return SpellSystemAdjacencySnapshot(
+            dependencies=dependencies,
+            reverse_dependencies=reverse_dependencies,
+            all_spell_ids=all_spell_ids,
+            root_spell_ids=root_spell_ids,
+            topologies=topologies,
+        )
 
 
     # ------------------------------------------------------------------

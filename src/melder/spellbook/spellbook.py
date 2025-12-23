@@ -47,7 +47,8 @@ class Spellbook(Cleanable):
      understand the implications of shared scope, mutation locking, and distributed
      spell ownership.
 
-     By default, setting (aetheric_frame=None) will generate a unique, isolated frame.
+     By default, using (aetheric_frame="default") uses the shared default frame.
+     Passing a new frame name creates an isolated frame for that name.
      -------------------------------------------------------------------------------
 
     **Responsibilities:**
@@ -60,6 +61,7 @@ class Spellbook(Cleanable):
         aetheric_frame (str, optional):
             A shared frame name used to join multiple Spellbooks under the same Aetheric
             configuration and spell contract scope. Defaults to "default".
+            If the named frame does not exist, Spellbook will create it.
         configuration (Optional[Configuration]):
             An optional pre-configured `Configuration` instance to use, typically provided
             when creating a Spellbook for an existing Aether frame.
@@ -83,6 +85,7 @@ class Spellbook(Cleanable):
         self._aetheric_frame: str = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
             raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
+        Spellbook._aether._ensure_frame(self._aetheric_frame)
 
         # Configuration state
         self._configuration_locked: bool = False

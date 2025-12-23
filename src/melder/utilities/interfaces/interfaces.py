@@ -4013,6 +4013,37 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
+    def _ensure_frame(self, aetheric_frame_name: str = "default") -> "IAethericFrame":
+        """
+        Ensure an AethericFrame exists for the given name, creating it if missing.
+
+        Purpose:
+            Provide a single, thread-safe creation path for named frames so
+            Spellbooks can initialize against a new frame without raising.
+
+        Contract:
+            - Returns the existing frame when it already exists.
+            - Creates and registers a new frame when absent.
+            - Does not mutate the default frame pointer unless the name is "default".
+
+        Args:
+            aetheric_frame_name: The frame name to ensure exists.
+
+        Returns:
+            IAethericFrame: The existing or newly created frame.
+
+        Raises:
+            RuntimeError: If the Aether is cleaned or its frame registry is unavailable.
+            ValueError: If the frame name is invalid for frame construction.
+
+        Threading:
+            Implementations must synchronize frame creation to prevent duplicates.
+
+        Lifecycle:
+            Frames created via this method are owned by Aether and cleaned by it.
+        """
+        ...
+
     def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
         Registers a conduit with the ConduitCloud of a specific frame.
