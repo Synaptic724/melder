@@ -877,3 +877,85 @@ def test_spell_crafter_run_all_phases_sets_phase6_result() -> None:
         assert root_spell.validation_result_phase6 is not None
     finally:
         conduit.cleanup()
+
+
+def test_spell_cleanup_after_run_all_phases_clears_phase_artifacts() -> None:
+    """
+    Purpose:
+        Validate Spell.cleanup clears phase artifacts after a full run.
+    Contract:
+        - Phase artifacts are present after run_all_phases.
+        - cleanup() drops the crafter and nulls dependency artifacts.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If phase artifacts are not cleared by cleanup.
+    """
+    spellbook = _make_spellbook()
+
+    class Leaf:
+        """
+        Purpose:
+            Dependency spell for cleanup verification.
+        Contract:
+            - Declares no constructor parameters.
+        """
+
+    class Root:
+        """
+        Purpose:
+            Spell that depends on Leaf and runs all phases.
+        Contract:
+            - Requires a Leaf instance during construction.
+        Args:
+            leaf: Injected Leaf dependency.
+        """
+        def __init__(self, leaf: Leaf) -> None:
+            """
+            Purpose:
+                Capture the injected Leaf dependency.
+            Contract:
+                - Stores the Leaf instance for assertions.
+            Args:
+                leaf: Injected Leaf dependency.
+            Returns:
+                None.
+            """
+            self.leaf = leaf
+
+    leaf_id = spellbook.bind(
+        spell=Leaf,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    root_id = spellbook.bind(
+        spell=Root,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        root_spell = conduit.get_spell_by_id(root_id)
+        assert root_spell is not None
+        root_spell.run_all_phases()
+
+        assert root_spell.requirements is not None
+        assert root_spell.symbolic_graph is not None
+        assert root_spell.resolution_frame is not None
+        assert set(root_spell.dependencies) == {leaf_id}
+        assert root_spell.dependency_graph is not None
+
+        root_spell.cleanup()
+
+        assert root_spell._cleaned is True
+        assert root_spell._crafter is None
+        assert root_spell.spell is None
+        assert root_spell.spell_index is None
+        assert root_spell.dependencies is None
+        assert root_spell.dependency_graph is None
+        assert root_spell.requirements is None
+        assert root_spell.symbolic_graph is None
+        assert root_spell.resolution_frame is None
+    finally:
+        conduit.cleanup()
