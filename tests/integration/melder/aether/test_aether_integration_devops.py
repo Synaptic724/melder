@@ -6,6 +6,11 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
+)
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
@@ -212,6 +217,101 @@ def test_aether_spell_system_states_dependency_and_impact_closure() -> None:
     assert states.get_by_index_id(service_index.id).transitively_dirty is True
 
     book.cleanup()
+
+
+def test_aether_spell_system_states_update_dependencies_removes_reverse_edges() -> None:
+    """
+    Purpose:
+        Validate dependency updates remove reverse edges when detached.
+    Contract:
+        - Removing dependencies clears reverse dependent links.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If reverse edges are not removed.
+    """
+    frame_name = "frame-dep-removal"
+    book = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_configuration(aether_frame=frame_name),
+    )
+    config_id = book.bind(
+        spell=BasicConfig,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    config_index = next(
+        idx for idx in book._spells.keys() if idx.current == config_id
+    )
+    service_index = next(
+        idx for idx in book._spells.keys() if idx.current == service_id
+    )
+    aether = Aether()
+    states = aether._get_spell_system_states(frame_name)
+
+    states.update_dependencies(service_index, [config_id])
+    config_state = states.get_by_index_id(config_index.id)
+    assert config_state is not None
+    assert service_index.id in config_state.direct_dependents
+
+    states.update_dependencies(service_index, [])
+    config_state = states.get_by_index_id(config_index.id)
+    assert config_state is not None
+    assert service_index.id not in config_state.direct_dependents
+
+    book.cleanup()
+
+
+def test_aether_spell_system_states_local_topology_round_trip() -> None:
+    """
+    Purpose:
+        Validate local topology registration and retrieval.
+    Contract:
+        - register_local_topology stores the topology by spell id.
+        - get_local_topology and get_local_topology_by_id return it.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If topology registration is incorrect.
+    """
+    frame_name = "frame-topology"
+    book = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_configuration(aether_frame=frame_name),
+    )
+    spell_id = book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    spell_index = next(
+        idx for idx in book._spells.keys() if idx.current == spell_id
+    )
+    aether = Aether()
+    states = aether._get_spell_system_states(frame_name)
+
+    socket = SpellSocketDescriptor(
+        spell_id=spell_id,
+        param_name="dep",
+        position=0,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=(),
+    )
+    topology = SpellLocalTopology(spell_id=spell_id, sockets=[socket])
+    try:
+        states.register_local_topology(spell_index, topology)
+        assert states.get_local_topology(spell_index) is topology
+        assert states.get_local_topology_by_id(spell_id) is topology
+    finally:
+        topology.cleanup()
+        book.cleanup()
 
 
 def test_aether_spell_system_states_consume_dirty_lineages() -> None:
