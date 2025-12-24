@@ -191,6 +191,87 @@ def test_spellbook_integration_frame_config_mismatch_raises() -> None:
         conduit.cleanup()
 
 
+def test_spellbook_integration_conjure_registers_spell_versions_and_cleanup_clears_registry() -> None:
+    """
+    Purpose:
+        Validate conjure registers spell versions into the Aether registry and cleanup clears them.
+    Contract:
+        - Conduit registration inserts SpellIndex entries into the frame spell registry.
+        - The frame version registry contains the bound spell version id.
+        - Conduit cleanup removes the version id from the frame registry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If registries are not updated as expected.
+    """
+    frame = "frame-registry"
+    spellbook = Spellbook(aetheric_frame=frame)
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    conduit_id = conduit.id
+    spell_indices = set(spellbook.spells.keys())
+    try:
+        aether = Spellbook._aether
+        frame_obj = aether._aetheric_frames[frame]
+        registry = frame_obj._spell_registry
+        assert conduit_id in registry
+        assert registry[conduit_id] == spell_indices
+        assert frame_obj.has_version(spell_id) is True
+    finally:
+        conduit.cleanup()
+
+    frame_obj = Spellbook._aether._aetheric_frames[frame]
+    registry = frame_obj._spell_registry
+    assert conduit_id in registry
+    assert registry[conduit_id] == set()
+    assert frame_obj.has_version(spell_id) is False
+
+
+def test_spellbook_integration_conjure_uses_locked_configuration_from_aether() -> None:
+    """
+    Purpose:
+        Validate conjure uses the Aether-locked configuration without redefinition.
+    Contract:
+        - Spellbook adopts the Aether configuration and remains locked.
+        - Conjure succeeds using the locked configuration.
+        - Aether retains the original configuration instance.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If configuration locking or conjure behavior is incorrect.
+    """
+    frame = "frame-locked-config"
+    aether = Spellbook._aether
+    aether._ensure_frame(frame)
+    config = Configuration(aether_frame=frame)
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    aether._bind_configuration(config, frame)
+
+    spellbook = Spellbook(aetheric_frame=frame)
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        assert spellbook.is_configuration_locked() is True
+        assert spellbook.get_configuration() is config
+        assert Spellbook._aether._get_configuration(frame) is config
+        instance = conduit.meld(spell=spell_id)
+        assert isinstance(instance, BasicService)
+    finally:
+        conduit.cleanup()
+
+
 def test_spellbook_integration_configuration_frame_mismatch_raises() -> None:
     """
     Purpose:

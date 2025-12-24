@@ -193,3 +193,79 @@ def test_component_spellbook_bind_configuration_to_aether_propagates_errors(
             spellbook._bind_configuration_to_aether()
     finally:
         spellbook.cleanup()
+
+
+def test_component_spellbook_get_configuration_from_aether_propagates_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Validate _get_configuration_from_aether surfaces Aether lookup errors.
+    Contract:
+        - Exceptions raised by Aether _get_configuration propagate to callers.
+    Args:
+        monkeypatch: Pytest fixture for patching Aether configuration lookup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the error is not raised.
+    """
+    spellbook = Spellbook()
+
+    def _raise_get_configuration(aetheric_frame_name: str = "default") -> None:
+        """
+        Purpose:
+            Simulate an Aether configuration lookup failure.
+        Contract:
+            Raises ValueError unconditionally.
+        Args:
+            aetheric_frame_name: Frame name provided by the caller.
+        Raises:
+            ValueError: Always raised for the stub.
+        """
+        raise ValueError(f"missing-frame:{aetheric_frame_name}")
+
+    try:
+        monkeypatch.setattr(spellbook._aether, "_get_configuration", _raise_get_configuration)
+        with pytest.raises(ValueError, match="missing-frame"):
+            spellbook._get_configuration_from_aether()
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_initialize_configuration_propagates_aether_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Validate _initialize_configuration re-raises Aether lookup errors.
+    Contract:
+        - Exceptions from _get_configuration_from_aether propagate to the caller.
+    Args:
+        monkeypatch: Pytest fixture for patching configuration lookup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the error is not raised.
+    """
+    spellbook = Spellbook()
+
+    def _raise_get_configuration() -> None:
+        """
+        Purpose:
+            Simulate a configuration lookup failure.
+        Contract:
+            Raises RuntimeError unconditionally.
+        Raises:
+            RuntimeError: Always raised for the stub.
+        """
+        raise RuntimeError("aether-lookup-failed")
+
+    try:
+        monkeypatch.setattr(spellbook, "_get_configuration_from_aether", _raise_get_configuration)
+        spellbook._configuration = None
+        spellbook._configuration_locked = False
+        with pytest.raises(RuntimeError, match="aether-lookup-failed"):
+            spellbook._initialize_configuration()
+    finally:
+        spellbook.cleanup()
