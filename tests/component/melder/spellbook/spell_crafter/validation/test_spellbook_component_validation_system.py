@@ -193,3 +193,132 @@ def test_component_validation_system_honors_cancellation_event() -> None:
         signal.cleanup()
         system.cleanup()
         spellbook.cleanup()
+
+
+def test_component_validation_system_reports_all_issue_types_in_complex_case() -> None:
+    """
+    Purpose:
+        Validate builtin strategies aggregate multiple issue types in one run.
+    Contract:
+        - Reports required holes, missing dependency graph, dangling deps,
+          self deps, circular deps, and duplicate spell names.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any expected issue type is missing.
+    """
+    spellbook = _make_spellbook()
+    system = SpellValidationSystem()
+
+    class ContainerA:
+        """
+        Purpose:
+            Provide a namespace for a Service spell with a required hole.
+        Contract:
+            Defines a nested Service class for multi-issue validation.
+        """
+
+        class Service:
+            """
+            Purpose:
+                Provide a spell with a required plain parameter.
+            Contract:
+                Declares a required plain parameter to trigger REQUIRED_HOLE.
+            Args:
+                value: Required plain parameter with no default.
+            """
+
+            def __init__(self, value: int) -> None:
+                """
+                Purpose:
+                    Capture the required value input.
+                Contract:
+                    Stores the provided value for completeness.
+                Args:
+                    value: Required input for the spell.
+                Returns:
+                    None.
+                """
+                self.value = value
+
+    class ContainerB:
+        """
+        Purpose:
+            Provide a second namespace for duplicate spell name detection.
+        Contract:
+            Defines a nested Service class with the same __name__.
+        """
+
+        class Service:
+            """
+            Purpose:
+                Provide a spell with a duplicate name for collision checks.
+            Contract:
+                No runtime behavior beyond construction.
+            """
+
+            def __init__(self) -> None:
+                """
+                Purpose:
+                    Initialize the Service spell.
+                Contract:
+                    No side effects beyond construction.
+                Returns:
+                    None.
+                """
+                return None
+
+    try:
+        root_id = spellbook.bind(
+            spell=ContainerA.Service,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        other_id = spellbook.bind(
+            spell=ContainerB.Service,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        root_spell = _get_spell_by_version_id(spellbook, root_id)
+        other_spell = _get_spell_by_version_id(spellbook, other_id)
+        assert root_spell is not None
+        assert other_spell is not None
+
+        root_spell.run_phase_requirements()
+        requirements = root_spell.requirements
+        assert requirements is not None
+
+        root_spell.dependencies = [other_id, root_id, "missing-id"]
+        other_spell.dependencies = [root_id]
+
+        result = system.validate_spell(
+            spell=root_spell,
+            requirements=requirements,
+            symbolic_graph=None,
+            resolution_frame=object(),
+        )
+        try:
+            codes = {issue.code for issue in result.issues}
+            expected = {
+                "MISSING_DEPENDENCY_GRAPH",
+                "DANGLING_DEPENDENCY",
+                "SELF_DEPENDENCY",
+                "CIRCULAR_DEPENDENCY",
+                "REQUIRED_HOLE",
+                "DUPLICATE_SPELL_NAME",
+            }
+            assert expected.issubset(codes)
+            severity_by_code = {issue.code: issue.severity for issue in result.issues}
+            assert severity_by_code["MISSING_DEPENDENCY_GRAPH"] == "warning"
+            assert severity_by_code["REQUIRED_HOLE"] == "warning"
+            assert severity_by_code["DANGLING_DEPENDENCY"] == "error"
+            assert severity_by_code["SELF_DEPENDENCY"] == "error"
+            assert severity_by_code["CIRCULAR_DEPENDENCY"] == "error"
+            assert severity_by_code["DUPLICATE_SPELL_NAME"] == "error"
+            assert result.has_errors is True
+            assert result.has_warnings is True
+        finally:
+            result.cleanup()
+    finally:
+        system.cleanup()
+        spellbook.cleanup()
