@@ -7,7 +7,8 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
@@ -1333,6 +1334,7 @@ def test_validation_system_local_dependency_not_dangling() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
+            spellframe="BasicService",
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -1773,5 +1775,354 @@ def test_spell_validation_phase6_reports_socket_ref_index_mismatch() -> None:
         codes = {diag.code for diag in result.errors}
         assert "socket_ref_missing_in_index" in codes
         assert "socket_ref_missing_in_index_name" in codes
+    finally:
+        spellbook.cleanup()
+
+
+def test_spell_validation_phase6_reports_missing_index_node() -> None:
+    """
+    Purpose:
+        Validate system validation reports missing index nodes referenced by blueprints.
+    Contract:
+        - missing_index_node is reported for the missing dependency node.
+        - root_not_viable is reported for the affected root.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If diagnostics are missing.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    class Consumer:
+        """
+        Purpose:
+            Provide a spell with a BasicService dependency.
+        Contract:
+            - Declares a BasicService dependency.
+        Args:
+            service: Injected BasicService dependency.
+        """
+
+        def __init__(self, service: BasicService) -> None:
+            """
+            Purpose:
+                Capture the injected BasicService dependency.
+            Contract:
+                Stores the dependency for completeness.
+            Args:
+                service: Injected BasicService dependency.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    try:
+        service_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe="BasicService",
+        )
+        consumer_id = spellbook.bind(
+            spell=Consumer,
+            existence=Existence.unique,
+            permissions="create",
+        )
+
+        service_spell = _get_spell_by_version_id(spellbook, service_id)
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert service_spell is not None
+        assert consumer_spell is not None
+
+        service_spell.run_phase_requirements()
+        service_spell.run_phase_symbolic_graph()
+        service_spell.run_phase_local_frame()
+        service_spell.run_phase_validation()
+
+        consumer_spell.run_phase_requirements()
+        consumer_spell.run_phase_symbolic_graph()
+        consumer_spell.run_phase_local_frame()
+        consumer_spell.run_phase_validation()
+        consumer_spell.run_phase_root_blueprints()
+
+        crafter = consumer_spell._crafter
+        assert crafter is not None
+        system_index = crafter._spell_system_index_phase5
+        assert system_index is not None
+        system_index.nodes.pop(service_id)
+
+        consumer_spell.run_phase_system_validation()
+
+        result = consumer_spell.validation_result_phase6
+        assert result is not None
+        codes = {diag.code for diag in result.errors}
+        assert "missing_index_node" in codes
+        assert "root_not_viable" in codes
+    finally:
+        spellbook.cleanup()
+
+
+def test_spell_validation_phase6_reports_edge_mismatch_index() -> None:
+    """
+    Purpose:
+        Validate system validation reports blueprint edges missing in the index.
+    Contract:
+        - edge_mismatch_index is reported when the index omits a dependency edge.
+        - root_not_viable is reported for the affected root.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If diagnostics are missing.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    class Consumer:
+        """
+        Purpose:
+            Provide a spell with a BasicService dependency.
+        Contract:
+            - Declares a BasicService dependency.
+        Args:
+            service: Injected BasicService dependency.
+        """
+
+        def __init__(self, service: BasicService) -> None:
+            """
+            Purpose:
+                Capture the injected BasicService dependency.
+            Contract:
+                Stores the dependency for completeness.
+            Args:
+                service: Injected BasicService dependency.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    try:
+        service_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe="BasicService",
+        )
+        consumer_id = spellbook.bind(
+            spell=Consumer,
+            existence=Existence.unique,
+            permissions="create",
+        )
+
+        service_spell = _get_spell_by_version_id(spellbook, service_id)
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert service_spell is not None
+        assert consumer_spell is not None
+
+        service_spell.run_phase_requirements()
+        service_spell.run_phase_symbolic_graph()
+        service_spell.run_phase_local_frame()
+        service_spell.run_phase_validation()
+
+        consumer_spell.run_phase_requirements()
+        consumer_spell.run_phase_symbolic_graph()
+        consumer_spell.run_phase_local_frame()
+        consumer_spell.run_phase_validation()
+        consumer_spell.run_phase_root_blueprints()
+
+        crafter = consumer_spell._crafter
+        assert crafter is not None
+        system_index = crafter._spell_system_index_phase5
+        assert system_index is not None
+        root_node = system_index.get_node(consumer_id)
+        assert root_node is not None
+        root_node._dependencies.clear()
+
+        consumer_spell.run_phase_system_validation()
+
+        result = consumer_spell.validation_result_phase6
+        assert result is not None
+        codes = {diag.code for diag in result.errors}
+        assert "edge_mismatch_index" in codes
+        assert "root_not_viable" in codes
+    finally:
+        spellbook.cleanup()
+
+
+def test_spell_validation_phase6_reports_socket_ref_duplicate() -> None:
+    """
+    Purpose:
+        Validate system validation detects duplicate socket refs.
+    Contract:
+        - socket_ref_duplicate is reported when a socket ref is duplicated.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If diagnostics are missing.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    class Consumer:
+        """
+        Purpose:
+            Provide a spell with a dependency socket for duplication tests.
+        Contract:
+            - Declares a BasicService dependency.
+        Args:
+            service: Injected BasicService dependency.
+        """
+
+        def __init__(self, service: BasicService) -> None:
+            """
+            Purpose:
+                Capture the injected BasicService dependency.
+            Contract:
+                Stores the dependency for completeness.
+            Args:
+                service: Injected BasicService dependency.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    try:
+        service_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe="BasicService",
+        )
+        consumer_id = spellbook.bind(
+            spell=Consumer,
+            existence=Existence.unique,
+            permissions="create",
+        )
+
+        service_spell = _get_spell_by_version_id(spellbook, service_id)
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert service_spell is not None
+        assert consumer_spell is not None
+
+        service_spell.run_phase_requirements()
+        service_spell.run_phase_symbolic_graph()
+        service_spell.run_phase_local_frame()
+        service_spell.run_phase_validation()
+
+        consumer_spell.run_phase_requirements()
+        consumer_spell.run_phase_symbolic_graph()
+        consumer_spell.run_phase_local_frame()
+        consumer_spell.run_phase_validation()
+        consumer_spell.run_phase_root_blueprints()
+
+        crafter = consumer_spell._crafter
+        assert crafter is not None
+        blueprints = crafter._entire_dag_blueprint_phase5
+        assert blueprints is not None
+        root_blueprint = blueprints.get(consumer_id)
+        assert root_blueprint is not None
+        socket = root_blueprint.socket_refs[0]
+        root_blueprint.add_socket_ref(socket)
+
+        consumer_spell.run_phase_system_validation()
+
+        result = consumer_spell.validation_result_phase6
+        assert result is not None
+        codes = {diag.code for diag in result.errors}
+        assert "socket_ref_duplicate" in codes
+    finally:
+        spellbook.cleanup()
+
+
+def test_spell_validation_phase6_reports_orphan_dag_index_socket() -> None:
+    """
+    Purpose:
+        Validate system validation detects DagIndex sockets missing from socket_refs.
+    Contract:
+        - dag_index_orphan_socket is reported for index-only sockets.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If diagnostics are missing.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    class Consumer:
+        """
+        Purpose:
+            Provide a spell with a dependency socket for DagIndex tests.
+        Contract:
+            - Declares a BasicService dependency.
+        Args:
+            service: Injected BasicService dependency.
+        """
+
+        def __init__(self, service: BasicService) -> None:
+            """
+            Purpose:
+                Capture the injected BasicService dependency.
+            Contract:
+                Stores the dependency for completeness.
+            Args:
+                service: Injected BasicService dependency.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    try:
+        service_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe="BasicService",
+        )
+        consumer_id = spellbook.bind(
+            spell=Consumer,
+            existence=Existence.unique,
+            permissions="create",
+        )
+
+        service_spell = _get_spell_by_version_id(spellbook, service_id)
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert service_spell is not None
+        assert consumer_spell is not None
+
+        service_spell.run_phase_requirements()
+        service_spell.run_phase_symbolic_graph()
+        service_spell.run_phase_local_frame()
+        service_spell.run_phase_validation()
+
+        consumer_spell.run_phase_requirements()
+        consumer_spell.run_phase_symbolic_graph()
+        consumer_spell.run_phase_local_frame()
+        consumer_spell.run_phase_validation()
+        consumer_spell.run_phase_root_blueprints()
+
+        crafter = consumer_spell._crafter
+        assert crafter is not None
+        blueprints = crafter._entire_dag_blueprint_phase5
+        assert blueprints is not None
+        root_blueprint = blueprints.get(consumer_id)
+        assert root_blueprint is not None
+        orphan = SocketRef(
+            node_id=consumer_id,
+            param_name="orphan",
+            param_path=("orphan",),
+            socket_kind=SocketKind.NORMAL,
+        )
+        root_blueprint.dag_index.add_socket(orphan)
+
+        consumer_spell.run_phase_system_validation()
+
+        result = consumer_spell.validation_result_phase6
+        assert result is not None
+        codes = {diag.code for diag in result.errors}
+        assert "dag_index_orphan_socket" in codes
     finally:
         spellbook.cleanup()
