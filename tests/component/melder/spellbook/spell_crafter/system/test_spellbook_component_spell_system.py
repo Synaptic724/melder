@@ -4,6 +4,8 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,
 )
@@ -14,6 +16,9 @@ from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder i
 )
 from melder.spellbook.spell_crafter.system.spell_system_validation_system import (
     SpellSystemValidationSystem,
+)
+from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import (
+    SocketRefSanityStrategy,
 )
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -74,6 +79,85 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
         if spell.spell_index.current == spell_id:
             return spell
     return None
+
+
+def _build_system_validation_artifacts(
+    spellbook: Spellbook,
+) -> tuple[str, str, dict[str, object], SpellSystemIndex, object]:
+    """
+    Purpose:
+        Build shared system-validation artifacts from real spell execution.
+    Contract:
+        - Returns a root id, dependency id, blueprints, index, and system states.
+        - Index dependencies mirror the adjacency snapshot.
+    Args:
+        spellbook: Spellbook configured for component tests.
+    Returns:
+        tuple: (root_id, dependency_id, blueprints, index, system_states).
+    """
+
+    class Consumer:
+        """
+        Purpose:
+            Provide a spell that depends on BasicService.
+        Contract:
+            - Declares a BasicService dependency.
+        Args:
+            service: Injected BasicService instance.
+        """
+
+        def __init__(self, service: BasicService) -> None:
+            """
+            Purpose:
+                Capture the injected BasicService dependency.
+            Contract:
+                Stores the dependency for completeness.
+            Args:
+                service: Injected BasicService dependency.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    service_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    consumer_id = spellbook.bind(
+        spell=Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+    assert consumer_spell is not None
+
+    consumer_spell.run_phase_requirements()
+    consumer_spell.run_phase_symbolic_graph()
+    consumer_spell.run_phase_local_frame()
+
+    states = spellbook._spell_system_states
+    assert states is not None
+    snapshot = SpellSystemAdjacencyBuilder.build(states)
+    blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
+
+    index = SpellSystemIndex()
+    spell_index_by_id = {
+        spell_index.current: spell_index for spell_index, _spell in spellbook.spells.items()
+    }
+    for spell_id in snapshot.all_spell_ids:
+        spell_index = spell_index_by_id.get(spell_id)
+        lineage_id = spell_index.id if spell_index is not None else f"lineage-{spell_id}"
+        deps = snapshot.dependencies.get(spell_id, set())
+        node = SpellSystemNode(
+            spell_id=spell_id,
+            lineage_id=lineage_id,
+            dependencies=deps,
+        )
+        index.upsert_node(node)
+
+    return consumer_id, service_id, blueprints, index, states
 
 
 def test_component_spell_system_builds_snapshot_from_states() -> None:
@@ -292,5 +376,103 @@ def test_component_spell_system_validation_marks_states_valid() -> None:
         state = states.get_by_spell_id(leaf_id)
         assert state is not None
         assert state.validity is SpellValidity.valid
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_system_validation_reports_socket_ref_duplicate() -> None:
+    """
+    Purpose:
+        Validate socket ref duplication is detected by system validation.
+    Contract:
+        - socket_ref_duplicate is reported when a SocketRef is duplicated.
+        - System states are gated when an error is present.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If duplicate socket refs are not detected.
+    """
+    spellbook = _make_spellbook()
+    try:
+        root_id, dependency_id, blueprints, index, states = _build_system_validation_artifacts(
+            spellbook
+        )
+        blueprint = blueprints[root_id]
+        socket = blueprint.socket_refs[0]
+        blueprint.add_socket_ref(socket)
+
+        system = SpellSystemValidationSystem([SocketRefSanityStrategy()])
+        try:
+            result = system.validate(
+                index=index,
+                blueprints=blueprints,
+                phase4_results={},
+                broken_spell_ids=set(),
+                spell_system_states=states,
+            )
+        finally:
+            system.cleanup()
+
+        codes = {diag.code for diag in result.errors}
+        assert "socket_ref_duplicate" in codes
+
+        root_state = states.get_by_spell_id(root_id)
+        dep_state = states.get_by_spell_id(dependency_id)
+        assert root_state is not None
+        assert dep_state is not None
+        assert root_state.validity is SpellValidity.gated
+        assert dep_state.validity is SpellValidity.gated
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_system_validation_reports_orphan_socket_ref() -> None:
+    """
+    Purpose:
+        Validate orphan DagIndex sockets are detected by system validation.
+    Contract:
+        - dag_index_orphan_socket is reported when the index contains a socket
+          absent from socket_refs.
+        - System states are gated when an error is present.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If orphan DagIndex sockets are not detected.
+    """
+    spellbook = _make_spellbook()
+    try:
+        root_id, dependency_id, blueprints, index, states = _build_system_validation_artifacts(
+            spellbook
+        )
+        blueprint = blueprints[root_id]
+        orphan = SocketRef(
+            node_id=root_id,
+            param_name="orphan",
+            param_path=("orphan",),
+            socket_kind=SocketKind.NORMAL,
+        )
+        blueprint.dag_index.add_socket(orphan)
+
+        system = SpellSystemValidationSystem([SocketRefSanityStrategy()])
+        try:
+            result = system.validate(
+                index=index,
+                blueprints=blueprints,
+                phase4_results={},
+                broken_spell_ids=set(),
+                spell_system_states=states,
+            )
+        finally:
+            system.cleanup()
+
+        codes = {diag.code for diag in result.errors}
+        assert "dag_index_orphan_socket" in codes
+
+        root_state = states.get_by_spell_id(root_id)
+        dep_state = states.get_by_spell_id(dependency_id)
+        assert root_state is not None
+        assert dep_state is not None
+        assert root_state.validity is SpellValidity.gated
+        assert dep_state.validity is SpellValidity.gated
     finally:
         spellbook.cleanup()

@@ -251,7 +251,9 @@ def test_spellbook_integration_conjure_uses_locked_configuration_from_aether() -
     aether = Spellbook._aether
     aether._ensure_frame(frame)
     config = Configuration(aether_frame=frame)
+    config.with_defaults()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    config.set_property("phase_scheduler_barrier_timeout_milliseconds", 60000)
     aether._bind_configuration(config, frame)
 
     spellbook = Spellbook(aetheric_frame=frame)
