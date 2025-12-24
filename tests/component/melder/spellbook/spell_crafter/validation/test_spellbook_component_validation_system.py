@@ -5,6 +5,8 @@ from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 
 
 @pytest.fixture(autouse=True)
@@ -129,5 +131,65 @@ def test_component_validation_system_reports_required_holes_and_missing_frame() 
         finally:
             result.cleanup()
     finally:
+        system.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_validation_system_honors_cancellation_event() -> None:
+    """
+    Purpose:
+        Validate the validation system honors CancellationEvent signals.
+    Contract:
+        - validate_spell raises OperationCancelledError when cancellation is set.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cancellation does not raise.
+    """
+    spellbook = _make_spellbook()
+    system = SpellValidationSystem()
+    signal = CancellationEventSignal()
+
+    class Leaf:
+        """
+        Purpose:
+            Provide a minimal spell for cancellation validation.
+        Contract:
+            - Declares no constructor parameters.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the leaf spell.
+            Contract:
+                No side effects beyond construction.
+            Returns:
+                None.
+            """
+            return None
+
+    try:
+        spell_id = spellbook.bind(
+            spell=Leaf,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        signal.cancel()
+        cancel_event = signal.event
+
+        with pytest.raises(OperationCancelledError):
+            system.validate_spell(
+                spell=spell,
+                requirements=None,
+                symbolic_graph=None,
+                resolution_frame=None,
+                cancel_event=cancel_event,
+            )
+    finally:
+        signal.cleanup()
         system.cleanup()
         spellbook.cleanup()
