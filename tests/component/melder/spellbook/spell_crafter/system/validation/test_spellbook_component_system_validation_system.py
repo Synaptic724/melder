@@ -20,6 +20,10 @@ from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemN
 from melder.spellbook.spell_crafter.system.spell_system_validation_system import (
     SpellSystemValidationSystem,
 )
+from melder.spellbook.spell_crafter.system.system_diagnostic import (
+    SystemDiagnostic,
+    SystemDiagnosticSeverity,
+)
 from melder.spellbook.spell_crafter.system.validation.broken_spell_in_dag_strategy import (
     BrokenSpellInDagStrategy,
 )
@@ -37,6 +41,15 @@ from melder.spellbook.spell_crafter.system.validation.root_viability_strategy im
 )
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import (
     SocketRefSanityStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.strategy_base import (
+    SpellSystemValidationStrategy,
+)
+from melder.utilities.custom_exceptions.operation_cancelled_error import (
+    OperationCancelledError,
+)
+from melder.utilities.synchronization.cancellation_event_signal import (
+    CancellationEventSignal,
 )
 
 
@@ -179,6 +192,100 @@ def _setup_states_with_dependency(
     dependency_index = _register_lineage(states, dependency_id)
     states.update_dependencies(root_index, [dependency_id])
     return frame, states, root_index, dependency_index
+
+
+class _DiagnosticEmitter(SpellSystemValidationStrategy):
+    """
+    Purpose:
+        Emit a single configured SystemDiagnostic for component tests.
+    Contract:
+        - Appends the diagnostic to the shared diagnostics list.
+    Args:
+        diagnostic: SystemDiagnostic to append.
+    """
+
+    def __init__(self, diagnostic: SystemDiagnostic) -> None:
+        """
+        Purpose:
+            Capture the diagnostic for later emission.
+        Contract:
+            - Stores the diagnostic for run().
+        Args:
+            diagnostic: SystemDiagnostic instance to append.
+        """
+        self._diagnostic = diagnostic
+
+    def run(
+        self,
+        *,
+        index: SpellSystemIndex,
+        blueprints: dict[str, RootResolutionBlueprint],
+        phase4_results: dict[str, object],
+        broken_spell_ids: set[str],
+        diagnostics: list[SystemDiagnostic],
+        cancel_event,
+    ) -> None:
+        """
+        Purpose:
+            Append the configured diagnostic.
+        Contract:
+            - Adds the diagnostic to the list without mutation.
+        Args:
+            index: System index for the frame.
+            blueprints: Root blueprints for the frame.
+            phase4_results: Phase-4 result map.
+            broken_spell_ids: Broken spell ids.
+            diagnostics: Shared diagnostics list.
+            cancel_event: Optional cancellation signal.
+        Returns:
+            None.
+        """
+        diagnostics.append(self._diagnostic)
+
+
+class _RecordingStrategy(SpellSystemValidationStrategy):
+    """
+    Purpose:
+        Track whether a validation strategy was executed.
+    Contract:
+        - Records each run invocation.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize a call-tracking strategy.
+        Contract:
+            - Starts with an empty call list.
+        """
+        self.calls: list[tuple[SpellSystemIndex, dict[str, RootResolutionBlueprint]]] = []
+
+    def run(
+        self,
+        *,
+        index: SpellSystemIndex,
+        blueprints: dict[str, RootResolutionBlueprint],
+        phase4_results: dict[str, object],
+        broken_spell_ids: set[str],
+        diagnostics: list[SystemDiagnostic],
+        cancel_event,
+    ) -> None:
+        """
+        Purpose:
+            Record the run call for validation assertions.
+        Contract:
+            - Appends the index and blueprint mapping to calls.
+        Args:
+            index: System index for the frame.
+            blueprints: Root blueprints for the frame.
+            phase4_results: Phase-4 result map.
+            broken_spell_ids: Broken spell ids.
+            diagnostics: Shared diagnostics list.
+            cancel_event: Optional cancellation signal.
+        Returns:
+            None.
+        """
+        self.calls.append((index, blueprints))
 
 
 def test_component_system_validation_clean_graph_marks_valid() -> None:
@@ -528,5 +635,285 @@ def test_component_system_validation_detects_orphan_dag_index_socket() -> None:
         assert dep_state is not None
         assert root_state.validity is SpellValidity.gated
         assert dep_state.validity is SpellValidity.gated
+    finally:
+        frame.cleanup()
+
+
+def test_component_system_validation_warning_does_not_gate_states() -> None:
+    """
+    Purpose:
+        Validate warning-only diagnostics do not gate SpellSystemStates.
+    Contract:
+        - Warning diagnostics appear in the validation state.
+        - Lineage validity is set to valid.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If warnings gate validity.
+    """
+    root_id = "root-warning-only"
+    frame = _make_frame("component-system-warning-only")
+    states = frame._spell_system_states
+    root_index = _register_lineage(states, root_id)
+    states.update_dependencies(root_index, [])
+
+    try:
+        index = SpellSystemIndex()
+        index.upsert_node(
+            SpellSystemNode(
+                spell_id=root_id,
+                lineage_id=root_index.id,
+                is_root=True,
+            )
+        )
+        warning = SystemDiagnostic(
+            code="warn_only",
+            message="warning only",
+            severity=SystemDiagnosticSeverity.WARNING,
+            spell_id=root_id,
+            root_id=root_id,
+        )
+        system = SpellSystemValidationSystem([_DiagnosticEmitter(warning)])
+        try:
+            result = system.validate(
+                index=index,
+                blueprints={},
+                phase4_results={},
+                broken_spell_ids=set(),
+                spell_system_states=states,
+            )
+        finally:
+            system.cleanup()
+
+        assert result.is_valid is True
+        assert result.errors == []
+        assert result.warnings == [warning]
+        state = states.get_by_spell_id(root_id)
+        assert state is not None
+        assert state.validity is SpellValidity.valid
+    finally:
+        frame.cleanup()
+
+
+def test_component_system_validation_skips_missing_state() -> None:
+    """
+    Purpose:
+        Validate index nodes without registered states are skipped.
+    Contract:
+        - Validation succeeds without raising for missing states.
+        - Registered lineages are still marked valid.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If missing states disrupt validation.
+    """
+    frame = _make_frame("component-system-missing-state")
+    states = frame._spell_system_states
+    root_id = "root-missing-state"
+    root_index = _register_lineage(states, root_id)
+    states.update_dependencies(root_index, [])
+
+    try:
+        index = SpellSystemIndex()
+        index.upsert_node(
+            SpellSystemNode(
+                spell_id=root_id,
+                lineage_id=root_index.id,
+                is_root=True,
+            )
+        )
+        index.upsert_node(
+            SpellSystemNode(
+                spell_id="orphan-node",
+                lineage_id="lineage-orphan",
+            )
+        )
+        system = SpellSystemValidationSystem([])
+        try:
+            result = system.validate(
+                index=index,
+                blueprints={},
+                phase4_results={},
+                broken_spell_ids=set(),
+                spell_system_states=states,
+            )
+        finally:
+            system.cleanup()
+
+        assert result.is_valid is True
+        assert result.errors == []
+        state = states.get_by_spell_id(root_id)
+        assert state is not None
+        assert state.validity is SpellValidity.valid
+        assert states.get_by_spell_id("orphan-node") is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_system_validation_only_updates_index_nodes() -> None:
+    """
+    Purpose:
+        Validate validation updates only the nodes present in the index.
+    Contract:
+        - Indexed nodes are marked valid.
+        - Non-indexed lineages retain their prior validity.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If non-indexed states are modified.
+    """
+    frame = _make_frame("component-system-index-only")
+    states = frame._spell_system_states
+    root_id = "root-index-only"
+    extra_id = "extra-index-only"
+    root_index = _register_lineage(states, root_id)
+    extra_index = _register_lineage(states, extra_id)
+    states.update_dependencies(root_index, [])
+    states.update_dependencies(extra_index, [])
+
+    try:
+        index = SpellSystemIndex()
+        index.upsert_node(
+            SpellSystemNode(
+                spell_id=root_id,
+                lineage_id=root_index.id,
+                is_root=True,
+            )
+        )
+        system = SpellSystemValidationSystem([])
+        try:
+            result = system.validate(
+                index=index,
+                blueprints={},
+                phase4_results={},
+                broken_spell_ids=set(),
+                spell_system_states=states,
+            )
+        finally:
+            system.cleanup()
+
+        assert result.is_valid is True
+        root_state = states.get_by_spell_id(root_id)
+        extra_state = states.get_by_spell_id(extra_id)
+        assert root_state is not None
+        assert extra_state is not None
+        assert root_state.validity is SpellValidity.valid
+        assert extra_state.validity is SpellValidity.gated
+    finally:
+        frame.cleanup()
+
+
+def test_component_system_validation_cancels_before_strategies() -> None:
+    """
+    Purpose:
+        Validate cancellation prevents strategies from executing.
+    Contract:
+        - Cancellation raises OperationCancelledError.
+        - Strategies are not invoked after cancellation is set.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If strategies execute after cancellation.
+    """
+    frame = _make_frame("component-system-cancel")
+    states = frame._spell_system_states
+    root_id = "root-cancel"
+    root_index = _register_lineage(states, root_id)
+    states.update_dependencies(root_index, [])
+
+    cancel_signal = CancellationEventSignal()
+    cancel_signal.cancel()
+    strategy = _RecordingStrategy()
+
+    try:
+        index = SpellSystemIndex()
+        index.upsert_node(
+            SpellSystemNode(
+                spell_id=root_id,
+                lineage_id=root_index.id,
+                is_root=True,
+            )
+        )
+        system = SpellSystemValidationSystem([strategy])
+        try:
+            with pytest.raises(OperationCancelledError):
+                system.validate(
+                    index=index,
+                    blueprints={},
+                    phase4_results={},
+                    broken_spell_ids=set(),
+                    spell_system_states=states,
+                    cancel_event=cancel_signal.event,
+                )
+        finally:
+            system.cleanup()
+
+        assert strategy.calls == []
+    finally:
+        cancel_signal.cleanup()
+        frame.cleanup()
+
+
+def test_component_system_validation_collects_multiple_errors() -> None:
+    """
+    Purpose:
+        Validate multiple error diagnostics are returned and gate validity.
+    Contract:
+        - Error diagnostics are returned in the validation state.
+        - Lineage validity is gated.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If errors are missing or validity is not gated.
+    """
+    root_id = "root-multi-error"
+    frame = _make_frame("component-system-multi-error")
+    states = frame._spell_system_states
+    root_index = _register_lineage(states, root_id)
+    states.update_dependencies(root_index, [])
+
+    try:
+        index = SpellSystemIndex()
+        index.upsert_node(
+            SpellSystemNode(
+                spell_id=root_id,
+                lineage_id=root_index.id,
+                is_root=True,
+            )
+        )
+        error_a = SystemDiagnostic(
+            code="error_a",
+            message="error a",
+            severity=SystemDiagnosticSeverity.ERROR,
+            spell_id=root_id,
+            root_id=root_id,
+        )
+        error_b = SystemDiagnostic(
+            code="error_b",
+            message="error b",
+            severity=SystemDiagnosticSeverity.ERROR,
+            spell_id=root_id,
+            root_id=root_id,
+        )
+        system = SpellSystemValidationSystem(
+            [_DiagnosticEmitter(error_a), _DiagnosticEmitter(error_b)]
+        )
+        try:
+            result = system.validate(
+                index=index,
+                blueprints={},
+                phase4_results={},
+                broken_spell_ids=set(),
+                spell_system_states=states,
+            )
+        finally:
+            system.cleanup()
+
+        codes = {diag.code for diag in result.errors}
+        assert codes == {"error_a", "error_b"}
+        assert result.is_valid is False
+        state = states.get_by_spell_id(root_id)
+        assert state is not None
+        assert state.validity is SpellValidity.gated
     finally:
         frame.cleanup()

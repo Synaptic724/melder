@@ -1,0 +1,114 @@
+from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+    DirectedAcyclicWorkGraph,
+)
+from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
+    ResolutionFrame,
+)
+
+
+def test_component_resolution_frame_tracks_results_through_dag_execution() -> None:
+    """
+    Purpose:
+        Validate ResolutionFrame stores results produced by DAG tasks.
+    Contract:
+        - Dependency tasks run before dependents.
+        - Results are stored under node ids after execution.
+    Returns:
+        None.
+    """
+    frame = ResolutionFrame({"dep": "override"})
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency(parent_key="dep", child_key="root")
+
+    execution_order: list[str] = []
+
+    def dep_task() -> None:
+        """
+        Purpose:
+            Register the dependency result.
+        Contract:
+            - Uses the override value if present.
+        Returns:
+            None.
+        """
+        execution_order.append("dep")
+        value = frame.get_override("dep") if frame.has_override("dep") else "default"
+        frame.set_result("dep", value)
+
+    def root_task() -> None:
+        """
+        Purpose:
+            Register the root result based on the dependency.
+        Contract:
+            - Reads dependency result from the frame.
+        Returns:
+            None.
+        """
+        execution_order.append("root")
+        dep_value = frame.get_result("dep")
+        frame.set_result("root", f"root:{dep_value}")
+
+    dep_node = dag.get_node("dep")
+    root_node = dag.get_node("root")
+    assert dep_node is not None
+    assert root_node is not None
+
+    dep_node.add_task(dep_task)
+    root_node.add_task(root_task)
+
+    dag.execute()
+
+    assert execution_order == ["dep", "root"]
+    assert frame.get_result("dep") == "override"
+    assert frame.get_result("root") == "root:override"
+
+
+def test_component_resolution_frame_records_errors_alongside_results() -> None:
+    """
+    Purpose:
+        Validate ResolutionFrame retains errors and results in a shared run.
+    Contract:
+        - Errors registered by one node are preserved.
+        - Other nodes can still store results.
+    Returns:
+        None.
+    """
+    frame = ResolutionFrame()
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_node("alpha")
+    dag.add_node("beta")
+
+    def alpha_task() -> None:
+        """
+        Purpose:
+            Record an error for the alpha node.
+        Contract:
+            - Error is stored without raising.
+        Returns:
+            None.
+        """
+        frame.register_error("alpha", RuntimeError("alpha failed"))
+
+    def beta_task() -> None:
+        """
+        Purpose:
+            Record a successful result for the beta node.
+        Contract:
+            - Result is stored on the frame.
+        Returns:
+            None.
+        """
+        frame.set_result("beta", "ok")
+
+    alpha_node = dag.get_node("alpha")
+    beta_node = dag.get_node("beta")
+    assert alpha_node is not None
+    assert beta_node is not None
+
+    alpha_node.add_task(alpha_task)
+    beta_node.add_task(beta_task)
+
+    dag.execute()
+
+    assert frame.get_error("alpha") is not None
+    assert frame.get_result("beta") == "ok"
