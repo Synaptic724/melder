@@ -1,0 +1,268 @@
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spellbook import Spellbook
+from tests.mocks.spellbook.core_classes import BasicService
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_component_contracts() -> None:
+    """
+    Purpose:
+        Ensure component contract tests start with a clean Aether singleton.
+    Contract:
+        - Resets the Aether singleton before the test runs.
+        - Rebinds Spellbook._aether and Conduit._aether to the new instance.
+        - Resets the singleton again after the test for isolation.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _make_spellbook() -> Spellbook:
+    """
+    Purpose:
+        Provide a Spellbook configured for component tests.
+    Contract:
+        - phase_scheduler_workers_per_spellbook is set to 1.
+    Returns:
+        Spellbook: A configured Spellbook instance.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    return spellbook
+
+
+def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+    """
+    Purpose:
+        Resolve a local Spell instance by its versioned spell id.
+    Contract:
+        - Returns the first local spell whose SpellIndex.current matches `spell_id`.
+        - Returns None if no matching spell is found.
+    Args:
+        spellbook: Spellbook holding locally bound spells.
+        spell_id: Versioned spell id to locate.
+    Returns:
+        Spell | None: The resolved spell or None if missing.
+    """
+    for spell_index, spell in spellbook.spells.items():
+        if spell_index.current == spell_id:
+            return spell
+    return None
+
+
+def test_component_spellbook_add_and_remove_contracted_spell_updates_maps() -> None:
+    """
+    Purpose:
+        Validate contracted spell maps update on add and remove operations.
+    Contract:
+        - _add_contracted_spell populates contracted maps and version cache.
+        - _remove_contracted_spell removes entries and clears versions.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If contracted maps or caches are incorrect.
+    """
+    spellbook = _make_spellbook()
+    conduit_id = "peer"
+
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spellbook._add_contracted_spell(spell, conduit_id)
+
+        key = spellbook._make_spell_key(
+            spell.spellframe,
+            spell.spell_name,
+            spell.binding_name,
+        )
+        spell_map = spellbook._contracted_spells[conduit_id]
+        lookup_map = spellbook._lookup_contracted_spells[conduit_id]
+        versions_set = spellbook._contracted_versions[conduit_id]
+
+        assert spell_map[spell.spell_index] is spell
+        assert lookup_map[key] is spell.spell_index
+        assert spell_id in versions_set
+
+        spellbook._remove_contracted_spell(spell_id, conduit_id)
+
+        assert spellbook._contracted_spells[conduit_id] == {}
+        assert key not in spellbook._lookup_contracted_spells[conduit_id]
+        assert spell_id not in spellbook._contracted_versions[conduit_id]
+        assert len(spellbook._contracted_versions[conduit_id]) == 0
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_remove_contracted_spell_raises_for_missing_conduit() -> None:
+    """
+    Purpose:
+        Validate removal raises when the conduit maps are missing.
+    Contract:
+        - _remove_contracted_spell raises RuntimeError for unknown conduits.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If removal does not raise for missing conduits.
+    """
+    spellbook = _make_spellbook()
+    try:
+        with pytest.raises(RuntimeError, match="No contracted spell maps"):
+            spellbook._remove_contracted_spell("missing-id", "missing-conduit")
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_clear_contracted_spells_for_conduit_clears_maps() -> None:
+    """
+    Purpose:
+        Validate clearing contracted spells empties maps but keeps the contract.
+    Contract:
+        - _clear_contracted_spells_for_conduit leaves conduit entries empty.
+        - Version cache for the conduit is cleared.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If maps are not cleared.
+    """
+    spellbook = _make_spellbook()
+    conduit_id = "peer"
+
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        spellbook._add_contracted_spell(spell, conduit_id)
+
+        spellbook._clear_contracted_spells_for_conduit(conduit_id)
+
+        assert spellbook._contracted_spells[conduit_id] == {}
+        assert spellbook._lookup_contracted_spells[conduit_id] == {}
+        assert spellbook._contracted_versions[conduit_id] == set()
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_clear_contracted_spells_for_conduit_raises_when_missing() -> None:
+    """
+    Purpose:
+        Validate clearing raises when the conduit maps are missing.
+    Contract:
+        - _clear_contracted_spells_for_conduit raises RuntimeError for unknown conduits.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If clearing does not raise for missing conduits.
+    """
+    spellbook = _make_spellbook()
+    try:
+        with pytest.raises(RuntimeError, match="No contracted spell maps"):
+            spellbook._clear_contracted_spells_for_conduit("missing-conduit")
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_remove_link_contract_removes_maps() -> None:
+    """
+    Purpose:
+        Validate link contract removal drops all maps for a conduit.
+    Contract:
+        - _remove_link_contract removes entries from all contracted maps.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any contract map remains.
+    """
+    spellbook = _make_spellbook()
+    conduit_id = "peer"
+
+    try:
+        spellbook._create_link_contract(conduit_id)
+        spellbook._remove_link_contract(conduit_id)
+
+        assert conduit_id not in spellbook._contracted_spells
+        assert conduit_id not in spellbook._lookup_contracted_spells
+        assert conduit_id not in spellbook._contracted_versions
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_remove_link_contract_raises_on_inconsistent_state() -> None:
+    """
+    Purpose:
+        Validate inconsistent contract maps raise on removal.
+    Contract:
+        - _remove_link_contract raises RuntimeError when maps are inconsistent.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If inconsistent state does not raise.
+    """
+    spellbook = _make_spellbook()
+    conduit_id = "peer"
+    spellbook._contracted_spells[conduit_id] = {}
+
+    try:
+        with pytest.raises(RuntimeError, match="Inconsistent link contract state"):
+            spellbook._remove_link_contract(conduit_id)
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_sever_link_contract_removes_maps() -> None:
+    """
+    Purpose:
+        Validate severing a link contract clears and removes contracted maps.
+    Contract:
+        - _sever_link_contract clears spell maps then removes the contract entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If contract maps remain after severing.
+    """
+    spellbook = _make_spellbook()
+    conduit_id = "peer"
+
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        spellbook._add_contracted_spell(spell, conduit_id)
+
+        spellbook._sever_link_contract(conduit_id)
+
+        assert conduit_id not in spellbook._contracted_spells
+        assert conduit_id not in spellbook._lookup_contracted_spells
+        assert conduit_id not in spellbook._contracted_versions
+    finally:
+        spellbook.cleanup()

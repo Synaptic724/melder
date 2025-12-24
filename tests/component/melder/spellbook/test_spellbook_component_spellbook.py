@@ -212,3 +212,67 @@ def test_component_spellbook_bind_existing_object_registers_to_creations() -> No
         assert bound_spell._owner_conduit_name == conduit._name
     finally:
         spellbook.cleanup()
+
+
+def test_component_spellbook_bind_updates_spell_versions_cache() -> None:
+    """
+    Purpose:
+        Validate bind keeps the local spell version cache warm.
+    Contract:
+        - _spell_versions includes the newly bound spell id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If _spell_versions is not updated.
+    """
+    spellbook = _make_spellbook()
+    states = _SpellSystemStatesStub()
+    spellbook._spell_system_states = states
+
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        assert spellbook._spell_versions is not None
+        assert spell_id in spellbook._spell_versions
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:
+    """
+    Purpose:
+        Validate binding after conjure stamps owner metadata on new spells.
+    Contract:
+        - New spells receive owner conduit id/name and owned_spell flag.
+        - No creation registration occurs for class-based spells.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ownership metadata is missing or incorrect.
+    """
+    spellbook = _make_spellbook()
+    states = _SpellSystemStatesStub()
+    spellbook._spell_system_states = states
+    conduit = _ConduitStub(conduit_id="owner-id", name="owner-name")
+    spellbook._conduit = conduit
+    spellbook._conjured = True
+
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        assert conduit.registered == []
+
+        bound_spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert bound_spell is not None
+        assert bound_spell.user_created_object is None
+        assert bound_spell.owned_spell is True
+        assert bound_spell._owner_conduit_id == conduit._id
+        assert bound_spell._owner_conduit_name == conduit._name
+    finally:
+        spellbook.cleanup()

@@ -153,7 +153,7 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
         assert optional_dep.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
         assert optional_dep.is_optional is True
         assert optional_dep.is_collection is False
-        assert optional_dep.target_annotation is BasicService
+        assert optional_dep.target_annotation == Optional[BasicService]
 
         services_dep = deps_by_name["services"]
         assert services_dep.di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION
@@ -166,5 +166,73 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
         assert count_dep.is_optional is True
         assert count_dep.is_collection is False
         assert count_dep.target_annotation is int
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_resolution_properties_follow_real_phase_artifacts() -> None:
+    """
+    Purpose:
+        Validate Spell resolution properties reflect real phase artifacts.
+    Contract:
+        - requirements and symbolic_graph are populated after Phases 1 and 2.
+        - resolution_frame is populated after Phase 3.
+        - dependencies list is populated after Phase 3.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If properties do not reflect phase artifacts.
+    """
+    spellbook = _make_spellbook()
+
+    class Consumer:
+        """
+        Purpose:
+            Spell that depends on BasicService for Phase 3 resolution.
+        Contract:
+            - Declares a BasicService dependency.
+        Args:
+            service: Injected BasicService instance.
+        """
+        def __init__(self, service: BasicService) -> None:
+            """
+            Purpose:
+                Capture the injected BasicService dependency.
+            Contract:
+                - Stores the service for assertions.
+            Args:
+                service: Injected BasicService instance.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    service_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    consumer_id = spellbook.bind(
+        spell=Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert spell is not None
+        assert spell.requirements is None
+        assert spell.symbolic_graph is None
+        assert spell.resolution_frame is None
+
+        spell.run_phase_requirements()
+        assert spell.requirements is not None
+
+        spell.run_phase_symbolic_graph()
+        assert spell.symbolic_graph is not None
+
+        spell.run_phase_local_frame()
+        assert spell.resolution_frame is not None
+        assert set(spell.dependencies) == {service_id}
     finally:
         spellbook.cleanup()
