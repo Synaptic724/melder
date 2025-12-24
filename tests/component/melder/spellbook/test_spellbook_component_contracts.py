@@ -266,3 +266,102 @@ def test_component_spellbook_sever_link_contract_removes_maps() -> None:
         assert conduit_id not in spellbook._contracted_versions
     finally:
         spellbook.cleanup()
+
+
+def test_component_spellbook_add_contracted_spell_tracks_multiple_versions() -> None:
+    """
+    Purpose:
+        Validate contracted version cache tracks all versions on a SpellIndex.
+    Contract:
+        - _add_contracted_spell adds every version from the SpellIndex.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If version cache is incomplete.
+    """
+    spellbook = _make_spellbook()
+    conduit_id = "peer"
+
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        initial_id = spell.spell_index.current
+        next_id = f"{initial_id}-v2"
+        spell.spell_index.update(next_id)
+
+        spellbook._add_contracted_spell(spell, conduit_id)
+
+        versions_set = spellbook._contracted_versions[conduit_id]
+        assert initial_id in versions_set
+        assert next_id in versions_set
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_remove_contracted_spell_removes_all_versions() -> None:
+    """
+    Purpose:
+        Validate removing a contracted spell clears all its versions.
+    Contract:
+        - _remove_contracted_spell removes every version for the SpellIndex.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If versions remain after removal.
+    """
+    spellbook = _make_spellbook()
+    conduit_id = "peer"
+
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        initial_id = spell.spell_index.current
+        next_id = f"{initial_id}-v2"
+        spell.spell_index.update(next_id)
+
+        spellbook._add_contracted_spell(spell, conduit_id)
+        spellbook._remove_contracted_spell(next_id, conduit_id)
+
+        versions_set = spellbook._contracted_versions[conduit_id]
+        assert initial_id not in versions_set
+        assert next_id not in versions_set
+        assert len(versions_set) == 0
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_find_contracted_spell_count_tracks_links() -> None:
+    """
+    Purpose:
+        Validate contracted spell count tracks linked conduits.
+    Contract:
+        - _find_contracted_spell_count returns the number of contract entries.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the contract count is incorrect.
+    """
+    spellbook = _make_spellbook()
+    try:
+        assert spellbook._find_contracted_spell_count() == 0
+
+        spellbook._create_link_contract("peer-a")
+        spellbook._create_link_contract("peer-b")
+        assert spellbook._find_contracted_spell_count() == 2
+
+        spellbook._remove_link_contract("peer-a")
+        assert spellbook._find_contracted_spell_count() == 1
+    finally:
+        spellbook.cleanup()
