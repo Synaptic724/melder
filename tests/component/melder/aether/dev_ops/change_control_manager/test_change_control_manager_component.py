@@ -1,3 +1,5 @@
+import pytest
+
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.change_control_manager.change_control_manager import (
     ChangeControlManager,
@@ -8,6 +10,12 @@ from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import
 )
 from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
+)
+from melder.utilities.custom_exceptions.operation_cancelled_error import (
+    OperationCancelledError,
+)
+from melder.utilities.synchronization.cancellation_event_signal import (
+    CancellationEventSignal,
 )
 
 
@@ -186,4 +194,206 @@ def test_component_change_control_revalidate_dirty_roots_uses_blueprint_roots() 
     finally:
         _cleanup_blueprints(blueprints)
         manager.cleanup()
+        frame.cleanup()
+
+
+def test_component_change_control_pending_change_round_trip() -> None:
+    """
+    Purpose:
+        Validate pending-change metadata round-trips through real components.
+    Contract:
+        - register_pending_change stores the reason and metadata.
+        - get_pending_change returns a snapshot copy.
+        - list_pending_changes includes the entry.
+        - clear_pending_change removes it.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If pending-change tracking is incorrect.
+    """
+    frame = AethericFrame("component-ccm-pending")
+    states = frame.spell_system_states
+    manager = frame.dev_ops_manager.change_control_manager
+    index = SpellIndex("spell-pending-change")
+    states.register_lineage(index, object())
+    try:
+        manager.register_pending_change(
+            index,
+            reason="rebinding",
+            metadata={"ticket": "T-100"},
+        )
+        entry = manager.get_pending_change(index.id)
+        assert entry is not None
+        assert entry["reason"] == "rebinding"
+        assert entry["ticket"] == "T-100"
+        snapshot = manager.list_pending_changes()
+        assert index.id in snapshot
+
+        entry["ticket"] = "mutated"
+        fresh = manager.get_pending_change(index.id)
+        assert fresh is not None
+        assert fresh["ticket"] == "T-100"
+
+        manager.clear_pending_change(index.id)
+        assert manager.get_pending_change(index.id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_notify_unknown_spell_tracks_dirty() -> None:
+    """
+    Purpose:
+        Validate unknown spell ids are tracked as dirty with monitoring active.
+    Contract:
+        - notify_spell_changed records the spell id in dirty_spells.
+        - dirty_roots remains empty when no component_of mapping exists.
+        - monitor_active is True after notification.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dirty tracking is incorrect.
+    """
+    frame = AethericFrame("component-ccm-unknown")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        manager.notify_spell_changed("ghost-spell")
+        info = manager.describe()
+        assert "ghost-spell" in info["dirty_spells"]
+        assert info["dirty_roots"] == set()
+        assert info["monitor_active"] is True
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_revalidate_dirty_roots_failure_keeps_dirty() -> None:
+    """
+    Purpose:
+        Validate dirty roots remain when revalidation fails.
+    Contract:
+        - revalidate_dirty_roots propagates the revalidator exception.
+        - dirty roots stay marked after failure.
+        - monitor_active remains True.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dirty roots are cleared after failure.
+    """
+    frame = AethericFrame("component-ccm-revalidate-failure")
+    states = frame.spell_system_states
+    root_id = "root-ccm-failure"
+    dep_id = "dep-ccm-failure"
+    root_index = _register_lineage(states, root_id)
+    _register_lineage(states, dep_id)
+    states.update_dependencies(root_index, [dep_id])
+
+    manager = frame.dev_ops_manager.change_control_manager
+    blueprints: dict[str, object] = {}
+
+    def _revalidate(_dirty_roots, _cancel_event) -> None:
+        raise RuntimeError("revalidate failed")
+
+    try:
+        blueprints = _build_root_blueprints(states)
+        manager.rebuild_component_of(blueprints)
+        manager.set_revalidator(_revalidate)
+
+        manager.notify_spell_changed(dep_id)
+        assert manager.is_root_dirty(root_id) is True
+
+        with pytest.raises(RuntimeError, match="revalidate failed"):
+            manager.revalidate_dirty_roots()
+
+        info = manager.describe()
+        assert root_id in info["dirty_roots"]
+        assert info["monitor_active"] is True
+    finally:
+        _cleanup_blueprints(blueprints)
+        frame.cleanup()
+
+
+def test_component_change_control_revalidate_dirty_roots_no_revalidator_noop() -> None:
+    """
+    Purpose:
+        Validate revalidation is a no-op when no revalidator is registered.
+    Contract:
+        - Dirty roots remain marked when revalidate_dirty_roots is called without a hook.
+        - monitor_active remains True.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dirty roots are cleared without a revalidator.
+    """
+    frame = AethericFrame("component-ccm-revalidate-no-hook")
+    states = frame.spell_system_states
+    root_id = "root-ccm-no-hook"
+    dep_id = "dep-ccm-no-hook"
+    root_index = _register_lineage(states, root_id)
+    _register_lineage(states, dep_id)
+    states.update_dependencies(root_index, [dep_id])
+
+    manager = frame.dev_ops_manager.change_control_manager
+    blueprints: dict[str, object] = {}
+
+    try:
+        blueprints = _build_root_blueprints(states)
+        manager.rebuild_component_of(blueprints)
+        manager.notify_spell_changed(dep_id)
+        assert manager.is_root_dirty(root_id) is True
+
+        manager.revalidate_dirty_roots()
+        info = manager.describe()
+        assert root_id in info["dirty_roots"]
+        assert info["monitor_active"] is True
+    finally:
+        _cleanup_blueprints(blueprints)
+        frame.cleanup()
+
+
+def test_component_change_control_revalidate_dirty_roots_respects_cancellation() -> None:
+    """
+    Purpose:
+        Validate cancellation aborts revalidation before the callback runs.
+    Contract:
+        - cancel_event throws before revalidator is called.
+        - dirty roots remain marked and monitoring stays active.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cancellation does not abort the revalidation.
+    """
+    frame = AethericFrame("component-ccm-cancel")
+    states = frame.spell_system_states
+    root_id = "root-ccm-cancel"
+    dep_id = "dep-ccm-cancel"
+    root_index = _register_lineage(states, root_id)
+    _register_lineage(states, dep_id)
+    states.update_dependencies(root_index, [dep_id])
+
+    manager = frame.dev_ops_manager.change_control_manager
+    blueprints: dict[str, object] = {}
+    calls: list[set[str]] = []
+
+    def _revalidate(dirty_roots: set[str], _cancel_event) -> None:
+        calls.append(set(dirty_roots))
+
+    signal = CancellationEventSignal()
+
+    try:
+        blueprints = _build_root_blueprints(states)
+        manager.rebuild_component_of(blueprints)
+        manager.set_revalidator(_revalidate)
+        manager.notify_spell_changed(dep_id)
+        assert manager.is_root_dirty(root_id) is True
+
+        signal.cancel()
+        with pytest.raises(OperationCancelledError):
+            manager.revalidate_dirty_roots(cancel_event=signal.event)
+
+        assert calls == []
+        info = manager.describe()
+        assert root_id in info["dirty_roots"]
+        assert info["monitor_active"] is True
+    finally:
+        signal.cleanup()
+        _cleanup_blueprints(blueprints)
         frame.cleanup()

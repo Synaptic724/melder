@@ -7,6 +7,12 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
+    SpellSystemAdjacencyBuilder,
+)
+from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
+    SpellSystemRootBlueprintBuilder,
+)
 from melder.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
@@ -350,3 +356,78 @@ def test_aether_spell_system_states_consume_dirty_lineages() -> None:
     assert states.consume_dirty_lineages() == []
 
     book.cleanup()
+
+
+def test_aether_devops_revalidate_pipeline_from_states() -> None:
+    """
+    Purpose:
+        Validate the devops pipeline from states to dirty-root revalidation.
+    Contract:
+        - SpellSystemStates dependencies and topologies build root blueprints.
+        - ChangeControlManager maps component_of from blueprints.
+        - Dirty roots are revalidated through DevOpsManager.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dirty roots are not revalidated.
+    """
+    frame_name = "frame-devops-pipeline"
+    book = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_configuration(aether_frame=frame_name),
+    )
+    config_id = book.bind(
+        spell=BasicConfig,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    config_index = next(
+        idx for idx in book._spells.keys() if idx.current == config_id
+    )
+    service_index = next(
+        idx for idx in book._spells.keys() if idx.current == service_id
+    )
+    aether = Aether()
+    states = aether._get_spell_system_states(frame_name)
+    devops = aether._get_devops_manager(frame_name)
+
+    socket = SpellSocketDescriptor(
+        spell_id=service_id,
+        param_name="config",
+        position=0,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=(config_id,),
+    )
+    topology = SpellLocalTopology(spell_id=service_id, sockets=[socket])
+    blueprints: dict[str, object] = {}
+    calls: list[set[str]] = []
+
+    def _revalidate(dirty_roots: set[str], _cancel_event) -> None:
+        calls.append(set(dirty_roots))
+
+    try:
+        states.update_dependencies(service_index, [config_id])
+        states.register_local_topology(service_index, topology)
+        snapshot = SpellSystemAdjacencyBuilder.build(states)
+        blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
+        devops.change_control_manager.rebuild_component_of(blueprints)
+        devops.change_control_manager.set_revalidator(_revalidate)
+
+        devops.change_control_manager.notify_spell_changed(config_id)
+        assert devops.change_control_manager.is_root_dirty(service_id) is True
+
+        devops.revalidate_dirty_roots()
+        assert calls == [{service_id}]
+        assert devops.change_control_manager.is_root_dirty(service_id) is False
+    finally:
+        for blueprint in blueprints.values():
+            blueprint.cleanup()
+        topology.cleanup()
+        book.cleanup()

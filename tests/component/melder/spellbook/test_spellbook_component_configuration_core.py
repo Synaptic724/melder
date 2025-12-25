@@ -146,3 +146,145 @@ def test_component_configuration_validate_requires_required_properties() -> None
     config = Configuration()
     with pytest.raises(ValueError, match="Missing required configuration property"):
         config.validate()
+
+
+def test_component_configuration_with_hook_registers_hook() -> None:
+    """
+    Purpose:
+        Validate with_hook registers a single hook fluently.
+    Contract:
+        - Returns the same configuration instance.
+        - Hook is registered and retrievable via get_hooks.
+    Returns:
+        None.
+    """
+    config = Configuration()
+
+    def hook() -> None:
+        return None
+
+    result = config.with_hook("spellbook-1", "on_meld_pre_resolve", hook)
+    assert result is config
+    hooks = config.get_hooks("spellbook-1")
+    assert hooks["on_meld_pre_resolve"] == [hook]
+
+
+def test_component_configuration_with_logger_factory_sets_factory() -> None:
+    """
+    Purpose:
+        Validate with_logger_factory installs a logger factory fluently.
+    Contract:
+        - Returns the same configuration instance.
+        - Factory is used by get_logger_for.
+    Returns:
+        None.
+    """
+    config = Configuration()
+
+    def factory(obj: object) -> str:
+        return f"logger:{obj}"
+
+    result = config.with_logger_factory(factory)
+    assert result is config
+    assert config.has_logger_factory() is True
+    assert config.get_logger_for("root") == "logger:root"
+
+
+def test_component_configuration_clear_logger_factory_after_with_logger_factory() -> None:
+    """
+    Purpose:
+        Validate clear_logger_factory removes a previously set factory.
+    Contract:
+        - Logger factory is cleared and get_logger_for returns None.
+    Returns:
+        None.
+    """
+    config = Configuration()
+
+    def factory(obj: object) -> str:
+        return f"logger:{obj}"
+
+    config.with_logger_factory(factory)
+    config.clear_logger_factory()
+    assert config.has_logger_factory() is False
+    assert config.get_logger_for("root") is None
+
+
+def test_component_configuration_with_disposal_method_names_sets_list() -> None:
+    """
+    Purpose:
+        Validate with_disposal_method_names sets disposal methods fluently.
+    Contract:
+        - Returns the same configuration instance.
+        - disposal_method_names is set to the provided list.
+    Returns:
+        None.
+    """
+    config = Configuration()
+    result = config.with_disposal_method_names(["cleanup", "close"])
+    assert result is config
+    assert config.get_property("disposal_method_names") == ["cleanup", "close"]
+
+
+def test_component_configuration_with_hooks_registers_multiple() -> None:
+    """
+    Purpose:
+        Validate with_hooks registers multiple hook names fluently.
+    Contract:
+        - Returns the same configuration instance.
+        - Hook mapping includes each provided hook.
+    Returns:
+        None.
+    """
+    config = Configuration()
+
+    def pre() -> None:
+        return None
+
+    def post() -> None:
+        return None
+
+    result = config.with_hooks(
+        "spellbook-1",
+        on_conduit_pre_created=pre,
+        on_conduit_post_created=post,
+    )
+    assert result is config
+    hooks = config.get_hooks("spellbook-1")
+    assert hooks["on_conduit_pre_created"] == [pre]
+    assert hooks["on_conduit_post_created"] == [post]
+
+
+def test_component_configuration_fluent_chain_validates_without_defaults() -> None:
+    """
+    Purpose:
+        Validate fluent API can set all required properties without defaults.
+    Contract:
+        - finalize freezes after validation.
+        - All required properties are present with expected values.
+    Returns:
+        None.
+    """
+    config = Configuration()
+
+    def factory(obj: object) -> str:
+        return f"logger:{obj}"
+
+    config.with_system_state("automatic")
+    config.with_debugging(True)
+    config.with_disposal(True)
+    config.with_disposal_method_names(["cleanup"])
+    config.with_phase_scheduler_workers(2)
+    config.with_phase_scheduler_barrier_timeout(1000)
+    config.with_ai_native(True)
+    config.with_logger_factory(factory)
+    config.finalize()
+
+    assert config.get_property("system_state") is SystemState.automatic
+    assert config.get_property("debugging") is True
+    assert config.get_property("disposal") is True
+    assert config.get_property("disposal_method_names") == ["cleanup"]
+    assert config.get_property("phase_scheduler_workers_per_spellbook") == 2
+    assert config.get_property("phase_scheduler_barrier_timeout_milliseconds") == 1000
+    assert config.get_property("ai_native_enabled") is True
+    assert config.get_logger_for("root") == "logger:root"

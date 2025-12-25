@@ -1,6 +1,7 @@
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
+from melder.spellbook.bind.spell_index import SpellIndex
 
 
 def test_component_incident_manager_cleanup_through_frame_cleans_incident() -> None:
@@ -52,5 +53,100 @@ def test_component_incident_manager_shared_reference_in_devops() -> None:
         assert manager_a is manager_b
         incidents = manager_b.list_incidents(status=IncidentStatus.open)
         assert incidents == [incident]
+    finally:
+        frame.cleanup()
+
+
+def test_component_incident_manager_filters_by_status_kind_and_lineage() -> None:
+    """
+    Purpose:
+        Validate incident filters against real Incident objects.
+    Contract:
+        - kind and status filters return only matching incidents.
+        - spell_index_id filter returns only incidents for that lineage.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If filters return incorrect incidents.
+    """
+    frame = AethericFrame("component-incident-filters")
+    manager = frame.dev_ops_manager.incident_manager
+    lineage = SpellIndex("spell-incident-filter")
+    try:
+        inc_a = manager.create_incident(
+            kind="validation_failed",
+            severity=IncidentSeverity.error,
+            summary="validation failed",
+            spell_index_id=lineage.id,
+        )
+        inc_b = manager.create_incident(
+            kind="graph_dirty",
+            severity=IncidentSeverity.warning,
+            summary="graph dirty",
+        )
+        inc_c = manager.create_incident(
+            kind="validation_failed",
+            severity=IncidentSeverity.info,
+            summary="validation warning",
+            spell_index_id=lineage.id,
+        )
+
+        inc_a.acknowledge()
+        inc_b.resolve()
+
+        by_kind = {inc.id for inc in manager.list_incidents(kind="validation_failed")}
+        assert by_kind == {inc_a.id, inc_c.id}
+
+        by_status = {inc.id for inc in manager.list_incidents(status=IncidentStatus.open)}
+        assert by_status == {inc_c.id}
+
+        by_lineage = {inc.id for inc in manager.list_incidents(spell_index_id=lineage.id)}
+        assert by_lineage == {inc_a.id, inc_c.id}
+    finally:
+        frame.cleanup()
+
+
+def test_component_incident_manager_list_is_snapshot() -> None:
+    """
+    Purpose:
+        Validate list_incidents returns a detached snapshot list.
+    Contract:
+        - Mutating the returned list does not change the registry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If list mutations affect the registry.
+    """
+    frame = AethericFrame("component-incident-list-snapshot")
+    manager = frame.dev_ops_manager.incident_manager
+    try:
+        incident = manager.create_incident(
+            kind="snapshot",
+            severity=IncidentSeverity.info,
+            summary="snapshot",
+        )
+        snapshot = manager.list_incidents()
+        snapshot.clear()
+        current = manager.list_incidents()
+        assert current == [incident]
+    finally:
+        frame.cleanup()
+
+
+def test_component_incident_manager_get_unknown_returns_none() -> None:
+    """
+    Purpose:
+        Validate get_incident returns None for unknown ids.
+    Contract:
+        - Missing incident ids return None.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If get_incident does not return None.
+    """
+    frame = AethericFrame("component-incident-missing")
+    manager = frame.dev_ops_manager.incident_manager
+    try:
+        assert manager.get_incident("missing-id") is None
     finally:
         frame.cleanup()
