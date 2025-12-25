@@ -1,3 +1,7 @@
+import threading
+
+import pytest
+
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -112,3 +116,72 @@ def test_component_resolution_frame_records_errors_alongside_results() -> None:
 
     assert frame.get_error("alpha") is not None
     assert frame.get_result("beta") == "ok"
+
+
+def test_component_resolution_frame_validates_inputs() -> None:
+    """
+    Purpose:
+        Validate ResolutionFrame enforces basic input validation.
+    Contract:
+        - Empty node ids raise ValueError.
+        - None error payloads raise ValueError.
+    Returns:
+        None.
+    """
+    frame = ResolutionFrame()
+
+    with pytest.raises(ValueError):
+        frame.set_result("", "value")
+    with pytest.raises(ValueError):
+        frame.register_error("node", None)  # type: ignore[arg-type]
+
+
+def test_component_resolution_frame_cleanup_blocks_access() -> None:
+    """
+    Purpose:
+        Validate cleanup prevents further access to frame state.
+    Contract:
+        - Accessing properties after cleanup raises RuntimeError.
+    Returns:
+        None.
+    """
+    frame = ResolutionFrame({"root": "override"})
+    frame.cleanup()
+
+    with pytest.raises(RuntimeError):
+        _ = frame.overrides
+    with pytest.raises(RuntimeError):
+        _ = frame.results
+    with pytest.raises(RuntimeError):
+        _ = frame.errors
+
+
+def test_component_resolution_frame_handles_concurrent_writes() -> None:
+    """
+    Purpose:
+        Validate ResolutionFrame supports concurrent result writes.
+    Contract:
+        - All threaded writes are recorded without errors.
+    Returns:
+        None.
+    """
+    frame = ResolutionFrame()
+    total = 25
+    errors: list[BaseException] = []
+
+    def worker(idx: int) -> None:
+        try:
+            frame.set_result(f"node-{idx}", f"value-{idx}")
+        except BaseException as exc:
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(total)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert not errors
+    results = frame.results
+    assert len(results) == total
+    assert results["node-0"] == "value-0"
