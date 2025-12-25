@@ -1,6 +1,9 @@
+import builtins
 import inspect
 import threading
-from typing import Any, List, Optional, Tuple, Union, get_args, get_origin
+import typing
+import types
+from typing import Any, Dict, List, Optional, Tuple, Union, get_args, get_origin
 # Melder imports
 from melder.spellbook.spell import Spell
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
@@ -263,6 +266,237 @@ class SpellRequirementsFinder(Cleanable):
 
         return spell.spell
 
+    def _resolve_parameter_annotations(
+            self,
+            call_target: Any,
+    ) -> Dict[str, Any]:
+        """
+        Resolve parameter annotations for the given call target.
+
+        This performs a best-effort forward-reference evaluation using
+        ``inspect.get_annotations(eval_str=True)``. If evaluation fails,
+        it falls back to raw annotations and then normalizes any forward
+        reference tokens it can resolve from the available namespaces.
+
+        Args:
+            call_target:
+                The class or callable whose signature annotations should
+                be resolved.
+
+        Returns:
+            Dict[str, Any]:
+                Mapping of parameter name -> normalized annotation.
+        """
+        if call_target is None:
+            return {}
+
+        if inspect.isclass(call_target):
+            annotation_target = getattr(call_target, "__init__", call_target)
+            module = inspect.getmodule(call_target)
+            globalns = dict(getattr(module, "__dict__", {}) if module else {})
+            localns: Dict[str, Any] = dict(vars(call_target))
+        else:
+            annotation_target = call_target
+            globalns = dict(getattr(call_target, "__globals__", {}) or {})
+            localns = {}
+
+        if "__builtins__" not in globalns:
+            globalns["__builtins__"] = builtins
+
+        # Ensure the typing module is accessible for "typing.Any" style annotations.
+        if "typing" not in globalns:
+            globalns["typing"] = typing
+        for name, value in typing.__dict__.items():
+            globalns.setdefault(name, value)
+
+        try:
+            annotations = inspect.get_annotations(
+                annotation_target,
+                eval_str=True,
+                globals=globalns,
+                locals=localns,
+            )
+        except Exception:
+            try:
+                annotations = inspect.get_annotations(
+                    annotation_target,
+                    eval_str=False,
+                    globals=globalns,
+                    locals=localns,
+                )
+            except Exception:
+                annotations = {}
+
+        normalized: Dict[str, Any] = {}
+        for name, annotation in annotations.items():
+            normalized[name] = self._normalize_annotation(
+                annotation=annotation,
+                globalns=globalns,
+                localns=localns,
+            )
+
+        return normalized
+
+    def _resolve_annotation_name(
+            self,
+            name: str,
+            globalns: Dict[str, Any],
+            localns: Dict[str, Any],
+    ) -> Optional[Any]:
+        """
+        Resolve a forward-ref name token against the provided namespaces.
+
+        Args:
+            name:
+                The forward-ref token (e.g. "MyType" or "pkg.MyType").
+            globalns:
+                Module-level globals used for resolution.
+            localns:
+                Local namespace for class-level symbols.
+
+        Returns:
+            Optional[Any]:
+                The resolved object if found, otherwise ``None``.
+        """
+        if name in localns:
+            return localns[name]
+
+        if name in globalns:
+            return globalns[name]
+
+        builtins_obj = globalns.get("__builtins__")
+        if isinstance(builtins_obj, dict):
+            if name in builtins_obj:
+                return builtins_obj[name]
+        elif builtins_obj is not None and hasattr(builtins_obj, name):
+            return getattr(builtins_obj, name)
+
+        if "." in name:
+            root_name, *rest = name.split(".")
+            root = self._resolve_annotation_name(root_name, globalns, localns)
+            if root is None:
+                return None
+            current = root
+            for attr in rest:
+                if not hasattr(current, attr):
+                    return None
+                current = getattr(current, attr)
+            return current
+
+        return None
+
+    def _normalize_annotation(
+            self,
+            *,
+            annotation: Any,
+            globalns: Dict[str, Any],
+            localns: Dict[str, Any],
+    ) -> Any:
+        """
+        Normalize a single annotation by resolving forward references.
+
+        This resolves:
+            - String tokens that map to known globals/locals.
+            - ``typing.ForwardRef`` objects to their underlying names or types.
+            - Nested generic arguments where possible (e.g. list["Foo"]).
+
+        Args:
+            annotation:
+                The raw annotation value.
+            globalns:
+                Namespace used for resolution.
+            localns:
+                Namespace used for resolution.
+
+        Returns:
+            Any:
+                The normalized annotation object.
+        """
+        if annotation is None:
+            return None
+
+        if isinstance(annotation, str):
+            resolved = self._resolve_annotation_name(annotation, globalns, localns)
+            return resolved if resolved is not None else annotation
+
+        if isinstance(annotation, typing.ForwardRef):
+            name = annotation.__forward_arg__
+            resolved = self._resolve_annotation_name(name, globalns, localns)
+            return resolved if resolved is not None else name
+
+        origin = get_origin(annotation)
+        if origin is None:
+            return annotation
+
+        args = get_args(annotation)
+        if not args:
+            return annotation
+
+        normalized_args = tuple(
+            self._normalize_annotation(
+                annotation=arg,
+                globalns=globalns,
+                localns=localns,
+            )
+            for arg in args
+        )
+
+        return self._rebuild_annotation(
+            annotation=annotation,
+            origin=origin,
+            args=normalized_args,
+        )
+
+    def _rebuild_annotation(
+            self,
+            *,
+            annotation: Any,
+            origin: Any,
+            args: Tuple[Any, ...],
+    ) -> Any:
+        """
+        Attempt to rebuild a parametrized annotation with normalized args.
+
+        If the origin does not support reconstruction, the original
+        annotation is returned unchanged.
+
+        Args:
+            annotation:
+                The original annotation object.
+            origin:
+                The origin type from :func:`typing.get_origin`.
+            args:
+                Normalized argument tuple.
+
+        Returns:
+            Any:
+                The rebuilt annotation, or the original if unsupported.
+        """
+        if not args:
+            return annotation
+
+        if origin is list and len(args) == 1:
+            return list[args[0]]
+
+        if origin is set and len(args) == 1:
+            return set[args[0]]
+
+        if origin is frozenset and len(args) == 1:
+            return frozenset[args[0]]
+
+        if origin is dict and len(args) == 2:
+            return dict[args[0], args[1]]
+
+        if origin is tuple:
+            if len(args) == 2 and args[1] is Ellipsis:
+                return tuple[args[0], Ellipsis]
+            return tuple[args]
+
+        if origin is Union or origin is types.UnionType:
+            return Union[args]
+
+        return annotation
+
     def _build_parameter_requirements(
             self,
             *,
@@ -282,7 +516,7 @@ class SpellRequirementsFinder(Cleanable):
         * Iterate the parameters in order.
         * For each parameter:
             - Compute basic flags (var-positional, var-keyword, keyword-only, etc.).
-            - Capture annotation and default.
+            - Resolve annotations (including forward references) and capture defaults.
             - Classify DI shape via :meth:`_classify_parameter`.
             - Construct a :class:`SpellParameterRequirement` that records all
               relevant metadata.
@@ -306,6 +540,7 @@ class SpellRequirementsFinder(Cleanable):
             return []
 
         requirements: List[SpellParameterRequirement] = []
+        resolved_annotations = self._resolve_parameter_annotations(call_target)
 
         for index, (param_name, parameter) in enumerate(signature.parameters.items()):
             self._throw_if_cancelled(cancel_event)
@@ -318,7 +553,8 @@ class SpellRequirementsFinder(Cleanable):
             default_value = parameter.default if has_default else None
 
             has_annotation = parameter.annotation is not inspect.Parameter.empty
-            annotation = parameter.annotation if has_annotation else None
+            raw_annotation = parameter.annotation if has_annotation else None
+            annotation = resolved_annotations.get(param_name, raw_annotation)
 
             # Non-DI shapes and boilerplate parameters.
             if param_name in ("self", "cls") or is_var_positional or is_var_keyword:
@@ -333,6 +569,7 @@ class SpellRequirementsFinder(Cleanable):
                     collection_element_annotation,
                     spellmap_default,
                 ) = self._classify_parameter(
+                    param_name=param_name,
                     annotation=annotation,
                     has_annotation=has_annotation,
                     default_value=default_value,
@@ -361,6 +598,7 @@ class SpellRequirementsFinder(Cleanable):
     def _classify_parameter(
             self,
             *,
+            param_name: str,
             annotation: Any,
             has_annotation: bool,
             default_value: Any,
@@ -400,6 +638,17 @@ class SpellRequirementsFinder(Cleanable):
         6. **Everything else**:
            Classified as :data:`ParameterDIShape.PLAIN`.
 
+        Args:
+            param_name:
+                The parameter name for diagnostics.
+            annotation:
+                The resolved annotation object.
+            has_annotation:
+                Whether the parameter has an explicit annotation.
+            default_value:
+                The raw default value from the signature.
+            has_default:
+                Whether a default value is present.
         Returns:
             tuple:
                 (di_shape, is_optional, collection_element_annotation, spellmap_default)
@@ -513,7 +762,7 @@ class SpellRequirementsFinder(Cleanable):
         * User-defined classes and Protocol/interface types (anything not in
           the ``builtins`` module) are treated as DI candidates.
         * String annotations are treated as **potential** DI candidates;
-          later phases may resolve them against the Spellbook or a type map.
+          Phase 1 attempts to resolve them before classification.
 
         Returns:
             bool: True if this annotation is considered a DI target.

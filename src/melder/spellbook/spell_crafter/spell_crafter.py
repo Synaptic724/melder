@@ -1,4 +1,5 @@
 ﻿import threading
+import inspect
 from typing import Any, Optional, List, Dict, Tuple, Set, Union
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
@@ -420,7 +421,8 @@ class SpellCrafter(Cleanable):
 
         Matching rules (Phase 3 view):
 
-          * First try concrete-class match: ``spell_obj.spell is annotation``.
+          * If the annotation is a string, match by spell name or frame name.
+          * Then try concrete-class match: ``spell_obj.spell is annotation``.
           * Then try frame match: ``spell_obj.spellframe is/== annotation``.
           * If ``binding_name`` is not None, require an exact match.
 
@@ -438,6 +440,23 @@ class SpellCrafter(Cleanable):
                     SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
             ):
                 return False
+
+        if isinstance(annotation, str):
+            if spell_obj.spell_name == annotation:
+                if binding_name is not None and spell_obj.binding_name != binding_name:
+                    return False
+                return True
+
+            frame = spell_obj.spellframe
+            if isinstance(frame, str) and frame == annotation:
+                if binding_name is not None and spell_obj.binding_name != binding_name:
+                    return False
+                return True
+
+            if inspect.isclass(frame) and frame.__name__ == annotation:
+                if binding_name is not None and spell_obj.binding_name != binding_name:
+                    return False
+                return True
 
         # Concrete class match.
         if spell_obj.spell is annotation:

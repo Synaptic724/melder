@@ -163,6 +163,96 @@ class ServiceWithRepoAndLogger:
         self.logger = logger
 
 
+class SharedRepo:
+    """
+    Purpose:
+        Provide a shared repository spell for path tests.
+    Contract:
+        - Stores the provided name on the instance.
+    """
+
+    def __init__(self, name: str = "shared") -> None:
+        """
+        Purpose:
+            Initialize the shared repository name.
+        Contract:
+            Stores the provided name on the instance.
+        Args:
+            name: Identifier used in override assertions.
+        Returns:
+            None.
+        """
+        self.name = name
+
+
+class ServiceA:
+    """
+    Purpose:
+        Provide a service that depends on the shared repo.
+    Contract:
+        - Stores the injected repo instance.
+    """
+
+    def __init__(self, repo: SharedRepo) -> None:
+        """
+        Purpose:
+            Capture the injected shared repo dependency.
+        Contract:
+            Stores the repo on the instance.
+        Args:
+            repo: Injected shared repository dependency.
+        Returns:
+            None.
+        """
+        self.repo = repo
+
+
+class ServiceB:
+    """
+    Purpose:
+        Provide a second service that depends on the shared repo.
+    Contract:
+        - Stores the injected repo instance.
+    """
+
+    def __init__(self, repo: SharedRepo) -> None:
+        """
+        Purpose:
+            Capture the injected shared repo dependency.
+        Contract:
+            Stores the repo on the instance.
+        Args:
+            repo: Injected shared repository dependency.
+        Returns:
+            None.
+        """
+        self.repo = repo
+
+
+class RootService:
+    """
+    Purpose:
+        Provide a root spell that depends on ServiceA and ServiceB.
+    Contract:
+        - Stores both service dependencies.
+    """
+
+    def __init__(self, service_a: ServiceA, service_b: ServiceB) -> None:
+        """
+        Purpose:
+            Capture the injected service dependencies.
+        Contract:
+            Stores service_a and service_b on the instance.
+        Args:
+            service_a: Injected ServiceA dependency.
+            service_b: Injected ServiceB dependency.
+        Returns:
+            None.
+        """
+        self.service_a = service_a
+        self.service_b = service_b
+
+
 def _make_spellbook() -> Spellbook:
     """
     Purpose:
@@ -579,92 +669,6 @@ def test_component_meld_root_blueprint_paths_shared_dependency() -> None:
     Raises:
         AssertionError: If shared dependency paths are missing or duplicated.
     """
-    class SharedRepo:
-        """
-        Purpose:
-            Provide a shared repository spell for path tests.
-        Contract:
-            - Stores the provided name on the instance.
-        """
-
-        def __init__(self, name: str = "shared") -> None:
-            """
-            Purpose:
-                Initialize the shared repository name.
-            Contract:
-                Stores the provided name on the instance.
-            Args:
-                name: Identifier used in override assertions.
-            Returns:
-                None.
-            """
-            self.name = name
-
-    class ServiceA:
-        """
-        Purpose:
-            Provide a service that depends on the shared repo.
-        Contract:
-            - Stores the injected repo instance.
-        """
-
-        def __init__(self, repo: SharedRepo) -> None:
-            """
-            Purpose:
-                Capture the injected shared repo dependency.
-            Contract:
-                Stores the repo on the instance.
-            Args:
-                repo: Injected shared repository dependency.
-            Returns:
-                None.
-            """
-            self.repo = repo
-
-    class ServiceB:
-        """
-        Purpose:
-            Provide a second service that depends on the shared repo.
-        Contract:
-            - Stores the injected repo instance.
-        """
-
-        def __init__(self, repo: SharedRepo) -> None:
-            """
-            Purpose:
-                Capture the injected shared repo dependency.
-            Contract:
-                Stores the repo on the instance.
-            Args:
-                repo: Injected shared repository dependency.
-            Returns:
-                None.
-            """
-            self.repo = repo
-
-    class RootService:
-        """
-        Purpose:
-            Provide a root spell that depends on ServiceA and ServiceB.
-        Contract:
-            - Stores both service dependencies.
-        """
-
-        def __init__(self, service_a: ServiceA, service_b: ServiceB) -> None:
-            """
-            Purpose:
-                Capture the injected service dependencies.
-            Contract:
-                Stores service_a and service_b on the instance.
-            Args:
-                service_a: Injected ServiceA dependency.
-                service_b: Injected ServiceB dependency.
-            Returns:
-                None.
-            """
-            self.service_a = service_a
-            self.service_b = service_b
-
     spellbook = _make_spellbook()
     repo_id = spellbook.bind(
         spell=SharedRepo,

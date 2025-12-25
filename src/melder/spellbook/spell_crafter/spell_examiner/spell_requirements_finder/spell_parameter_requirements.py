@@ -143,9 +143,9 @@ class SpellParameterRequirement(Cleanable):
         """
         The **effective** annotation object as seen on the callable.
 
-        This may still be a ``typing`` object, a bare class, a string
-        (if ``from __future__ import annotations`` is used), or something else.
-        No attempt is made here to "resolve" it.
+        This may be a ``typing`` object, a bare class, or a string if
+        forward references could not be resolved. Phase 1 attempts to
+        resolve forward references so DI can match real types.
         """
         self.check_cleaned()
         return self._annotation

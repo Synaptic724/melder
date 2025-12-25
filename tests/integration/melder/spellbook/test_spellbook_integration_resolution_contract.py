@@ -1,5 +1,5 @@
 import pytest
-from typing import Protocol
+from typing import List, Optional, Protocol, Union
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -30,6 +30,161 @@ def reset_aether_singleton_for_integration() -> None:
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
+
+
+class _ForwardRefRepo:
+    """
+    Purpose:
+        Provide a repository spell for forward-ref DI tests.
+    Contract:
+        Stores a stable marker for assertions.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize the repository marker.
+        Contract:
+            Sets marker to "forward".
+        Returns:
+            None.
+        """
+        self.marker = "forward"
+
+
+class _ForwardRefService:
+    """
+    Purpose:
+        Provide a service with a forward-ref dependency annotation.
+    Contract:
+        Stores the injected repository instance.
+    """
+
+    def __init__(self, repo: "_ForwardRefRepo") -> None:
+        """
+        Purpose:
+            Capture the repository for assertions.
+        Contract:
+            Stores the repository on the instance.
+        Args:
+            repo: Injected repository instance.
+        Returns:
+            None.
+        """
+        self.repo = repo
+
+
+class _ForwardRefHandler(Protocol):
+    """
+    Purpose:
+        Provide a protocol spellframe for forward-ref list DI tests.
+    Contract:
+        Acts as a DI grouping key.
+    """
+
+
+class _ForwardRefHandlerA:
+    """
+    Purpose:
+        Provide a handler implementation for forward-ref list DI tests.
+    Contract:
+        Stores a stable marker for assertions.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize the handler marker.
+        Contract:
+            Sets marker to "A".
+        Returns:
+            None.
+        """
+        self.marker = "A"
+
+
+class _ForwardRefHandlerB:
+    """
+    Purpose:
+        Provide a second handler implementation for forward-ref list DI tests.
+    Contract:
+        Stores a stable marker for assertions.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize the handler marker.
+        Contract:
+            Sets marker to "B".
+        Returns:
+            None.
+        """
+        self.marker = "B"
+
+
+class _ForwardRefPipeline:
+    """
+    Purpose:
+        Provide a service that collects handlers via forward-ref list DI.
+    Contract:
+        Stores the injected handlers list.
+    """
+
+    def __init__(self, handlers: list["_ForwardRefHandler"]) -> None:
+        """
+        Purpose:
+            Capture the handlers for assertions.
+        Contract:
+            Stores the handlers on the instance.
+        Args:
+            handlers: Injected handler instances.
+        Returns:
+            None.
+        """
+        self.handlers = handlers
+
+
+class _LateForwardService:
+    """
+    Purpose:
+        Provide a service that depends on a later-defined repository.
+    Contract:
+        Stores the injected repository instance.
+    """
+
+    def __init__(self, repo: "_LateForwardRepo") -> None:
+        """
+        Purpose:
+            Capture the injected repository.
+        Contract:
+            Stores the repository on the instance.
+        Args:
+            repo: Injected repository instance.
+        Returns:
+            None.
+        """
+        self.repo = repo
+
+
+class _LateForwardRepo:
+    """
+    Purpose:
+        Provide a repository spell defined after its consumer.
+    Contract:
+        Stores a stable marker for assertions.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize the repository marker.
+        Contract:
+            Sets marker to "late".
+        Returns:
+            None.
+        """
+        self.marker = "late"
 
 
 def test_meld_by_spell_id_resolves_class_instance() -> None:
@@ -232,6 +387,867 @@ def test_meld_by_string_spellframe_resolves() -> None:
         instance = conduit.meld(spellframe="handlers")
         assert isinstance(instance, _Handler)
         assert instance.marker == "string"
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_string_resolves_dependency() -> None:
+    """
+    Purpose:
+        Validate forward-ref string annotations resolve for DI.
+    Contract:
+        - String annotations are resolved to real types during Phase 1.
+        - The dependency is injected as a concrete instance.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is not injected.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_ForwardRefRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_ForwardRefService,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _ForwardRefRepo)
+        assert instance.repo.marker == "forward"
+    finally:
+        conduit.cleanup()
+
+
+def test_collection_di_forward_ref_list_injects_all() -> None:
+    """
+    Purpose:
+        Validate collection DI works with forward-ref list annotations.
+    Contract:
+        - list["FrameType"] resolves all bound implementations.
+        - All resolved handlers are injected into the list.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the handler list is incomplete.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_ForwardRefHandlerA,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_ForwardRefHandler,
+    )
+    spellbook.bind(
+        spell=_ForwardRefHandlerB,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_ForwardRefHandler,
+    )
+    pipeline_id = spellbook.bind(
+        spell=_ForwardRefPipeline,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        pipeline = conduit.meld(spell=pipeline_id)
+        markers = {handler.marker for handler in pipeline.handlers}
+        assert markers == {"A", "B"}
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_unresolved_forward_ref_raises() -> None:
+    """
+    Purpose:
+        Validate unresolved forward-ref annotations fail with a clear error.
+    Contract:
+        - Unresolvable DI annotations raise during Phase 1.
+        - The error message points at the missing type.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the unresolved annotation does not raise.
+    """
+    class _BrokenService:
+        """
+        Purpose:
+            Provide a spell with an unresolved DI annotation.
+        Contract:
+            Uses an annotation that cannot be resolved at runtime.
+        """
+
+        def __init__(self, dep: "MissingDependency") -> None:
+            """
+            Purpose:
+                Declare a dependency with an unresolved annotation.
+            Contract:
+                Stores the dependency for completeness.
+            Args:
+                dep: Unresolved dependency annotation.
+            Returns:
+                None.
+            """
+            self.dep = dep
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_BrokenService,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    with pytest.raises(PhaseExecutionError) as exc_info:
+        spellbook.conjure(name="root")
+
+    assert any(
+        "no DI candidate found" in str(error) and "MissingDependency" in str(error)
+        for error in exc_info.value.errors
+    )
+
+
+def test_type_hint_di_forward_ref_optional_resolves_dependency() -> None:
+    """
+    Purpose:
+        Validate Optional forward-ref annotations resolve for DI.
+    Contract:
+        - Optional["Type"] still injects the dependency.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is not injected.
+    """
+    class _OptionalService:
+        """
+        Purpose:
+            Provide a service with an Optional forward-ref dependency.
+        Contract:
+            Stores the injected dependency instance.
+        """
+
+        def __init__(self, repo: Optional["_ForwardRefRepo"]) -> None:
+            """
+            Purpose:
+                Capture the injected repository.
+            Contract:
+                Stores the repository on the instance.
+            Args:
+                repo: Injected repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_ForwardRefRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_OptionalService,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _ForwardRefRepo)
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_union_resolves_dependency() -> None:
+    """
+    Purpose:
+        Validate Union forward-ref annotations resolve for DI.
+    Contract:
+        - Union["Type", None] still injects the dependency.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is not injected.
+    """
+    class _UnionService:
+        """
+        Purpose:
+            Provide a service with a Union forward-ref dependency.
+        Contract:
+            Stores the injected dependency instance.
+        """
+
+        def __init__(self, repo: Union["_ForwardRefRepo", None]) -> None:
+            """
+            Purpose:
+                Capture the injected repository.
+            Contract:
+                Stores the repository on the instance.
+            Args:
+                repo: Injected repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_ForwardRefRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_UnionService,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _ForwardRefRepo)
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_typing_list_protocol_resolves_all() -> None:
+    """
+    Purpose:
+        Validate typing.List forward-ref annotations resolve for collection DI.
+    Contract:
+        - List["Protocol"] injects all bound implementations.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the handler list is incomplete.
+    """
+    class _TypingListPipeline:
+        """
+        Purpose:
+            Provide a pipeline using typing.List forward-ref annotations.
+        Contract:
+            Stores the injected handlers list.
+        """
+
+        def __init__(self, handlers: List["_ForwardRefHandler"]) -> None:
+            """
+            Purpose:
+                Capture the injected handlers.
+            Contract:
+                Stores the handlers on the instance.
+            Args:
+                handlers: Injected handler instances.
+            Returns:
+                None.
+            """
+            self.handlers = handlers
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_ForwardRefHandlerA,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_ForwardRefHandler,
+    )
+    spellbook.bind(
+        spell=_ForwardRefHandlerB,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_ForwardRefHandler,
+    )
+    pipeline_id = spellbook.bind(
+        spell=_TypingListPipeline,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        pipeline = conduit.meld(spell=pipeline_id)
+        markers = {handler.marker for handler in pipeline.handlers}
+        assert markers == {"A", "B"}
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_list_class_frame_resolves_all() -> None:
+    """
+    Purpose:
+        Validate forward-ref list DI resolves class-frame implementations.
+    Contract:
+        - list["Frame"] injects all bound implementations.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the handler list is incomplete.
+    """
+    class _Frame:
+        """
+        Purpose:
+            Provide a class frame for list DI.
+        Contract:
+            Acts as a DI grouping key.
+        """
+
+    class _FrameImplA:
+        """
+        Purpose:
+            Provide a class-frame implementation.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the marker.
+            Contract:
+                Sets marker to "A".
+            Returns:
+                None.
+            """
+            self.marker = "A"
+
+    class _FrameImplB:
+        """
+        Purpose:
+            Provide another class-frame implementation.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the marker.
+            Contract:
+                Sets marker to "B".
+            Returns:
+                None.
+            """
+            self.marker = "B"
+
+    class _FramePipeline:
+        """
+        Purpose:
+            Provide a pipeline that depends on class-frame list DI.
+        Contract:
+            Stores the injected implementations list.
+        """
+
+        def __init__(self, handlers: list["_Frame"]) -> None:
+            """
+            Purpose:
+                Capture the injected implementations.
+            Contract:
+                Stores the handlers on the instance.
+            Args:
+                handlers: Injected class-frame handlers.
+            Returns:
+                None.
+            """
+            self.handlers = handlers
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_FrameImplA,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_Frame,
+    )
+    spellbook.bind(
+        spell=_FrameImplB,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_Frame,
+    )
+    pipeline_id = spellbook.bind(
+        spell=_FramePipeline,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        pipeline = conduit.meld(spell=pipeline_id)
+        markers = {handler.marker for handler in pipeline.handlers}
+        assert markers == {"A", "B"}
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_local_class_resolves_by_name() -> None:
+    """
+    Purpose:
+        Validate local forward refs resolve by spell name.
+    Contract:
+        - Local class annotations still inject the dependency.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is not injected.
+    """
+    class _LocalRepo:
+        """
+        Purpose:
+            Provide a local repository spell for name-based resolution.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the local repository marker.
+            Contract:
+                Sets marker to "local".
+            Returns:
+                None.
+            """
+            self.marker = "local"
+
+    class _LocalService:
+        """
+        Purpose:
+            Provide a service with a local forward-ref annotation.
+        Contract:
+            Stores the injected repository instance.
+        """
+
+        def __init__(self, repo: "_LocalRepo") -> None:
+            """
+            Purpose:
+                Capture the injected repository.
+            Contract:
+                Stores the repository on the instance.
+            Args:
+                repo: Injected repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_LocalRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_LocalService,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _LocalRepo)
+        assert instance.repo.marker == "local"
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_local_protocol_collection_resolves_by_name() -> None:
+    """
+    Purpose:
+        Validate local protocol forward refs resolve list DI by name.
+    Contract:
+        - list["Protocol"] injects all bound implementations.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If collection DI is incomplete.
+    """
+    class _LocalProtocol(Protocol):
+        """
+        Purpose:
+            Provide a local protocol frame for list DI.
+        Contract:
+            Acts as a DI grouping key.
+        """
+
+    class _LocalProtoImplA:
+        """
+        Purpose:
+            Provide a local protocol implementation.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the marker.
+            Contract:
+                Sets marker to "A".
+            Returns:
+                None.
+            """
+            self.marker = "A"
+
+    class _LocalProtoImplB:
+        """
+        Purpose:
+            Provide another local protocol implementation.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the marker.
+            Contract:
+                Sets marker to "B".
+            Returns:
+                None.
+            """
+            self.marker = "B"
+
+    class _LocalPipeline:
+        """
+        Purpose:
+            Provide a pipeline that depends on local protocol list DI.
+        Contract:
+            Stores the injected implementations list.
+        """
+
+        def __init__(self, handlers: list["_LocalProtocol"]) -> None:
+            """
+            Purpose:
+                Capture the injected handlers.
+            Contract:
+                Stores the handlers on the instance.
+            Args:
+                handlers: Injected protocol handlers.
+            Returns:
+                None.
+            """
+            self.handlers = handlers
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_LocalProtoImplA,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_LocalProtocol,
+    )
+    spellbook.bind(
+        spell=_LocalProtoImplB,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_LocalProtocol,
+    )
+    pipeline_id = spellbook.bind(
+        spell=_LocalPipeline,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        pipeline = conduit.meld(spell=pipeline_id)
+        markers = {handler.marker for handler in pipeline.handlers}
+        assert markers == {"A", "B"}
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_module_scope_defined_late_resolves() -> None:
+    """
+    Purpose:
+        Validate module-scope forward refs resolve when defined later.
+    Contract:
+        - The dependency is injected even when defined after the consumer.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is not injected.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_LateForwardRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_LateForwardService,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _LateForwardRepo)
+        assert instance.repo.marker == "late"
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_spellmap_default_wins_over_unresolved() -> None:
+    """
+    Purpose:
+        Validate SpellMap defaults override unresolved forward-ref annotations.
+    Contract:
+        - SpellMap default is used for DI.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is not injected.
+    """
+    class _SpellMapFallback:
+        """
+        Purpose:
+            Provide a service with a SpellMap default and unresolved annotation.
+        Contract:
+            Uses the SpellMap default for DI.
+        """
+
+        def __init__(self, repo: "MissingDep" = SpellMap(_ForwardRefRepo)) -> None:
+            """
+            Purpose:
+                Capture the injected repository.
+            Contract:
+                Stores the repository on the instance.
+            Args:
+                repo: Injected repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_ForwardRefRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_SpellMapFallback,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _ForwardRefRepo)
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_list_includes_all_binding_names() -> None:
+    """
+    Purpose:
+        Validate collection DI includes implementations across binding names.
+    Contract:
+        - list["Protocol"] includes all bindings for that frame.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the handler list is incomplete.
+    """
+    class _BindingPipeline:
+        """
+        Purpose:
+            Provide a pipeline that depends on protocol list DI.
+        Contract:
+            Stores the injected handlers list.
+        """
+
+        def __init__(self, handlers: list["_ForwardRefHandler"]) -> None:
+            """
+            Purpose:
+                Capture the injected handlers.
+            Contract:
+                Stores the handlers on the instance.
+            Args:
+                handlers: Injected handler instances.
+            Returns:
+                None.
+            """
+            self.handlers = handlers
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_ForwardRefHandlerA,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_ForwardRefHandler,
+        binding_name="alpha",
+    )
+    spellbook.bind(
+        spell=_ForwardRefHandlerB,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_ForwardRefHandler,
+        binding_name="beta",
+    )
+    pipeline_id = spellbook.bind(
+        spell=_BindingPipeline,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        pipeline = conduit.meld(spell=pipeline_id)
+        markers = {handler.marker for handler in pipeline.handlers}
+        assert markers == {"A", "B"}
+    finally:
+        conduit.cleanup()
+
+
+def test_type_hint_di_forward_ref_typing_list_class_frame_resolves_all() -> None:
+    """
+    Purpose:
+        Validate typing.List resolves class-frame list DI.
+    Contract:
+        - List["Frame"] injects all bound implementations.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the handler list is incomplete.
+    """
+    class _TypingFrame:
+        """
+        Purpose:
+            Provide a class frame for typing.List DI.
+        Contract:
+            Acts as a DI grouping key.
+        """
+
+    class _TypingFrameImplA:
+        """
+        Purpose:
+            Provide a class-frame implementation.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the marker.
+            Contract:
+                Sets marker to "A".
+            Returns:
+                None.
+            """
+            self.marker = "A"
+
+    class _TypingFrameImplB:
+        """
+        Purpose:
+            Provide another class-frame implementation.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the marker.
+            Contract:
+                Sets marker to "B".
+            Returns:
+                None.
+            """
+            self.marker = "B"
+
+    class _TypingFramePipeline:
+        """
+        Purpose:
+            Provide a pipeline that depends on typing.List class-frame DI.
+        Contract:
+            Stores the injected implementations list.
+        """
+
+        def __init__(self, handlers: List["_TypingFrame"]) -> None:
+            """
+            Purpose:
+                Capture the injected handlers.
+            Contract:
+                Stores the handlers on the instance.
+            Args:
+                handlers: Injected class-frame handlers.
+            Returns:
+                None.
+            """
+            self.handlers = handlers
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_TypingFrameImplA,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_TypingFrame,
+    )
+    spellbook.bind(
+        spell=_TypingFrameImplB,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_TypingFrame,
+    )
+    pipeline_id = spellbook.bind(
+        spell=_TypingFramePipeline,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        pipeline = conduit.meld(spell=pipeline_id)
+        markers = {handler.marker for handler in pipeline.handlers}
+        assert markers == {"A", "B"}
     finally:
         conduit.cleanup()
 

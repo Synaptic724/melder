@@ -1,5 +1,5 @@
 import inspect
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import pytest
 
@@ -196,7 +196,7 @@ def test_string_annotation_counts_as_di_target():
     reqs = _reqs_for(f, spell_type=SpellType.METHOD)
     p = _by_name(reqs)["x"]
     assert p.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
-    assert p.annotation == "Dep"
+    assert p.annotation is Dep
 
 
 def test_builtin_annotation_stays_plain():
@@ -273,3 +273,253 @@ def test_spell_requirements_cleanup_swallows_child_errors_and_blocks_access():
     assert reqs._cleaned is True
     with pytest.raises(RuntimeError):
         _ = reqs.parameters
+
+
+def test_forward_ref_list_annotation_resolves_collection_element() -> None:
+    """
+    Purpose:
+        Validate forward-ref list annotations resolve to collection DI.
+    Contract:
+        - list["Dep"] is classified as collection DI.
+        - The element annotation resolves to Dep.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If classification or element resolution fails.
+    """
+    def f(x: list["Dep"]):
+        """
+        Purpose:
+            Provide a target signature with a forward-ref list annotation.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Forward-ref annotated parameter.
+        Returns:
+            Any.
+        """
+        return x
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION
+    assert p.collection_element_annotation is Dep
+
+
+def test_forward_ref_typing_list_annotation_resolves_collection_element() -> None:
+    """
+    Purpose:
+        Validate typing.List forward-ref annotations resolve to collection DI.
+    Contract:
+        - List["Dep"] is classified as collection DI.
+        - The element annotation resolves to Dep.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If classification or element resolution fails.
+    """
+    def f(x: List["Dep"]):
+        """
+        Purpose:
+            Provide a target signature with typing.List forward-ref annotations.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Forward-ref annotated parameter.
+        Returns:
+            Any.
+        """
+        return x
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION
+    assert p.collection_element_annotation is Dep
+
+
+def test_forward_ref_optional_annotation_marks_optional() -> None:
+    """
+    Purpose:
+        Validate Optional forward-ref annotations are treated as optional DI.
+    Contract:
+        - Optional["Dep"] is classified as single DI.
+        - is_optional is True.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If optional classification fails.
+    """
+    def f(x: Optional["Dep"]):
+        """
+        Purpose:
+            Provide a target signature with an Optional forward-ref annotation.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Optional forward-ref parameter.
+        Returns:
+            Any.
+        """
+        return x
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+    assert p.is_optional is True
+
+
+def test_forward_ref_union_annotation_marks_optional() -> None:
+    """
+    Purpose:
+        Validate Union forward-ref annotations are treated as optional DI.
+    Contract:
+        - Union["Dep", None] is classified as single DI.
+        - is_optional is True.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If optional classification fails.
+    """
+    def f(x: Union["Dep", None]):
+        """
+        Purpose:
+            Provide a target signature with a Union forward-ref annotation.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Union forward-ref parameter.
+        Returns:
+            Any.
+        """
+        return x
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+    assert p.is_optional is True
+
+
+def test_forward_ref_local_class_annotation_remains_string() -> None:
+    """
+    Purpose:
+        Validate local forward-ref annotations stay as strings when unresolved.
+    Contract:
+        - Local forward refs remain string annotations.
+        - DI shape still classifies as single by annotation.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If annotation normalization behaves unexpectedly.
+    """
+    class LocalDep:
+        """
+        Purpose:
+            Provide a local dependency for forward-ref tests.
+        Contract:
+            Serves as a local-only annotation target.
+        """
+
+    def f(x: "LocalDep"):
+        """
+        Purpose:
+            Provide a target signature with a local forward-ref annotation.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Local forward-ref parameter.
+        Returns:
+            Any.
+        """
+        return x
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+    assert p.annotation == "LocalDep"
+
+
+def test_forward_ref_nested_list_annotation_is_plain() -> None:
+    """
+    Purpose:
+        Validate nested list annotations are not treated as DI collections.
+    Contract:
+        - list[list["Dep"]] is classified as plain.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If nested list DI is misclassified.
+    """
+    def f(x: list[list["Dep"]]):
+        """
+        Purpose:
+            Provide a target signature with a nested list annotation.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Nested list parameter.
+        Returns:
+            Any.
+        """
+        return x
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.PLAIN
+
+
+def test_forward_ref_dict_annotation_is_plain() -> None:
+    """
+    Purpose:
+        Validate dict annotations with forward refs are not treated as DI.
+    Contract:
+        - dict[str, "Dep"] is classified as plain.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dict annotations are misclassified.
+    """
+    def f(x: dict[str, "Dep"]):
+        """
+        Purpose:
+            Provide a target signature with a dict forward-ref annotation.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Dict forward-ref parameter.
+        Returns:
+            Any.
+        """
+        return x
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.PLAIN
+
+
+def test_forward_ref_builtin_list_annotation_is_plain() -> None:
+    """
+    Purpose:
+        Validate builtin forward-ref annotations do not trigger DI.
+    Contract:
+        - list["int"] is classified as plain.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If builtin annotations are misclassified.
+    """
+    def f(x: list["int"]):
+        """
+        Purpose:
+            Provide a target signature with a builtin forward-ref list annotation.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Builtin forward-ref parameter.
+        Returns:
+            Any.
+        """
+        return x
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.PLAIN
