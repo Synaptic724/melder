@@ -1,5 +1,4 @@
-﻿from __future__ import annotations
-import threading
+﻿import threading
 from typing import Any, Optional, List, Dict, Tuple, Set, Union
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph

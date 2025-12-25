@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Any, Optional
 # Melder Imports
 from melder.spellbook.spell import Spell

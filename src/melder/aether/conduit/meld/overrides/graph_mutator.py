@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, Dict
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (

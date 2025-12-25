@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import functools
 import threading
 from copy import deepcopy

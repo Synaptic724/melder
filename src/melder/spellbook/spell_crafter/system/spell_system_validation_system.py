@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Dict, Iterable, List, Optional, Set
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (

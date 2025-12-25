@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Any, Optional, Callable
 # Melder Imports
 from melder.spellbook.existence.existence import Existence

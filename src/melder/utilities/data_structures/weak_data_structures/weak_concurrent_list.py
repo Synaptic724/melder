@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import threading
 import ulid
 from typing import Any, Callable, Optional, List, TypeVar, Generic

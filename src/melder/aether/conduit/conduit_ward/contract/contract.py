@@ -2,7 +2,6 @@ from typing import Optional, Any, Dict
 from threading import RLock
 # Melder imports
 from melder.aether.conduit.conduit_ward.contract.details import Detail
-from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IConduitWard, IConduit, IContract

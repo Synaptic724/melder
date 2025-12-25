@@ -1,4 +1,3 @@
-from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence, Tuple, Dict, List, Optional
 # Melder imports

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Dict, Iterable, Mapping, Optional
 
 from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode

@@ -1,7 +1,3 @@
-# melder/spellbook/spell_crafter/system/spell_system_root_blueprint_builder.py
-
-from __future__ import annotations
-
 from collections import deque
 from typing import Deque, Dict, List, Optional, Sequence, Set, Tuple
 

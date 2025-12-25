@@ -1,4 +1,3 @@
-from __future__ import annotations    # MUST be first
 import threading
 from typing import Any, ClassVar
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import ulid
 import weakref
 from typing import Generic, TypeVar, Optional, Callable, List, Any

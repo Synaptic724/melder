@@ -1,4 +1,3 @@
-from __future__ import annotations
 import inspect
 import threading
 from typing import Any, List, Optional, Tuple, Union, get_args, get_origin

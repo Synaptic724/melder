@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Iterable, List, Optional, Sequence
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable

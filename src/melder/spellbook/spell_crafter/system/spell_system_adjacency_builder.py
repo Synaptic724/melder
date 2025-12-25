@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Dict, Iterable, Optional, Set
 # Melder imports
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import SpellSystemAdjacencySnapshot

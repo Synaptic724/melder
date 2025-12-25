@@ -1,4 +1,3 @@
-from __future__ import annotations
 from threading import RLock
 from typing import Optional
 # Melder Imports

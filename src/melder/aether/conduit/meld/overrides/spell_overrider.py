@@ -1,4 +1,3 @@
-from __future__ import annotations
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from enum import IntEnum
 from typing import Any, Dict, List

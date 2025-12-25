@@ -1,4 +1,3 @@
-from __future__ import annotations
 import weakref
 import threading
 from typing import Generic, TypeVar, Optional, Callable, Union, Any, Iterator

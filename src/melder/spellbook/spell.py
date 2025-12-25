@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Optional, List, Any, Callable
 import ulid
 from threading import RLock
