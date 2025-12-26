@@ -157,6 +157,40 @@ def test_component_spellspace_reset_disposes_and_clears_bucket() -> None:
         conduit.cleanup()
 
 
+def test_component_spellspace_reset_preserves_other_spellspaces() -> None:
+    """
+    Purpose:
+        Validate resetting one spellspace does not clear other buckets.
+    Contract:
+        - reset clears only the active spellspace bucket.
+        - other spellspace buckets remain intact.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If unrelated spellspace buckets are cleared.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_spell_space,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        creations = conduit._creations
+        with conduit.enter_spellspace() as outer:
+            outer_instance = outer.meld(spell=spell_id)
+            with conduit.enter_spellspace() as inner:
+                inner.meld(spell=spell_id)
+                inner.reset()
+                assert creations.get_spellspace_creation(inner.id, spell_id) is None
+                outer_creation = creations.get_spellspace_creation(outer.id, spell_id)
+                assert outer_creation is not None
+                assert outer_creation.value is outer_instance
+    finally:
+        conduit.cleanup()
+
+
 def test_component_creations_extract_restore_spellspace_reuses_instance() -> None:
     """
     Purpose:

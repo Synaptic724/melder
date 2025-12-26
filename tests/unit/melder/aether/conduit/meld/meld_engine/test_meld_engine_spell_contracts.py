@@ -650,3 +650,33 @@ def test_apply_spell_contract_dependencies_records_occurrence_and_override() -> 
 
     assert dependencies["service"] == [("provider", ("service",))]
     assert ("provider", ("service",)) in engine._contract_overrides_by_occurrence
+
+
+def test_apply_spell_contract_dependencies_noop_when_spell_missing() -> None:
+    """
+    Purpose:
+        Validate missing consumer spells result in no dependency changes.
+    Contract:
+        - Missing spells in lookup skip SpellContract dependency injection.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dependencies change for missing spells.
+    """
+    engine = object.__new__(MeldEngine)
+    engine._contract_overrides_by_occurrence = {}
+    engine._contract_overrides_by_spell_id = {}
+    engine._spell_lookup = {}
+    engine._root_spell = SimpleNamespace(
+        spell_index=SpellIndex("root"),
+        spell_name="Root",
+    )
+
+    dependencies = {"existing": [("dep", ("existing",))]}
+    engine._apply_spell_contract_dependencies(
+        dependencies=dependencies,
+        occurrence=("missing", ()),
+    )
+
+    assert dependencies == {"existing": [("dep", ("existing",))]}
+    assert engine._contract_overrides_by_occurrence == {}

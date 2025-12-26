@@ -1412,6 +1412,20 @@ def test_ensure_lineage_resolvable_raises_for_invalid_state() -> None:
         meld._ensure_lineage_resolvable(spell)
 
 
+def test_ensure_lineage_resolvable_raises_for_disabled_state() -> None:
+    """
+    Verify disabled lineage validity raises SpellbookValidationError.
+
+    Contract:
+        - Disabled validity raises without attempting revalidation.
+    """
+    meld = _make_meld()
+    state = _SystemStateStub(validity=SpellValidity.disabled)
+    spell = _SpellStub(spell_id="spell-1", system_state=state)
+    with pytest.raises(SpellbookValidationError):
+        meld._ensure_lineage_resolvable(spell)
+
+
 def test_gated_validation_required_unknown_without_dirty_raises() -> None:
     """
     Verify unknown validity values still raise validation errors when not dirty.

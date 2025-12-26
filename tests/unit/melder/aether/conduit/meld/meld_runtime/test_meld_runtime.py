@@ -852,3 +852,50 @@ def test_cleanup_is_idempotent() -> None:
     runtime.cleanup()
     runtime.cleanup()
     assert runtime.cleaned is True
+
+
+def test_execute_blueprint_ignores_non_dict_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Verify non-dict overrides are ignored when a blueprint is present.
+
+    Contract:
+        - Non-dict overrides fall back to {} before SpellOverrider.apply.
+        - Execution proceeds using the override_map produced by SpellOverrider.
+    """
+    runtime = MeldRuntime()
+    root_blueprint = object()
+    mutated_blueprint = object()
+    crafter = SimpleNamespace(_root_blueprint_phase5=root_blueprint)
+    spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override={})
+    context = _make_context(spell=spell, overrides=[])
+
+    mutator_instance = MagicMock()
+    mutator_instance.apply.return_value = mutated_blueprint
+    mutator_cls = MagicMock(return_value=mutator_instance)
+    monkeypatch.setattr(runtime_module, "GraphMutator", mutator_cls)
+
+    overrider_instance = MagicMock()
+    overrider_instance.apply.return_value = {}
+    overrider_cls = MagicMock(return_value=overrider_instance)
+    monkeypatch.setattr(runtime_module, "SpellOverrider", overrider_cls)
+
+    engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
+    assert runtime.execute(context) == "ok"
+    overrider_instance.apply.assert_called_once_with({})
+    assert engine_cls.call_args.kwargs["blueprint"] is mutated_blueprint
+
+
+def test_build_frame_overrides_rejects_non_iterable_args() -> None:
+    """
+    Verify non-iterable __args__ values raise TypeError.
+
+    Contract:
+        - __args__ must be iterable when provided.
+    """
+    runtime = MeldRuntime()
+    with pytest.raises(TypeError):
+        runtime._build_frame_overrides(
+            context_overrides={"__args__": 1},
+            override_map={},
+            root_spell_id="spell-1",
+        )

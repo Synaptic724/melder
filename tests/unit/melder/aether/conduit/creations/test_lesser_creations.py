@@ -435,6 +435,33 @@ def test_clear_spellspace_instances_removes_bucket_and_future_get_returns_none(m
     assert creations.get_spellspace_creation("ss-1", "spell-1") is None
 
 
+def test_clear_spellspace_instances_preserves_other_buckets(make_lesser_creations):
+    """
+    Purpose:
+        Ensure clearing one spellspace bucket leaves others intact.
+    Contract:
+        - The targeted bucket is removed.
+        - Other buckets remain accessible.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If unrelated buckets are cleared.
+    """
+    creations, _ = make_lesser_creations()
+    obj_a = object()
+    obj_b = object()
+
+    creations.register_spellspace_creation("ss-1", "spell-a", obj_a)
+    creations.register_spellspace_creation("ss-2", "spell-b", obj_b)
+
+    creations.clear_spellspace_instances("ss-1")
+
+    assert creations.get_spellspace_creation("ss-1", "spell-a") is None
+    preserved = creations.get_spellspace_creation("ss-2", "spell-b")
+    assert preserved is not None
+    assert preserved.value is obj_b
+
+
 def test_clear_spellspace_instances_calls_disposal_on_all_spells_in_bucket(make_lesser_creations):
     creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
     calls: List[str] = []
@@ -562,6 +589,33 @@ def test_cleanup_marks_cleaned_and_blocks_adds(make_lesser_creations):
         creations.add_many("spell-1", object())
 
 
+def test_cleanup_nulls_internal_refs_and_logger_fields(make_lesser_creations):
+    """
+    Purpose:
+        Validate cleanup nulls internal references for lifecycle safety.
+    Contract:
+        - Managed collections are nulled after cleanup.
+        - Logger and log metadata are nulled after cleanup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If references remain after cleanup.
+    """
+    creations, _ = make_lesser_creations()
+
+    creations.cleanup()
+
+    assert creations._unique_per_scope is None
+    assert creations._many is None
+    assert creations._spellspace_instances is None
+    assert creations._conduit is None
+    assert creations._parent_creations is None
+    assert creations._disposal_method_names is None
+    assert creations._logger is None
+    assert creations._log_groups is None
+    assert creations._log_sysgroups is None
+
+
 def test_cleanup_disposes_across_scopes_unique_many_spellspace(make_lesser_creations):
     creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
     calls: List[str] = []
@@ -655,3 +709,29 @@ def test_transfer_data_and_clear_should_return_snapshot_and_clean_when_fixed(mak
 
     with pytest.raises(RuntimeError, match="already been cleaned"):
         creations.add_unique_per_scope("u2", object())
+
+
+def test_transfer_data_and_clear_skips_disposal_for_transferred_entries(make_lesser_creations):
+    """
+    Purpose:
+        Verify transfer_data_and_clear skips disposal for transferred entries.
+    Contract:
+        - No disposal calls occur for transferred objects.
+        - The manager is marked cleaned after transfer.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If disposal is invoked or the manager remains active.
+    """
+    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    calls: List[str] = []
+    item = _RecordingItem(calls, "u1", raises=True)
+    creations.add_unique_per_scope("u1", item)
+
+    data = creations.transfer_data_and_clear()
+
+    assert calls == []
+    assert data["unique_per_scope"]["u1"].value is item
+    assert creations.cleaned is True
+    assert creations._unique_per_scope is None
+    assert creations._many is None

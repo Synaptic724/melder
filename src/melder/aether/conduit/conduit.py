@@ -864,7 +864,8 @@ class Conduit(Cleanable):
 
         This process allows the conduit to create its own links through the Aether system.
         It effectively forks this conduit into a new tree, retaining its children and
-        creation data, and establishes new links with the parent. Only a normal conduit
+        creation data, and establishes new links with the parent. The local Meld is
+        rewired to the new Creations manager after transfer. Only a normal conduit
         can access the Spellbook to bind new spells.
 
         Optionally, in **dynamic mode**, you can supply a `hooks` mapping that will be
@@ -927,6 +928,10 @@ class Conduit(Cleanable):
 
                 # Step 4: Replace the old creations
                 self._creations = new_creations
+
+                # Step 4.1: Ensure Meld uses the upgraded creations manager.
+                if self._meld is not None:
+                    self._meld._creations = new_creations
 
                 # Step 5: Reconfigure the conduit ward
                 self._conduit_ward._convert_to_normal_conduit()

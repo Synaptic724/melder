@@ -119,3 +119,27 @@ class TestCreation:
 
             # Assert: Release called upon exit
             mock_lock_instance.release.assert_called_once()
+
+    def test_context_manager_releases_lock_on_exception(self, sample_value):
+        """
+        Purpose:
+            Verify the context manager releases the lock when exceptions occur.
+        Contract:
+            - acquire is called on entry.
+            - release is called on exit even when the body raises.
+            - exceptions propagate to the caller.
+        Returns:
+            None.
+        Raises:
+            AssertionError: If the lock is not released or errors are swallowed.
+        """
+        with patch("threading.RLock") as MockRLock:
+            mock_lock_instance = MockRLock.return_value
+            creation = Creation(sample_value)
+
+            with pytest.raises(ValueError, match="boom"):
+                with creation:
+                    raise ValueError("boom")
+
+            mock_lock_instance.acquire.assert_called_once()
+            mock_lock_instance.release.assert_called_once()
