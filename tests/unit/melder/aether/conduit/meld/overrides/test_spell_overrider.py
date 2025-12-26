@@ -511,3 +511,29 @@ def test_apply_raises_for_empty_override_key() -> None:
 
     with pytest.raises(ValueError, match="Override key must not be empty"):
         overrider.apply({"   ": "value"})
+
+
+def test_specificity_for_spec_rejects_unknown_kind() -> None:
+    """
+    Purpose:
+        Validate unsupported TargetSpec kinds raise an error.
+    Contract:
+        - Unknown TargetSpecKind values raise RuntimeError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If unsupported kinds do not raise.
+    """
+    class _SpecStub:
+        """
+        Spec stub with an unsupported kind value.
+        """
+
+        def __init__(self) -> None:
+            """
+            Initialize the stub with an unsupported kind.
+            """
+            self.kind = object()
+
+    with pytest.raises(RuntimeError, match="Unsupported TargetSpecKind"):
+        SpellOverrider._specificity_for_spec(_SpecStub())

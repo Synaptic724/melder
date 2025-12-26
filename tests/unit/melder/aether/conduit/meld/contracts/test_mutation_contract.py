@@ -123,6 +123,21 @@ def test_spell_override_dict_is_preserved() -> None:
     assert contract.spell_override is override
 
 
+def test_spell_override_tuple_is_preserved() -> None:
+    """
+    Verify tuple overrides are preserved by reference.
+
+    Contract:
+        - spell_override retains tuple payloads as positional args.
+
+    Raises:
+        AssertionError: If the override is copied or replaced.
+    """
+    override = (1, 2)
+    contract = MutationContract(spell="alpha", spell_override=override)
+    assert contract.spell_override is override
+
+
 def test_cleanup_clears_dict_override_and_nulls_fields() -> None:
     """
     Verify cleanup clears dict overrides and nulls references.
@@ -170,6 +185,27 @@ def test_cleanup_clears_list_override_and_nulls_fields() -> None:
     assert contract.spell is None
     assert contract.spellframe is None
     assert contract.binding_name is None
+    assert contract.spell_override is None
+
+
+def test_cleanup_leaves_tuple_override_intact() -> None:
+    """
+    Verify cleanup does not mutate tuple overrides.
+
+    Contract:
+        - tuple overrides remain unchanged after cleanup.
+        - contract spell_override is set to None.
+
+    Raises:
+        AssertionError: If tuple overrides are mutated.
+    """
+    override = (1, 2)
+    contract = MutationContract(
+        spell="alpha",
+        spell_override=override,
+    )
+    contract.cleanup()
+    assert override == (1, 2)
     assert contract.spell_override is None
 
 

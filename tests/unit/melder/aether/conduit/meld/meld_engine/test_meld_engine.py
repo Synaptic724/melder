@@ -3696,3 +3696,115 @@ def test_apply_mutation_overrides_skips_when_override_dict_empty() -> None:
     )
 
     assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+
+
+def test_build_execution_order_returns_fallback_for_empty_graph() -> None:
+    """
+    Verify execution ordering falls back to blueprint order for empty graphs.
+
+    Contract:
+        - Empty occurrence graphs return the fallback order as-is.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If fallback ordering is not preserved.
+    """
+    engine, _, _ = _make_engine()
+    order = engine._build_execution_order(
+        occurrence_graph={},
+        fallback_order=["a", "b"],
+    )
+    assert order == ["a", "b"]
+
+
+def test_build_execution_order_uses_fallback_on_cycle() -> None:
+    """
+    Verify execution ordering falls back when cycles prevent full ordering.
+
+    Contract:
+        - Cyclic dependency graphs fall back to the provided order.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If fallback ordering is not used on cycles.
+    """
+    engine, _, _ = _make_engine()
+    occurrence_graph = {
+        ("a", ()): {"dep": [("b", ("dep",))]},
+        ("b", ()): {"dep": [("a", ("dep",))]},
+    }
+    order = engine._build_execution_order(
+        occurrence_graph=occurrence_graph,
+        fallback_order=["a", "b"],
+    )
+    assert order == ["a", "b"]
+
+
+def test_construct_root_only_wraps_callable_errors() -> None:
+    """
+    Verify root-only construction wraps callable failures in MeldExecutionError.
+
+    Contract:
+        - Errors from the root callable raise MeldExecutionError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If callable errors are not wrapped.
+    """
+    def _boom(**_kwargs: Any) -> None:
+        raise RuntimeError("boom")
+
+    root_spell = _make_spell(spell_id="root", spell=_boom)
+    engine, _, _ = _make_engine(root_spell=root_spell)
+    with pytest.raises(MeldExecutionError, match="Error invoking spell target"):
+        engine._construct_root_only()
+
+
+def test_construct_root_only_ignores_invalid_args_override() -> None:
+    """
+    Verify invalid __args__ overrides are ignored for root-only construction.
+
+    Contract:
+        - Non-sequence __args__ overrides are ignored.
+        - Keyword overrides still apply.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If invalid __args__ overrides are not ignored.
+    """
+    captured: dict[str, Any] = {}
+
+    def _callable(*args: Any, **kwargs: Any) -> str:
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+        return "ok"
+
+    root_spell = _make_spell(spell_id="root", spell=_callable)
+    frame = ResolutionFrame(overrides={"__args__": "bad", "x": 1})
+    engine, _, _ = _make_engine(root_spell=root_spell, frame=frame)
+
+    assert engine._construct_root_only() == "ok"
+    assert captured["args"] == ()
+    assert captured["kwargs"] == {"x": 1}
+
+
+def test_collect_occurrence_dependencies_ignores_topology_errors_without_dag() -> None:
+    """
+    Verify topology lookup errors do not block occurrence expansion without a DAG.
+
+    Contract:
+        - Topology errors fall back to empty dependency sets when no DAG exists.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If topology errors prevent dependency collection.
+    """
+    engine, root_spell, _ = _make_engine()
+    engine._system_states = _SystemStatesStub({}, raise_on={root_spell.spell_index.current})
+
+    dependencies = engine._collect_occurrence_dependencies(
+        occurrence=(root_spell.spell_index.current, ()),
+        dag=None,
+    )
+
+    assert dependencies == {}

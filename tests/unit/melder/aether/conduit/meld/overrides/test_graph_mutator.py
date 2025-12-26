@@ -603,3 +603,65 @@ def test_apply_handles_multiple_overrides() -> None:
     mutated = mutator.apply({"dep": "new-parent"})
     assert _parent_ids(mutated.dag, "child-a") == ["new-parent"]
     assert _parent_ids(mutated.dag, "child-b") == ["new-parent"]
+
+
+def test_cleanup_swallows_engine_cleanup_errors() -> None:
+    """
+    Verify cleanup ignores engine cleanup failures.
+
+    Contract:
+        - cleanup suppresses engine cleanup errors.
+        - engine and blueprint references are nulled.
+    """
+    socket_ref = _make_socket_ref(
+        node_id="child",
+        param_name="dep",
+        param_path=("dep",),
+    )
+    blueprint = _make_blueprint(
+        root_id="child",
+        root_lineage_id="lineage-1",
+        edges=[("parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
+        socket_refs=[socket_ref],
+    )
+    mutator = GraphMutator(blueprint)
+    engine_mock = MagicMock()
+    engine_mock.cleanup.side_effect = RuntimeError("cleanup failure")
+    mutator._engine = engine_mock
+
+    mutator.cleanup()
+
+    assert mutator._engine is None
+    assert mutator._blueprint is None
+
+
+def test_apply_handles_multiple_distinct_override_keys() -> None:
+    """
+    Verify multiple override keys rewire their respective sockets.
+
+    Contract:
+        - Each override key rewires only its targeted mutation socket.
+    """
+    ref_a = _make_socket_ref(
+        node_id="child-a",
+        param_name="dep",
+        param_path=("dep",),
+    )
+    ref_b = _make_socket_ref(
+        node_id="child-b",
+        param_name="other",
+        param_path=("other",),
+    )
+    blueprint = _make_blueprint(
+        root_id="child-a",
+        root_lineage_id="lineage-1",
+        edges=[
+            ("old-a", "child-a", "dep", SocketKind.MUTATION_CONTRACT),
+            ("old-b", "child-b", "other", SocketKind.MUTATION_CONTRACT),
+        ],
+        socket_refs=[ref_a, ref_b],
+    )
+    mutator = GraphMutator(blueprint)
+    mutated = mutator.apply({"dep": "new-a", "other": "new-b"})
+    assert _parent_ids(mutated.dag, "child-a") == ["new-a"]
+    assert _parent_ids(mutated.dag, "child-b") == ["new-b"]

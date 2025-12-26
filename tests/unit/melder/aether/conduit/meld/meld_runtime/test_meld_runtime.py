@@ -799,3 +799,56 @@ def test_build_frame_overrides_empty_inputs_return_empty() -> None:
         root_spell_id="spell-1",
     )
     assert merged == {}
+
+
+def test_execute_wraps_graph_mutator_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Verify GraphMutator failures are wrapped in MeldExecutionError.
+
+    Contract:
+        - GraphMutator.apply errors raise MeldExecutionError with inner exception.
+    """
+    runtime = MeldRuntime()
+    root_blueprint = object()
+    crafter = SimpleNamespace(_root_blueprint_phase5=root_blueprint)
+    spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override={"x": "y"})
+    context = _make_context(spell=spell, overrides={})
+
+    mutator_instance = MagicMock()
+    mutator_instance.apply.side_effect = RuntimeError("mutator failure")
+    mutator_cls = MagicMock(return_value=mutator_instance)
+    monkeypatch.setattr(runtime_module, "GraphMutator", mutator_cls)
+
+    with pytest.raises(MeldExecutionError) as exc_info:
+        runtime.execute(context)
+    assert isinstance(exc_info.value.inner, RuntimeError)
+
+
+def test_execute_allows_missing_spellbook(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Verify execution proceeds when the spell has no spellbook.
+
+    Contract:
+        - Missing spell._spellbook yields an empty spell_lookup.
+    """
+    runtime = MeldRuntime()
+    spell = _SpellStub(spell_id="spell-1", spellbook=None)
+    context = _make_context(spell=spell)
+    engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
+
+    assert runtime.execute(context) == "ok"
+    lookup = engine_cls.call_args.kwargs["spell_lookup"]
+    assert lookup == {}
+
+
+def test_cleanup_is_idempotent() -> None:
+    """
+    Verify cleanup can be called multiple times safely.
+
+    Contract:
+        - cleanup is idempotent and leaves cleaned=True.
+    """
+    runtime = MeldRuntime()
+    runtime.cleanup()
+    runtime.cleanup()
+    assert runtime.cleaned is True
