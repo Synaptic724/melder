@@ -735,3 +735,29 @@ def test_transfer_data_and_clear_skips_disposal_for_transferred_entries(make_les
     assert creations.cleaned is True
     assert creations._unique_per_scope is None
     assert creations._many is None
+
+
+def test_transfer_data_and_clear_cleans_spellspace_entries(make_lesser_creations):
+    """
+    Purpose:
+        Ensure transfer_data_and_clear cleans spellspace entries rather than transferring them.
+    Contract:
+        - Spellspace creations are cleaned during transfer.
+        - Returned data includes only unique_per_scope and many.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If spellspace entries are transferred or remain active.
+    """
+    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    spell_id = "spell-1"
+    obj = object()
+    creations.register_spellspace_creation("ss-1", spell_id, obj)
+    wrapper = creations.get_spellspace_creation("ss-1", spell_id)
+
+    data = creations.transfer_data_and_clear()
+
+    assert set(data.keys()) == {"unique_per_scope", "many"}
+    assert wrapper is not None
+    assert wrapper.value is None
+    assert creations.cleaned is True

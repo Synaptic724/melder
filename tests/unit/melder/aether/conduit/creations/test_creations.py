@@ -440,6 +440,40 @@ def test_extract_spell_creations_removes_entries_from_multiple_spellspace_bucket
     assert creations.get_spellspace_creation("ss-2", spell_id) is None
 
 
+def test_extract_spell_creations_preserves_spellspace_bucket_with_other_spells(
+        normal_conduit: FakeConduit,
+) -> None:
+    """
+    Purpose:
+        Ensure extraction removes only the targeted spell and preserves other spellspace entries.
+    Contract:
+        - The extracted spellspace entry is removed.
+        - Other spellspace entries remain in the same bucket.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If remaining spellspace entries are removed.
+    """
+    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    spell_id = "spell-a"
+    other_spell_id = "spell-b"
+    obj_a = object()
+    obj_b = object()
+
+    creations.register_spellspace_creation("ss-1", spell_id, obj_a)
+    creations.register_spellspace_creation("ss-1", other_spell_id, obj_b)
+
+    extracted = creations.extract_spell_creations(spell_id)
+
+    assert len(extracted) == 1
+    assert extracted[0]["scope"] == "spellspace"
+    assert extracted[0]["spellspace_id"] == "ss-1"
+    assert creations.get_spellspace_creation("ss-1", spell_id) is None
+    remaining = creations.get_spellspace_creation("ss-1", other_spell_id)
+    assert remaining is not None
+    assert remaining.value is obj_b
+
+
 def test_extract_spell_creations_can_extract_across_spellspace_and_singletons(normal_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
     spell_id = "spell-shared"
@@ -840,6 +874,30 @@ def test_restore_spell_creations_restores_spellspace_entries(normal_conduit: Fak
     restored = creations.get_spellspace_creation("ss-1", spell_id)
     assert restored is not None
     assert restored.value is obj
+
+
+def test_restore_spell_creations_ignores_spellspace_entries_missing_id(
+        normal_conduit: FakeConduit,
+) -> None:
+    """
+    Purpose:
+        Ensure spellspace entries without spellspace_id are ignored.
+    Contract:
+        - Missing spellspace_id entries do not mutate storage.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If missing spellspace_id entries are restored.
+    """
+    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    spell_id = "spell-x"
+
+    creations.restore_spell_creations(
+        spell_id,
+        [{"scope": "spellspace", "creation": Creation(object())}],
+    )
+
+    assert creations.extract_spell_creations(spell_id) == []
 
 
 def test_restore_spell_creations_ignores_invalid_entries(normal_conduit: FakeConduit) -> None:

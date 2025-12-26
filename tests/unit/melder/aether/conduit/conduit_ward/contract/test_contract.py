@@ -186,6 +186,64 @@ def test_contract_cleanup_idempotent(contract):
     assert contract._cleaned
 
 # ----------------------------------------------------------------------
+# _clean_up Tests
+# ----------------------------------------------------------------------
+
+def test_clean_up_clears_maps_and_cleans_details(contract, sample_detail_a, sample_detail_b):
+    """
+    Purpose:
+        Verify _clean_up clears detail maps and cleans entries.
+    Contract:
+        _clean_up calls detail cleanup, empties maps, and keeps wards intact.
+    Args:
+        contract: Contract fixture under test.
+        sample_detail_a: Detail fixture for ward A.
+        sample_detail_b: Detail fixture for ward B.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup does not clear or preserve expected state.
+    """
+    contract._details_a["spell_a_id"] = sample_detail_a
+    contract._details_b["spell_b_id"] = sample_detail_b
+
+    contract._clean_up()
+
+    assert contract._details_a == {}
+    assert contract._details_b == {}
+    assert sample_detail_a.cleanup.called
+    assert sample_detail_b.cleanup.called
+    assert contract._ward_a is not None
+    assert contract._ward_b is not None
+    assert contract._cleaned is False
+
+# ----------------------------------------------------------------------
+# Context Manager Tests
+# ----------------------------------------------------------------------
+
+def test_contract_context_manager_acquires_and_releases_lock(contract):
+    """
+    Purpose:
+        Verify contract context manager acquires and releases the lock.
+    Contract:
+        __enter__ acquires the lock and __exit__ releases it.
+    Args:
+        contract: Contract fixture under test.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the lock is not acquired or released.
+    """
+    lock = MagicMock()
+    contract._lock = lock
+
+    with contract as entered:
+        assert entered is contract
+
+    lock.acquire.assert_called_once_with()
+    lock.release.assert_called_once_with()
+
+# ----------------------------------------------------------------------
 # _get_peer Tests
 # ----------------------------------------------------------------------
 
