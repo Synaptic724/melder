@@ -1,5 +1,5 @@
 import inspect
-from typing import List, Optional, Union
+from typing import List, Optional, Union, get_args, get_origin
 
 import pytest
 
@@ -397,6 +397,200 @@ def test_forward_ref_union_annotation_marks_optional() -> None:
     p = _by_name(reqs)["x"]
     assert p.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
     assert p.is_optional is True
+
+
+def test_string_expression_typing_optional_parses_and_marks_optional(monkeypatch) -> None:
+    """
+    Purpose:
+        Validate typing.Optional string expressions are parsed into DI hints.
+    Contract:
+        - typing.Optional[Dep] becomes an optional single-annotation requirement.
+        - The resolved annotation contains Dep and None.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If parsing or classification fails.
+    """
+    def f(x: object) -> object:
+        """
+        Purpose:
+            Provide a signature for Optional string-expression parsing.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Arbitrary input value.
+        Returns:
+            object: The input.
+        """
+        return x
+
+    def fake_get_annotations(*args: object, **kwargs: object) -> dict[str, str]:
+        """
+        Purpose:
+            Provide a deterministic string annotation payload.
+        Contract:
+            Returns a typing.Optional string expression for parameter "x".
+        Args:
+            *args: Unused positional arguments.
+            **kwargs: Unused keyword arguments.
+        Returns:
+            dict[str, str]: The fake annotations mapping.
+        """
+        return {"x": "typing.Optional[Dep]"}
+
+    monkeypatch.setattr(inspect, "get_annotations", fake_get_annotations)
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+    assert p.is_optional is True
+    assert Dep in get_args(p.annotation)
+    assert type(None) in get_args(p.annotation)
+
+
+def test_string_expression_typing_union_parses_and_marks_optional(monkeypatch) -> None:
+    """
+    Purpose:
+        Validate typing.Union string expressions are parsed into DI hints.
+    Contract:
+        - typing.Union[Dep, None] becomes an optional single-annotation requirement.
+        - The resolved annotation contains Dep and None.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If parsing or classification fails.
+    """
+    def f(x: object) -> object:
+        """
+        Purpose:
+            Provide a signature for Union string-expression parsing.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Arbitrary input value.
+        Returns:
+            object: The input.
+        """
+        return x
+
+    def fake_get_annotations(*args: object, **kwargs: object) -> dict[str, str]:
+        """
+        Purpose:
+            Provide a deterministic string annotation payload.
+        Contract:
+            Returns a typing.Union string expression for parameter "x".
+        Args:
+            *args: Unused positional arguments.
+            **kwargs: Unused keyword arguments.
+        Returns:
+            dict[str, str]: The fake annotations mapping.
+        """
+        return {"x": "typing.Union[Dep, None]"}
+
+    monkeypatch.setattr(inspect, "get_annotations", fake_get_annotations)
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+    assert p.is_optional is True
+    assert Dep in get_args(p.annotation)
+    assert type(None) in get_args(p.annotation)
+
+
+def test_string_expression_pep604_parses_and_marks_optional(monkeypatch) -> None:
+    """
+    Purpose:
+        Validate PEP 604 string expressions are parsed into DI hints.
+    Contract:
+        - Dep | None becomes an optional single-annotation requirement.
+        - The resolved annotation contains Dep and None.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If parsing or classification fails.
+    """
+    def f(x: object) -> object:
+        """
+        Purpose:
+            Provide a signature for PEP 604 string-expression parsing.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Arbitrary input value.
+        Returns:
+            object: The input.
+        """
+        return x
+
+    def fake_get_annotations(*args: object, **kwargs: object) -> dict[str, str]:
+        """
+        Purpose:
+            Provide a deterministic string annotation payload.
+        Contract:
+            Returns a PEP 604 string expression for parameter "x".
+        Args:
+            *args: Unused positional arguments.
+            **kwargs: Unused keyword arguments.
+        Returns:
+            dict[str, str]: The fake annotations mapping.
+        """
+        return {"x": "Dep | None"}
+
+    monkeypatch.setattr(inspect, "get_annotations", fake_get_annotations)
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+    assert p.is_optional is True
+    assert Dep in get_args(p.annotation)
+    assert type(None) in get_args(p.annotation)
+
+
+def test_string_expression_typing_list_parses_collection_element(monkeypatch) -> None:
+    """
+    Purpose:
+        Validate typing.List string expressions are parsed into collection DI.
+    Contract:
+        - typing.List[Dep] becomes a collection annotation with Dep elements.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If parsing or classification fails.
+    """
+    def f(x: object) -> object:
+        """
+        Purpose:
+            Provide a signature for typing.List string-expression parsing.
+        Contract:
+            Returns the input for completeness.
+        Args:
+            x: Arbitrary input value.
+        Returns:
+            object: The input.
+        """
+        return x
+
+    def fake_get_annotations(*args: object, **kwargs: object) -> dict[str, str]:
+        """
+        Purpose:
+            Provide a deterministic string annotation payload.
+        Contract:
+            Returns a typing.List string expression for parameter "x".
+        Args:
+            *args: Unused positional arguments.
+            **kwargs: Unused keyword arguments.
+        Returns:
+            dict[str, str]: The fake annotations mapping.
+        """
+        return {"x": "typing.List[Dep]"}
+
+    monkeypatch.setattr(inspect, "get_annotations", fake_get_annotations)
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION
+    assert p.collection_element_annotation is Dep
+    assert get_origin(p.annotation) is list
 
 
 def test_forward_ref_local_class_annotation_remains_string() -> None:

@@ -1,3 +1,4 @@
+import ast
 import builtins
 import inspect
 import threading
@@ -276,7 +277,8 @@ class SpellRequirementsFinder(Cleanable):
         This performs a best-effort forward-reference evaluation using
         ``inspect.get_annotations(eval_str=True)``. If evaluation fails,
         it falls back to raw annotations and then normalizes any forward
-        reference tokens it can resolve from the available namespaces.
+        reference tokens or string expressions it can resolve from the
+        available namespaces.
 
         Args:
             call_target:
@@ -385,6 +387,216 @@ class SpellRequirementsFinder(Cleanable):
 
         return None
 
+    def _parse_annotation_expression(
+            self,
+            text: str,
+            globalns: Dict[str, Any],
+            localns: Dict[str, Any],
+    ) -> Tuple[bool, Any]:
+        """
+        Parse a string annotation expression into a normalized object.
+
+        This supports a safe subset of expression forms:
+            - Name and attribute references (``Foo``, ``typing.List``).
+            - Subscripted generics (``list[Foo]``, ``Optional[Foo]``).
+            - Union via ``|`` (``Foo | None``).
+
+        Args:
+            text:
+                The raw annotation string.
+            globalns:
+                Namespace used for resolution.
+            localns:
+                Namespace used for resolution.
+
+        Returns:
+            Tuple[bool, Any]:
+                A tuple of (success, value). If parsing fails, success is False.
+        """
+        try:
+            parsed = ast.parse(text, mode="eval")
+        except SyntaxError:
+            return False, None
+
+        sentinel = object()
+        resolved = self._resolve_annotation_node(
+            node=parsed.body,
+            globalns=globalns,
+            localns=localns,
+            sentinel=sentinel,
+        )
+        if resolved is sentinel:
+            return False, None
+        return True, resolved
+
+    def _resolve_annotation_node(
+            self,
+            *,
+            node: ast.AST,
+            globalns: Dict[str, Any],
+            localns: Dict[str, Any],
+            sentinel: object,
+    ) -> Any:
+        """
+        Resolve a parsed annotation AST node into a runtime object.
+
+        Args:
+            node:
+                AST node representing part of the annotation expression.
+            globalns:
+                Namespace used for resolution.
+            localns:
+                Namespace used for resolution.
+            sentinel:
+                Sentinel used to signal unsupported nodes.
+
+        Returns:
+            Any:
+                The resolved annotation object, or the sentinel if unsupported.
+        """
+        if isinstance(node, ast.Name):
+            resolved = self._resolve_annotation_name(node.id, globalns, localns)
+            return resolved if resolved is not None else node.id
+
+        if isinstance(node, ast.Constant):
+            return node.value
+
+        if isinstance(node, ast.Attribute):
+            base = self._resolve_annotation_node(
+                node=node.value,
+                globalns=globalns,
+                localns=localns,
+                sentinel=sentinel,
+            )
+            if base is sentinel:
+                return sentinel
+            if isinstance(base, str):
+                return f"{base}.{node.attr}"
+            if hasattr(base, node.attr):
+                return getattr(base, node.attr)
+            return sentinel
+
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+            left = self._resolve_annotation_node(
+                node=node.left,
+                globalns=globalns,
+                localns=localns,
+                sentinel=sentinel,
+            )
+            right = self._resolve_annotation_node(
+                node=node.right,
+                globalns=globalns,
+                localns=localns,
+                sentinel=sentinel,
+            )
+            if left is sentinel or right is sentinel:
+                return sentinel
+            return Union[left, right]
+
+        if isinstance(node, ast.Subscript):
+            container = self._resolve_annotation_node(
+                node=node.value,
+                globalns=globalns,
+                localns=localns,
+                sentinel=sentinel,
+            )
+            if container is sentinel:
+                return sentinel
+
+            slice_node = node.slice
+            if isinstance(slice_node, ast.Tuple):
+                args_nodes = slice_node.elts
+            else:
+                args_nodes = [slice_node]
+
+            args: List[Any] = []
+            for arg_node in args_nodes:
+                arg_value = self._resolve_annotation_node(
+                    node=arg_node,
+                    globalns=globalns,
+                    localns=localns,
+                    sentinel=sentinel,
+                )
+                if arg_value is sentinel:
+                    return sentinel
+                args.append(arg_value)
+
+            return self._build_subscripted_annotation(
+                container=container,
+                args=tuple(args),
+                sentinel=sentinel,
+            )
+
+        return sentinel
+
+    def _build_subscripted_annotation(
+            self,
+            *,
+            container: Any,
+            args: Tuple[Any, ...],
+            sentinel: object,
+    ) -> Any:
+        """
+        Build a subscripted annotation from a container and args.
+
+        Args:
+            container:
+                The container type or alias (e.g. list, typing.List).
+            args:
+                The resolved subscript arguments.
+            sentinel:
+                Sentinel used to indicate unsupported containers.
+
+        Returns:
+            Any:
+                The constructed annotation, or the sentinel if unsupported.
+        """
+        if not args:
+            return sentinel
+
+        if container in (list, typing.List):
+            if len(args) == 1:
+                return list[args[0]]
+            return sentinel
+
+        if container in (set, typing.Set):
+            if len(args) == 1:
+                return set[args[0]]
+            return sentinel
+
+        if container in (frozenset, typing.FrozenSet):
+            if len(args) == 1:
+                return frozenset[args[0]]
+            return sentinel
+
+        if container in (dict, typing.Dict):
+            if len(args) == 2:
+                return dict[args[0], args[1]]
+            return sentinel
+
+        if container in (tuple, typing.Tuple):
+            if len(args) == 2 and args[1] is Ellipsis:
+                return tuple[args[0], Ellipsis]
+            return tuple[args]
+
+        if container in (typing.Optional, Optional):
+            if len(args) == 1:
+                return Union[args[0], None]
+            return sentinel
+
+        if container in (typing.Union, Union):
+            return Union[args]
+
+        if hasattr(container, "__class_getitem__"):
+            try:
+                if len(args) == 1:
+                    return container[args[0]]
+                return container[args]
+            except Exception:
+                return sentinel
+
+        return sentinel
+
     def _normalize_annotation(
             self,
             *,
@@ -416,6 +628,24 @@ class SpellRequirementsFinder(Cleanable):
             return None
 
         if isinstance(annotation, str):
+            parsed, resolved_expr = self._parse_annotation_expression(
+                annotation,
+                globalns,
+                localns,
+            )
+            if parsed:
+                if isinstance(resolved_expr, str):
+                    resolved = self._resolve_annotation_name(
+                        resolved_expr,
+                        globalns,
+                        localns,
+                    )
+                    return resolved if resolved is not None else resolved_expr
+                return self._normalize_annotation(
+                    annotation=resolved_expr,
+                    globalns=globalns,
+                    localns=localns,
+                )
             resolved = self._resolve_annotation_name(annotation, globalns, localns)
             return resolved if resolved is not None else annotation
 
@@ -731,16 +961,19 @@ class SpellRequirementsFinder(Cleanable):
         origin = get_origin(annotation)
         args = get_args(annotation)
 
-        # PEP 604 unions (T | None) show up as types.UnionType in 3.11+,
-        # but get_origin/get_args still behave like typing.Union.
-        if origin is Union and args:
+        if origin in (Union, types.UnionType) and args:
             has_none = False
             non_none_args: List[Any] = []
             for arg in args:
-                if arg is type(None):
+                if isinstance(arg, typing.ForwardRef):
+                    arg_value = arg.__forward_arg__
+                else:
+                    arg_value = arg
+
+                if arg_value is type(None):
                     has_none = True
                 else:
-                    non_none_args.append(arg)
+                    non_none_args.append(arg_value)
 
             if has_none:
                 if len(non_none_args) == 1:
@@ -767,6 +1000,9 @@ class SpellRequirementsFinder(Cleanable):
         Returns:
             bool: True if this annotation is considered a DI target.
         """
+        if isinstance(annotation, typing.ForwardRef):
+            return True
+
         # String annotations will be resolved later; treat them as potential DI.
         if isinstance(annotation, str):
             return True

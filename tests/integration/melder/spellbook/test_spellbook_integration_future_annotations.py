@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing
+
 import pytest
 from typing import Optional, Protocol, Union
 
@@ -515,6 +517,61 @@ def test_future_annotations_optional_forward_ref_injects_dependency() -> None:
         conduit.cleanup()
 
 
+def test_future_annotations_typing_optional_forward_ref_injects_dependency() -> None:
+    """
+    Purpose:
+        Validate typing.Optional forward-ref annotations inject dependencies.
+    Contract:
+        - typing.Optional[_FutureLateRepo] resolves the repository dependency.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is missing.
+    """
+    class _TypingOptionalService:
+        """
+        Purpose:
+            Provide a service that uses typing.Optional forward-ref DI.
+        Contract:
+            Stores the injected repository instance.
+        """
+
+        def __init__(self, repo: typing.Optional[_FutureLateRepo]) -> None:
+            """
+            Purpose:
+                Capture the injected repository.
+            Contract:
+                Stores the repository on the instance.
+            Args:
+                repo: Injected repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_FutureLateRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_TypingOptionalService,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _FutureLateRepo)
+    finally:
+        conduit.cleanup()
+
+
 def test_future_annotations_union_forward_ref_injects_dependency() -> None:
     """
     Purpose:
@@ -537,6 +594,61 @@ def test_future_annotations_union_forward_ref_injects_dependency() -> None:
     )
     service_id = spellbook.bind(
         spell=_FutureUnionService,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _FutureLateRepo)
+    finally:
+        conduit.cleanup()
+
+
+def test_future_annotations_typing_union_forward_ref_injects_dependency() -> None:
+    """
+    Purpose:
+        Validate typing.Union forward-ref annotations inject dependencies.
+    Contract:
+        - typing.Union[_FutureLateRepo, None] resolves the repository dependency.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is missing.
+    """
+    class _TypingUnionService:
+        """
+        Purpose:
+            Provide a service that uses typing.Union forward-ref DI.
+        Contract:
+            Stores the injected repository instance.
+        """
+
+        def __init__(self, repo: typing.Union[_FutureLateRepo, None]) -> None:
+            """
+            Purpose:
+                Capture the injected repository.
+            Contract:
+                Stores the repository on the instance.
+            Args:
+                repo: Injected repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_FutureLateRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_TypingUnionService,
         existence=Existence.many,
         permissions="create",
     )
@@ -579,6 +691,219 @@ def test_future_annotations_pep604_forward_ref_injects_dependency() -> None:
     try:
         instance = conduit.meld(spell=service_id)
         assert isinstance(instance.repo, _FutureLateRepo)
+    finally:
+        conduit.cleanup()
+
+
+def test_future_annotations_typing_list_forward_ref_collection_resolves_all() -> None:
+    """
+    Purpose:
+        Validate typing.List forward-ref annotations resolve for collection DI.
+    Contract:
+        - typing.List[_FutureProtocol] injects all bound implementations.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If collection DI is incomplete.
+    """
+    class _TypingListPipeline:
+        """
+        Purpose:
+            Provide a pipeline that depends on typing.List forward-ref DI.
+        Contract:
+            Stores the injected handlers list.
+        """
+
+        def __init__(self, handlers: typing.List[_FutureProtocol]) -> None:
+            """
+            Purpose:
+                Capture the injected handlers.
+            Contract:
+                Stores the handlers on the instance.
+            Args:
+                handlers: Injected handler implementations.
+            Returns:
+                None.
+            """
+            self.handlers = handlers
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_FutureHandlerA,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_FutureProtocol,
+    )
+    spellbook.bind(
+        spell=_FutureHandlerB,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=_FutureProtocol,
+    )
+    pipeline_id = spellbook.bind(
+        spell=_TypingListPipeline,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        pipeline = conduit.meld(spell=pipeline_id)
+        markers = {handler.marker for handler in pipeline.handlers}
+        assert markers == {"A", "B"}
+    finally:
+        conduit.cleanup()
+
+
+def test_future_annotations_local_optional_forward_ref_resolves_by_name() -> None:
+    """
+    Purpose:
+        Validate Optional local forward refs resolve by name under future annotations.
+    Contract:
+        - Optional local dependencies are injected by spell name.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is not injected.
+    """
+    class _LocalRepo:
+        """
+        Purpose:
+            Provide a local repository spell for Optional forward-ref tests.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the local repository marker.
+            Contract:
+                Sets marker to "optional".
+            Returns:
+                None.
+            """
+            self.marker = "optional"
+
+    class _LocalOptionalService:
+        """
+        Purpose:
+            Provide a service that uses Optional local forward-ref DI.
+        Contract:
+            Stores the injected repository instance.
+        """
+
+        def __init__(self, repo: Optional[_LocalRepo]) -> None:
+            """
+            Purpose:
+                Capture the injected local repository.
+            Contract:
+                Stores the repository on the instance.
+            Args:
+                repo: Injected local repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_LocalRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_LocalOptionalService,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _LocalRepo)
+        assert instance.repo.marker == "optional"
+    finally:
+        conduit.cleanup()
+
+
+def test_future_annotations_local_pep604_forward_ref_resolves_by_name() -> None:
+    """
+    Purpose:
+        Validate PEP 604 local forward refs resolve by name under future annotations.
+    Contract:
+        - Local dependencies declared as `_LocalRepo | None` are injected.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dependency is not injected.
+    """
+    class _LocalRepo:
+        """
+        Purpose:
+            Provide a local repository spell for PEP 604 forward-ref tests.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the local repository marker.
+            Contract:
+                Sets marker to "pep604".
+            Returns:
+                None.
+            """
+            self.marker = "pep604"
+
+    class _LocalPep604Service:
+        """
+        Purpose:
+            Provide a service that uses PEP 604 local forward-ref DI.
+        Contract:
+            Stores the injected repository instance.
+        """
+
+        def __init__(self, repo: _LocalRepo | None) -> None:
+            """
+            Purpose:
+                Capture the injected local repository.
+            Contract:
+                Stores the repository on the instance.
+            Args:
+                repo: Injected local repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_LocalRepo,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = spellbook.bind(
+        spell=_LocalPep604Service,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell=service_id)
+        assert isinstance(instance.repo, _LocalRepo)
+        assert instance.repo.marker == "pep604"
     finally:
         conduit.cleanup()
 

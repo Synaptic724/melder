@@ -1,6 +1,8 @@
 ﻿import threading
 import inspect
-from typing import Any, Optional, List, Dict, Tuple, Set, Union
+import typing
+import types
+from typing import Any, Optional, List, Dict, Tuple, Set, Union, get_args, get_origin
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -408,6 +410,44 @@ class SpellCrafter(Cleanable):
         """
         return scanner.iter_all_spells()
 
+    def _normalize_annotation_for_matching(self, annotation: Any) -> Any:
+        """
+        Normalize a DI annotation for Phase 3 matching.
+
+        This unwraps Optional/Union-with-None annotations and converts
+        ForwardRef tokens into their string names so name-based matching
+        can succeed for local forward references.
+
+        Args:
+            annotation:
+                The raw annotation object from Phase 1.
+
+        Returns:
+            Any:
+                The normalized annotation to use for matching.
+        """
+        if isinstance(annotation, typing.ForwardRef):
+            return annotation.__forward_arg__
+
+        origin = get_origin(annotation)
+        args = get_args(annotation)
+
+        if origin in (Union, types.UnionType) and args:
+            non_none_args: List[Any] = []
+            for arg in args:
+                if isinstance(arg, typing.ForwardRef):
+                    arg_value = arg.__forward_arg__
+                else:
+                    arg_value = arg
+                if arg_value is type(None):
+                    continue
+                non_none_args.append(arg_value)
+
+            if len(non_none_args) == 1:
+                return non_none_args[0]
+
+        return annotation
+
     def _matches_annotation(
             self,
             annotation: Any,
@@ -421,6 +461,7 @@ class SpellCrafter(Cleanable):
 
         Matching rules (Phase 3 view):
 
+          * Optional/Union annotations should be normalized before matching.
           * If the annotation is a string, match by spell name or frame name.
           * Then try concrete-class match: ``spell_obj.spell is annotation``.
           * Then try frame match: ``spell_obj.spellframe is/== annotation``.
@@ -440,6 +481,9 @@ class SpellCrafter(Cleanable):
                     SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
             ):
                 return False
+
+        if isinstance(annotation, typing.ForwardRef):
+            annotation = annotation.__forward_arg__
 
         if isinstance(annotation, str):
             if spell_obj.spell_name == annotation:
@@ -489,7 +533,7 @@ class SpellCrafter(Cleanable):
             RuntimeError:
                 If zero or multiple candidates are found.
         """
-        annotation = dep.target_annotation
+        annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         # Parameter-level binding metadata does not exist yet; we only support
         # the default binding for now.
         binding_name: Optional[str] = None
@@ -545,7 +589,7 @@ class SpellCrafter(Cleanable):
             Dict[SpellIndex, Spell]: mapping of all candidates. It is valid
             for this mapping to be empty (an empty collection will be injected).
         """
-        annotation = dep.target_annotation
+        annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
 
         candidates: Dict[Any, ISpell] = {}

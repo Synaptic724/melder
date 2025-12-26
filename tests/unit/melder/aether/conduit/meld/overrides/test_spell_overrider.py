@@ -427,3 +427,87 @@ def test_apply_after_cleanup_raises() -> None:
 
     with pytest.raises(RuntimeError, match="already been cleaned"):
         overrider.apply({})
+
+
+def test_apply_allows_same_specificity_same_value() -> None:
+    """
+    Purpose:
+        Validate same-specificity overrides are allowed when values match.
+    Contract:
+        - Matching overrides with identical specificity and value do not raise.
+        - The socket retains the shared value.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the override map is incorrect.
+    """
+    socket_ref = _make_socket_ref(
+        node_id="node-1",
+        param_name="b",
+        param_path=("a", "b"),
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        root_lineage_id="lineage-1",
+        socket_refs=[socket_ref],
+    )
+    overrider = SpellOverrider(blueprint)
+
+    result = overrider.apply({"a>b": "value", "a > b": "value"})
+
+    assert result == {socket_ref: "value"}
+
+
+def test_apply_keeps_more_specific_override_when_lower_specificity_is_late() -> None:
+    """
+    Purpose:
+        Validate lower-specificity rules do not override path overrides.
+    Contract:
+        - PATH overrides remain authoritative even when BROADCAST appears later.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the path override is replaced.
+    """
+    socket_ref = _make_socket_ref(
+        node_id="node-1",
+        param_name="repo",
+        param_path=("repo",),
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        root_lineage_id="lineage-1",
+        socket_refs=[socket_ref],
+    )
+    overrider = SpellOverrider(blueprint)
+
+    result = overrider.apply({"repo": "path", "**repo": "broadcast"})
+
+    assert result == {socket_ref: "path"}
+
+
+def test_apply_raises_for_empty_override_key() -> None:
+    """
+    Purpose:
+        Validate empty override keys are rejected.
+    Contract:
+        - Empty or whitespace-only keys raise ValueError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If invalid keys do not raise.
+    """
+    socket_ref = _make_socket_ref(
+        node_id="node-1",
+        param_name="dep",
+        param_path=("dep",),
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        root_lineage_id="lineage-1",
+        socket_refs=[socket_ref],
+    )
+    overrider = SpellOverrider(blueprint)
+
+    with pytest.raises(ValueError, match="Override key must not be empty"):
+        overrider.apply({"   ": "value"})
