@@ -1,3 +1,4 @@
+import inspect
 import threading
 from typing import List, Optional, Any, Tuple, Dict
 # Melder Imports
@@ -12,6 +13,7 @@ from melder.utilities.interfaces.interfaces import IConduit, IConduitWard, ISpel
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
@@ -1261,6 +1263,9 @@ class ConduitWard(Cleanable):
         This now contracts the **SpellIndex lineage** and uses the spell's
         current version ID only as the initial reference. On mutation, the
         lineage will advance, and lookups will resolve to the new version.
+        When a new contract entry is added, cached consumer creations that
+        declare a matching SpellContract are invalidated so future melds
+        re-resolve dependencies.
 
         Args:
             spell (ISpell, optional): The spell object to contract.
@@ -1358,6 +1363,18 @@ class ConduitWard(Cleanable):
                     system_groups=self._log_sysgroups,
                 )
                 raise
+            try:
+                contract_key = None
+                spellbook = self._conduit._spellbook
+                if spellbook is not None:
+                    contract_key = spellbook._make_spell_key(
+                        spell.spellframe,
+                        spell.spell_name,
+                        spell.binding_name,
+                    )
+                self._invalidate_contract_consumers(contract_key)
+            except Exception:
+                pass
 
         self._logger.info(
             f"add_spell_to_contract: success spell_id={spell_id} conduit_id={conduit_id} perms={permissions_enum.name}",
@@ -1399,6 +1416,109 @@ class ConduitWard(Cleanable):
         if perms is None:
             raise RuntimeError("Spell permissions are undefined.")
         return EnumHelpers.convert_enum_and_check(perms, Permissions)
+
+    def _get_spell_contract_keys(self, spell: ISpell) -> set[tuple[str, str]]:
+        """
+        Internal
+
+        Collect canonical SpellContract keys declared on a spell's call signature.
+
+        This inspects the underlying callable for SpellContract defaults and returns
+        their canonical `(frame_key, binding_key)` tuples for matching.
+
+        Args:
+            spell (ISpell): Spell to inspect for SpellContract defaults.
+
+        Returns:
+            set[tuple[str, str]]: Canonical keys for SpellContract defaults. Returns
+                an empty set when no contracts are declared or the signature cannot
+                be inspected.
+
+        Threading:
+            - Read-only; no internal locks are acquired here.
+
+        Raises:
+            None. This helper is best-effort and returns an empty set when
+            introspection fails.
+        """
+        try:
+            call_target = spell.spell
+        except AttributeError:
+            return set()
+        try:
+            signature = inspect.signature(call_target)
+        except (TypeError, ValueError):
+            return set()
+
+        keys: set[tuple[str, str]] = set()
+        for param_name, parameter in signature.parameters.items():
+            if param_name in ("self", "cls"):
+                continue
+            if parameter.kind in (
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+            if parameter.default is inspect.Parameter.empty:
+                continue
+            default_value = parameter.default
+            if isinstance(default_value, SpellContract):
+                keys.add(default_value.canonical_key)
+        return keys
+
+    def _invalidate_contract_consumers(self, contract_key: Optional[tuple[str, str]] = None) -> None:
+        """
+        Internal
+
+        Clear cached creations for consumer spells that declare SpellContract sockets.
+
+        If `contract_key` is provided, only consumers that declare a SpellContract
+        with that canonical key are invalidated. When `contract_key` is None, all
+        spells with any SpellContract defaults are invalidated.
+
+        Args:
+            contract_key (Optional[tuple[str, str]]):
+                Canonical contract key to match, or None to invalidate all
+                SpellContract consumers.
+
+        Returns:
+            None.
+
+        Threading:
+            - Snapshots Spellbook spell registry under the Spellbook lock.
+            - Uses Creations' internal lock via `extract_spell_creations`.
+
+        Raises:
+            None. Best-effort; failures are swallowed to avoid blocking contract
+            operations.
+        """
+        conduit = self._conduit
+        if conduit is None:
+            return
+        spellbook = conduit._spellbook
+        creations = conduit._creations
+        if spellbook is None or creations is None:
+            return
+
+        with spellbook._lock:
+            if spellbook._spells is None:
+                return
+            spells = list(spellbook._spells.values())
+
+        for spell in spells:
+            if spell is None:
+                continue
+            keys = self._get_spell_contract_keys(spell)
+            if not keys:
+                continue
+            if contract_key is not None and contract_key not in keys:
+                continue
+            try:
+                creations.extract_spell_creations(spell.spell_id)
+            except AttributeError:
+                return
+            except Exception:
+                continue
 
     def _has_local_spell_version(self, spell_id: str) -> bool:
         """
@@ -1661,6 +1781,10 @@ class ConduitWard(Cleanable):
 
         Removes a specific spell from an existing contract.
 
+        When the contract entry is fully removed, cached consumer creations that
+        declare a matching SpellContract are invalidated so future melds
+        re-resolve dependencies.
+
         Args:
             spell (ISpell, optional): The spell object to remove.
             spell_id (str, optional): The unique ID of the spell to remove.
@@ -1683,6 +1807,20 @@ class ConduitWard(Cleanable):
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
         contract = self._find_contract_by_id(conduit_id)
         if contract is not None:
+            contract_key = None
+            try:
+                spellbook = self._conduit._spellbook
+                if spellbook is not None:
+                    with spellbook._lock:
+                        contracted_spell = spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
+                    if contracted_spell is not None:
+                        contract_key = spellbook._make_spell_key(
+                            contracted_spell.spellframe,
+                            contracted_spell.spell_name,
+                            contracted_spell.binding_name,
+                        )
+            except Exception:
+                contract_key = None
             deleted_detail = False
             with contract._lock:
                 if contract._check_if_exists(conduit._conduit_ward, spell_id):
@@ -1707,6 +1845,10 @@ class ConduitWard(Cleanable):
                         mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                     )
                     raise
+                try:
+                    self._invalidate_contract_consumers(contract_key)
+                except Exception:
+                    pass
 
             if self._is_contract_empty(contract):
                 try:
@@ -1790,6 +1932,9 @@ class ConduitWard(Cleanable):
 
         Removes ALL spells from the contract associated with the specified peer conduit.
 
+        Cached consumer creations that declare SpellContract sockets are invalidated
+        so future melds re-resolve dependencies after the bulk removal.
+
         Args:
             conduit (IConduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
@@ -1822,6 +1967,10 @@ class ConduitWard(Cleanable):
                         mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                     )
                     raise
+            try:
+                self._invalidate_contract_consumers()
+            except Exception:
+                pass
             self._logger.info(
                 f"remove_all_spells_from_contract: success conduit_id={conduit_id}",
                 method_name="_remove_all_spells_from_contract",

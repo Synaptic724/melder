@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+import inspect
 from threading import RLock
 from typing import Any, Callable, Dict, Iterable, List, MutableMapping, Optional, Sequence, Tuple
 
@@ -21,6 +22,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 
 _OccurrenceKey = tuple[str, tuple[str, ...]]
 _InstanceKey = tuple[str, Optional[tuple[str, ...]]]
@@ -58,6 +60,8 @@ class MeldEngine(Cleanable):
         "_instance_results",
         "_override_targets_by_spell_id",
         "_any_overrides_present",
+        "_contract_overrides_by_occurrence",
+        "_contract_overrides_by_spell_id",
     ]
 
     def __init__(
@@ -127,6 +131,8 @@ class MeldEngine(Cleanable):
         self._instance_results: Dict[_InstanceKey, Any] = {}
         self._override_targets_by_spell_id: Dict[str, List[SocketRef]] = {}
         self._any_overrides_present: bool = False
+        self._contract_overrides_by_occurrence: Dict[_OccurrenceKey, Any] = {}
+        self._contract_overrides_by_spell_id: Dict[str, List[tuple[_OccurrenceKey, Any]]] = {}
 
     # ------------------------------------------------------------------ #
     # Cleanup
@@ -166,6 +172,8 @@ class MeldEngine(Cleanable):
             self._instance_results = None
             self._override_targets_by_spell_id = None
             self._any_overrides_present = None
+            self._contract_overrides_by_occurrence = None
+            self._contract_overrides_by_spell_id = None
             self._cleaned = True
 
     # ------------------------------------------------------------------ #
@@ -204,17 +212,26 @@ class MeldEngine(Cleanable):
 
     def run(self) -> Any:
         """
-        Execute the meld call and return the constructed root instance.
+        Purpose:
+            Execute a meld call and return the constructed root instance.
+        Side Effects:
+            - Stores constructed instances in the ResolutionFrame.
+            - Mutates internal instance results and override tracking.
+            - Invokes spell callables to construct instances.
+        Args:
+            None.
+        Returns:
+            Any: The constructed root instance.
+        Raises:
+            MeldExecutionError: If resolution fails, dependencies are missing,
+                or override conflicts are detected.
+            OperationCancelledError: If cancellation is signalled mid-run.
 
-        Executes the deep DAG in topological order using the RootResolutionBlueprint
-        when available. For `Existence.many`, each reachable path produces a distinct
-        instance; all other existences are treated as shared. Overrides are applied
-        per path for `Existence.many`, and shared overrides are validated for
-        ambiguity before construction.
-
-        If the blueprint includes ordered nodes that are not reachable from the
-        root occurrence, those nodes are treated as additional entrypoints and
-        executed in the supplied order.
+        Notes:
+            Executes the deep DAG in dependency-safe order when a blueprint
+            is available. SpellContract sockets are resolved during occurrence
+            expansion using contracted spells, with local fallback when no
+            contract is available.
         """
         self.check_cleaned()
 
@@ -225,7 +242,6 @@ class MeldEngine(Cleanable):
         self._override_targets_by_spell_id = self._collect_override_targets(
             self._override_map
         )
-        self._any_overrides_present = self._detect_any_overrides()
 
         # If we have a deep blueprint, walk it; otherwise fall back to root-only.
         if self._blueprint is None or not self._blueprint.ordered_node_ids:
@@ -251,6 +267,11 @@ class MeldEngine(Cleanable):
             ordered_node_ids=ordered_ids,
             dag=dag,
         )
+        execution_order = self._build_execution_order(
+            occurrence_graph=occurrence_graph,
+            fallback_order=ordered_ids,
+        )
+        self._any_overrides_present = self._detect_any_overrides()
         (
             instance_keys_by_spell_id,
             canonical_occurrences_by_spell_id,
@@ -262,11 +283,13 @@ class MeldEngine(Cleanable):
         )
         self._validate_shared_override_targets(shared_spell_ids)
 
-        for node_id in ordered_ids:
+        for node_id in execution_order:
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
             spell = self._spell_lookup.get(node_id)
+            if spell is None and node_id == root_id:
+                spell = self._root_spell
             if spell is None:
                 raise MeldExecutionError(
                     spell_id=node_id,
@@ -281,10 +304,15 @@ class MeldEngine(Cleanable):
                         instance_key: _InstanceKey = instance_key,
                         spell: ISpell = spell,
                 ) -> Any:
+                    contract_override = self._get_contract_override_payload_for_instance(
+                        instance_key=instance_key,
+                        canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
+                    )
                     kwargs = self._build_kwargs_for_instance(
                         instance_key=instance_key,
                         occurrence_graph=occurrence_graph,
                         canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
+                        contract_override=contract_override,
                     )
                     return self._construct_spell(spell, kwargs)
 
@@ -319,12 +347,15 @@ class MeldEngine(Cleanable):
         Contract:
             - Returns True when either socket-level overrides or root-level
               overrides are present.
+            - Contract-level overrides are treated as overrides when non-empty.
             - Empty override maps and empty frame overrides are treated as
               no overrides.
         Returns:
             bool: True if any overrides are present, otherwise False.
         """
         if self._override_map:
+            return True
+        if self._contract_overrides_by_spell_id:
             return True
         overrides = self._frame.overrides
         return bool(overrides)
@@ -355,6 +386,7 @@ class MeldEngine(Cleanable):
             Determine whether any overrides target the given spell.
         Contract:
             - Socket overrides are resolved by spell id.
+            - Contract overrides are resolved by spell id.
             - Root-level overrides apply to the root spell id only.
         Args:
             spell_id: Spell version id to check.
@@ -362,6 +394,8 @@ class MeldEngine(Cleanable):
             bool: True if overrides target the spell id.
         """
         if self._override_targets_by_spell_id.get(spell_id):
+            return True
+        if self._contract_overrides_by_spell_id.get(spell_id):
             return True
         root_id = self._root_spell.spell_index.current
         if spell_id != root_id:
@@ -378,6 +412,7 @@ class MeldEngine(Cleanable):
             Reject ambiguous overrides for shared spell instances.
         Contract:
             - Shared spell instances may receive at most one override per parameter.
+            - Shared spell instances may receive at most one contract override payload.
             - Multiple overrides for the same parameter raise MeldExecutionError
               even if the values are identical.
         Args:
@@ -391,7 +426,7 @@ class MeldEngine(Cleanable):
         for spell_id in shared_spell_ids:
             socket_refs = self._override_targets_by_spell_id.get(spell_id, [])
             if not socket_refs:
-                continue
+                socket_refs = []
 
             by_param: Dict[str, List[SocketRef]] = defaultdict(list)
             for socket_ref in socket_refs:
@@ -411,6 +446,21 @@ class MeldEngine(Cleanable):
                         f"Multiple overrides target parameter {param_name!r} on shared "
                         f"spell {spell_name!r}. Shared instances accept at most one "
                         "override per parameter."
+                    ),
+                )
+
+            contract_overrides = self._contract_overrides_by_spell_id.get(spell_id, [])
+            if len(contract_overrides) > 1:
+                spell = self._spell_lookup.get(spell_id)
+                spell_name = spell.spell_name if spell is not None else spell_id
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell_name,
+                    node_id=spell_id,
+                    message=(
+                        f"Multiple SpellContract overrides target shared spell "
+                        f"{spell_name!r}. Shared instances accept at most one "
+                        "SpellContract override payload."
                     ),
                 )
 
@@ -542,6 +592,80 @@ class MeldEngine(Cleanable):
                         if child_occurrence not in existing_occurrences:
                             queue.append(child_occurrence)
 
+    def _build_execution_order(
+            self,
+            *,
+            occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
+            fallback_order: Sequence[str],
+    ) -> List[str]:
+        """
+        Purpose:
+            Build a dependency-safe execution order for spell ids.
+        Side Effects:
+            None. This method is a pure ordering helper.
+        Args:
+            occurrence_graph: Path-aware occurrence graph.
+            fallback_order: Blueprint order used as a stable tie-breaker.
+        Returns:
+            List[str]: Spell ids in execution order.
+        Raises:
+            None.
+        """
+        if not occurrence_graph:
+            return list(fallback_order) if fallback_order else []
+
+        edges: Dict[str, set[str]] = defaultdict(set)
+        indegree: Dict[str, int] = defaultdict(int)
+        nodes: set[str] = set()
+
+        for occurrence, dependencies in occurrence_graph.items():
+            node_id = occurrence[0]
+            nodes.add(node_id)
+            for dependency_list in dependencies.values():
+                for dependency_occurrence in dependency_list:
+                    dep_id = dependency_occurrence[0]
+                    nodes.add(dep_id)
+                    if node_id not in edges[dep_id]:
+                        edges[dep_id].add(node_id)
+                        indegree[node_id] += 1
+
+        for node_id in nodes:
+            indegree.setdefault(node_id, 0)
+
+        fallback_rank = {node_id: idx for idx, node_id in enumerate(fallback_order or [])}
+        last_rank = len(fallback_rank)
+
+        def _sort_key(node_id: str) -> tuple[int, str]:
+            return (fallback_rank.get(node_id, last_rank), node_id)
+
+        queue = [node_id for node_id, degree in indegree.items() if degree == 0]
+        queue.sort(key=_sort_key)
+        order: List[str] = []
+
+        while queue:
+            node_id = queue.pop(0)
+            order.append(node_id)
+            for child_id in sorted(edges.get(node_id, []), key=_sort_key):
+                indegree[child_id] -= 1
+                if indegree[child_id] == 0:
+                    queue.append(child_id)
+            queue.sort(key=_sort_key)
+
+        if len(order) == len(nodes):
+            return order
+
+        resolved: List[str] = []
+        seen: set[str] = set()
+        for node_id in fallback_order or []:
+            if node_id in nodes and node_id not in seen:
+                seen.add(node_id)
+                resolved.append(node_id)
+        for node_id in sorted(nodes):
+            if node_id not in seen:
+                seen.add(node_id)
+                resolved.append(node_id)
+        return resolved
+
     def _collect_occurrence_dependencies(
             self,
             *,
@@ -551,16 +675,15 @@ class MeldEngine(Cleanable):
         """
         Purpose:
             Collect dependency occurrences for a single spell occurrence.
-        Contract:
-            - Each dependency uses the current occurrence path plus the
-              dependency parameter name.
-            - Local topology is preferred; DAG metadata is used as a fallback.
-            - Mutation overrides replace dependencies for MutationContract sockets.
+        Side Effects:
+            - May record SpellContract override payloads for dependency occurrences.
         Args:
             occurrence: The (spell_id, path) occurrence being expanded.
             dag: DirectedAcyclicWorkGraph for fallback dependency discovery.
         Returns:
             Dict[str, List[_OccurrenceKey]]: Parameter-to-occurrence mapping.
+        Raises:
+            MeldExecutionError: If SpellContract resolution is ambiguous or missing.
         """
         spell_id, path = occurrence
         dependencies: Dict[str, List[_OccurrenceKey]] = {}
@@ -609,12 +732,415 @@ class MeldEngine(Cleanable):
                 elif child_occurrence not in existing:
                     existing.append(child_occurrence)
 
+        self._apply_spell_contract_dependencies(
+            dependencies=dependencies,
+            occurrence=occurrence,
+        )
+
         self._apply_mutation_overrides_to_dependencies(
             dependencies=dependencies,
             occurrence=occurrence,
         )
 
         return dependencies
+
+    def _apply_spell_contract_dependencies(
+            self,
+            *,
+            dependencies: Dict[str, List[_OccurrenceKey]],
+            occurrence: _OccurrenceKey,
+    ) -> None:
+        """
+        Purpose:
+            Add dependency occurrences for SpellContract sockets.
+        Contract:
+            - Only parameters with SpellContract defaults are treated as contract
+              sockets.
+            - Contract sockets are resolved without touching cleaned Phase 1
+              requirements artifacts.
+        Side Effects:
+            - Mutates the dependencies mapping in-place.
+            - Records SpellContract override payloads when provided.
+        Args:
+            dependencies: Mapping to update with contract dependencies.
+            occurrence: The (spell_id, path) occurrence being expanded.
+        Returns:
+            None.
+        Raises:
+            MeldExecutionError: If a SpellContract is missing or ambiguous.
+        """
+        spell_id, path = occurrence
+        spell = self._spell_lookup.get(spell_id)
+        if spell is None and spell_id == self._root_spell.spell_index.current:
+            spell = self._root_spell
+        if spell is None:
+            return
+
+        for param_name, contract in self._iter_spell_contract_defaults(spell):
+            if contract is None:
+                continue
+
+            target_spell_id = self._resolve_spell_contract_spell_id(
+                contract=contract,
+                consumer_spell=spell,
+                param_name=param_name,
+            )
+            child_occurrence = (target_spell_id, path + (param_name,))
+            existing = dependencies.get(param_name)
+            if existing is None:
+                dependencies[param_name] = [child_occurrence]
+            elif child_occurrence not in existing:
+                existing.append(child_occurrence)
+
+            self._record_contract_override(
+                occurrence=child_occurrence,
+                contract=contract,
+                consumer_spell=spell,
+                param_name=param_name,
+            )
+
+    def _iter_spell_contract_defaults(
+            self,
+            spell: ISpell,
+    ) -> Iterable[Tuple[str, SpellContract]]:
+        """
+        Purpose:
+            Yield SpellContract defaults discovered in the spell's call signature.
+        Contract:
+            - Only parameters with SpellContract defaults are returned.
+            - Ignores "self"/"cls" and var-arg parameters.
+            - Returns an empty iterable when the signature cannot be resolved.
+        Side Effects:
+            None. This method performs introspection only.
+        Args:
+            spell: Spell whose constructor or callable signature is inspected.
+        Returns:
+            Iterable[Tuple[str, SpellContract]]: Parameter names paired with
+                SpellContract defaults.
+        Raises:
+            None. Failures to introspect return an empty iterable.
+        """
+        try:
+            call_target = spell.spell
+        except AttributeError:
+            return []
+
+        try:
+            signature = inspect.signature(call_target)
+        except (TypeError, ValueError):
+            return []
+
+        contracts: List[Tuple[str, SpellContract]] = []
+        for param_name, parameter in signature.parameters.items():
+            if param_name in ("self", "cls"):
+                continue
+            if parameter.kind in (
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+            if parameter.default is inspect.Parameter.empty:
+                continue
+            default_value = parameter.default
+            if isinstance(default_value, SpellContract):
+                contracts.append((param_name, default_value))
+
+        return contracts
+
+    def _resolve_spell_contract_spell_id(
+            self,
+            *,
+            contract: SpellContract,
+            consumer_spell: ISpell,
+            param_name: str,
+    ) -> str:
+        """
+        Purpose:
+            Resolve a SpellContract to a concrete provider spell id.
+        Side Effects:
+            None. This method performs lookup only.
+        Args:
+            contract: SpellContract describing the provider requirement.
+            consumer_spell: The spell that declared the contract.
+            param_name: Parameter name for diagnostics.
+        Returns:
+            str: Provider spell id for the contract.
+        Raises:
+            MeldExecutionError: If the contract is missing, ambiguous, or inconsistent.
+        """
+        try:
+            consumer_spell_id = consumer_spell.spell_index.current
+        except AttributeError:
+            consumer_spell_id = "<unknown>"
+        try:
+            consumer_spell_name = consumer_spell.spell_name
+        except AttributeError:
+            consumer_spell_name = str(consumer_spell_id)
+
+        contract_key = contract.canonical_key
+        contracted_candidates: List[ISpell] = []
+
+        try:
+            spellbook = consumer_spell._spellbook
+        except AttributeError:
+            spellbook = None
+
+        contracted_lookup = None
+        if spellbook is not None:
+            try:
+                contracted_lookup = spellbook._lookup_contracted_spells
+            except AttributeError:
+                contracted_lookup = None
+
+        if contracted_lookup:
+            for conduit_id, lookup_map in contracted_lookup.items():
+                spell_index = lookup_map.get(contract_key)
+                if spell_index is None:
+                    continue
+                try:
+                    contracted_maps = spellbook._contracted_spells
+                except AttributeError:
+                    contracted_maps = None
+                if contracted_maps is None:
+                    raise MeldExecutionError(
+                        spell_id=consumer_spell_id,
+                        spell_name=consumer_spell_name,
+                        node_id=consumer_spell_id,
+                        param_name=param_name,
+                        message="Contracted spell map missing while resolving SpellContract.",
+                    )
+                contracted_map = contracted_maps.get(conduit_id)
+                if contracted_map is None:
+                    raise MeldExecutionError(
+                        spell_id=consumer_spell_id,
+                        spell_name=consumer_spell_name,
+                        node_id=consumer_spell_id,
+                        param_name=param_name,
+                        message=(
+                            f"Contracted spell map missing for conduit '{conduit_id}' while "
+                            "resolving SpellContract."
+                        ),
+                    )
+                spell_obj = contracted_map.get(spell_index)
+                if spell_obj is None:
+                    raise MeldExecutionError(
+                        spell_id=consumer_spell_id,
+                        spell_name=consumer_spell_name,
+                        node_id=consumer_spell_id,
+                        param_name=param_name,
+                        message="Contracted spell index missing while resolving SpellContract.",
+                    )
+                contracted_candidates.append(spell_obj)
+
+        if len(contracted_candidates) > 1:
+            raise MeldExecutionError(
+                spell_id=consumer_spell_id,
+                spell_name=consumer_spell_name,
+                node_id=consumer_spell_id,
+                param_name=param_name,
+                message=(
+                    "SpellContract resolved to multiple contracted spells. "
+                    "Use distinct bindings or remove the ambiguous contracts."
+                ),
+            )
+        if len(contracted_candidates) == 1:
+            return contracted_candidates[0].spell_index.current
+
+        local_candidate: Optional[ISpell] = None
+        if spellbook is not None:
+            try:
+                local_lookup = spellbook._lookup_spells
+            except AttributeError:
+                local_lookup = None
+            if local_lookup is not None:
+                spell_index = local_lookup.get(contract_key)
+                if spell_index is not None:
+                    try:
+                        local_map = spellbook._spells
+                    except AttributeError:
+                        local_map = None
+                    if local_map is None:
+                        raise MeldExecutionError(
+                            spell_id=consumer_spell_id,
+                            spell_name=consumer_spell_name,
+                            node_id=consumer_spell_id,
+                            param_name=param_name,
+                            message="Local spell map missing while resolving SpellContract.",
+                        )
+                    local_candidate = local_map.get(spell_index)
+
+        if local_candidate is None:
+            fallback_candidates: List[ISpell] = []
+            for spell_obj in self._spell_lookup.values():
+                try:
+                    spell_key = spell_obj.key
+                except AttributeError:
+                    continue
+                if spell_key == contract_key:
+                    fallback_candidates.append(spell_obj)
+
+            if len(fallback_candidates) > 1:
+                raise MeldExecutionError(
+                    spell_id=consumer_spell_id,
+                    spell_name=consumer_spell_name,
+                    node_id=consumer_spell_id,
+                    param_name=param_name,
+                    message=(
+                        "SpellContract resolved to multiple local spells. "
+                        "Use a binding_name to disambiguate."
+                    ),
+                )
+            if fallback_candidates:
+                local_candidate = fallback_candidates[0]
+
+        if local_candidate is None:
+            raise MeldExecutionError(
+                spell_id=consumer_spell_id,
+                spell_name=consumer_spell_name,
+                node_id=consumer_spell_id,
+                param_name=param_name,
+                message=(
+                    "SpellContract could not be resolved. "
+                    "No contracted or local spell matched the contract."
+                ),
+            )
+
+        return local_candidate.spell_index.current
+
+    def _normalize_contract_override_payload(
+            self,
+            *,
+            payload: Any,
+            consumer_spell_id: str,
+            consumer_spell_name: str,
+            param_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Purpose:
+            Normalize a SpellContract override payload for runtime use.
+        Side Effects:
+            None. Returns a normalized payload copy.
+        Args:
+            payload: Raw spell_override payload from the SpellContract.
+            consumer_spell_id: Spell id for diagnostics.
+            consumer_spell_name: Spell name for diagnostics.
+            param_name: Parameter name for diagnostics.
+        Returns:
+            Dict[str, Any]: Normalized override payload.
+        Raises:
+            MeldExecutionError: If the payload type is unsupported.
+        """
+        if payload is None:
+            return {}
+        if isinstance(payload, dict):
+            normalized = dict(payload)
+            if "__args__" in normalized:
+                raw_args = normalized["__args__"]
+                if not isinstance(raw_args, (list, tuple)):
+                    raise MeldExecutionError(
+                        spell_id=consumer_spell_id,
+                        spell_name=consumer_spell_name,
+                        node_id=consumer_spell_id,
+                        param_name=param_name,
+                        message="SpellContract __args__ override must be a list or tuple.",
+                    )
+            return normalized
+        if isinstance(payload, (list, tuple)):
+            return {"__args__": list(payload)}
+        raise MeldExecutionError(
+            spell_id=consumer_spell_id,
+            spell_name=consumer_spell_name,
+            node_id=consumer_spell_id,
+            param_name=param_name,
+            message=(
+                "SpellContract spell_override must be a dict, list, or tuple."
+            ),
+        )
+
+    def _record_contract_override(
+            self,
+            *,
+            occurrence: _OccurrenceKey,
+            contract: SpellContract,
+            consumer_spell: ISpell,
+            param_name: str,
+    ) -> None:
+        """
+        Purpose:
+            Record SpellContract override payloads for later application.
+        Side Effects:
+            - Updates contract override maps for occurrences and spell ids.
+        Args:
+            occurrence: Provider occurrence receiving the override.
+            contract: SpellContract providing the override payload.
+            consumer_spell: Spell that declared the contract.
+            param_name: Parameter name for diagnostics.
+        Returns:
+            None.
+        Raises:
+            MeldExecutionError: If the override payload type is invalid.
+        """
+        try:
+            consumer_spell_id = consumer_spell.spell_index.current
+        except AttributeError:
+            consumer_spell_id = "<unknown>"
+        try:
+            consumer_spell_name = consumer_spell.spell_name
+        except AttributeError:
+            consumer_spell_name = str(consumer_spell_id)
+
+        normalized = self._normalize_contract_override_payload(
+            payload=contract.spell_override,
+            consumer_spell_id=consumer_spell_id,
+            consumer_spell_name=consumer_spell_name,
+            param_name=param_name,
+        )
+        if not normalized:
+            return
+
+        self._contract_overrides_by_occurrence[occurrence] = dict(normalized)
+        spell_id = occurrence[0]
+        self._contract_overrides_by_spell_id.setdefault(spell_id, []).append(
+            (occurrence, dict(normalized))
+        )
+
+    def _get_contract_override_payload_for_instance(
+            self,
+            *,
+            instance_key: _InstanceKey,
+            canonical_occurrences_by_spell_id: Dict[str, _OccurrenceKey],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Purpose:
+            Retrieve the SpellContract override payload for an instance.
+        Side Effects:
+            None. This method is a read-only lookup.
+        Args:
+            instance_key: Instance key being constructed.
+            canonical_occurrences_by_spell_id: Canonical occurrences for shared spells.
+        Returns:
+            Optional[Dict[str, Any]]: Override payload or None.
+        Raises:
+            MeldExecutionError: If a shared spell lacks a canonical occurrence.
+        """
+        spell_id, path = instance_key
+        if path is not None:
+            occurrence = (spell_id, path)
+            payload = self._contract_overrides_by_occurrence.get(occurrence)
+            return dict(payload) if payload is not None else None
+
+        canonical = self._occurrence_for_instance_key(
+            instance_key=instance_key,
+            canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
+        )
+        payload = self._contract_overrides_by_occurrence.get(canonical)
+        if payload is not None:
+            return dict(payload)
+
+        contract_overrides = self._contract_overrides_by_spell_id.get(spell_id, [])
+        if not contract_overrides:
+            return None
+        return dict(contract_overrides[0][1])
 
     def _resolve_mutation_override_targets(
             self,
@@ -1033,17 +1559,18 @@ class MeldEngine(Cleanable):
             instance_key: _InstanceKey,
             occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
             canonical_occurrences_by_spell_id: Dict[str, _OccurrenceKey],
+            contract_override: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Purpose:
             Build keyword args for a specific spell instance.
-        Contract:
-            - Override values take precedence over dependency injection.
-            - Multiple dependency providers inject lists in parameter order.
+        Side Effects:
+            None. Returns a new kwargs mapping.
         Args:
             instance_key: Instance key being constructed.
             occurrence_graph: Dependency graph keyed by occurrence.
             canonical_occurrences_by_spell_id: Canonical occurrences for shared spells.
+            contract_override: Optional SpellContract override payload for this instance.
         Returns:
             Dict[str, Any]: Keyword arguments for construction.
         Raises:
@@ -1061,6 +1588,11 @@ class MeldEngine(Cleanable):
             occurrence_path=path,
             shared=shared,
         )
+
+        contract_payload = dict(contract_override) if contract_override else {}
+        positional_override = None
+        if "__args__" in contract_payload:
+            positional_override = contract_payload.pop("__args__")
 
         kwargs: Dict[str, Any] = {}
         dependencies = occurrence_graph.get(occurrence, {})
@@ -1089,6 +1621,14 @@ class MeldEngine(Cleanable):
                 kwargs[param_name] = values[0]
             else:
                 kwargs[param_name] = values
+
+        if positional_override is not None:
+            kwargs["__args__"] = positional_override
+
+        for param_name, value in contract_payload.items():
+            if param_name in override_values:
+                continue
+            kwargs[param_name] = value
 
         for param_name, value in override_values.items():
             if param_name not in kwargs:
@@ -1329,7 +1869,17 @@ class MeldEngine(Cleanable):
 
     def _construct_spell(self, spell: ISpell, kwargs: Dict[str, Any]) -> Any:
         """
-        Construct a spell instance with provided kwargs (no positional in DAG mode).
+        Purpose:
+            Construct a spell instance using the provided arguments.
+        Side Effects:
+            - Invokes the spell callable to create an instance.
+        Args:
+            spell: Spell to construct.
+            kwargs: Keyword argument payload (may include "__args__" for positional args).
+        Returns:
+            Any: Constructed spell instance.
+        Raises:
+            MeldExecutionError: If construction fails or required data is missing.
         """
         if spell.is_existing_creation:
             if spell.user_created_object is None:
@@ -1344,7 +1894,17 @@ class MeldEngine(Cleanable):
             return spell.spell
 
         try:
-            return spell.spell(**kwargs)
+            call_kwargs = dict(kwargs)
+            raw_args = call_kwargs.pop("__args__", [])
+            if isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
+                args = list(raw_args)
+            else:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message="__args__ override must be a list or tuple.",
+                )
+            return spell.spell(*args, **call_kwargs)
         except Exception as exc:
             raise MeldExecutionError(
                 spell_id=spell.spell_index.current,

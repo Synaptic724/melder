@@ -10,6 +10,7 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -393,3 +394,381 @@ def test_conduit_spell_contract_resolves_after_dynamic_link() -> None:
     finally:
         borrower.cleanup()
         owner.cleanup()
+
+
+def test_conduit_spell_contract_falls_back_to_local_spell() -> None:
+    """
+    Purpose:
+        Validate SpellContract falls back to local spells when no contract exists.
+    Contract:
+        - Local spells can satisfy SpellContract sockets when no contracted spell matches.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If local fallback does not resolve.
+    """
+    class LocalService:
+        """
+        Purpose:
+            Provide a local IService implementation for fallback resolution.
+        Contract:
+            - Stores a marker for assertions.
+        """
+
+        def __init__(self, marker: str = "local") -> None:
+            """
+            Purpose:
+                Initialize the local marker.
+            Contract:
+                Stores the provided marker on the instance.
+            Args:
+                marker: Marker for assertions.
+            Returns:
+                None.
+            """
+            self.marker = marker
+
+    class ContractConsumer:
+        """
+        Purpose:
+            Provide a consumer with a SpellContract dependency.
+        Contract:
+            - Declares a SpellContract socket for IService.
+            - Stores the resolved service for assertions.
+        """
+
+        def __init__(
+            self,
+            service: IService = SpellContract(
+                spellframe=IService,
+                binding_name="primary",
+            ),
+        ) -> None:
+            """
+            Purpose:
+                Capture the resolved service dependency.
+            Contract:
+                Stores the service instance on the consumer.
+            Args:
+                service: Resolved service instance.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    configuration = _make_dynamic_configuration()
+    spellbook = Spellbook(configuration=configuration)
+    spellbook.bind(
+        spell=LocalService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    consumer_id = spellbook.bind(
+        spell=ContractConsumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(automatic=False, name="local")
+    try:
+        assert conduit.validate_contracts_and_define() == {}
+        instance = conduit.meld(spell=consumer_id)
+
+        assert isinstance(instance, ContractConsumer)
+        assert isinstance(instance.service, LocalService)
+    finally:
+        conduit.cleanup()
+
+
+def test_conduit_spell_contract_prefers_contracted_spell() -> None:
+    """
+    Purpose:
+        Validate SpellContract prefers contracted spells over local fallback.
+    Contract:
+        - Contracted spells are used when available.
+        - Local fallback is ignored when a contracted spell matches.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the contracted spell is not selected.
+    """
+    class LocalService:
+        """
+        Purpose:
+            Provide a local IService implementation for fallback comparison.
+        Contract:
+            - Stores a marker for assertions.
+        """
+
+        def __init__(self, marker: str = "local") -> None:
+            """
+            Purpose:
+                Initialize the local marker.
+            Contract:
+                Stores the marker on the instance.
+            Args:
+                marker: Marker for assertions.
+            Returns:
+                None.
+            """
+            self.marker = marker
+
+    class ContractConsumer:
+        """
+        Purpose:
+            Provide a consumer with a SpellContract dependency.
+        Contract:
+            - Declares a SpellContract socket for IService.
+            - Stores the resolved service for assertions.
+        """
+
+        def __init__(
+            self,
+            service: IService = SpellContract(
+                spellframe=IService,
+                binding_name="primary",
+            ),
+        ) -> None:
+            """
+            Purpose:
+                Capture the resolved service dependency.
+            Contract:
+                Stores the service instance on the consumer.
+            Args:
+                service: Resolved service instance.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    service_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+
+    borrower_book = Spellbook(configuration=configuration)
+    borrower_book.bind(
+        spell=LocalService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    consumer_id = borrower_book.bind(
+        spell=ContractConsumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        assert borrower.add_spell_to_contract(
+            spell_id=service_id,
+            conduit=owner,
+            permissions="create",
+        )
+        assert borrower.validate_contracts_and_define()
+
+        instance = borrower.meld(spell=consumer_id)
+
+        assert isinstance(instance, ContractConsumer)
+        assert isinstance(instance.service, BasicService)
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_spell_contract_applies_override_payload() -> None:
+    """
+    Purpose:
+        Validate SpellContract spell_override applies to provider construction.
+    Contract:
+        - spell_override payload is passed to the provider constructor.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the override is not applied.
+    """
+    class ContractConsumer:
+        """
+        Purpose:
+            Provide a consumer that supplies a SpellContract override.
+        Contract:
+            - Declares a SpellContract socket with a spell_override payload.
+            - Stores the resolved service for assertions.
+        """
+
+        def __init__(
+            self,
+            service: IService = SpellContract(
+                spellframe=IService,
+                binding_name="primary",
+                spell_override={"marker": "override"},
+            ),
+        ) -> None:
+            """
+            Purpose:
+                Capture the resolved service dependency.
+            Contract:
+                Stores the service instance on the consumer.
+            Args:
+                service: Resolved service instance.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    service_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    borrower_book = Spellbook(configuration=configuration)
+    consumer_id = borrower_book.bind(
+        spell=ContractConsumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        assert borrower.add_spell_to_contract(
+            spell_id=service_id,
+            conduit=owner,
+            permissions="create",
+        )
+        assert borrower.validate_contracts_and_define()
+
+        instance = borrower.meld(spell=consumer_id)
+
+        assert isinstance(instance, ContractConsumer)
+        assert isinstance(instance.service, BasicService)
+        assert instance.service.marker == "override"
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_conduit_spell_contract_ambiguous_contracted_raises() -> None:
+    """
+    Purpose:
+        Validate SpellContract raises when contracted providers are ambiguous.
+    Contract:
+        - Multiple contracted spells under the same key raise MeldExecutionError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ambiguity does not raise.
+    """
+    class AltService:
+        """
+        Purpose:
+            Provide an alternate IService implementation for ambiguity tests.
+        Contract:
+            - Stores a marker for assertions.
+        """
+
+        def __init__(self, marker: str = "alt") -> None:
+            """
+            Purpose:
+                Initialize the alternate marker.
+            Contract:
+                Stores the marker on the instance.
+            Args:
+                marker: Marker for assertions.
+            Returns:
+                None.
+            """
+            self.marker = marker
+
+    class ContractConsumer:
+        """
+        Purpose:
+            Provide a consumer with a SpellContract dependency.
+        Contract:
+            - Declares a SpellContract socket for IService.
+            - Stores the resolved service for assertions.
+        """
+
+        def __init__(
+            self,
+            service: IService = SpellContract(
+                spellframe=IService,
+                binding_name="primary",
+            ),
+        ) -> None:
+            """
+            Purpose:
+                Capture the resolved service dependency.
+            Contract:
+                Stores the service instance on the consumer.
+            Args:
+                service: Resolved service instance.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    configuration = _make_dynamic_configuration()
+    owner_a_book = Spellbook(configuration=configuration)
+    owner_a_id = owner_a_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    owner_b_book = Spellbook(configuration=configuration)
+    owner_b_id = owner_b_book.bind(
+        spell=AltService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    borrower_book = Spellbook(configuration=configuration)
+    consumer_id = borrower_book.bind(
+        spell=ContractConsumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    owner_a = owner_a_book.conjure(automatic=False, name="owner_a")
+    owner_b = owner_b_book.conjure(automatic=False, name="owner_b")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner_a.link(borrower)
+        owner_b.link(borrower)
+        assert borrower.add_spell_to_contract(
+            spell_id=owner_a_id,
+            conduit=owner_a,
+            permissions="create",
+        )
+        assert borrower.add_spell_to_contract(
+            spell_id=owner_b_id,
+            conduit=owner_b,
+            permissions="create",
+        )
+        assert borrower.validate_contracts_and_define()
+
+        with pytest.raises(MeldExecutionError, match="multiple contracted spells"):
+            borrower.meld(spell=consumer_id)
+    finally:
+        borrower.cleanup()
+        owner_a.cleanup()
+        owner_b.cleanup()

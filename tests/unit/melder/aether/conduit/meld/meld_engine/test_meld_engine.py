@@ -1501,10 +1501,11 @@ def test_run_blueprint_missing_spell_lookup_raises() -> None:
     Verify blueprint execution rejects missing spell lookups.
 
     Contract:
-        - missing spell_lookup entries raise MeldExecutionError.
+        - missing non-root spell_lookup entries raise MeldExecutionError.
+        - the root spell can be used even when not present in spell_lookup.
     """
-    dag = _make_dag_with_nodes(["node-1"])
-    blueprint = _make_blueprint("node-1", dag, ["node-1"])
+    dag = _make_dag_with_nodes(["node-1", "missing-node"])
+    blueprint = _make_blueprint("node-1", dag, ["node-1", "missing-node"])
     root_spell = _make_spell(spell_id="node-1")
     engine, _, _ = _make_engine(
         root_spell=root_spell,

@@ -216,6 +216,8 @@ class _SpellbookStub:
         contracted_spells: dict[str, dict[Any, _SpellStub]] | None = None,
         lookup_spells: dict[tuple[str, str], Any] | None = None,
         lookup_contracted_spells: dict[str, dict[tuple[str, str], Any]] | None = None,
+        aetheric_frame: str = "default",
+        aether: Any | None = None,
     ) -> None:
         """
         Initialize stub spellbook maps.
@@ -225,11 +227,67 @@ class _SpellbookStub:
             contracted_spells: Contracted spell maps keyed by conduit id.
             lookup_spells: Local lookup map keyed by (frame, binding).
             lookup_contracted_spells: Contracted lookup maps per conduit.
+            aetheric_frame: Aetheric frame name for change-control lookups.
+            aether: Aether stub providing change-control managers.
         """
         self._spells = spells or {}
         self._contracted_spells = contracted_spells or {}
         self._lookup_spells = lookup_spells or {}
         self._lookup_contracted_spells = lookup_contracted_spells or {}
+        self._aetheric_frame = aetheric_frame
+        self._aether = aether
+
+
+class _ChangeControlManagerStub:
+    """
+    Minimal change-control manager for dirty-root gating tests.
+    """
+
+    def __init__(self, *, dirty_roots: Iterable[str] | None = None) -> None:
+        """
+        Initialize the manager with a set of dirty root ids.
+
+        Args:
+            dirty_roots: Optional iterable of root ids marked dirty.
+        """
+        self._dirty_roots = set(dirty_roots or [])
+
+    def is_root_dirty(self, root_id: str) -> bool:
+        """
+        Return True when the root id is marked dirty.
+
+        Args:
+            root_id: Spell root id to check.
+        Returns:
+            bool: True when the root id is dirty.
+        """
+        return root_id in self._dirty_roots
+
+
+class _AetherStub:
+    """
+    Minimal Aether stub exposing a change-control manager.
+    """
+
+    def __init__(self, ccm: _ChangeControlManagerStub | None) -> None:
+        """
+        Initialize the stub with a change-control manager.
+
+        Args:
+            ccm: Change-control manager to return.
+        """
+        self._ccm = ccm
+
+    def _get_change_control_manager(self, frame_name: str) -> _ChangeControlManagerStub | None:
+        """
+        Return the stored change-control manager.
+
+        Args:
+            frame_name: Aetheric frame name (unused in stub).
+        Returns:
+            Optional change-control manager.
+        """
+        return self._ccm
 
 
 class _ConduitStub:
@@ -337,6 +395,51 @@ def _make_creations(
         active_spellspace=active_spellspace,
     )
     return Creations(False, [], conduit), conduit
+
+
+def test_cleanup_clears_references_and_cleans_runtime() -> None:
+    """
+    Verify Meld.cleanup releases references and cleans runtime resources.
+
+    Contract:
+        - Spellbook maps and creations references are cleared.
+        - Runtime cleanup runs and the runtime reference is dropped.
+        - Meld hooks are cleared and removed.
+    """
+    class _RuntimeStub:
+        """
+        Minimal runtime stub that records cleanup calls.
+        """
+
+        def __init__(self) -> None:
+            """
+            Initialize the cleanup flag.
+            """
+            self.cleaned = False
+
+        def cleanup(self) -> None:
+            """
+            Mark the runtime as cleaned.
+            """
+            self.cleaned = True
+
+    meld = _make_meld()
+    runtime = _RuntimeStub()
+    hook_list: list[Callable[..., Any]] = [lambda: None]
+    meld._runtime = runtime
+    meld._meld_hooks = {"on_meld_pre_resolve": hook_list}
+
+    meld.cleanup()
+
+    assert runtime.cleaned is True
+    assert hook_list == []
+    assert meld._owned_spells is None
+    assert meld._contracted_spells is None
+    assert meld._lookup_owned_spells is None
+    assert meld._lookup_contracted_spells is None
+    assert meld._creations is None
+    assert meld._runtime is None
+    assert meld._meld_hooks is None
 
 
 def test_meld_requires_identity_source() -> None:
@@ -756,6 +859,26 @@ def test_gated_validation_required_transfer_in_progress_raises() -> None:
         meld._gated_validation_required(spell)
 
     assert "spell-1" in str(exc_info.value)
+
+
+def test_gated_validation_required_blocks_dirty_root() -> None:
+    """
+    Verify dirty roots raise MeldExecutionError under change-control checks.
+
+    Contract:
+        - Dirty root ids trigger MeldExecutionError for unknown validity values.
+    """
+    dirty_roots = {"spell-1"}
+    ccm = _ChangeControlManagerStub(dirty_roots=dirty_roots)
+    aether = _AetherStub(ccm)
+    spellbook = _SpellbookStub(aetheric_frame="default", aether=aether)
+    meld = _make_meld(spellbook=spellbook)
+    state = _SystemStateStub(validity=object())
+    spell = _SpellStub(spell_id="spell-1", system_state=state)
+    spell._spellbook = spellbook
+
+    with pytest.raises(MeldExecutionError, match="dirty under change-control"):
+        meld._gated_validation_required(spell)
 
 
 def test_get_existing_creation_unique_returns_instance() -> None:
