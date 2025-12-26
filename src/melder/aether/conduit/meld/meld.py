@@ -929,6 +929,47 @@ class Meld(Cleanable):
             return owner_creations
         return caller_creations
 
+    def _raise_override_on_existing_instance(
+            self,
+            *,
+            spell: ISpell,
+            overrides: Optional[dict[str, Any]],
+    ) -> None:
+        """
+        Internal
+
+        Reject per-call overrides when a shared instance already exists.
+
+        Contract:
+            - If no overrides are supplied, this is a no-op.
+            - If overrides are present, reuse is blocked and a MeldExecutionError is raised.
+            - The error message must clearly signal that the instance already exists.
+
+        Args:
+            spell:
+                The spell whose cached instance would be reused.
+            overrides:
+                Normalized per-call overrides from :meth:`_normalize_spell_override`.
+
+        Returns:
+            None.
+
+        Raises:
+            MeldExecutionError:
+                If overrides are supplied for an already-instantiated shared spell.
+        """
+        if not overrides:
+            return
+
+        raise MeldExecutionError(
+            spell_id=spell.spell_index.current,
+            spell_name=spell.spell_name,
+            message=(
+                "Overrides were supplied for a spell instance that already exists. "
+                "Shared instances cannot be overridden after creation."
+            ),
+        )
+
     def _resolve_instance_with_locks(
             self,
             spell: ISpell,
@@ -945,6 +986,7 @@ class Meld(Cleanable):
             - Shared existences hold the spell lock across the same flow and
               use the creations lock only for map access.
             - Existence.many always constructs and registers without reuse.
+            - Overrides targeting existing instances raise MeldExecutionError.
 
         Args:
             spell:
@@ -956,6 +998,10 @@ class Meld(Cleanable):
             tuple[Any, bool]:
                 (instance, created) where created is True only when this call
                 constructs and registers a new instance.
+        Raises:
+            MeldExecutionError:
+                If overrides are supplied for a spell instance that already
+                exists under a shared Existence mode.
         """
         creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
@@ -992,6 +1038,11 @@ class Meld(Cleanable):
                     if spell.is_existing_creation:
                         self._register_spell(spell, instance, creations)
                     created = True
+                else:
+                    self._raise_override_on_existing_instance(
+                        spell=spell,
+                        overrides=overrides,
+                    )
             return instance, created
 
         with spell._lock:
@@ -1011,6 +1062,11 @@ class Meld(Cleanable):
                     with creations._lock:
                         self._register_spell(spell, instance, creations)
                 created = True
+            else:
+                self._raise_override_on_existing_instance(
+                    spell=spell,
+                    overrides=overrides,
+                )
 
         return instance, created
 

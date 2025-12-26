@@ -6,11 +6,13 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
+from tests.mocks.spellbook.protocols import IService
 
 
 @pytest.fixture(autouse=True)
@@ -316,3 +318,78 @@ def test_conduit_upgrade_to_normal_requires_dynamic() -> None:
             lesser.upgrade_to_normal(name="upgraded")
     finally:
         conduit.cleanup()
+
+
+def test_conduit_spell_contract_resolves_after_dynamic_link() -> None:
+    """
+    Purpose:
+        Validate SpellContract sockets resolve after dynamic conduit linking.
+    Contract:
+        - A linked provider conduit can satisfy a SpellContract dependency.
+        - The resolved dependency is an instance of the contracted spell.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If SpellContract sockets do not resolve after linking.
+    """
+    class ContractConsumer:
+        """
+        Purpose:
+            Provide a consumer that declares a SpellContract dependency.
+        Contract:
+            - Declares a SpellContract socket for IService.
+            - Stores the resolved service for assertions.
+        """
+        def __init__(
+            self,
+            service: IService = SpellContract(
+                spellframe=IService,
+                binding_name="primary",
+            ),
+        ) -> None:
+            """
+            Purpose:
+                Capture the resolved contract service dependency.
+            Contract:
+                Stores the resolved service instance on the consumer.
+            Args:
+                service: Resolved service instance for this consumer.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    service_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    borrower_book = Spellbook(configuration=configuration)
+    consumer_id = borrower_book.bind(
+        spell=ContractConsumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        assert borrower.add_spell_to_contract(
+            spell_id=service_id,
+            conduit=owner,
+            permissions="create",
+        )
+        assert borrower.validate_contracts_and_define()
+
+        instance = borrower.meld(spell=consumer_id)
+
+        assert isinstance(instance, ContractConsumer)
+        assert isinstance(instance.service, BasicService)
+    finally:
+        borrower.cleanup()
+        owner.cleanup()

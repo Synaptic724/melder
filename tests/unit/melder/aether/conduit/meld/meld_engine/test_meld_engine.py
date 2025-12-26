@@ -183,6 +183,130 @@ def _make_socket_ref(node_id: str, param_name: str) -> SocketRef:
     )
 
 
+def _make_socket_ref_with_path(
+    *,
+    node_id: str,
+    param_name: str,
+    param_path: Iterable[str],
+    socket_kind: SocketKind,
+) -> SocketRef:
+    """
+    Build a SocketRef with an explicit parameter path and socket kind.
+
+    Args:
+        node_id: Spell id that owns the socket.
+        param_name: Parameter name for the socket.
+        param_path: Full parameter path from the root.
+        socket_kind: SocketKind classification for the socket.
+
+    Returns:
+        SocketRef: Socket reference with the requested metadata.
+    """
+    return SocketRef(
+        node_id=node_id,
+        param_name=param_name,
+        param_path=tuple(param_path),
+        socket_kind=socket_kind,
+    )
+
+
+def _make_mutation_socket_ref(
+    *,
+    node_id: str,
+    param_name: str,
+    param_path: Iterable[str],
+) -> SocketRef:
+    """
+    Build a MutationContract SocketRef for mutation override tests.
+
+    Args:
+        node_id: Spell id that owns the socket.
+        param_name: Parameter name for the socket.
+        param_path: Full parameter path from the root.
+
+    Returns:
+        SocketRef: MutationContract socket reference.
+    """
+    return _make_socket_ref_with_path(
+        node_id=node_id,
+        param_name=param_name,
+        param_path=param_path,
+        socket_kind=SocketKind.MUTATION_CONTRACT,
+    )
+
+
+def _make_blueprint_with_sockets(
+    *,
+    root_id: str,
+    dag: DirectedAcyclicWorkGraph,
+    ordered_node_ids: Iterable[str],
+    sockets: Iterable[SocketRef],
+) -> RootResolutionBlueprint:
+    """
+    Build a RootResolutionBlueprint and attach socket refs for targeting.
+
+    Args:
+        root_id: Root spell id for the blueprint.
+        dag: DAG used by the blueprint.
+        ordered_node_ids: Topological node ordering.
+        sockets: SocketRef entries to attach and index.
+
+    Returns:
+        RootResolutionBlueprint: Blueprint with sockets indexed.
+    """
+    blueprint = _make_blueprint(
+        root_id=root_id,
+        dag=dag,
+        ordered_node_ids=ordered_node_ids,
+    )
+    for socket in sockets:
+        blueprint.add_socket_ref(socket)
+    return blueprint
+
+
+def _make_engine_with_sockets(
+    *,
+    root_id: str,
+    ordered_node_ids: Iterable[str],
+    sockets: Iterable[SocketRef],
+    spell_lookup: Optional[dict[str, Any]] = None,
+) -> tuple[MeldEngine, RootResolutionBlueprint, SimpleNamespace]:
+    """
+    Build a MeldEngine wired to a blueprint with socket refs.
+
+    Args:
+        root_id: Root spell id for the blueprint and engine.
+        ordered_node_ids: Execution order for the blueprint.
+        sockets: Socket refs to attach to the blueprint index.
+        spell_lookup: Optional extra spell lookup entries.
+
+    Returns:
+        tuple[MeldEngine, RootResolutionBlueprint, SimpleNamespace]:
+            Engine, blueprint, and root spell stub.
+    """
+    node_ids = set(ordered_node_ids)
+    node_ids.add(root_id)
+    for socket in sockets:
+        node_ids.add(socket.node_id)
+    dag = _make_dag_with_nodes(node_ids)
+    blueprint = _make_blueprint_with_sockets(
+        root_id=root_id,
+        dag=dag,
+        ordered_node_ids=ordered_node_ids,
+        sockets=sockets,
+    )
+    root_spell = _make_spell(spell_id=root_id, existence=Existence.many)
+    lookup = {root_id: root_spell}
+    if spell_lookup:
+        lookup.update(spell_lookup)
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=lookup,
+    )
+    return engine, blueprint, root_spell
+
+
 def _make_dag_with_nodes(node_ids: Iterable[str]) -> DirectedAcyclicWorkGraph:
     """
     Create a DAG containing nodes for each id.
@@ -1694,6 +1818,29 @@ def test_run_blueprint_cancels_between_nodes() -> None:
     signal.cleanup()
 
 
+def test_run_blueprint_executes_orphan_ordered_node() -> None:
+    """
+    Verify ordered nodes outside the root path still execute.
+
+    Contract:
+        - orphan nodes in the ordered list are constructed and stored in the frame.
+        - the root spell result is still returned.
+    """
+    dag = _make_dag_with_nodes(["first", "second"])
+    blueprint = _make_blueprint("second", dag, ["first", "second"])
+
+    first_spell = _make_spell(spell_id="first", spell=lambda: "first-value", existence=Existence.many)
+    second_spell = _make_spell(spell_id="second", spell=lambda: "second-value", existence=Existence.many)
+
+    engine, _, frame = _make_engine(
+        root_spell=second_spell,
+        blueprint=blueprint,
+        spell_lookup={"first": first_spell, "second": second_spell},
+    )
+    assert engine.run() == "second-value"
+    assert frame.get_result("first") == "first-value"
+
+
 def test_build_kwargs_merges_topology_and_incoming_params() -> None:
     """
     Verify build_kwargs merges partial topology with incoming_params.
@@ -2015,3 +2162,1536 @@ def test_resolve_spell_instance_shared_unique_skips_spell_lock_when_caller_lock_
     assert spell._lock.__enter__.called is False
     creations_snapshot = creations.extract_spell_creations("spell-1")
     assert creations_snapshot[0]["creation"].value is instance
+
+
+def test_extend_occurrence_graph_with_ordered_nodes_noop_on_empty_order() -> None:
+    """
+    Verify ordered-node expansion is skipped when no ordered ids are provided.
+
+    Contract:
+        - Occurrence graph remains unchanged.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ordered-node expansion mutates the graph.
+    """
+    engine, root_spell, _ = _make_engine()
+    root_id = root_spell.spell_index.current
+    dag = _make_dag_with_nodes([root_id])
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(),
+        dag=dag,
+    )
+
+    assert set(occurrence_graph.keys()) == {(root_id, ())}
+    assert occurrence_graph[(root_id, ())] == {}
+
+
+def test_extend_occurrence_graph_with_ordered_nodes_noop_on_none_dag() -> None:
+    """
+    Verify ordered-node expansion is skipped when the DAG is missing.
+
+    Contract:
+        - Occurrence graph is left unchanged when dag is None.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If entries are added without a DAG.
+    """
+    engine, root_spell, _ = _make_engine()
+    root_id = root_spell.spell_index.current
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=_make_dag_with_nodes([root_id]),
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, "orphan"),
+        dag=None,
+    )
+
+    assert set(occurrence_graph.keys()) == {(root_id, ())}
+
+
+@pytest.mark.parametrize("orphan_id", ("orphan-a", "orphan-b", "orphan-c"))
+def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_nodes(
+    orphan_id: str,
+) -> None:
+    """
+    Verify ordered-node expansion adds missing orphan nodes as entrypoints.
+
+    Contract:
+        - Orphan nodes appear in the occurrence graph with empty paths.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If orphan nodes are not added.
+    """
+    engine, root_spell, _ = _make_engine()
+    root_id = root_spell.spell_index.current
+    dag = _make_dag_with_nodes([root_id, orphan_id])
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, orphan_id),
+        dag=dag,
+    )
+
+    assert (orphan_id, ()) in occurrence_graph
+    assert occurrence_graph[(orphan_id, ())] == {}
+
+
+@pytest.mark.parametrize(
+    ("param_name", "parent_ids"),
+    (
+        ("dep", ("b", "a")),
+        ("socket", ("c", "a")),
+    ),
+)
+def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_dependencies(
+    param_name: str,
+    parent_ids: tuple[str, ...],
+) -> None:
+    """
+    Verify ordered-node expansion walks orphan dependencies in DAG order.
+
+    Contract:
+        - Orphan dependencies are added with the correct param path.
+        - Parent ordering is sorted by parent id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If orphan dependencies are not expanded correctly.
+    """
+    engine, root_spell, _ = _make_engine()
+    root_id = root_spell.spell_index.current
+    node_ids = [root_id, "orphan", *parent_ids]
+    dag = _make_dag_with_nodes(node_ids)
+    for parent_id in parent_ids:
+        dag.add_dependency(parent_id, "orphan", param_name=param_name)
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, "orphan"),
+        dag=dag,
+    )
+
+    deps = occurrence_graph[("orphan", ())][param_name]
+    expected_parent_ids = sorted(parent_ids)
+    assert [occurrence[0] for occurrence in deps] == expected_parent_ids
+    assert all(occurrence[1] == (param_name,) for occurrence in deps)
+
+
+def test_extend_occurrence_graph_with_ordered_nodes_adds_nested_orphan_dependencies() -> None:
+    """
+    Verify ordered-node expansion follows nested orphan dependency chains.
+
+    Contract:
+        - Dependencies discovered from orphan nodes are expanded recursively.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If nested dependencies are missing.
+    """
+    engine, root_spell, _ = _make_engine()
+    root_id = root_spell.spell_index.current
+    dag = _make_dag_with_nodes([root_id, "orphan", "mid", "leaf"])
+    dag.add_dependency("mid", "orphan", param_name="mid")
+    dag.add_dependency("leaf", "mid", param_name="leaf")
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, "orphan"),
+        dag=dag,
+    )
+
+    assert ("mid", ("mid",)) in occurrence_graph
+    assert ("leaf", ("mid", "leaf")) in occurrence_graph
+    assert occurrence_graph[("orphan", ())]["mid"] == [("mid", ("mid",))]
+    assert occurrence_graph[("mid", ("mid",))]["leaf"] == [("leaf", ("mid", "leaf"))]
+
+
+def test_extend_occurrence_graph_with_ordered_nodes_uses_topology_for_orphan_dependencies() -> None:
+    """
+    Verify ordered-node expansion uses topology when available.
+
+    Contract:
+        - Topology sockets provide dependency occurrences for orphan nodes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If topology dependencies are not applied.
+    """
+    topology = _make_topology([_make_socket("dep", ["parent"])])
+    system_states = _SystemStatesStub({"orphan": topology})
+    engine, root_spell, _ = _make_engine(system_states=system_states)
+    root_id = root_spell.spell_index.current
+    dag = _make_dag_with_nodes([root_id, "orphan", "parent"])
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, "orphan"),
+        dag=dag,
+    )
+
+    assert occurrence_graph[("orphan", ())]["dep"] == [("parent", ("dep",))]
+    assert ("parent", ("dep",)) in occurrence_graph
+
+
+def test_extend_occurrence_graph_with_ordered_nodes_skips_existing_occurrence() -> None:
+    """
+    Verify ordered-node expansion does not add duplicate occurrences.
+
+    Contract:
+        - Nodes already reachable from the root are not re-added as entrypoints.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If duplicate occurrences are added.
+    """
+    engine, root_spell, _ = _make_engine()
+    root_id = root_spell.spell_index.current
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("child", root_id, param_name="dep")
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, "child"),
+        dag=dag,
+    )
+
+    occurrences = {occurrence for occurrence in occurrence_graph if occurrence[0] == "child"}
+    assert occurrences == {("child", ("dep",))}
+
+
+def test_extend_occurrence_graph_with_ordered_nodes_preserves_existing_dependencies() -> None:
+    """
+    Verify ordered-node expansion preserves existing dependency mappings.
+
+    Contract:
+        - Existing dependency lists remain unchanged after expansion.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If existing dependencies are overwritten.
+    """
+    engine, root_spell, _ = _make_engine()
+    root_id = root_spell.spell_index.current
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency("child", root_id, param_name="dep")
+    dag.add_node("orphan")
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, "child", "orphan"),
+        dag=dag,
+    )
+
+    assert occurrence_graph[(root_id, ())] == {"dep": [("child", ("dep",))]}
+
+
+def test_run_blueprint_executes_ordered_nodes_in_order() -> None:
+    """
+    Verify blueprint execution respects the ordered node list.
+
+    Contract:
+        - Ordered nodes execute in the supplied order.
+        - Root result is still returned.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If execution order is not preserved.
+    """
+    order: list[str] = []
+    root_spell = _make_spell(
+        spell_id="root",
+        spell=lambda **_: order.append("root") or "root-value",
+        existence=Existence.many,
+    )
+    first_spell = _make_spell(
+        spell_id="first",
+        spell=lambda **_: order.append("first") or "first-value",
+        existence=Existence.many,
+    )
+    second_spell = _make_spell(
+        spell_id="second",
+        spell=lambda **_: order.append("second") or "second-value",
+        existence=Existence.many,
+    )
+    dag = _make_dag_with_nodes(["root", "first", "second"])
+    blueprint = _make_blueprint("root", dag, ["first", "root", "second"])
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={
+            "root": root_spell,
+            "first": first_spell,
+            "second": second_spell,
+        },
+    )
+
+    assert engine.run() == "root-value"
+    assert order == ["first", "root", "second"]
+
+
+def test_run_blueprint_cancellation_after_orphan_stores_results() -> None:
+    """
+    Verify cancellation after an orphan node preserves completed results.
+
+    Contract:
+        - Nodes executed before cancellation remain stored in the frame.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If completed results are missing after cancellation.
+    """
+    signal = CancellationEventSignal()
+    root_spell = _make_spell(
+        spell_id="root",
+        spell=lambda **_: "root-value",
+        existence=Existence.many,
+    )
+    orphan_spell = _make_spell(
+        spell_id="orphan",
+        spell=lambda **_: signal.cancel() or "orphan-value",
+        existence=Existence.many,
+    )
+    dag = _make_dag_with_nodes(["root", "orphan"])
+    blueprint = _make_blueprint("root", dag, ["root", "orphan"])
+    engine, _, frame = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={"root": root_spell, "orphan": orphan_spell},
+        cancel_event=signal.event,
+    )
+
+    with pytest.raises(OperationCancelledError):
+        engine.run()
+
+    assert frame.get_result("root") == "root-value"
+    assert frame.get_result("orphan") == "orphan-value"
+    signal.cleanup()
+
+
+def test_run_blueprint_orphan_dependency_injected_from_dag() -> None:
+    """
+    Verify orphan nodes still receive DAG-based dependencies.
+
+    Contract:
+        - Dependencies for orphan nodes are injected when ordered ids include them.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If orphan dependency wiring is missing.
+    """
+    root_spell = _make_spell(
+        spell_id="root",
+        spell=lambda **_: "root-value",
+        existence=Existence.many,
+    )
+    parent_spell = _make_spell(
+        spell_id="parent",
+        spell=lambda **_: "parent-value",
+        existence=Existence.many,
+    )
+    orphan_spell = _make_spell(
+        spell_id="orphan",
+        spell=lambda *, dep: f"orphan-{dep}",
+        existence=Existence.many,
+    )
+    dag = _make_dag_with_nodes(["root", "parent", "orphan"])
+    dag.add_dependency("parent", "orphan", param_name="dep")
+    blueprint = _make_blueprint("root", dag, ["parent", "orphan", "root"])
+    engine, _, frame = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={
+            "root": root_spell,
+            "parent": parent_spell,
+            "orphan": orphan_spell,
+        },
+    )
+
+    assert engine.run() == "root-value"
+    assert frame.get_result("orphan") == "orphan-parent-value"
+
+
+def test_resolve_mutation_override_targets_requires_dict() -> None:
+    """
+    Verify mutation override resolution rejects non-dict payloads.
+
+    Contract:
+        - mutation_override must be a dict.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If a non-dict payload is provided.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="node",
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=(socket,),
+    )
+
+    with pytest.raises(MeldExecutionError, match="mutation_override must be a dict"):
+        engine._resolve_mutation_override_targets(
+            mutation_override=["mutant"],
+            dag_index=blueprint.dag_index,
+        )
+
+
+def test_resolve_mutation_override_targets_requires_dag_index() -> None:
+    """
+    Verify mutation override resolution requires a DagIndex.
+
+    Contract:
+        - Missing DagIndex raises MeldExecutionError.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If DagIndex is None.
+    """
+    engine, _, _ = _make_engine()
+    with pytest.raises(MeldExecutionError, match="requires an active DagIndex"):
+        engine._resolve_mutation_override_targets(
+            mutation_override={"mutant": "target"},
+            dag_index=None,
+        )
+
+
+@pytest.mark.parametrize(
+    ("path_key", "param_path"),
+    (
+        ("mutant", ("mutant",)),
+        ("left>mutant", ("left", "mutant")),
+        ("left>right>mutant", ("left", "right", "mutant")),
+    ),
+)
+def test_resolve_mutation_override_targets_path_matches_mutation_socket(
+    path_key: str,
+    param_path: tuple[str, ...],
+) -> None:
+    """
+    Verify PATH mutation overrides resolve matching mutation sockets.
+
+    Contract:
+        - PATH keys resolve to mutation sockets at the exact path.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If PATH resolution misses the socket.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="node",
+        param_name=param_path[-1],
+        param_path=param_path,
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=(socket,),
+    )
+
+    resolved = engine._resolve_mutation_override_targets(
+        mutation_override={path_key: "override-id"},
+        dag_index=blueprint.dag_index,
+    )
+
+    assert len(resolved) == 1
+    resolved_socket, target_id = resolved[0]
+    assert resolved_socket.param_path == param_path
+    assert target_id == "override-id"
+
+
+@pytest.mark.parametrize(
+    ("path_key", "param_path"),
+    (
+        ("mutant", ("mutant",)),
+        ("left>mutant", ("left", "mutant")),
+    ),
+)
+def test_resolve_mutation_override_targets_path_ignores_non_mutation_socket(
+    path_key: str,
+    param_path: tuple[str, ...],
+) -> None:
+    """
+    Verify PATH mutation overrides reject non-mutation sockets.
+
+    Contract:
+        - Non-mutation sockets are not eligible for mutation overrides.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If no mutation sockets match the path.
+    """
+    socket = _make_socket_ref_with_path(
+        node_id="node",
+        param_name=param_path[-1],
+        param_path=param_path,
+        socket_kind=SocketKind.NORMAL,
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=(socket,),
+    )
+
+    with pytest.raises(MeldExecutionError, match="No mutation sockets found"):
+        engine._resolve_mutation_override_targets(
+            mutation_override={path_key: "override-id"},
+            dag_index=blueprint.dag_index,
+        )
+
+
+def test_resolve_mutation_override_targets_path_missing_raises() -> None:
+    """
+    Verify PATH mutation overrides raise when no sockets exist at the path.
+
+    Contract:
+        - Missing mutation socket paths raise MeldExecutionError.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If the path does not resolve.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="node",
+        param_name="other",
+        param_path=("other",),
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=(socket,),
+    )
+
+    with pytest.raises(MeldExecutionError, match="override path"):
+        engine._resolve_mutation_override_targets(
+            mutation_override={"mutant": "override-id"},
+            dag_index=blueprint.dag_index,
+        )
+
+
+@pytest.mark.parametrize("param_name", ("mutant", "config"))
+def test_resolve_mutation_override_targets_unique_matches_single(
+    param_name: str,
+) -> None:
+    """
+    Verify UNIQUE mutation overrides resolve a single mutation socket.
+
+    Contract:
+        - Unique overrides resolve to exactly one mutation socket.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If resolution does not return one socket.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="node",
+        param_name=param_name,
+        param_path=(param_name,),
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=(socket,),
+    )
+
+    resolved = engine._resolve_mutation_override_targets(
+        mutation_override={f"*{param_name}": "override-id"},
+        dag_index=blueprint.dag_index,
+    )
+
+    assert len(resolved) == 1
+    resolved_socket, target_id = resolved[0]
+    assert resolved_socket.param_name == param_name
+    assert target_id == "override-id"
+
+
+@pytest.mark.parametrize("param_name", ("missing", "absent"))
+def test_resolve_mutation_override_targets_unique_missing_raises(
+    param_name: str,
+) -> None:
+    """
+    Verify UNIQUE mutation overrides raise when no mutation sockets match.
+
+    Contract:
+        - Unique overrides require exactly one mutation socket.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If no mutation socket matches the name.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="node",
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=(socket,),
+    )
+
+    with pytest.raises(MeldExecutionError, match="unique override"):
+        engine._resolve_mutation_override_targets(
+            mutation_override={f"*{param_name}": "override-id"},
+            dag_index=blueprint.dag_index,
+        )
+
+
+@pytest.mark.parametrize(
+    "param_paths",
+    (
+        (("left", "mutant"), ("right", "mutant")),
+        (("mutant",), ("other", "mutant")),
+    ),
+)
+def test_resolve_mutation_override_targets_unique_multiple_matches_raises(
+    param_paths: tuple[tuple[str, ...], ...],
+) -> None:
+    """
+    Verify UNIQUE mutation overrides raise when multiple mutation sockets match.
+
+    Contract:
+        - Unique overrides reject multiple mutation socket matches.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If multiple mutation sockets match the name.
+    """
+    sockets = tuple(
+        _make_mutation_socket_ref(
+            node_id="node",
+            param_name=param_path[-1],
+            param_path=param_path,
+        )
+        for param_path in param_paths
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=sockets,
+    )
+
+    with pytest.raises(MeldExecutionError, match="multiple mutation sockets"):
+        engine._resolve_mutation_override_targets(
+            mutation_override={"*mutant": "override-id"},
+            dag_index=blueprint.dag_index,
+        )
+
+
+@pytest.mark.parametrize(
+    ("socket_specs", "expected_paths"),
+    (
+        (
+            (
+                (("left", "mutant"), SocketKind.MUTATION_CONTRACT),
+                (("right", "mutant"), SocketKind.MUTATION_CONTRACT),
+            ),
+            (("left", "mutant"), ("right", "mutant")),
+        ),
+        (
+            (
+                (("left", "mutant"), SocketKind.MUTATION_CONTRACT),
+                (("right", "mutant"), SocketKind.NORMAL),
+            ),
+            (("left", "mutant"),),
+        ),
+        (
+            (
+                (("mutant",), SocketKind.MUTATION_CONTRACT),
+            ),
+            (("mutant",),),
+        ),
+    ),
+)
+def test_resolve_mutation_override_targets_broadcast_matches(
+    socket_specs: tuple[tuple[tuple[str, ...], SocketKind], ...],
+    expected_paths: tuple[tuple[str, ...], ...],
+) -> None:
+    """
+    Verify BROADCAST mutation overrides resolve all mutation sockets by name.
+
+    Contract:
+        - Broadcast overrides return every matching mutation socket.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If broadcast resolution does not return all matches.
+    """
+    sockets = tuple(
+        _make_socket_ref_with_path(
+            node_id="node",
+            param_name=param_path[-1],
+            param_path=param_path,
+            socket_kind=socket_kind,
+        )
+        for param_path, socket_kind in socket_specs
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=sockets,
+    )
+
+    resolved = engine._resolve_mutation_override_targets(
+        mutation_override={"**mutant": "override-id"},
+        dag_index=blueprint.dag_index,
+    )
+
+    resolved_paths = sorted(socket.param_path for socket, _ in resolved)
+    assert resolved_paths == sorted(expected_paths)
+
+
+@pytest.mark.parametrize(
+    "socket_specs",
+    (
+        (
+            (("other",), SocketKind.MUTATION_CONTRACT),
+        ),
+        (
+            (("mutant",), SocketKind.NORMAL),
+        ),
+    ),
+)
+def test_resolve_mutation_override_targets_broadcast_missing_raises(
+    socket_specs: tuple[tuple[tuple[str, ...], SocketKind], ...],
+) -> None:
+    """
+    Verify BROADCAST mutation overrides raise when no mutation sockets match.
+
+    Contract:
+        - Broadcast overrides require at least one mutation socket match.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If no mutation sockets match the name.
+    """
+    sockets = tuple(
+        _make_socket_ref_with_path(
+            node_id="node",
+            param_name=param_path[-1],
+            param_path=param_path,
+            socket_kind=socket_kind,
+        )
+        for param_path, socket_kind in socket_specs
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=sockets,
+    )
+
+    with pytest.raises(MeldExecutionError, match="broadcast override"):
+        engine._resolve_mutation_override_targets(
+            mutation_override={"**mutant": "override-id"},
+            dag_index=blueprint.dag_index,
+        )
+
+
+@pytest.mark.parametrize("raw_key", (None, "", "   ", "*", "**", ">"))
+def test_resolve_mutation_override_targets_invalid_key_raises(
+    raw_key: object,
+) -> None:
+    """
+    Verify mutation override resolution rejects invalid keys.
+
+    Contract:
+        - Invalid keys raise MeldExecutionError.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If the override key is invalid.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="node",
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=(socket,),
+    )
+
+    with pytest.raises(MeldExecutionError, match="Invalid mutation_override key"):
+        engine._resolve_mutation_override_targets(
+            mutation_override={raw_key: "override-id"},
+            dag_index=blueprint.dag_index,
+        )
+
+
+@pytest.mark.parametrize("target_id", (None, "", 123))
+def test_resolve_mutation_override_targets_invalid_target_raises(
+    target_id: object,
+) -> None:
+    """
+    Verify mutation override resolution rejects invalid target ids.
+
+    Contract:
+        - Targets must be non-empty spell id strings.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If the target id is invalid.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="node",
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=(socket,),
+    )
+
+    with pytest.raises(MeldExecutionError, match="Invalid mutation_override target"):
+        engine._resolve_mutation_override_targets(
+            mutation_override={"mutant": target_id},
+            dag_index=blueprint.dag_index,
+        )
+
+
+@pytest.mark.parametrize(
+    "param_path",
+    (
+        ("mutant",),
+        ("left", "mutant"),
+        ("left", "right", "mutant"),
+    ),
+)
+def test_apply_mutation_overrides_replaces_dependency_for_matching_path(
+    param_path: tuple[str, ...],
+) -> None:
+    """
+    Verify mutation overrides replace dependencies for the matching path.
+
+    Contract:
+        - Matching paths are rewired to the override target id.
+        - Other parameters remain unchanged.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If rewiring does not occur.
+    """
+    node_id = "node-1"
+    param_name = param_path[-1]
+    socket = _make_mutation_socket_ref(
+        node_id=node_id,
+        param_name=param_name,
+        param_path=param_path,
+    )
+    spell = _make_spell(spell_id=node_id, existence=Existence.many)
+    override_key = ">".join(param_path)
+    spell.mutation_override = {override_key: "override-id"}
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", node_id),
+        sockets=(socket,),
+        spell_lookup={node_id: spell},
+    )
+
+    occurrence = (node_id, param_path[:-1])
+    other_path = param_path[:-1] + ("other",)
+    dependencies = {
+        param_name: [("orig-id", param_path)],
+        "other": [("other-id", other_path)],
+    }
+
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=occurrence,
+    )
+
+    assert dependencies[param_name] == [("override-id", param_path)]
+    assert dependencies["other"] == [("other-id", other_path)]
+
+
+@pytest.mark.parametrize(
+    ("param_path", "occurrence_path"),
+    (
+        (("left", "mutant"), ()),
+        (("left", "mutant"), ("right",)),
+    ),
+)
+def test_apply_mutation_overrides_ignores_nonmatching_path(
+    param_path: tuple[str, ...],
+    occurrence_path: tuple[str, ...],
+) -> None:
+    """
+    Verify mutation overrides ignore occurrences that do not match the path.
+
+    Contract:
+        - Non-matching paths do not rewrite dependencies.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If non-matching paths are rewritten.
+    """
+    node_id = "node-1"
+    param_name = param_path[-1]
+    socket = _make_mutation_socket_ref(
+        node_id=node_id,
+        param_name=param_name,
+        param_path=param_path,
+    )
+    spell = _make_spell(spell_id=node_id, existence=Existence.many)
+    spell.mutation_override = {">".join(param_path): "override-id"}
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", node_id),
+        sockets=(socket,),
+        spell_lookup={node_id: spell},
+    )
+
+    dependencies = {
+        param_name: [("orig-id", occurrence_path + (param_name,))],
+    }
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=(node_id, occurrence_path),
+    )
+
+    assert dependencies[param_name] == [("orig-id", occurrence_path + (param_name,))]
+
+
+def test_apply_mutation_overrides_ignores_other_node_id() -> None:
+    """
+    Verify mutation overrides do not apply to different node ids.
+
+    Contract:
+        - Overrides only apply when socket_ref.node_id matches the occurrence spell id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If overrides apply to other nodes.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="other-node",
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    spell = _make_spell(spell_id="node-1", existence=Existence.many)
+    spell.mutation_override = {"mutant": "override-id"}
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node-1"),
+        sockets=(socket,),
+        spell_lookup={"node-1": spell},
+    )
+
+    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=("node-1", ()),
+    )
+
+    assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+
+
+def test_apply_mutation_overrides_updates_multiple_params() -> None:
+    """
+    Verify mutation overrides can update multiple parameters in one pass.
+
+    Contract:
+        - Each targeted param receives its override target id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If not all params are updated.
+    """
+    node_id = "node-1"
+    sockets = (
+        _make_mutation_socket_ref(
+            node_id=node_id,
+            param_name="left",
+            param_path=("left",),
+        ),
+        _make_mutation_socket_ref(
+            node_id=node_id,
+            param_name="right",
+            param_path=("right",),
+        ),
+    )
+    spell = _make_spell(spell_id=node_id, existence=Existence.many)
+    spell.mutation_override = {
+        "left": "left-id",
+        "right": "right-id",
+    }
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", node_id),
+        sockets=sockets,
+        spell_lookup={node_id: spell},
+    )
+
+    dependencies = {
+        "left": [("orig-left", ("left",))],
+        "right": [("orig-right", ("right",))],
+    }
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=(node_id, ()),
+    )
+
+    assert dependencies["left"] == [("left-id", ("left",))]
+    assert dependencies["right"] == [("right-id", ("right",))]
+
+
+def test_apply_mutation_overrides_replaces_multiple_existing_occurrences() -> None:
+    """
+    Verify mutation overrides replace multi-occurrence dependency lists.
+
+    Contract:
+        - Existing lists are replaced by a single override occurrence.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If extra occurrences remain.
+    """
+    node_id = "node-1"
+    socket = _make_mutation_socket_ref(
+        node_id=node_id,
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    spell = _make_spell(spell_id=node_id, existence=Existence.many)
+    spell.mutation_override = {"mutant": "override-id"}
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", node_id),
+        sockets=(socket,),
+        spell_lookup={node_id: spell},
+    )
+
+    dependencies = {
+        "mutant": [
+            ("orig-a", ("mutant",)),
+            ("orig-b", ("mutant",)),
+        ],
+    }
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=(node_id, ()),
+    )
+
+    assert dependencies["mutant"] == [("override-id", ("mutant",))]
+
+
+def test_apply_mutation_overrides_skips_when_blueprint_missing() -> None:
+    """
+    Verify mutation overrides are skipped without a blueprint.
+
+    Contract:
+        - Missing blueprint results in no dependency changes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dependencies change without a blueprint.
+    """
+    engine, root_spell, _ = _make_engine()
+    root_spell.mutation_override = {"mutant": "override-id"}
+    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=(root_spell.spell_index.current, ()),
+    )
+
+    assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+
+
+def test_apply_mutation_overrides_skips_when_mutation_override_missing() -> None:
+    """
+    Verify missing mutation_override attributes are treated as no-ops.
+
+    Contract:
+        - Missing mutation_override does not alter dependencies.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dependencies change without overrides.
+    """
+    node_id = "node-1"
+    socket = _make_mutation_socket_ref(
+        node_id=node_id,
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    spell = _make_spell(spell_id=node_id, existence=Existence.many)
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", node_id),
+        sockets=(socket,),
+        spell_lookup={node_id: spell},
+    )
+
+    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=(node_id, ()),
+    )
+
+    assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+
+
+def test_apply_mutation_overrides_uses_root_spell_when_lookup_missing() -> None:
+    """
+    Verify root spell overrides apply even when root is not in spell_lookup.
+
+    Contract:
+        - Root spell fallback provides mutation_override resolution.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If root overrides are not applied.
+    """
+    root_id = "root"
+    socket = _make_mutation_socket_ref(
+        node_id=root_id,
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    blueprint = _make_blueprint_with_sockets(
+        root_id=root_id,
+        dag=_make_dag_with_nodes([root_id]),
+        ordered_node_ids=(root_id,),
+        sockets=(socket,),
+    )
+    root_spell = _make_spell(spell_id=root_id, existence=Existence.many)
+    root_spell.mutation_override = {"mutant": "override-id"}
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={},
+    )
+
+    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=(root_id, ()),
+    )
+
+    assert dependencies["mutant"] == [("override-id", ("mutant",))]
+
+
+def test_apply_mutation_overrides_rejects_non_dict_override() -> None:
+    """
+    Verify mutation override application rejects non-dict payloads.
+
+    Contract:
+        - Non-dict mutation_override raises MeldExecutionError.
+    Returns:
+        None.
+    Raises:
+        MeldExecutionError: If mutation_override is not a dict.
+    """
+    node_id = "node-1"
+    socket = _make_mutation_socket_ref(
+        node_id=node_id,
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    spell = _make_spell(spell_id=node_id, existence=Existence.many)
+    spell.mutation_override = ["mutant"]
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", node_id),
+        sockets=(socket,),
+        spell_lookup={node_id: spell},
+    )
+
+    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    with pytest.raises(MeldExecutionError, match="mutation_override must be a dict"):
+        engine._apply_mutation_overrides_to_dependencies(
+            dependencies=dependencies,
+            occurrence=(node_id, ()),
+        )
+
+
+def test_extend_occurrence_graph_with_ordered_nodes_merges_topology_and_dag_dependencies() -> None:
+    """
+    Verify ordered-node expansion merges topology and DAG dependencies.
+
+    Contract:
+        - Topology sockets are merged with DAG-discovered dependencies.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dependency sources are not combined.
+    """
+    topology = _make_topology([_make_socket("dep", ["parent-a"])])
+    system_states = _SystemStatesStub({"orphan": topology})
+    engine, root_spell, _ = _make_engine(system_states=system_states)
+    root_id = root_spell.spell_index.current
+    dag = _make_dag_with_nodes([root_id, "orphan", "parent-a", "parent-b"])
+    dag.add_dependency("parent-b", "orphan", param_name="dep")
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, "orphan"),
+        dag=dag,
+    )
+
+    deps = occurrence_graph[("orphan", ())]["dep"]
+    assert deps == [("parent-a", ("dep",)), ("parent-b", ("dep",))]
+
+
+def test_extend_occurrence_graph_with_ordered_nodes_dedupes_topology_and_dag_duplicates() -> None:
+    """
+    Verify ordered-node expansion does not duplicate shared dependencies.
+
+    Contract:
+        - DAG dependencies that duplicate topology sockets are not repeated.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If duplicate dependencies are added.
+    """
+    topology = _make_topology([_make_socket("dep", ["parent-a"])])
+    system_states = _SystemStatesStub({"orphan": topology})
+    engine, root_spell, _ = _make_engine(system_states=system_states)
+    root_id = root_spell.spell_index.current
+    dag = _make_dag_with_nodes([root_id, "orphan", "parent-a"])
+    dag.add_dependency("parent-a", "orphan", param_name="dep")
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, "orphan"),
+        dag=dag,
+    )
+
+    deps = occurrence_graph[("orphan", ())]["dep"]
+    assert deps == [("parent-a", ("dep",))]
+
+
+def test_extend_occurrence_graph_with_ordered_nodes_adds_multiple_orphans() -> None:
+    """
+    Verify ordered-node expansion adds multiple orphan nodes.
+
+    Contract:
+        - Each orphan in the ordered list is added as an entrypoint.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If orphan entrypoints are missing.
+    """
+    engine, root_spell, _ = _make_engine()
+    root_id = root_spell.spell_index.current
+    dag = _make_dag_with_nodes([root_id, "orphan-a", "orphan-b"])
+    occurrence_graph = engine._build_occurrence_graph(
+        dag=dag,
+        root_spell_id=root_id,
+    )
+
+    engine._extend_occurrence_graph_with_ordered_nodes(
+        occurrence_graph=occurrence_graph,
+        ordered_node_ids=(root_id, "orphan-a", "orphan-b"),
+        dag=dag,
+    )
+
+    assert ("orphan-a", ()) in occurrence_graph
+    assert ("orphan-b", ()) in occurrence_graph
+
+
+def test_run_blueprint_orphan_dependency_injected_from_topology() -> None:
+    """
+    Verify orphan nodes can inject topology-based dependencies.
+
+    Contract:
+        - Orphan nodes execute with topology-provided dependency values.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If orphan dependency injection fails.
+    """
+    topology = _make_topology([_make_socket("dep", ["parent"])])
+    system_states = _SystemStatesStub({"orphan": topology})
+    root_spell = _make_spell(
+        spell_id="root",
+        spell=lambda **_: "root-value",
+        existence=Existence.many,
+    )
+    parent_spell = _make_spell(
+        spell_id="parent",
+        spell=lambda **_: "parent-value",
+        existence=Existence.many,
+    )
+    orphan_spell = _make_spell(
+        spell_id="orphan",
+        spell=lambda *, dep: f"orphan-{dep}",
+        existence=Existence.many,
+    )
+    dag = _make_dag_with_nodes(["root", "parent", "orphan"])
+    blueprint = _make_blueprint("root", dag, ["parent", "orphan", "root"])
+    engine, _, frame = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={
+            "root": root_spell,
+            "parent": parent_spell,
+            "orphan": orphan_spell,
+        },
+        system_states=system_states,
+    )
+
+    assert engine.run() == "root-value"
+    assert frame.get_result("orphan") == "orphan-parent-value"
+
+
+def test_resolve_mutation_override_targets_unique_ignores_non_mutation_socket() -> None:
+    """
+    Verify UNIQUE mutation overrides ignore non-mutation sockets.
+
+    Contract:
+        - Only mutation sockets are eligible for unique override matches.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If non-mutation sockets influence the match count.
+    """
+    sockets = (
+        _make_mutation_socket_ref(
+            node_id="node",
+            param_name="mutant",
+            param_path=("mutant",),
+        ),
+        _make_socket_ref_with_path(
+            node_id="node",
+            param_name="mutant",
+            param_path=("other", "mutant"),
+            socket_kind=SocketKind.NORMAL,
+        ),
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=sockets,
+    )
+
+    resolved = engine._resolve_mutation_override_targets(
+        mutation_override={"*mutant": "override-id"},
+        dag_index=blueprint.dag_index,
+    )
+
+    assert len(resolved) == 1
+    resolved_socket, target_id = resolved[0]
+    assert resolved_socket.socket_kind is SocketKind.MUTATION_CONTRACT
+    assert target_id == "override-id"
+
+
+def test_resolve_mutation_override_targets_path_allows_multiple_matches() -> None:
+    """
+    Verify PATH mutation overrides allow multiple mutation socket matches.
+
+    Contract:
+        - PATH overrides resolve all mutation sockets sharing the exact path.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If multiple matches are not returned.
+    """
+    sockets = (
+        _make_mutation_socket_ref(
+            node_id="node-a",
+            param_name="mutant",
+            param_path=("left", "mutant"),
+        ),
+        _make_mutation_socket_ref(
+            node_id="node-b",
+            param_name="mutant",
+            param_path=("left", "mutant"),
+        ),
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node-a", "node-b"),
+        sockets=sockets,
+    )
+
+    resolved = engine._resolve_mutation_override_targets(
+        mutation_override={"left>mutant": "override-id"},
+        dag_index=blueprint.dag_index,
+    )
+
+    node_ids = {socket.node_id for socket, _ in resolved}
+    assert node_ids == {"node-a", "node-b"}
+
+
+def test_resolve_mutation_override_targets_path_trims_whitespace() -> None:
+    """
+    Verify PATH mutation overrides ignore surrounding whitespace.
+
+    Contract:
+        - Whitespace around path segments is ignored for matching.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If whitespace prevents path matching.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="node",
+        param_name="mutant",
+        param_path=("left", "mutant"),
+    )
+    engine, blueprint, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "node"),
+        sockets=(socket,),
+    )
+
+    resolved = engine._resolve_mutation_override_targets(
+        mutation_override={" left > mutant ": "override-id"},
+        dag_index=blueprint.dag_index,
+    )
+
+    assert len(resolved) == 1
+    assert resolved[0][0].param_path == ("left", "mutant")
+
+
+def test_apply_mutation_overrides_adds_dependency_when_missing() -> None:
+    """
+    Verify mutation overrides create dependency entries when missing.
+
+    Contract:
+        - Missing parameter entries are created during override application.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If missing dependencies are not created.
+    """
+    node_id = "node-1"
+    socket = _make_mutation_socket_ref(
+        node_id=node_id,
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    spell = _make_spell(spell_id=node_id, existence=Existence.many)
+    spell.mutation_override = {"mutant": "override-id"}
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", node_id),
+        sockets=(socket,),
+        spell_lookup={node_id: spell},
+    )
+
+    dependencies = {"other": [("other-id", ("other",))]}
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=(node_id, ()),
+    )
+
+    assert dependencies["mutant"] == [("override-id", ("mutant",))]
+    assert dependencies["other"] == [("other-id", ("other",))]
+
+
+def test_apply_mutation_overrides_skips_when_spell_missing_in_lookup() -> None:
+    """
+    Verify mutation override application is skipped for missing spells.
+
+    Contract:
+        - Unknown spell ids do not mutate dependency mappings.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dependencies are mutated for missing spells.
+    """
+    socket = _make_mutation_socket_ref(
+        node_id="missing",
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", "missing"),
+        sockets=(socket,),
+    )
+
+    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=("missing", ()),
+    )
+
+    assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+
+
+def test_apply_mutation_overrides_skips_when_override_dict_empty() -> None:
+    """
+    Verify empty mutation_override dictionaries are treated as no-ops.
+
+    Contract:
+        - Empty mutation_override values do not change dependencies.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If empty overrides change dependencies.
+    """
+    node_id = "node-1"
+    socket = _make_mutation_socket_ref(
+        node_id=node_id,
+        param_name="mutant",
+        param_path=("mutant",),
+    )
+    spell = _make_spell(spell_id=node_id, existence=Existence.many)
+    spell.mutation_override = {}
+    engine, _, _ = _make_engine_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root", node_id),
+        sockets=(socket,),
+        spell_lookup={node_id: spell},
+    )
+
+    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    engine._apply_mutation_overrides_to_dependencies(
+        dependencies=dependencies,
+        occurrence=(node_id, ()),
+    )
+
+    assert dependencies["mutant"] == [("orig-id", ("mutant",))]

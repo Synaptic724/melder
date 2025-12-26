@@ -1,5 +1,6 @@
+from collections import defaultdict, deque
 from threading import RLock
-from typing import Any, Dict, MutableMapping, Optional, Sequence, Callable
+from typing import Any, Callable, Dict, Iterable, List, MutableMapping, Optional, Sequence, Tuple
 
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -13,12 +14,16 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
+
+_OccurrenceKey = tuple[str, tuple[str, ...]]
+_InstanceKey = tuple[str, Optional[tuple[str, ...]]]
 
 
 class MeldEngine(Cleanable):
@@ -50,6 +55,9 @@ class MeldEngine(Cleanable):
         "_override_map",
         "_spell_lookup",
         "_system_states",
+        "_instance_results",
+        "_override_targets_by_spell_id",
+        "_any_overrides_present",
     ]
 
     def __init__(
@@ -116,6 +124,9 @@ class MeldEngine(Cleanable):
         self._override_map: Dict[SocketRef, Any] = override_map or {}
         self._spell_lookup: Dict[str, ISpell] = spell_lookup or {}
         self._system_states = system_states
+        self._instance_results: Dict[_InstanceKey, Any] = {}
+        self._override_targets_by_spell_id: Dict[str, List[SocketRef]] = {}
+        self._any_overrides_present: bool = False
 
     # ------------------------------------------------------------------ #
     # Cleanup
@@ -152,6 +163,9 @@ class MeldEngine(Cleanable):
             self._override_map = None
             self._spell_lookup = None
             self._system_states = None
+            self._instance_results = None
+            self._override_targets_by_spell_id = None
+            self._any_overrides_present = None
             self._cleaned = True
 
     # ------------------------------------------------------------------ #
@@ -193,8 +207,14 @@ class MeldEngine(Cleanable):
         Execute the meld call and return the constructed root instance.
 
         Executes the deep DAG in topological order using the RootResolutionBlueprint
-        when available. Falls back to single-node construction if no blueprint is set,
-        and registers the root instance into creations for reuse.
+        when available. For `Existence.many`, each reachable path produces a distinct
+        instance; all other existences are treated as shared. Overrides are applied
+        per path for `Existence.many`, and shared overrides are validated for
+        ambiguity before construction.
+
+        If the blueprint includes ordered nodes that are not reachable from the
+        root occurrence, those nodes are treated as additional entrypoints and
+        executed in the supplied order.
         """
         self.check_cleaned()
 
@@ -202,17 +222,45 @@ class MeldEngine(Cleanable):
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
 
+        self._override_targets_by_spell_id = self._collect_override_targets(
+            self._override_map
+        )
+        self._any_overrides_present = self._detect_any_overrides()
+
         # If we have a deep blueprint, walk it; otherwise fall back to root-only.
-        if self._blueprint is None:
+        if self._blueprint is None or not self._blueprint.ordered_node_ids:
+            instance_key = self._instance_key_for_root()
             instance, _ = self._resolve_spell_instance(
                 self._root_spell,
                 construct_fn=self._construct_root_only,
             )
-            self._store_result(self._root_spell.spell_index.current, instance)
+            self._store_instance_result(instance_key, instance)
             return instance
 
-        ordered_ids = self._blueprint.ordered_node_ids
-        dag = self._blueprint.dag
+        blueprint = self._blueprint
+        ordered_ids = blueprint.ordered_node_ids
+        dag = blueprint.dag
+        root_id = self._root_spell.spell_index.current
+
+        occurrence_graph = self._build_occurrence_graph(
+            dag=dag,
+            root_spell_id=root_id,
+        )
+        self._extend_occurrence_graph_with_ordered_nodes(
+            occurrence_graph=occurrence_graph,
+            ordered_node_ids=ordered_ids,
+            dag=dag,
+        )
+        (
+            instance_keys_by_spell_id,
+            canonical_occurrences_by_spell_id,
+            root_instance_key,
+            shared_spell_ids,
+        ) = self._build_instance_plan(
+            occurrence_graph=occurrence_graph,
+            root_spell_id=root_id,
+        )
+        self._validate_shared_override_targets(shared_spell_ids)
 
         for node_id in ordered_ids:
             if cancel_event is not None and cancel_event.is_set:
@@ -226,28 +274,912 @@ class MeldEngine(Cleanable):
                     message=f"Spell with id '{node_id}' not found in spellbook for meld.",
                 )
 
-            def _construct_node() -> Any:
-                kwargs = self._build_kwargs_for_node(
-                    node_id=node_id,
-                    dag=dag,
-                    override_map=self._override_map,
+            instance_keys = instance_keys_by_spell_id.get(node_id, [])
+            for instance_key in instance_keys:
+                def _construct_node(
+                        *,
+                        instance_key: _InstanceKey = instance_key,
+                        spell: ISpell = spell,
+                ) -> Any:
+                    kwargs = self._build_kwargs_for_instance(
+                        instance_key=instance_key,
+                        occurrence_graph=occurrence_graph,
+                        canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
+                    )
+                    return self._construct_spell(spell, kwargs)
+
+                instance, _ = self._resolve_spell_instance(
+                    spell,
+                    construct_fn=_construct_node,
                 )
-                return self._construct_spell(spell, kwargs)
+                self._store_instance_result(instance_key, instance)
+                if cancel_event is not None and cancel_event.is_set:
+                    cancel_event.throw_if_set()
 
-            instance, _ = self._resolve_spell_instance(
-                spell,
-                construct_fn=_construct_node,
-            )
-            self._store_result(node_id, instance)
-
-        root_id = self._root_spell.spell_index.current
         try:
-            return self._frame.get_result(root_id)
-        except KeyError:
+            return self._get_instance_result(root_instance_key)
+        except MeldExecutionError:
             # If the blueprint didn't include the root (unlikely), build root directly.
-            instance = self._construct_root_only()
-            self._store_result(root_id, instance)
+            fallback_key = self._instance_key_for_root()
+            instance, _ = self._resolve_spell_instance(
+                self._root_spell,
+                construct_fn=self._construct_root_only,
+            )
+            self._store_instance_result(fallback_key, instance)
             return instance
+
+    # ------------------------------------------------------------------ #
+    # Instance planning
+    # ------------------------------------------------------------------ #
+
+    def _detect_any_overrides(self) -> bool:
+        """
+        Purpose:
+            Determine whether this meld call carries any overrides.
+        Contract:
+            - Returns True when either socket-level overrides or root-level
+              overrides are present.
+            - Empty override maps and empty frame overrides are treated as
+              no overrides.
+        Returns:
+            bool: True if any overrides are present, otherwise False.
+        """
+        if self._override_map:
+            return True
+        overrides = self._frame.overrides
+        return bool(overrides)
+
+    def _collect_override_targets(
+            self,
+            override_map: Dict[SocketRef, Any],
+    ) -> Dict[str, List[SocketRef]]:
+        """
+        Purpose:
+            Group override targets by spell id for validation.
+        Contract:
+            - Keys are spell version ids.
+            - Values are the SocketRef entries targeted by overrides.
+        Args:
+            override_map: SocketRef -> override value mapping.
+        Returns:
+            Dict[str, List[SocketRef]]: Override sockets grouped by spell id.
+        """
+        targets: Dict[str, List[SocketRef]] = defaultdict(list)
+        for socket_ref in (override_map or {}):
+            targets[socket_ref.node_id].append(socket_ref)
+        return dict(targets)
+
+    def _has_overrides_for_spell(self, spell_id: str) -> bool:
+        """
+        Purpose:
+            Determine whether any overrides target the given spell.
+        Contract:
+            - Socket overrides are resolved by spell id.
+            - Root-level overrides apply to the root spell id only.
+        Args:
+            spell_id: Spell version id to check.
+        Returns:
+            bool: True if overrides target the spell id.
+        """
+        if self._override_targets_by_spell_id.get(spell_id):
+            return True
+        root_id = self._root_spell.spell_index.current
+        if spell_id != root_id:
+            return False
+        overrides = self._frame.overrides
+        return bool(overrides)
+
+    def _validate_shared_override_targets(
+            self,
+            shared_spell_ids: Iterable[str],
+    ) -> None:
+        """
+        Purpose:
+            Reject ambiguous overrides for shared spell instances.
+        Contract:
+            - Shared spell instances may receive at most one override per parameter.
+            - Multiple overrides for the same parameter raise MeldExecutionError
+              even if the values are identical.
+        Args:
+            shared_spell_ids: Spell ids that resolve to shared instances.
+        Returns:
+            None.
+        Raises:
+            MeldExecutionError: If multiple overrides target the same parameter
+                on a shared spell.
+        """
+        for spell_id in shared_spell_ids:
+            socket_refs = self._override_targets_by_spell_id.get(spell_id, [])
+            if not socket_refs:
+                continue
+
+            by_param: Dict[str, List[SocketRef]] = defaultdict(list)
+            for socket_ref in socket_refs:
+                by_param[socket_ref.param_name].append(socket_ref)
+
+            for param_name, refs in by_param.items():
+                if len(refs) <= 1:
+                    continue
+                spell = self._spell_lookup.get(spell_id)
+                spell_name = spell.spell_name if spell is not None else spell_id
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell_name,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        f"Multiple overrides target parameter {param_name!r} on shared "
+                        f"spell {spell_name!r}. Shared instances accept at most one "
+                        "override per parameter."
+                    ),
+                )
+
+    @staticmethod
+    def _is_shared_existence(existence: Existence) -> bool:
+        """
+        Purpose:
+            Determine whether an existence policy yields a shared instance.
+        Contract:
+            - Existence.many is treated as non-shared (per-path instances).
+            - All other existences are treated as shared for override validation.
+        Args:
+            existence: Existence policy for the spell.
+        Returns:
+            bool: True when the existence is shared; False otherwise.
+        """
+        return existence is not Existence.many
+
+    def _instance_key_for_root(self) -> _InstanceKey:
+        """
+        Purpose:
+            Build the instance key for the root spell in root-only execution.
+        Contract:
+            - Shared existences use a None path.
+            - Existence.many uses the empty path as the instance key.
+        Returns:
+            _InstanceKey: Instance key for the root spell.
+        """
+        root_id = self._root_spell.spell_index.current
+        if self._is_shared_existence(self._root_spell.existence):
+            return root_id, None
+        return root_id, ()
+
+    def _build_occurrence_graph(
+            self,
+            *,
+            dag: Any,
+            root_spell_id: str,
+    ) -> Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]]:
+        """
+        Purpose:
+            Build a path-aware occurrence graph rooted at the entrypoint spell.
+        Contract:
+            - Returns a mapping of occurrence -> param_name -> child occurrences.
+            - Uses local topology when available; falls back to DAG metadata.
+            - Includes the root occurrence even if it has no dependencies.
+        Args:
+            dag: DirectedAcyclicWorkGraph from the blueprint.
+            root_spell_id: Version id for the root spell.
+        Returns:
+            Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]]: Occurrence graph.
+        """
+        root_occurrence: _OccurrenceKey = (root_spell_id, ())
+        occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]] = {}
+        queue: deque[_OccurrenceKey] = deque([root_occurrence])
+        seen: set[_OccurrenceKey] = set()
+
+        while queue:
+            occurrence = queue.popleft()
+            if occurrence in seen:
+                continue
+            seen.add(occurrence)
+
+            dependencies = self._collect_occurrence_dependencies(
+                occurrence=occurrence,
+                dag=dag,
+            )
+            occurrence_graph[occurrence] = dependencies
+
+            for child_list in dependencies.values():
+                for child_occurrence in child_list:
+                    if child_occurrence not in seen:
+                        queue.append(child_occurrence)
+
+        return occurrence_graph
+
+    def _extend_occurrence_graph_with_ordered_nodes(
+            self,
+            *,
+            occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
+            ordered_node_ids: Sequence[str],
+            dag: Any,
+    ) -> None:
+        """
+        Purpose:
+            Ensure ordered nodes outside the root path still get occurrences.
+        Contract:
+            - Nodes already present in the occurrence graph are left unchanged.
+            - Missing ordered nodes are treated as additional entrypoints with
+              empty paths and expanded via dependency discovery.
+            - Newly discovered occurrences are appended without overwriting
+              existing entries.
+        Args:
+            occurrence_graph:
+                Existing occurrence graph to extend in-place.
+            ordered_node_ids:
+                Ordered node ids from the blueprint.
+            dag:
+                DirectedAcyclicWorkGraph used for dependency discovery.
+        Returns:
+            None.
+        """
+        if not ordered_node_ids or dag is None:
+            return
+
+        existing_occurrences = set(occurrence_graph.keys())
+        present_spell_ids = {spell_id for spell_id, _ in existing_occurrences}
+
+        for node_id in ordered_node_ids:
+            if node_id in present_spell_ids:
+                continue
+
+            queue: deque[_OccurrenceKey] = deque([(node_id, ())])
+            while queue:
+                occurrence = queue.popleft()
+                if occurrence in existing_occurrences:
+                    continue
+                existing_occurrences.add(occurrence)
+                present_spell_ids.add(occurrence[0])
+
+                dependencies = self._collect_occurrence_dependencies(
+                    occurrence=occurrence,
+                    dag=dag,
+                )
+                occurrence_graph[occurrence] = dependencies
+
+                for child_list in dependencies.values():
+                    for child_occurrence in child_list:
+                        if child_occurrence not in existing_occurrences:
+                            queue.append(child_occurrence)
+
+    def _collect_occurrence_dependencies(
+            self,
+            *,
+            occurrence: _OccurrenceKey,
+            dag: Any,
+    ) -> Dict[str, List[_OccurrenceKey]]:
+        """
+        Purpose:
+            Collect dependency occurrences for a single spell occurrence.
+        Contract:
+            - Each dependency uses the current occurrence path plus the
+              dependency parameter name.
+            - Local topology is preferred; DAG metadata is used as a fallback.
+            - Mutation overrides replace dependencies for MutationContract sockets.
+        Args:
+            occurrence: The (spell_id, path) occurrence being expanded.
+            dag: DirectedAcyclicWorkGraph for fallback dependency discovery.
+        Returns:
+            Dict[str, List[_OccurrenceKey]]: Parameter-to-occurrence mapping.
+        """
+        spell_id, path = occurrence
+        dependencies: Dict[str, List[_OccurrenceKey]] = {}
+
+        topology = None
+        if self._system_states is not None:
+            try:
+                topology = self._system_states.get_local_topology_by_id(spell_id)
+            except Exception:
+                topology = None
+
+        if topology is not None:
+            for socket in topology.sockets:
+                if not socket.target_spell_ids:
+                    continue
+                for target_id in socket.target_spell_ids:
+                    child_occurrence = (target_id, path + (socket.param_name,))
+                    dependencies.setdefault(socket.param_name, []).append(child_occurrence)
+
+        node = dag.get_node(spell_id) if dag is not None else None
+        if node is not None:
+            mutated_params: set[str] = set()
+            sorted_parents = sorted(node.dependencies, key=lambda parent: parent.id)
+            for parent_node in sorted_parents:
+                param_name = node.incoming_params.get(parent_node)
+                if not param_name:
+                    continue
+                socket_kind = None
+                if dag is not None:
+                    socket_kind = dag._socket_kinds.get((parent_node, node))
+                child_occurrence = (parent_node.id, path + (param_name,))
+                if socket_kind is SocketKind.MUTATION_CONTRACT:
+                    if param_name not in mutated_params:
+                        dependencies[param_name] = []
+                        mutated_params.add(param_name)
+                    if child_occurrence not in dependencies[param_name]:
+                        dependencies[param_name].append(child_occurrence)
+                    continue
+
+                if param_name in mutated_params:
+                    continue
+
+                existing = dependencies.get(param_name)
+                if existing is None:
+                    dependencies[param_name] = [child_occurrence]
+                elif child_occurrence not in existing:
+                    existing.append(child_occurrence)
+
+        self._apply_mutation_overrides_to_dependencies(
+            dependencies=dependencies,
+            occurrence=occurrence,
+        )
+
+        return dependencies
+
+    def _resolve_mutation_override_targets(
+            self,
+            *,
+            mutation_override: Dict[str, Any],
+            dag_index: DagIndex,
+    ) -> List[tuple[SocketRef, str]]:
+        """
+        Purpose:
+            Resolve mutation override keys into targeted mutation sockets.
+        Contract:
+            - Only MutationContract sockets are eligible targets.
+            - PATH / UNIQUE / BROADCAST cardinality rules are enforced.
+            - Invalid keys or targets raise MeldExecutionError.
+        Args:
+            mutation_override:
+                Mapping of override_key -> target spell id.
+            dag_index:
+                DagIndex from the active root blueprint.
+        Returns:
+            List[tuple[SocketRef, str]]:
+                List of (socket_ref, target_spell_id) pairs to apply.
+        Raises:
+            MeldExecutionError:
+                If override keys are invalid, ambiguous, or have no matches.
+        """
+        if not mutation_override:
+            return []
+
+        if not isinstance(mutation_override, dict):
+            raise MeldExecutionError(
+                spell_id=self._root_spell.spell_index.current,
+                spell_name=self._root_spell.spell_name,
+                message="mutation_override must be a dict of override_key -> spell_id.",
+            )
+
+        if dag_index is None:
+            raise MeldExecutionError(
+                spell_id=self._root_spell.spell_index.current,
+                spell_name=self._root_spell.spell_name,
+                message="mutation_override requires an active DagIndex.",
+            )
+
+        resolved: List[tuple[SocketRef, str]] = []
+
+        for raw_key, target_id in mutation_override.items():
+            if not isinstance(raw_key, str) or not raw_key.strip():
+                raise MeldExecutionError(
+                    spell_id=self._root_spell.spell_index.current,
+                    spell_name=self._root_spell.spell_name,
+                    message=f"Invalid mutation_override key: {raw_key!r}.",
+                )
+            if not isinstance(target_id, str) or not target_id.strip():
+                raise MeldExecutionError(
+                    spell_id=self._root_spell.spell_index.current,
+                    spell_name=self._root_spell.spell_name,
+                    message=(
+                        f"Invalid mutation_override target for key {raw_key!r}: "
+                        "expected non-empty spell_id string."
+                    ),
+                )
+
+            try:
+                spec = TargetSpec.parse(raw_key)
+            except Exception as exc:
+                raise MeldExecutionError(
+                    spell_id=self._root_spell.spell_index.current,
+                    spell_name=self._root_spell.spell_name,
+                    message=f"Invalid mutation_override key: {raw_key!r}.",
+                    inner=exc,
+                ) from exc
+
+            matches: List[SocketRef] = []
+            if spec.kind is TargetSpecKind.PATH:
+                if not spec.path:
+                    raise MeldExecutionError(
+                        spell_id=self._root_spell.spell_index.current,
+                        spell_name=self._root_spell.spell_name,
+                        message=f"Path override key {raw_key!r} did not contain any segments.",
+                    )
+                candidates = dag_index.get_by_exact_path(spec.path)
+                matches = [
+                    socket
+                    for socket in candidates
+                    if socket.socket_kind is SocketKind.MUTATION_CONTRACT
+                ]
+                if not matches:
+                    path_str = ">".join(spec.path)
+                    raise MeldExecutionError(
+                        spell_id=self._root_spell.spell_index.current,
+                        spell_name=self._root_spell.spell_name,
+                        message=(
+                            "No mutation sockets found for override path "
+                            f"'{path_str}'."
+                        ),
+                    )
+
+            elif spec.kind is TargetSpecKind.UNIQUE:
+                if not spec.param_name:
+                    raise MeldExecutionError(
+                        spell_id=self._root_spell.spell_index.current,
+                        spell_name=self._root_spell.spell_name,
+                        message=f"Unique override key {raw_key!r} is missing a parameter name.",
+                    )
+                candidates = dag_index.get_by_name(spec.param_name)
+                matches = [
+                    socket
+                    for socket in candidates
+                    if socket.socket_kind is SocketKind.MUTATION_CONTRACT
+                ]
+                count = len(matches)
+                if count == 0:
+                    raise MeldExecutionError(
+                        spell_id=self._root_spell.spell_index.current,
+                        spell_name=self._root_spell.spell_name,
+                        message=(
+                            "No mutation sockets found for unique override "
+                            f"'*{spec.param_name}'."
+                        ),
+                    )
+                if count > 1:
+                    raise MeldExecutionError(
+                        spell_id=self._root_spell.spell_index.current,
+                        spell_name=self._root_spell.spell_name,
+                        message=(
+                            "Unique override matched multiple mutation sockets "
+                            f"for '*{spec.param_name}'."
+                        ),
+                    )
+
+            elif spec.kind is TargetSpecKind.BROADCAST:
+                if not spec.param_name:
+                    raise MeldExecutionError(
+                        spell_id=self._root_spell.spell_index.current,
+                        spell_name=self._root_spell.spell_name,
+                        message=f"Broadcast override key {raw_key!r} is missing a parameter name.",
+                    )
+                candidates = dag_index.get_by_name(spec.param_name)
+                matches = [
+                    socket
+                    for socket in candidates
+                    if socket.socket_kind is SocketKind.MUTATION_CONTRACT
+                ]
+                if not matches:
+                    raise MeldExecutionError(
+                        spell_id=self._root_spell.spell_index.current,
+                        spell_name=self._root_spell.spell_name,
+                        message=(
+                            "No mutation sockets found for broadcast override "
+                            f"'**{spec.param_name}'."
+                        ),
+                    )
+            else:
+                raise MeldExecutionError(
+                    spell_id=self._root_spell.spell_index.current,
+                    spell_name=self._root_spell.spell_name,
+                    message=f"Unsupported TargetSpecKind for override {raw_key!r}.",
+                )
+
+            for socket_ref in matches:
+                resolved.append((socket_ref, target_id))
+
+        return resolved
+
+    def _apply_mutation_overrides_to_dependencies(
+            self,
+            *,
+            dependencies: Dict[str, List[_OccurrenceKey]],
+            occurrence: _OccurrenceKey,
+    ) -> None:
+        """
+        Purpose:
+            Overlay mutation overrides onto dependency occurrences.
+        Contract:
+            - Only applies when the active spell has a mutation_override payload.
+            - Matching mutation sockets are rewired to the override spell id.
+            - Overrides are matched against the occurrence path for disambiguation.
+            - Missing mutation_override attributes are treated as "no overrides".
+        Args:
+            dependencies:
+                Parameter-to-occurrence mapping to update in-place.
+            occurrence:
+                The (spell_id, path) occurrence being expanded.
+        Returns:
+            None.
+        Raises:
+            MeldExecutionError:
+                If mutation overrides are invalid or ambiguous.
+        """
+        if self._blueprint is None:
+            return
+
+        spell_id, path = occurrence
+        spell = self._spell_lookup.get(spell_id)
+        if spell is None and spell_id == self._root_spell.spell_index.current:
+            spell = self._root_spell
+        if spell is None:
+            return
+
+        try:
+            mutation_override = spell.mutation_override
+        except AttributeError:
+            mutation_override = {}
+        if not mutation_override:
+            return
+
+        override_targets = self._resolve_mutation_override_targets(
+            mutation_override=mutation_override,
+            dag_index=self._blueprint.dag_index,
+        )
+
+        for socket_ref, target_id in override_targets:
+            if socket_ref.node_id != spell_id:
+                continue
+            if socket_ref.param_path[:-1] != path:
+                continue
+            param_name = socket_ref.param_name
+            child_occurrence = (target_id, path + (param_name,))
+            dependencies[param_name] = [child_occurrence]
+
+    def _build_instance_plan(
+            self,
+            *,
+            occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
+            root_spell_id: str,
+    ) -> tuple[
+        Dict[str, List[_InstanceKey]],
+        Dict[str, _OccurrenceKey],
+        _InstanceKey,
+        set[str],
+    ]:
+        """
+        Purpose:
+            Build per-spell instance keys and canonical occurrences.
+        Contract:
+            - Existence.many -> one instance per occurrence path.
+            - Shared existences -> one instance per spell id.
+            - Canonical occurrences anchor dependency paths for shared spells.
+        Args:
+            occurrence_graph: Path-aware occurrence graph.
+            root_spell_id: Version id for the root spell.
+        Returns:
+            tuple:
+                - Dict[str, List[_InstanceKey]]: instance keys by spell id.
+                - Dict[str, _OccurrenceKey]: canonical occurrence per shared spell.
+                - _InstanceKey: instance key for the root spell.
+                - set[str]: spell ids treated as shared.
+        Raises:
+            MeldExecutionError: If a spell id is missing from the lookup table.
+        """
+        occurrences_by_spell_id: Dict[str, List[_OccurrenceKey]] = defaultdict(list)
+        for occurrence in occurrence_graph:
+            spell_id, _ = occurrence
+            occurrences_by_spell_id[spell_id].append(occurrence)
+
+        instance_keys_by_spell_id: Dict[str, List[_InstanceKey]] = {}
+        canonical_occurrences_by_spell_id: Dict[str, _OccurrenceKey] = {}
+        shared_spell_ids: set[str] = set()
+
+        for spell_id, occurrences in occurrences_by_spell_id.items():
+            spell = self._spell_lookup.get(spell_id)
+            if spell is None:
+                if spell_id == root_spell_id:
+                    spell = self._root_spell
+                else:
+                    raise MeldExecutionError(
+                        spell_id=spell_id,
+                        spell_name=spell_id,
+                        message=(
+                            f"Dependency spell with id '{spell_id}' not found in spellbook for meld."
+                        ),
+                    )
+
+            if self._is_shared_existence(spell.existence):
+                shared_spell_ids.add(spell_id)
+                canonical = self._select_canonical_occurrence(occurrences)
+                canonical_occurrences_by_spell_id[spell_id] = canonical
+                instance_keys_by_spell_id[spell_id] = [(spell_id, None)]
+            else:
+                sorted_occurrences = sorted(occurrences, key=lambda entry: entry[1])
+                instance_keys_by_spell_id[spell_id] = [
+                    (spell_id, path) for _, path in sorted_occurrences
+                ]
+
+        root_occurrence: _OccurrenceKey = (root_spell_id, ())
+        root_instance_key = self._instance_key_for_occurrence(root_occurrence)
+
+        return (
+            instance_keys_by_spell_id,
+            canonical_occurrences_by_spell_id,
+            root_instance_key,
+            shared_spell_ids,
+        )
+
+    @staticmethod
+    def _select_canonical_occurrence(
+            occurrences: Sequence[_OccurrenceKey],
+    ) -> _OccurrenceKey:
+        """
+        Purpose:
+            Pick a stable occurrence for shared instance dependency paths.
+        Contract:
+            - The canonical occurrence is the one with the lexicographically
+              smallest path.
+        Args:
+            occurrences: Occurrences for the same spell id.
+        Returns:
+            _OccurrenceKey: The canonical occurrence.
+        """
+        return min(occurrences, key=lambda entry: entry[1])
+
+    def _instance_key_for_occurrence(
+            self,
+            occurrence: _OccurrenceKey,
+    ) -> _InstanceKey:
+        """
+        Purpose:
+            Map an occurrence to its instance key based on existence policy.
+        Contract:
+            - Existence.many preserves the occurrence path.
+            - Shared existences collapse to a None path.
+        Args:
+            occurrence: The (spell_id, path) occurrence to map.
+        Returns:
+            _InstanceKey: Instance key for the occurrence.
+        Raises:
+            MeldExecutionError: If the spell id is not registered in the lookup.
+        """
+        spell_id, path = occurrence
+        spell = self._spell_lookup.get(spell_id)
+        if spell is None:
+            root_id = self._root_spell.spell_index.current
+            if spell_id == root_id:
+                spell = self._root_spell
+            else:
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell_id,
+                    message=(
+                        f"Dependency spell with id '{spell_id}' not found in spellbook for meld."
+                    ),
+                )
+        if self._is_shared_existence(spell.existence):
+            return spell_id, None
+        return spell_id, path
+
+    def _occurrence_for_instance_key(
+            self,
+            *,
+            instance_key: _InstanceKey,
+            canonical_occurrences_by_spell_id: Dict[str, _OccurrenceKey],
+    ) -> _OccurrenceKey:
+        """
+        Purpose:
+            Resolve the occurrence used to build kwargs for an instance.
+        Contract:
+            - Shared instances use their canonical occurrence path.
+            - Per-path instances use their own occurrence path.
+        Args:
+            instance_key: The instance key being resolved.
+            canonical_occurrences_by_spell_id: Canonical occurrence mapping.
+        Returns:
+            _OccurrenceKey: The occurrence used for dependency lookup.
+        Raises:
+            MeldExecutionError: If a shared spell lacks a canonical occurrence.
+        """
+        spell_id, path = instance_key
+        if path is not None:
+            return spell_id, path
+        canonical = canonical_occurrences_by_spell_id.get(spell_id)
+        if canonical is None:
+            raise MeldExecutionError(
+                spell_id=spell_id,
+                spell_name=spell_id,
+                message=f"Canonical occurrence missing for shared spell '{spell_id}'.",
+            )
+        return canonical
+
+    def _build_instance_override_map(
+            self,
+            *,
+            spell_id: str,
+            occurrence_path: tuple[str, ...],
+            shared: bool,
+    ) -> Dict[str, Any]:
+        """
+        Purpose:
+            Select overrides applicable to a specific spell instance.
+        Contract:
+            - Shared instances accept path-agnostic overrides for their params.
+            - Per-path instances accept overrides whose param_path matches the
+              occurrence path.
+        Args:
+            spell_id: Spell id being constructed.
+            occurrence_path: Path to the occurrence from the root.
+            shared: Whether the instance is shared.
+        Returns:
+            Dict[str, Any]: Parameter name to override value mapping.
+        """
+        overrides: Dict[str, Any] = {}
+        for socket_ref, value in (self._override_map or {}).items():
+            if socket_ref.node_id != spell_id:
+                continue
+            if shared:
+                overrides[socket_ref.param_name] = value
+                continue
+            if not socket_ref.param_path:
+                continue
+            if tuple(socket_ref.param_path[:-1]) == occurrence_path:
+                overrides[socket_ref.param_name] = value
+        return overrides
+
+    def _build_kwargs_for_instance(
+            self,
+            *,
+            instance_key: _InstanceKey,
+            occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
+            canonical_occurrences_by_spell_id: Dict[str, _OccurrenceKey],
+    ) -> Dict[str, Any]:
+        """
+        Purpose:
+            Build keyword args for a specific spell instance.
+        Contract:
+            - Override values take precedence over dependency injection.
+            - Multiple dependency providers inject lists in parameter order.
+        Args:
+            instance_key: Instance key being constructed.
+            occurrence_graph: Dependency graph keyed by occurrence.
+            canonical_occurrences_by_spell_id: Canonical occurrences for shared spells.
+        Returns:
+            Dict[str, Any]: Keyword arguments for construction.
+        Raises:
+            MeldExecutionError: If a dependency instance is missing.
+        """
+        occurrence = self._occurrence_for_instance_key(
+            instance_key=instance_key,
+            canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
+        )
+        spell_id, path = occurrence
+        shared = instance_key[1] is None
+
+        override_values = self._build_instance_override_map(
+            spell_id=spell_id,
+            occurrence_path=path,
+            shared=shared,
+        )
+
+        kwargs: Dict[str, Any] = {}
+        dependencies = occurrence_graph.get(occurrence, {})
+        for param_name, dependency_occurrences in dependencies.items():
+            if param_name in override_values:
+                kwargs[param_name] = override_values[param_name]
+                continue
+            values: List[Any] = []
+            for dependency_occurrence in dependency_occurrences:
+                dependency_key = self._instance_key_for_occurrence(dependency_occurrence)
+                if dependency_key not in self._instance_results:
+                    raise MeldExecutionError(
+                        spell_id=spell_id,
+                        spell_name=spell_id,
+                        node_id=spell_id,
+                        param_name=param_name,
+                        message=(
+                            f"Dependency '{dependency_occurrence[0]}' missing while "
+                            f"building args for '{spell_id}'."
+                        ),
+                    )
+                values.append(self._instance_results[dependency_key])
+            if not values:
+                continue
+            if len(values) == 1:
+                kwargs[param_name] = values[0]
+            else:
+                kwargs[param_name] = values
+
+        for param_name, value in override_values.items():
+            if param_name not in kwargs:
+                kwargs[param_name] = value
+
+        return kwargs
+
+    def _store_instance_result(
+            self,
+            instance_key: _InstanceKey,
+            instance: Any,
+    ) -> None:
+        """
+        Purpose:
+            Store a resolved instance for the given instance key.
+        Contract:
+            - Instance results are stored in a path-aware map.
+            - The first instance for a spell id is also stored in ResolutionFrame.
+        Args:
+            instance_key: Instance key for the constructed spell.
+            instance: Constructed instance.
+        Returns:
+            None.
+        """
+        self._instance_results[instance_key] = instance
+        spell_id = instance_key[0]
+        if not self._frame.has_result(spell_id):
+            self._frame.set_result(spell_id, instance)
+
+    def _get_instance_result(self, instance_key: _InstanceKey) -> Any:
+        """
+        Purpose:
+            Retrieve a resolved instance by instance key.
+        Contract:
+            - Returns the instance when present.
+        Args:
+            instance_key: Instance key to retrieve.
+        Returns:
+            Any: The resolved instance.
+        Raises:
+            MeldExecutionError: If the instance is missing from the results map.
+        """
+        if instance_key not in self._instance_results:
+            spell_id, _ = instance_key
+            raise MeldExecutionError(
+                spell_id=spell_id,
+                spell_name=spell_id,
+                message=f"Instance result missing for spell '{spell_id}'.",
+            )
+        return self._instance_results[instance_key]
+
+    def _raise_override_on_existing(self, spell: ISpell) -> None:
+        """
+        Purpose:
+            Raise when overrides target an already-instantiated shared spell.
+        Contract:
+            - Shared spell instances cannot accept overrides after creation.
+            - Root-level overrides are rejected when the root already exists.
+        Args:
+            spell: The spell whose instance is being reused.
+        Returns:
+            None.
+        Raises:
+            MeldExecutionError: If overrides target an existing shared instance.
+        """
+        if not self._is_shared_existence(spell.existence):
+            return
+
+        spell_id = spell.spell_index.current
+        root_id = self._root_spell.spell_index.current
+        if spell_id == root_id and self._any_overrides_present:
+            raise MeldExecutionError(
+                spell_id=spell_id,
+                spell_name=spell.spell_name,
+                node_id=spell_id,
+                message=(
+                    "Overrides were supplied for a root spell that already exists. "
+                    "Shared instances cannot be overridden after creation."
+                ),
+            )
+
+        if self._has_overrides_for_spell(spell_id):
+            raise MeldExecutionError(
+                spell_id=spell_id,
+                spell_name=spell.spell_name,
+                node_id=spell_id,
+                message=(
+                    "Overrides were supplied for a shared spell that already exists. "
+                    "Shared instances cannot be overridden after creation."
+                ),
+            )
 
     # ------------------------------------------------------------------ #
     # Construction helpers
@@ -471,6 +1403,8 @@ class MeldEngine(Cleanable):
               container, shared existences skip the spell lock to avoid
               lock inversion.
             - Existence.many always constructs and registers without reuse.
+            - Shared existences raise if overrides target an already-instantiated
+              instance.
 
         Args:
             spell: The spell being resolved.
@@ -506,6 +1440,8 @@ class MeldEngine(Cleanable):
                     instance = construct_fn()
                     self._register_spell(spell, instance, creations)
                     created = True
+                else:
+                    self._raise_override_on_existing(spell)
             return instance, created
 
         use_spell_lock = self._should_use_spell_lock(spell, creations)
@@ -523,6 +1459,8 @@ class MeldEngine(Cleanable):
                         with creations._lock:
                             self._register_spell(spell, instance, creations)
                     created = True
+                else:
+                    self._raise_override_on_existing(spell)
             return instance, created
 
         if creations is None:
@@ -535,6 +1473,8 @@ class MeldEngine(Cleanable):
                 instance = construct_fn()
                 self._register_spell(spell, instance, creations)
                 created = True
+            else:
+                self._raise_override_on_existing(spell)
 
         return instance, created
 

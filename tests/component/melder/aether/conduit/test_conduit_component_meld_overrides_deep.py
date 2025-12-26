@@ -335,24 +335,32 @@ class _RootNode:
         self.service = service
 
 
-def _bind_custom_graph(spellbook: Spellbook) -> str:
+def _bind_custom_graph(
+    spellbook: Spellbook,
+    *,
+    service_existence: Existence = Existence.many,
+    root_existence: Existence = Existence.unique,
+) -> str:
     """
     Purpose:
         Bind the custom mixed graph for deep override tests.
     Contract:
         - Registers BasicService, BasicConfig, and custom nodes.
+        - Allows customizing the BasicService existence for override scenarios.
         - Returns the spell id for the root node.
     Args:
         spellbook: Spellbook used to register the graph.
+        service_existence: Existence policy used for BasicService bindings.
+        root_existence: Existence policy used for the root node binding.
     Returns:
         str: Versioned spell id for the root node.
     """
-    spellbook.bind(spell=BasicService, existence=Existence.unique, permissions="create")
+    spellbook.bind(spell=BasicService, existence=service_existence, permissions="create")
     spellbook.bind(spell=BasicConfig, existence=Existence.unique, permissions="create")
     spellbook.bind(spell=_ServiceNode, existence=Existence.unique, permissions="create")
     spellbook.bind(spell=_ConfigNode, existence=Existence.unique, permissions="create")
     spellbook.bind(spell=_MixedNode, existence=Existence.unique, permissions="create")
-    return spellbook.bind(spell=_RootNode, existence=Existence.unique, permissions="create")
+    return spellbook.bind(spell=_RootNode, existence=root_existence, permissions="create")
 
 
 @pytest.mark.parametrize(
@@ -706,6 +714,25 @@ def test_component_meld_overrides_depth5_path_trims_whitespace(
         assert _walk_path(root, attr_path) is override_leaf
 
 
+def test_component_meld_overrides_custom_many_instances_are_distinct() -> None:
+    """
+    Purpose:
+        Validate Existence.many yields distinct service instances per path.
+    Contract:
+        - The root service instance differs from the mixed-left service instance.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If per-path instances are not distinct.
+    """
+    spellbook = _make_spellbook()
+    root_id = _bind_custom_graph(spellbook)
+
+    with _conjured(spellbook) as conduit:
+        root = conduit.meld(spell=root_id)
+        assert root.service is not root.mixed.left.service
+
+
 @pytest.mark.parametrize(
     "override_path,value,attr_path,attr_name",
     [
@@ -892,6 +919,83 @@ def test_component_meld_overrides_custom_unique_over_broadcast() -> None:
         )
         assert root.mixed.right.config is unique_config
         assert root.mixed.right.config.label == "unique"
+
+
+def test_component_meld_overrides_custom_shared_duplicate_param_raises() -> None:
+    """
+    Purpose:
+        Validate shared spells reject multiple overrides for the same parameter.
+    Contract:
+        - Multiple overrides for a shared BasicService parameter raise.
+        - The error is raised even when override values match.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If duplicate shared overrides do not raise.
+    """
+    spellbook = _make_spellbook()
+    root_id = _bind_custom_graph(spellbook, service_existence=Existence.unique)
+
+    with _conjured(spellbook) as conduit:
+        with pytest.raises(MeldExecutionError, match="Multiple overrides"):
+            conduit.meld(
+                spell=root_id,
+                spell_override={
+                    "service>marker": "dup",
+                    "mixed>left>service>marker": "dup",
+                },
+            )
+
+
+def test_component_meld_overrides_custom_shared_existing_instance_raises() -> None:
+    """
+    Purpose:
+        Validate overrides are rejected when a shared root already exists.
+    Contract:
+        - A second meld with overrides raises MeldExecutionError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If shared-instance overrides do not raise.
+    """
+    spellbook = _make_spellbook()
+    root_id = _bind_custom_graph(spellbook)
+
+    with _conjured(spellbook) as conduit:
+        conduit.meld(spell=root_id)
+        with pytest.raises(MeldExecutionError, match="already exists"):
+            conduit.meld(
+                spell=root_id,
+                spell_override={"service>marker": "override"},
+            )
+
+
+def test_component_meld_overrides_custom_shared_dependency_existing_raises() -> None:
+    """
+    Purpose:
+        Validate overrides are rejected when a shared dependency already exists.
+    Contract:
+        - A new root meld with overrides raises when the shared dependency
+          is already instantiated.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If shared dependency overrides do not raise.
+    """
+    spellbook = _make_spellbook()
+    root_id = _bind_custom_graph(
+        spellbook,
+        service_existence=Existence.unique,
+        root_existence=Existence.many,
+    )
+
+    with _conjured(spellbook) as conduit:
+        conduit.meld(spell=root_id)
+        with pytest.raises(MeldExecutionError, match="already exists"):
+            conduit.meld(
+                spell=root_id,
+                spell_override={"service>marker": "override"},
+            )
 
 
 def test_component_meld_overrides_custom_unique_missing_raises() -> None:
