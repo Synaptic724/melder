@@ -2036,6 +2036,97 @@ def test_restore_contract_entry_removes_when_not_existed() -> None:
     assert len(env.source_ward.remove_calls) == 1
 
 
+def test_restore_contract_entry_with_fallback_uses_primary() -> None:
+    """
+    Verify fallback helper uses the primary ward when available.
+
+    Contract:
+    - Primary ward receives the add call.
+    - Fallback ward is not invoked.
+    """
+    env = build_environment()
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    transfer._restore_contract_entry_with_fallback(
+        primary_ward=env.source_ward,
+        fallback_ward=env.target_ward,
+        primary_peer=env.peer,
+        fallback_peer=env.target,
+        spell_obj=env.spell,
+    )
+
+    assert len(env.source_ward.add_calls) == 1
+    assert env.source_ward.add_calls[0]["conduit_id"] == env.peer._id
+    assert env.target_ward.add_calls == []
+
+
+def test_restore_contract_entry_with_fallback_uses_fallback_on_attribute_error() -> None:
+    """
+    Verify fallback helper uses the fallback when primary lacks the method.
+
+    Contract:
+    - AttributeError on primary triggers fallback add call.
+    """
+    env = build_environment()
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+    primary_ward = SimpleNamespace()
+
+    transfer._restore_contract_entry_with_fallback(
+        primary_ward=primary_ward,
+        fallback_ward=env.source_ward,
+        primary_peer=env.peer,
+        fallback_peer=env.target,
+        spell_obj=env.spell,
+    )
+
+    assert len(env.source_ward.add_calls) == 1
+    assert env.source_ward.add_calls[0]["conduit_id"] == env.target._id
+
+
+def test_restore_contract_entry_with_fallback_skips_fallback_on_error() -> None:
+    """
+    Verify fallback helper skips fallback on non-AttributeError failures.
+
+    Contract:
+    - Primary errors other than AttributeError stop the restore.
+    """
+    env = build_environment()
+
+    def _boom(**_kwargs: Any) -> None:
+        """
+        Purpose:
+            Simulate a primary ward failure during contract restoration.
+        Contract:
+            - Always raises RuntimeError.
+        """
+        raise RuntimeError("boom")
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+    primary_ward = SimpleNamespace(_add_spell_to_contract=_boom)
+
+    transfer._restore_contract_entry_with_fallback(
+        primary_ward=primary_ward,
+        fallback_ward=env.source_ward,
+        primary_peer=env.peer,
+        fallback_peer=env.target,
+        spell_obj=env.spell,
+    )
+
+    assert env.source_ward.add_calls == []
+
+
 def test_rollback_spellbook_move_restores_source_ownership() -> None:
     """
     Verify rollback_spellbook_move restores spell ownership to source.

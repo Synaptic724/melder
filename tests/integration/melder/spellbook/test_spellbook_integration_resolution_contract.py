@@ -235,6 +235,54 @@ def test_meld_by_spell_id_resolves_class_instance() -> None:
         conduit.cleanup()
 
 
+def test_meld_by_spell_name_resolves_class_instance() -> None:
+    """
+    Purpose:
+        Validate resolution by spell_name string.
+    Contract:
+        - Conduit.meld(spell_name="<ClassName>") resolves the default binding.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the resolved instance type is incorrect.
+    """
+    class _Service:
+        """
+        Purpose:
+            Provide a simple class spell for spell_name resolution.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the service marker.
+            Contract:
+                Sets marker to "name".
+            Returns:
+                None.
+            """
+            self.marker = "name"
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_Service,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell_name=_Service.__name__)
+        assert isinstance(instance, _Service)
+        assert instance.marker == "name"
+    finally:
+        conduit.cleanup()
+
+
 def test_meld_by_class_with_binding_name_resolves() -> None:
     """
     Purpose:

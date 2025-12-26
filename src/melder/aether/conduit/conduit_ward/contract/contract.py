@@ -2,6 +2,8 @@ from typing import Optional, Any, Dict
 from threading import RLock
 # Melder imports
 from melder.aether.conduit.conduit_ward.contract.details import Detail
+from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
+from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IConduitWard, IConduit, IContract
@@ -277,12 +279,34 @@ class Contract(Cleanable):
         Internal
 
         Grant a list of spells with a single permission type for the specified ward.
+        Each spell_id is resolved to a local SpellIndex owned by the ward's spellbook,
+        and the Detail is recorded as an initiated grant.
 
         Args:
             ward (IConduitWard): The ward granting access.
             spell_ids (list[str]): List of spell IDs to grant.
             permission (Permissions): The permission level to assign.
+
+        Raises:
+            ValueError: If a spell_id cannot be resolved to a local SpellIndex.
         """
         detail_map = self._get_detail_map(ward)
+        spellbook = ward._conduit._spellbook
+        local_spells = spellbook.spells
         for spell_id in spell_ids:
-            detail_map[spell_id] = Detail(spell_id, permission)
+            spell_index = None
+            for candidate_index in local_spells.keys():
+                if candidate_index.has_version(spell_id):
+                    spell_index = candidate_index
+                    break
+            if spell_index is None:
+                raise ValueError(
+                    f"Spell id '{spell_id}' not found in spellbook."
+                )
+            detail_map[spell_id] = Detail(
+                spell_index=spell_index,
+                spell_id=spell_id,
+                permissions=permission,
+                contract_type=ContractTypes.initiated,
+                reason=DetailReason.other,
+            )

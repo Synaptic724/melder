@@ -1,6 +1,7 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from threading import RLock
+from types import SimpleNamespace
 
 from melder.aether.conduit.conduit_ward.contract.contract import Contract
 from melder.aether.conduit.conduit_ward.contract.details import Detail
@@ -826,39 +827,66 @@ def test_find_spell_in_ward_not_found(contract):
 # _grant Tests
 # ----------------------------------------------------------------------
 
-def test_grant_spells_to_ward(contract, mock_conduit_ward_a, mock_spell_index):
+def test_grant_spells_to_ward(contract, mock_conduit_ward_a):
     """
     Purpose:
         Verify _grant creates Detail entries for each spell id.
     Contract:
-        _grant populates the ward map and calls Detail for each id.
+        _grant populates the ward map with Detail entries using local SpellIndex.
     Args:
         contract: Contract fixture under test.
         mock_conduit_ward_a: Ward A mock fixture.
-        mock_spell_index: SpellIndex mock fixture.
     Returns:
         None.
     Raises:
         AssertionError: If details are not created or stored correctly.
     """
-    # Patch Detail to avoid full initialization for this test's scope
-    with patch('melder.aether.conduit.conduit_ward.contract.contract.Detail') as MockDetail:
-        # Configure MockDetail to return a mock instance
-        MockDetail.return_value = MagicMock(spec=Detail)
-        
-        spell_ids = ["spell_1", "spell_2"]
-        permissions = Permissions.create
-        
-        contract._grant(mock_conduit_ward_a, spell_ids, permissions)
-        
-        assert len(contract._details_a) == 2
-        
-        # Verify Detail constructor was called correctly for each spell
-        assert MockDetail.call_count == 2
-        # Check calls for specific arguments
-        MockDetail.assert_any_call("spell_1", permissions)
-        MockDetail.assert_any_call("spell_2", permissions)
-        
-        # Ensure the mock details were added to the map
-        assert "spell_1" in contract._details_a
-        assert "spell_2" in contract._details_a
+    spell_index_a = SpellIndex("spell_1")
+    spell_index_b = SpellIndex("spell_2")
+    spellbook = SimpleNamespace(
+        spells={
+            spell_index_a: MagicMock(),
+            spell_index_b: MagicMock(),
+        }
+    )
+    mock_conduit_ward_a._conduit._spellbook = spellbook
+
+    contract._grant(mock_conduit_ward_a, ["spell_1", "spell_2"], Permissions.create)
+
+    assert len(contract._details_a) == 2
+
+    detail_a = contract._details_a["spell_1"]
+    detail_b = contract._details_a["spell_2"]
+    assert detail_a.spell_index is spell_index_a
+    assert detail_b.spell_index is spell_index_b
+    assert detail_a.permissions is Permissions.create
+    assert detail_b.permissions is Permissions.create
+    assert detail_a.contract_type is ContractTypes.initiated
+    assert detail_b.contract_type is ContractTypes.initiated
+    assert detail_a.reason is DetailReason.other
+    assert detail_b.reason is DetailReason.other
+
+def test_grant_spells_to_ward_raises_for_missing_spell_id(contract, mock_conduit_ward_a):
+    """
+    Purpose:
+        Ensure _grant rejects spell ids not found in the local spellbook.
+    Contract:
+        _grant raises ValueError when no local SpellIndex matches a spell_id.
+    Args:
+        contract: Contract fixture under test.
+        mock_conduit_ward_a: Ward A mock fixture.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If missing spell ids do not raise ValueError.
+    """
+    spell_index_a = SpellIndex("spell_1")
+    spellbook = SimpleNamespace(
+        spells={
+            spell_index_a: MagicMock(),
+        }
+    )
+    mock_conduit_ward_a._conduit._spellbook = spellbook
+
+    with pytest.raises(ValueError, match="Spell id"):
+        contract._grant(mock_conduit_ward_a, ["spell_2"], Permissions.read)

@@ -8,6 +8,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.interfaces.interfaces import IConduit, ISpell
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.bind.spell_index import SpellIndex
 
 # ----------------------------------------------------------------------
@@ -1757,3 +1758,178 @@ def test_validate_contracts_and_define_returns_false_on_exception(ward):
         results = ward._validate_contracts_and_define()
 
     assert results[contract._id] is False
+
+# ----------------------------------------------------------------------
+# 30. Spell Contract Consumers
+# ----------------------------------------------------------------------
+
+def test_get_spell_contract_keys_collects_contract_defaults(ward):
+    """
+    Verify _get_spell_contract_keys collects SpellContract defaults.
+
+    Contract:
+        - SpellContract defaults are returned as canonical keys.
+        - Non-contract defaults and varargs/kwargs are ignored.
+    """
+    contract_a = SpellContract(spellframe="FrameA", binding_name="primary")
+    contract_b = SpellContract(spellframe="FrameB", binding_name="secondary")
+
+    def _callable(self, primary=contract_a, value=1, *args, secondary=contract_b, **kwargs):
+        """
+        Purpose:
+            Provide a callable with SpellContract defaults for inspection.
+        Contract:
+            - Exposes SpellContract defaults in the signature.
+        """
+        return None
+
+    spell = MagicMock(spec=ISpell)
+    spell.spell = _callable
+
+    keys = ward._get_spell_contract_keys(spell)
+
+    assert keys == {contract_a.canonical_key, contract_b.canonical_key}
+
+def test_get_spell_contract_keys_returns_empty_when_missing_callable(ward):
+    """
+    Verify _get_spell_contract_keys returns empty when spell has no callable.
+
+    Contract:
+        - Missing spell.spell returns an empty set instead of raising.
+    """
+    assert ward._get_spell_contract_keys(object()) == set()
+
+def test_get_spell_contract_keys_returns_empty_on_signature_error(ward):
+    """
+    Verify _get_spell_contract_keys returns empty on signature inspection errors.
+
+    Contract:
+        - Non-callable spell targets yield an empty key set.
+    """
+    spell = MagicMock(spec=ISpell)
+    spell.spell = object()
+
+    assert ward._get_spell_contract_keys(spell) == set()
+
+def test_invalidate_contract_consumers_filters_by_contract_key(ward):
+    """
+    Verify _invalidate_contract_consumers only invalidates matching consumers.
+
+    Contract:
+        - Only spells declaring the requested contract_key are invalidated.
+    """
+    contract_a = SpellContract(spellframe="FrameA", binding_name="primary")
+    contract_b = SpellContract(spellframe="FrameB", binding_name="secondary")
+
+    def _consumer_a(self, dep=contract_a):
+        """
+        Purpose:
+            Provide a consumer with a SpellContract default.
+        Contract:
+            - Declares the contract_a socket in the signature.
+        """
+        return None
+
+    def _consumer_b(self, dep=contract_b):
+        """
+        Purpose:
+            Provide a consumer with a different SpellContract default.
+        Contract:
+            - Declares the contract_b socket in the signature.
+        """
+        return None
+
+    def _consumer_none(self, dep=1):
+        """
+        Purpose:
+            Provide a consumer without SpellContract defaults.
+        Contract:
+            - Declares only non-contract defaults.
+        """
+        return None
+
+    spell_a = MagicMock(spec=ISpell)
+    spell_a.spell_id = "spell-a"
+    spell_a.spell = _consumer_a
+    spell_b = MagicMock(spec=ISpell)
+    spell_b.spell_id = "spell-b"
+    spell_b.spell = _consumer_b
+    spell_none = MagicMock(spec=ISpell)
+    spell_none.spell_id = "spell-c"
+    spell_none.spell = _consumer_none
+
+    spellbook = MagicMock()
+    spellbook._lock = threading.RLock()
+    spellbook._spells = {
+        "a": spell_a,
+        "b": spell_b,
+        "c": spell_none,
+    }
+
+    creations = MagicMock()
+
+    ward._conduit._spellbook = spellbook
+    ward._conduit._creations = creations
+
+    ward._invalidate_contract_consumers(contract_a.canonical_key)
+
+    assert creations.extract_spell_creations.call_count == 1
+    assert creations.extract_spell_creations.call_args[0] == ("spell-a",)
+
+def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward):
+    """
+    Verify _invalidate_contract_consumers invalidates all consumers and swallows errors.
+
+    Contract:
+        - All spells declaring SpellContract defaults are invalidated.
+        - Errors during invalidation are suppressed.
+    """
+    contract_a = SpellContract(spellframe="FrameA", binding_name="primary")
+    contract_b = SpellContract(spellframe="FrameB", binding_name="secondary")
+
+    def _consumer_a(self, dep=contract_a):
+        """
+        Purpose:
+            Provide a consumer with a SpellContract default.
+        Contract:
+            - Declares the contract_a socket in the signature.
+        """
+        return None
+
+    def _consumer_b(self, dep=contract_b):
+        """
+        Purpose:
+            Provide a consumer with a SpellContract default.
+        Contract:
+            - Declares the contract_b socket in the signature.
+        """
+        return None
+
+    spell_a = MagicMock(spec=ISpell)
+    spell_a.spell_id = "spell-a"
+    spell_a.spell = _consumer_a
+    spell_b = MagicMock(spec=ISpell)
+    spell_b.spell_id = "spell-b"
+    spell_b.spell = _consumer_b
+
+    spellbook = MagicMock()
+    spellbook._lock = threading.RLock()
+    spellbook._spells = {
+        "a": spell_a,
+        "b": spell_b,
+    }
+
+    creations = MagicMock()
+    creations.extract_spell_creations = MagicMock(side_effect=[RuntimeError("boom"), None])
+
+    ward._conduit._spellbook = spellbook
+    ward._conduit._creations = creations
+
+    ward._invalidate_contract_consumers()
+
+    assert creations.extract_spell_creations.call_count == 2
+    called_spell_ids = {
+        call_args[0][0]
+        for call_args in creations.extract_spell_creations.call_args_list
+    }
+    assert called_spell_ids == {"spell-a", "spell-b"}
