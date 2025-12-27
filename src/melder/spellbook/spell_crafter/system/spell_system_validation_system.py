@@ -26,6 +26,18 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 class SpellSystemValidationSystem(Cleanable):
     """
     Orchestrates system-level validation strategies over Phase 5 artifacts and Phase 4 outcomes.
+
+    Purpose:
+        Aggregate system-level validation diagnostics and update lineage validity
+        for all spells in the current frame.
+    Contract:
+        - Strategies are executed in the order provided at construction.
+        - Diagnostics are collected and returned via SpellSystemValidationState.
+        - Lineage validity is set to VALID when no error diagnostics exist, and
+          to GATED when any error diagnostics are present.
+    Threading:
+        Callers are responsible for external synchronization when sharing inputs
+        across threads. This class does not introduce additional locking.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -60,6 +72,28 @@ class SpellSystemValidationSystem(Cleanable):
     ) -> SpellSystemValidationState:
         """
         Run system-level validation and update per-lineage validity.
+
+        Purpose:
+            Validate the system-level DAG artifacts produced in Phase 5 and
+            record a frame-wide validation verdict.
+        Contract:
+            - Executes each configured strategy in order against shared inputs.
+            - Collects diagnostics across strategies into a single list.
+            - Auto-populates diagnostic source attribution when missing.
+            - Marks all lineages VALID on success or GATED on error diagnostics.
+            - Returns a validation state containing all diagnostics and nodes.
+        Args:
+            index: Frame-level spell system index to validate.
+            blueprints: Root blueprints keyed by root spell id.
+            phase4_results: Phase-4 validation artifacts keyed by spell id.
+            broken_spell_ids: Set of spell ids flagged as broken in Phase 4.
+            spell_system_states: Registry used to mark lineage validity.
+            cancel_event: Optional cancellation signal for long-running validation.
+        Returns:
+            SpellSystemValidationState: Aggregated diagnostics and validity.
+        Raises:
+            ValueError: If required inputs are None.
+            Exception: Propagates cancellation exceptions or strategy errors.
         """
         self.check_cleaned()
         if index is None:
@@ -76,6 +110,7 @@ class SpellSystemValidationSystem(Cleanable):
         for strategy in self._strategies:
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
+            before_count = len(diagnostics)
             strategy.run(
                 index=index,
                 blueprints=blueprints,
@@ -84,6 +119,11 @@ class SpellSystemValidationSystem(Cleanable):
                 diagnostics=diagnostics,
                 cancel_event=cancel_event,
             )
+            if len(diagnostics) > before_count:
+                source = type(strategy).__name__
+                for diag in diagnostics[before_count:]:
+                    if isinstance(diag, SystemDiagnostic) and diag.source is None:
+                        diag._source = source
 
         has_error = any(
             diag.severity is SystemDiagnosticSeverity.ERROR for diag in diagnostics

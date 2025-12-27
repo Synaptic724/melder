@@ -1039,7 +1039,8 @@ def test_check_system_state_dynamic_in_automatic_raises():
     Purpose:
         Verify dynamic policy is rejected in automatic mode when not allowed.
     Contract:
-        _check_system_state raises when automatic is False and policy is dynamic.
+        _check_system_state raises when automatic is False and policy is dynamic,
+        and the error message includes policy and system_state context.
     Returns:
         None.
     Raises:
@@ -1047,8 +1048,12 @@ def test_check_system_state_dynamic_in_automatic_raises():
     """
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError) as excinfo:
         sb._check_system_state(Policies.whitelist_all, automatic=False)
+    message = str(excinfo.value)
+    assert "policy=Policies.whitelist_all" in message
+    assert "automatic=False" in message
+    assert "system_state=SystemState.automatic" in message
 
 
 def test_check_system_state_dynamic_allowed_when_automatic_flag_true():
@@ -1056,7 +1061,8 @@ def test_check_system_state_dynamic_allowed_when_automatic_flag_true():
     Purpose:
         Confirm automatic flag does not override rejection for dynamic policy.
     Contract:
-        _check_system_state raises even when automatic is True for dynamic policies.
+        _check_system_state raises even when automatic is True for dynamic policies,
+        and the error message includes policy and allowed-policy context.
     Returns:
         None.
     Raises:
@@ -1064,8 +1070,11 @@ def test_check_system_state_dynamic_allowed_when_automatic_flag_true():
     """
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError) as excinfo:
         sb._check_system_state(Policies.whitelist_all, automatic=True)
+    message = str(excinfo.value)
+    assert "policy=Policies.whitelist_all" in message
+    assert "allowed=default" in message
 
 
 def test_define_conduit_stamps_owner_and_primes_existing():
@@ -3404,7 +3413,7 @@ def test_conjure_twice_raises(monkeypatch):
     Purpose:
         Ensure conjure cannot be invoked twice.
     Contract:
-        The second conjure call raises RuntimeError.
+        The second conjure call raises RuntimeError with spellbook context.
     Args:
         monkeypatch: Pytest fixture for patching scheduler and conduit classes.
     Returns:
@@ -3473,8 +3482,11 @@ def test_conjure_twice_raises(monkeypatch):
     sb._validate_and_freeze_configuration = lambda: None
     sb._bind_configuration_to_aether = lambda: None
     sb.conjure()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError) as excinfo:
         sb.conjure()
+    message = str(excinfo.value)
+    assert "spellbook_id=" in message
+    assert "conduit_id=" in message
 
 
 def test_refresh_local_spell_versions_thread_safe():

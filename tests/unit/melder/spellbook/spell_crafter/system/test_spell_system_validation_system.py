@@ -171,6 +171,7 @@ def test_validity_set_to_valid_when_no_errors():
     assert result.is_valid is True
     assert result.errors == []
     assert result.warnings and result.warnings[0].severity is SystemDiagnosticSeverity.WARNING
+    assert result.warnings[0].source == "_RecordingStrategy"
     assert result.nodes == idx.nodes
 
 
@@ -189,6 +190,7 @@ def test_validity_set_to_gated_on_error_diagnostic():
     assert state.calls == [(SpellValidity.gated, SpellStateChangeReason.validation_failed)]
     assert result.is_valid is False
     assert result.errors and result.errors[0].severity is SystemDiagnosticSeverity.ERROR
+    assert result.errors[0].source == "_RecordingStrategy"
     assert result.warnings == []
 
 

@@ -17,6 +17,21 @@ class SystemDiagnostic(Cleanable):
 
     Uses the Cleanable pattern so cached diagnostics can be deterministically
     torn down when no longer needed.
+
+    Purpose:
+        Represent one system-level validation finding with optional attribution.
+    Contract:
+        - ``code`` and ``message`` are required and non-empty.
+        - ``severity`` is always a ``SystemDiagnosticSeverity`` value.
+        - ``source`` is optional and used for strategy attribution.
+    Attributes:
+        code: Machine-readable identifier for the diagnostic.
+        message: Human-readable description of the issue.
+        severity: Severity bucket for the diagnostic.
+        spell_id: Optional spell id associated with the diagnostic.
+        root_id: Optional root id associated with the diagnostic.
+        source: Optional strategy identifier that produced the diagnostic.
+        details: Optional structured payload for tooling.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -25,6 +40,7 @@ class SystemDiagnostic(Cleanable):
         "_severity",
         "_spell_id",
         "_root_id",
+        "_source",
         "_details",
     ]
 
@@ -36,8 +52,28 @@ class SystemDiagnostic(Cleanable):
             severity: SystemDiagnosticSeverity = SystemDiagnosticSeverity.ERROR,
             spell_id: Optional[str] = None,
             root_id: Optional[str] = None,
+            source: Optional[str] = None,
             details: Optional[Dict[str, Any]] = None,
     ) -> None:
+        """
+        Purpose:
+            Initialize a system-level validation diagnostic.
+        Contract:
+            - Requires non-empty code and non-None message/severity.
+            - Preserves optional spell/root ids, source attribution, and details.
+        Args:
+            code: Machine-readable diagnostic identifier.
+            message: Human-readable explanation of the diagnostic.
+            severity: Severity bucket for the diagnostic.
+            spell_id: Optional spell id associated with the diagnostic.
+            root_id: Optional root id associated with the diagnostic.
+            source: Optional strategy identifier for attribution.
+            details: Optional structured context for tooling.
+        Returns:
+            None.
+        Raises:
+            ValueError: If code is empty or message/severity are None.
+        """
         super().__init__()
         if not code:
             raise ValueError("code must not be empty.")
@@ -51,6 +87,7 @@ class SystemDiagnostic(Cleanable):
         self._severity: SystemDiagnosticSeverity = severity
         self._spell_id: Optional[str] = spell_id
         self._root_id: Optional[str] = root_id
+        self._source: Optional[str] = source
         self._details: Optional[Dict[str, Any]] = dict(details) if details else None
 
     def cleanup(self) -> None:
@@ -62,6 +99,7 @@ class SystemDiagnostic(Cleanable):
         self._severity = None
         self._spell_id = None
         self._root_id = None
+        self._source = None
         if self._details is not None:
             self._details.clear()
         self._details = None
@@ -92,6 +130,11 @@ class SystemDiagnostic(Cleanable):
         return self._root_id
 
     @property
+    def source(self) -> Optional[str]:
+        self.check_cleaned()
+        return self._source
+
+    @property
     def details(self) -> Optional[Dict[str, Any]]:
         self.check_cleaned()
         if self._details is None:
@@ -101,5 +144,6 @@ class SystemDiagnostic(Cleanable):
     def __repr__(self) -> str:
         return (
             f"SystemDiagnostic(code={self._code!r}, severity={self._severity!r}, "
-            f"spell_id={self._spell_id!r}, root_id={self._root_id!r})"
+            f"spell_id={self._spell_id!r}, root_id={self._root_id!r}, "
+            f"source={self._source!r})"
         )

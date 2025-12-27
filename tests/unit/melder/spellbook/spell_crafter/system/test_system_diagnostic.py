@@ -17,6 +17,7 @@ def test_constructor_sets_defaults_and_fields():
     assert diag.severity is SystemDiagnosticSeverity.ERROR
     assert diag.spell_id is None
     assert diag.root_id is None
+    assert diag.source is None
     assert diag.details is None
 
 
@@ -27,11 +28,13 @@ def test_constructor_accepts_custom_severity_and_ids():
         severity=SystemDiagnosticSeverity.WARNING,
         spell_id="sid",
         root_id="rid",
+        source="StrategyName",
         details={"a": 1},
     )
     assert diag.severity is SystemDiagnosticSeverity.WARNING
     assert diag.spell_id == "sid"
     assert diag.root_id == "rid"
+    assert diag.source == "StrategyName"
     assert diag.details == {"a": 1}
 
 
@@ -105,6 +108,7 @@ def test_cleanup_idempotent():
         lambda d: d.severity,
         lambda d: d.spell_id,
         lambda d: d.root_id,
+        lambda d: d.source,
         lambda d: d.details,
     ],
 )

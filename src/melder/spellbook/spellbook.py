@@ -1483,12 +1483,24 @@ class Spellbook(Cleanable):
 
         with self._lock:
             if self._conjured:
+                conduit_id = None
+                conduit_name = None
+                if self._conduit is not None:
+                    conduit_id = self._conduit._id
+                    conduit_name = self._conduit._name
                 self._logger.error(
-                    "This Spellbook has already conjured a Conduit.",
+                    "Conjure denied: Spellbook already has a conduit "
+                    f"(spellbook_id={self._id}, conduit_id={conduit_id}, "
+                    f"conduit_name={conduit_name}).",
                     "conjure",
                     exc_info=True,
                 )
-                raise RuntimeError("This Spellbook has already conjured a Conduit. Only one is allowed per Spellbook.")
+                raise RuntimeError(
+                    "This Spellbook has already conjured a Conduit. "
+                    "Only one is allowed per Spellbook. "
+                    f"(spellbook_id={self._id}, conduit_id={conduit_id}, "
+                    f"conduit_name={conduit_name})"
+                )
 
             # Ensure configuration is validated, frozen, and bound to Aether
             if not self.is_configuration_locked():
@@ -1557,6 +1569,13 @@ class Spellbook(Cleanable):
 
         Checks if the requested policy is compatible with the current `system_state` configuration.
 
+        Purpose:
+            Enforce the contract between conduit policies and the configured
+            system state before conjure proceeds.
+        Contract:
+            - Automatic mode only allows the default policy.
+            - Dynamic policies require a dynamic system_state.
+            - Raises with policy, automatic, and system_state context for diagnosis.
         Args:
             policy (str): The policy requested for the new Conduit.
             automatic (bool): Whether to operate in automatic (non-dynamic) mode.
@@ -1565,20 +1584,37 @@ class Spellbook(Cleanable):
             RuntimeError: If a dynamic-only policy is requested while `automatic` is True or `system_state` is automatic.
         """
         policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
+        system_state = self._configuration.get_property("system_state")
 
         # Automatic mode: only default policy is allowed
         if automatic:
             if policy_enum != Policies.default:
-                self._logger.error("Dynamic-only policy requested while automatic=True.", "_check_system_state", exc_info=True)
-                raise RuntimeError("Dynamic-only policies are not allowed when automatic mode is requested.")
+                self._logger.error(
+                    "Dynamic-only policy requested while automatic=True "
+                    f"(policy={policy_enum}, system_state={system_state}).",
+                    "_check_system_state",
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    "Dynamic-only policies are not allowed when automatic mode is requested. "
+                    f"(policy={policy_enum}, automatic={automatic}, "
+                    f"system_state={system_state}, allowed=default)"
+                )
             return
 
         # Dynamic requested: ensure system_state supports it
-        if self._configuration.get_property("system_state") == SystemState.automatic:
-            self._logger.error("Dynamic policy requested while system_state is automatic.", "_check_system_state", exc_info=True)
+        if system_state == SystemState.automatic:
+            self._logger.error(
+                "Dynamic policy requested while system_state is automatic "
+                f"(policy={policy_enum}, automatic={automatic}, "
+                f"system_state={system_state}).",
+                "_check_system_state",
+                exc_info=True,
+            )
             raise RuntimeError(
                 "Cannot use dynamic policies in automatic system_state. "
-                "Please set system_state to 'dynamic' in the configuration or set automatic=True."
+                f"(policy={policy_enum}, automatic={automatic}, system_state={system_state}). "
+                "Set system_state to 'dynamic' in the configuration or set automatic=True."
             )
 
     def _define_conduit_into_spells(self, conduit: Conduit) -> None:

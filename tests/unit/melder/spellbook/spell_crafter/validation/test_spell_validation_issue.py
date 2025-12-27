@@ -49,6 +49,7 @@ def test_init_accepts_valid_severity(severity: str) -> None:
     assert issue.severity == severity
     assert issue.code == "CODE"
     assert issue.message == "Message"
+    assert issue.source is None
 
 
 def test_init_rejects_invalid_severity() -> None:
@@ -148,6 +149,26 @@ def test_details_preserve_provided_mapping() -> None:
         details=details,
     )
     assert issue.details == details
+
+
+def test_init_accepts_source() -> None:
+    """
+    Purpose:
+        Verify source attribution is stored on initialization.
+    Contract:
+        source is preserved on the created issue.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If source is not retained.
+    """
+    issue = SpellValidationIssue(
+        severity="warning",
+        code="CODE",
+        message="Message",
+        source="StrategyName",
+    )
+    assert issue.source == "StrategyName"
 
 
 def test_cleanup_clears_details_and_marks_cleaned() -> None:

@@ -75,6 +75,11 @@ class RootReachabilityStrategy(SpellSystemValidationStrategy):
                         severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=root_id,
                         root_id=root_id,
+                        details={
+                            "root_id": root_id,
+                            "dag_node_count": len(dag.nodes),
+                            "dag_nodes": sorted(dag.nodes.keys()),
+                        },
                     )
                 )
                 continue
@@ -105,6 +110,8 @@ class RootReachabilityStrategy(SpellSystemValidationStrategy):
                         details={
                             "root_id": root_id,
                             "spell_id": node_id,
+                            "reachable_node_count": len(reachable),
+                            "reachable_nodes": sorted(reachable),
                         },
                     )
                 )

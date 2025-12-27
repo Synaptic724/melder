@@ -2,6 +2,7 @@ from threading import RLock
 from typing import Any, Dict, List, Optional
 # Melder imports
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
+from melder.spellbook.spell_crafter.validation.spell_validation_issue import SpellValidationIssue
 from melder.spellbook.spell_crafter.validation.spell_validation_result import SpellValidationResult
 # Strategies
 from melder.spellbook.spell_crafter.validation.strategies.circular_dependency_strategy import CircularDependencyStrategy
@@ -210,6 +211,26 @@ class SpellValidationSystem(Cleanable):
     ) -> 'SpellValidationResult':
         """
         Validate a single spell using all registered strategies.
+
+        Purpose:
+            Execute spell-level validation strategies and return a unified
+            :class:`SpellValidationResult` containing all issues.
+        Contract:
+            - Executes each strategy in registry order against the same context.
+            - Appends all reported issues into the result in the order produced.
+            - Automatically tags issues with the emitting strategy when missing.
+            - Always cleans the validation context (scanner, references) on exit.
+        Args:
+            spell: Spell instance to validate.
+            requirements: Phase 1 requirements artifact, if available.
+            symbolic_graph: Phase 2 symbolic graph, if available.
+            resolution_frame: Phase 3 resolution frame, if available.
+            cancel_event: Optional cancellation token.
+        Returns:
+            SpellValidationResult: Aggregated issues for the spell.
+        Raises:
+            ValueError: If ``spell`` is None.
+            Exception: Propagates any strategy exceptions or cancellation errors.
         """
         self.check_cleaned()
         if spell is None:
@@ -250,7 +271,13 @@ class SpellValidationSystem(Cleanable):
             for strategy in strategies:
                 if cancel_event is not None and cancel_event.is_set:
                     cancel_event.throw_if_set()
+                before_count = len(issues)
                 strategy.validate(context)
+                if len(issues) > before_count:
+                    source = type(strategy).__name__
+                    for issue in issues[before_count:]:
+                        if isinstance(issue, SpellValidationIssue) and issue.source is None:
+                            issue.source = source
         finally:
             # Always tear down the context (scanner, references, etc.)
             try:

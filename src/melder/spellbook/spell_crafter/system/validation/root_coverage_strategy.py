@@ -74,6 +74,15 @@ class RootCoverageStrategy(SpellSystemValidationStrategy):
                         severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=root_id,
                         root_id=root_id,
+                        details={
+                            "root_id": root_id,
+                            "index_node_ids": sorted(index.nodes.keys()),
+                            "index_root_ids": sorted(
+                                index_node.spell_id
+                                for index_node in index.nodes.values()
+                                if index_node.is_root
+                            ),
+                        },
                     )
                 )
                 continue
@@ -88,6 +97,15 @@ class RootCoverageStrategy(SpellSystemValidationStrategy):
                         severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=root_id,
                         root_id=root_id,
+                        details={
+                            "root_id": root_id,
+                            "node_is_root": node.is_root,
+                            "index_root_ids": sorted(
+                                index_node.spell_id
+                                for index_node in index.nodes.values()
+                                if index_node.is_root
+                            ),
+                        },
                     )
                 )
 
@@ -109,5 +127,14 @@ class RootCoverageStrategy(SpellSystemValidationStrategy):
                     severity=SystemDiagnosticSeverity.ERROR,
                     spell_id=node.spell_id,
                     root_id=node.spell_id,
+                    details={
+                        "root_id": node.spell_id,
+                        "blueprint_root_ids": sorted(blueprints.keys()),
+                        "index_root_ids": sorted(
+                            index_node.spell_id
+                            for index_node in index.nodes.values()
+                            if index_node.is_root
+                        ),
+                    },
                 )
             )

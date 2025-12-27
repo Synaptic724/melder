@@ -866,6 +866,37 @@ def test_validate_spell_appends_issues_to_result() -> None:
     )
     assert issue in result.issues
     assert result.issues is strategy.issues_ref
+    assert issue.source == "_RecordingStrategy"
+
+
+def test_validate_spell_preserves_issue_source() -> None:
+    """
+    Purpose:
+        Ensure validation does not overwrite existing issue source metadata.
+    Contract:
+        An issue with a pre-set source retains that value.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the source is replaced.
+    """
+    system = _TestValidationSystem()
+    issue = SpellValidationIssue(
+        "error",
+        "E",
+        "err",
+        source="ExplicitSource",
+    )
+    strategy = _RecordingStrategy(name="rec", issue=issue)
+    system.register_strategy(strategy)
+    result = system.validate_spell(
+        spell=_make_spell(),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+    assert issue in result.issues
+    assert issue.source == "ExplicitSource"
 
 
 def test_validate_spell_cancellation_preempts_strategies() -> None:

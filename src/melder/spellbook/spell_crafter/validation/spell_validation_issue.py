@@ -7,6 +7,12 @@ class SpellValidationIssue(Cleanable):
     """
     Single validation issue (error or warning) produced by a strategy.
 
+    Purpose:
+        Represent one validation finding with optional attribution and context.
+    Contract:
+        - ``severity`` must be ``"error"`` or ``"warning"``.
+        - ``code`` and ``message`` must be non-empty strings.
+        - ``source`` is optional and used for strategy attribution.
     Attributes
     ----------
     severity:
@@ -15,6 +21,8 @@ class SpellValidationIssue(Cleanable):
         Machine-readable identifier for the issue (e.g. "DANGLING_DEPENDENCY").
     message:
         Human-readable message explaining the issue.
+    source:
+        Optional strategy identifier that produced the issue.
     details:
         Optional extra context for tooling (parameter name, cycle, etc.).
     """
@@ -23,6 +31,7 @@ class SpellValidationIssue(Cleanable):
         "severity",
         "code",
         "message",
+        "source",
         "details",
     ]
 
@@ -32,7 +41,26 @@ class SpellValidationIssue(Cleanable):
             code: str,
             message: str,
             details: Optional[Dict[str, Any]] = None,
+            source: Optional[str] = None,
     ) -> None:
+        """
+        Purpose:
+            Construct a single validation issue for a spell.
+        Contract:
+            - Accepts only "error" or "warning" for severity.
+            - Requires non-empty code and message values.
+            - Preserves provided details and source metadata for diagnostics.
+        Args:
+            severity: Either "error" or "warning".
+            code: Machine-readable issue identifier.
+            message: Human-readable explanation of the issue.
+            details: Optional structured context for tooling.
+            source: Optional strategy identifier for attribution.
+        Returns:
+            None.
+        Raises:
+            ValueError: If severity is invalid or code/message are empty.
+        """
         super().__init__()
 
         if severity not in ("error", "warning"):
@@ -45,6 +73,7 @@ class SpellValidationIssue(Cleanable):
         self.severity: str = severity
         self.code: str = code
         self.message: str = message
+        self.source: Optional[str] = source
         self.details: Dict[str, Any] = details or {}
 
     def cleanup(self) -> None:
