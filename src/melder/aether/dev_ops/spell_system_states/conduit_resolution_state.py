@@ -337,6 +337,14 @@ class ConduitResolutionState(Cleanable):
         """
         Replace diagnostics if the incoming set differs by signature.
 
+        Purpose:
+            Persist conduit-scoped diagnostics while decoupling from external
+            cleanup lifecycles (e.g., validation state teardown).
+        Contract:
+            - Stores cloned diagnostics so later cleanup of the input list
+              does not invalidate this state.
+            - Incoming diagnostics are never cleaned by this method.
+
         Args:
             diagnostics:
                 New diagnostics to store.
@@ -349,14 +357,13 @@ class ConduitResolutionState(Cleanable):
         if diagnostics is None:
             raise ValueError("diagnostics cannot be None.")
 
-        new_list = list(diagnostics)
-        new_sig = self._diagnostics_signature(new_list)
+        new_sig = self._diagnostics_signature(diagnostics)
         with self._lock:
             old_sig = self._diagnostics_signature(self._diagnostics)
             if new_sig == old_sig:
                 return
             self._cleanup_diagnostics_locked()
-            self._diagnostics = list(new_list)
+            self._diagnostics = self._clone_diagnostics(diagnostics)
             self.mark_dirty()
 
     def clear_diagnostics(self) -> None:
@@ -527,6 +534,44 @@ class ConduitResolutionState(Cleanable):
                 )
             )
         return tuple(signatures)
+
+    def _clone_diagnostics(
+            self,
+            diagnostics: Sequence[SystemDiagnostic],
+    ) -> List[SystemDiagnostic]:
+        """
+        Clone diagnostics to preserve them beyond external cleanup lifecycles.
+
+        Purpose:
+            Prevent shared diagnostics from being invalidated when upstream
+            validation state objects are cleaned.
+        Contract:
+            - Returns a new list of SystemDiagnostic instances.
+            - Copies all primary fields and details payloads.
+            - Skips None entries.
+        Args:
+            diagnostics:
+                Diagnostics to clone.
+        Returns:
+            List[SystemDiagnostic]:
+                Cloned diagnostics with independent lifecycle ownership.
+        """
+        clones: List[SystemDiagnostic] = []
+        for diag in diagnostics:
+            if diag is None:
+                continue
+            clones.append(
+                SystemDiagnostic(
+                    code=diag.code,
+                    message=diag.message,
+                    severity=diag.severity,
+                    spell_id=diag.spell_id,
+                    root_id=diag.root_id,
+                    source=diag.source,
+                    details=diag.details,
+                )
+            )
+        return clones
 
     def _details_signature(
             self,

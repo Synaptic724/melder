@@ -253,11 +253,15 @@ def test_record_diagnostics_replaces_on_change() -> None:
     replacement = _make_diagnostic(code="B", message="two")
 
     state.record_diagnostics([original])
-    assert state.list_diagnostics() == [original]
+    stored_original = state.list_diagnostics()
+    assert [diag.code for diag in stored_original] == ["A"]
+    assert original.cleaned is False
 
     state.record_diagnostics([replacement])
-    assert state.list_diagnostics() == [replacement]
-    assert original.cleaned is True
+    stored_replacement = state.list_diagnostics()
+    assert [diag.code for diag in stored_replacement] == ["B"]
+    assert stored_original[0].cleaned is True
+    assert original.cleaned is False
 
 
 def test_record_diagnostics_skips_on_same_signature() -> None:
@@ -277,9 +281,12 @@ def test_record_diagnostics_skips_on_same_signature() -> None:
     duplicate = _make_diagnostic(code="A", message="one")
 
     state.record_diagnostics([original])
+    stored = state.list_diagnostics()
     state.record_diagnostics([duplicate])
 
-    assert state.list_diagnostics() == [original]
+    stored_after = state.list_diagnostics()
+    assert stored_after[0] is stored[0]
+    assert stored_after[0].code == "A"
     assert original.cleaned is False
     assert duplicate.cleaned is False
 
@@ -299,10 +306,12 @@ def test_clear_diagnostics_cleans_entries() -> None:
     diag = _make_diagnostic(code="A", message="one")
 
     state.record_diagnostics([diag])
+    stored = state.list_diagnostics()
     state.clear_diagnostics()
 
     assert state.list_diagnostics() == []
-    assert diag.cleaned is True
+    assert stored[0].cleaned is True
+    assert diag.cleaned is False
 
 
 def test_has_errors_and_warnings_reflect_severity() -> None:
