@@ -348,16 +348,16 @@ def test_contract_provider_presence_missing_spell_contract_warns() -> None:
     assert issues[0].code == "SPELL_CONTRACT_MISSING_PROVIDER"
 
 
-def test_contract_provider_presence_automatic_mode_errors() -> None:
+def test_contract_provider_presence_automatic_mode_warns() -> None:
     """
     Purpose:
-        Verify contract sockets are rejected in automatic system state.
+        Verify contract sockets emit warnings in automatic system state.
     Contract:
-        Emits CONTRACT_IN_AUTOMATIC_MODE error.
+        Emits CONTRACT_IN_AUTOMATIC_MODE warning.
     Returns:
         None.
     Raises:
-        AssertionError: If the error is missing.
+        AssertionError: If the warning is missing.
     """
     class IService:
         """
@@ -386,7 +386,7 @@ def test_contract_provider_presence_automatic_mode_errors() -> None:
     ContractProviderPresenceStrategy().validate(context)
 
     assert len(issues) == 1
-    assert issues[0].severity == "error"
+    assert issues[0].severity == "warning"
     assert issues[0].code == "CONTRACT_IN_AUTOMATIC_MODE"
 
 

@@ -102,8 +102,12 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                 continue
 
             requirements = crafter.requirements
-            if requirements.cleaned:
-                continue
+            try:
+                if requirements.cleaned:
+                    continue
+            except AttributeError:
+                # Requirements stubs may omit cleaned; treat as active.
+                pass
             try:
                 parameters = requirements.parameters
             except RuntimeError:

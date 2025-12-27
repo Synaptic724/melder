@@ -6,6 +6,8 @@ import pytest
 
 import melder.spellbook.spell_crafter.spell_crafter as spell_crafter_module
 from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
+from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
@@ -690,6 +692,7 @@ class _ParamStub:
         annotation: object | None = None,
         collection_element_annotation: object | None = None,
         spellmap_default: object | None = None,
+        default_value: object | None = None,
     ) -> None:
         """
         Purpose:
@@ -704,6 +707,7 @@ class _ParamStub:
             annotation: Parameter annotation.
             collection_element_annotation: Collection element annotation.
             spellmap_default: SpellMap default object.
+            default_value: Default value for the parameter, if any.
         Returns:
             None.
         """
@@ -714,6 +718,7 @@ class _ParamStub:
         self.annotation = annotation
         self.collection_element_annotation = collection_element_annotation
         self.spellmap_default = spellmap_default
+        self.default_value = default_value
 
 
 class _RequirementsStub:
@@ -2607,6 +2612,13 @@ def test_run_phase_symbolic_graph_builds_dependencies(
         AssertionError: If dependency metadata is incorrect.
     """
     crafter, spell, _ = _build_spell_and_crafter()
+    default_value = None
+    if di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
+        default_value = spellmap_default
+    elif di_shape is ParameterDIShape.SPELL_CONTRACT:
+        default_value = SpellContract(spellframe=target_annotation, binding_name="primary")
+    elif di_shape is ParameterDIShape.MUTATION_CONTRACT:
+        default_value = MutationContract(spellframe=target_annotation, binding_name="primary")
     param = _ParamStub(
         name="param",
         position=1,
@@ -2615,6 +2627,7 @@ def test_run_phase_symbolic_graph_builds_dependencies(
         annotation=target_annotation,
         collection_element_annotation=target_annotation,
         spellmap_default=spellmap_default,
+        default_value=default_value,
     )
     crafter._requirements = _RequirementsStub([param])
 

@@ -28,7 +28,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         - Emits errors when more than one provider matches a contract key.
         - Emits warnings for missing providers in dynamic mode or late-binding
           mutation sockets.
-        - Emits errors for any contract sockets in automatic system state.
+        - Emits warnings for contract sockets in automatic system state.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -110,12 +110,12 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
             if param.di_shape is ParameterDIShape.SPELL_CONTRACT and automatic_mode:
                 context.issues.append(
                     SpellValidationIssue(
-                        severity="error",
+                        severity="warning",
                         code="CONTRACT_IN_AUTOMATIC_MODE",
                         message=(
                             f"Spell {spell.spell_name!r} declares a contract socket for "
                             f"parameter {param.name!r} while system_state is automatic. "
-                            "Contracts require dynamic mode."
+                            "Contracts require dynamic mode to resolve."
                         ),
                         details={
                             "spell_id": spell.spell_index.current,
