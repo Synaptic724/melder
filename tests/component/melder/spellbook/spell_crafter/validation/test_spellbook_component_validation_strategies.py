@@ -5,6 +5,12 @@ from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.spellbook_scanner import SpellbookScanner
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
+from melder.spellbook.spell_crafter.validation.strategies.annotation_shape_guard_strategy import (
+    AnnotationShapeGuardStrategy,
+)
+from melder.spellbook.spell_crafter.validation.strategies.callable_profile_hygiene_strategy import (
+    CallableProfileHygieneStrategy,
+)
 from melder.spellbook.spell_crafter.validation.strategies.circular_dependency_strategy import (
     CircularDependencyStrategy,
 )
@@ -13,6 +19,12 @@ from melder.spellbook.spell_crafter.validation.strategies.dangling_dependency_st
 )
 from melder.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
     DuplicateSpellNameStrategy,
+)
+from melder.spellbook.spell_crafter.validation.strategies.existing_creation_compatibility_strategy import (
+    ExistingCreationCompatibilityStrategy,
+)
+from melder.spellbook.spell_crafter.validation.strategies.parameter_policy_strategy import (
+    ParameterPolicyStrategy,
 )
 from melder.spellbook.spell_crafter.validation.strategies.required_holes_strategy import (
     RequiredHolesStrategy,
@@ -23,7 +35,11 @@ from melder.spellbook.spell_crafter.validation.strategies.resolution_frame_prese
 from melder.spellbook.spell_crafter.validation.strategies.self_validation_strategy import (
     SelfDependencyStrategy,
 )
+from melder.spellbook.spell_crafter.validation.strategies.spellmap_shape_validation_strategy import (
+    SpellMapShapeValidationStrategy,
+)
 from melder.spellbook.spellbook import Spellbook
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 
@@ -121,6 +137,422 @@ def _make_context(
     )
     return context, issues
 
+
+def test_component_annotation_shape_guard_flags_unsupported_collection_shape() -> None:
+    """
+    Purpose:
+        Validate AnnotationShapeGuardStrategy flags unsupported collection annotations.
+    Contract:
+        - set[T] DI annotations yield UNSUPPORTED_COLLECTION_SHAPE errors.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the unsupported collection shape is not reported.
+    """
+    spellbook = _make_spellbook()
+    strategy = AnnotationShapeGuardStrategy()
+
+    class UsesSet:
+        """
+        Purpose:
+            Provide a spell with an unsupported collection DI annotation.
+        Contract:
+            - Declares set[BasicService] as a DI dependency.
+        Args:
+            services: Injected services collection.
+        """
+
+        def __init__(self, services: set[BasicService]) -> None:
+            """
+            Purpose:
+                Capture the injected services.
+            Contract:
+                Stores the services on the instance.
+            Args:
+                services: Collection of services.
+            Returns:
+                None.
+            """
+            self.services = services
+
+    try:
+        spell_id = spellbook.bind(
+            spell=UsesSet,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spell.run_phase_requirements()
+        requirements = spell.requirements
+        context, issues = _make_context(
+            spell=spell,
+            spellbook=spellbook,
+            requirements=requirements,
+        )
+        try:
+            strategy.validate(context)
+            assert len(issues) == 1
+            issue = issues[0]
+            assert issue.code == "UNSUPPORTED_COLLECTION_SHAPE"
+            assert issue.severity == "error"
+        finally:
+            context.cleanup()
+    finally:
+        strategy.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_annotation_shape_guard_warns_on_list_non_di_element() -> None:
+    """
+    Purpose:
+        Validate AnnotationShapeGuardStrategy warns on list elements that are not DI targets.
+    Contract:
+        - list[int] yields LIST_ELEMENT_NOT_DI_TARGET warnings.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the expected warning is not reported.
+    """
+    spellbook = _make_spellbook()
+    strategy = AnnotationShapeGuardStrategy()
+
+    class UsesList:
+        """
+        Purpose:
+            Provide a spell with a list annotation that is not DI-eligible.
+        Contract:
+            - Declares list[int] as a plain parameter.
+        Args:
+            values: Plain list of ints.
+        """
+
+        def __init__(self, values: list[int]) -> None:
+            """
+            Purpose:
+                Capture the values list.
+            Contract:
+                Stores the values on the instance.
+            Args:
+                values: Plain list input.
+            Returns:
+                None.
+            """
+            self.values = values
+
+    try:
+        spell_id = spellbook.bind(
+            spell=UsesList,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spell.run_phase_requirements()
+        requirements = spell.requirements
+        context, issues = _make_context(
+            spell=spell,
+            spellbook=spellbook,
+            requirements=requirements,
+        )
+        try:
+            strategy.validate(context)
+            assert len(issues) == 1
+            issue = issues[0]
+            assert issue.code == "LIST_ELEMENT_NOT_DI_TARGET"
+            assert issue.severity == "warning"
+        finally:
+            context.cleanup()
+    finally:
+        strategy.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellmap_shape_validation_flags_missing_target() -> None:
+    """
+    Purpose:
+        Validate SpellMapShapeValidationStrategy flags missing SpellMap targets.
+    Contract:
+        - SpellMap defaults with no spell/spellframe yield SPELLMAP_MISSING_TARGET errors.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the missing target is not reported.
+    """
+    spellbook = _make_spellbook()
+    strategy = SpellMapShapeValidationStrategy()
+    spellmap = SpellMap(spell=BasicService)
+    spellmap.spell = None
+    spellmap.spellframe = None
+
+    class UsesSpellMap:
+        """
+        Purpose:
+            Provide a spell with a malformed SpellMap default.
+        Contract:
+            - Uses a SpellMap missing both spell and spellframe.
+        Args:
+            service: SpellMap placeholder.
+        """
+
+        def __init__(self, service: SpellMap = spellmap) -> None:
+            """
+            Purpose:
+                Capture the service placeholder.
+            Contract:
+                Stores the service on the instance.
+            Args:
+                service: SpellMap placeholder.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    try:
+        spell_id = spellbook.bind(
+            spell=UsesSpellMap,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spell.run_phase_requirements()
+        requirements = spell.requirements
+        context, issues = _make_context(
+            spell=spell,
+            spellbook=spellbook,
+            requirements=requirements,
+        )
+        try:
+            strategy.validate(context)
+            assert len(issues) == 1
+            issue = issues[0]
+            assert issue.code == "SPELLMAP_MISSING_TARGET"
+            assert issue.severity == "error"
+        finally:
+            context.cleanup()
+    finally:
+        strategy.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellmap_shape_validation_warns_on_non_normalized_binding_name() -> None:
+    """
+    Purpose:
+        Validate SpellMapShapeValidationStrategy warns on non-normalized binding names.
+    Contract:
+        - Non-normalized binding names yield SPELLMAP_BINDING_NAME_NOT_NORMALIZED warnings.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the expected warning is not reported.
+    """
+    spellbook = _make_spellbook()
+    strategy = SpellMapShapeValidationStrategy()
+    spellmap = SpellMap(spell=BasicService, binding_name="primary")
+    spellmap.binding_name = "Primary"
+
+    class UsesSpellMap:
+        """
+        Purpose:
+            Provide a spell with a SpellMap using a non-normalized binding name.
+        Contract:
+            - Uses binding_name with uppercase letters.
+        Args:
+            service: SpellMap placeholder.
+        """
+
+        def __init__(self, service: SpellMap = spellmap) -> None:
+            """
+            Purpose:
+                Capture the service placeholder.
+            Contract:
+                Stores the service on the instance.
+            Args:
+                service: SpellMap placeholder.
+            Returns:
+                None.
+            """
+            self.service = service
+
+    try:
+        spell_id = spellbook.bind(
+            spell=UsesSpellMap,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spell.run_phase_requirements()
+        requirements = spell.requirements
+        context, issues = _make_context(
+            spell=spell,
+            spellbook=spellbook,
+            requirements=requirements,
+        )
+        try:
+            strategy.validate(context)
+            assert len(issues) == 1
+            issue = issues[0]
+            assert issue.code == "SPELLMAP_BINDING_NAME_NOT_NORMALIZED"
+            assert issue.severity == "warning"
+        finally:
+            context.cleanup()
+    finally:
+        strategy.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_callable_profile_hygiene_flags_missing_profile() -> None:
+    """
+    Purpose:
+        Validate CallableProfileHygieneStrategy flags missing binding profiles.
+    Contract:
+        - Missing binding profiles yield MISSING_BINDING_PROFILE errors.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the missing profile is not reported.
+    """
+    spellbook = _make_spellbook()
+    strategy = CallableProfileHygieneStrategy()
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spell.profile = None
+        context, issues = _make_context(spell=spell, spellbook=spellbook)
+        try:
+            strategy.validate(context)
+            assert len(issues) == 1
+            issue = issues[0]
+            assert issue.code == "MISSING_BINDING_PROFILE"
+            assert issue.severity == "error"
+        finally:
+            context.cleanup()
+    finally:
+        strategy.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_parameter_policy_strategy_flags_variadic_di_annotations() -> None:
+    """
+    Purpose:
+        Validate ParameterPolicyStrategy flags variadic DI annotations.
+    Contract:
+        - Variadic parameters annotated for DI yield VARIADIC_DI_UNSUPPORTED errors.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the variadic DI issue is not reported.
+    """
+    spellbook = _make_spellbook()
+    strategy = ParameterPolicyStrategy()
+
+    class UsesVariadic:
+        """
+        Purpose:
+            Provide a spell with a variadic DI annotation.
+        Contract:
+            - Declares *handlers: BasicService, which is unsupported for DI.
+        Args:
+            handlers: Variadic DI annotations.
+        """
+
+        def __init__(self, *handlers: BasicService) -> None:
+            """
+            Purpose:
+                Capture the variadic handlers.
+            Contract:
+                Stores the handlers on the instance.
+            Args:
+                handlers: Variadic handlers.
+            Returns:
+                None.
+            """
+            self.handlers = handlers
+
+    try:
+        spell_id = spellbook.bind(
+            spell=UsesVariadic,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spell.run_phase_requirements()
+        requirements = spell.requirements
+        context, issues = _make_context(
+            spell=spell,
+            spellbook=spellbook,
+            requirements=requirements,
+        )
+        try:
+            strategy.validate(context)
+            assert len(issues) == 1
+            issue = issues[0]
+            assert issue.code == "VARIADIC_DI_UNSUPPORTED"
+            assert issue.severity == "error"
+        finally:
+            context.cleanup()
+    finally:
+        strategy.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_existing_creation_compatibility_flags_missing_instance() -> None:
+    """
+    Purpose:
+        Validate ExistingCreationCompatibilityStrategy flags missing instances.
+    Contract:
+        - Existing-creation spells with no instance yield EXISTING_CREATION_MISSING_INSTANCE errors.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the missing instance is not reported.
+    """
+    spellbook = _make_spellbook()
+    strategy = ExistingCreationCompatibilityStrategy()
+    existing = BasicService()
+
+    try:
+        spell_id = spellbook.bind(
+            spell=existing,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spell.run_phase_requirements()
+        spell.user_created_object = None
+
+        context, issues = _make_context(
+            spell=spell,
+            spellbook=spellbook,
+            requirements=spell.requirements,
+        )
+        try:
+            strategy.validate(context)
+            assert len(issues) == 1
+            issue = issues[0]
+            assert issue.code == "EXISTING_CREATION_MISSING_INSTANCE"
+            assert issue.severity == "error"
+        finally:
+            context.cleanup()
+    finally:
+        strategy.cleanup()
+        spellbook.cleanup()
 
 def test_component_resolution_frame_presence_strategy_flags_missing_frame() -> None:
     """

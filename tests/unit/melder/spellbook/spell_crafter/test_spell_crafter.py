@@ -3809,6 +3809,10 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
         "BrokenSpellInDagStrategy",
         "GraphConsistencyStrategy",
         "MissingPhase4Strategy",
+        "RootReachabilityStrategy",
+        "RootCoverageStrategy",
+        "IndexDependencySanityStrategy",
+        "LineageAlignmentStrategy",
         "RootViabilityStrategy",
         "SocketRefSanityStrategy",
     ]

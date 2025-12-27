@@ -206,7 +206,7 @@ class Spell(Cleanable):
         self.resolution_profile: Optional[SpellResolutionProfile] = None
 
         # Per-spell compiler / resolution helper (SpellCrafter).
-        # This owns all Phase 1–4 artifacts and is disposable.
+        # This owns all Phase 1–7 artifacts and is disposable.
         self._crafter: Optional["SpellCrafter"] = None
 
         # Created after Conduit made (ownership / scope integration)

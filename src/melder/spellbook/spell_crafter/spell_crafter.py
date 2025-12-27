@@ -48,8 +48,41 @@ from melder.spellbook.spell_crafter.system.spell_system_validation_system import
 from melder.spellbook.spell_crafter.system.validation.cycle_detection_strategy import CycleDetectionStrategy
 from melder.spellbook.spell_crafter.system.validation.broken_spell_in_dag_strategy import BrokenSpellInDagStrategy
 from melder.spellbook.spell_crafter.system.validation.graph_consistency_strategy import GraphConsistencyStrategy
+from melder.spellbook.spell_crafter.system.validation.dependency_type_sanity_strategy import (
+    DependencyTypeSanityStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.index_coverage_strategy import (
+    IndexCoverageStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.index_dependency_sanity_strategy import (
+    IndexDependencySanityStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.lineage_alignment_strategy import (
+    LineageAlignmentStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.lineage_version_conflict_strategy import (
+    LineageVersionConflictStrategy,
+)
 from melder.spellbook.spell_crafter.system.validation.missing_phase4_strategy import MissingPhase4Strategy
+from melder.spellbook.spell_crafter.system.validation.ownership_consistency_strategy import (
+    OwnershipConsistencyStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.root_coverage_strategy import (
+    RootCoverageStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.root_lineage_conflict_strategy import (
+    RootLineageConflictStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.root_reachability_strategy import (
+    RootReachabilityStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.root_scale_limit_strategy import (
+    RootScaleLimitStrategy,
+)
 from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import RootViabilityStrategy
+from melder.spellbook.spell_crafter.system.validation.socket_ambiguity_strategy import (
+    SocketAmbiguityStrategy,
+)
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import SocketRefSanityStrategy
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -1291,11 +1324,20 @@ class SpellCrafter(Cleanable):
             if state is not None:
                 lineage_id = state.spell_index_id
 
-            node = SpellSystemNode(spell_id=spell_id, lineage_id=lineage_id)
-            node.add_dependencies(deps)
+            spell_instance = version_to_spell.get(spell_id)
+            if lineage_id is None and spell_instance is not None:
+                lineage_id = spell_instance.spell_index.id
 
-            if spell_id in filtered_snapshot.root_spell_ids:
-                node.is_root = True
+            node = SpellSystemNode(
+                spell_id=spell_id,
+                lineage_id=lineage_id,
+                dependencies=deps,
+                existence=spell_instance.existence if spell_instance is not None else None,
+                spell_type=spell_instance.spell_type if spell_instance is not None else None,
+                conduit_id=spell_instance._owner_conduit_id if spell_instance is not None else None,
+                ward_id=None,
+                is_root=spell_id in filtered_snapshot.root_spell_ids,
+            )
 
             system_index.upsert_node(node)
 
@@ -1475,6 +1517,17 @@ class SpellCrafter(Cleanable):
             BrokenSpellInDagStrategy(),
             GraphConsistencyStrategy(),
             MissingPhase4Strategy(),
+            RootReachabilityStrategy(),
+            RootCoverageStrategy(),
+            IndexDependencySanityStrategy(),
+            LineageAlignmentStrategy(),
+            IndexCoverageStrategy(),
+            LineageVersionConflictStrategy(),
+            RootLineageConflictStrategy(),
+            OwnershipConsistencyStrategy(),
+            DependencyTypeSanityStrategy(),
+            RootScaleLimitStrategy(),
+            SocketAmbiguityStrategy(),
             RootViabilityStrategy(),
             SocketRefSanityStrategy(),
         ]

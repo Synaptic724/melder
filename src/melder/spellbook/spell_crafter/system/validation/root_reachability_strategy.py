@@ -1,0 +1,110 @@
+from typing import Dict, List, Optional, Set
+# Melder imports
+from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+    RootResolutionBlueprint,
+)
+from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
+from melder.spellbook.spell_crafter.system.system_diagnostic import (
+    SystemDiagnostic,
+    SystemDiagnosticSeverity,
+)
+from melder.spellbook.spell_crafter.system.validation.strategy_base import (
+    SpellSystemValidationStrategy,
+)
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+
+
+class RootReachabilityStrategy(SpellSystemValidationStrategy):
+    """
+    Internal
+
+    Purpose:
+        Ensure each root blueprint only contains nodes reachable from its root.
+    Contract:
+        - Emits ``root_missing_in_dag`` when the root id is not present in the DAG.
+        - Emits ``dag_orphan_node`` for any DAG node not reachable from the root.
+        - Skips reachability traversal when the root is missing to avoid noisy cascades.
+    """
+    __slots__ = []
+
+    def run(
+            self,
+            *,
+            index: SpellSystemIndex,
+            blueprints: Dict[str, RootResolutionBlueprint],
+            phase4_results: Dict[str, object],
+            broken_spell_ids: Set[str],
+            diagnostics: List[SystemDiagnostic],
+            cancel_event: Optional[CancellationEvent],
+    ) -> None:
+        """
+        Validate that every blueprint DAG node is reachable from its root.
+
+        Purpose:
+            Detect orphan nodes that are not reachable from the root spell.
+        Contract:
+            - Root-less DAGs raise a ``root_missing_in_dag`` diagnostic.
+            - Orphan nodes produce ``dag_orphan_node`` diagnostics.
+            - Cancellation is honored between roots.
+        Args:
+            index: Spell system index being validated.
+            blueprints: Root blueprints keyed by root spell id.
+            phase4_results: Phase-4 validation artifacts keyed by spell id.
+            broken_spell_ids: Set of broken spell ids.
+            diagnostics: Collection that receives diagnostics.
+            cancel_event: Optional cancellation signal.
+        Returns:
+            None.
+        Raises:
+            OperationCancelledError:
+                If ``cancel_event`` is set while iterating.
+        """
+        for root_id, blueprint in blueprints.items():
+            if cancel_event is not None and cancel_event.is_set:
+                cancel_event.throw_if_set()
+
+            dag = blueprint.dag
+            root_node = dag.get_node(root_id)
+            if root_node is None:
+                diagnostics.append(
+                    SystemDiagnostic(
+                        code="root_missing_in_dag",
+                        message=(
+                            f"Root '{root_id}' is not present in blueprint DAG."
+                        ),
+                        severity=SystemDiagnosticSeverity.ERROR,
+                        spell_id=root_id,
+                        root_id=root_id,
+                    )
+                )
+                continue
+
+            reachable: Set[str] = set()
+            stack = [root_node]
+            while stack:
+                node = stack.pop()
+                node_id = node.id
+                if node_id in reachable:
+                    continue
+                reachable.add(node_id)
+                for dep in node.dependencies:
+                    stack.append(dep)
+
+            for node_id in dag.nodes.keys():
+                if node_id in reachable:
+                    continue
+                diagnostics.append(
+                    SystemDiagnostic(
+                        code="dag_orphan_node",
+                        message=(
+                            f"Blueprint DAG for root '{root_id}' contains orphan node '{node_id}'."
+                        ),
+                        severity=SystemDiagnosticSeverity.ERROR,
+                        spell_id=node_id,
+                        root_id=root_id,
+                        details={
+                            "root_id": root_id,
+                            "spell_id": node_id,
+                        },
+                    )
+                )

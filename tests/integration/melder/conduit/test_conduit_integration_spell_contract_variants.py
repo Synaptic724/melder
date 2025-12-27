@@ -2,6 +2,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
@@ -420,6 +421,176 @@ def test_spell_contract_missing_provider_raises() -> None:
             conduit.meld(spell=consumer_id)
     finally:
         conduit.cleanup()
+
+
+def test_spell_contract_missing_dependency_does_not_gate_provider_state() -> None:
+    """
+    Purpose:
+        Validate missing contracted dependencies do not gate provider lineage state.
+    Contract:
+        - Borrower meld fails when provider dependencies are not contracted.
+        - Provider SpellSystemState remains valid after the failure.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If provider state is gated or borrower meld does not fail.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    borrower_book = Spellbook(configuration=configuration)
+
+    class _ProviderDependency:
+        """
+        Purpose:
+            Provide a dependency that is only bound in the provider spellbook.
+        Contract:
+            - Acts as a required constructor dependency.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the provider-only dependency.
+            Contract:
+                - No side effects beyond construction.
+            Returns:
+                None.
+            """
+            return None
+
+    class _ProviderService:
+        """
+        Purpose:
+            Provide a contracted service that depends on a local-only dependency.
+        Contract:
+            - Requires the provider dependency at construction time.
+        """
+
+        def __init__(self, dep: _ProviderDependency) -> None:
+            """
+            Purpose:
+                Capture the provider-only dependency.
+            Contract:
+                - Stores the dependency for completeness.
+            Args:
+                dep: Injected provider dependency.
+            Returns:
+                None.
+            """
+            self.dep = dep
+
+    owner_book.bind(
+        spell=_ProviderDependency,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    service_id = owner_book.bind(
+        spell=_ProviderService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    consumer_id = borrower_book.bind(
+        spell=ContractConsumerPrimary,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        assert borrower.add_spell_to_contract(
+            spell_id=service_id,
+            conduit=owner,
+            permissions="create",
+        )
+        assert borrower.validate_contracts_and_define()
+
+        provider_state = owner_book._spell_system_states.get_by_spell_id(service_id)
+        assert provider_state is not None
+        assert provider_state.validity is SpellValidity.valid
+
+        with pytest.raises(MeldExecutionError):
+            borrower.meld(spell=consumer_id)
+
+        assert provider_state.validity is SpellValidity.valid
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_spell_contract_runtime_error_does_not_gate_provider_state() -> None:
+    """
+    Purpose:
+        Validate provider runtime failures do not gate lineage validity.
+    Contract:
+        - Borrower meld raises when provider constructor fails.
+        - Provider SpellSystemState remains valid after the failure.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If provider state is gated or borrower meld does not fail.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    borrower_book = Spellbook(configuration=configuration)
+
+    class _ProviderService:
+        """
+        Purpose:
+            Provide a contracted service that fails at construction time.
+        Contract:
+            - Raises a runtime error when instantiated.
+        """
+
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Trigger a construction-time failure.
+            Contract:
+                - Always raises RuntimeError.
+            Raises:
+                RuntimeError: Always raised to simulate a runtime failure.
+            """
+            raise RuntimeError("boom")
+
+    service_id = owner_book.bind(
+        spell=_ProviderService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    consumer_id = borrower_book.bind(
+        spell=ContractConsumerPrimary,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        assert borrower.add_spell_to_contract(
+            spell_id=service_id,
+            conduit=owner,
+            permissions="create",
+        )
+        assert borrower.validate_contracts_and_define()
+
+        provider_state = owner_book._spell_system_states.get_by_spell_id(service_id)
+        assert provider_state is not None
+        assert provider_state.validity is SpellValidity.valid
+
+        with pytest.raises(MeldExecutionError):
+            borrower.meld(spell=consumer_id)
+
+        assert provider_state.validity is SpellValidity.valid
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
 def test_spell_contract_contract_removed_falls_back_to_local() -> None:

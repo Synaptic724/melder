@@ -25,15 +25,49 @@ from melder.spellbook.spell_crafter.system.validation.cycle_detection_strategy i
 from melder.spellbook.spell_crafter.system.validation.graph_consistency_strategy import (
     GraphConsistencyStrategy,
 )
+from melder.spellbook.spell_crafter.system.validation.dependency_type_sanity_strategy import (
+    DependencyTypeSanityStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.index_coverage_strategy import (
+    IndexCoverageStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.index_dependency_sanity_strategy import (
+    IndexDependencySanityStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.lineage_alignment_strategy import (
+    LineageAlignmentStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.lineage_version_conflict_strategy import (
+    LineageVersionConflictStrategy,
+)
 from melder.spellbook.spell_crafter.system.validation.missing_phase4_strategy import (
     MissingPhase4Strategy,
+)
+from melder.spellbook.spell_crafter.system.validation.ownership_consistency_strategy import (
+    OwnershipConsistencyStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.root_coverage_strategy import (
+    RootCoverageStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.root_lineage_conflict_strategy import (
+    RootLineageConflictStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.root_reachability_strategy import (
+    RootReachabilityStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.root_scale_limit_strategy import (
+    RootScaleLimitStrategy,
 )
 from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import (
     RootViabilityStrategy,
 )
+from melder.spellbook.spell_crafter.system.validation.socket_ambiguity_strategy import (
+    SocketAmbiguityStrategy,
+)
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import (
     SocketRefSanityStrategy,
 )
+from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.custom_exceptions.operation_cancelled_error import (
     OperationCancelledError,
 )
@@ -46,6 +80,9 @@ def _make_index(
     nodes: dict[str, set[str]],
     *,
     root_ids: set[str] | None = None,
+    lineage_map: dict[str, str] | None = None,
+    spell_types: dict[str, SpellType] | None = None,
+    conduit_ids: dict[str, str] | None = None,
 ) -> SpellSystemIndex:
     """
     Purpose:
@@ -56,16 +93,26 @@ def _make_index(
     Args:
         nodes: Mapping of spell_id -> dependency ids.
         root_ids: Optional set of root spell ids.
+        lineage_map: Optional mapping of spell_id -> lineage id.
+        spell_types: Optional mapping of spell_id -> SpellType.
+        conduit_ids: Optional mapping of spell_id -> conduit id.
     Returns:
         SpellSystemIndex: Populated index.
     """
     index = SpellSystemIndex()
     roots = root_ids or set()
     for spell_id, deps in nodes.items():
+        lineage_id = (
+            lineage_map.get(spell_id)
+            if lineage_map is not None and spell_id in lineage_map
+            else f"lineage-{spell_id}"
+        )
         node = SpellSystemNode(
             spell_id=spell_id,
-            lineage_id=f"lineage-{spell_id}",
+            lineage_id=lineage_id,
             dependencies=deps,
+            spell_type=spell_types.get(spell_id) if spell_types is not None else None,
+            conduit_id=conduit_ids.get(spell_id) if conduit_ids is not None else None,
             is_root=spell_id in roots,
         )
         index.upsert_node(node)
@@ -75,6 +122,7 @@ def _make_index(
 def _make_blueprint(
     *,
     root_id: str,
+    root_lineage_id: str | None = None,
     edges: dict[str, set[str]],
     extra_nodes: set[str] | None = None,
 ) -> RootResolutionBlueprint:
@@ -86,6 +134,7 @@ def _make_blueprint(
         - DAG edges connect parent -> child.
     Args:
         root_id: Root spell id for the blueprint.
+        root_lineage_id: Optional lineage id for the root spell.
         edges: Mapping of child_id -> parent ids.
         extra_nodes: Optional extra node ids to include with no edges.
     Returns:
@@ -103,7 +152,11 @@ def _make_blueprint(
         for parent_id in parents:
             dag.add_dependency(parent_key=parent_id, child_key=child_id)
 
-    return RootResolutionBlueprint(root_spell_id=root_id, root_lineage_id=None, dag=dag)
+    return RootResolutionBlueprint(
+        root_spell_id=root_id,
+        root_lineage_id=root_lineage_id,
+        dag=dag,
+    )
 
 
 def _make_socket_ref(*, node_id: str, name: str, path: tuple[str, ...]) -> SocketRef:
@@ -989,3 +1042,289 @@ def test_component_socket_ref_sanity_scopes_diagnostics_to_root() -> None:
 
     roots = {diag.root_id for diag in diagnostics}
     assert roots == {"root-a"}
+
+
+def test_component_root_reachability_no_orphans() -> None:
+    """
+    Purpose:
+        Validate RootReachabilityStrategy reports no issues for reachable DAGs.
+    Contract:
+        - Diagnostics remain empty when all nodes are reachable from the root.
+    Returns:
+        None.
+    """
+    strategy = RootReachabilityStrategy()
+    blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": {"dep"}, "dep": set()}, root_ids={"root"}),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_component_root_reachability_reports_missing_root() -> None:
+    """
+    Purpose:
+        Validate RootReachabilityStrategy reports a missing root in the DAG.
+    Contract:
+        - root_missing_in_dag is emitted when the root is not present.
+    Returns:
+        None.
+    """
+    strategy = RootReachabilityStrategy()
+    blueprint = _make_blueprint(root_id="root", edges={}, extra_nodes={"orphan"})
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"orphan": set()}, root_ids=set()),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert [diag.code for diag in diagnostics] == ["root_missing_in_dag"]
+
+
+def test_component_root_reachability_reports_orphan_nodes() -> None:
+    """
+    Purpose:
+        Validate RootReachabilityStrategy reports orphan DAG nodes.
+    Contract:
+        - dag_orphan_node is emitted for nodes not reachable from the root.
+    Returns:
+        None.
+    """
+    strategy = RootReachabilityStrategy()
+    blueprint = _make_blueprint(
+        root_id="root",
+        edges={"root": {"dep"}},
+        extra_nodes={"orphan"},
+    )
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": {"dep"}, "dep": set(), "orphan": set()}, root_ids={"root"}),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    codes = {diag.code for diag in diagnostics}
+    assert codes == {"dag_orphan_node"}
+    assert {diag.spell_id for diag in diagnostics} == {"orphan"}
+
+
+def test_component_root_coverage_reports_missing_root_in_index() -> None:
+    """
+    Purpose:
+        Validate RootCoverageStrategy reports missing root entries.
+    Contract:
+        - root_missing_in_index is emitted when a blueprint root is absent from the index.
+    Returns:
+        None.
+    """
+    strategy = RootCoverageStrategy()
+    blueprint = _make_blueprint(root_id="root", edges={})
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"other": set()}, root_ids=set()),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"root_missing_in_index"}
+
+
+def test_component_root_coverage_reports_unmarked_root() -> None:
+    """
+    Purpose:
+        Validate RootCoverageStrategy reports roots not flagged in the index.
+    Contract:
+        - root_not_marked_in_index is emitted when the index node is not a root.
+    Returns:
+        None.
+    """
+    strategy = RootCoverageStrategy()
+    blueprint = _make_blueprint(root_id="root", edges={})
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": set()}, root_ids=set()),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"root_not_marked_in_index"}
+
+
+def test_component_root_coverage_reports_missing_blueprint() -> None:
+    """
+    Purpose:
+        Validate RootCoverageStrategy reports roots missing blueprints.
+    Contract:
+        - missing_root_blueprint is emitted when the index marks a root without a blueprint.
+    Returns:
+        None.
+    """
+    strategy = RootCoverageStrategy()
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": set()}, root_ids={"root"}),
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"missing_root_blueprint"}
+
+
+def test_component_index_dependency_sanity_reports_missing_dependency() -> None:
+    """
+    Purpose:
+        Validate IndexDependencySanityStrategy reports missing dependencies.
+    Contract:
+        - missing_index_dependency is emitted when a dependency id is unknown.
+    Returns:
+        None.
+    """
+    strategy = IndexDependencySanityStrategy()
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": {"missing"}}, root_ids={"root"}),
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"missing_index_dependency"}
+
+
+def test_component_index_dependency_sanity_no_missing_dependencies() -> None:
+    """
+    Purpose:
+        Validate IndexDependencySanityStrategy ignores complete graphs.
+    Contract:
+        - Diagnostics remain empty when dependencies exist in the index.
+    Returns:
+        None.
+    """
+    strategy = IndexDependencySanityStrategy()
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": {"dep"}, "dep": set()}, root_ids={"root"}),
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_component_lineage_alignment_reports_mismatch() -> None:
+    """
+    Purpose:
+        Validate LineageAlignmentStrategy reports lineage mismatches.
+    Contract:
+        - root_lineage_mismatch is emitted when root lineage ids diverge.
+    Returns:
+        None.
+    """
+    strategy = LineageAlignmentStrategy()
+    blueprint = _make_blueprint(
+        root_id="root",
+        root_lineage_id="lineage-other",
+        edges={},
+    )
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": set()}, root_ids={"root"}),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"root_lineage_mismatch"}
+
+
+def test_component_lineage_alignment_ignores_missing_lineage() -> None:
+    """
+    Purpose:
+        Validate LineageAlignmentStrategy skips roots without lineage metadata.
+    Contract:
+        - Diagnostics remain empty when root_lineage_id is None.
+    Returns:
+        None.
+    """
+    strategy = LineageAlignmentStrategy()
+    blueprint = _make_blueprint(root_id="root", root_lineage_id=None, edges={})
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": set()}, root_ids={"root"}),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_component_lineage_alignment_ignores_matching_lineage() -> None:
+    """
+    Purpose:
+        Validate LineageAlignmentStrategy ignores matching lineage ids.
+    Contract:
+        - Diagnostics remain empty when lineage ids match.
+    Returns:
+        None.
+    """
+    strategy = LineageAlignmentStrategy()
+    blueprint = _make_blueprint(
+        root_id="root",
+        root_lineage_id="lineage-root",
+        edges={},
+    )
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": set()}, root_ids={"root"}),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []

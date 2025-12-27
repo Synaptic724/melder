@@ -12,6 +12,21 @@ from melder.spellbook.spell_crafter.validation.strategies.resolution_frame_prese
     ResolutionFramePresenceStrategy
 from melder.spellbook.spell_crafter.validation.strategies.self_validation_strategy import SelfDependencyStrategy
 from melder.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import DuplicateSpellNameStrategy
+from melder.spellbook.spell_crafter.validation.strategies.annotation_shape_guard_strategy import (
+    AnnotationShapeGuardStrategy,
+)
+from melder.spellbook.spell_crafter.validation.strategies.spellmap_shape_validation_strategy import (
+    SpellMapShapeValidationStrategy,
+)
+from melder.spellbook.spell_crafter.validation.strategies.parameter_policy_strategy import (
+    ParameterPolicyStrategy,
+)
+from melder.spellbook.spell_crafter.validation.strategies.callable_profile_hygiene_strategy import (
+    CallableProfileHygieneStrategy,
+)
+from melder.spellbook.spell_crafter.validation.strategies.existing_creation_compatibility_strategy import (
+    ExistingCreationCompatibilityStrategy,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
@@ -107,6 +122,11 @@ class SpellValidationSystem(Cleanable):
         * CircularDependencyStrategy
         * RequiredHolesStrategy
         * DuplicateSpellNameStrategy
+        * AnnotationShapeGuardStrategy
+        * SpellMapShapeValidationStrategy
+        * ParameterPolicyStrategy
+        * CallableProfileHygieneStrategy
+        * ExistingCreationCompatibilityStrategy
         """
         self.register_strategy(ResolutionFramePresenceStrategy())
         self.register_strategy(DanglingDependenciesStrategy())
@@ -114,6 +134,11 @@ class SpellValidationSystem(Cleanable):
         self.register_strategy(CircularDependencyStrategy())
         self.register_strategy(RequiredHolesStrategy())
         self.register_strategy(DuplicateSpellNameStrategy())
+        self.register_strategy(AnnotationShapeGuardStrategy())
+        self.register_strategy(SpellMapShapeValidationStrategy())
+        self.register_strategy(ParameterPolicyStrategy())
+        self.register_strategy(CallableProfileHygieneStrategy())
+        self.register_strategy(ExistingCreationCompatibilityStrategy())
 
     def register_strategy(self, strategy: 'SpellValidationStrategy') -> None:
         """

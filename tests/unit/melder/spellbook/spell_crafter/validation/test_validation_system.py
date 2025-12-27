@@ -554,6 +554,11 @@ def test_init_registers_builtin_strategies() -> None:
         "circular_dependency",
         "required_holes",
         "duplicate_spell_name",
+        "annotation_shape_guard",
+        "spellmap_shape_validation",
+        "parameter_policy",
+        "callable_profile_hygiene",
+        "existing_creation_compatibility",
     }
     assert expected.issubset(names)
     assert len(names) >= len(expected)
