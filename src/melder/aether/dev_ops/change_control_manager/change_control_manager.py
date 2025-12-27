@@ -7,7 +7,7 @@ from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import 
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-class ChangeControlManager(Cleanable):
+class ChangeControlManager(Cleanable, IChangeControlManager):
     """
     High-level change/release tracker for an Aetheric Frame.
 

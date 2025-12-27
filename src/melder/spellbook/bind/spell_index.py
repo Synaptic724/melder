@@ -2,9 +2,10 @@ import threading
 import ulid
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import ISpellIndex
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-class SpellIndex(Cleanable):
+class SpellIndex(Cleanable, ISpellIndex):
     """
     A stable dictionary key that points to a mutable version ID.
 

@@ -9,7 +9,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.interfaces import ISpellbook, ISpellSystemStates
+from melder.utilities.interfaces.interfaces import ISpell, ISpellbook, ISpellSystemStates
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -18,7 +18,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 
 #region Spell
-class Spell(Cleanable):
+class Spell(Cleanable, ISpell):
     """
     Internal
 

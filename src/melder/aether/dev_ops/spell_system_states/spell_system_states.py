@@ -13,7 +13,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex, ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-class SpellSystemStates(Cleanable):
+class SpellSystemStates(Cleanable, ISpellSystemStates):
     """
     Per-frame registry for all SpellSystemState instances.
 

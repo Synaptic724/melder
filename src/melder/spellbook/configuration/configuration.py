@@ -11,7 +11,7 @@ from melder.utilities.helpers.package import Pack
 from melder.utilities.logger.std_logger_factory import StdLoggerFactory
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-class Configuration(Cleanable):
+class Configuration(Cleanable, IConfiguration):
     """
     Configuration governs the behavior of the entire system.
 

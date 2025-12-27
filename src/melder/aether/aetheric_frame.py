@@ -3,7 +3,7 @@ from typing import Set, Dict
 
 import ulid
 # Melder Imports
-from melder.utilities.interfaces.interfaces import IConduit
+from melder.utilities.interfaces.interfaces import IConduit, IAethericFrame
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit_cloud import ConduitCloud
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -13,7 +13,7 @@ from melder.aether.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-class AethericFrame(Cleanable):
+class AethericFrame(Cleanable, IAethericFrame):
     """
     Manages an isolated "universe" or "frame" within the Aether.
 

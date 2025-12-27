@@ -11,9 +11,10 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnosticSeverity,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import IConduitResolutionState
 
 
-class ConduitResolutionState(Cleanable):
+class ConduitResolutionState(Cleanable, IConduitResolutionState):
     """
     Per-conduit resolution validity container.
 

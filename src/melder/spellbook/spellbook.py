@@ -10,7 +10,7 @@ from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import ISpell, IConfiguration, ISpellIndex, ISpellSystemStates
+from melder.utilities.interfaces.interfaces import ISpell, IConfiguration, ISpellIndex, ISpellSystemStates, ISpellbook
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
@@ -26,7 +26,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 
 #region Spellbook
-class Spellbook(Cleanable):
+class Spellbook(Cleanable, ISpellbook):
     """
     Public API
 

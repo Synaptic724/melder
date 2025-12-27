@@ -2,12 +2,12 @@ import threading
 from typing import Dict
 import ulid
 # Melder imports
-from melder.utilities.interfaces.interfaces import IConduit
+from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
-class ConduitCloud(Cleanable):
+class ConduitCloud(Cleanable, IConduitCloud):
     """
     An abstract factory for named conduits, active only in "dynamic" mode.
 
