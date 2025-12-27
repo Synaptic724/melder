@@ -162,3 +162,96 @@ def test_spellbook_validation_error_includes_phase_diagnostics() -> None:
     assert "Phase 6 diagnostics" in message
     assert "DIAG_CODE" in message
     assert "DiagStrategy" in message
+
+
+def test_spellbook_validation_error_message_example_without_diagnostics() -> None:
+    """
+    Purpose:
+        Provide a concrete example of the default validation error message.
+    Contract:
+        The formatted message matches the expected no-diagnostics layout.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the message does not match the expected format.
+    """
+    spell = SimpleNamespace(
+        spell_name="RootSpell",
+        spell_id="spell-1",
+        spellframe="frame-1",
+    )
+
+    error = SpellbookValidationError([spell])
+    message = str(error)
+
+    expected = "\n".join(
+        [
+            "Spellbook validation failed; one or more spells are broken. Broken spells: "
+            "RootSpell (id=spell-1, frame='frame-1')",
+            "Diagnostics:",
+            "Phase 4 issues:",
+            "- Spell 'RootSpell' (id=spell-1, frame='frame-1'):",
+            "    (none recorded)",
+            "Phase 6 diagnostics:",
+            "  (none recorded)",
+        ]
+    )
+
+    assert message == expected
+
+
+def test_spellbook_validation_error_message_example_with_diagnostics() -> None:
+    """
+    Purpose:
+        Provide a concrete example of the diagnostics-rich error message.
+    Contract:
+        The formatted message matches the expected diagnostic layout.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the message does not match the expected format.
+    """
+    issue = SpellValidationIssue(
+        severity="error",
+        code="ISSUE_CODE",
+        message="Issue message.",
+        details={"param": "value"},
+        source="IssueStrategy",
+    )
+    diag = SystemDiagnostic(
+        code="DIAG_CODE",
+        message="Diag message.",
+        severity=SystemDiagnosticSeverity.ERROR,
+        spell_id="spell-1",
+        root_id="root-1",
+        details={"impact": "root", "path": "root>dep"},
+        source="DiagStrategy",
+    )
+
+    spell = SimpleNamespace(
+        spell_name="RootSpell",
+        spell_id="spell-1",
+        spellframe="frame-1",
+        validation_result_phase4=SimpleNamespace(issues=[issue]),
+        validation_result_phase6=SimpleNamespace(errors=[diag], warnings=[]),
+    )
+
+    error = SpellbookValidationError([spell])
+    message = str(error)
+
+    expected = "\n".join(
+        [
+            "Spellbook validation failed; one or more spells are broken. Broken spells: "
+            "RootSpell (id=spell-1, frame='frame-1')",
+            "Diagnostics:",
+            "Phase 4 issues:",
+            "- Spell 'RootSpell' (id=spell-1, frame='frame-1'):",
+            "    - [error] ISSUE_CODE (source=IssueStrategy): Issue message.",
+            "      details: {'param': 'value'}",
+            "Phase 6 diagnostics:",
+            "  - [error] DIAG_CODE (source=DiagStrategy, spell_id=spell-1, root_id=root-1): Diag message.",
+            "    details: {'impact': 'root', 'path': 'root>dep'}",
+        ]
+    )
+
+    assert message == expected
