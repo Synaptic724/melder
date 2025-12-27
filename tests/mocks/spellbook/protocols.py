@@ -8,6 +8,7 @@ class IService(Protocol):
     Contract:
         Acts as a DI grouping key for service-like dependencies.
     """
+    tester: str
 
 
 class IConfig(Protocol):

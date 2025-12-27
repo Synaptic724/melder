@@ -196,6 +196,8 @@ def test_component_broken_spell_in_dag_no_broken_ids() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -221,6 +223,8 @@ def test_component_broken_spell_in_dag_reports_single_broken() -> None:
         phase4_results={},
         broken_spell_ids={"dep"},
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -252,6 +256,8 @@ def test_component_broken_spell_in_dag_reports_multiple_broken() -> None:
         phase4_results={},
         broken_spell_ids={"dep-a", "dep-b"},
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -282,6 +288,8 @@ def test_component_broken_spell_in_dag_reports_across_roots() -> None:
         phase4_results={},
         broken_spell_ids={"dep"},
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -311,6 +319,8 @@ def test_component_broken_spell_in_dag_honors_cancellation() -> None:
                 phase4_results={},
                 broken_spell_ids={"dep"},
                 diagnostics=diagnostics,
+                spell_system_states=None,
+                spell_lookup={},
                 cancel_event=signal.event,
             )
     finally:
@@ -336,6 +346,8 @@ def test_component_cycle_detection_no_cycle_is_noop() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -361,6 +373,8 @@ def test_component_cycle_detection_reports_cycle() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -386,6 +400,8 @@ def test_component_cycle_detection_disconnected_nodes_no_cycle() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -411,6 +427,8 @@ def test_component_cycle_detection_allows_unknown_dependency() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -439,6 +457,8 @@ def test_component_cycle_detection_honors_cancellation() -> None:
                 phase4_results={},
                 broken_spell_ids=set(),
                 diagnostics=diagnostics,
+                spell_system_states=None,
+                spell_lookup={},
                 cancel_event=signal.event,
             )
     finally:
@@ -465,6 +485,8 @@ def test_component_graph_consistency_no_diagnostics_for_match() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -495,6 +517,8 @@ def test_component_graph_consistency_reports_missing_child_node() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -522,6 +546,8 @@ def test_component_graph_consistency_reports_missing_parent_node() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -548,6 +574,8 @@ def test_component_graph_consistency_reports_edge_mismatch() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -578,6 +606,8 @@ def test_component_graph_consistency_reports_edge_missing_from_blueprint() -> No
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -603,6 +633,8 @@ def test_component_missing_phase4_no_missing_results() -> None:
         phase4_results={"root": object(), "dep": object()},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -628,6 +660,8 @@ def test_component_missing_phase4_reports_single_missing() -> None:
         phase4_results={"root": object()},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -661,6 +695,8 @@ def test_component_missing_phase4_reports_multiple_missing() -> None:
         phase4_results={"root": object()},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -690,6 +726,8 @@ def test_component_missing_phase4_reports_missing_per_root() -> None:
         phase4_results={"root-a": object(), "root-b": object()},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -719,6 +757,8 @@ def test_component_missing_phase4_honors_cancellation() -> None:
                 phase4_results={"root": object()},
                 broken_spell_ids=set(),
                 diagnostics=diagnostics,
+                spell_system_states=None,
+                spell_lookup={},
                 cancel_event=signal.event,
             )
     finally:
@@ -751,6 +791,8 @@ def test_component_root_viability_emits_for_root_error() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -784,6 +826,8 @@ def test_component_root_viability_ignores_warnings() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -816,6 +860,8 @@ def test_component_root_viability_ignores_unscoped_errors() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -849,6 +895,8 @@ def test_component_root_viability_emits_only_for_matching_root() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -889,6 +937,8 @@ def test_component_root_viability_emits_once_per_root() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -917,6 +967,8 @@ def test_component_socket_ref_sanity_no_issues_for_valid_index() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -945,6 +997,8 @@ def test_component_socket_ref_sanity_reports_duplicate_socket_ref() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -973,6 +1027,8 @@ def test_component_socket_ref_sanity_reports_missing_index_entries() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1002,6 +1058,8 @@ def test_component_socket_ref_sanity_reports_orphan_index_socket() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1034,6 +1092,8 @@ def test_component_socket_ref_sanity_scopes_diagnostics_to_root() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1060,6 +1120,8 @@ def test_component_root_reachability_no_orphans() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1085,6 +1147,8 @@ def test_component_root_reachability_reports_missing_root() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1114,6 +1178,8 @@ def test_component_root_reachability_reports_orphan_nodes() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1141,6 +1207,8 @@ def test_component_root_coverage_reports_missing_root_in_index() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1166,6 +1234,8 @@ def test_component_root_coverage_reports_unmarked_root() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1190,6 +1260,8 @@ def test_component_root_coverage_reports_missing_blueprint() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1214,6 +1286,8 @@ def test_component_index_dependency_sanity_reports_missing_dependency() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1238,6 +1312,8 @@ def test_component_index_dependency_sanity_no_missing_dependencies() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1267,6 +1343,8 @@ def test_component_lineage_alignment_reports_mismatch() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1292,6 +1370,8 @@ def test_component_lineage_alignment_ignores_missing_lineage() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1321,6 +1401,8 @@ def test_component_lineage_alignment_ignores_matching_lineage() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1357,6 +1439,8 @@ def test_component_root_scale_limit_reports_node_limit() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1388,6 +1472,8 @@ def test_component_root_scale_limit_reports_edge_limit() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1421,6 +1507,8 @@ def test_component_root_scale_limit_reports_depth_limit() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1457,6 +1545,8 @@ def test_component_root_scale_limit_reports_fan_out_limit() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1482,6 +1572,8 @@ def test_component_index_coverage_reports_orphan_index_node() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1512,6 +1604,8 @@ def test_component_root_lineage_conflict_reports_duplicates() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1542,6 +1636,8 @@ def test_component_lineage_version_conflict_reports_multiple_versions() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1570,6 +1666,8 @@ def test_component_dependency_type_sanity_reports_callable_dependency() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1600,6 +1698,8 @@ def test_component_ownership_consistency_reports_conflicts() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 
@@ -1629,6 +1729,8 @@ def test_component_ownership_consistency_ignores_unknown_conduit() -> None:
         phase4_results={},
         broken_spell_ids=set(),
         diagnostics=diagnostics,
+        spell_system_states=None,
+        spell_lookup={},
         cancel_event=None,
     )
 

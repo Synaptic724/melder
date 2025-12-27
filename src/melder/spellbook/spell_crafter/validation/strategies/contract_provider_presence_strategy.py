@@ -95,6 +95,8 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                 )
                 provider_map.setdefault(key, []).append(index.current)
 
+        automatic_mode = system_state is SystemState.automatic
+
         for param in requirements.parameters:
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
@@ -105,7 +107,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
             ):
                 continue
 
-            if system_state is SystemState.automatic:
+            if param.di_shape is ParameterDIShape.SPELL_CONTRACT and automatic_mode:
                 context.issues.append(
                     SpellValidationIssue(
                         severity="error",
@@ -220,12 +222,12 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                 continue
 
             if not providers:
-                severity = "warning" if contract.late_binding else "error"
-                code = (
-                    "MUTATION_CONTRACT_MISSING_PROVIDER"
-                    if contract.late_binding
-                    else "MUTATION_CONTRACT_MISSING_PROVIDER_EARLY"
-                )
+                if contract.late_binding or automatic_mode:
+                    severity = "warning"
+                    code = "MUTATION_CONTRACT_MISSING_PROVIDER"
+                else:
+                    severity = "error"
+                    code = "MUTATION_CONTRACT_MISSING_PROVIDER_EARLY"
                 context.issues.append(
                     SpellValidationIssue(
                         severity=severity,

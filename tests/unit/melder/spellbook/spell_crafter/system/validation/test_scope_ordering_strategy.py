@@ -31,7 +31,7 @@ def test_scope_ordering_violation_emits_error() -> None:
             spell_id="child",
             lineage_id="lineage-child",
             dependencies=set(),
-            existence=Existence.many,
+            existence=Existence.unique_per_spell_space,
         )
     )
     diagnostics: list = []
@@ -69,7 +69,7 @@ def test_scope_ordering_allows_narrow_to_broad() -> None:
             spell_id="root",
             lineage_id="lineage-root",
             dependencies={"child"},
-            existence=Existence.many,
+            existence=Existence.unique_per_spell_space,
         )
     )
     index.upsert_node(

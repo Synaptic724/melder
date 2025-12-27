@@ -82,6 +82,8 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
 
             if node.existence is None:
                 continue
+            if node.existence is Existence.many:
+                continue
             node_rank = scope_rank.get(node.existence)
             if node_rank is None:
                 continue
@@ -89,6 +91,8 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
             for dep_id in node.dependencies:
                 dep_node = index.get_node(dep_id)
                 if dep_node is None or dep_node.existence is None:
+                    continue
+                if dep_node.existence is Existence.many:
                     continue
                 dep_rank = scope_rank.get(dep_node.existence)
                 if dep_rank is None:
