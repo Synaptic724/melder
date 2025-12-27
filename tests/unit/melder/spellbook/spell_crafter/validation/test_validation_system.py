@@ -178,6 +178,7 @@ class _ContextStub:
         scanner: object | None,
         cancel_event: object | None,
         issues: list,
+        cleanup_artifacts: bool = True,
     ) -> None:
         """
         Purpose:
@@ -193,6 +194,7 @@ class _ContextStub:
             scanner: SpellbookScanner instance or None.
             cancel_event: Cancellation event or None.
             issues: Shared issues list.
+            cleanup_artifacts: Whether to clean artifacts during context cleanup.
         Returns:
             None.
         """
@@ -204,6 +206,7 @@ class _ContextStub:
         self.scanner = scanner
         self.cancel_event = cancel_event
         self.issues = issues
+        self.cleanup_artifacts = cleanup_artifacts
         self.cleanup_calls = 0
         self.cleaned = False
         _ContextStub.last_instance = self

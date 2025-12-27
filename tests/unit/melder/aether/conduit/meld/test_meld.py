@@ -129,6 +129,8 @@ class _SpellStub:
         spellframe: str = "frame",
         existence: Existence = Existence.unique,
         system_state: _SystemStateStub | None = None,
+        spell_system_states: Any | None = None,
+        spellbook: Any | None = None,
         is_broken: bool = False,
         is_existing_creation: bool = False,
         user_created_object: Any | None = None,
@@ -153,6 +155,8 @@ class _SpellStub:
             spellframe: Spell frame identifier.
             existence: Existence scope for the spell.
             system_state: Optional system state for validity gating.
+            spell_system_states: Optional system state registry for resolution gating.
+            spellbook: Optional spellbook stub for resolution phase execution.
             is_broken: Whether the spell is broken.
             is_existing_creation: Whether the spell is an existing-creation spell.
             user_created_object: Pre-created instance for existing-creation spells.
@@ -174,6 +178,8 @@ class _SpellStub:
         self.spell_index = spell_index or _SpellIndexStub(current=spell_id)
         self.existence = existence
         self.system_state = system_state
+        self._spell_system_states = spell_system_states
+        self._spellbook = spellbook
         self.is_broken = is_broken
         self.is_existing_creation = is_existing_creation
         self.user_created_object = user_created_object

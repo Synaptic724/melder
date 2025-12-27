@@ -408,6 +408,22 @@ class _DummyCrafter:
         self.calls.append("change_control")
         self.seen_cancel_events.append((conduit_id, cancel_event))
 
+    def cleanup_phase_artifacts(self):
+        """
+        Purpose:
+            Record phase artifact cleanup.
+        Contract:
+            Appends cleanup marker and clears phase artifacts.
+        Returns:
+            None.
+        """
+        self.calls.append("cleanup_phase_artifacts")
+        self.requirements = None
+        self.symbolic_graph = None
+        self.resolution_frame = None
+        self.validation_result_phase4 = None
+        self.validation_result_phase6 = None
+
     def cleanup(self):
         """
         Purpose:
@@ -692,6 +708,7 @@ def test_run_all_phases_invokes_crafter_in_order():
         "root_blueprints",
         "system_validation",
         "change_control",
+        "cleanup_phase_artifacts",
     ]
     observed = [
         ev[1] if isinstance(ev, tuple) else ev for ev in crafter.seen_cancel_events

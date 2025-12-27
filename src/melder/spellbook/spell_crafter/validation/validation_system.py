@@ -271,6 +271,7 @@ class SpellValidationSystem(Cleanable):
             scanner=scanner,
             cancel_event=cancel_event,
             issues=issues,
+            cleanup_artifacts=False,
         )
 
         # Snapshot strategies under the lock, then run them.

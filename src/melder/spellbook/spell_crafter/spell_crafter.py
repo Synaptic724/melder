@@ -207,6 +207,7 @@ class SpellCrafter(Cleanable):
             * Cleans up :class:`SpellSymbolicGraph` and its dependencies.
             * Resets the resolution frame (the owning :class:`Spell` keeps the
               concrete DAG and dependency ids).
+            * Cleans Phase 5 artifacts (root blueprints and system index).
             * Resets validation state.
             * Nulls the Spell reference (but does **not** mutate/dispose the Spell).
 
@@ -219,74 +220,36 @@ class SpellCrafter(Cleanable):
             if self._cleaned:
                 return
 
-            if self._requirements is not None:
-                try:
-                    self._requirements.cleanup()
-                except Exception:
-                    pass
-
-            if self._symbolic_graph is not None:
-                try:
-                    self._symbolic_graph.cleanup()
-                except Exception:
-                    pass
-
-            if self._resolution_frame is not None and isinstance(self._resolution_frame, Cleanable):
-                try:
-                    self._resolution_frame.cleanup()
-                except Exception:
-                    pass
-
-            if self._validation_result_phase4 is not None and isinstance(self._validation_result_phase4, Cleanable):
-                try:
-                    self._validation_result_phase4.cleanup()
-                except Exception:
-                    pass
-
-            if self._validation_result_phase6 is not None and isinstance(self._validation_result_phase6, Cleanable):
-                try:
-                    self._validation_result_phase6.cleanup()
-                except Exception:
-                    pass
-
+            self._cleanup_phase_artifacts_locked()
             if self._root_blueprint_phase5 is not None:
                 try:
                     self._root_blueprint_phase5.cleanup()
                 except Exception:
                     pass
-
             if self._spell_system_index_phase5 is not None:
                 try:
                     self._spell_system_index_phase5.cleanup()
                 except Exception:
                     pass
-
             if self._entire_dag_blueprint_phase5 is not None:
-                try:
-                    for blueprint in self._entire_dag_blueprint_phase5.values():
+                for blueprint in list(self._entire_dag_blueprint_phase5.values()):
+                    if blueprint is None:
+                        continue
+                    try:
                         blueprint.cleanup()
-                except Exception:
-                    pass
-
-            if self._spellbook_scanner is not None:
+                    except Exception:
+                        pass
                 try:
-                    self._spellbook_scanner.cleanup()
+                    self._entire_dag_blueprint_phase5.clear()
                 except Exception:
                     pass
-            self._spellbook_scanner = None
-            # Resolution frame is a lightweight summary; just drop it.
-            self._resolution_frame = None
             self._root_blueprint_phase5 = None
             self._spell_system_index_phase5 = None
             self._entire_dag_blueprint_phase5 = None
-            self._requirements = None
-            self._symbolic_graph = None
-            self._validation_result_phase4 = None
-            self._validation_result_phase6 = None
-            self._spell_system_states = None
             self._validated_phase4 = False
             self._validated_phase6 = False
             self._is_broken = False
+            self._spell_system_states = None
             self._spell = None
             self._spell_validator = None
             self._cleaned = True
@@ -403,6 +366,73 @@ class SpellCrafter(Cleanable):
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+    def reset_phase_artifacts(self) -> None:
+        """
+        Release transient Phase 1-4 and Phase 6 artifacts without disposing the crafter.
+
+        This keeps Phase 5 artifacts and validation flags intact for runtime use.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleanup_phase_artifacts_locked()
+
+    def cleanup_phase_artifacts(self) -> None:
+        """
+        Backward-compatible alias for reset_phase_artifacts.
+
+        This keeps the SpellCrafter reusable for future phase runs while
+        releasing transient Phase 1-4 and Phase 6 artifacts.
+        """
+        self.reset_phase_artifacts()
+
+    def _cleanup_phase_artifacts_locked(self) -> None:
+        """
+        Internal helper to clean phase artifacts under the crafter lock.
+        """
+        if self._requirements is not None:
+            try:
+                self._requirements.cleanup()
+            except Exception:
+                pass
+
+        if self._symbolic_graph is not None:
+            try:
+                self._symbolic_graph.cleanup()
+            except Exception:
+                pass
+
+        if self._resolution_frame is not None and isinstance(self._resolution_frame, Cleanable):
+            try:
+                self._resolution_frame.cleanup()
+            except Exception:
+                pass
+
+        if self._validation_result_phase4 is not None and isinstance(self._validation_result_phase4, Cleanable):
+            try:
+                self._validation_result_phase4.cleanup()
+            except Exception:
+                pass
+
+        if self._validation_result_phase6 is not None and isinstance(self._validation_result_phase6, Cleanable):
+            try:
+                self._validation_result_phase6.cleanup()
+            except Exception:
+                pass
+
+        if self._spellbook_scanner is not None:
+            try:
+                self._spellbook_scanner.cleanup()
+            except Exception:
+                pass
+        self._spellbook_scanner = None
+        self._resolution_frame = None
+        self._requirements = None
+        self._symbolic_graph = None
+        self._validation_result_phase4 = None
+        self._validation_result_phase6 = None
+
     def set_root_blueprint_phase5(self, blueprint: RootResolutionBlueprint) -> None:
         """Set the Phase-5 root blueprint for this spell."""
         self.check_cleaned()
@@ -1550,6 +1580,12 @@ class SpellCrafter(Cleanable):
         Runs system-level validation strategies over Phase-5 artifacts and
         Phase-4 outcomes. Records per-conduit resolution validity via
         SpellSystemStates and caches the frame-level validation state locally.
+
+        Note:
+            When Phase-4 results have been cleaned but Phase 4 previously
+            completed successfully, we still include a placeholder entry
+            in the phase4_results map so MissingPhase4Strategy can treat
+            the spell as validated.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
@@ -1566,14 +1602,17 @@ class SpellCrafter(Cleanable):
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
         spell_lookup: Dict[str, ISpell] = {}
+        phase4_placeholder = object()
 
         for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
             spell_lookup[spell_index.current] = spell_instance
-            crafter = getattr(spell_instance, "_crafter", None)
+            crafter = spell_instance._crafter
             if crafter is None:
                 continue
             if crafter._validation_result_phase4 is not None:
                 phase4_results[spell_index.current] = crafter._validation_result_phase4
+            elif crafter._validated_phase4:
+                phase4_results[spell_index.current] = phase4_placeholder
             if crafter._is_broken:
                 broken_spell_ids.add(spell_index.current)
 
@@ -1703,6 +1742,9 @@ class SpellCrafter(Cleanable):
             None. The crafter retains all intermediate artifacts until
             :meth:`cleanup` is called. The owning Spell only needs to hold the
             final DAG and dependency spell_ids once Phase 3 is fully implemented.
+        Notes:
+            Phase artifacts are cleaned after Phase 7; structural data remains in
+            SpellSystemStates and on the Spell itself.
         """
         self.run_phase_requirements(cancel_event=cancel_event)
         self.run_phase_symbolic_graph(cancel_event=cancel_event)
@@ -1749,3 +1791,4 @@ class SpellCrafter(Cleanable):
         self.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
         self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         self.run_phase_change_control(conduit_id, cancel_event=cancel_event)
+        self.cleanup_phase_artifacts()

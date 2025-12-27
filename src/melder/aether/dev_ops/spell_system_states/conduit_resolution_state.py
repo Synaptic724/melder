@@ -119,6 +119,28 @@ class ConduitResolutionState(Cleanable):
         with self._lock:
             return self._spell_validity.get(spell_id, self._initial_validity)
 
+    def snapshot_spell_validity(self) -> Dict[str, SpellValidity]:
+        """
+        Return a snapshot copy of per-spell resolution validity.
+
+        Purpose:
+            Provide a stable view of spell-level resolution validity for callers
+            that need to clone or transfer state without mutating the source.
+        Contract:
+            - Returns a shallow copy; callers cannot mutate internal state.
+            - Snapshot reflects the state at the time of call.
+        Returns:
+            Dict[str, SpellValidity]:
+                Mapping of spell_id -> SpellValidity.
+        Raises:
+            RuntimeError: If this state has been cleaned.
+        Threading:
+            Acquires the internal lock while copying.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._spell_validity)
+
     def set_spell_validity(
             self,
             spell_id: str,
@@ -211,6 +233,28 @@ class ConduitResolutionState(Cleanable):
             return None
         with self._lock:
             return self._root_validity.get(root_id, self._initial_validity)
+
+    def snapshot_root_validity(self) -> Dict[str, SpellValidity]:
+        """
+        Return a snapshot copy of per-root resolution validity.
+
+        Purpose:
+            Provide a stable view of root-level resolution validity for callers
+            that need to clone or transfer state without mutating the source.
+        Contract:
+            - Returns a shallow copy; callers cannot mutate internal state.
+            - Snapshot reflects the state at the time of call.
+        Returns:
+            Dict[str, SpellValidity]:
+                Mapping of root_id -> SpellValidity.
+        Raises:
+            RuntimeError: If this state has been cleaned.
+        Threading:
+            Acquires the internal lock while copying.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._root_validity)
 
     def set_root_validity(
             self,
@@ -353,6 +397,25 @@ class ConduitResolutionState(Cleanable):
                 diag.severity is SystemDiagnosticSeverity.WARNING
                 for diag in self._diagnostics
             )
+
+    def is_dirty(self) -> bool:
+        """
+        Return True when resolution validity has changed since last validation.
+
+        Purpose:
+            Surface whether this conduit needs revalidation.
+        Contract:
+            - True indicates a change occurred after the last successful validation.
+        Returns:
+            bool:
+                True if dirty, False otherwise.
+        Raises:
+            RuntimeError: If this state has been cleaned.
+        Threading:
+            Uses the current dirty flag without taking the lock.
+        """
+        self.check_cleaned()
+        return bool(self._dirty)
 
     # ------------------------------------------------------------------ #
     # Dirty tracking                                                     #

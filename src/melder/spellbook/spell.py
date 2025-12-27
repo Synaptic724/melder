@@ -607,6 +607,9 @@ class Spell(Cleanable):
 
         Returns:
             None.
+        Notes:
+            Phase artifacts are cleaned after Phase 7; spell-level dependency
+            data and system state remain available.
         """
         self.check_cleaned()
         crafter = self._ensure_crafter()
@@ -846,6 +849,7 @@ class Spell(Cleanable):
         crafter.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
+        crafter.cleanup_phase_artifacts()
 
 
     #endregion Resolution Phases

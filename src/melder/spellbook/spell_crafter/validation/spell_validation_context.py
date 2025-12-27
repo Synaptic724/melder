@@ -39,6 +39,7 @@ class SpellValidationContext(Cleanable):
         "scanner",
         "cancel_event",
         "issues",
+        "_cleanup_artifacts",
     ]
 
     def __init__(
@@ -51,6 +52,7 @@ class SpellValidationContext(Cleanable):
             scanner: Optional['SpellbookScanner'],
             cancel_event: Optional['CancellationEvent'],
             issues: List['SpellValidationIssue'],
+            cleanup_artifacts: bool = True,
     ) -> None:
         super().__init__()
 
@@ -70,6 +72,7 @@ class SpellValidationContext(Cleanable):
         # NOTE: this list is shared with the caller (SpellValidationSystem);
         # cleanup must not mutate the underlying list contents.
         self.issues: List['SpellValidationIssue'] = issues
+        self._cleanup_artifacts: bool = cleanup_artifacts
 
     def cleanup(self) -> None:
         """
@@ -90,13 +93,14 @@ class SpellValidationContext(Cleanable):
             except Exception:
                 pass
 
-        # Clean up owned artifacts if they support deterministic teardown.
-        for artifact in (self.requirements, self.symbolic_graph, self.resolution_frame):
-            if isinstance(artifact, Cleanable):
-                try:
-                    artifact.cleanup()
-                except Exception:
-                    pass
+        # Clean up owned artifacts if requested.
+        if self._cleanup_artifacts:
+            for artifact in (self.requirements, self.symbolic_graph, self.resolution_frame):
+                if isinstance(artifact, Cleanable):
+                    try:
+                        artifact.cleanup()
+                    except Exception:
+                        pass
 
         # Drop references to help GC.
         self.spell = None

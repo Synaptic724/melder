@@ -947,6 +947,10 @@ class Conduit(Cleanable):
             RuntimeError / ValueError / TypeError:
                 Propagated from Configuration.add_hooks(...) if the hook set is invalid
                 (frozen configuration, unknown hook names, non-callables, etc.).
+        Contract:
+            - Transfers existing lesser creations into a normal-creations manager.
+            - Rewires meld runtime to use the upgraded creations manager.
+            - Seeds per-conduit resolution state from the prior root conduit when available.
         """
         with self._lock:
             if not self.__dynamic_environment__:
@@ -957,6 +961,23 @@ class Conduit(Cleanable):
                 raise RuntimeError("Only lesser conduits can be upgraded.")
 
             try:
+                # Snapshot root conduit resolution state before converting lineage.
+                spell_system_states = None
+                source_resolution_state = None
+                source_conduit_id = None
+                if self._spellbook is not None:
+                    spell_system_states = self._spellbook._spell_system_states
+                if spell_system_states is not None and self._conduit_ward is not None:
+                    try:
+                        root_conduit = self._conduit_ward.root_conduit
+                    except Exception:
+                        root_conduit = None
+                    if root_conduit is not None:
+                        source_conduit_id = root_conduit._id
+                        source_resolution_state = spell_system_states.get_conduit_resolution_state(
+                            source_conduit_id
+                        )
+
                 # Step 1: Change state + optional name
                 self._conduit_state = ConduitState.normal
                 self._name = name
@@ -988,6 +1009,37 @@ class Conduit(Cleanable):
 
                 # Step 6: Reconfigure the spellbook
                 self._spellbook.create_new_preset_spellbook()
+
+                # Step 6.5: Seed resolution state from the former root conduit.
+                if (
+                        spell_system_states is not None
+                        and source_resolution_state is not None
+                        and source_conduit_id
+                        and source_conduit_id != self._id
+                ):
+                    try:
+                        target_state = spell_system_states.get_or_create_conduit_resolution_state(self._id)
+                        target_state.bulk_set_spell_validity(
+                            source_resolution_state.snapshot_spell_validity()
+                        )
+                        target_state.bulk_set_root_validity(
+                            source_resolution_state.snapshot_root_validity()
+                        )
+                        target_state.record_diagnostics(
+                            source_resolution_state.list_diagnostics()
+                        )
+                        if source_resolution_state.is_dirty():
+                            target_state.mark_dirty()
+                        else:
+                            last_validated_at = source_resolution_state.last_validated_at()
+                            if last_validated_at is not None:
+                                target_state.clear_dirty(last_validated_at)
+                    except Exception:
+                        self._logger.error(
+                            "Failed to seed conduit resolution state from root conduit.",
+                            "upgrade_to_normal",
+                            exc_info=True,
+                        )
 
                 # Step 7: Register as a full Conduit in Aether and Conduit Cloud
                 Conduit._add_conduit_to_aether(self)

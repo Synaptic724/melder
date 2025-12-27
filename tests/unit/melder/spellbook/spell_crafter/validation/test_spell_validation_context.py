@@ -335,6 +335,39 @@ def test_cleanup_calls_artifact_cleanup() -> None:
     assert resolution_frame.cleanup_calls == 1
 
 
+def test_cleanup_skips_artifact_cleanup_when_disabled() -> None:
+    """
+    Purpose:
+        Ensure artifact cleanup can be disabled for deferred teardown.
+    Contract:
+        Cleanable artifacts are not cleaned when cleanup_artifacts is False.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If artifact cleanup is invoked when disabled.
+    """
+    requirements = _CleanableStub()
+    symbolic_graph = _CleanableStub()
+    resolution_frame = _CleanableStub()
+    context = SpellValidationContext(
+        spell=object(),
+        spellbook=None,
+        requirements=requirements,
+        symbolic_graph=symbolic_graph,
+        resolution_frame=resolution_frame,
+        scanner=None,
+        cancel_event=None,
+        issues=[],
+        cleanup_artifacts=False,
+    )
+
+    context.cleanup()
+
+    assert requirements.cleanup_calls == 0
+    assert symbolic_graph.cleanup_calls == 0
+    assert resolution_frame.cleanup_calls == 0
+
+
 def test_cleanup_swallows_artifact_cleanup_errors() -> None:
     """
     Purpose:

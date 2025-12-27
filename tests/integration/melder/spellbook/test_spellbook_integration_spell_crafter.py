@@ -5,6 +5,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spellbook import Spellbook
@@ -111,8 +112,8 @@ def test_spell_crafter_run_all_phases_builds_dependencies_and_state() -> None:
         Validate run_all_phases builds the local frame, dependencies, and state.
     Contract:
         - dependencies include the resolved spell_id for constructor deps.
-        - resolution_frame orders dependency before root.
         - SpellSystemState records direct dependencies.
+        - Phase artifacts are cleaned after Phase 7.
     Returns:
         None.
     Raises:
@@ -169,13 +170,9 @@ def test_spell_crafter_run_all_phases_builds_dependencies_and_state() -> None:
 
         assert set(root_spell.dependencies) == {leaf_id}
         assert root_spell.dependency_graph is not None
-
-        frame = root_spell.resolution_frame
-        assert frame is not None
-        ordered = frame.ordered_node_ids
-        assert leaf_id in ordered
-        assert root_id in ordered
-        assert ordered[-1] == root_id
+        assert root_spell.requirements is None
+        assert root_spell.symbolic_graph is None
+        assert root_spell.resolution_frame is None
 
         state = root_spell.system_state
         assert state is not None
@@ -814,16 +811,17 @@ def test_spell_crafter_validation_sets_flags_and_result() -> None:
         conduit.cleanup()
 
 
-def test_spell_crafter_run_all_phases_sets_phase6_result() -> None:
+def test_spell_crafter_run_all_phases_records_phase6_state() -> None:
     """
     Purpose:
-        Validate run_all_phases computes Phase 6 system validation results.
+        Validate run_all_phases records Phase 6 results in conduit state.
     Contract:
-        - validation_result_phase6 is populated after run_all_phases.
+        - ConduitResolutionState marks the root spell as valid.
+        - Phase artifacts are cleaned after Phase 7.
     Returns:
         None.
     Raises:
-        AssertionError: If Phase 6 results are missing.
+        AssertionError: If Phase 6 validity is missing.
     """
     spellbook = _make_spellbook()
 
@@ -874,7 +872,11 @@ def test_spell_crafter_run_all_phases_sets_phase6_result() -> None:
         assert root_spell is not None
         root_spell.run_all_phases("cid")
 
-        assert root_spell.validation_result_phase6 is not None
+        assert root_spell.validation_result_phase6 is None
+        conduit_state = spellbook._spell_system_states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.valid
+        assert conduit_state.get_root_validity(root_id) is SpellValidity.valid
     finally:
         conduit.cleanup()
 
@@ -884,7 +886,7 @@ def test_spell_cleanup_after_run_all_phases_clears_phase_artifacts() -> None:
     Purpose:
         Validate Spell.cleanup clears phase artifacts after a full run.
     Contract:
-        - Phase artifacts are present after run_all_phases.
+        - Phase artifacts are cleaned after run_all_phases.
         - cleanup() drops the crafter and nulls dependency artifacts.
     Returns:
         None.
@@ -940,9 +942,11 @@ def test_spell_cleanup_after_run_all_phases_clears_phase_artifacts() -> None:
         assert root_spell is not None
         root_spell.run_all_phases("cid")
 
-        assert root_spell.requirements is not None
-        assert root_spell.symbolic_graph is not None
-        assert root_spell.resolution_frame is not None
+        assert root_spell.requirements is None
+        assert root_spell.symbolic_graph is None
+        assert root_spell.resolution_frame is None
+        assert root_spell.validation_result_phase4 is None
+        assert root_spell.validation_result_phase6 is None
         assert set(root_spell.dependencies) == {leaf_id}
         assert root_spell.dependency_graph is not None
 

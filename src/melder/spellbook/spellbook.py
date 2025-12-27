@@ -1910,6 +1910,8 @@ class Spellbook(Cleanable):
         Raises:
             ValueError:
                 If conduit_id is empty.
+        Notes:
+            After Phase 7 completes, per-spell phase artifacts are cleaned.
         """
         self.check_cleaned()
         if not conduit_id:
@@ -1934,7 +1936,9 @@ class Spellbook(Cleanable):
                 lambda: self._phase_change_control_factory(scheduler, conduit_id),
             )
 
-            return scheduler.run_all_phases()
+            results = scheduler.run_all_phases()
+            self._cleanup_phase_artifacts_after_resolution()
+            return results
         finally:
             try:
                 scheduler.cleanup()
@@ -1945,6 +1949,23 @@ class Spellbook(Cleanable):
                     exc_info=True,
                 )
     #endregion
+
+    def _cleanup_phase_artifacts_after_resolution(self) -> None:
+        """
+        Internal
+
+        Clean per-spell phase artifacts after conduit-scoped phases complete.
+        """
+        self.check_cleaned()
+        for spell in self._spells.values():
+            crafter = getattr(spell, "_crafter", None)
+            if crafter is None:
+                continue
+            try:
+                crafter.cleanup_phase_artifacts()
+            except Exception:
+                # Cleanup should not disrupt conjure/resolve flows.
+                pass
 
     def _phase_requirements_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
         """
