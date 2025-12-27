@@ -4073,18 +4073,6 @@ class IConduit(ICleanable, Protocol):
 
 
 
-class ILink(ICleanable, Protocol):
-    """
-    An Interface representing a live connection (contract) between two Conduits.
-    """
-    _id: str
-    def sever(self):
-        """
-        Severs the link, dissolving the contract between the two Conduits.
-        """
-        ...
-
-
 class IDetail(ICleanable, Protocol):
     """
     An Interface for a 'Detail', a single permission or rule within a Contract.

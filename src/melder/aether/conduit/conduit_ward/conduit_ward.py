@@ -21,7 +21,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 # TODO: Please ensure that locking dynamics properly ensure state management between contracts and to use SafeGuard where we need to in order to ensure we grab all the locks to properly manage state
 
 #region ConduitWard
-class ConduitWard(Cleanable):
+class ConduitWard(Cleanable, IConduitWard):
     """
     Control-plane for a single Conduit: contracts, lineage, and policy.
 

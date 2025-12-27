@@ -27,7 +27,7 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import Spellb
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 
 
-class Meld(Cleanable):
+class Meld(Cleanable, IMeld):
     """
     ## 🪄 Meld: Spell Activation and Dependency Resolution
 

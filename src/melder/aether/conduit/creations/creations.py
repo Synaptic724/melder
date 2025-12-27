@@ -3,13 +3,13 @@ from typing import List, Optional, Dict, Any
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import IConduit
+from melder.utilities.interfaces.interfaces import IConduit, ICreations
 from melder.aether.conduit.creations.creation import Creation
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #TODO: Create a creations object to encapsulate the objects under my control.
 
-class Creations(Cleanable):
+class Creations(Cleanable, ICreations):
     """
     Manages all instantiated objects within a Conduit (Normal Scope).
 

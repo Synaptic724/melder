@@ -27,7 +27,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 #TODO: @GPT5, please inform Mark that he needs to implement Conduits hooks, for pre- during, and post activations so we can add Aspect Oriented Programming here
 
 #region Conduit
-class Conduit(Cleanable):
+class Conduit(Cleanable, IConduit):
     """
     A Conduit is a modular graph node that behaves like a scope and a factory.
 

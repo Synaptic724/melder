@@ -3,11 +3,11 @@ from typing import List, Optional, Dict
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import IConduit
+from melder.utilities.interfaces.interfaces import IConduit, ILesserCreations
 from melder.aether.conduit.creations.creation import Creation
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-class LesserCreations(Cleanable):
+class LesserCreations(Cleanable, ILesserCreations):
     """
     Manages instantiated objects within a **Lesser Conduit** (Child Scope).
 
