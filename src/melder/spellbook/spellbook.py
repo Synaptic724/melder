@@ -1507,6 +1507,9 @@ class Spellbook(Cleanable):
                 self._validate_and_freeze_configuration()
                 self._bind_configuration_to_aether()
 
+            # Create a unique ID for this Conduit
+            conduit_id = IDBuilder.create_id()
+            
             # Run the multi-phase resolution pipeline (requirements, graphs, frames, validation)
             # This uses PhaseScheduler + UnitOfWork and cooperates via the shared CancellationEvent.
             self._run_resolution_phases()
@@ -1526,7 +1529,6 @@ class Spellbook(Cleanable):
             )
 
             # 2) Construct the Conduit.
-            conduit_id = IDBuilder.create_id()
             conduit = Conduit(
                 spellbook=self,
                 name=name,
