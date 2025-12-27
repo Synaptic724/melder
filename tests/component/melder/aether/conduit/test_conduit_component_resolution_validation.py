@@ -223,6 +223,7 @@ def test_component_conduit_upgrade_seeds_resolution_state_from_root() -> None:
     root = spellbook.conjure(automatic=False, name="root")
     lesser = root.create_lesser_conduit()
     try:
+        original_id = lesser.id
         root_state = root.validate_resolution()
         assert root_state is not None
         assert root_state.has_errors() is False
@@ -235,5 +236,88 @@ def test_component_conduit_upgrade_seeds_resolution_state_from_root() -> None:
         assert upgraded_state is not root_state
         assert upgraded_state.has_errors() is False
         assert upgraded_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
+        assert lesser.id == original_id
     finally:
         root.cleanup()
+
+
+def test_component_conduit_validate_resolution_matches_get_resolution_state() -> None:
+    """
+    Purpose:
+        Validate get_resolution_state returns the state produced by validation.
+    Contract:
+        - validate_resolution returns a conduit-scoped resolution state.
+        - get_resolution_state returns the same state instance.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If validation state is not reused by get_resolution_state.
+    """
+    configuration = _make_dynamic_configuration()
+    spellbook = Spellbook(configuration=configuration)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(automatic=False, name="root")
+    try:
+        state = conduit.validate_resolution()
+        assert state is not None
+        assert conduit.get_resolution_state() is state
+    finally:
+        conduit.cleanup()
+
+
+def test_component_conduit_resolution_state_cleaned_on_conduit_cleanup() -> None:
+    """
+    Purpose:
+        Validate conduit cleanup deterministically cleans its resolution state.
+    Contract:
+        - Resolution state is cleaned when the owning conduit is cleaned.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If resolution state is not cleaned on cleanup.
+    """
+    configuration = _make_dynamic_configuration()
+    spellbook = Spellbook(configuration=configuration)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(automatic=False, name="root")
+    state = conduit.validate_resolution()
+    conduit.cleanup()
+
+    assert state is not None
+    assert state.cleaned is True
+
+
+def test_component_conduit_validate_resolution_raises_when_cleaned() -> None:
+    """
+    Purpose:
+        Validate cleaned conduits reject resolution validation requests.
+    Contract:
+        - validate_resolution raises RuntimeError after cleanup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleaned conduits accept validation.
+    """
+    configuration = _make_dynamic_configuration()
+    spellbook = Spellbook(configuration=configuration)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit.cleanup()
+
+    with pytest.raises(RuntimeError):
+        conduit.validate_resolution()
