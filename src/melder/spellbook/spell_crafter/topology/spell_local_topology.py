@@ -45,6 +45,15 @@ class SpellSocketDescriptor:
 
             For contract / mutation sockets that are not yet resolved, this
             will typically be an empty tuple.
+
+        contract_key:
+            Canonical ``(frame_key, binding_key)`` for contract sockets.
+            This is populated for SPELL_CONTRACT and MUTATION_CONTRACT
+            sockets to support system-level contract validation.
+
+        contract_late_binding:
+            For MUTATION_CONTRACT sockets, indicates whether the contract is
+            declared late-binding. This is None for non-mutation sockets.
     """
     __melder_internal__ = _mrg.sentinel
     spell_id: str
@@ -54,6 +63,8 @@ class SpellSocketDescriptor:
     is_collection: bool
     is_optional: bool
     target_spell_ids: Tuple[str, ...]
+    contract_key: Optional[Tuple[str, str]] = None
+    contract_late_binding: Optional[bool] = None
 
 
 class SpellLocalTopology(Cleanable):

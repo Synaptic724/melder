@@ -191,6 +191,8 @@ def test_no_blueprints_produces_no_diagnostics() -> None:
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -215,6 +217,8 @@ def test_all_nodes_have_phase4_results() -> None:
         blueprints=blueprints,
         phase4_results={"a": object(), "b": object()},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -239,6 +243,8 @@ def test_missing_single_node_emits_diagnostic() -> None:
         blueprints=blueprints,
         phase4_results={"a": object()},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -269,6 +275,8 @@ def test_missing_multiple_nodes_emits_multiple_diagnostics() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -297,6 +305,8 @@ def test_missing_across_multiple_roots_emits_per_root() -> None:
         blueprints=blueprints,
         phase4_results={"a": object()},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -325,6 +335,8 @@ def test_diagnostics_list_reused_appends_new_entries() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=existing,
         cancel_event=None,
     )
@@ -351,6 +363,8 @@ def test_cancel_event_halts_before_processing() -> None:
             blueprints=blueprints,
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=diags,
             cancel_event=_CancelStub(is_set=True),
         )
@@ -378,6 +392,8 @@ def test_cancel_event_checked_between_roots() -> None:
             blueprints=blueprints,
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=diags,
             cancel_event=_ToggleCancel(),
         )
@@ -402,6 +418,8 @@ def test_phase4_results_extra_entries_ignored() -> None:
         blueprints=blueprints,
         phase4_results={"a": object(), "b": object(), "extra": object()},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -426,6 +444,8 @@ def test_empty_dag_produces_no_diagnostics() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -450,6 +470,8 @@ def test_phase4_results_none_value_considered_present() -> None:
         blueprints=blueprints,
         phase4_results={"a": None},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -474,6 +496,8 @@ def test_missing_phase4_only_considers_dag_nodes() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -499,6 +523,8 @@ def test_missing_phase4_message_includes_spell_and_root() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )

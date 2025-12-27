@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Mapping, Optional, Set
 
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -11,6 +11,7 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import (
 from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
+from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -28,9 +29,37 @@ class RootViabilityStrategy(SpellSystemValidationStrategy):
             blueprints: Dict[str, RootResolutionBlueprint],
             phase4_results: Dict[str, object],
             broken_spell_ids: Set[str],
+            spell_system_states: ISpellSystemStates,
+            spell_lookup: Mapping[str, ISpell],
             diagnostics: List[SystemDiagnostic],
             cancel_event: Optional[CancellationEvent],
     ) -> None:
+        """
+        Emit a root-level viability error when any system error affects the DAG.
+
+        Purpose:
+            Collapse existing system-level errors into a single "root not viable"
+            diagnostic for any root that already has error diagnostics.
+        Contract:
+            - Only roots with existing ERROR diagnostics receive a new error.
+            - This strategy does not introduce new root analysis; it aggregates
+              existing error diagnostics for clarity.
+            - Cancellation is honored between roots.
+        Args:
+            index: Spell system index being validated.
+            blueprints: Root blueprints keyed by root spell id.
+            phase4_results: Phase-4 validation artifacts keyed by spell id.
+            broken_spell_ids: Set of broken spell ids.
+            spell_system_states: SpellSystemStates registry for topology and lineage data.
+            spell_lookup: Mapping of visible spell version ids to spell objects.
+            diagnostics: Collection that receives diagnostics.
+            cancel_event: Optional cancellation signal.
+        Returns:
+            None.
+        Raises:
+            OperationCancelledError:
+                If ``cancel_event`` is set while iterating.
+        """
         # Pre-group diagnostics by root_id for existing errors.
         errors_by_root: Dict[str, int] = {}
         for diag in diagnostics:

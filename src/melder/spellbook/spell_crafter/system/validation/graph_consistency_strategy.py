@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Mapping, Optional, Set, Tuple
 # Melder imports
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -11,6 +11,7 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import (
 from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
+from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 class GraphConsistencyStrategy(SpellSystemValidationStrategy):
@@ -26,9 +27,37 @@ class GraphConsistencyStrategy(SpellSystemValidationStrategy):
             blueprints: Dict[str, RootResolutionBlueprint],
             phase4_results: Dict[str, object],
             broken_spell_ids: Set[str],
+            spell_system_states: ISpellSystemStates,
+            spell_lookup: Mapping[str, ISpell],
             diagnostics: List[SystemDiagnostic],
             cancel_event: Optional[CancellationEvent],
     ) -> None:
+        """
+        Validate DAG edges across blueprints against SpellSystemIndex.
+
+        Purpose:
+            Ensure root DAG edges and index dependencies remain consistent in
+            both directions.
+        Contract:
+            - Missing index nodes referenced by blueprints produce errors.
+            - Blueprint edges missing from the index produce errors.
+            - Index edges missing from all blueprints produce errors.
+            - Cancellation is honored during traversal.
+        Args:
+            index: Spell system index being validated.
+            blueprints: Root blueprints keyed by root spell id.
+            phase4_results: Phase-4 validation artifacts keyed by spell id.
+            broken_spell_ids: Set of broken spell ids.
+            spell_system_states: SpellSystemStates registry for topology and lineage data.
+            spell_lookup: Mapping of visible spell version ids to spell objects.
+            diagnostics: Collection that receives diagnostics.
+            cancel_event: Optional cancellation signal.
+        Returns:
+            None.
+        Raises:
+            OperationCancelledError:
+                If ``cancel_event`` is set while iterating.
+        """
         nodes = index.nodes
         # Collect all edges present in blueprint DAGs for reverse consistency checks.
         dag_edges: Set[Tuple[str, str]] = set()

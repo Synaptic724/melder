@@ -31,6 +31,8 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates, ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -78,6 +80,24 @@ from melder.spellbook.spell_crafter.system.validation.root_reachability_strategy
 )
 from melder.spellbook.spell_crafter.system.validation.root_scale_limit_strategy import (
     RootScaleLimitStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.visibility_gap_strategy import (
+    VisibilityGapStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.topology_dependency_mismatch_strategy import (
+    TopologyDependencyMismatchStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.identity_mixing_strategy import (
+    IdentityMixingStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.contracted_version_drift_strategy import (
+    ContractedVersionDriftStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.scope_ordering_strategy import (
+    ScopeOrderingStrategy,
+)
+from melder.spellbook.spell_crafter.system.validation.contract_graph_cycle_strategy import (
+    ContractGraphCycleStrategy,
 )
 from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import RootViabilityStrategy
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import SocketRefSanityStrategy
@@ -814,6 +834,8 @@ class SpellCrafter(Cleanable):
 
         for param in self._requirements.parameters:
             di_shape: ParameterDIShape = param.di_shape
+            contract_key = None
+            contract_late_binding = None
 
             # Only shapes that participate in the symbolic socket graph.
             if di_shape not in (
@@ -852,11 +874,13 @@ class SpellCrafter(Cleanable):
                 # Contract socket.
                 #
                 # For now we reuse the raw annotation as the "target" so that
-                # later phases (5–7) can infer what this contract is over,
+                # later phases (5-7) can infer what this contract is over,
                 # without committing to any specific resolution semantics yet.
                 target_annotation = param.annotation
                 is_collection = False
                 spellmap_default = None
+                if isinstance(param.default_value, SpellContract):
+                    contract_key = param.default_value.canonical_key
 
             elif di_shape is ParameterDIShape.MUTATION_CONTRACT:
                 # Mutation socket.
@@ -867,6 +891,9 @@ class SpellCrafter(Cleanable):
                 target_annotation = param.annotation
                 is_collection = False
                 spellmap_default = None
+                if isinstance(param.default_value, MutationContract):
+                    contract_key = param.default_value.canonical_key
+                    contract_late_binding = param.default_value.late_binding
 
             else:
                 # Should not happen given the filter above, but kept for
@@ -882,6 +909,8 @@ class SpellCrafter(Cleanable):
                 target_annotation=target_annotation,
                 is_collection=is_collection,
                 spellmap_default=spellmap_default,
+                contract_key=contract_key,
+                contract_late_binding=contract_late_binding,
             )
             deps.append(dep)
 
@@ -913,9 +942,11 @@ class SpellCrafter(Cleanable):
             * Copy ``is_collection`` and ``is_optional`` flags from the
               symbolic graph.
             * Look up any concrete targets via ``socket_targets`` using
-              ``(param_name, position)``. Normal DI sockets may have one or
-              many targets; contract, mutation, and plain sockets will
-              typically have none at this phase.
+                ``(param_name, position)``. Normal DI sockets may have one or
+                many targets; contract, mutation, and plain sockets will
+                typically have none at this phase.
+            * Preserve contract metadata for SpellContract / MutationContract
+              sockets (canonical key, late-binding flag).
             * Create a :class:`SpellSocketDescriptor` for that parameter.
 
         The resulting :class:`SpellLocalTopology` is a per-spell, constructor-
@@ -943,13 +974,15 @@ class SpellCrafter(Cleanable):
             socket_kind = self._socket_kind_for_dep(dep)
 
             descriptor = SpellSocketDescriptor(
-                spell_id=spell_id,
-                param_name=dep.param_name,
-                position=dep.position,
-                socket_kind=socket_kind,
-                is_collection=dep.is_collection,
-                is_optional=dep.is_optional,
-                target_spell_ids=target_spell_ids,
+                  spell_id=spell_id,
+                  param_name=dep.param_name,
+                  position=dep.position,
+                  socket_kind=socket_kind,
+                  is_collection=dep.is_collection,
+                  is_optional=dep.is_optional,
+                  target_spell_ids=target_spell_ids,
+                  contract_key=dep.contract_key,
+                  contract_late_binding=dep.contract_late_binding,
             )
             descriptors.append(descriptor)
 
@@ -1499,8 +1532,10 @@ class SpellCrafter(Cleanable):
 
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
+        spell_lookup: Dict[str, ISpell] = {}
 
         for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
+            spell_lookup[spell_index.current] = spell_instance
             crafter = getattr(spell_instance, "_crafter", None)
             if crafter is None:
                 continue
@@ -1517,12 +1552,18 @@ class SpellCrafter(Cleanable):
             RootReachabilityStrategy(),
             RootCoverageStrategy(),
             IndexDependencySanityStrategy(),
+            VisibilityGapStrategy(),
+            TopologyDependencyMismatchStrategy(),
+            IdentityMixingStrategy(),
+            ContractedVersionDriftStrategy(),
             LineageAlignmentStrategy(),
             IndexCoverageStrategy(),
             LineageVersionConflictStrategy(),
             RootLineageConflictStrategy(),
             OwnershipConsistencyStrategy(),
             DependencyTypeSanityStrategy(),
+            ScopeOrderingStrategy(),
+            ContractGraphCycleStrategy(),
             RootScaleLimitStrategy(),
             RootViabilityStrategy(),
             SocketRefSanityStrategy(),
@@ -1535,6 +1576,7 @@ class SpellCrafter(Cleanable):
             phase4_results=phase4_results,
             broken_spell_ids=broken_spell_ids,
             spell_system_states=self._spell_system_states,
+            spell_lookup=spell_lookup,
             cancel_event=cancel_event,
         )
 

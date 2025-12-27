@@ -28,6 +28,12 @@ from melder.spellbook.spell_crafter.validation.strategies.callable_profile_hygie
 from melder.spellbook.spell_crafter.validation.strategies.existing_creation_compatibility_strategy import (
     ExistingCreationCompatibilityStrategy,
 )
+from melder.spellbook.spell_crafter.validation.strategies.contract_provider_presence_strategy import (
+    ContractProviderPresenceStrategy,
+)
+from melder.spellbook.spell_crafter.validation.strategies.binding_resolution_cycle_strategy import (
+    BindingResolutionCycleStrategy,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
@@ -125,6 +131,8 @@ class SpellValidationSystem(Cleanable):
         * DuplicateSpellNameStrategy
         * AnnotationShapeGuardStrategy
         * SpellMapShapeValidationStrategy
+        * ContractProviderPresenceStrategy
+        * BindingResolutionCycleStrategy
         * ParameterPolicyStrategy
         * CallableProfileHygieneStrategy
         * ExistingCreationCompatibilityStrategy
@@ -137,6 +145,8 @@ class SpellValidationSystem(Cleanable):
         self.register_strategy(DuplicateSpellNameStrategy())
         self.register_strategy(AnnotationShapeGuardStrategy())
         self.register_strategy(SpellMapShapeValidationStrategy())
+        self.register_strategy(ContractProviderPresenceStrategy())
+        self.register_strategy(BindingResolutionCycleStrategy())
         self.register_strategy(ParameterPolicyStrategy())
         self.register_strategy(CallableProfileHygieneStrategy())
         self.register_strategy(ExistingCreationCompatibilityStrategy())

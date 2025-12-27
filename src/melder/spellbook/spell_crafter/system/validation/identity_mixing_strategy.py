@@ -1,5 +1,5 @@
 from typing import Dict, List, Mapping, Optional, Set
-# Melder imports
+
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -11,20 +11,20 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import (
 from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
-from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
-class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
+class IdentityMixingStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Detect mixed identity usage between version ids and lineage ids.
 
     Purpose:
-        Flag dependency graphs that rely on method/lambda spell types.
+        Ensure dependency edges only reference version ids, not lineage ids,
+        preventing ambiguous or unresolvable lookups.
     Contract:
-        - Emits ``dependency_type_unexpected`` for method/lambda dependencies.
-        - Uses WARNING severity to avoid gating resolution.
+        - Emits errors when dependency ids match known lineage ids.
+        - Skips nodes with missing lineage metadata.
     """
     __slots__ = []
 
@@ -41,14 +41,14 @@ class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate dependency spell types against system-level expectations.
+        Validate that dependency ids are version ids, not lineage ids.
 
         Purpose:
-            Surface dependency chains that rely on callable spells rather than
-            class/existing-creation spells.
+            Catch dependency edges that reference lineage ids directly, which
+            can cause resolution to drift or fail.
         Contract:
-            - Emits warnings for method/lambda dependency types.
-            - Missing dependency nodes are ignored (handled elsewhere).
+            - Emits an error for each dependency id that matches a lineage id.
+            - Cancellation is honored between nodes.
         Args:
             index: Spell system index being validated.
             blueprints: Root blueprints keyed by root spell id.
@@ -64,40 +64,35 @@ class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
             OperationCancelledError:
                 If ``cancel_event`` is set while iterating.
         """
-        disallowed_types = {
-            SpellType.METHOD,
-            SpellType.METHOD_WITH_BINDING_NAME,
-            SpellType.METHOD_WITH_SPELLFRAME,
-            SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
-            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
-            SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
-            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        lineage_ids: Set[str] = {
+            node.lineage_id for node in index.nodes.values() if node.lineage_id is not None
         }
+        version_ids: Set[str] = set(index.nodes.keys())
 
         for node in index.nodes.values():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
             for dep_id in node.dependencies:
-                dep_node = index.get_node(dep_id)
-                if dep_node is None or dep_node.spell_type is None:
+                if dep_id in version_ids:
                     continue
-                if dep_node.spell_type not in disallowed_types:
+                if dep_id not in lineage_ids:
                     continue
+
                 diagnostics.append(
                     SystemDiagnostic(
-                        code="dependency_type_unexpected",
+                        code="identity_mixing_detected",
                         message=(
-                            f"Spell '{node.spell_id}' depends on '{dep_id}' "
-                            f"with type '{dep_node.spell_type.name}'."
+                            f"Spell '{node.spell_id}' depends on lineage id '{dep_id}' "
+                            "instead of a version id."
                         ),
-                        severity=SystemDiagnosticSeverity.WARNING,
+                        severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=node.spell_id,
                         root_id=None,
                         details={
                             "spell_id": node.spell_id,
                             "dependency_id": dep_id,
-                            "dependency_type": dep_node.spell_type.name,
+                            "known_lineage_ids": sorted(lineage_ids),
                         },
                     )
                 )

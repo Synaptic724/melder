@@ -7,6 +7,7 @@ from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import 
 )
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
+from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -28,6 +29,8 @@ class SpellSystemValidationStrategy(ABC):
             blueprints: Dict[str, RootResolutionBlueprint],
             phase4_results: Mapping[str, object],
             broken_spell_ids: Set[str],
+            spell_system_states: ISpellSystemStates,
+            spell_lookup: Mapping[str, ISpell],
             diagnostics: List[SystemDiagnostic],
             cancel_event: Optional[CancellationEvent],
     ) -> None:
@@ -39,6 +42,8 @@ class SpellSystemValidationStrategy(ABC):
             blueprints: Phase-5 blueprints keyed by id.
             phase4_results: Phase-4 results keyed by id.
             broken_spell_ids: Set of broken spell ids.
+            spell_system_states: SpellSystemStates registry for topology and lineage data.
+            spell_lookup: Mapping of visible spell version ids to spell objects.
             diagnostics: List to append diagnostics into.
             cancel_event: Optional cancellation signal.
         """

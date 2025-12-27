@@ -242,6 +242,8 @@ def test_no_blueprints_produces_no_diagnostics() -> None:
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -272,6 +274,8 @@ def test_synced_socket_refs_and_index_produce_no_diagnostics() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -298,6 +302,8 @@ def test_duplicate_socket_ref_emits_duplicate_diagnostic() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -327,6 +333,8 @@ def test_duplicate_socket_ref_multiple_times_emits_multiple_duplicates() -> None
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -353,6 +361,8 @@ def test_missing_in_index_emits_path_and_name_diagnostics() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -386,6 +396,8 @@ def test_missing_in_index_by_name_only_emits_name_diagnostic() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -419,6 +431,8 @@ def test_missing_in_index_by_path_only_emits_path_diagnostic() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -451,6 +465,8 @@ def test_orphan_socket_in_index_emits_orphan_diagnostic() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -480,6 +496,8 @@ def test_orphan_socket_with_valid_ref_only_reports_orphan() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -513,6 +531,8 @@ def test_multiple_orphan_sockets_emit_multiple_diagnostics() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -539,6 +559,8 @@ def test_diagnostics_list_reused_appends_entries() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=existing,
         cancel_event=None,
     )
@@ -566,6 +588,8 @@ def test_cancel_event_halts_before_processing() -> None:
             blueprints={"root": blueprint},
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=diags,
             cancel_event=_CancelStub(is_set=True),
         )
@@ -596,6 +620,8 @@ def test_cancel_event_checked_between_roots() -> None:
             blueprints=blueprints,
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=diags,
             cancel_event=_ToggleCancel(),
         )
@@ -625,6 +651,8 @@ def test_missing_refs_across_multiple_roots_include_root_id() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -651,6 +679,8 @@ def test_duplicate_message_includes_param_path() -> None:
         blueprints={"root": blueprint},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )

@@ -163,6 +163,8 @@ def test_matching_graph_produces_no_diagnostics() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -194,6 +196,8 @@ def test_missing_child_node_emits_missing_index_node() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -231,6 +235,8 @@ def test_missing_parent_node_emits_missing_index_node() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -266,6 +272,8 @@ def test_edge_mismatch_index_emits_diagnostic_with_details() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -303,6 +311,8 @@ def test_edge_missing_from_blueprint_emits_diagnostic() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -335,6 +345,8 @@ def test_edge_missing_from_blueprint_with_empty_blueprints() -> None:
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -377,6 +389,8 @@ def test_union_edges_across_blueprints_prevents_missing_edge() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -408,6 +422,8 @@ def test_diagnostics_list_reused_appends_new() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=existing,
         cancel_event=None,
     )
@@ -441,6 +457,8 @@ def test_cancel_event_raises_before_processing() -> None:
             blueprints=blueprints,
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=diags,
             cancel_event=_CancelStub(is_set=True),
         )
@@ -472,6 +490,8 @@ def test_multiple_edge_mismatches_emit_multiple_diagnostics() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -505,6 +525,8 @@ def test_multiple_missing_edges_emit_multiple_diagnostics() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -533,6 +555,8 @@ def test_index_nodes_without_dependencies_not_reported_when_blueprints_empty() -
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -574,6 +598,8 @@ def test_missing_index_nodes_across_blueprints_reported_per_root() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -607,6 +633,8 @@ def test_missing_index_nodes_reported_for_each_blueprint_node() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -635,6 +663,8 @@ def test_edge_missing_from_blueprint_includes_non_index_parent() -> None:
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )

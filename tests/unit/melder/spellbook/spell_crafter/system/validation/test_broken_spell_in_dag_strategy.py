@@ -30,6 +30,8 @@ def test_no_broken_ids_produces_no_diagnostics():
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diagnostics,
         cancel_event=None,
     )
@@ -47,6 +49,8 @@ def test_non_matching_broken_ids_produces_no_diagnostics():
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids={"missing"},
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diagnostics,
         cancel_event=None,
     )
@@ -64,6 +68,8 @@ def test_matching_broken_ids_emit_diagnostic_with_details():
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids={"broken"},
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diagnostics,
         cancel_event=None,
     )
@@ -96,6 +102,8 @@ def test_cancel_event_honored_before_work():
             blueprints=blueprints,
             phase4_results={},
             broken_spell_ids={"a"},
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=diagnostics,
             cancel_event=_Cancel(),
         )
@@ -111,6 +119,8 @@ def test_multiple_broken_ids_emit_multiple_diagnostics():
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids={"a", "c"},
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diagnostics,
         cancel_event=None,
     )
@@ -130,6 +140,8 @@ def test_diagnostics_are_appended_not_overwritten():
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids={"a"},
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=existing,
         cancel_event=None,
     )

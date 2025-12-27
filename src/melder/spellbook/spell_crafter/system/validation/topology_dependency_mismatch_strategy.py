@@ -1,8 +1,9 @@
 from typing import Dict, List, Mapping, Optional, Set
-# Melder imports
+
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnostic,
@@ -15,14 +16,16 @@ from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
-class IndexCoverageStrategy(SpellSystemValidationStrategy):
+class TopologyDependencyMismatchStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Detect mismatches between local topologies and index dependencies.
 
     Purpose:
-        Ensure every SpellSystemIndex node appears in at least one blueprint DAG.
+        Ensure Phase 3 local topology sockets remain consistent with the
+        dependency edges recorded in SpellSystemIndex.
     Contract:
-        - Emits ``index_node_missing_from_blueprints`` for index nodes absent from all DAGs.
+        - Compares NORMAL socket targets to index dependency ids.
+        - Emits errors when topology targets and index dependencies disagree.
     """
     __slots__ = []
 
@@ -39,13 +42,13 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate that index nodes are covered by root blueprints.
+        Validate topology socket targets against index dependencies.
 
         Purpose:
-            Catch spells that are present in the system index but never appear
-            in any root DAG.
+            Detect drift between socket targets and dependency edges.
         Contract:
-            - Each uncovered node yields a diagnostic.
+            - Only NORMAL sockets contribute to dependency comparisons.
+            - Emits an error when topology and index disagree.
             - Cancellation is honored between nodes.
         Args:
             index: Spell system index being validated.
@@ -62,23 +65,43 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
             OperationCancelledError:
                 If ``cancel_event`` is set while iterating.
         """
-        covered_ids: Set[str] = set()
-        for blueprint in blueprints.values():
-            covered_ids.update(blueprint.dag.nodes.keys())
-
-        for spell_id in index.nodes.keys():
+        for node in index.nodes.values():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
-            if spell_id in covered_ids:
+
+            topology = spell_system_states.get_local_topology_by_id(node.spell_id)
+            if topology is None:
                 continue
+
+            topology_deps: Set[str] = set()
+            for socket in topology.iter_sockets():
+                if socket.socket_kind is not SocketKind.NORMAL:
+                    continue
+                topology_deps.update(socket.target_spell_ids)
+
+            index_deps = set(node.dependencies)
+            missing_in_index = topology_deps.difference(index_deps)
+            extra_in_index = index_deps.difference(topology_deps)
+
+            if not missing_in_index and not extra_in_index:
+                continue
+
             diagnostics.append(
                 SystemDiagnostic(
-                    code="index_node_missing_from_blueprints",
+                    code="topology_dependency_mismatch",
                     message=(
-                        f"SpellSystemIndex node '{spell_id}' is not present in any root blueprint."
+                        f"Spell '{node.spell_id}' has dependency mismatches between "
+                        "local topology sockets and SpellSystemIndex."
                     ),
                     severity=SystemDiagnosticSeverity.ERROR,
-                    spell_id=spell_id,
+                    spell_id=node.spell_id,
                     root_id=None,
+                    details={
+                        "spell_id": node.spell_id,
+                        "missing_in_index": sorted(missing_in_index),
+                        "extra_in_index": sorted(extra_in_index),
+                        "topology_dependencies": sorted(topology_deps),
+                        "index_dependencies": sorted(index_deps),
+                    },
                 )
             )

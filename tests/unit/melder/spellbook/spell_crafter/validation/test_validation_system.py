@@ -559,6 +559,8 @@ def test_init_registers_builtin_strategies() -> None:
         "parameter_policy",
         "callable_profile_hygiene",
         "existing_creation_compatibility",
+        "contract_provider_presence",
+        "binding_resolution_cycle",
     }
     assert expected.issubset(names)
     assert len(names) >= len(expected)

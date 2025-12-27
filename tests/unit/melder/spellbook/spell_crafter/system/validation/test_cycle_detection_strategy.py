@@ -48,6 +48,8 @@ def test_run_requires_index():
             blueprints={},
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=[],
             cancel_event=_CancelStub(is_set=False),
         )
@@ -60,6 +62,8 @@ def test_empty_index_produces_no_diagnostics():
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -74,6 +78,8 @@ def test_single_node_no_deps_has_no_cycle():
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -88,6 +94,8 @@ def test_linear_chain_is_acyclic():
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -102,6 +110,8 @@ def test_simple_cycle_emits_diagnostic():
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -120,6 +130,8 @@ def test_self_cycle_detected():
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -139,6 +151,8 @@ def test_cycle_in_one_component_still_reports_once():
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -156,6 +170,8 @@ def test_missing_dependency_node_does_not_crash():
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -171,6 +187,8 @@ def test_cancel_event_halts_processing():
             blueprints={},
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=[],
             cancel_event=cancel,
         )
@@ -196,6 +214,8 @@ def test_cancel_event_checked_during_traversal():
             blueprints={},
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=[],
             cancel_event=cancel,
         )
@@ -225,6 +245,8 @@ def test_three_node_cycle_emits_diagnostic() -> None:
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -257,6 +279,8 @@ def test_diamond_graph_is_acyclic() -> None:
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -288,6 +312,8 @@ def test_multiple_cycles_report_once() -> None:
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -318,6 +344,8 @@ def test_cycle_with_missing_dependency_still_detected() -> None:
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=_CancelStub(is_set=False),
     )
@@ -333,6 +361,8 @@ def test_diagnostics_list_reused():
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=existing,
         cancel_event=_CancelStub(is_set=False),
     )

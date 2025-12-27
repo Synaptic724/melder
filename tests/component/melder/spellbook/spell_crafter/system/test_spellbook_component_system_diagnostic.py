@@ -61,6 +61,8 @@ class _DiagnosticStrategy(SpellSystemValidationStrategy):
         blueprints: dict[str, object],
         phase4_results: dict[str, object],
         broken_spell_ids: set[str],
+        spell_system_states: object,
+        spell_lookup: dict[str, object],
         diagnostics: list[SystemDiagnostic],
         cancel_event,
     ) -> None:
@@ -74,6 +76,8 @@ class _DiagnosticStrategy(SpellSystemValidationStrategy):
             blueprints: Root blueprints for the frame.
             phase4_results: Phase-4 result map.
             broken_spell_ids: Broken spell ids.
+            spell_system_states: SpellSystemStates instance.
+            spell_lookup: Mapping of spell ids to spell objects.
             diagnostics: Shared diagnostics list.
             cancel_event: Optional cancellation signal.
         Returns:

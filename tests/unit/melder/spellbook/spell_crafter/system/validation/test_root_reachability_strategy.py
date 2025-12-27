@@ -53,6 +53,8 @@ def test_root_reachability_missing_root_in_dag_includes_details():
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diagnostics,
         cancel_event=None,
     )
@@ -85,6 +87,8 @@ def test_root_reachability_orphan_nodes_include_reachable_details():
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diagnostics,
         cancel_event=None,
     )

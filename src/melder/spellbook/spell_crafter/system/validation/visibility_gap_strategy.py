@@ -1,5 +1,5 @@
 from typing import Dict, List, Mapping, Optional, Set
-# Melder imports
+
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -15,14 +15,17 @@ from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
-class IndexCoverageStrategy(SpellSystemValidationStrategy):
+class VisibilityGapStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Detect dependencies filtered out by spellbook visibility.
 
     Purpose:
-        Ensure every SpellSystemIndex node appears in at least one blueprint DAG.
+        Surface cases where a visible spell depends on spell ids that are not
+        present in the current SpellSystemIndex because they are not visible
+        to the spellbook (e.g., missing contracted dependencies).
     Contract:
-        - Emits ``index_node_missing_from_blueprints`` for index nodes absent from all DAGs.
+        - Compares SpellSystemStates direct dependencies against index edges.
+        - Emits one diagnostic per spell with missing dependencies.
     """
     __slots__ = []
 
@@ -39,13 +42,14 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate that index nodes are covered by root blueprints.
+        Validate that visible spells retain all direct dependencies.
 
         Purpose:
-            Catch spells that are present in the system index but never appear
-            in any root DAG.
+            Identify missing dependencies that were filtered out due to
+            spell visibility constraints.
         Contract:
-            - Each uncovered node yields a diagnostic.
+            - Uses SpellSystemStates as the source of truth for direct deps.
+            - Emits errors when dependencies are missing from the index.
             - Cancellation is honored between nodes.
         Args:
             index: Spell system index being validated.
@@ -62,23 +66,36 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
             OperationCancelledError:
                 If ``cancel_event`` is set while iterating.
         """
-        covered_ids: Set[str] = set()
-        for blueprint in blueprints.values():
-            covered_ids.update(blueprint.dag.nodes.keys())
-
-        for spell_id in index.nodes.keys():
+        for node in index.nodes.values():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
-            if spell_id in covered_ids:
+
+            state = spell_system_states.get_by_spell_id(node.spell_id)
+            if state is None or state.direct_dependencies is None:
                 continue
+
+            state_deps = set(state.direct_dependencies)
+            index_deps = set(node.dependencies)
+            missing = state_deps.difference(index_deps)
+
+            if not missing:
+                continue
+
             diagnostics.append(
                 SystemDiagnostic(
-                    code="index_node_missing_from_blueprints",
+                    code="visibility_gap_dependency_filtered",
                     message=(
-                        f"SpellSystemIndex node '{spell_id}' is not present in any root blueprint."
+                        f"Spell '{node.spell_id}' depends on missing spell ids "
+                        f"{sorted(missing)}, which are not visible in the current spellbook."
                     ),
                     severity=SystemDiagnosticSeverity.ERROR,
-                    spell_id=spell_id,
+                    spell_id=node.spell_id,
                     root_id=None,
+                    details={
+                        "spell_id": node.spell_id,
+                        "missing_dependency_ids": sorted(missing),
+                        "state_dependencies": sorted(state_deps),
+                        "index_dependencies": sorted(index_deps),
+                    },
                 )
             )

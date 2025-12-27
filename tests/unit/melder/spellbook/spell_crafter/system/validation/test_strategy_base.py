@@ -91,6 +91,8 @@ class _RecorderStrategy(SpellSystemValidationStrategy):
         blueprints: dict[str, RootResolutionBlueprint],
         phase4_results: dict[str, object],
         broken_spell_ids: set[str],
+        spell_system_states: object,
+        spell_lookup: dict[str, object],
         diagnostics: list[SystemDiagnostic],
         cancel_event,
     ) -> None:
@@ -105,13 +107,24 @@ class _RecorderStrategy(SpellSystemValidationStrategy):
             blueprints: Blueprints mapping to record.
             phase4_results: Phase-4 results to record.
             broken_spell_ids: Broken spell ids to record.
+            spell_system_states: Spell system states to record.
+            spell_lookup: Spell lookup mapping to record.
             diagnostics: Diagnostics list to append into.
             cancel_event: Cancellation event to record.
         Returns:
             None.
         """
         self.calls.append(
-            (index, blueprints, phase4_results, broken_spell_ids, diagnostics, cancel_event)
+            (
+                index,
+                blueprints,
+                phase4_results,
+                broken_spell_ids,
+                spell_system_states,
+                spell_lookup,
+                diagnostics,
+                cancel_event,
+            )
         )
         if self._emit:
             diagnostics.append(SystemDiagnostic("rec", "recorded"))
@@ -173,6 +186,8 @@ def test_concrete_strategy_records_inputs() -> None:
     phase4_results = {"a": object()}
     broken = {"b"}
     diags: list[SystemDiagnostic] = []
+    spell_system_states = object()
+    spell_lookup: dict[str, object] = {}
     cancel = object()
 
     strategy.run(
@@ -180,12 +195,23 @@ def test_concrete_strategy_records_inputs() -> None:
         blueprints=blueprints,
         phase4_results=phase4_results,
         broken_spell_ids=broken,
+        spell_system_states=spell_system_states,
+        spell_lookup=spell_lookup,
         diagnostics=diags,
         cancel_event=cancel,
     )
 
     assert strategy.calls
-    assert strategy.calls[0] == (idx, blueprints, phase4_results, broken, diags, cancel)
+    assert strategy.calls[0] == (
+        idx,
+        blueprints,
+        phase4_results,
+        broken,
+        spell_system_states,
+        spell_lookup,
+        diags,
+        cancel,
+    )
 
 
 def test_concrete_strategy_can_append_diagnostics() -> None:
@@ -207,6 +233,8 @@ def test_concrete_strategy_can_append_diagnostics() -> None:
         blueprints=_blueprint(root_id="root", node_ids=("a",)),
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )

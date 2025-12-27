@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Mapping, Optional, Set
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
@@ -19,7 +19,7 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpellSystemStates
+from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -68,6 +68,7 @@ class SpellSystemValidationSystem(Cleanable):
             phase4_results: Dict[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: ISpellSystemStates,
+            spell_lookup: Optional[Mapping[str, ISpell]] = None,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> SpellSystemValidationState:
         """
@@ -88,6 +89,7 @@ class SpellSystemValidationSystem(Cleanable):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of spell ids flagged as broken in Phase 4.
             spell_system_states: Registry used to mark lineage validity.
+            spell_lookup: Optional mapping of visible spell version ids to spell objects.
             cancel_event: Optional cancellation signal for long-running validation.
         Returns:
             SpellSystemValidationState: Aggregated diagnostics and validity.
@@ -105,6 +107,9 @@ class SpellSystemValidationSystem(Cleanable):
         if self._strategies is None:
             raise RuntimeError("Validation strategies have been cleaned.")
 
+        if spell_lookup is None:
+            spell_lookup = {}
+
         diagnostics: List[SystemDiagnostic] = []
 
         for strategy in self._strategies:
@@ -116,6 +121,8 @@ class SpellSystemValidationSystem(Cleanable):
                 blueprints=blueprints,
                 phase4_results=phase4_results,
                 broken_spell_ids=broken_spell_ids,
+                spell_system_states=spell_system_states,
+                spell_lookup=spell_lookup,
                 diagnostics=diagnostics,
                 cancel_event=cancel_event,
             )

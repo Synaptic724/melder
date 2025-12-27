@@ -1,5 +1,5 @@
 from typing import Dict, List, Mapping, Optional, Set
-# Melder imports
+
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -15,14 +15,17 @@ from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
-class IndexCoverageStrategy(SpellSystemValidationStrategy):
+class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Detect version drift between index nodes and visible spells.
 
     Purpose:
-        Ensure every SpellSystemIndex node appears in at least one blueprint DAG.
+        Ensure SpellSystemIndex nodes reference the current version id for
+        each visible lineage, preventing stale contracted versions.
     Contract:
-        - Emits ``index_node_missing_from_blueprints`` for index nodes absent from all DAGs.
+        - Emits errors when a node's spell_id is not among the visible versions
+          for its lineage.
+        - Skips nodes without lineage metadata.
     """
     __slots__ = []
 
@@ -39,13 +42,14 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate that index nodes are covered by root blueprints.
+        Validate that index nodes align with visible lineage versions.
 
         Purpose:
-            Catch spells that are present in the system index but never appear
-            in any root DAG.
+            Surface cases where SpellSystemIndex references outdated spell
+            version ids for a lineage visible in the spellbook.
         Contract:
-            - Each uncovered node yields a diagnostic.
+            - Uses spell_lookup to determine visible current versions.
+            - Emits errors when a node's spell_id is not a visible version.
             - Cancellation is honored between nodes.
         Args:
             index: Spell system index being validated.
@@ -62,23 +66,38 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
             OperationCancelledError:
                 If ``cancel_event`` is set while iterating.
         """
-        covered_ids: Set[str] = set()
-        for blueprint in blueprints.values():
-            covered_ids.update(blueprint.dag.nodes.keys())
-
-        for spell_id in index.nodes.keys():
+        lineage_to_versions: Dict[str, Set[str]] = {}
+        for spell_id, spell in spell_lookup.items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
-            if spell_id in covered_ids:
+            lineage_id = spell.spell_index.id
+            lineage_to_versions.setdefault(lineage_id, set()).add(spell_id)
+
+        for node in index.nodes.values():
+            if cancel_event is not None and cancel_event.is_set:
+                cancel_event.throw_if_set()
+            lineage_id = node.lineage_id
+            if lineage_id is None:
+                continue
+            visible_versions = lineage_to_versions.get(lineage_id)
+            if not visible_versions:
+                continue
+            if node.spell_id in visible_versions:
                 continue
             diagnostics.append(
                 SystemDiagnostic(
-                    code="index_node_missing_from_blueprints",
+                    code="contracted_version_drift",
                     message=(
-                        f"SpellSystemIndex node '{spell_id}' is not present in any root blueprint."
+                        f"Spell '{node.spell_id}' is not a visible current version for "
+                        f"lineage '{lineage_id}'."
                     ),
                     severity=SystemDiagnosticSeverity.ERROR,
-                    spell_id=spell_id,
+                    spell_id=node.spell_id,
                     root_id=None,
+                    details={
+                        "spell_id": node.spell_id,
+                        "lineage_id": lineage_id,
+                        "visible_versions": sorted(visible_versions),
+                    },
                 )
             )

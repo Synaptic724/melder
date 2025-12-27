@@ -1003,6 +1003,7 @@ class _SpellSystemValidationSystemStub:
         phase4_results: dict[str, object],
         broken_spell_ids: set[str],
         spell_system_states: object,
+        spell_lookup: dict[str, object],
         cancel_event: object | None,
     ) -> object:
         """
@@ -1016,6 +1017,7 @@ class _SpellSystemValidationSystemStub:
             phase4_results: Phase 4 results mapping.
             broken_spell_ids: Broken spell id set.
             spell_system_states: SpellSystemStates instance.
+            spell_lookup: Mapping of spell ids to spell instances.
             cancel_event: Optional cancellation event.
         Returns:
             object: Validation state stub.
@@ -1027,6 +1029,7 @@ class _SpellSystemValidationSystemStub:
                 "phase4_results": dict(phase4_results),
                 "broken_spell_ids": set(broken_spell_ids),
                 "spell_system_states": spell_system_states,
+                "spell_lookup": dict(spell_lookup),
                 "cancel_event": cancel_event,
             }
         )
@@ -3819,12 +3822,18 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
         "RootReachabilityStrategy",
         "RootCoverageStrategy",
         "IndexDependencySanityStrategy",
+        "VisibilityGapStrategy",
+        "TopologyDependencyMismatchStrategy",
+        "IdentityMixingStrategy",
+        "ContractedVersionDriftStrategy",
         "LineageAlignmentStrategy",
         "IndexCoverageStrategy",
         "LineageVersionConflictStrategy",
         "RootLineageConflictStrategy",
         "OwnershipConsistencyStrategy",
         "DependencyTypeSanityStrategy",
+        "ScopeOrderingStrategy",
+        "ContractGraphCycleStrategy",
         "RootScaleLimitStrategy",
         "RootViabilityStrategy",
         "SocketRefSanityStrategy",

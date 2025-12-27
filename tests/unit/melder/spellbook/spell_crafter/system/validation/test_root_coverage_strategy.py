@@ -78,6 +78,8 @@ def test_root_coverage_missing_root_in_index_includes_details():
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diagnostics,
         cancel_event=None,
     )
@@ -111,6 +113,8 @@ def test_root_coverage_root_not_marked_in_index_includes_details():
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diagnostics,
         cancel_event=None,
     )
@@ -143,6 +147,8 @@ def test_root_coverage_missing_root_blueprint_includes_details():
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diagnostics,
         cancel_event=None,
     )

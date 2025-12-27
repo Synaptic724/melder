@@ -1,5 +1,5 @@
 import threading
-from typing import Any
+from typing import Any, Optional, Tuple
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
@@ -56,6 +56,14 @@ class SpellSymbolicDependency(Cleanable):
     spellmap_default:
         For SPELLMAP_DEFAULT shape, the original :class:`SpellMap` default
         instance attached to the parameter.
+
+    contract_key:
+        For SPELL_CONTRACT and MUTATION_CONTRACT shapes, the canonical
+        ``(frame_key, binding_key)`` derived from the contract object.
+
+    contract_late_binding:
+        For MUTATION_CONTRACT shapes, whether the contract declares
+        late binding semantics. For all other shapes, this is None.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -68,6 +76,8 @@ class SpellSymbolicDependency(Cleanable):
         "_target_annotation",
         "_is_collection",
         "_spellmap_default",
+        "_contract_key",
+        "_contract_late_binding",
     ]
 
     def __init__(
@@ -81,6 +91,8 @@ class SpellSymbolicDependency(Cleanable):
             target_annotation: Any,
             is_collection: bool,
             spellmap_default: Any = None,
+            contract_key: Optional[Tuple[str, str]] = None,
+            contract_late_binding: Optional[bool] = None,
     ) -> None:
         super().__init__()
 
@@ -101,6 +113,8 @@ class SpellSymbolicDependency(Cleanable):
         self._target_annotation: Any = target_annotation
         self._is_collection: bool = is_collection
         self._spellmap_default: Any = spellmap_default
+        self._contract_key: Optional[Tuple[str, str]] = contract_key
+        self._contract_late_binding: Optional[bool] = contract_late_binding
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -128,6 +142,8 @@ class SpellSymbolicDependency(Cleanable):
             self._target_annotation = None
             self._is_collection = False
             self._spellmap_default = None
+            self._contract_key = None
+            self._contract_late_binding = None
             self._cleaned = True
 
         self._lock = None
@@ -207,3 +223,26 @@ class SpellSymbolicDependency(Cleanable):
         """
         self.check_cleaned()
         return self._spellmap_default
+
+    @property
+    def contract_key(self) -> Optional[Tuple[str, str]]:
+        """
+        Canonical ``(frame_key, binding_key)`` for contract sockets.
+
+        For SPELL_CONTRACT and MUTATION_CONTRACT shapes, this is derived from
+        the contract descriptor. For all other shapes, this is None.
+        """
+        self.check_cleaned()
+        return self._contract_key
+
+    @property
+    def contract_late_binding(self) -> Optional[bool]:
+        """
+        Late-binding flag for mutation contracts.
+
+        Returns:
+            Optional[bool]:
+                True/False for MUTATION_CONTRACT sockets, otherwise None.
+        """
+        self.check_cleaned()
+        return self._contract_late_binding

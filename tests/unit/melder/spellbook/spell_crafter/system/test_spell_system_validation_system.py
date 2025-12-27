@@ -25,6 +25,9 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
 
 
 class _RecordingStrategy(SpellSystemValidationStrategy):
+    """
+    Test helper that records validation inputs and optionally emits a diagnostic.
+    """
     def __init__(self, *, severity=None, code="C", message="msg"):
         self.calls = []
         self.diag = (
@@ -40,11 +43,25 @@ class _RecordingStrategy(SpellSystemValidationStrategy):
         blueprints,
         phase4_results,
         broken_spell_ids,
+        spell_system_states,
+        spell_lookup,
         diagnostics,
         cancel_event,
     ) -> None:
+        """
+        Capture validation inputs and optionally append a diagnostic.
+        """
         self.calls.append(
-            (index, blueprints, phase4_results, broken_spell_ids, diagnostics, cancel_event)
+            (
+                index,
+                blueprints,
+                phase4_results,
+                broken_spell_ids,
+                spell_system_states,
+                spell_lookup,
+                diagnostics,
+                cancel_event,
+            )
         )
         if self.diag is not None:
             diagnostics.append(self.diag)
@@ -108,6 +125,7 @@ def test_cleanup_is_idempotent_and_blocks_validate():
             phase4_results={},
             broken_spell_ids=set(),
             spell_system_states=_States({}),
+            spell_lookup={},
         )
 
 
@@ -127,6 +145,7 @@ def test_validate_requires_non_null_inputs(param, kw):
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=_States({}),
+        spell_lookup={},
     )
     base_kwargs.update(kw)
     with pytest.raises(ValueError):
@@ -144,12 +163,14 @@ def test_strategies_receive_inputs_and_diagnostics_shared():
         phase4_results={"a": 1},
         broken_spell_ids={"b"},
         spell_system_states=_States({}),
+        spell_lookup={},
     )
     assert strategy.calls
-    (_, bp, p4, broken, diags, _) = strategy.calls[-1]
+    (_, bp, p4, broken, _, spell_lookup, diags, _) = strategy.calls[-1]
     assert bp is blueprints
     assert p4 == {"a": 1}
     assert broken == {"b"}
+    assert spell_lookup == {}
     assert diags == []
 
 
@@ -165,6 +186,7 @@ def test_validity_set_to_valid_when_no_errors():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=states,
+        spell_lookup={},
     )
     for st in (state_a, state_b):
         assert st.calls == [(SpellValidity.valid, SpellStateChangeReason.validation_passed)]
@@ -186,6 +208,7 @@ def test_validity_set_to_gated_on_error_diagnostic():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=_States({"a": state}),
+        spell_lookup={},
     )
     assert state.calls == [(SpellValidity.gated, SpellStateChangeReason.validation_failed)]
     assert result.is_valid is False
@@ -206,6 +229,7 @@ def test_set_validity_skips_missing_state_and_swallows_errors():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=_States({"a": good, "b": bad, "missing": None}),
+        spell_lookup={},
     )
     # good state updated, bad state exception swallowed, validity still reflected as valid
     assert good.calls == [(SpellValidity.valid, SpellStateChangeReason.validation_passed)]
@@ -222,6 +246,7 @@ def test_cancel_event_short_circuits_before_strategy():
             phase4_results={},
             broken_spell_ids=set(),
             spell_system_states=_States({}),
+            spell_lookup={},
             cancel_event=_CancelStub(),
         )
     assert strategy.calls == []
@@ -238,6 +263,7 @@ def test_validate_raises_after_cleanup_of_strategies():
             phase4_results={},
             broken_spell_ids=set(),
             spell_system_states=_States({}),
+            spell_lookup={},
         )
 
 
@@ -253,6 +279,7 @@ def test_validate_can_run_multiple_times():
             phase4_results={},
             broken_spell_ids=set(),
             spell_system_states=states,
+            spell_lookup={},
         )
     assert len(strategy.calls) == 2
 
@@ -267,6 +294,7 @@ def test_validate_with_no_strategies_succeeds():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=states,
+        spell_lookup={},
     )
     assert result.is_valid is True
     assert result.errors == []
@@ -283,6 +311,7 @@ def test_validate_ignores_none_severity_diagnostics():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=states,
+        spell_lookup={},
     )
     assert result.errors == []
     assert result.warnings == []
@@ -298,6 +327,7 @@ def test_validate_collects_multiple_warnings():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=_States({"a": _StateStub()}),
+        spell_lookup={},
     )
     assert {d.code for d in result.warnings} == {"W1", "W2"}
     assert result.errors == []
@@ -315,6 +345,7 @@ def test_error_overrides_warnings_for_validity():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=_States({"a": state}),
+        spell_lookup={},
     )
     assert result.is_valid is False
     assert result.errors
@@ -329,6 +360,7 @@ def test_validate_returns_nodes_reference():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=_States({"a": _StateStub(), "b": _StateStub()}),
+        spell_lookup={},
     )
     assert result.nodes is idx.nodes
 
@@ -343,6 +375,7 @@ def test_validate_runs_all_strategies_when_not_cancelled():
         phase4_results={},
         broken_spell_ids={"x"},
         spell_system_states=_States({"a": _StateStub()}),
+        spell_lookup={},
         cancel_event=cancel,
     )
     assert len(s1.calls) == 1
@@ -374,6 +407,7 @@ def test_cancel_event_blocks_subsequent_strategies():
             phase4_results={},
             broken_spell_ids=set(),
             spell_system_states=_States({"a": _StateStub()}),
+            spell_lookup={},
             cancel_event=cancel,
         )
     # first strategy runs, second blocked
@@ -389,6 +423,7 @@ def test_validate_supports_empty_index():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=_States({}),
+        spell_lookup={},
     )
     assert result.is_valid is True
     assert result.nodes == {}
@@ -408,6 +443,7 @@ def test_errors_and_warnings_filtered_by_severity():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=_States({"a": _StateStub()}),
+        spell_lookup={},
     )
     assert result.errors == [err]
     assert result.warnings == [warn]
@@ -429,6 +465,7 @@ def test_validate_propagates_broken_spell_ids_to_strategies():
         phase4_results={},
         broken_spell_ids=broken,
         spell_system_states=_States({"x": _StateStub()}),
+        spell_lookup={},
     )
     assert strat.calls
     assert strat.calls[0][3] == broken
@@ -444,6 +481,7 @@ def test_state_set_validity_called_for_each_node():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=states,
+        spell_lookup={},
     )
     for sid in idx.nodes:
         assert states.mapping[sid].calls
@@ -458,6 +496,7 @@ def test_validate_returns_diagnostics_when_error_present():
         phase4_results={},
         broken_spell_ids=set(),
         spell_system_states=_States({"a": _StateStub()}),
+        spell_lookup={},
     )
     assert result.errors
     assert result.errors[0].severity is SystemDiagnosticSeverity.ERROR

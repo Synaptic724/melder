@@ -1,5 +1,6 @@
 from typing import Dict, List, Mapping, Optional, Set
-# Melder imports
+
+from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -11,20 +12,21 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import (
 from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
-from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
-class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
+class ScopeOrderingStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Enforce lifecycle scope ordering across dependency edges.
 
     Purpose:
-        Flag dependency graphs that rely on method/lambda spell types.
+        Prevent broad-scope spells from depending on narrower-scope spells,
+        which can lead to leaking per-conduit or per-call instances into
+        shared contexts.
     Contract:
-        - Emits ``dependency_type_unexpected`` for method/lambda dependencies.
-        - Uses WARNING severity to avoid gating resolution.
+        - Emits errors when a broader scope depends on a narrower scope.
+        - Skips checks when existence metadata is missing.
     """
     __slots__ = []
 
@@ -41,14 +43,15 @@ class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate dependency spell types against system-level expectations.
+        Validate dependency edges against scope ordering rules.
 
         Purpose:
-            Surface dependency chains that rely on callable spells rather than
-            class/existing-creation spells.
+            Detect broad-to-narrow dependencies that can corrupt lifecycle
+            boundaries and caching semantics.
         Contract:
-            - Emits warnings for method/lambda dependency types.
-            - Missing dependency nodes are ignored (handled elsewhere).
+            - Only compares nodes with known existence metadata.
+            - Emits one diagnostic per offending edge.
+            - Cancellation is honored between nodes.
         Args:
             index: Spell system index being validated.
             blueprints: Root blueprints keyed by root spell id.
@@ -64,40 +67,50 @@ class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
             OperationCancelledError:
                 If ``cancel_event`` is set while iterating.
         """
-        disallowed_types = {
-            SpellType.METHOD,
-            SpellType.METHOD_WITH_BINDING_NAME,
-            SpellType.METHOD_WITH_SPELLFRAME,
-            SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
-            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
-            SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
-            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        scope_rank = {
+            Existence.unique: 0,
+            Existence.unique_per_conduit_cluster: 1,
+            Existence.unique_per_conduit_lineage: 2,
+            Existence.unique_per_conduit: 3,
+            Existence.unique_per_spell_space: 4,
+            Existence.many: 5,
         }
 
         for node in index.nodes.values():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
+            if node.existence is None:
+                continue
+            node_rank = scope_rank.get(node.existence)
+            if node_rank is None:
+                continue
+
             for dep_id in node.dependencies:
                 dep_node = index.get_node(dep_id)
-                if dep_node is None or dep_node.spell_type is None:
+                if dep_node is None or dep_node.existence is None:
                     continue
-                if dep_node.spell_type not in disallowed_types:
+                dep_rank = scope_rank.get(dep_node.existence)
+                if dep_rank is None:
                     continue
+                if node_rank >= dep_rank:
+                    continue
+
                 diagnostics.append(
                     SystemDiagnostic(
-                        code="dependency_type_unexpected",
+                        code="scope_ordering_violation",
                         message=(
-                            f"Spell '{node.spell_id}' depends on '{dep_id}' "
-                            f"with type '{dep_node.spell_type.name}'."
+                            f"Spell '{node.spell_id}' ({node.existence.name}) depends on "
+                            f"'{dep_id}' ({dep_node.existence.name}), which is a narrower scope."
                         ),
-                        severity=SystemDiagnosticSeverity.WARNING,
+                        severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=node.spell_id,
                         root_id=None,
                         details={
                             "spell_id": node.spell_id,
+                            "spell_existence": node.existence.name,
                             "dependency_id": dep_id,
-                            "dependency_type": dep_node.spell_type.name,
+                            "dependency_existence": dep_node.existence.name,
                         },
                     )
                 )

@@ -192,6 +192,8 @@ def test_no_existing_errors_produces_no_diagnostics() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -224,6 +226,8 @@ def test_existing_error_emits_root_not_viable() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=existing,
         cancel_event=None,
     )
@@ -261,6 +265,8 @@ def test_error_without_root_id_does_not_trigger() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -294,6 +300,8 @@ def test_warning_does_not_trigger_root_not_viable() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -337,6 +345,8 @@ def test_multiple_roots_emit_only_for_roots_with_errors() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -377,6 +387,8 @@ def test_multiple_errors_for_same_root_emit_once() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -411,6 +423,8 @@ def test_cancel_event_halts_before_processing() -> None:
             blueprints=blueprints,
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=diags,
             cancel_event=_CancelStub(is_set=True),
         )
@@ -453,6 +467,8 @@ def test_cancel_event_checked_between_roots() -> None:
             blueprints=blueprints,
             phase4_results={},
             broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
             diagnostics=diags,
             cancel_event=_ToggleCancel(),
         )
@@ -485,6 +501,8 @@ def test_blueprints_empty_does_not_add_viability_diagnostics() -> None:
         blueprints={},
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -518,6 +536,8 @@ def test_error_for_unknown_root_does_not_emit_viability() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -551,6 +571,8 @@ def test_error_without_spell_id_still_triggers_viability() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -585,6 +607,8 @@ def test_root_not_viable_message_includes_root_id() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
@@ -627,6 +651,8 @@ def test_warnings_for_root_do_not_trigger_viability() -> None:
         blueprints=blueprints,
         phase4_results={},
         broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
         diagnostics=diags,
         cancel_event=None,
     )
