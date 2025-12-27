@@ -278,6 +278,7 @@ def test_component_validation_system_reports_all_issue_types_in_complex_case() -
             spell=ContainerB.Service,
             existence=Existence.unique,
             permissions="create",
+            binding_name="secondary",
         )
         root_spell = _get_spell_by_version_id(spellbook, root_id)
         other_spell = _get_spell_by_version_id(spellbook, other_id)

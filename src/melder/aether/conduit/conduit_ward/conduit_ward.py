@@ -1282,6 +1282,8 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If no contract exists with the target conduit (link required first).
             RuntimeError: If the spell is already contracted with the same permissions.
+            RuntimeError: If the contracted spell binding key collides with existing bindings,
+                including dependency collisions when link_dependencies is True.
             ValueError/TypeError/RuntimeError: From internal helper checks.
         """
         self.check_cleaned()
@@ -1330,6 +1332,29 @@ class ConduitWard(Cleanable):
 
         # Policy + ownership checks remain unchanged
         self._check_spell_if_eligible(spell, conduit, permissions_enum)
+
+        spellbook = self._conduit._spellbook
+        if spellbook is not None:
+            contract_key = spellbook._make_spell_key(
+                spell.spellframe,
+                spell.spell_name,
+                spell.binding_name,
+            )
+            spellbook._assert_lookup_key_available(
+                lookup_key=contract_key,
+                spell_index=spell.spell_index,
+                context="_add_spell_to_contract",
+                check_local=False,
+                check_contracted=True,
+            )
+
+        if link_dependencies:
+            self._preflight_contract_dependency_collisions(
+                root_spell=spell,
+                root_spell_id=source_root_id,
+                requested_permissions=permissions_enum,
+                aetheric_frame=aetheric_frame,
+            )
 
         # From this ConduitWard's perspective, the peer's Detail represents
         # a spell that the peer has **received** from us.
@@ -1716,6 +1741,126 @@ class ConduitWard(Cleanable):
             # Recurse through transitive dependencies
             child_deps = getattr(dep_spell, "dependencies", None) or []
             for child_dep in child_deps:
+                walk(child_dep)
+
+        for dep in deps:
+            walk(dep)
+
+    def _preflight_contract_dependency_collisions(
+            self,
+            *,
+            root_spell: ISpell,
+            root_spell_id: str,
+            requested_permissions: Permissions,
+            aetheric_frame: str = "default",
+    ) -> None:
+        """
+        Internal
+
+        Purpose:
+            Fail fast by checking contracted-binding collisions for a root spell
+            and any transitive dependencies before linking.
+        Contract:
+            - Raises if any dependency is missing or ineligible for contracting.
+            - Raises if any contracted binding key would collide with an existing
+              contracted spell or another spell in this preflight batch.
+            - Does not mutate contracts or spellbooks.
+        Args:
+            root_spell: Root spell being contracted.
+            root_spell_id: Root spell id for dependency source tagging.
+            requested_permissions: Requested permissions for dependency linking.
+            aetheric_frame: Aetheric frame for conduit/spell lookups.
+        Returns:
+            None.
+        Raises:
+            ValueError: If root_spell or root_spell_id are missing.
+            RuntimeError: If dependencies are missing, ineligible, or collide.
+        Threading:
+            Read-only; no contract locks are acquired.
+        """
+        self.check_cleaned()
+
+        if root_spell is None:
+            raise ValueError("root_spell must not be None.")
+        if root_spell_id is None:
+            raise ValueError("root_spell_id must not be None.")
+
+        spellbook = self._conduit._spellbook
+        if spellbook is None:
+            return
+
+        visited: set[str] = set()
+        batch_keys: dict[tuple[str, str], ISpell] = {}
+
+        def record_spell(spell: ISpell, spell_id: str) -> None:
+            contract_key = spellbook._make_spell_key(
+                spell.spellframe,
+                spell.spell_name,
+                spell.binding_name,
+            )
+            existing = batch_keys.get(contract_key)
+            if existing is not None and existing is not spell:
+                frame_key, bind_key = contract_key
+                raise RuntimeError(
+                    "Spell binding key collision detected in preflight batch. "
+                    f"frame_key='{frame_key}', binding_name='{bind_key}'. "
+                    "Use a distinct spellframe or binding_name to disambiguate."
+                )
+            batch_keys[contract_key] = spell
+            spellbook._assert_lookup_key_available(
+                lookup_key=contract_key,
+                spell_index=spell.spell_index,
+                context="_preflight_contract_dependency_collisions",
+                check_local=False,
+                check_contracted=True,
+            )
+
+        visited.add(root_spell_id)
+        record_spell(root_spell, root_spell_id)
+
+        try:
+            deps = root_spell.dependencies
+        except AttributeError:
+            deps = []
+
+        if not deps:
+            return
+
+        def walk(dep_id: str) -> None:
+            if dep_id in visited:
+                return
+            visited.add(dep_id)
+
+            if self._has_local_spell_version(dep_id):
+                return
+
+            owner_conduit = self._conduit.get_conduit_by_spell_id(dep_id, aetheric_frame)
+            if owner_conduit is None:
+                raise RuntimeError(
+                    f"Dependency '{dep_id}' owner not found for root '{root_spell_id}'."
+                )
+
+            if owner_conduit._id == self._id:
+                return
+
+            dep_spell = owner_conduit.get_spell_by_id(dep_id, aetheric_frame)
+            if dep_spell is None:
+                raise RuntimeError(
+                    f"Dependency '{dep_id}' not found in owner conduit '{owner_conduit._id}'."
+                )
+
+            dep_permissions = self._get_spell_permissions(dep_spell)
+            if requested_permissions == Permissions.read or dep_permissions == Permissions.read:
+                dep_permissions = Permissions.read
+
+            self._check_spell_if_eligible(dep_spell, owner_conduit, dep_permissions)
+            record_spell(dep_spell, dep_id)
+
+            try:
+                child_deps = dep_spell.dependencies
+            except AttributeError:
+                child_deps = []
+            for child_dep in child_deps or []:
                 walk(child_dep)
 
         for dep in deps:

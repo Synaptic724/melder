@@ -502,6 +502,7 @@ def test_collection_di_forward_ref_list_injects_all() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe=_ForwardRefHandler,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_ForwardRefPipeline,
@@ -727,6 +728,7 @@ def test_type_hint_di_forward_ref_typing_list_protocol_resolves_all() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe=_ForwardRefHandler,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_TypingListPipeline,
@@ -836,6 +838,7 @@ def test_type_hint_di_forward_ref_list_class_frame_resolves_all() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe=_Frame,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_FramePipeline,
@@ -1020,6 +1023,7 @@ def test_type_hint_di_forward_ref_local_protocol_collection_resolves_by_name() -
         existence=Existence.unique,
         permissions="create",
         spellframe=_LocalProtocol,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_LocalPipeline,
@@ -1284,6 +1288,7 @@ def test_type_hint_di_forward_ref_typing_list_class_frame_resolves_all() -> None
         existence=Existence.unique,
         permissions="create",
         spellframe=_TypingFrame,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_TypingFramePipeline,
@@ -1746,6 +1751,7 @@ def test_collection_di_by_list_frame_injects_all() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe=IHandler,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_Pipeline,
@@ -1939,6 +1945,7 @@ def test_type_hint_di_ambiguous_frame_raises() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe=IRepository,
+        binding_name="secondary",
     )
     spellbook.bind(
         spell=_Service,

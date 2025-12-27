@@ -208,6 +208,7 @@ def test_component_local_frame_dag_supports_collection_dependencies() -> None:
             existence=Existence.unique,
             permissions="create",
             spellframe=IService,
+            binding_name="secondary",
         )
         consumer_id = spellbook.bind(
             spell=Consumer,

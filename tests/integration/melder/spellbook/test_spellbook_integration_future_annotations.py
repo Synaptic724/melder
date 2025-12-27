@@ -425,6 +425,7 @@ def test_future_annotations_collection_di_protocol_list_resolves_all() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe=_FutureProtocol,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_FuturePipeline,
@@ -467,6 +468,7 @@ def test_future_annotations_collection_di_class_frame_list_resolves_all() -> Non
         existence=Existence.unique,
         permissions="create",
         spellframe=_FutureFrame,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_FutureFramePipeline,
@@ -742,6 +744,7 @@ def test_future_annotations_typing_list_forward_ref_collection_resolves_all() ->
         existence=Existence.unique,
         permissions="create",
         spellframe=_FutureProtocol,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_TypingListPipeline,
@@ -1110,6 +1113,7 @@ def test_future_annotations_local_forward_ref_collection_resolves_by_name() -> N
         existence=Existence.unique,
         permissions="create",
         spellframe=_LocalFrame,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_LocalFramePipeline,
@@ -1219,6 +1223,7 @@ def test_future_annotations_local_protocol_forward_ref_collection_resolves_by_na
         existence=Existence.unique,
         permissions="create",
         spellframe=_LocalProtocol,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_LocalProtoPipeline,

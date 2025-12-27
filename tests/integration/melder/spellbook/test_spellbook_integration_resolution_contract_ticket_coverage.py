@@ -26,6 +26,11 @@ SUPPORTED_TICKET_ITEMS: Dict[str, tuple[str, ...]] = {
         "test_meld_overrides_unique_targets_dependency",
         "test_meld_by_class_with_spell_override_dict_applies_kwargs",
     ),
+    "A6": (
+        "test_meld_by_spell_name_resolves_class_instance",
+        "test_meld_by_spell_name_string_resolves_default_binding",
+        "test_meld_by_spell_name_with_binding_name_resolves_named_binding",
+    ),
     "B1": (
         "test_bind_conjure_and_meld_resolves_direct_dependency",
         "test_type_hint_di_by_concrete_class_resolves_dependency",

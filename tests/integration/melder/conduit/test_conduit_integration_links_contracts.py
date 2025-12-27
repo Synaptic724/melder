@@ -10,7 +10,6 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -667,13 +666,13 @@ def test_conduit_spell_contract_applies_override_payload() -> None:
 def test_conduit_spell_contract_ambiguous_contracted_raises() -> None:
     """
     Purpose:
-        Validate SpellContract raises when contracted providers are ambiguous.
+        Validate duplicate contracted providers are rejected before resolution.
     Contract:
-        - Multiple contracted spells under the same key raise MeldExecutionError.
+        - add_spell_to_contract raises RuntimeError when the binding key collides.
     Returns:
         None.
     Raises:
-        AssertionError: If ambiguity does not raise.
+        AssertionError: If duplicate contracts are not rejected.
     """
     class AltService:
         """
@@ -759,15 +758,12 @@ def test_conduit_spell_contract_ambiguous_contracted_raises() -> None:
             conduit=owner_a,
             permissions="create",
         )
-        assert borrower.add_spell_to_contract(
-            spell_id=owner_b_id,
-            conduit=owner_b,
-            permissions="create",
-        )
-        assert borrower.validate_contracts_and_define()
-
-        with pytest.raises(MeldExecutionError, match="multiple contracted spells"):
-            borrower.meld(spell=consumer_id)
+        with pytest.raises(RuntimeError, match="binding key collision"):
+            borrower.add_spell_to_contract(
+                spell_id=owner_b_id,
+                conduit=owner_b,
+                permissions="create",
+            )
     finally:
         borrower.cleanup()
         owner_a.cleanup()

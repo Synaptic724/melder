@@ -162,6 +162,7 @@ def test_component_spellbook_define_conduit_into_spells_stamps_ownership_and_reg
             spell=existing,
             existence=Existence.unique,
             permissions="create",
+            binding_name="existing",
         )
 
         conduit = _ConduitStub(conduit_id="owner-id", name="owner-name")

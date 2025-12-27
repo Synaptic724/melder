@@ -412,6 +412,9 @@ def test_add_spell_to_contract_flow(ward):
     spell.spell_index = SpellIndex("sha-1")
     spell._owner_conduit_id = target_conduit._id
     spell.permissions = Permissions.create
+    spell.spellframe = "frame"
+    spell.spell_name = "TestSpell"
+    spell.binding_name = "default"
     spell.__name__ = "TestSpell"
     
     # Mock retrieval

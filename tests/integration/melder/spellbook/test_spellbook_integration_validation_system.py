@@ -1149,6 +1149,7 @@ def test_validation_system_duplicate_spell_name_local_only() -> None:
             spell=ContainerB.Service,
             existence=Existence.unique,
             permissions="create",
+            binding_name="secondary",
         )
 
         spell = _get_spell_by_version_id(spellbook, target_id)

@@ -6,6 +6,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from tests.mocks.spellbook.core_classes import BasicService
+from tests.mocks.spellbook.protocols import IService
 
 
 @pytest.fixture(autouse=True)
@@ -169,6 +170,56 @@ def test_component_spellbook_bind_registers_lineage_and_states() -> None:
         assert bound_spell is not None
         assert bound_spell._spell_system_states is states
         assert bound_spell.spell_index.current == spell_id
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_bind_rejects_duplicate_binding_key() -> None:
+    """
+    Purpose:
+        Validate bind rejects duplicate normalized binding keys.
+    Contract:
+        - Rebinding a different spell under the same frame/binding raises RuntimeError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If duplicate bindings are not rejected.
+    """
+    spellbook = _make_spellbook()
+
+    class ServiceA:
+        """
+        Purpose:
+            Provide a simple spell for duplicate binding tests.
+        Contract:
+            No behavior beyond type identity.
+        """
+
+    class ServiceB:
+        """
+        Purpose:
+            Provide a second spell for duplicate binding tests.
+        Contract:
+            No behavior beyond type identity.
+        """
+
+    try:
+        spellbook.bind(
+            spell=ServiceA,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+
+        with pytest.raises(RuntimeError, match="binding key collision"):
+            spellbook.bind(
+                spell=ServiceB,
+                existence=Existence.unique,
+                permissions="create",
+                spellframe=IService,
+                binding_name="primary",
+            )
     finally:
         spellbook.cleanup()
 

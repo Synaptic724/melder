@@ -11,6 +11,7 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import IConduit, ISpell
 
 
@@ -64,9 +65,26 @@ class FakeSpell:
         *,
         permissions: Permissions = Permissions.create,
         spell_name: str = "FakeSpell",
+        binding_name: str | None = None,
         dependencies: list[str] | None = None,
     ) -> None:
-        """Create a spell with a SpellIndex lineage and ownership metadata."""
+        """
+        Purpose:
+            Create a spell with lineage, ownership metadata, and a binding name.
+        Contract:
+            - Initializes SpellIndex lineage with the provided spell_id.
+            - Records owner conduit metadata for ownership checks.
+            - Uses the provided binding_name or defaults to "default".
+        Args:
+            spell_id: Versioned spell id for lineage tracking.
+            owner_id: Owning conduit id for ownership checks.
+            permissions: Permissions assigned to the spell.
+            spell_name: Friendly spell name for diagnostics.
+            binding_name: Binding name for lookup key generation.
+            dependencies: Optional dependency spell ids.
+        Returns:
+            None.
+        """
         self._cleaned = False
         self._lock = threading.RLock()
         self._id = f"spell-{spell_id}"
@@ -75,7 +93,7 @@ class FakeSpell:
         self.permissions = permissions
         self._permissions = permissions
         self.spellframe = "frame"
-        self.binding_name = "default"
+        self.binding_name = "default" if binding_name is None else binding_name
         self.spell_name = spell_name
         self.__name__ = spell_name
         self._owner_conduit_id = owner_id
@@ -126,7 +144,8 @@ class FakeSpellbook:
         self._lock = threading.RLock()
         self._spells: dict[SpellIndex, FakeSpell] = {}
         self._contracted_spells: dict[str, dict[SpellIndex, FakeSpell]] = {}
-        self._lookup_contracted_spells: dict[str, dict[tuple[str, str, str], SpellIndex]] = {}
+        self._lookup_spells: dict[tuple[str, str], SpellIndex] = {}
+        self._lookup_contracted_spells: dict[str, dict[tuple[str, str], SpellIndex]] = {}
         self._contracted_versions: dict[str, set[str]] = {}
         self._create_link_calls: list[str] = []
         self._add_contracted_calls: list[tuple[str, str]] = []
@@ -137,6 +156,76 @@ class FakeSpellbook:
     def add_local_spell(self, spell: FakeSpell) -> None:
         """Register a locally owned spell for lineage checks."""
         self._spells[spell.spell_index] = spell
+        lookup_key = self._make_spell_key(
+            spell.spellframe,
+            spell.spell_name,
+            spell.binding_name,
+        )
+        self._lookup_spells[lookup_key] = spell.spell_index
+
+    def _make_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> tuple[str, str]:
+        """
+        Create a normalized lookup key for spells in this fake spellbook.
+
+        Args:
+            spellframe: Spellframe identifier to normalize.
+            spell_name: Spell name used for frame fallback.
+            binding_name: Binding name to normalize.
+
+        Returns:
+            tuple[str, str]: Normalized (frame_key, binding_key) pair.
+        """
+        frame_key, bind_key = SpellInputUtils.make_spell_key_from_parts(
+            spellframe=spellframe,
+            spell_name=spell_name,
+            binding_name=binding_name,
+        )
+        return frame_key, bind_key
+
+    def _assert_lookup_key_available(
+        self,
+        *,
+        lookup_key: tuple[str, str],
+        spell_index: SpellIndex,
+        context: str,
+        check_local: bool = True,
+        check_contracted: bool = True,
+    ) -> None:
+        """
+        Validate lookup key uniqueness for local/contracted spell maps.
+
+        Args:
+            lookup_key: Normalized (frame_key, binding_key) tuple.
+            spell_index: SpellIndex associated with the incoming spell.
+            context: Caller context for error reporting.
+            check_local: When True, enforce uniqueness against local entries.
+            check_contracted: When True, enforce uniqueness against contracted entries.
+
+        Raises:
+            RuntimeError: If the lookup key collides with another spell.
+        """
+        if check_local:
+            existing_local = self._lookup_spells.get(lookup_key)
+            if existing_local is not None and existing_local is not spell_index:
+                frame_key, bind_key = lookup_key
+                raise RuntimeError(
+                    "Spell binding key collision detected in local registry. "
+                    f"frame_key='{frame_key}', binding_name='{bind_key}'. "
+                    "Use a distinct spellframe or binding_name to disambiguate."
+                )
+
+        if check_contracted:
+            for conduit_id, lookup_map in self._lookup_contracted_spells.items():
+                existing_contracted = lookup_map.get(lookup_key)
+                if existing_contracted is None or existing_contracted is spell_index:
+                    continue
+                frame_key, bind_key = lookup_key
+                raise RuntimeError(
+                    "Spell binding key collision detected in contracted registry. "
+                    f"frame_key='{frame_key}', binding_name='{bind_key}', "
+                    f"conduit_id='{conduit_id}'. Use a distinct spellframe or binding_name "
+                    "to disambiguate."
+                )
 
     def _create_link_contract(self, conduit_id: str) -> None:
         """Create contracted spell buckets for a peer conduit."""
@@ -160,7 +249,12 @@ class FakeSpellbook:
         lookup_map = self._lookup_contracted_spells[conduit_id]
         versions_set = self._contracted_versions[conduit_id]
         spell_map[spell.spell_index] = spell
-        lookup_map[(spell.spellframe, spell.spell_name, spell.binding_name)] = spell.spell_index
+        lookup_key = self._make_spell_key(
+            spell.spellframe,
+            spell.spell_name,
+            spell.binding_name,
+        )
+        lookup_map[lookup_key] = spell.spell_index
         versions = spell.spell_index._versions
         if versions:
             for version_id in versions:
@@ -209,7 +303,12 @@ class FakeSpellbook:
         if spell_index is None or spell is None:
             raise RuntimeError("Spell version not found.")
         spell_map.pop(spell_index, None)
-        lookup_map.pop((spell.spellframe, spell.spell_name, spell.binding_name), None)
+        lookup_key = self._make_spell_key(
+            spell.spellframe,
+            spell.spell_name,
+            spell.binding_name,
+        )
+        lookup_map.pop(lookup_key, None)
         versions = spell_index._versions
         if versions:
             for version_id in versions:
@@ -395,14 +494,32 @@ def _register_spell(
     *,
     permissions: Permissions = Permissions.create,
     spell_name: str = "Spell",
+    binding_name: str | None = None,
     dependencies: list[str] | None = None,
 ) -> FakeSpell:
-    """Create and register a spell owned by the given conduit."""
+    """
+    Purpose:
+        Create and register a spell owned by the given conduit.
+    Contract:
+        - Creates a FakeSpell with a unique binding_name when one is not provided.
+        - Registers the spell on the conduit and its fake spellbook.
+    Args:
+        conduit: Conduit that will own the spell.
+        spell_id: Versioned spell id for lineage tracking.
+        permissions: Permissions assigned to the spell.
+        spell_name: Friendly spell name for diagnostics.
+        binding_name: Optional binding name override.
+        dependencies: Optional dependency spell ids.
+    Returns:
+        FakeSpell: The registered spell instance.
+    """
+    resolved_binding = f"binding-{spell_id}" if binding_name is None else binding_name
     spell = FakeSpell(
         spell_id,
         conduit._id,
         permissions=permissions,
         spell_name=spell_name,
+        binding_name=resolved_binding,
         dependencies=dependencies,
     )
     conduit.register_spell(spell)
@@ -1136,6 +1253,237 @@ def test_link_spell_dependencies_adds_transitive_dependencies(
         (owner._id, dep_one.spell_id),
         (owner._id, dep_two.spell_id),
     }
+
+
+def test_add_spell_to_contract_preflight_rejects_dependency_collision() -> None:
+    """Verify dependency collisions fail fast before contract mutation when linking dependencies."""
+    owner, borrower = _build_conduit_pair()
+    owner_two = FakeConduit("owner-2", name="OwnerTwo", policy=Policies.default, dynamic=True)
+    borrower.register_conduit(owner_two)
+    owner_two.register_conduit(borrower)
+
+    borrower._conduit_ward._create_new_contract(owner)
+    borrower._conduit_ward._create_new_contract(owner_two)
+
+    collision_spell = _register_spell(
+        owner_two,
+        "spell-collision",
+        permissions=Permissions.create,
+        binding_name="shared",
+    )
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=collision_spell,
+        spell_id=collision_spell.spell_id,
+        conduit=owner_two,
+        permissions="create",
+    )
+
+    dep_spell = _register_spell(
+        owner,
+        "dep-collision",
+        permissions=Permissions.create,
+        binding_name="shared",
+    )
+    root_spell = _register_spell(
+        owner,
+        "root-collision",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+
+    with pytest.raises(RuntimeError, match="binding key collision"):
+        borrower._conduit_ward._add_spell_to_contract(
+            spell=root_spell,
+            spell_id=root_spell.spell_id,
+            conduit=owner,
+            permissions="create",
+            link_dependencies=True,
+        )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert contract._get_detail_map(owner._conduit_ward) == {}
+
+
+def test_add_spell_to_contract_preflight_rejects_root_collision() -> None:
+    """Verify root spell collisions fail fast before contract mutation with link_dependencies."""
+    owner, borrower = _build_conduit_pair()
+    owner_two = FakeConduit("owner-2", name="OwnerTwo", policy=Policies.default, dynamic=True)
+    borrower.register_conduit(owner_two)
+    owner_two.register_conduit(borrower)
+
+    borrower._conduit_ward._create_new_contract(owner)
+    borrower._conduit_ward._create_new_contract(owner_two)
+
+    collision_spell = _register_spell(
+        owner_two,
+        "spell-root-collision",
+        permissions=Permissions.create,
+        binding_name="shared-root",
+    )
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=collision_spell,
+        spell_id=collision_spell.spell_id,
+        conduit=owner_two,
+        permissions="create",
+    )
+
+    root_spell = _register_spell(
+        owner,
+        "spell-root",
+        permissions=Permissions.create,
+        binding_name="shared-root",
+    )
+
+    with pytest.raises(RuntimeError, match="binding key collision"):
+        borrower._conduit_ward._add_spell_to_contract(
+            spell=root_spell,
+            spell_id=root_spell.spell_id,
+            conduit=owner,
+            permissions="create",
+            link_dependencies=True,
+        )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert contract._get_detail_map(owner._conduit_ward) == {}
+
+
+def test_add_spell_to_contract_preflight_allows_local_collision() -> None:
+    """Verify local binding collisions are allowed when contracting dependencies."""
+    owner, borrower = _build_conduit_pair()
+    borrower._conduit_ward._create_new_contract(owner)
+
+    _register_spell(
+        borrower,
+        "spell-local",
+        permissions=Permissions.create,
+        binding_name="shared-local",
+    )
+    root_spell = _register_spell(
+        owner,
+        "spell-root-local",
+        permissions=Permissions.create,
+        binding_name="shared-local",
+    )
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=root_spell,
+        spell_id=root_spell.spell_id,
+        conduit=owner,
+        permissions="create",
+        link_dependencies=True,
+    )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert contract._get_detail_map(owner._conduit_ward).get(root_spell.spell_id) is not None
+
+
+def test_add_spell_to_contract_preflight_raises_on_missing_dependency_owner() -> None:
+    """Verify missing dependency owners fail fast before contract mutation."""
+    owner, borrower = _build_conduit_pair()
+    borrower._conduit_ward._create_new_contract(owner)
+
+    root_spell = _register_spell(
+        owner,
+        "spell-root-missing-owner",
+        permissions=Permissions.create,
+        dependencies=["dep-missing-owner"],
+    )
+
+    with pytest.raises(RuntimeError, match="owner not found"):
+        borrower._conduit_ward._add_spell_to_contract(
+            spell=root_spell,
+            spell_id=root_spell.spell_id,
+            conduit=owner,
+            permissions="create",
+            link_dependencies=True,
+        )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert contract._get_detail_map(owner._conduit_ward) == {}
+
+
+def test_add_spell_to_contract_preflight_raises_on_missing_dependency_spell() -> None:
+    """Verify missing dependency spells fail fast before contract mutation."""
+    owner, borrower = _build_conduit_pair()
+    borrower._conduit_ward._create_new_contract(owner)
+
+    dep_id = "dep-missing-spell"
+    borrower.register_spell_owner(dep_id, owner)
+    root_spell = _register_spell(
+        owner,
+        "spell-root-missing-spell",
+        permissions=Permissions.create,
+        dependencies=[dep_id],
+    )
+
+    with pytest.raises(RuntimeError, match="not found in owner conduit"):
+        borrower._conduit_ward._add_spell_to_contract(
+            spell=root_spell,
+            spell_id=root_spell.spell_id,
+            conduit=owner,
+            permissions="create",
+            link_dependencies=True,
+        )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert contract._get_detail_map(owner._conduit_ward) == {}
+
+
+def test_add_spell_to_contract_preflight_rejects_mixed_owner_dependency_collision() -> None:
+    """Verify mixed-owner dependency collisions fail fast without partial mutation."""
+    owner, borrower = _build_conduit_pair()
+    owner_two = FakeConduit("owner-2", name="OwnerTwo", policy=Policies.default, dynamic=True)
+    borrower.register_conduit(owner_two)
+    owner_two.register_conduit(borrower)
+
+    borrower._conduit_ward._create_new_contract(owner)
+    borrower._conduit_ward._create_new_contract(owner_two)
+
+    collision_spell = _register_spell(
+        owner_two,
+        "spell-collision-owner-two",
+        permissions=Permissions.create,
+        binding_name="shared-mixed",
+    )
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=collision_spell,
+        spell_id=collision_spell.spell_id,
+        conduit=owner_two,
+        permissions="create",
+    )
+
+    dep_ok = _register_spell(owner, "dep-ok", permissions=Permissions.create)
+    dep_collision = _register_spell(
+        owner_two,
+        "dep-collision",
+        permissions=Permissions.create,
+        binding_name="shared-mixed",
+    )
+    borrower.register_spell_owner(dep_ok.spell_id, owner)
+    borrower.register_spell_owner(dep_collision.spell_id, owner_two)
+    root_spell = _register_spell(
+        owner,
+        "spell-root-mixed",
+        permissions=Permissions.create,
+        dependencies=[dep_ok.spell_id, dep_collision.spell_id],
+    )
+
+    with pytest.raises(RuntimeError, match="binding key collision"):
+        borrower._conduit_ward._add_spell_to_contract(
+            spell=root_spell,
+            spell_id=root_spell.spell_id,
+            conduit=owner,
+            permissions="create",
+            link_dependencies=True,
+        )
+
+    contract_owner = borrower._conduit_ward._find_contract(owner)
+    contract_owner_two = borrower._conduit_ward._find_contract(owner_two)
+    assert contract_owner._get_detail_map(owner._conduit_ward) == {}
+    detail_map_two = contract_owner_two._get_detail_map(owner_two._conduit_ward)
+    assert detail_map_two.get(dep_collision.spell_id) is None
+    assert detail_map_two.get(collision_spell.spell_id) is not None
 
 
 def test_link_returns_true_when_contract_already_exists(

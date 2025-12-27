@@ -198,6 +198,7 @@ def test_component_topology_collection_targets_include_all_spell_ids() -> None:
             existence=Existence.unique,
             permissions="create",
             spellframe=IService,
+            binding_name="secondary",
         )
         consumer_id = spellbook.bind(
             spell=Consumer,

@@ -435,6 +435,7 @@ def test_future_annotations_list_string_inner_protocol_resolves_all() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe=_ExtraProtocol,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_ListStringPipeline,
@@ -495,6 +496,7 @@ def test_future_annotations_typing_list_string_inner_protocol_resolves_all() -> 
         existence=Existence.unique,
         permissions="create",
         spellframe=_ExtraProtocol,
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_TypingListStringPipeline,
@@ -555,6 +557,7 @@ def test_future_annotations_list_string_spellframe_resolves_all() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe="extra_frame",
+        binding_name="secondary",
     )
     pipeline_id = spellbook.bind(
         spell=_StringFramePipeline,

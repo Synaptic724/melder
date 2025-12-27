@@ -549,6 +549,7 @@ def test_component_duplicate_spell_name_strategy_flags_collision() -> None:
             spell=ContainerB.Service,
             existence=Existence.unique,
             permissions="create",
+            binding_name="secondary",
         )
         spell = _get_spell_by_version_id(spellbook, first_id)
         assert spell is not None

@@ -4,7 +4,9 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from tests.mocks.spellbook.core_classes import BasicLogger
 from tests.mocks.spellbook.core_classes import BasicService
+from tests.mocks.spellbook.protocols import IService
 
 
 @pytest.fixture(autouse=True)
@@ -112,6 +114,51 @@ def test_component_spellbook_add_and_remove_contracted_spell_updates_maps() -> N
         assert len(spellbook._contracted_versions[conduit_id]) == 0
     finally:
         spellbook.cleanup()
+
+
+def test_component_spellbook_add_contracted_spell_rejects_peer_collision() -> None:
+    """
+    Purpose:
+        Validate contracted spells cannot collide across peer conduits.
+    Contract:
+        - _add_contracted_spell raises RuntimeError when a peer already uses the key.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If peer collisions are not rejected.
+    """
+    owner_a_book = _make_spellbook()
+    owner_b_book = _make_spellbook()
+    borrower_book = _make_spellbook()
+
+    owner_a_id = owner_a_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    owner_b_id = owner_b_book.bind(
+        spell=BasicLogger,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+
+    try:
+        owner_a_spell = _get_spell_by_version_id(owner_a_book, owner_a_id)
+        owner_b_spell = _get_spell_by_version_id(owner_b_book, owner_b_id)
+        assert owner_a_spell is not None
+        assert owner_b_spell is not None
+
+        borrower_book._add_contracted_spell(owner_a_spell, "peer-a")
+        with pytest.raises(RuntimeError, match="binding key collision"):
+            borrower_book._add_contracted_spell(owner_b_spell, "peer-b")
+    finally:
+        borrower_book.cleanup()
+        owner_b_book.cleanup()
+        owner_a_book.cleanup()
 
 
 def test_component_spellbook_remove_contracted_spell_raises_for_missing_conduit() -> None:

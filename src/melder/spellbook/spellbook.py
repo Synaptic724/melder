@@ -586,6 +586,64 @@ class Spellbook(Cleanable):
         )
         return frame_key, bind_key
 
+    def _assert_lookup_key_available(
+            self,
+            *,
+            lookup_key: tuple[str, str],
+            spell_index: SpellIndex,
+            context: str,
+            check_local: bool = True,
+            check_contracted: bool = True,
+    ) -> None:
+        """
+        Internal
+
+        Purpose:
+            Guard against duplicate binding keys across selected local/contracted maps.
+        Contract:
+            - Raises RuntimeError if the lookup key is already mapped to a different
+              SpellIndex in local or contracted lookup maps when those checks are enabled.
+            - Allows the lookup key when it maps to the same SpellIndex (idempotent).
+        Args:
+            lookup_key: Normalized (frame_key, binding_key) tuple for the spell.
+            spell_index: SpellIndex associated with the incoming spell.
+            context: Method name used for logging/error context.
+            check_local: If True, enforce uniqueness against local bindings.
+            check_contracted: If True, enforce uniqueness against contracted bindings.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the lookup key is already bound to another spell.
+        """
+        self.check_cleaned()
+
+        if check_local:
+            existing_local = self._lookup_spells.get(lookup_key)
+            if existing_local is not None and existing_local is not spell_index:
+                frame_key, bind_key = lookup_key
+                message = (
+                    "Spell binding key collision detected in local registry. "
+                    f"frame_key='{frame_key}', binding_name='{bind_key}'. "
+                    "Use a distinct spellframe or binding_name to disambiguate."
+                )
+                self._logger.error(message, context, exc_info=True)
+                raise RuntimeError(message)
+
+        if check_contracted:
+            for conduit_id, lookup_map in self._lookup_contracted_spells.items():
+                existing_contracted = lookup_map.get(lookup_key)
+                if existing_contracted is None or existing_contracted is spell_index:
+                    continue
+                frame_key, bind_key = lookup_key
+                message = (
+                    "Spell binding key collision detected in contracted registry. "
+                    f"frame_key='{frame_key}', binding_name='{bind_key}', "
+                    f"conduit_id='{conduit_id}'. Use a distinct spellframe or binding_name "
+                    "to disambiguate."
+                )
+                self._logger.error(message, context, exc_info=True)
+                raise RuntimeError(message)
+
     def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
         """
         Public API
@@ -773,6 +831,8 @@ class Spellbook(Cleanable):
         Args:
             spell (ISpell): The spell object to add.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
+        Raises:
+            RuntimeError: If the contracted spell's binding key collides with existing bindings.
         """
 
         with self._lock:
@@ -780,6 +840,13 @@ class Spellbook(Cleanable):
                 self._create_link_contract(conduit_id)
 
             spell_key = self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
+            self._assert_lookup_key_available(
+                lookup_key=spell_key,
+                spell_index=spell.spell_index,
+                context="_add_contracted_spell",
+                check_local=False,
+                check_contracted=True,
+            )
 
             spell_map = self._contracted_spells[conduit_id]
             lookup_map = self._lookup_contracted_spells[conduit_id]
@@ -1040,6 +1107,7 @@ class Spellbook(Cleanable):
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
             RuntimeError: If the spell is already bound in the registry.
+            RuntimeError: If the normalized binding key is already in use locally.
             TypeError: If invalid hook types are provided.
         """
         try:
@@ -1068,6 +1136,14 @@ class Spellbook(Cleanable):
                     "to register a distinct spell, ensure its structure (or binding/frame/name) differs \n"
                     "so it produces a unique spell_id."
                 )
+
+            self._assert_lookup_key_available(
+                lookup_key=new_spell._key,
+                spell_index=new_spell.spell_index,
+                context="bind",
+                check_local=True,
+                check_contracted=False,
+            )
 
             self._add_hooks_to_spell(new_spell, **kwargs)
 
