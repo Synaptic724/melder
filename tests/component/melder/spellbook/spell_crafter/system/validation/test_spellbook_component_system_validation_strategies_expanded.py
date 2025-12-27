@@ -61,9 +61,6 @@ from melder.spellbook.spell_crafter.system.validation.root_scale_limit_strategy 
 from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import (
     RootViabilityStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.socket_ambiguity_strategy import (
-    SocketAmbiguityStrategy,
-)
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import (
     SocketRefSanityStrategy,
 )
@@ -1638,28 +1635,3 @@ def test_component_ownership_consistency_ignores_unknown_conduit() -> None:
     assert diagnostics == []
 
 
-def test_component_socket_ambiguity_reports_duplicate_names() -> None:
-    """
-    Purpose:
-        Validate SocketAmbiguityStrategy reports duplicate socket names.
-    Contract:
-        - socket_ref_name_ambiguous is emitted when a param name repeats.
-    Returns:
-        None.
-    """
-    strategy = SocketAmbiguityStrategy()
-    blueprint = _make_blueprint(root_id="root", edges={})
-    blueprint.add_socket_ref(_make_socket_ref(node_id="root", name="service", path=("service",)))
-    blueprint.add_socket_ref(_make_socket_ref(node_id="root", name="service", path=("child", "service")))
-    diagnostics: list[SystemDiagnostic] = []
-
-    strategy.run(
-        index=_make_index({"root": set()}, root_ids={"root"}),
-        blueprints={"root": blueprint},
-        phase4_results={},
-        broken_spell_ids=set(),
-        diagnostics=diagnostics,
-        cancel_event=None,
-    )
-
-    assert {diag.code for diag in diagnostics} == {"socket_ref_name_ambiguous"}

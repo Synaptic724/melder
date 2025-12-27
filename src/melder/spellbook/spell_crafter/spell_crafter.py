@@ -80,9 +80,6 @@ from melder.spellbook.spell_crafter.system.validation.root_scale_limit_strategy 
     RootScaleLimitStrategy,
 )
 from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import RootViabilityStrategy
-from melder.spellbook.spell_crafter.system.validation.socket_ambiguity_strategy import (
-    SocketAmbiguityStrategy,
-)
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import SocketRefSanityStrategy
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -1527,7 +1524,6 @@ class SpellCrafter(Cleanable):
             OwnershipConsistencyStrategy(),
             DependencyTypeSanityStrategy(),
             RootScaleLimitStrategy(),
-            # SocketAmbiguityStrategy(),
             RootViabilityStrategy(),
             SocketRefSanityStrategy(),
         ]

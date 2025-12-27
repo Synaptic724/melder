@@ -19,6 +19,7 @@ from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
+from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -446,7 +447,7 @@ class _SpellStub:
     Purpose:
         Provide a spell stub with the attributes SpellCrafter expects.
     Contract:
-        Exposes spell_index, spell_name, and spellbook/system references.
+        Exposes spell_index, spell_name, and metadata used during Phase 5.
     """
 
     def __init__(
@@ -455,11 +456,13 @@ class _SpellStub:
         spell_id: str,
         spell_name: str = "spell-name",
         spell_type: SpellType = SpellType.SPELL,
+        existence: Existence = Existence.unique,
         spell: object | None = None,
         spellframe: object | None = None,
         binding_name: str | None = None,
         spellbook: _SpellbookStub,
         spell_system_states: _SpellSystemStatesStub | None = None,
+        owner_conduit_id: str | None = None,
         include_dependency_graph: bool = True,
         dependency_graph: object | None = None,
     ) -> None:
@@ -472,11 +475,13 @@ class _SpellStub:
             spell_id: Current spell id.
             spell_name: Spell name string.
             spell_type: Spell type enum.
+            existence: Existence policy for the stubbed spell.
             spell: Underlying callable or class.
             spellframe: Spellframe object.
             binding_name: Optional binding name.
             spellbook: Owning spellbook stub.
             spell_system_states: Optional system state registry.
+            owner_conduit_id: Optional owner conduit id for the spell.
             include_dependency_graph: Whether to set dependency_graph attribute.
             dependency_graph: Dependency graph object or None.
         Returns:
@@ -485,11 +490,13 @@ class _SpellStub:
         self.spell_index = _SpellIndexStub(spell_id, index_id=f"lineage-{spell_id}")
         self.spell_name = spell_name
         self.spell_type = spell_type
+        self.existence = existence
         self.spell = spell
         self.spellframe = spellframe
         self.binding_name = binding_name
         self._spellbook = spellbook
         self._spell_system_states = spell_system_states
+        self._owner_conduit_id = owner_conduit_id
         self._crafter = None
         if include_dependency_graph:
             self.dependency_graph = dependency_graph
@@ -3819,7 +3826,6 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
         "OwnershipConsistencyStrategy",
         "DependencyTypeSanityStrategy",
         "RootScaleLimitStrategy",
-        "SocketAmbiguityStrategy",
         "RootViabilityStrategy",
         "SocketRefSanityStrategy",
     ]
