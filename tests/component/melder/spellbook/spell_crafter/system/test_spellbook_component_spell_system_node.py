@@ -95,6 +95,7 @@ def test_component_node_dependency_change_triggers_graph_mismatch() -> None:
         Validate node dependency changes surface as graph consistency errors.
     Contract:
         - edge_missing_from_blueprint is emitted for new index edges.
+        - Conduit resolution validity is invalid when errors are present.
     Returns:
         None.
     Raises:
@@ -150,15 +151,16 @@ def test_component_node_dependency_change_triggers_graph_mismatch() -> None:
                 phase4_results={root_id: object(), dep_id: object(), extra_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
 
         codes = {diag.code for diag in result.errors}
         assert "edge_missing_from_blueprint" in codes
-        root_state = states.get_by_spell_id(root_id)
-        assert root_state is not None
-        assert root_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
 

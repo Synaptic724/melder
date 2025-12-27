@@ -86,7 +86,7 @@ def _run_spell_to_phase5(spell: Any) -> None:
     spell.run_phase_symbolic_graph()
     spell.run_phase_local_frame()
     spell.run_phase_validation()
-    spell.run_phase_root_blueprints()
+    spell.run_phase_root_blueprints("cid")
 
 
 def test_component_change_control_wires_component_of_for_local_root() -> None:
@@ -142,7 +142,7 @@ def test_component_change_control_wires_component_of_for_local_root() -> None:
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
         _run_spell_to_phase5(consumer_spell)
-        consumer_spell.run_phase_change_control()
+        consumer_spell.run_phase_change_control("cid")
 
         manager = Spellbook._aether._get_change_control_manager(
             spellbook._aetheric_frame

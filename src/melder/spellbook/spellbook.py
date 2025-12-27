@@ -1507,12 +1507,14 @@ class Spellbook(Cleanable):
                 self._validate_and_freeze_configuration()
                 self._bind_configuration_to_aether()
 
-            # Create a unique ID for this Conduit
+            # Run structural phases (1-4) before resolution phases.
+            self._run_structural_phases()
+
+            # Create a unique ID for this Conduit for per-conduit resolution phases.
             conduit_id = IDBuilder.create_id()
-            
-            # Run the multi-phase resolution pipeline (requirements, graphs, frames, validation)
-            # This uses PhaseScheduler + UnitOfWork and cooperates via the shared CancellationEvent.
-            self._run_resolution_phases()
+
+            # Run conduit-scoped resolution phases (5-7) after structural validation.
+            self._run_resolution_phases_for_conduit(conduit_id)
 
             # Validate policy vs system_state and local spell registry
             self._check_system_state(policy, automatic)
@@ -1792,75 +1794,44 @@ class Spellbook(Cleanable):
 
 #endregion Hook Management
 #region Resolution Phases
-    def _run_resolution_phases(self) -> Dict[str, Sequence['UnitOfWork']]:
+    def _run_resolution_phases(self, conduit_id: str) -> Dict[str, Sequence['UnitOfWork']]:
         """
         Internal
 
-        Orchestrate the multi-phase Spellbook resolution pipeline using
-        :class:`PhaseScheduler` and :class:`UnitOfWork`.
+        Convenience wrapper that runs structural phases (1-4) followed by
+        conduit-scoped resolution phases (5-7).
 
-        This method is invoked from :meth:`conjure` **after** the
-        configuration has been validated, frozen, and bound into Aether,
-        but **before** any Conduit is constructed.
+        This is primarily a compatibility shim for callers that still expect
+        a single orchestration method.
 
-        Phases (in order)
-        -----------------
-        1. ``"requirements"``:
-               Per-spell static checks and requirement gathering
-               (dependencies, frames, policy hints, etc.).
-
-        2. ``"symbolic_graph"``:
-               Build per-spell symbolic graphs / local structural views.
-
-        3. ``"local_frame"``:
-               Construct local execution frames / resolution frames that
-               will later be combined into larger DAGs.
-
-        4. ``"validation"``:
-               Final per-spell validation over the assembled metadata
-               and frames.
-
-        5. ``"root_blueprints"``:
-                Build frame-level root blueprints and the SpellSystemIndex
-                from Phase 1-4 artifacts.
-
-        6. ``"system_validation"``:
-                Validate the system-level DAG and update lineage validity
-                across the frame.
-
-        7. ``"change_control"``:
-                Wire change-control and component-of indices for the frame.
-
-        Notes:
-            Phases 5-7 are **frame-level** operations. We schedule these
-            for every local spell to keep per-spell validation state
-            consistent with the frame-level artifacts.
-
-        All work is executed via :class:`UnitOfWork` on a shared worker pool
-        sized by the Configuration's
-        ``phase_scheduler_workers_per_spellbook`` property. Each unit
-        cooperates with a shared :class:`CancellationEvent`, so any failure
-        or timeout cancels the remaining pipeline.
-
-        After all phases complete, this method performs a **hard validation
-        barrier**:
-
-            - It inspects every local Spell.
-            - If any spell reports ``spell.is_broken is True`` (i.e. its
-              validation phase found errors), a :class:`SpellbookValidationError`
-              is raised and Conduit construction is aborted.
-
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
         Returns:
             Dict[str, Sequence[UnitOfWork]]:
-                Mapping of phase name -> sequence of `UnitOfWork` instances,
-                if and only if all spells validate successfully. Callers may
-                inspect individual `uow.result()` / `uow.exception()` for
-                detailed telemetry or diagnostics.
-
+                Mapping of phase name -> sequence of `UnitOfWork` instances.
         Raises:
+            ValueError:
+                If conduit_id is empty.
             SpellbookValidationError:
-                If one or more spells are marked as broken after the
-                validation phase.
+                If structural validation finds broken spells.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        results: Dict[str, Sequence['UnitOfWork']] = {}
+        results.update(self._run_structural_phases())
+        results.update(self._run_resolution_phases_for_conduit(conduit_id))
+        return results
+
+    def _run_structural_phases(self) -> Dict[str, Sequence['UnitOfWork']]:
+        """
+        Internal
+
+        Orchestrate Phases 1-4 (requirements, symbolic graph, local frame, validation).
+
+        This method performs a hard validation barrier after Phase 4 and raises
+        :class:`SpellbookValidationError` if any spell is broken.
         """
         self.check_cleaned()
 
@@ -1870,8 +1841,6 @@ class Spellbook(Cleanable):
         )
 
         try:
-            # Register phases in the scheduler – each factory closes over
-            # the scheduler so it can mint correctly-wired UnitOfWork items.
             scheduler.register_phase(
                 "requirements",
                 lambda: self._phase_requirements_factory(scheduler),
@@ -1888,60 +1857,91 @@ class Spellbook(Cleanable):
                 "validation",
                 lambda: self._phase_validation_factory(scheduler),
             )
-            scheduler.register_phase(
-                "root_blueprints",
-                lambda: self._phase_root_blueprints_factory(scheduler),
-            )
-            scheduler.register_phase(
-                "system_validation",
-                lambda: self._phase_system_validation_factory(scheduler),
-            )
-            scheduler.register_phase(
-                "change_control",
-                lambda: self._phase_change_control_factory(scheduler),
-            )
 
             results = scheduler.run_all_phases()
 
-            # --------------------------------------------------------------
-            # Post-phase validation barrier
-            #
-            # At this point, every spell has had its validation phase invoked
-            # via SpellCrafter / SpellValidationSystem. We now inspect the
-            # per-spell flags and **fail hard** if any spell is broken.
-            # --------------------------------------------------------------
             broken_spells: list[ISpell] = []
             for spell in self._spells.values():
-                # `is_broken` is a facade over SpellCrafter's validation state.
                 try:
                     if spell.is_broken:
                         broken_spells.append(spell)
                 except Exception:
-                    # If a spell explodes during status check, treat it as broken.
                     broken_spells.append(spell)
 
             if broken_spells:
                 broken_spell_ids = [spell.spell_id for spell in broken_spells]
                 broken_spell_names = [spell.spell_name for spell in broken_spells]
                 self._logger.error(
-                    "Spellbook resolution pipeline completed with broken spells; "
+                    "Spellbook structural pipeline completed with broken spells; "
                     f"raising SpellbookValidationError. "
                     f"broken_spell_ids={broken_spell_ids}, "
                     f"broken_spell_names={broken_spell_names}",
-                    "_run_resolution_phases",
+                    "_run_structural_phases",
                 )
                 raise SpellbookValidationError(broken_spells)
 
             return results
         finally:
-            # Deterministic teardown of the scheduler regardless of success/failure.
             try:
                 scheduler.cleanup()
             except Exception:
-                # We do not let cleanup failures override the original phase error.
                 self._logger.error(
-                    "PhaseScheduler.cleanup() raised during _run_resolution_phases",
-                    "_run_resolution_phases",
+                    "PhaseScheduler.cleanup() raised during _run_structural_phases",
+                    "_run_structural_phases",
+                    exc_info=True,
+                )
+
+    def _run_resolution_phases_for_conduit(
+            self,
+            conduit_id: str,
+    ) -> Dict[str, Sequence['UnitOfWork']]:
+        """
+        Internal
+
+        Orchestrate conduit-scoped Phases 5-7 (root blueprints, system validation,
+        change control). This must run after structural phases complete.
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+        Returns:
+            Dict[str, Sequence[UnitOfWork]]:
+                Mapping of phase name -> sequence of `UnitOfWork` instances.
+        Raises:
+            ValueError:
+                If conduit_id is empty.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+
+        scheduler = PhaseScheduler(
+            spellbook=self,
+            configuration=self._configuration,
+        )
+
+        try:
+            scheduler.register_phase(
+                "root_blueprints",
+                lambda: self._phase_root_blueprints_factory(scheduler, conduit_id),
+            )
+            scheduler.register_phase(
+                "system_validation",
+                lambda: self._phase_system_validation_factory(scheduler, conduit_id),
+            )
+            scheduler.register_phase(
+                "change_control",
+                lambda: self._phase_change_control_factory(scheduler, conduit_id),
+            )
+
+            return scheduler.run_all_phases()
+        finally:
+            try:
+                scheduler.cleanup()
+            except Exception:
+                self._logger.error(
+                    "PhaseScheduler.cleanup() raised during _run_resolution_phases_for_conduit",
+                    "_run_resolution_phases_for_conduit",
                     exc_info=True,
                 )
     #endregion
@@ -2082,7 +2082,11 @@ class Spellbook(Cleanable):
 
         return units
 
-    def _phase_root_blueprints_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+    def _phase_root_blueprints_factory(
+            self,
+            scheduler: PhaseScheduler,
+            conduit_id: str,
+    ) -> Sequence['UnitOfWork']:
         """
         Internal
 
@@ -2094,7 +2098,7 @@ class Spellbook(Cleanable):
 
         Expected spell surface:
 
-            ``spell.run_phase_root_blueprints(cancel_event: CancellationEvent) -> Any``
+            ``spell.run_phase_root_blueprints(conduit_id, cancel_event: CancellationEvent) -> Any``
         """
         self.check_cleaned()
         if not self._spells:
@@ -2105,7 +2109,7 @@ class Spellbook(Cleanable):
             units.append(
                 scheduler.create_unit_of_work(
                     func=spell.run_phase_root_blueprints,
-                    args=(scheduler.cancel_event,),
+                    args=(conduit_id, scheduler.cancel_event,),
                     label=f"root_blueprints:{spell.spell_id}",
                     metadata={
                         "phase": "root_blueprints",
@@ -2115,7 +2119,11 @@ class Spellbook(Cleanable):
             )
         return units
 
-    def _phase_system_validation_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+    def _phase_system_validation_factory(
+            self,
+            scheduler: PhaseScheduler,
+            conduit_id: str,
+    ) -> Sequence['UnitOfWork']:
         """
         Internal
 
@@ -2127,7 +2135,7 @@ class Spellbook(Cleanable):
 
         Expected spell surface:
 
-            ``spell.run_phase_system_validation(cancel_event: CancellationEvent) -> Any``
+            ``spell.run_phase_system_validation(conduit_id, cancel_event: CancellationEvent) -> Any``
         """
         self.check_cleaned()
         if not self._spells:
@@ -2138,7 +2146,7 @@ class Spellbook(Cleanable):
             units.append(
                 scheduler.create_unit_of_work(
                     func=spell.run_phase_system_validation,
-                    args=(scheduler.cancel_event,),
+                    args=(conduit_id, scheduler.cancel_event,),
                     label=f"system_validation:{spell.spell_id}",
                     metadata={
                         "phase": "system_validation",
@@ -2148,7 +2156,11 @@ class Spellbook(Cleanable):
             )
         return units
 
-    def _phase_change_control_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+    def _phase_change_control_factory(
+            self,
+            scheduler: PhaseScheduler,
+            conduit_id: str,
+    ) -> Sequence['UnitOfWork']:
         """
         Internal
 
@@ -2160,7 +2172,7 @@ class Spellbook(Cleanable):
 
         Expected spell surface:
 
-            ``spell.run_phase_change_control(cancel_event: CancellationEvent) -> Any``
+            ``spell.run_phase_change_control(conduit_id, cancel_event: CancellationEvent) -> Any``
         """
         self.check_cleaned()
         if not self._spells:
@@ -2171,7 +2183,7 @@ class Spellbook(Cleanable):
             units.append(
                 scheduler.create_unit_of_work(
                     func=spell.run_phase_change_control,
-                    args=(scheduler.cancel_event,),
+                    args=(conduit_id, scheduler.cancel_event,),
                     label=f"change_control:{spell.spell_id}",
                     metadata={
                         "phase": "change_control",

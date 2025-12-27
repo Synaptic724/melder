@@ -1363,17 +1363,17 @@ def test_validation_system_local_dependency_not_dangling() -> None:
         spellbook.cleanup()
 
 
-def test_spell_validation_phase6_marks_valid_and_updates_system_state() -> None:
+def test_spell_validation_phase6_marks_valid_and_updates_conduit_state() -> None:
     """
     Purpose:
         Validate Phase 6 marks a clean spell as system-valid.
     Contract:
         - Phase 6 validation result reports is_valid True.
-        - SpellSystemStates marks the lineage as SpellValidity.valid.
+        - ConduitResolutionState marks the spell as SpellValidity.valid.
     Returns:
         None.
     Raises:
-        AssertionError: If Phase 6 validation or system state is incorrect.
+        AssertionError: If Phase 6 validation or conduit state is incorrect.
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
@@ -1411,29 +1411,29 @@ def test_spell_validation_phase6_marks_valid_and_updates_system_state() -> None:
         spell.run_phase_symbolic_graph()
         spell.run_phase_local_frame()
         spell.run_phase_validation()
-        spell.run_phase_root_blueprints()
-        spell.run_phase_system_validation()
+        spell.run_phase_root_blueprints("cid")
+        spell.run_phase_system_validation("cid")
 
         result = spell.validation_result_phase6
         assert result is not None
         assert result.is_valid is True
         assert result.errors == []
 
-        state = spellbook._spell_system_states.get_by_spell_id(spell_id)
-        assert state is not None
-        assert state.validity is SpellValidity.valid
+        conduit_state = spellbook._spell_system_states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(spell_id) is SpellValidity.valid
     finally:
         spellbook.cleanup()
 
 
-def test_spell_validation_phase6_gates_broken_spell_in_system_state() -> None:
+def test_spell_validation_phase6_marks_invalid_broken_spell_in_conduit_state() -> None:
     """
     Purpose:
         Validate Phase 6 gates lineages when Phase 4 marks a spell broken.
     Contract:
         - Phase 6 validation result reports is_valid False.
         - broken_spell_in_dag is reported in system diagnostics.
-        - SpellSystemStates marks the lineage as SpellValidity.gated.
+        - ConduitResolutionState marks the spell as SpellValidity.invalid.
     Returns:
         None.
     Raises:
@@ -1477,8 +1477,8 @@ def test_spell_validation_phase6_gates_broken_spell_in_system_state() -> None:
 
         spell.dependencies = ["missing-id"]
         spell.run_phase_validation()
-        spell.run_phase_root_blueprints()
-        spell.run_phase_system_validation()
+        spell.run_phase_root_blueprints("cid")
+        spell.run_phase_system_validation("cid")
 
         result = spell.validation_result_phase6
         assert result is not None
@@ -1487,9 +1487,9 @@ def test_spell_validation_phase6_gates_broken_spell_in_system_state() -> None:
         codes = {diag.code for diag in result.errors}
         assert "broken_spell_in_dag" in codes
 
-        state = spellbook._spell_system_states.get_by_spell_id(spell_id)
-        assert state is not None
-        assert state.validity is SpellValidity.gated
+        conduit_state = spellbook._spell_system_states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(spell_id) is SpellValidity.invalid
     finally:
         spellbook.cleanup()
 
@@ -1552,8 +1552,8 @@ def test_spell_validation_phase6_reports_missing_phase4_validation_and_root_not_
         consumer_spell.run_phase_symbolic_graph()
         consumer_spell.run_phase_local_frame()
         consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints()
-        consumer_spell.run_phase_system_validation()
+        consumer_spell.run_phase_root_blueprints("cid")
+        consumer_spell.run_phase_system_validation("cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -1681,8 +1681,8 @@ def test_spell_validation_phase6_detects_cycle_in_index_and_graph_mismatch() -> 
         root_spell.run_phase_symbolic_graph()
         root_spell.run_phase_local_frame()
         root_spell.run_phase_validation()
-        root_spell.run_phase_root_blueprints()
-        root_spell.run_phase_system_validation()
+        root_spell.run_phase_root_blueprints("cid")
+        root_spell.run_phase_system_validation("cid")
 
         result = root_spell.validation_result_phase6
         assert result is not None
@@ -1759,7 +1759,7 @@ def test_spell_validation_phase6_reports_socket_ref_index_mismatch() -> None:
         consumer_spell.run_phase_symbolic_graph()
         consumer_spell.run_phase_local_frame()
         consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints()
+        consumer_spell.run_phase_root_blueprints("cid")
 
         crafter = consumer_spell._crafter
         assert crafter is not None
@@ -1769,7 +1769,7 @@ def test_spell_validation_phase6_reports_socket_ref_index_mismatch() -> None:
         assert root_blueprint is not None
         root_blueprint._dag_index = DagIndex()
 
-        consumer_spell.run_phase_system_validation()
+        consumer_spell.run_phase_system_validation("cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -1846,7 +1846,7 @@ def test_spell_validation_phase6_reports_missing_index_node() -> None:
         consumer_spell.run_phase_symbolic_graph()
         consumer_spell.run_phase_local_frame()
         consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints()
+        consumer_spell.run_phase_root_blueprints("cid")
 
         crafter = consumer_spell._crafter
         assert crafter is not None
@@ -1854,7 +1854,7 @@ def test_spell_validation_phase6_reports_missing_index_node() -> None:
         assert system_index is not None
         system_index.nodes.pop(service_id)
 
-        consumer_spell.run_phase_system_validation()
+        consumer_spell.run_phase_system_validation("cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -1931,7 +1931,7 @@ def test_spell_validation_phase6_reports_edge_mismatch_index() -> None:
         consumer_spell.run_phase_symbolic_graph()
         consumer_spell.run_phase_local_frame()
         consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints()
+        consumer_spell.run_phase_root_blueprints("cid")
 
         crafter = consumer_spell._crafter
         assert crafter is not None
@@ -1941,7 +1941,7 @@ def test_spell_validation_phase6_reports_edge_mismatch_index() -> None:
         assert root_node is not None
         root_node._dependencies.clear()
 
-        consumer_spell.run_phase_system_validation()
+        consumer_spell.run_phase_system_validation("cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -2017,7 +2017,7 @@ def test_spell_validation_phase6_reports_socket_ref_duplicate() -> None:
         consumer_spell.run_phase_symbolic_graph()
         consumer_spell.run_phase_local_frame()
         consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints()
+        consumer_spell.run_phase_root_blueprints("cid")
 
         crafter = consumer_spell._crafter
         assert crafter is not None
@@ -2028,7 +2028,7 @@ def test_spell_validation_phase6_reports_socket_ref_duplicate() -> None:
         socket = root_blueprint.socket_refs[0]
         root_blueprint.add_socket_ref(socket)
 
-        consumer_spell.run_phase_system_validation()
+        consumer_spell.run_phase_system_validation("cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -2103,7 +2103,7 @@ def test_spell_validation_phase6_reports_orphan_dag_index_socket() -> None:
         consumer_spell.run_phase_symbolic_graph()
         consumer_spell.run_phase_local_frame()
         consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints()
+        consumer_spell.run_phase_root_blueprints("cid")
 
         crafter = consumer_spell._crafter
         assert crafter is not None
@@ -2119,7 +2119,7 @@ def test_spell_validation_phase6_reports_orphan_dag_index_socket() -> None:
         )
         root_blueprint.dag_index.add_socket(orphan)
 
-        consumer_spell.run_phase_system_validation()
+        consumer_spell.run_phase_system_validation("cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None

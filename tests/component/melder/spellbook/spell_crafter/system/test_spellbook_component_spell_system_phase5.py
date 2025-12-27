@@ -122,7 +122,7 @@ def test_component_phase5_builds_system_index_and_root_blueprint() -> None:
         consumer_spell.run_phase_symbolic_graph()
         consumer_spell.run_phase_local_frame()
         consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints()
+        consumer_spell.run_phase_root_blueprints("cid")
 
         crafter = consumer_spell._crafter
         assert crafter is not None
@@ -206,7 +206,7 @@ def test_component_phase5_does_not_attach_root_blueprint_to_non_root() -> None:
         consumer_spell.run_phase_symbolic_graph()
         consumer_spell.run_phase_local_frame()
         consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints()
+        consumer_spell.run_phase_root_blueprints("cid")
 
         consumer_crafter = consumer_spell._crafter
         service_crafter = service_spell._crafter
@@ -301,7 +301,7 @@ def test_component_phase5_filters_out_non_visible_spells() -> None:
         consumer_spell.run_phase_symbolic_graph()
         consumer_spell.run_phase_local_frame()
         consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints()
+        consumer_spell.run_phase_root_blueprints("cid")
 
         crafter = consumer_spell._crafter
         assert crafter is not None

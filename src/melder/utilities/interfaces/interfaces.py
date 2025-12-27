@@ -818,6 +818,7 @@ class ISpell(ICleanable, Protocol):
 
     def run_phase_root_blueprints(
             self,
+            conduit_id: str,
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
@@ -832,6 +833,8 @@ class ISpell(ICleanable, Protocol):
             - Does not execute later phases.
 
         Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
                 Optional cancellation signal shared across the scheduler.
 
@@ -842,6 +845,7 @@ class ISpell(ICleanable, Protocol):
 
     def run_phase_system_validation(
             self,
+            conduit_id: str,
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
@@ -856,6 +860,8 @@ class ISpell(ICleanable, Protocol):
             - Does not execute later phases.
 
         Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
                 Optional cancellation signal shared across the scheduler.
 
@@ -866,6 +872,7 @@ class ISpell(ICleanable, Protocol):
 
     def run_phase_change_control(
             self,
+            conduit_id: str,
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
@@ -879,6 +886,8 @@ class ISpell(ICleanable, Protocol):
             - Does not return a value; wiring occurs inside the crafter.
 
         Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
                 Optional cancellation signal shared across the scheduler.
 
@@ -887,8 +896,32 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
+    def run_structural_phases(
+            self,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> None:
+        """
+        Convenience helper to run **structural phases only** (1-4) for this spell.
+
+        Phases executed via the :class:`SpellCrafter`:
+
+            1. Requirements extraction.
+            2. Symbolic graph construction.
+            3. Local resolution frame / DAG construction.
+            4. Validation (structural only).
+
+        Each phase honours the optional :class:`CancellationEvent`. If the
+        event is set, the underlying phase methods will raise via
+        ``cancel_event.throw_if_set()``.
+
+        Raises:
+            Exception: Propagates exceptions raised by the underlying phases.
+        """
+        ...
+
     def run_all_phases(
             self,
+            conduit_id: str,
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
@@ -907,6 +940,12 @@ class ISpell(ICleanable, Protocol):
         Each phase honours the optional :class:`CancellationEvent`. If the
         event is set, the underlying phase methods will raise via
         ``cancel_event.throw_if_set()``.
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
         """
         ...
 
@@ -5630,6 +5669,129 @@ class IContract(ICleanable, Protocol):
         ...
 
 @runtime_checkable
+class IConduitResolutionState(ICleanable, Protocol):
+    """
+    Per-conduit resolution validity container.
+
+    This protocol mirrors the ConduitResolutionState API used to track
+    Phases 5-7 validity and diagnostics for a specific conduit.
+    """
+
+    _conduit_id: str
+
+    def get_spell_validity(self, spell_id: str) -> Optional['SpellValidity']:
+        """
+        Return the stored resolution validity for a spell id.
+        """
+        ...
+
+    def set_spell_validity(
+            self,
+            spell_id: str,
+            validity: 'SpellValidity',
+            *,
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> None:
+        """
+        Set resolution validity for a single spell id.
+        """
+        ...
+
+    def bulk_set_spell_validity(
+            self,
+            validity_map: Mapping[str, 'SpellValidity'],
+            *,
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> None:
+        """
+        Bulk update resolution validity for spell ids.
+        """
+        ...
+
+    def get_root_validity(self, root_id: str) -> Optional['SpellValidity']:
+        """
+        Return the stored resolution validity for a root id.
+        """
+        ...
+
+    def set_root_validity(
+            self,
+            root_id: str,
+            validity: 'SpellValidity',
+            *,
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> None:
+        """
+        Set resolution validity for a single root id.
+        """
+        ...
+
+    def bulk_set_root_validity(
+            self,
+            validity_map: Mapping[str, 'SpellValidity'],
+            *,
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> None:
+        """
+        Bulk update resolution validity for root ids.
+        """
+        ...
+
+    def record_diagnostics(self, diagnostics: Sequence['SystemDiagnostic']) -> None:
+        """
+        Record per-conduit system diagnostics, replacing on signature change.
+        """
+        ...
+
+    def clear_diagnostics(self) -> None:
+        """
+        Clear stored diagnostics.
+        """
+        ...
+
+    def list_diagnostics(self) -> List['SystemDiagnostic']:
+        """
+        Return a snapshot list of stored diagnostics.
+        """
+        ...
+
+    def has_errors(self) -> bool:
+        """
+        Return True if any diagnostic has ERROR severity.
+        """
+        ...
+
+    def has_warnings(self) -> bool:
+        """
+        Return True if any diagnostic has WARNING severity.
+        """
+        ...
+
+    def mark_dirty(self, change_reason: Optional['SpellStateChangeReason'] = None) -> None:
+        """
+        Mark this resolution state as dirty.
+        """
+        ...
+
+    def clear_dirty(self, validated_at: float) -> None:
+        """
+        Mark this resolution state as clean after validation.
+        """
+        ...
+
+    def last_validated_at(self) -> Optional[float]:
+        """
+        Return the last successful validation timestamp.
+        """
+        ...
+
+    def cleanup(self) -> None:
+        """
+        Cleanup the resolution state and release references.
+        """
+        ...
+
+@runtime_checkable
 class ISpellSystemStates(ICleanable, Protocol):
     """
     Per-frame registry for all SpellSystemState instances.
@@ -5659,6 +5821,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     _states_by_index_id: Optional[Dict[str, 'SpellSystemState']]
     _states_by_spell_id: Optional[Dict[str, 'SpellSystemState']]
     _dirty_lineages: Optional['Set[str]']
+    _resolution_by_conduit_id: Optional[Dict[str, 'IConduitResolutionState']]
 
     # ------------------------------------------------------------------
     # Registration / lookup
@@ -5826,6 +5989,115 @@ class ISpellSystemStates(ICleanable, Protocol):
             A list of SpellSystemState objects. The list is detached from the
             underlying ConcurrentDict so callers cannot accidentally keep a
             live iterator into internal state.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Per-conduit resolution state (Phases 5-7)
+    # ------------------------------------------------------------------
+    def get_conduit_resolution_state(self, conduit_id: str) -> Optional['IConduitResolutionState']:
+        """
+        Retrieve the per-conduit resolution state for a conduit id.
+        """
+        ...
+
+    def get_or_create_conduit_resolution_state(self, conduit_id: str) -> 'IConduitResolutionState':
+        """
+        Retrieve or create the per-conduit resolution state for a conduit id.
+        """
+        ...
+
+    def drop_conduit_resolution_state(self, conduit_id: str) -> None:
+        """
+        Remove and cleanup the per-conduit resolution state for a conduit id.
+        """
+        ...
+
+    def iter_conduit_resolution_states(self) -> Iterator['IConduitResolutionState']:
+        """
+        Iterate over registered per-conduit resolution states.
+        """
+        ...
+
+    def set_conduit_spell_validity(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            validity: 'SpellValidity',
+            *,
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> None:
+        """
+        Set per-conduit resolution validity for a spell id.
+        """
+        ...
+
+    def bulk_set_conduit_spell_validity(
+            self,
+            conduit_id: str,
+            validity_map: Mapping[str, 'SpellValidity'],
+            *,
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> None:
+        """
+        Bulk update per-conduit resolution validity for spell ids.
+        """
+        ...
+
+    def set_conduit_root_validity(
+            self,
+            conduit_id: str,
+            root_id: str,
+            validity: 'SpellValidity',
+            *,
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> None:
+        """
+        Set per-conduit resolution validity for a root id.
+        """
+        ...
+
+    def bulk_set_conduit_root_validity(
+            self,
+            conduit_id: str,
+            validity_map: Mapping[str, 'SpellValidity'],
+            *,
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> None:
+        """
+        Bulk update per-conduit resolution validity for root ids.
+        """
+        ...
+
+    def record_conduit_diagnostics(
+            self,
+            conduit_id: str,
+            diagnostics: Sequence['SystemDiagnostic'],
+    ) -> None:
+        """
+        Record per-conduit system diagnostics, replacing on signature change.
+        """
+        ...
+
+    def clear_conduit_diagnostics(self, conduit_id: str) -> None:
+        """
+        Clear per-conduit diagnostics for a conduit id.
+        """
+        ...
+
+    def mark_conduit_dirty(
+            self,
+            conduit_id: str,
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> None:
+        """
+        Mark a per-conduit resolution state as dirty.
+        """
+        ...
+
+    def clear_conduit_dirty(self, conduit_id: str, validated_at: float) -> None:
+        """
+        Mark a per-conduit resolution state as clean after validation.
         """
         ...
 

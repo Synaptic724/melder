@@ -1,9 +1,14 @@
 import threading
-from typing import Iterable, Optional, Set, List, Dict
+from typing import Iterable, Optional, Set, List, Dict, Iterator, Mapping, Sequence
 # Melder imports
+from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import (
+    ConduitResolutionState,
+)
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex, ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -40,6 +45,7 @@ class SpellSystemStates(Cleanable):
         "_states_by_spell_id",
         "_dirty_lineages",
         "_local_topologies",
+        "_resolution_by_conduit_id",
     ]
 
     def __init__(self, frame: "AethericFrame") -> None:
@@ -63,6 +69,8 @@ class SpellSystemStates(Cleanable):
         self._dirty_lineages: Optional[Set[str]] = set()
         # Version-id keyed topologies captured during Phase 3.
         self._local_topologies: Dict[str, 'SpellLocalTopology'] = {}
+        # Per-conduit resolution state for Phases 5-7.
+        self._resolution_by_conduit_id: Optional[Dict[str, ConduitResolutionState]] = {}
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -113,6 +121,14 @@ class SpellSystemStates(Cleanable):
                     pass
                 self._local_topologies.clear()
                 self._local_topologies = None
+            if self._resolution_by_conduit_id is not None:
+                for state in list(self._resolution_by_conduit_id.values()):
+                    try:
+                        state.cleanup()
+                    except Exception:
+                        pass
+                self._resolution_by_conduit_id.clear()
+                self._resolution_by_conduit_id = None
 
             self._frame = None
 
@@ -398,6 +414,193 @@ class SpellSystemStates(Cleanable):
             if self._states_by_index_id is None:
                 return []
             return list(self._states_by_index_id.values())
+
+    # ------------------------------------------------------------------
+    # Per-conduit resolution state (Phases 5-7)
+    # ------------------------------------------------------------------
+    def get_conduit_resolution_state(self, conduit_id: str) -> Optional[ConduitResolutionState]:
+        """
+        Retrieve the per-conduit resolution state for a given conduit id.
+
+        Args:
+            conduit_id:
+                Conduit identifier used as the resolution-state key.
+        Returns:
+            ConduitResolutionState | None:
+                The resolution state if present; otherwise None.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            return None
+        with self._lock:
+            if self._resolution_by_conduit_id is None:
+                return None
+            return self._resolution_by_conduit_id.get(conduit_id)
+
+    def get_or_create_conduit_resolution_state(self, conduit_id: str) -> ConduitResolutionState:
+        """
+        Retrieve or create the per-conduit resolution state for a conduit id.
+
+        Args:
+            conduit_id:
+                Conduit identifier used as the resolution-state key.
+        Returns:
+            ConduitResolutionState:
+                The resolution state instance for this conduit.
+        Raises:
+            ValueError:
+                If conduit_id is empty.
+            RuntimeError:
+                If the registry has been cleaned.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        with self._lock:
+            if self._resolution_by_conduit_id is None:
+                raise RuntimeError("SpellSystemStates has been cleaned.")
+            state = self._resolution_by_conduit_id.get(conduit_id)
+            if state is None:
+                state = ConduitResolutionState(conduit_id)
+                self._resolution_by_conduit_id[conduit_id] = state
+            return state
+
+    def drop_conduit_resolution_state(self, conduit_id: str) -> None:
+        """
+        Remove and cleanup the per-conduit resolution state for a conduit id.
+
+        Args:
+            conduit_id:
+                Conduit identifier to remove.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            return
+        with self._lock:
+            if self._resolution_by_conduit_id is None:
+                return
+            state = self._resolution_by_conduit_id.pop(conduit_id, None)
+            if state is not None:
+                try:
+                    state.cleanup()
+                except Exception:
+                    pass
+
+    def iter_conduit_resolution_states(self) -> Iterator[ConduitResolutionState]:
+        """
+        Iterate over all registered per-conduit resolution states.
+
+        Returns:
+            Iterator[ConduitResolutionState]:
+                Snapshot iterator over registered resolution states.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._resolution_by_conduit_id is None:
+                return iter(())
+            return iter(list(self._resolution_by_conduit_id.values()))
+
+    def set_conduit_spell_validity(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            validity: SpellValidity,
+            *,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Set per-conduit resolution validity for a spell id.
+        """
+        self.check_cleaned()
+        state = self.get_or_create_conduit_resolution_state(conduit_id)
+        state.set_spell_validity(spell_id, validity, change_reason=change_reason)
+
+    def bulk_set_conduit_spell_validity(
+            self,
+            conduit_id: str,
+            validity_map: Mapping[str, SpellValidity],
+            *,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Bulk update per-conduit resolution validity for spell ids.
+        """
+        self.check_cleaned()
+        state = self.get_or_create_conduit_resolution_state(conduit_id)
+        state.bulk_set_spell_validity(validity_map, change_reason=change_reason)
+
+    def set_conduit_root_validity(
+            self,
+            conduit_id: str,
+            root_id: str,
+            validity: SpellValidity,
+            *,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Set per-conduit resolution validity for a root spell id.
+        """
+        self.check_cleaned()
+        state = self.get_or_create_conduit_resolution_state(conduit_id)
+        state.set_root_validity(root_id, validity, change_reason=change_reason)
+
+    def bulk_set_conduit_root_validity(
+            self,
+            conduit_id: str,
+            validity_map: Mapping[str, SpellValidity],
+            *,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Bulk update per-conduit resolution validity for root spell ids.
+        """
+        self.check_cleaned()
+        state = self.get_or_create_conduit_resolution_state(conduit_id)
+        state.bulk_set_root_validity(validity_map, change_reason=change_reason)
+
+    def record_conduit_diagnostics(
+            self,
+            conduit_id: str,
+            diagnostics: Sequence[SystemDiagnostic],
+    ) -> None:
+        """
+        Record per-conduit system diagnostics, replacing if signatures differ.
+        """
+        self.check_cleaned()
+        state = self.get_or_create_conduit_resolution_state(conduit_id)
+        state.record_diagnostics(diagnostics)
+
+    def clear_conduit_diagnostics(self, conduit_id: str) -> None:
+        """
+        Clear per-conduit system diagnostics for a conduit id.
+        """
+        self.check_cleaned()
+        state = self.get_conduit_resolution_state(conduit_id)
+        if state is None:
+            return
+        state.clear_diagnostics()
+
+    def mark_conduit_dirty(
+            self,
+            conduit_id: str,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Mark a per-conduit resolution state as dirty.
+        """
+        self.check_cleaned()
+        state = self.get_or_create_conduit_resolution_state(conduit_id)
+        state.mark_dirty(change_reason=change_reason)
+
+    def clear_conduit_dirty(self, conduit_id: str, validated_at: float) -> None:
+        """
+        Mark a per-conduit resolution state as clean after validation.
+        """
+        self.check_cleaned()
+        state = self.get_conduit_resolution_state(conduit_id)
+        if state is None:
+            return
+        state.clear_dirty(validated_at)
 
 
     def register_local_topology(

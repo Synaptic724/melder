@@ -21,6 +21,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 # Creations types
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
@@ -64,7 +65,8 @@ class Meld(Cleanable):
     def __init__(
             self,
             creations: ILesserCreations | ICreations,
-            spellbook: ISpellbook
+            spellbook: ISpellbook,
+            conduit_id: Optional[str] = None,
     ) -> None:
         """
         Initialize the Meld component with references to the component store,
@@ -78,11 +80,16 @@ class Meld(Cleanable):
                 The registry of all known spell configurations. Meld keeps
                 direct references to the internal `ConcurrentDict` instances
                 to perform fast, thread-safe lookups.
+            conduit_id:
+                Optional identifier for the owning conduit. When supplied,
+                this is used as the default resolution scope for per-conduit
+                validity checks.
         """
         super().__init__()
 
         self._lock = RLock()
         self._cleaned: bool = False
+        self._conduit_id: Optional[str] = conduit_id
 
         # Spellbook references (used for resolution)
         self._owned_spells: Dict[ISpellIndex, ISpell] = spellbook._spells
@@ -135,6 +142,7 @@ class Meld(Cleanable):
 
             # Clear creations reference
             self._creations = None
+            self._conduit_id = None
 
             # Tear down the runtime if present
             if self._runtime is not None:
@@ -276,7 +284,7 @@ class Meld(Cleanable):
                 f"[MELD] Cannot meld broken spell: {target_spell}."
             )
 
-        # 4) Respect SpellSystemState / SpellValidity gate (if DevOps is wired).
+        # 4) Respect structural SpellSystemState gate (if DevOps is wired).
         self._gated_validation_required(target_spell)
 
         # 5) Execute pre-cast hooks (no instance context yet).
@@ -303,30 +311,35 @@ class Meld(Cleanable):
         """
         Internal
 
-        Enforce SpellSystemState / SpellValidity gating **and** perform a
-        single lazy revalidation for UNKNOWN / GATED lineages.
+        Enforce structural SpellSystemState gating and per-conduit resolution
+        gating for this spell.
 
         Behaviour:
 
         - If there is no SpellSystemState:
-            → no-op here; we rely on `spell.is_broken` later in `meld(...)`.
+            -> no-op here; we rely on `spell.is_broken` later in `meld(...)`.
 
-        - If validity is VALID:
-            → no-op; allow meld to proceed.
-
-        - If validity is UNKNOWN or GATED:
-            → run the per-spell phases (1–4) via `spell.run_all_phases()`.
+        - If structural validity is UNKNOWN or GATED:
+            -> run the per-spell structural phases (1-4) via
+               `spell.run_structural_phases()`.
               Then:
-                * if `spell.is_broken` → mark INVALID and raise
+                * if `spell.is_broken` -> mark INVALID and raise
                   SpellbookValidationError.
-                * else → if the lineage did not move to VALID, raise
+                * else -> if the lineage did not move to VALID, raise
                   SpellbookValidationError.
 
           After this call, the lineage should no longer be UNKNOWN/GATED. If it
           is, that is treated as a validation failure.
 
-        - If validity is INVALID or DISABLED:
-            → raise SpellbookValidationError immediately.
+        - If structural validity is INVALID or DISABLED:
+            -> raise SpellbookValidationError immediately.
+        - If per-conduit resolution validity is UNKNOWN or GATED:
+            -> run conduit-scoped phases (5-7) via
+               `spell._spellbook._run_resolution_phases_for_conduit(conduit_id)`.
+              Then:
+                * if resolution validity is INVALID/DISABLED -> raise
+                  SpellbookValidationError.
+                * else if still UNKNOWN/GATED -> raise SpellbookValidationError.
         Threading:
             - Uses the per-spell lock (`spell._lock`) to serialize revalidation
               when validity is UNKNOWN or GATED, preventing concurrent phase runs.
@@ -336,55 +349,63 @@ class Meld(Cleanable):
             # No DevOps gate wired; let existing `is_broken` guard handle it.
             return
 
-        # Fast path / immediate failure for invalid/disabled etc.
-        if not self._gated_validation_required(spell):
-            return
+        # Structural gating
+        if self._gated_validation_required(spell):
+            with spell._lock:
+                if self._gated_validation_required(spell):
+                    spell.run_structural_phases()
 
-        # At this point we know: state is not None and validity ∈ {unknown, gated}.
-        with spell._lock:
-            if not self._gated_validation_required(spell):
-                return
+                    # If the crafter thinks it's broken, we hard-pin to invalid and bail.
+                    if spell.is_broken:
+                        state.set_validity(SpellValidity.invalid)
+                        raise SpellbookValidationError([spell])
 
-            spell.run_all_phases()
+                    refreshed_state = spell.system_state
+                    if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
+                        raise SpellbookValidationError([spell])
 
-            # If the crafter thinks it's broken, we hard-pin to invalid and bail.
-            if spell.is_broken:
-                state.set_validity(SpellValidity.invalid)
-                raise SpellbookValidationError([spell])
-
-            # Re-read state in case your validation pipeline swapped the object
-            # or mutated validity.
-            refreshed_state = spell.system_state
-
-            # One chance: after revalidation, the lineage must be VALID.
-            if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
-                raise SpellbookValidationError([spell])
+        # Resolution gating (per-conduit)
+        self._ensure_resolution_resolvable(spell)
 
 
     def _gated_validation_required(self, spell: ISpell) -> bool:
         """
         Internal
 
-        Decide whether this spell's lineage needs a **lazy revalidation**
+        Decide whether this spell's lineage needs a **lazy structural revalidation**
         pass before we attempt to meld it.
 
         Semantics:
 
-        - If no SpellSystemState is attached → False
+        - If no SpellSystemState is attached -> False
           (DevOps / change-control not wired; Meld falls back to Spell flags).
 
-        - SpellValidity.valid   → False  (safe to resolve as-is).
-        - SpellValidity.unknown → True   (first-pass revalidation needed).
-        - SpellValidity.gated   → True   (structural / contract / mutation gate).
-        - SpellValidity.invalid / disabled → raise SpellbookValidationError.
+        - SpellValidity.valid   -> False  (safe to resolve as-is).
+        - SpellValidity.unknown -> True   (first-pass revalidation needed).
+        - SpellValidity.gated   -> True   (structural / contract / mutation gate).
+        - SpellValidity.invalid / disabled -> raise SpellbookValidationError.
+        - Dirty root under change-control -> raise MeldExecutionError.
 
         This method does **not** run validation; it only answers:
-        “Should we try to revalidate this lineage now?”
+        "Should we try to revalidate this lineage now?"
         """
         state = spell.system_state
         if state is None:
             # No DevOps wiring; nothing for us to do at this layer.
             return False
+
+        # Defensive: block dirty roots under change-control regardless of validity.
+        try:
+            spellbook = spell._spellbook
+            frame_name = spellbook._aetheric_frame
+            ccm = spellbook._aether._get_change_control_manager(frame_name)
+            if ccm is not None and ccm.is_root_dirty(spell.spell_index.current):
+                raise MeldExecutionError(spell_id=spell.spell_index.current, spell_name=spell.spell_name, message=f"Root '{spell.spell_index.current}' is dirty under change-control; revalidation required.")
+        except MeldExecutionError:
+            raise
+        except Exception:
+            # If change-control is unavailable, proceed with existing validity gate.
+            pass
 
         validity = state.validity
 
@@ -400,22 +421,103 @@ class Meld(Cleanable):
                 raise SpellbookValidationError([spell])
             raise SpellbookValidationError([spell])
 
-        # Defensive: block dirty roots under change-control even if validity looks OK.
-        try:
-            spellbook = spell._spellbook
-            frame_name = spellbook._aetheric_frame
-            ccm = spellbook._aether._get_change_control_manager(frame_name)
-            if ccm is not None and ccm.is_root_dirty(spell.spell_index.current):
-                raise MeldExecutionError(spell_id=spell.spell_index.current, spell_name=spell.spell_name, message=f"Root '{spell.spell_index.current}' is dirty under change-control; revalidation required.")
-        except MeldExecutionError:
-            raise
-        except Exception:
-            # If change-control is unavailable, proceed with existing validity gate.
-            pass
-
         # Extremely defensive: any future enum value → treat as not resolvable.
         raise SpellbookValidationError([spell])
 
+
+
+    def _ensure_resolution_resolvable(self, spell: ISpell) -> None:
+        """
+        Internal
+
+        Enforce per-conduit resolution validity for Phases 5-7.
+
+        This method checks the ConduitResolutionState for the active conduit
+        (or root conduit for lesser conduits) and runs conduit-scoped phases
+        if resolution validity is UNKNOWN or GATED.
+        """
+        spell_system_states = spell._spell_system_states
+        if spell_system_states is None:
+            return
+
+        conduit_id = self._get_resolution_conduit_id()
+        if not conduit_id:
+            return
+
+        resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+        resolution_validity = self._get_resolution_validity(spell, resolution_state)
+
+        if resolution_validity is SpellValidity.valid:
+            return
+
+        if resolution_validity is SpellValidity.invalid or resolution_validity is SpellValidity.disabled:
+            raise SpellbookValidationError([spell])
+
+        if resolution_validity is SpellValidity.unknown or resolution_validity is SpellValidity.gated:
+            with spell._lock:
+                resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+                resolution_validity = self._get_resolution_validity(spell, resolution_state)
+                if resolution_validity is SpellValidity.valid:
+                    return
+                if resolution_validity is SpellValidity.invalid or resolution_validity is SpellValidity.disabled:
+                    raise SpellbookValidationError([spell])
+
+                spellbook = spell._spellbook
+                if spellbook is None:
+                    raise SpellbookValidationError([spell])
+                spellbook._run_resolution_phases_for_conduit(conduit_id)
+
+                resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+                resolution_validity = self._get_resolution_validity(spell, resolution_state)
+                if resolution_validity is SpellValidity.valid:
+                    return
+
+            raise SpellbookValidationError([spell])
+
+        raise SpellbookValidationError([spell])
+
+    def _get_resolution_conduit_id(self) -> Optional[str]:
+        """
+        Resolve the conduit id used for per-conduit resolution validity.
+
+        For normal conduits, this is the conduit's own id. For lesser conduits,
+        this uses the root conduit id when available.
+        """
+        if self._creations is None:
+            return self._conduit_id
+
+        conduit = self._creations._conduit
+        if conduit is None:
+            return self._conduit_id
+
+        if conduit._conduit_state is ConduitState.lesser:
+            ward = conduit._conduit_ward
+            if ward is not None:
+                root = ward.root_conduit
+                if root is not None:
+                    return root._id
+
+        return conduit._id
+
+    def _get_resolution_validity(
+            self,
+            spell: ISpell,
+            resolution_state: Optional[Any],
+    ) -> Optional[SpellValidity]:
+        """
+        Resolve per-conduit validity for a spell, using root validity when applicable.
+        """
+        if resolution_state is None:
+            return SpellValidity.unknown
+
+        spell_id = spell.spell_index.current
+        crafter = spell._crafter
+        if crafter is not None:
+            blueprint = crafter.root_blueprint_phase5
+            if blueprint is not None and blueprint.root_spell_id == spell_id:
+                return resolution_state.get_root_validity(spell_id)
+
+        return resolution_state.get_spell_validity(spell_id)
 
 
     def set_meld_hooks(self, hooks: Dict[str, list[Callable[..., Any]]]) -> None:

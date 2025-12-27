@@ -123,7 +123,7 @@ def _run_spell_to_phase5(spell: Any) -> None:
     spell.run_phase_symbolic_graph()
     spell.run_phase_local_frame()
     spell.run_phase_validation()
-    spell.run_phase_root_blueprints()
+    spell.run_phase_root_blueprints("cid")
 
 
 def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint() -> None:

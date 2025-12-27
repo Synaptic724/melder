@@ -339,6 +339,7 @@ def test_component_system_validation_clean_graph_marks_valid() -> None:
                 phase4_results={root_id: object(), dep_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -346,12 +347,10 @@ def test_component_system_validation_clean_graph_marks_valid() -> None:
         assert result.is_valid is True
         assert result.errors == []
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dep_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.valid
-        assert dep_state.validity is SpellValidity.valid
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.valid
+        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.valid
     finally:
         frame.cleanup()
 
@@ -363,7 +362,7 @@ def test_component_system_validation_missing_phase4_marks_root_not_viable() -> N
     Contract:
         - missing_phase4_validation is emitted for the missing node.
         - root_not_viable is emitted for the root blueprint.
-        - SpellSystemStates are gated.
+        - Conduit resolution validity is invalid for indexed nodes.
     Returns:
         None.
     Raises:
@@ -394,6 +393,7 @@ def test_component_system_validation_missing_phase4_marks_root_not_viable() -> N
                 phase4_results={root_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -402,12 +402,10 @@ def test_component_system_validation_missing_phase4_marks_root_not_viable() -> N
         assert "missing_phase4_validation" in codes
         assert "root_not_viable" in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dep_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.gated
-        assert dep_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
+        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
 
@@ -415,11 +413,11 @@ def test_component_system_validation_missing_phase4_marks_root_not_viable() -> N
 def test_component_system_validation_broken_spell_in_dag_gates_states() -> None:
     """
     Purpose:
-        Validate broken spells in a root DAG gate system validity.
+        Validate broken spells in a root DAG invalidate conduit resolution.
     Contract:
         - broken_spell_in_dag is emitted for the dependency.
         - root_not_viable is emitted for the root.
-        - SpellSystemStates are gated.
+        - Conduit resolution validity is invalid for indexed nodes.
     Returns:
         None.
     Raises:
@@ -450,6 +448,7 @@ def test_component_system_validation_broken_spell_in_dag_gates_states() -> None:
                 phase4_results={root_id: object(), dep_id: object()},
                 broken_spell_ids={dep_id},
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -458,12 +457,10 @@ def test_component_system_validation_broken_spell_in_dag_gates_states() -> None:
         assert "broken_spell_in_dag" in codes
         assert "root_not_viable" in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dep_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.gated
-        assert dep_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
+        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
 
@@ -513,6 +510,7 @@ def test_component_system_validation_cycle_and_graph_mismatch() -> None:
                 phase4_results={root_id: object(), dep_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -521,12 +519,10 @@ def test_component_system_validation_cycle_and_graph_mismatch() -> None:
         assert "cycle_detected" in codes
         assert "edge_missing_from_blueprint" in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dep_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.gated
-        assert dep_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
+        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
 
@@ -538,7 +534,7 @@ def test_component_system_validation_socket_ref_index_missing_entries() -> None:
     Contract:
         - socket_ref_missing_in_index is emitted.
         - socket_ref_missing_in_index_name is emitted.
-        - SpellSystemStates are gated.
+        - Conduit resolution validity is invalid for indexed nodes.
     Returns:
         None.
     Raises:
@@ -569,6 +565,7 @@ def test_component_system_validation_socket_ref_index_missing_entries() -> None:
                 phase4_results={root_id: object(), dep_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -577,12 +574,10 @@ def test_component_system_validation_socket_ref_index_missing_entries() -> None:
         assert "socket_ref_missing_in_index" in codes
         assert "socket_ref_missing_in_index_name" in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dep_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.gated
-        assert dep_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
+        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
 
@@ -593,7 +588,7 @@ def test_component_system_validation_detects_orphan_dag_index_socket() -> None:
         Validate DagIndex sockets missing from socket_refs are reported.
     Contract:
         - dag_index_orphan_socket is emitted.
-        - SpellSystemStates are gated.
+        - Conduit resolution validity is invalid for indexed nodes.
     Returns:
         None.
     Raises:
@@ -630,6 +625,7 @@ def test_component_system_validation_detects_orphan_dag_index_socket() -> None:
                 phase4_results={root_id: object(), dep_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -637,12 +633,10 @@ def test_component_system_validation_detects_orphan_dag_index_socket() -> None:
         codes = {diag.code for diag in result.errors}
         assert "dag_index_orphan_socket" in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dep_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.gated
-        assert dep_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
+        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
 
@@ -650,14 +644,14 @@ def test_component_system_validation_detects_orphan_dag_index_socket() -> None:
 def test_component_system_validation_warning_does_not_gate_states() -> None:
     """
     Purpose:
-        Validate warning-only diagnostics do not gate SpellSystemStates.
+        Validate warning-only diagnostics do not invalidate conduit resolution.
     Contract:
         - Warning diagnostics appear in the validation state.
-        - Lineage validity is set to valid.
+        - Conduit resolution validity is set to valid.
     Returns:
         None.
     Raises:
-        AssertionError: If warnings gate validity.
+        AssertionError: If warnings invalidate conduit resolution validity.
     """
     root_id = "root-warning-only"
     frame = _make_frame("component-system-warning-only")
@@ -689,6 +683,7 @@ def test_component_system_validation_warning_does_not_gate_states() -> None:
                 phase4_results={},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -696,9 +691,9 @@ def test_component_system_validation_warning_does_not_gate_states() -> None:
         assert result.is_valid is True
         assert result.errors == []
         assert result.warnings == [warning]
-        state = states.get_by_spell_id(root_id)
-        assert state is not None
-        assert state.validity is SpellValidity.valid
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.valid
     finally:
         frame.cleanup()
 
@@ -709,7 +704,7 @@ def test_component_system_validation_skips_missing_state() -> None:
         Validate index nodes without registered states are skipped.
     Contract:
         - Validation succeeds without raising for missing states.
-        - Registered lineages are still marked valid.
+        - Conduit resolution validity is marked valid for indexed nodes.
     Returns:
         None.
     Raises:
@@ -744,15 +739,16 @@ def test_component_system_validation_skips_missing_state() -> None:
                 phase4_results={},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
 
         assert result.is_valid is True
         assert result.errors == []
-        state = states.get_by_spell_id(root_id)
-        assert state is not None
-        assert state.validity is SpellValidity.valid
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.valid
         assert states.get_by_spell_id("orphan-node") is None
     finally:
         frame.cleanup()
@@ -764,11 +760,11 @@ def test_component_system_validation_only_updates_index_nodes() -> None:
         Validate validation updates only the nodes present in the index.
     Contract:
         - Indexed nodes are marked valid.
-        - Non-indexed lineages retain their prior validity.
+        - Non-indexed lineages retain their prior validity in conduit state.
     Returns:
         None.
     Raises:
-        AssertionError: If non-indexed states are modified.
+        AssertionError: If non-indexed conduit validity is modified.
     """
     frame = _make_frame("component-system-index-only")
     states = frame._spell_system_states
@@ -796,17 +792,16 @@ def test_component_system_validation_only_updates_index_nodes() -> None:
                 phase4_results={},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
 
         assert result.is_valid is True
-        root_state = states.get_by_spell_id(root_id)
-        extra_state = states.get_by_spell_id(extra_id)
-        assert root_state is not None
-        assert extra_state is not None
-        assert root_state.validity is SpellValidity.valid
-        assert extra_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.valid
+        assert conduit_state.get_spell_validity(extra_id) is SpellValidity.unknown
     finally:
         frame.cleanup()
 
@@ -851,6 +846,7 @@ def test_component_system_validation_cancels_before_strategies() -> None:
                     phase4_results={},
                     broken_spell_ids=set(),
                     spell_system_states=states,
+                    conduit_id="cid",
                     cancel_event=cancel_signal.event,
                 )
         finally:
@@ -865,14 +861,14 @@ def test_component_system_validation_cancels_before_strategies() -> None:
 def test_component_system_validation_collects_multiple_errors() -> None:
     """
     Purpose:
-        Validate multiple error diagnostics are returned and gate validity.
+        Validate multiple error diagnostics are returned and invalidate resolution.
     Contract:
         - Error diagnostics are returned in the validation state.
-        - Lineage validity is gated.
+        - Conduit resolution validity is invalid.
     Returns:
         None.
     Raises:
-        AssertionError: If errors are missing or validity is not gated.
+        AssertionError: If errors are missing or resolution validity is not invalid.
     """
     root_id = "root-multi-error"
     frame = _make_frame("component-system-multi-error")
@@ -913,6 +909,7 @@ def test_component_system_validation_collects_multiple_errors() -> None:
                 phase4_results={},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -920,8 +917,8 @@ def test_component_system_validation_collects_multiple_errors() -> None:
         codes = {diag.code for diag in result.errors}
         assert codes == {"error_a", "error_b"}
         assert result.is_valid is False
-        state = states.get_by_spell_id(root_id)
-        assert state is not None
-        assert state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()

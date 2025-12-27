@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Mapping, Optional, Set
+from typing import Dict, Iterable, List, Mapping, Optional, Set, Sequence
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
@@ -33,8 +33,10 @@ class SpellSystemValidationSystem(Cleanable):
     Contract:
         - Strategies are executed in the order provided at construction.
         - Diagnostics are collected and returned via SpellSystemValidationState.
-        - Lineage validity is set to VALID when no error diagnostics exist, and
-          to GATED when any error diagnostics are present.
+        - When conduit_id is provided, per-conduit resolution validity is set
+          to VALID when no error diagnostics exist, and to INVALID when any
+          error diagnostics are present.
+        - Global structural validity is not modified by this class.
     Threading:
         Callers are responsible for external synchronization when sharing inputs
         across threads. This class does not introduce additional locking.
@@ -68,6 +70,7 @@ class SpellSystemValidationSystem(Cleanable):
             phase4_results: Dict[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: ISpellSystemStates,
+            conduit_id: Optional[str] = None,
             spell_lookup: Optional[Mapping[str, ISpell]] = None,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> SpellSystemValidationState:
@@ -81,14 +84,20 @@ class SpellSystemValidationSystem(Cleanable):
             - Executes each configured strategy in order against shared inputs.
             - Collects diagnostics across strategies into a single list.
             - Auto-populates diagnostic source attribution when missing.
-            - Marks all lineages VALID on success or GATED on error diagnostics.
+            - When conduit_id is provided, marks per-conduit resolution validity
+              VALID on success or INVALID on error diagnostics.
             - Returns a validation state containing all diagnostics and nodes.
         Args:
             index: Frame-level spell system index to validate.
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of spell ids flagged as broken in Phase 4.
-            spell_system_states: Registry used to mark lineage validity.
+            spell_system_states: Registry used for topology and resolution state.
+            conduit_id:
+                Optional conduit identifier. When provided, diagnostics and
+                per-conduit resolution validity are recorded in
+                ConduitResolutionState. Global structural validity is not
+                modified here.
             spell_lookup: Optional mapping of visible spell version ids to spell objects.
             cancel_event: Optional cancellation signal for long-running validation.
         Returns:
@@ -136,19 +145,14 @@ class SpellSystemValidationSystem(Cleanable):
             diag.severity is SystemDiagnosticSeverity.ERROR for diag in diagnostics
         )
 
-        if has_error:
-            self._set_validity(
+        if conduit_id is not None:
+            self._record_conduit_resolution_state(
                 spell_system_states=spell_system_states,
-                spell_ids=index.nodes.keys(),
-                validity=SpellValidity.gated,
-                change_reason=SpellStateChangeReason.validation_failed,
-            )
-        else:
-            self._set_validity(
-                spell_system_states=spell_system_states,
-                spell_ids=index.nodes.keys(),
-                validity=SpellValidity.valid,
-                change_reason=SpellStateChangeReason.validation_passed,
+                conduit_id=conduit_id,
+                index=index,
+                blueprints=blueprints,
+                diagnostics=diagnostics,
+                has_error=has_error,
             )
 
         errors = [
@@ -167,25 +171,51 @@ class SpellSystemValidationSystem(Cleanable):
             nodes=index.nodes,
         )
 
-    def _set_validity(
+    def _record_conduit_resolution_state(
             self,
             *,
             spell_system_states: ISpellSystemStates,
-            spell_ids: Iterable[str],
-            validity: SpellValidity,
-            change_reason: SpellStateChangeReason,
+            conduit_id: str,
+            index: SpellSystemIndex,
+            blueprints: Mapping[str, RootResolutionBlueprint],
+            diagnostics: Sequence[SystemDiagnostic],
+            has_error: bool,
     ) -> None:
         """
-        Apply a validity flag to all supplied spell_ids if their lineage state exists.
+        Record per-conduit resolution validity and diagnostics.
+
+        When errors exist, all spells/roots are marked invalid for this conduit.
+        On success, all spells/roots are marked valid and the conduit state is
+        marked clean with a validation timestamp.
         """
-        for spell_id in spell_ids:
-            state = spell_system_states.get_by_spell_id(spell_id)
-            if state is None:
-                continue
-            try:
-                state.set_validity(
-                    validity,
-                    change_reason=change_reason,
-                )
-            except Exception:
-                continue
+        if conduit_id is None:
+            return
+
+        validity = SpellValidity.invalid if has_error else SpellValidity.valid
+        change_reason = (
+            SpellStateChangeReason.validation_failed
+            if has_error
+            else SpellStateChangeReason.validation_passed
+        )
+
+        spell_ids = list(index.nodes.keys())
+        root_ids = list(blueprints.keys())
+
+        try:
+            spell_system_states.bulk_set_conduit_spell_validity(
+                conduit_id,
+                {spell_id: validity for spell_id in spell_ids},
+                change_reason=change_reason,
+            )
+            spell_system_states.bulk_set_conduit_root_validity(
+                conduit_id,
+                {root_id: validity for root_id in root_ids},
+                change_reason=change_reason,
+            )
+            spell_system_states.record_conduit_diagnostics(conduit_id, diagnostics)
+            if not has_error:
+                import time
+                spell_system_states.clear_conduit_dirty(conduit_id, time.time())
+        except Exception:
+            # Resolution state is best-effort; diagnostics still returned to caller.
+            return

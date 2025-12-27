@@ -312,9 +312,9 @@ def test_component_spell_system_builds_root_blueprint_from_snapshot() -> None:
 def test_component_spell_system_validation_marks_states_valid() -> None:
     """
     Purpose:
-        Validate system validation updates real SpellSystemStates entries.
+        Validate system validation updates conduit resolution entries.
     Contract:
-        - SpellSystemValidationSystem marks nodes as valid when no errors exist.
+        - Conduit resolution validity is marked valid when no errors exist.
     Returns:
         None.
     Raises:
@@ -368,14 +368,15 @@ def test_component_spell_system_validation_marks_states_valid() -> None:
                 phase4_results={},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
 
         assert result.is_valid is True
-        state = states.get_by_spell_id(leaf_id)
-        assert state is not None
-        assert state.validity is SpellValidity.valid
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(leaf_id) is SpellValidity.valid
     finally:
         spellbook.cleanup()
 
@@ -386,7 +387,7 @@ def test_component_spell_system_validation_reports_socket_ref_duplicate() -> Non
         Validate socket ref duplication is detected by system validation.
     Contract:
         - socket_ref_duplicate is reported when a SocketRef is duplicated.
-        - System states are gated when an error is present.
+        - Conduit resolution validity is invalid when an error is present.
     Returns:
         None.
     Raises:
@@ -409,6 +410,7 @@ def test_component_spell_system_validation_reports_socket_ref_duplicate() -> Non
                 phase4_results={},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -416,12 +418,10 @@ def test_component_spell_system_validation_reports_socket_ref_duplicate() -> Non
         codes = {diag.code for diag in result.errors}
         assert "socket_ref_duplicate" in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dependency_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.gated
-        assert dep_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
+        assert conduit_state.get_spell_validity(dependency_id) is SpellValidity.invalid
     finally:
         spellbook.cleanup()
 
@@ -433,7 +433,7 @@ def test_component_spell_system_validation_reports_orphan_socket_ref() -> None:
     Contract:
         - dag_index_orphan_socket is reported when the index contains a socket
           absent from socket_refs.
-        - System states are gated when an error is present.
+        - Conduit resolution validity is invalid when an error is present.
     Returns:
         None.
     Raises:
@@ -461,6 +461,7 @@ def test_component_spell_system_validation_reports_orphan_socket_ref() -> None:
                 phase4_results={},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -468,11 +469,9 @@ def test_component_spell_system_validation_reports_orphan_socket_ref() -> None:
         codes = {diag.code for diag in result.errors}
         assert "dag_index_orphan_socket" in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dependency_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.gated
-        assert dep_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
+        assert conduit_state.get_spell_validity(dependency_id) is SpellValidity.invalid
     finally:
         spellbook.cleanup()

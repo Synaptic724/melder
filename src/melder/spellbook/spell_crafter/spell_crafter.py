@@ -1,4 +1,5 @@
 ﻿import threading
+import time
 import inspect
 import typing
 import types
@@ -1225,7 +1226,7 @@ class SpellCrafter(Cleanable):
         Phase 4 – Per-spell validation using SpellValidationSystem.
 
         Responsibilities:
-            * Assume Phases 1–3 have completed for this Spell.
+            * Assume Phases 1-3 have completed for this Spell.
             * Delegate to :class:`SpellValidationSystem` to validate this spell
               using:
                   - Phase 1 requirements,
@@ -1234,21 +1235,29 @@ class SpellCrafter(Cleanable):
             * Cache the resulting :class:`SpellValidationResult` and expose it
               via :attr:`validation_result`, :attr:`validated`,
               and :attr:`is_broken`.
+            * Update global structural validity (SpellSystemState) when available.
 
         Contracts:
-            * Does **not** call Phases 1–3. If any of the required artifacts
+            * Does **not** call Phases 1-3. If any of the required artifacts
               are missing, this method raises.
             * Does **not** mutate the Spell or build any DAGs. It only records
               validation outcome and diagnostics on this SpellCrafter.
+            * If the SpellSystemState is no longer valid (unknown/gated/invalid),
+              the validation is re-run even if this phase previously completed.
             * Returns ``None``; callers rely on the stored validation result and
               flags instead of a direct return value.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
 
-        # If we've already validated and still have a result, do nothing.
+        # If we've already validated and the structural state is still valid, do nothing.
         if self._validated_phase4 and self._validation_result_phase4 is not None:
-            return
+            if self._spell_system_states is not None and self._spell.spell_index is not None:
+                state = self._spell_system_states.get_by_index_id(self._spell.spell_index.id)
+                if state is None or state.validity is SpellValidity.valid:
+                    return
+            else:
+                return
 
         # Hard contract: Phases 1–3 must have been run explicitly.
         if (
@@ -1278,12 +1287,29 @@ class SpellCrafter(Cleanable):
         # For now: any error -> broken. You can refine this later via severity.
         self._is_broken = result.has_errors
 
+        # Update global structural validity for this lineage.
+        if self._spell_system_states is not None and self._spell.spell_index is not None:
+            state = self._spell_system_states.get_by_index_id(self._spell.spell_index.id)
+            if state is not None:
+                if self._is_broken:
+                    state.set_validity(
+                        SpellValidity.invalid,
+                        change_reason=SpellStateChangeReason.validation_failed,
+                    )
+                else:
+                    state.clear_dirty(time.time())
+                    state.set_validity(
+                        SpellValidity.valid,
+                        change_reason=SpellStateChangeReason.validation_passed,
+                    )
+
     # ------------------------------------------------------------------
     # Phase 5 - Build Deep Dag Structures
     # ------------------------------------------------------------------
 
     def run_phase_root_blueprints(
             self,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -1295,6 +1321,8 @@ class SpellCrafter(Cleanable):
         spells visible to the current Spellbook (local + contracted).
 
         Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
                 Optional cancellation handle.
 
@@ -1303,6 +1331,8 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
 
         # Phase 4 must have run; otherwise system-level work is meaningless.
         if not self._validated_phase4 and self._validation_result_phase4 is None:
@@ -1404,7 +1434,7 @@ class SpellCrafter(Cleanable):
 
                 def _revalidate_dirty_roots(dirty_roots: Set[str], cancel_event: Optional[CancellationEvent]) -> None:
                     """
-                    Re-run Phases 1–6 for the supplied root spell_ids.
+                    Re-run Phases 1-7 for the supplied root spell_ids.
                     """
                     # Scanner scoped to this invocation to avoid stale spell refs.
                     scanner = SpellbookScanner(spellbook)
@@ -1422,7 +1452,7 @@ class SpellCrafter(Cleanable):
                         if crafter is None:
                             continue
                         try:
-                            crafter.run_all_phases(cancel_event=cancel_event)
+                            crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
                         except Exception:
                             # Leave dirty flags intact on failure.
                             raise
@@ -1511,17 +1541,20 @@ class SpellCrafter(Cleanable):
 
     def run_phase_system_validation(
             self,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Phase 6 - System-level validation.
 
         Runs system-level validation strategies over Phase-5 artifacts and
-        Phase-4 outcomes. Drives SpellValidity for all lineages via
+        Phase-4 outcomes. Records per-conduit resolution validity via
         SpellSystemStates and caches the frame-level validation state locally.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
         if self._entire_dag_blueprint_phase5 is None or self._spell_system_index_phase5 is None:
             raise RuntimeError(
                 "SpellCrafter Phase 6: cannot run system validation before Phase 5 has completed."
@@ -1576,6 +1609,7 @@ class SpellCrafter(Cleanable):
             phase4_results=phase4_results,
             broken_spell_ids=broken_spell_ids,
             spell_system_states=self._spell_system_states,
+            conduit_id=conduit_id,
             spell_lookup=spell_lookup,
             cancel_event=cancel_event,
         )
@@ -1590,6 +1624,7 @@ class SpellCrafter(Cleanable):
 
     def run_phase_change_control(
             self,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -1602,9 +1637,11 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
-        self._ensure_change_control_ready()
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        self._ensure_change_control_ready(conduit_id)
 
-    def _ensure_change_control_ready(self) -> None:
+    def _ensure_change_control_ready(self, conduit_id: str) -> None:
         """
         Internal helper to (re)wire change-control after Phase 5 artifacts exist.
         """
@@ -1634,7 +1671,7 @@ class SpellCrafter(Cleanable):
                         crafter = spell_instance._crafter
                         if crafter is None:
                             continue
-                        crafter.run_all_phases(cancel_event=cancel_event)
+                        crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
 
                 change_control_manager.set_revalidator(_revalidate_dirty_roots)
         except Exception:
@@ -1646,15 +1683,15 @@ class SpellCrafter(Cleanable):
     # Convenience – run all phases
     # ------------------------------------------------------------------
 
-    def run_all_phases(
+    def run_structural_phases(
             self,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Convenience helper to run all phases in sequence for this spell.
+        Convenience helper to run **structural phases only** (1-4) in sequence.
 
-        This is typically invoked via :meth:`Spell.run_all_phases` (a facade)
-        and is intended for batch compilation / `meld()` cycles.
+        This is typically invoked via :meth:`Spell.run_structural_phases` and
+        is used for global, conduit-agnostic structural validation.
 
         Execution order:
             1. Requirements (Phase 1)
@@ -1671,6 +1708,44 @@ class SpellCrafter(Cleanable):
         self.run_phase_symbolic_graph(cancel_event=cancel_event)
         self.run_phase_local_frame(cancel_event=cancel_event)
         self.run_phase_validation(cancel_event=cancel_event)
-        self.run_phase_root_blueprints(cancel_event=cancel_event)
-        self.run_phase_system_validation(cancel_event=cancel_event)
-        self.run_phase_change_control(cancel_event=cancel_event)
+
+    def run_all_phases(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Convenience helper to run all phases in sequence for this spell.
+
+        This is typically invoked via :meth:`Spell.run_all_phases` (a facade)
+        and is intended for batch compilation / `meld()` cycles.
+
+        Execution order:
+            1. Requirements (Phase 1)
+            2. Symbolic graph (Phase 2)
+            3. Local frame / DAG (Phase 3)
+            4. Validation (Phase 4)
+            5. Root blueprints (Phase 5)
+            6. System validation (Phase 6)
+            7. Change control (Phase 7)
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None. The crafter retains all intermediate artifacts until
+            :meth:`cleanup` is called. The owning Spell only needs to hold the
+            final DAG and dependency spell_ids once Phase 3 is fully implemented.
+        """
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        self.run_phase_requirements(cancel_event=cancel_event)
+        self.run_phase_symbolic_graph(cancel_event=cancel_event)
+        self.run_phase_local_frame(cancel_event=cancel_event)
+        self.run_phase_validation(cancel_event=cancel_event)
+        self.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
+        self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
+        self.run_phase_change_control(conduit_id, cancel_event=cancel_event)

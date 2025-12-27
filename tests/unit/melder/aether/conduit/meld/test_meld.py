@@ -165,8 +165,8 @@ class _SpellStub:
             aetheric_frame: Aetheric frame name.
             spell_index: Spell index stub.
             spell_type: Spell type label used in error messages.
-            validity_after_run: Validity to assign after run_all_phases.
-            broken_after_run: Broken state to assign after run_all_phases.
+            validity_after_run: Validity to assign after structural phases.
+            broken_after_run: Broken state to assign after structural phases.
         """
         self.spell_id = spell_id
         self.spell_name = spell_name
@@ -190,6 +190,7 @@ class _SpellStub:
         self.activation_hooks: list[Callable[..., Any]] = []
         self.post_hooks: list[Callable[..., Any]] = []
         self.run_all_phases_calls = 0
+        self.run_structural_phases_calls = 0
         self._validity_after_run = validity_after_run
         self._broken_after_run = broken_after_run
 
@@ -198,6 +199,16 @@ class _SpellStub:
         Record a run_all_phases call and apply post-run state mutations.
         """
         self.run_all_phases_calls += 1
+        if self._validity_after_run is not None and self.system_state is not None:
+            self.system_state.validity = self._validity_after_run
+        if self._broken_after_run is not None:
+            self.is_broken = self._broken_after_run
+
+    def run_structural_phases(self) -> None:
+        """
+        Record a run_structural_phases call and apply post-run state mutations.
+        """
+        self.run_structural_phases_calls += 1
         if self._validity_after_run is not None and self.system_state is not None:
             self.system_state.validity = self._validity_after_run
         if self._broken_after_run is not None:
@@ -716,7 +727,7 @@ def test_ensure_lineage_resolvable_skips_without_state() -> None:
 
     meld._ensure_lineage_resolvable(spell)
 
-    assert spell.run_all_phases_calls == 0
+    assert spell.run_structural_phases_calls == 0
 
 
 def test_ensure_lineage_resolvable_revalidates_unknown_success() -> None:
@@ -724,7 +735,7 @@ def test_ensure_lineage_resolvable_revalidates_unknown_success() -> None:
     Verify unknown validity triggers revalidation to valid.
 
     Contract:
-        - run_all_phases is called for unknown validity.
+        - run_structural_phases is called for unknown validity.
         - validation succeeds when validity becomes valid.
     """
     meld = _make_meld()
@@ -737,7 +748,7 @@ def test_ensure_lineage_resolvable_revalidates_unknown_success() -> None:
 
     meld._ensure_lineage_resolvable(spell)
 
-    assert spell.run_all_phases_calls == 1
+    assert spell.run_structural_phases_calls == 1
     assert state.validity is SpellValidity.valid
 
 
@@ -780,7 +791,7 @@ def test_ensure_lineage_resolvable_raises_when_not_valid_after_phases() -> None:
     with pytest.raises(SpellbookValidationError):
         meld._ensure_lineage_resolvable(spell)
 
-    assert spell.run_all_phases_calls == 1
+    assert spell.run_structural_phases_calls == 1
 
 
 def test_gated_validation_required_returns_false_without_state() -> None:

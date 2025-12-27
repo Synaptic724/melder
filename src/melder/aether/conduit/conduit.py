@@ -112,7 +112,11 @@ class Conduit(Cleanable):
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
         self._spellbook: ISpellbook = spellbook
-        self._meld: Meld = Meld(creations=self._creations, spellbook=self._spellbook)
+        self._meld: Meld = Meld(
+            creations=self._creations,
+            spellbook=self._spellbook,
+            conduit_id=self._id,
+        )
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
             f"_spellspace_stack_{self._id}", default=[]
         )
@@ -544,6 +548,13 @@ class Conduit(Cleanable):
                 Conduit._aether._unregister_conduit_cloud(self, self._aetheric_frame)
         except Exception as e:
             self._logger.error(f"Error unregistering from Aether: {e}", "_cleanup_normal_conduit", exc_info=True)
+
+        # 4.5) Drop per-conduit resolution state (normal conduits only)
+        try:
+            if self._spellbook is not None and self._spellbook._spell_system_states is not None:
+                self._spellbook._spell_system_states.drop_conduit_resolution_state(self._id)
+        except Exception:
+            self._logger.error("Error dropping conduit resolution state", "_cleanup_normal_conduit", exc_info=True)
 
         # 5) Spellbook (owned by normal conduits)
         try:

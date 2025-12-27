@@ -692,6 +692,7 @@ class Spell(Cleanable):
 
     def run_phase_root_blueprints(
             self,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -706,6 +707,8 @@ class Spell(Cleanable):
             - Does not execute later phases.
 
         Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
                 Optional cancellation signal shared across the scheduler.
 
@@ -714,17 +717,18 @@ class Spell(Cleanable):
         """
         self.check_cleaned()
         crafter = self._ensure_crafter()
-        crafter.run_phase_root_blueprints(cancel_event=cancel_event)
+        crafter.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
 
     def run_phase_system_validation(
             self,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Phase 6 - System-level validation (facade).
 
         Delegates to the SpellCrafter to validate system-level DAG integrity
-        and update lineage validity states.
+        and update per-conduit resolution validity.
 
         Contract:
             - Requires Phase 5 to have completed successfully.
@@ -732,6 +736,8 @@ class Spell(Cleanable):
             - Does not execute later phases.
 
         Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
                 Optional cancellation signal shared across the scheduler.
 
@@ -740,10 +746,11 @@ class Spell(Cleanable):
         """
         self.check_cleaned()
         crafter = self._ensure_crafter()
-        crafter.run_phase_system_validation(cancel_event=cancel_event)
+        crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
 
     def run_phase_change_control(
             self,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -757,6 +764,8 @@ class Spell(Cleanable):
             - Does not return a value; wiring occurs inside the crafter.
 
         Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
                 Optional cancellation signal shared across the scheduler.
 
@@ -765,10 +774,40 @@ class Spell(Cleanable):
         """
         self.check_cleaned()
         crafter = self._ensure_crafter()
-        crafter.run_phase_change_control(cancel_event=cancel_event)
+        crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
+
+    def run_structural_phases(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Convenience helper to run **structural phases only** (1-4) for this spell.
+
+        Phases executed via the :class:`SpellCrafter`:
+
+            1. Requirements extraction.
+            2. Symbolic graph construction.
+            3. Local resolution frame / DAG construction.
+            4. Validation.
+
+        Each phase honours the optional :class:`CancellationEvent`. If the
+        event is set, the underlying phase methods will raise via
+        ``cancel_event.throw_if_set()``.
+
+        Raises:
+            Exception: Propagates exceptions raised by the underlying phases.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+
+        crafter.run_phase_requirements(cancel_event=cancel_event)
+        crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
+        crafter.run_phase_local_frame(cancel_event=cancel_event)
+        crafter.run_phase_validation(cancel_event=cancel_event)
 
     def run_all_phases(
             self,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -788,6 +827,12 @@ class Spell(Cleanable):
         event is set, the underlying phase methods will raise via
         ``cancel_event.throw_if_set()``.
 
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
         Raises:
             Exception: Propagates exceptions raised by the underlying phases.
         """
@@ -798,9 +843,9 @@ class Spell(Cleanable):
         crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
         crafter.run_phase_local_frame(cancel_event=cancel_event)
         crafter.run_phase_validation(cancel_event=cancel_event)
-        crafter.run_phase_root_blueprints(cancel_event=cancel_event)
-        crafter.run_phase_system_validation(cancel_event=cancel_event)
-        crafter.run_phase_change_control(cancel_event=cancel_event)
+        crafter.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
+        crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
+        crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
 
 
     #endregion Resolution Phases

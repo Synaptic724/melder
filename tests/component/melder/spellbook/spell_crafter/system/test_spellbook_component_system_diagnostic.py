@@ -92,11 +92,11 @@ def test_component_system_diagnostic_warning_roundtrip() -> None:
         Validate warning diagnostics flow through system validation.
     Contract:
         - Warning diagnostics appear in the validation state.
-        - Lineage validity is set to valid.
+        - Conduit resolution validity is set to valid.
     Returns:
         None.
     Raises:
-        AssertionError: If warnings are lost or validity is gated.
+        AssertionError: If warnings are lost or resolution validity is not valid.
     """
     frame = AethericFrame("component-system-diagnostic-warning")
     states = frame._spell_system_states
@@ -130,6 +130,7 @@ def test_component_system_diagnostic_warning_roundtrip() -> None:
                 phase4_results={},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -137,9 +138,9 @@ def test_component_system_diagnostic_warning_roundtrip() -> None:
         assert result.is_valid is True
         assert result.errors == []
         assert result.warnings == [warning]
-        state = states.get_by_spell_id(root_id)
-        assert state is not None
-        assert state.validity is SpellValidity.valid
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.valid
         assert warning.details == {"detail": "value"}
     finally:
         frame.cleanup()
@@ -151,11 +152,11 @@ def test_component_system_diagnostic_error_gates_states() -> None:
         Validate error diagnostics gate lineage validity.
     Contract:
         - Error diagnostics appear in the validation state.
-        - Lineage validity is gated.
+        - Conduit resolution validity is invalid.
     Returns:
         None.
     Raises:
-        AssertionError: If errors are not propagated or gated.
+        AssertionError: If errors are not propagated or resolution validity is not invalid.
     """
     frame = AethericFrame("component-system-diagnostic-error")
     states = frame._spell_system_states
@@ -188,6 +189,7 @@ def test_component_system_diagnostic_error_gates_states() -> None:
                 phase4_results={},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -195,8 +197,8 @@ def test_component_system_diagnostic_error_gates_states() -> None:
         assert result.is_valid is False
         assert result.errors == [error]
         assert result.warnings == []
-        state = states.get_by_spell_id(root_id)
-        assert state is not None
-        assert state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()

@@ -1008,6 +1008,7 @@ class _SpellSystemValidationSystemStub:
         phase4_results: dict[str, object],
         broken_spell_ids: set[str],
         spell_system_states: object,
+        conduit_id: str | None = None,
         spell_lookup: dict[str, object],
         cancel_event: object | None,
     ) -> object:
@@ -1022,6 +1023,7 @@ class _SpellSystemValidationSystemStub:
             phase4_results: Phase 4 results mapping.
             broken_spell_ids: Broken spell id set.
             spell_system_states: SpellSystemStates instance.
+            conduit_id: Optional conduit identifier for resolution scoping.
             spell_lookup: Mapping of spell ids to spell instances.
             cancel_event: Optional cancellation event.
         Returns:
@@ -1034,6 +1036,7 @@ class _SpellSystemValidationSystemStub:
                 "phase4_results": dict(phase4_results),
                 "broken_spell_ids": set(broken_spell_ids),
                 "spell_system_states": spell_system_states,
+                "conduit_id": conduit_id,
                 "spell_lookup": dict(spell_lookup),
                 "cancel_event": cancel_event,
             }
@@ -3371,7 +3374,7 @@ def test_run_phase_root_blueprints_requires_phase4(
 
     if expect_raise:
         with pytest.raises(RuntimeError, match="Phase 5"):
-            crafter.run_phase_root_blueprints(cancel_event=None)
+            crafter.run_phase_root_blueprints("cid", cancel_event=None)
         return
 
     snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids=set())
@@ -3382,7 +3385,7 @@ def test_run_phase_root_blueprints_requires_phase4(
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
-    crafter.run_phase_root_blueprints(cancel_event=None)
+    crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert crafter.spell_system_index_phase5 is not None
 
@@ -3444,7 +3447,7 @@ def test_run_phase_root_blueprints_builds_index_and_attaches(
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
-    crafter.run_phase_root_blueprints(cancel_event=None)
+    crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert crafter.root_blueprint_phase5 is blueprint
     assert crafter.spell_system_index_phase5 is not None
@@ -3493,7 +3496,7 @@ def test_run_phase_root_blueprints_skips_missing_root_spell(
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
-    crafter.run_phase_root_blueprints(cancel_event=None)
+    crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert crafter.root_blueprint_phase5 is None
     assert crafter.spell_system_index_phase5 is not None
@@ -3539,7 +3542,7 @@ def test_run_phase_root_blueprints_uses_existing_scanner(
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
-    crafter.run_phase_root_blueprints(cancel_event=None)
+    crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert _SpellbookScannerStub.created == [existing_scanner]
 
@@ -3587,7 +3590,7 @@ def test_run_phase_root_blueprints_change_control_wires_revalidator(
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
-    crafter.run_phase_root_blueprints(cancel_event=None)
+    crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert manager.rebuild_calls == [blueprints]
     assert manager.set_calls == 1
@@ -3636,38 +3639,50 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
 
     calls: list[dict[str, object]] = []
 
-    def _run_all_phases(self: SpellCrafter, *, cancel_event: object | None = None) -> None:
+    def _run_all_phases(
+            self: SpellCrafter,
+            conduit_id: str,
+            *,
+            cancel_event: object | None = None,
+    ) -> None:
         """
         Purpose:
             Record revalidation calls for dirty roots.
         Contract:
-            Appends the crafter and cancel_event to the call list.
+            Appends the crafter, conduit id, and cancel_event to the call list.
         Args:
+            conduit_id: Conduit identifier forwarded by the revalidator.
             cancel_event: Optional cancellation event forwarded by the revalidator.
         Returns:
             None.
         """
-        calls.append({"crafter": self, "cancel_event": cancel_event})
+        calls.append(
+            {
+                "crafter": self,
+                "conduit_id": conduit_id,
+                "cancel_event": cancel_event,
+            }
+        )
 
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
     monkeypatch.setattr(SpellCrafter, "run_all_phases", _run_all_phases)
 
-    crafter.run_phase_root_blueprints(cancel_event=None)
+    crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert manager._revalidate_fn is not None
 
     cancel = _CancelStub(is_set=False)
     manager._revalidate_fn({"root", "missing"}, cancel)
 
-    assert calls == [{"crafter": crafter, "cancel_event": cancel}]
+    assert calls == [{"crafter": crafter, "conduit_id": "cid", "cancel_event": cancel}]
 
     cancel_set = _CancelStub(is_set=True)
     with pytest.raises(RuntimeError, match="cancelled"):
         manager._revalidate_fn({"root"}, cancel_set)
 
-    assert calls == [{"crafter": crafter, "cancel_event": cancel}]
+    assert calls == [{"crafter": crafter, "conduit_id": "cid", "cancel_event": cancel}]
 
 
 def test_run_phase_root_blueprints_swallow_change_control_errors(
@@ -3711,7 +3726,7 @@ def test_run_phase_root_blueprints_swallow_change_control_errors(
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
-    crafter.run_phase_root_blueprints(cancel_event=None)
+    crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert crafter.spell_system_index_phase5 is not None
 
@@ -3731,7 +3746,7 @@ def test_run_phase_root_blueprints_cancellation() -> None:
     cancel = _CancelStub(is_set=True)
 
     with pytest.raises(RuntimeError, match="cancelled"):
-        crafter.run_phase_root_blueprints(cancel_event=cancel)
+        crafter.run_phase_root_blueprints("cid", cancel_event=cancel)
 
 
 @pytest.mark.parametrize(
@@ -3773,7 +3788,7 @@ def test_run_phase_system_validation_requires_phase5(
         crafter._spell_system_index_phase5 = spell_crafter_module.SpellSystemIndex()
 
     with pytest.raises(RuntimeError, match="Phase 6"):
-        crafter.run_phase_system_validation(cancel_event=None)
+        crafter.run_phase_system_validation("cid", cancel_event=None)
 
 
 def test_run_phase_system_validation_collects_phase4_and_broken(
@@ -3819,7 +3834,7 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
         _SpellSystemValidationSystemStub,
     )
 
-    crafter.run_phase_system_validation(cancel_event=None)
+    crafter.run_phase_system_validation("cid", cancel_event=None)
 
     validator = _SpellSystemValidationSystemStub.last_instance
     assert validator is not None
@@ -3882,7 +3897,7 @@ def test_run_phase_system_validation_uses_existing_scanner(
         _SpellSystemValidationSystemStub,
     )
 
-    crafter.run_phase_system_validation(cancel_event=None)
+    crafter.run_phase_system_validation("cid", cancel_event=None)
 
     assert _SpellbookScannerStub.created == [existing_scanner]
 
@@ -3919,7 +3934,7 @@ def test_run_phase_system_validation_sets_flags(
         _SpellSystemValidationSystemStub,
     )
 
-    crafter.run_phase_system_validation(cancel_event=None)
+    crafter.run_phase_system_validation("cid", cancel_event=None)
 
     assert crafter.validation_result_phase6 is not None
     assert crafter._validated_phase6 is True
@@ -3943,7 +3958,7 @@ def test_run_phase_change_control_calls_ensure(
     crafter, _, _ = _build_spell_and_crafter()
     calls = {"count": 0}
 
-    def _ensure(self: SpellCrafter) -> None:
+    def _ensure(self: SpellCrafter, conduit_id: str) -> None:
         """
         Purpose:
             Track helper invocation for the test.
@@ -3952,11 +3967,12 @@ def test_run_phase_change_control_calls_ensure(
         Returns:
             None.
         """
+        assert conduit_id == "cid"
         calls["count"] += 1
 
     monkeypatch.setattr(SpellCrafter, "_ensure_change_control_ready", _ensure)
 
-    crafter.run_phase_change_control(cancel_event=None)
+    crafter.run_phase_change_control("cid", cancel_event=None)
 
     assert calls["count"] == 1
 
@@ -3976,7 +3992,7 @@ def test_run_phase_change_control_cancellation() -> None:
     cancel = _CancelStub(is_set=True)
 
     with pytest.raises(RuntimeError, match="cancelled"):
-        crafter.run_phase_change_control(cancel_event=cancel)
+        crafter.run_phase_change_control("cid", cancel_event=cancel)
 
 
 def test_ensure_change_control_ready_rebuilds_component_index() -> None:
@@ -3997,7 +4013,7 @@ def test_ensure_change_control_ready_rebuilds_component_index() -> None:
     blueprints = {"root": _RootBlueprintStub("root")}
     crafter._entire_dag_blueprint_phase5 = blueprints
 
-    crafter._ensure_change_control_ready()
+    crafter._ensure_change_control_ready("cid")
 
     assert manager.rebuild_calls == [blueprints]
 
@@ -4017,7 +4033,7 @@ def test_ensure_change_control_ready_registers_revalidator_when_missing() -> Non
     aether = _AetherStub(manager=manager)
     crafter, _, _ = _build_spell_and_crafter(aether=aether)
 
-    crafter._ensure_change_control_ready()
+    crafter._ensure_change_control_ready("cid")
 
     assert manager.set_calls == 1
     assert manager._revalidate_fn is not None
@@ -4036,7 +4052,7 @@ def test_ensure_change_control_ready_skips_when_manager_none() -> None:
     """
     crafter, _, _ = _build_spell_and_crafter()
 
-    crafter._ensure_change_control_ready()
+    crafter._ensure_change_control_ready("cid")
 
 
 def test_ensure_change_control_ready_skips_when_revalidator_present() -> None:
@@ -4055,7 +4071,7 @@ def test_ensure_change_control_ready_skips_when_revalidator_present() -> None:
     aether = _AetherStub(manager=manager)
     crafter, _, _ = _build_spell_and_crafter(aether=aether)
 
-    crafter._ensure_change_control_ready()
+    crafter._ensure_change_control_ready("cid")
 
     assert manager.set_calls == 0
 
@@ -4074,7 +4090,7 @@ def test_ensure_change_control_ready_swallow_errors() -> None:
     aether = _AetherStub(raise_on_get=True)
     crafter, _, _ = _build_spell_and_crafter(aether=aether)
 
-    crafter._ensure_change_control_ready()
+    crafter._ensure_change_control_ready("cid")
 
 
 def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -4104,13 +4120,18 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
         Returns:
             callable: Phase stub callable.
         """
-        def _phase(self: SpellCrafter, *, cancel_event: object | None = None) -> None:
+        def _phase(
+                self: SpellCrafter,
+                *args: object,
+                cancel_event: object | None = None,
+        ) -> None:
             """
             Purpose:
                 Record a single phase invocation.
             Contract:
                 Appends the phase name to the outer call list.
             Args:
+                args: Optional positional args (conduit_id for phases 5-7).
                 cancel_event: Optional cancel event forwarded by run_all_phases.
             Returns:
                 None.
@@ -4127,7 +4148,7 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(SpellCrafter, "run_phase_system_validation", _record("system_validation"))
     monkeypatch.setattr(SpellCrafter, "run_phase_change_control", _record("change_control"))
 
-    crafter.run_all_phases(cancel_event=None)
+    crafter.run_all_phases("cid", cancel_event=None)
 
     assert calls == [
         "requirements",
@@ -4157,13 +4178,18 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     cancel = _CancelStub(is_set=False)
     received: list[object | None] = []
 
-    def _record(self: SpellCrafter, *, cancel_event: object | None = None) -> None:
+    def _record(
+            self: SpellCrafter,
+            *args: object,
+            cancel_event: object | None = None,
+    ) -> None:
         """
         Purpose:
             Record the cancel_event passed by run_all_phases.
         Contract:
             Appends the cancel_event to the received list.
         Args:
+            args: Optional positional args (conduit_id for phases 5-7).
             cancel_event: Cancel event provided by run_all_phases.
         Returns:
             None.
@@ -4178,6 +4204,6 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(SpellCrafter, "run_phase_system_validation", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_change_control", _record)
 
-    crafter.run_all_phases(cancel_event=cancel)
+    crafter.run_all_phases("cid", cancel_event=cancel)
 
     assert received == [cancel] * 7

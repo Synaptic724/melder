@@ -306,7 +306,7 @@ def _run_all_spellbook_phases_through_blueprints(spellbook: Spellbook) -> None:
         spell.run_phase_local_frame()
         spell.run_phase_validation()
     for spell in spells:
-        spell.run_phase_root_blueprints()
+        spell.run_phase_root_blueprints("cid")
 
 
 def _make_mutation_host_class() -> type:

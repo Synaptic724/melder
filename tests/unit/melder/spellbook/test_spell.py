@@ -363,47 +363,50 @@ class _DummyCrafter:
         self.calls.append("validation")
         self.seen_cancel_events.append(cancel_event)
 
-    def run_phase_root_blueprints(self, cancel_event=None):
+    def run_phase_root_blueprints(self, conduit_id, cancel_event=None):
         """
         Purpose:
             Record Phase 5 invocation.
         Contract:
-            Appends the phase name and stores the cancel event.
+            Appends the phase name, stores conduit id, and stores the cancel event.
         Args:
+            conduit_id: Conduit identifier passed by the caller.
             cancel_event: Cancellation event passed by the caller.
         Returns:
             None.
         """
         self.calls.append("root_blueprints")
-        self.seen_cancel_events.append(cancel_event)
+        self.seen_cancel_events.append((conduit_id, cancel_event))
 
-    def run_phase_system_validation(self, cancel_event=None):
+    def run_phase_system_validation(self, conduit_id, cancel_event=None):
         """
         Purpose:
             Record Phase 6 invocation.
         Contract:
-            Appends the phase name and stores the cancel event.
+            Appends the phase name, stores conduit id, and stores the cancel event.
         Args:
+            conduit_id: Conduit identifier passed by the caller.
             cancel_event: Cancellation event passed by the caller.
         Returns:
             None.
         """
         self.calls.append("system_validation")
-        self.seen_cancel_events.append(cancel_event)
+        self.seen_cancel_events.append((conduit_id, cancel_event))
 
-    def run_phase_change_control(self, cancel_event=None):
+    def run_phase_change_control(self, conduit_id, cancel_event=None):
         """
         Purpose:
             Record Phase 7 invocation.
         Contract:
-            Appends the phase name and stores the cancel event.
+            Appends the phase name, stores conduit id, and stores the cancel event.
         Args:
+            conduit_id: Conduit identifier passed by the caller.
             cancel_event: Cancellation event passed by the caller.
         Returns:
             None.
         """
         self.calls.append("change_control")
-        self.seen_cancel_events.append(cancel_event)
+        self.seen_cancel_events.append((conduit_id, cancel_event))
 
     def cleanup(self):
         """
@@ -679,7 +682,7 @@ def test_run_all_phases_invokes_crafter_in_order():
     spell._ensure_crafter = types.MethodType(lambda self: crafter, spell)
     cancel_event = object()
 
-    spell.run_all_phases(cancel_event=cancel_event)
+    spell.run_all_phases("cid", cancel_event=cancel_event)
 
     assert crafter.calls == [
         "requirements",
@@ -689,6 +692,26 @@ def test_run_all_phases_invokes_crafter_in_order():
         "root_blueprints",
         "system_validation",
         "change_control",
+    ]
+    observed = [
+        ev[1] if isinstance(ev, tuple) else ev for ev in crafter.seen_cancel_events
+    ]
+    assert all(ev is cancel_event for ev in observed)
+
+
+def test_run_structural_phases_invokes_crafter_in_order():
+    spell = _make_spell()
+    crafter = _DummyCrafter()
+    spell._ensure_crafter = types.MethodType(lambda self: crafter, spell)
+    cancel_event = object()
+
+    spell.run_structural_phases(cancel_event=cancel_event)
+
+    assert crafter.calls == [
+        "requirements",
+        "symbolic_graph",
+        "local_frame",
+        "validation",
     ]
     assert all(ev is cancel_event for ev in crafter.seen_cancel_events)
 
@@ -810,7 +833,7 @@ def test_run_all_phases_rejects_after_cleanup():
     spell = _make_spell()
     spell.cleanup()
     with pytest.raises(RuntimeError):
-        spell.run_all_phases()
+        spell.run_all_phases("cid")
 
 
 def test_ensure_crafter_lazy_creation_uses_imported_class(monkeypatch):

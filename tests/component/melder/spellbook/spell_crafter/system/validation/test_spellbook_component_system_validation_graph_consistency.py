@@ -67,7 +67,7 @@ def test_component_system_validation_reports_missing_index_node() -> None:
     Contract:
         - missing_index_node is emitted for blueprint nodes absent from the index.
         - root_not_viable is emitted for the affected root.
-        - Root lineage is gated.
+        - Conduit resolution validity is invalid for indexed nodes.
     Returns:
         None.
     Raises:
@@ -101,6 +101,7 @@ def test_component_system_validation_reports_missing_index_node() -> None:
                 phase4_results={root_id: object(), dep_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -109,9 +110,9 @@ def test_component_system_validation_reports_missing_index_node() -> None:
         assert "missing_index_node" in codes
         assert "root_not_viable" in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        assert root_state is not None
-        assert root_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
 
@@ -123,7 +124,7 @@ def test_component_system_validation_reports_edge_mismatch_index() -> None:
     Contract:
         - edge_mismatch_index is emitted for unexpected blueprint edges.
         - root_not_viable is emitted for the affected root.
-        - Both lineages are gated.
+        - Conduit resolution validity is invalid for indexed nodes.
     Returns:
         None.
     Raises:
@@ -164,6 +165,7 @@ def test_component_system_validation_reports_edge_mismatch_index() -> None:
                 phase4_results={root_id: object(), dep_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -172,12 +174,10 @@ def test_component_system_validation_reports_edge_mismatch_index() -> None:
         assert "edge_mismatch_index" in codes
         assert "root_not_viable" in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dep_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.gated
-        assert dep_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
+        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
 
@@ -189,7 +189,7 @@ def test_component_system_validation_does_not_add_root_viability_for_unscoped_er
     Contract:
         - edge_missing_from_blueprint is emitted with no root_id.
         - root_not_viable is not emitted.
-        - Lineage validity is gated due to existing errors.
+        - Conduit resolution validity is invalid due to existing errors.
     Returns:
         None.
     Raises:
@@ -238,6 +238,7 @@ def test_component_system_validation_does_not_add_root_viability_for_unscoped_er
                 phase4_results={root_id: object(), dep_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
@@ -246,11 +247,9 @@ def test_component_system_validation_does_not_add_root_viability_for_unscoped_er
         assert "edge_missing_from_blueprint" in codes
         assert "root_not_viable" not in codes
 
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dep_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.gated
-        assert dep_state.validity is SpellValidity.gated
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
+        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()

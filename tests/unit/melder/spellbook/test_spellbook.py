@@ -116,44 +116,47 @@ class DummySpell:
         """
         return ("validation", self.spell_id, cancel_event)
 
-    def run_phase_root_blueprints(self, cancel_event):
+    def run_phase_root_blueprints(self, conduit_id, cancel_event):
         """
         Purpose:
             Provide a deterministic Phase 5 marker for tests.
         Contract:
-            Returns a tuple containing phase name, spell id, and cancel event.
+            Returns a tuple containing phase name, spell id, conduit id, and cancel event.
         Args:
+            conduit_id: Conduit identifier forwarded by the scheduler.
             cancel_event: Cancellation event forwarded by the scheduler.
         Returns:
-            tuple[str, str, object]: Phase marker tuple.
+            tuple[str, str, str, object]: Phase marker tuple.
         """
-        return ("root_blueprints", self.spell_id, cancel_event)
+        return ("root_blueprints", self.spell_id, conduit_id, cancel_event)
 
-    def run_phase_system_validation(self, cancel_event):
+    def run_phase_system_validation(self, conduit_id, cancel_event):
         """
         Purpose:
             Provide a deterministic Phase 6 marker for tests.
         Contract:
-            Returns a tuple containing phase name, spell id, and cancel event.
+            Returns a tuple containing phase name, spell id, conduit id, and cancel event.
         Args:
+            conduit_id: Conduit identifier forwarded by the scheduler.
             cancel_event: Cancellation event forwarded by the scheduler.
         Returns:
-            tuple[str, str, object]: Phase marker tuple.
+            tuple[str, str, str, object]: Phase marker tuple.
         """
-        return ("system_validation", self.spell_id, cancel_event)
+        return ("system_validation", self.spell_id, conduit_id, cancel_event)
 
-    def run_phase_change_control(self, cancel_event):
+    def run_phase_change_control(self, conduit_id, cancel_event):
         """
         Purpose:
             Provide a deterministic Phase 7 marker for tests.
         Contract:
-            Returns a tuple containing phase name, spell id, and cancel event.
+            Returns a tuple containing phase name, spell id, conduit id, and cancel event.
         Args:
+            conduit_id: Conduit identifier forwarded by the scheduler.
             cancel_event: Cancellation event forwarded by the scheduler.
         Returns:
-            tuple[str, str, object]: Phase marker tuple.
+            tuple[str, str, str, object]: Phase marker tuple.
         """
-        return ("change_control", self.spell_id, cancel_event)
+        return ("change_control", self.spell_id, conduit_id, cancel_event)
 
     def _add_owned_conduit(self, cid, cname=None, creations=None):
         """
@@ -1155,9 +1158,9 @@ def test_phase_factories_build_units_and_label():
     sym_units = sb._phase_symbolic_graph_factory(scheduler)
     loc_units = sb._phase_local_frame_factory(scheduler)
     val_units = sb._phase_validation_factory(scheduler)
-    root_units = sb._phase_root_blueprints_factory(scheduler)
-    sys_units = sb._phase_system_validation_factory(scheduler)
-    change_units = sb._phase_change_control_factory(scheduler)
+    root_units = sb._phase_root_blueprints_factory(scheduler, "cid")
+    sys_units = sb._phase_system_validation_factory(scheduler, "cid")
+    change_units = sb._phase_change_control_factory(scheduler, "cid")
     assert req_units[0]["label"] == "requirements:x"
     assert sym_units[0]["label"] == "symbolic_graph:x"
     assert loc_units[0]["label"] == "local_frame:x"
@@ -1202,7 +1205,7 @@ def test_run_resolution_phases_success(monkeypatch):
     spell = DummySpell()
     sb._spells = {DummySpellIndex(): spell}
     sb._logger = DummySafeLogger()
-    results = sb._run_resolution_phases()
+    results = sb._run_resolution_phases("cid")
     assert set(results.keys()) == {
         "requirements",
         "symbolic_graph",
@@ -1252,7 +1255,7 @@ def test_run_resolution_phases_broken_spell_raises(monkeypatch):
     sb._spells = {DummySpellIndex(): BrokenSpell()}
     sb._logger = DummySafeLogger()
     with pytest.raises(SpellbookValidationError):
-        sb._run_resolution_phases()
+        sb._run_resolution_phases("cid")
 
 
 def test_run_resolution_phases_spell_status_error_treated_as_broken():
@@ -1290,7 +1293,7 @@ def test_run_resolution_phases_spell_status_error_treated_as_broken():
     sb._spells = {DummySpellIndex(): ErrorSpell()}
     sb._logger = DummySafeLogger()
     with pytest.raises(SpellbookValidationError):
-        sb._run_resolution_phases()
+        sb._run_resolution_phases("cid")
 
 
 def test_run_resolution_phases_cleans_scheduler_on_exception(monkeypatch):
@@ -1330,7 +1333,7 @@ def test_run_resolution_phases_cleans_scheduler_on_exception(monkeypatch):
 
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", BoomScheduler)
     with pytest.raises(RuntimeError):
-        sb._run_resolution_phases()
+        sb._run_resolution_phases("cid")
 
 
 def test_get_conjure_hook_map_no_config_returns_none():
@@ -1664,7 +1667,7 @@ def test_run_resolution_phases_scheduler_cleanup_failure_logged(monkeypatch):
 
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", CleanupBoomScheduler)
     sb._logger = DummySafeLogger()
-    results = sb._run_resolution_phases()
+    results = sb._run_resolution_phases("cid")
     assert "requirements" in results
 
 
@@ -1912,9 +1915,9 @@ def test_phase_factories_return_empty_when_no_spells():
     assert sb._phase_symbolic_graph_factory(scheduler) == []
     assert sb._phase_local_frame_factory(scheduler) == []
     assert sb._phase_validation_factory(scheduler) == []
-    assert sb._phase_root_blueprints_factory(scheduler) == []
-    assert sb._phase_system_validation_factory(scheduler) == []
-    assert sb._phase_change_control_factory(scheduler) == []
+    assert sb._phase_root_blueprints_factory(scheduler, "cid") == []
+    assert sb._phase_system_validation_factory(scheduler, "cid") == []
+    assert sb._phase_change_control_factory(scheduler, "cid") == []
 
 
 def test_run_resolution_phases_with_multiple_spells():
@@ -1933,7 +1936,7 @@ def test_run_resolution_phases_with_multiple_spells():
     spell2 = DummySpell(spell_id="b")
     sb._spells = {DummySpellIndex(sid="a"): spell1, DummySpellIndex(sid="b"): spell2}
     sb._logger = DummySafeLogger()
-    results = sb._run_resolution_phases()
+    results = sb._run_resolution_phases("cid")
     assert set(results.keys()) == {
         "requirements",
         "symbolic_graph",
@@ -2473,7 +2476,7 @@ def test_run_resolution_phases_cleans_scheduler_even_on_error(monkeypatch):
     sb._logger = DummySafeLogger()
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", lambda *a, **k: sched)
     with pytest.raises(RuntimeError):
-        sb._run_resolution_phases()
+        sb._run_resolution_phases("cid")
     assert sched.cleaned is True
 
 
@@ -2542,9 +2545,9 @@ def test_phase_factories_metadata_contains_spell_id():
         sb._phase_symbolic_graph_factory(scheduler),
         sb._phase_local_frame_factory(scheduler),
         sb._phase_validation_factory(scheduler),
-        sb._phase_root_blueprints_factory(scheduler),
-        sb._phase_system_validation_factory(scheduler),
-        sb._phase_change_control_factory(scheduler),
+        sb._phase_root_blueprints_factory(scheduler, "cid"),
+        sb._phase_system_validation_factory(scheduler, "cid"),
+        sb._phase_change_control_factory(scheduler, "cid"),
     ):
         assert units[0]["metadata"]["spell_id"] == "abc"
 
@@ -3117,15 +3120,20 @@ def test_run_resolution_phases_cleans_scheduler_on_success(monkeypatch):
     """
     sb = Spellbook()
     sb._spells = {DummySpellIndex(): DummySpell()}
-    scheduler = DummyPhaseScheduler(sb, None)
-    scheduler.cleaned = False
+    schedulers: list[DummyPhaseScheduler] = []
     sb._logger = DummySafeLogger()
     # Patch constructor to return our scheduler so we can check cleaned flag.
     import melder.spellbook.spellbook as spellbook_module
-    monkeypatch.setattr(spellbook_module, "PhaseScheduler", lambda *a, **k: scheduler)
-    results = sb._run_resolution_phases()
+    def _make_scheduler(*args, **kwargs):
+        sched = DummyPhaseScheduler(*args, **kwargs)
+        sched.cleaned = False
+        schedulers.append(sched)
+        return sched
+    monkeypatch.setattr(spellbook_module, "PhaseScheduler", _make_scheduler)
+    results = sb._run_resolution_phases("cid")
     assert "requirements" in results
-    assert scheduler.cleaned is True
+    assert schedulers
+    assert all(sched.cleaned is True for sched in schedulers)
 
 
 def test_conjure_hooks_fire_in_order(monkeypatch):
@@ -3328,7 +3336,7 @@ def test_run_resolution_phases_propagates_phase_exception(monkeypatch):
     sb._logger = DummySafeLogger()
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", ExecScheduler)
     with pytest.raises(RuntimeError):
-        sb._run_resolution_phases()
+        sb._run_resolution_phases("cid")
 
 
 def test_conjure_sets_conduit_and_marks_conjured(monkeypatch):

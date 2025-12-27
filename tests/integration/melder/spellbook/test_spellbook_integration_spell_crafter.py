@@ -165,7 +165,7 @@ def test_spell_crafter_run_all_phases_builds_dependencies_and_state() -> None:
     try:
         root_spell = conduit.get_spell_by_id(root_id)
         assert root_spell is not None
-        root_spell.run_all_phases()
+        root_spell.run_all_phases("cid")
 
         assert set(root_spell.dependencies) == {leaf_id}
         assert root_spell.dependency_graph is not None
@@ -517,7 +517,7 @@ def test_spell_crafter_phase5_requires_phase4() -> None:
         spell.run_phase_symbolic_graph()
         spell.run_phase_local_frame()
         with pytest.raises(RuntimeError):
-            spell.run_phase_root_blueprints()
+            spell.run_phase_root_blueprints("cid")
     finally:
         spellbook.cleanup()
 
@@ -557,7 +557,7 @@ def test_spell_crafter_phase6_requires_phase5() -> None:
         spell.run_phase_local_frame()
         spell.run_phase_validation()
         with pytest.raises(RuntimeError):
-            spell.run_phase_system_validation()
+            spell.run_phase_system_validation("cid")
     finally:
         spellbook.cleanup()
 
@@ -872,7 +872,7 @@ def test_spell_crafter_run_all_phases_sets_phase6_result() -> None:
     try:
         root_spell = conduit.get_spell_by_id(root_id)
         assert root_spell is not None
-        root_spell.run_all_phases()
+        root_spell.run_all_phases("cid")
 
         assert root_spell.validation_result_phase6 is not None
     finally:
@@ -938,7 +938,7 @@ def test_spell_cleanup_after_run_all_phases_clears_phase_artifacts() -> None:
     try:
         root_spell = conduit.get_spell_by_id(root_id)
         assert root_spell is not None
-        root_spell.run_all_phases()
+        root_spell.run_all_phases("cid")
 
         assert root_spell.requirements is not None
         assert root_spell.symbolic_graph is not None

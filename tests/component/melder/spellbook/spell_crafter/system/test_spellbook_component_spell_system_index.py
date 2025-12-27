@@ -293,7 +293,7 @@ def test_component_index_validation_with_graph_consistency_strategy() -> None:
         Validate index and blueprint alignment passes graph consistency checks.
     Contract:
         - GraphConsistencyStrategy emits no diagnostics for a clean graph.
-        - SpellSystemStates are marked valid for the index nodes.
+        - Conduit resolution validity is marked valid for the index nodes.
     Returns:
         None.
     Raises:
@@ -319,18 +319,17 @@ def test_component_index_validation_with_graph_consistency_strategy() -> None:
                 phase4_results={root_id: object(), dep_id: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
 
         assert result.is_valid is True
         assert result.errors == []
-        root_state = states.get_by_spell_id(root_id)
-        dep_state = states.get_by_spell_id(dep_id)
-        assert root_state is not None
-        assert dep_state is not None
-        assert root_state.validity is SpellValidity.valid
-        assert dep_state.validity is SpellValidity.valid
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_id) is SpellValidity.valid
+        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.valid
     finally:
         frame.cleanup()
 
@@ -341,11 +340,11 @@ def test_component_index_validation_multiple_roots_stay_valid() -> None:
         Validate validation marks multiple root-only nodes as valid.
     Contract:
         - GraphConsistencyStrategy emits no diagnostics for isolated roots.
-        - SpellSystemStates are set to valid for each root.
+        - Conduit resolution validity is set to valid for each root.
     Returns:
         None.
     Raises:
-        AssertionError: If validity flags are incorrect.
+        AssertionError: If resolution validity is incorrect.
     """
     frame = AethericFrame("component-index-multi-root-valid")
     states = frame._spell_system_states
@@ -368,17 +367,16 @@ def test_component_index_validation_multiple_roots_stay_valid() -> None:
                 phase4_results={root_a: object(), root_b: object()},
                 broken_spell_ids=set(),
                 spell_system_states=states,
+                conduit_id="cid",
             )
         finally:
             system.cleanup()
 
         assert result.is_valid is True
         assert result.errors == []
-        root_a_state = states.get_by_spell_id(root_a)
-        root_b_state = states.get_by_spell_id(root_b)
-        assert root_a_state is not None
-        assert root_b_state is not None
-        assert root_a_state.validity is SpellValidity.valid
-        assert root_b_state.validity is SpellValidity.valid
+        conduit_state = states.get_conduit_resolution_state("cid")
+        assert conduit_state is not None
+        assert conduit_state.get_spell_validity(root_a) is SpellValidity.valid
+        assert conduit_state.get_spell_validity(root_b) is SpellValidity.valid
     finally:
         frame.cleanup()

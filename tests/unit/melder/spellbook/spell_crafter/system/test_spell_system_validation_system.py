@@ -82,11 +82,138 @@ class _StateRaiser(_StateStub):
 
 
 class _States:
-    def __init__(self, mapping):
-        self.mapping = mapping
+    """
+    Test double for per-conduit resolution updates in SpellSystemValidationSystem.
+    """
+
+    def __init__(
+        self,
+        mapping=None,
+        *,
+        raise_on_spell_set=False,
+        raise_on_root_set=False,
+        raise_on_diagnostics=False,
+        raise_on_clear=False,
+    ):
+        """
+        Purpose:
+            Initialize the stub with optional error-injection flags.
+        Contract:
+            - Captures per-conduit resolution update calls for assertions.
+            - Can be configured to raise in specific update paths.
+        Args:
+            mapping: Optional spell-id mapping retained for compatibility.
+            raise_on_spell_set: When True, bulk spell validity updates raise.
+            raise_on_root_set: When True, bulk root validity updates raise.
+            raise_on_diagnostics: When True, diagnostics recording raises.
+            raise_on_clear: When True, clearing dirty state raises.
+        Returns:
+            None.
+        """
+        self.mapping = mapping or {}
+        self.raise_on_spell_set = raise_on_spell_set
+        self.raise_on_root_set = raise_on_root_set
+        self.raise_on_diagnostics = raise_on_diagnostics
+        self.raise_on_clear = raise_on_clear
+        self.spell_validity_calls = []
+        self.root_validity_calls = []
+        self.diagnostics_calls = []
+        self.clear_dirty_calls = []
 
     def get_by_spell_id(self, spell_id):
+        """
+        Purpose:
+            Provide a compatibility lookup for spell ids.
+        Contract:
+            - Returns the stored mapping value for the spell id, if any.
+        Args:
+            spell_id: Spell id to lookup.
+        Returns:
+            The mapped value or None.
+        """
         return self.mapping.get(spell_id)
+
+    def bulk_set_conduit_spell_validity(self, conduit_id, validity_map, *, change_reason=None):
+        """
+        Purpose:
+            Record per-conduit spell validity updates.
+        Contract:
+            - Appends call details to spell_validity_calls.
+            - Raises if raise_on_spell_set is enabled.
+        Args:
+            conduit_id: Conduit identifier for the update.
+            validity_map: Mapping of spell_id -> SpellValidity.
+            change_reason: Optional SpellStateChangeReason for the update.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: When configured to raise on spell updates.
+        """
+        self.spell_validity_calls.append(
+            (conduit_id, dict(validity_map), change_reason)
+        )
+        if self.raise_on_spell_set:
+            raise RuntimeError("boom")
+
+    def bulk_set_conduit_root_validity(self, conduit_id, validity_map, *, change_reason=None):
+        """
+        Purpose:
+            Record per-conduit root validity updates.
+        Contract:
+            - Appends call details to root_validity_calls.
+            - Raises if raise_on_root_set is enabled.
+        Args:
+            conduit_id: Conduit identifier for the update.
+            validity_map: Mapping of root_id -> SpellValidity.
+            change_reason: Optional SpellStateChangeReason for the update.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: When configured to raise on root updates.
+        """
+        self.root_validity_calls.append(
+            (conduit_id, dict(validity_map), change_reason)
+        )
+        if self.raise_on_root_set:
+            raise RuntimeError("boom")
+
+    def record_conduit_diagnostics(self, conduit_id, diagnostics):
+        """
+        Purpose:
+            Record diagnostics associated with a conduit validation run.
+        Contract:
+            - Appends call details to diagnostics_calls.
+            - Raises if raise_on_diagnostics is enabled.
+        Args:
+            conduit_id: Conduit identifier for the diagnostics.
+            diagnostics: Sequence of SystemDiagnostic entries.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: When configured to raise on diagnostics recording.
+        """
+        self.diagnostics_calls.append((conduit_id, list(diagnostics)))
+        if self.raise_on_diagnostics:
+            raise RuntimeError("boom")
+
+    def clear_conduit_dirty(self, conduit_id, validated_at):
+        """
+        Purpose:
+            Record clearing of conduit dirty state.
+        Contract:
+            - Appends call details to clear_dirty_calls.
+            - Raises if raise_on_clear is enabled.
+        Args:
+            conduit_id: Conduit identifier for the update.
+            validated_at: Validation timestamp.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: When configured to raise on dirty clearing.
+        """
+        self.clear_dirty_calls.append((conduit_id, validated_at))
+        if self.raise_on_clear:
+            raise RuntimeError("boom")
 
 
 class _CancelStub:
@@ -175,10 +302,20 @@ def test_strategies_receive_inputs_and_diagnostics_shared():
 
 
 def test_validity_set_to_valid_when_no_errors():
+    """
+    Purpose:
+        Verify conduit resolution validity is marked valid on warning-only output.
+    Contract:
+        - Spell and root validity are set to VALID with validation_passed.
+        - Diagnostics are recorded and dirty state is cleared.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If per-conduit validity or diagnostics are incorrect.
+    """
     strategy = _RecordingStrategy(severity=SystemDiagnosticSeverity.WARNING)
     idx = _index_with_nodes("a", "b")
-    state_a, state_b = _StateStub(), _StateStub()
-    states = _States({"a": state_a, "b": state_b})
+    states = _States({"a": _StateStub(), "b": _StateStub()})
     sys_val = SpellSystemValidationSystem([strategy])
     result = sys_val.validate(
         index=idx,
@@ -187,9 +324,20 @@ def test_validity_set_to_valid_when_no_errors():
         broken_spell_ids=set(),
         spell_system_states=states,
         spell_lookup={},
+        conduit_id="cid",
     )
-    for st in (state_a, state_b):
-        assert st.calls == [(SpellValidity.valid, SpellStateChangeReason.validation_passed)]
+    assert states.spell_validity_calls == [
+        ("cid", {"a": SpellValidity.valid, "b": SpellValidity.valid}, SpellStateChangeReason.validation_passed)
+    ]
+    assert states.root_validity_calls == [
+        ("cid", {"root": SpellValidity.valid}, SpellStateChangeReason.validation_passed)
+    ]
+    assert states.diagnostics_calls
+    assert states.diagnostics_calls[-1][0] == "cid"
+    assert states.diagnostics_calls[-1][1][0].severity is SystemDiagnosticSeverity.WARNING
+    assert len(states.clear_dirty_calls) == 1
+    assert states.clear_dirty_calls[0][0] == "cid"
+    assert isinstance(states.clear_dirty_calls[0][1], float)
     assert result.is_valid is True
     assert result.errors == []
     assert result.warnings and result.warnings[0].severity is SystemDiagnosticSeverity.WARNING
@@ -198,19 +346,38 @@ def test_validity_set_to_valid_when_no_errors():
 
 
 def test_validity_set_to_gated_on_error_diagnostic():
+    """
+    Purpose:
+        Verify conduit resolution validity is marked invalid on error output.
+    Contract:
+        - Spell and root validity are set to INVALID with validation_failed.
+        - Diagnostics are recorded and dirty state is not cleared.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If per-conduit validity is not invalid on errors.
+    """
     strategy = _RecordingStrategy(severity=SystemDiagnosticSeverity.ERROR)
     idx = _index_with_nodes("a")
-    state = _StateStub()
     sys_val = SpellSystemValidationSystem([strategy])
+    states = _States({"a": _StateStub()})
     result = sys_val.validate(
         index=idx,
         blueprints=_blueprint(),
         phase4_results={},
         broken_spell_ids=set(),
-        spell_system_states=_States({"a": state}),
+        spell_system_states=states,
         spell_lookup={},
+        conduit_id="cid",
     )
-    assert state.calls == [(SpellValidity.gated, SpellStateChangeReason.validation_failed)]
+    assert states.spell_validity_calls == [
+        ("cid", {"a": SpellValidity.invalid}, SpellStateChangeReason.validation_failed)
+    ]
+    assert states.root_validity_calls == [
+        ("cid", {"root": SpellValidity.invalid}, SpellStateChangeReason.validation_failed)
+    ]
+    assert states.diagnostics_calls
+    assert states.clear_dirty_calls == []
     assert result.is_valid is False
     assert result.errors and result.errors[0].severity is SystemDiagnosticSeverity.ERROR
     assert result.errors[0].source == "_RecordingStrategy"
@@ -218,21 +385,33 @@ def test_validity_set_to_gated_on_error_diagnostic():
 
 
 def test_set_validity_skips_missing_state_and_swallows_errors():
+    """
+    Purpose:
+        Ensure per-conduit state update failures do not crash validation.
+    Contract:
+        - Exceptions raised by resolution-state updates are swallowed.
+        - Validation still returns a successful result when no diagnostics exist.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If errors propagate or result validity is incorrect.
+    """
     strategy = _RecordingStrategy()  # no diagnostics -> valid path
     idx = _index_with_nodes("a", "b")
-    good = _StateStub()
-    bad = _StateRaiser()
+    states = _States({"a": _StateStub(), "b": _StateStub()}, raise_on_spell_set=True)
     sys_val = SpellSystemValidationSystem([strategy])
     result = sys_val.validate(
         index=idx,
         blueprints=_blueprint(),
         phase4_results={},
         broken_spell_ids=set(),
-        spell_system_states=_States({"a": good, "b": bad, "missing": None}),
+        spell_system_states=states,
         spell_lookup={},
+        conduit_id="cid",
     )
-    # good state updated, bad state exception swallowed, validity still reflected as valid
-    assert good.calls == [(SpellValidity.valid, SpellStateChangeReason.validation_passed)]
+    assert states.spell_validity_calls
+    assert states.diagnostics_calls == []
+    assert states.clear_dirty_calls == []
     assert result.is_valid is True
 
 
@@ -335,21 +514,36 @@ def test_validate_collects_multiple_warnings():
 
 
 def test_error_overrides_warnings_for_validity():
+    """
+    Purpose:
+        Verify error diagnostics override warnings for conduit validity.
+    Contract:
+        - Conduit spell validity is INVALID when errors are present.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If error diagnostics do not drive invalid validity.
+    """
     warn = _RecordingStrategy(severity=SystemDiagnosticSeverity.WARNING)
     err = _RecordingStrategy(severity=SystemDiagnosticSeverity.ERROR)
     idx = _index_with_nodes("a")
-    state = _StateStub()
+    states = _States({"a": _StateStub()})
     result = SpellSystemValidationSystem([warn, err]).validate(
         index=idx,
         blueprints=_blueprint(),
         phase4_results={},
         broken_spell_ids=set(),
-        spell_system_states=_States({"a": state}),
+        spell_system_states=states,
         spell_lookup={},
+        conduit_id="cid",
     )
     assert result.is_valid is False
     assert result.errors
-    assert state.calls[-1] == (SpellValidity.gated, SpellStateChangeReason.validation_failed)
+    assert states.spell_validity_calls[-1] == (
+        "cid",
+        {"a": SpellValidity.invalid},
+        SpellStateChangeReason.validation_failed,
+    )
 
 
 def test_validate_returns_nodes_reference():
@@ -472,6 +666,16 @@ def test_validate_propagates_broken_spell_ids_to_strategies():
 
 
 def test_state_set_validity_called_for_each_node():
+    """
+    Purpose:
+        Ensure all index nodes are included in per-conduit validity updates.
+    Contract:
+        - bulk_set_conduit_spell_validity receives all node ids.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any index node is missing from the validity map.
+    """
     strat = _RecordingStrategy()
     idx = _index_with_nodes("a", "b", "c")
     states = _States({sid: _StateStub() for sid in idx.nodes})
@@ -482,9 +686,12 @@ def test_state_set_validity_called_for_each_node():
         broken_spell_ids=set(),
         spell_system_states=states,
         spell_lookup={},
+        conduit_id="cid",
     )
-    for sid in idx.nodes:
-        assert states.mapping[sid].calls
+    assert states.spell_validity_calls
+    validity_map = states.spell_validity_calls[-1][1]
+    assert set(validity_map.keys()) == set(idx.nodes.keys())
+    assert all(validity is SpellValidity.valid for validity in validity_map.values())
 
 
 def test_validate_returns_diagnostics_when_error_present():

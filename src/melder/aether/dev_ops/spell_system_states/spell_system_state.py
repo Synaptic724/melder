@@ -28,7 +28,9 @@ class SpellSystemState(Cleanable):
     Validity / State
     ----------------
     - `validity`:
-        Coarse resolution gate (unknown / valid / gated / invalid / disabled).
+        Structural validity gate (unknown / valid / gated / invalid / disabled).
+        This only reflects *global* spell-definition correctness (Phases 1-4),
+        not conduit-specific resolution state.
     - `flags`:
         Fine-grained SpellState markers describing *why* the lineage is in its current condition
         (topology changes, contracts, mutation, ops).
@@ -176,7 +178,11 @@ class SpellSystemState(Cleanable):
     @property
     def validity(self) -> SpellValidity:
         """
-        Coarse resolution gate for this lineage (unknown/valid/gated/invalid/disabled).
+        Structural validity gate for this lineage (unknown/valid/gated/invalid/disabled).
+
+        Note:
+            This is the *global* structural verdict for Phases 1-4 only. Per-conduit
+            resolution validity for Phases 5-7 lives in ConduitResolutionState.
         """
         self.check_cleaned()
         return self._validity

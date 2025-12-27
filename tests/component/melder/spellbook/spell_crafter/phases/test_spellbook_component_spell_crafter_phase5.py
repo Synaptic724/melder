@@ -120,7 +120,7 @@ def test_component_phase5_blueprint_includes_deep_socket_paths() -> None:
         root_spell.run_phase_symbolic_graph()
         root_spell.run_phase_local_frame()
         root_spell.run_phase_validation()
-        root_spell.run_phase_root_blueprints()
+        root_spell.run_phase_root_blueprints("cid")
 
         crafter = root_spell._crafter
         assert crafter is not None
@@ -204,7 +204,7 @@ def test_component_phase5_system_index_marks_root_and_dependencies() -> None:
         root_spell.run_phase_symbolic_graph()
         root_spell.run_phase_local_frame()
         root_spell.run_phase_validation()
-        root_spell.run_phase_root_blueprints()
+        root_spell.run_phase_root_blueprints("cid")
 
         crafter = root_spell._crafter
         assert crafter is not None
@@ -255,7 +255,7 @@ def test_component_phase5_builds_blueprints_for_multiple_roots() -> None:
         service_spell.run_phase_validation()
         config_spell.run_phase_requirements()
 
-        service_spell.run_phase_root_blueprints()
+        service_spell.run_phase_root_blueprints("cid")
 
         crafter = service_spell._crafter
         assert crafter is not None

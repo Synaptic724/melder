@@ -28,7 +28,7 @@ def test_register_phase_and_run_success():
     uow = UnitOfWork(lambda: 123)
     uow.run_synchronously()
     scheduler.register_phase("p1", lambda: [uow])
-    results = scheduler.run_all_phases()
+    results = scheduler.run_all_phases("cid")
     assert "p1" in results
     assert results["p1"][0] is uow
 
@@ -40,7 +40,7 @@ def test_run_all_phases_raises_on_missing_factory():
     scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
     scheduler._phase_order.append("missing")
     with pytest.raises(PhaseSchedulerError):
-        scheduler.run_all_phases()
+        scheduler.run_all_phases("cid")
 
 
 def test_run_single_phase_propagates_execution_error():
@@ -52,7 +52,7 @@ def test_run_single_phase_propagates_execution_error():
         uow.run_synchronously()
     scheduler.register_phase("p1", lambda: [uow])
     with pytest.raises(PhaseExecutionError):
-        scheduler.run_all_phases()
+        scheduler.run_all_phases("cid")
     scheduler.cleanup()
 
 
@@ -66,7 +66,7 @@ def test_run_single_phase_timeout():
         return [uow]
     scheduler.register_phase("p1", slow_factory)
     with pytest.raises(PhaseTimeoutError):
-        scheduler.run_all_phases()
+        scheduler.run_all_phases("cid")
     scheduler.cleanup()
 
 
@@ -98,7 +98,7 @@ def test_multi_worker_executes_all_units():
     units = [make_uow(i) for i in range(10)]
     scheduler.register_phase("p1", lambda: units)
 
-    results = scheduler.run_all_phases()
+    results = scheduler.run_all_phases("cid")
     assert scheduler.workers == 5
     assert len(executed) == 10
     assert sorted(executed) == list(range(10))
@@ -120,7 +120,7 @@ def test_multiple_phases_and_thread_pool_reuse():
     scheduler.register_phase("phase1", lambda: phase1_units)
     scheduler.register_phase("phase2", lambda: phase2_units)
 
-    results = scheduler.run_all_phases()
+    results = scheduler.run_all_phases("cid")
 
     assert scheduler.workers == 10
     assert scheduler._workers_started is True

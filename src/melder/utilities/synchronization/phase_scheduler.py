@@ -505,10 +505,16 @@ class PhaseScheduler(Cleanable):
     # Public run API
     # ------------------------------------------------------------------
 
-    def run_all_phases(self) -> Dict[str, Sequence[UnitOfWork]]:
+    def run_all_phases(self, conduit_id: Optional[str] = None) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Execute all registered phases in registration order.
 
+        Args:
+            conduit_id:
+                Optional conduit identifier carried by callers that need to
+                align phase execution with a specific conduit context. The
+                scheduler does not use this value directly; phase factories
+                may capture it via closure as needed.
         Returns:
             Dict[str, Sequence[UnitOfWork]]:
                 Mapping of phase_name -> Sequence[UnitOfWork]. Callers may
