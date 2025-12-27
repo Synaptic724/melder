@@ -3813,6 +3813,13 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
         "RootCoverageStrategy",
         "IndexDependencySanityStrategy",
         "LineageAlignmentStrategy",
+        "IndexCoverageStrategy",
+        "LineageVersionConflictStrategy",
+        "RootLineageConflictStrategy",
+        "OwnershipConsistencyStrategy",
+        "DependencyTypeSanityStrategy",
+        "RootScaleLimitStrategy",
+        "SocketAmbiguityStrategy",
         "RootViabilityStrategy",
         "SocketRefSanityStrategy",
     ]

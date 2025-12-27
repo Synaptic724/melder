@@ -1527,7 +1527,7 @@ class SpellCrafter(Cleanable):
             OwnershipConsistencyStrategy(),
             DependencyTypeSanityStrategy(),
             RootScaleLimitStrategy(),
-            SocketAmbiguityStrategy(),
+            # SocketAmbiguityStrategy(),
             RootViabilityStrategy(),
             SocketRefSanityStrategy(),
         ]

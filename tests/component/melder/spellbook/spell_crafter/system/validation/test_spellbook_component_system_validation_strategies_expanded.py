@@ -1328,3 +1328,338 @@ def test_component_lineage_alignment_ignores_matching_lineage() -> None:
     )
 
     assert diagnostics == []
+
+
+def test_component_root_scale_limit_reports_node_limit() -> None:
+    """
+    Purpose:
+        Validate RootScaleLimitStrategy reports node count limits.
+    Contract:
+        - root_dag_node_limit_exceeded is emitted for oversized DAGs.
+    Returns:
+        None.
+    """
+    strategy = RootScaleLimitStrategy(
+        max_nodes=3,
+        max_edges=100,
+        max_depth=100,
+        max_fan_out=100,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        edges={"root": {"svc-a", "svc-b"}, "svc-a": {"shared"}, "svc-b": {"shared"}},
+    )
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index(
+            {"root": {"svc-a", "svc-b"}, "svc-a": {"shared"}, "svc-b": {"shared"}, "shared": set()},
+            root_ids={"root"},
+        ),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"root_dag_node_limit_exceeded"}
+    assert diagnostics[0].severity is SystemDiagnosticSeverity.WARNING
+
+
+def test_component_root_scale_limit_reports_edge_limit() -> None:
+    """
+    Purpose:
+        Validate RootScaleLimitStrategy reports edge count limits.
+    Contract:
+        - root_dag_edge_limit_exceeded is emitted when edges exceed the limit.
+    Returns:
+        None.
+    """
+    strategy = RootScaleLimitStrategy(
+        max_nodes=100,
+        max_edges=1,
+        max_depth=100,
+        max_fan_out=100,
+    )
+    blueprint = _make_blueprint(root_id="root", edges={"root": {"dep-a", "dep-b"}})
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": {"dep-a", "dep-b"}, "dep-a": set(), "dep-b": set()}, root_ids={"root"}),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"root_dag_edge_limit_exceeded"}
+
+
+def test_component_root_scale_limit_reports_depth_limit() -> None:
+    """
+    Purpose:
+        Validate RootScaleLimitStrategy reports depth limits.
+    Contract:
+        - root_dag_depth_limit_exceeded is emitted when depth exceeds the limit.
+    Returns:
+        None.
+    """
+    strategy = RootScaleLimitStrategy(
+        max_nodes=100,
+        max_edges=100,
+        max_depth=2,
+        max_fan_out=100,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        edges={"root": {"a"}, "a": {"b"}, "b": {"c"}},
+    )
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": {"a"}, "a": {"b"}, "b": {"c"}, "c": set()}, root_ids={"root"}),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"root_dag_depth_limit_exceeded"}
+
+
+def test_component_root_scale_limit_reports_fan_out_limit() -> None:
+    """
+    Purpose:
+        Validate RootScaleLimitStrategy reports fan-out limits.
+    Contract:
+        - root_dag_fan_out_limit_exceeded is emitted when fan-out exceeds the limit.
+    Returns:
+        None.
+    """
+    strategy = RootScaleLimitStrategy(
+        max_nodes=100,
+        max_edges=100,
+        max_depth=100,
+        max_fan_out=1,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        edges={"root": {"svc-a", "svc-b"}, "svc-a": {"shared"}, "svc-b": {"shared"}},
+    )
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index(
+            {"root": {"svc-a", "svc-b"}, "svc-a": {"shared"}, "svc-b": {"shared"}, "shared": set()},
+            root_ids={"root"},
+        ),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"root_dag_fan_out_limit_exceeded"}
+
+
+def test_component_index_coverage_reports_orphan_index_node() -> None:
+    """
+    Purpose:
+        Validate IndexCoverageStrategy reports index nodes missing from blueprints.
+    Contract:
+        - index_node_missing_from_blueprints is emitted for orphan index nodes.
+    Returns:
+        None.
+    """
+    strategy = IndexCoverageStrategy()
+    blueprint = _make_blueprint(root_id="root", edges={})
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": set(), "orphan": set()}, root_ids={"root"}),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"index_node_missing_from_blueprints"}
+
+
+def test_component_root_lineage_conflict_reports_duplicates() -> None:
+    """
+    Purpose:
+        Validate RootLineageConflictStrategy reports multiple roots per lineage.
+    Contract:
+        - root_lineage_conflict is emitted for each root sharing a lineage.
+    Returns:
+        None.
+    """
+    strategy = RootLineageConflictStrategy()
+    blueprint_a = _make_blueprint(root_id="root-a", edges={})
+    blueprint_b = _make_blueprint(root_id="root-b", edges={})
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index(
+            {"root-a": set(), "root-b": set()},
+            root_ids={"root-a", "root-b"},
+            lineage_map={"root-a": "lineage-x", "root-b": "lineage-x"},
+        ),
+        blueprints={"root-a": blueprint_a, "root-b": blueprint_b},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"root_lineage_conflict"}
+    assert {diag.root_id for diag in diagnostics} == {"root-a", "root-b"}
+
+
+def test_component_lineage_version_conflict_reports_multiple_versions() -> None:
+    """
+    Purpose:
+        Validate LineageVersionConflictStrategy reports multiple versions in a root DAG.
+    Contract:
+        - lineage_version_conflict is emitted when a lineage appears twice.
+    Returns:
+        None.
+    """
+    strategy = LineageVersionConflictStrategy()
+    blueprint = _make_blueprint(root_id="root", edges={"root": {"v1", "v2"}})
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index(
+            {"root": {"v1", "v2"}, "v1": set(), "v2": set()},
+            root_ids={"root"},
+            lineage_map={"root": "lineage-root", "v1": "lineage-shared", "v2": "lineage-shared"},
+        ),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"lineage_version_conflict"}
+
+
+def test_component_dependency_type_sanity_reports_callable_dependency() -> None:
+    """
+    Purpose:
+        Validate DependencyTypeSanityStrategy warns on callable dependencies.
+    Contract:
+        - dependency_type_unexpected is emitted for method/lambda dependencies.
+    Returns:
+        None.
+    """
+    strategy = DependencyTypeSanityStrategy()
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index(
+            {"root": {"dep"}, "dep": set()},
+            root_ids={"root"},
+            spell_types={"dep": SpellType.METHOD},
+        ),
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"dependency_type_unexpected"}
+    assert diagnostics[0].severity is SystemDiagnosticSeverity.WARNING
+
+
+def test_component_ownership_consistency_reports_conflicts() -> None:
+    """
+    Purpose:
+        Validate OwnershipConsistencyStrategy reports conflicting conduit owners.
+    Contract:
+        - lineage_conduit_conflict is emitted when multiple conduits share a lineage.
+    Returns:
+        None.
+    """
+    strategy = OwnershipConsistencyStrategy()
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index(
+            {"v1": set(), "v2": set()},
+            root_ids=set(),
+            lineage_map={"v1": "lineage-a", "v2": "lineage-a"},
+            conduit_ids={"v1": "conduit-a", "v2": "conduit-b"},
+        ),
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"lineage_conduit_conflict"}
+
+
+def test_component_ownership_consistency_ignores_unknown_conduit() -> None:
+    """
+    Purpose:
+        Validate OwnershipConsistencyStrategy ignores unknown conduit ids.
+    Contract:
+        - Diagnostics remain empty when only one conduit id is known.
+    Returns:
+        None.
+    """
+    strategy = OwnershipConsistencyStrategy()
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index(
+            {"v1": set(), "v2": set()},
+            root_ids=set(),
+            lineage_map={"v1": "lineage-a", "v2": "lineage-a"},
+            conduit_ids={"v1": "conduit-a"},
+        ),
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_component_socket_ambiguity_reports_duplicate_names() -> None:
+    """
+    Purpose:
+        Validate SocketAmbiguityStrategy reports duplicate socket names.
+    Contract:
+        - socket_ref_name_ambiguous is emitted when a param name repeats.
+    Returns:
+        None.
+    """
+    strategy = SocketAmbiguityStrategy()
+    blueprint = _make_blueprint(root_id="root", edges={})
+    blueprint.add_socket_ref(_make_socket_ref(node_id="root", name="service", path=("service",)))
+    blueprint.add_socket_ref(_make_socket_ref(node_id="root", name="service", path=("child", "service")))
+    diagnostics: list[SystemDiagnostic] = []
+
+    strategy.run(
+        index=_make_index({"root": set()}, root_ids={"root"}),
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert {diag.code for diag in diagnostics} == {"socket_ref_name_ambiguous"}
