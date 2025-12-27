@@ -17,19 +17,19 @@ class ICleanable(Protocol):
     abstract base class.
     """
 
-    _cleaned: "bool"
+    _cleaned: bool
 
     @property
-    def cleaned(self) -> "bool":
+    def cleaned(self) -> bool:
         """Returns True if the object has already been cleaned."""
         ...
 
     @property
-    def is_cleaned(self) -> "bool":
+    def is_cleaned(self) -> bool:
         """Alias for `cleaned`."""
         ...
 
-    def check_cleaned(self) -> "None":
+    def check_cleaned(self) -> None:
         """
         Check if the object has been cleaned.
 
@@ -38,7 +38,7 @@ class ICleanable(Protocol):
         """
         ...
 
-    def  cleanup(self) -> "None":
+    def  cleanup(self) -> None:
         """
         Dispose must be implemented by subclasses.
 
@@ -50,7 +50,7 @@ class ICleanable(Protocol):
         """
         ...
 
-    async def async_cleanup(self) -> "None":
+    async def async_cleanup(self) -> None:
         """
         Dispose must be implemented by subclasses.
 
@@ -277,8 +277,8 @@ class ILesserCreations(ICleanable, Protocol):
     # -----------------
     # Attributes
     # -----------------
-    _unique_per_scope: 'Dict[str, object]'
-    _many: 'Dict[str, List[object]]'
+    _unique_per_scope: Dict[str, object]
+    _many: Dict[str, List[object]]
     _disposal_enabled: bool
     _disposal_method_names: List[str]
     _lock: RLock
@@ -426,13 +426,13 @@ class ISpell(ICleanable, Protocol):
     permissions: Permissions
 
     # Arbitrary metadata
-    tags: 'List'
-    metadata: 'Dict'
+    tags: List
+    metadata: Dict
     _mutation_override: dict
 
     # Dependency graph + requirements
     dependency_graph: Any
-    dependencies: 'List[str]'
+    dependencies: List[str]
 
     # Spellbook
     _spellbook: Optional['ISpellbook']
@@ -449,9 +449,9 @@ class ISpell(ICleanable, Protocol):
     _owner_creations: Any
 
     # Lifecycle hooks
-    pre_hooks: 'List[Callable[..., Any]]'
-    activation_hooks: 'List[Callable[..., Any]]'
-    post_hooks: 'List[Callable[..., Any]]'
+    pre_hooks: List[Callable[..., Any]]
+    activation_hooks: List[Callable[..., Any]]
+    post_hooks: List[Callable[..., Any]]
 
     _spell_system_states: 'ISpellSystemStates'
     _key: Tuple[str, str]
@@ -1918,8 +1918,8 @@ class IConduitWard(ICleanable, Protocol):
     _log_sysgroups: List[str]
     _policy_set: bool
     _policy: Optional['Policies']
-    _initiated_index: 'Dict[str, str]'
-    _received_index: 'Dict[str, str]'
+    _initiated_index: Dict[str, str]
+    _received_index: Dict[str, str]
     _contracts: 'Dict[str, Contract]'
     _parent_conduit: Optional['IConduit']
     _root_conduit: Optional['IConduit']
@@ -2827,7 +2827,7 @@ class IConduit(ICleanable, Protocol):
     _aether: 'Aether'
 
     # Instance-level core attributes (1:1 with Conduit)
-    _lock: 'threading.RLock'
+    _lock: threading.RLock
     _id: str
     _name: Optional[str]
     __debugger_mode__: bool
