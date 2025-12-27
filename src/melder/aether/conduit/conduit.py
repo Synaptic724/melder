@@ -36,23 +36,62 @@ class Conduit(Cleanable):
     """
     _aether = Aether()
     __melder_internal__ = _mrg.sentinel
-    def __init__(self, spellbook: ISpellbook, configuration: IConfiguration, conduit_state: ConduitState,
-                 aetheric_frame: str, policy: Policies, automatic: bool = True, name: Optional[str] = None, logger: Any | None = None):
+    def __init__(
+            self,
+            spellbook: ISpellbook,
+            configuration: IConfiguration,
+            conduit_state: ConduitState,
+            aetheric_frame: str,
+            policy: Policies,
+            automatic: bool = True,
+            name: Optional[str] = None,
+            logger: Any | None = None,
+            conduit_id: Optional[str] = None,
+    ):
         """
         Public API
 
         Initializes a new Conduit.
 
         Args:
-            spellbook (ISpellbook): The Spellbook governing this Conduit.
-            configuration (IConfiguration): The locked system configuration.
-            conduit_state (str): The role of this Conduit ('normal' or 'lesser').
-            name (str, optional): An optional name for easier identification.
+            spellbook (ISpellbook):
+                The Spellbook governing this Conduit.
+            configuration (IConfiguration):
+                The locked system configuration.
+            conduit_state (ConduitState):
+                The role of this Conduit ('normal' or 'lesser').
+            aetheric_frame (str):
+                The Aetheric frame name this Conduit belongs to.
+            policy (Policies):
+                The Conduit policy that governs linking and contract behavior.
+            automatic (bool, optional):
+                If True, operate in automatic (non-dynamic) mode.
+            name (str, optional):
+                An optional name for easier identification.
+            logger (Any | None, optional):
+                Optional logger instance or logger-like object.
+            conduit_id (str | None, optional):
+                Optional explicit conduit identifier. When None, an ID is generated
+                via IDBuilder.create_id().
+
+        Raises:
+            TypeError:
+                If configuration is not an IConfiguration or conduit_id is not a string.
+            ValueError:
+                If conduit_id is provided but empty.
         """
         super().__init__()
         # General Init
         self._lock: threading.RLock = threading.RLock()
-        self._id: str = IDBuilder.create_id()
+        if conduit_id is None:
+            conduit_id = IDBuilder.create_id()
+        elif not isinstance(conduit_id, str):
+            raise TypeError(
+                f"conduit_id must be a string when provided, got {type(conduit_id).__name__}"
+            )
+        elif not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        self._id: str = conduit_id
         self._name: str = name
         self.__debugger_mode__: bool = False
         self.__dynamic_environment__: bool = False

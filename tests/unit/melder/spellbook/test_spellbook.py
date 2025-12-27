@@ -3212,7 +3212,18 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
         Contract:
             Exposes id/name/creations and a cleanup hook.
         """
-        def __init__(self, spellbook, name, conduit_state, configuration, aetheric_frame, policy, automatic, logger):
+        def __init__(
+                self,
+                spellbook,
+                name,
+                conduit_state,
+                configuration,
+                aetheric_frame,
+                policy,
+                automatic,
+                logger,
+                conduit_id=None,
+        ):
             """
             Purpose:
                 Initialize the stub conduit.
@@ -3227,10 +3238,11 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
                 policy: Conduit policy value.
                 automatic: Automatic mode flag.
                 logger: Logger instance.
+                conduit_id: Optional conduit id override for tests.
             Returns:
                 None.
             """
-            self._id = "cid"
+            self._id = conduit_id or "cid"
             self._name = "cname"
             self._creations = {}
 

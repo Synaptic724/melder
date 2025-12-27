@@ -1526,6 +1526,7 @@ class Spellbook(Cleanable):
             )
 
             # 2) Construct the Conduit.
+            conduit_id = IDBuilder.create_id()
             conduit = Conduit(
                 spellbook=self,
                 name=name,
@@ -1535,6 +1536,7 @@ class Spellbook(Cleanable):
                 policy=policy_enum,
                 automatic=automatic,
                 logger=conduit_logger,
+                conduit_id=conduit_id,
             )
 
             # Mark this Spellbook as having conjured its single conduit
