@@ -2101,6 +2101,126 @@ class Conduit(Cleanable):
         self._conduit_ward.cleanup_all_lesser_conduits()
 
     #endregion Conduit Ward API
+    #region Conduit Resolution Validation API
+    def get_resolution_state(self) -> Optional["ConduitResolutionState"]:
+        """
+        Public API
+
+        Return the per-conduit resolution state for this conduit.
+
+        Purpose:
+            Provide access to conduit-scoped Phase 5-7 validity and diagnostics
+            after linking/contracting without running validation.
+        Contract:
+            - Does not run validation or mutate any state.
+            - For lesser conduits, uses the root conduit id.
+            - Returns None when no resolution state has been recorded yet.
+        Returns:
+            ConduitResolutionState | None:
+                The resolution state for this conduit (or its root), if present.
+        Raises:
+            RuntimeError: If the conduit is cleaned or the root conduit is unavailable.
+            RuntimeError: If the Spellbook is not available on this conduit.
+        Threading:
+            Uses the conduit lock to resolve lineage/root identity. The returned
+            state is owned by SpellSystemStates and provides its own locking.
+        """
+        self.check_cleaned()
+
+        with self._lock:
+            conduit_id = self._id
+            if self._conduit_state is ConduitState.lesser:
+                if self._conduit_ward is None:
+                    self._logger.error(
+                        "Root conduit is not set for this lineage.",
+                        "get_resolution_state",
+                    )
+                    raise RuntimeError("Root conduit is not set for this lineage.")
+                root_conduit = self._conduit_ward.root_conduit
+                conduit_id = root_conduit._id
+
+            spellbook = self._spellbook
+            if spellbook is None:
+                self._logger.error(
+                    "Spellbook is not available for this conduit.",
+                    "get_resolution_state",
+                )
+                raise RuntimeError("Spellbook is not available for this conduit.")
+            spell_system_states = spellbook._spell_system_states
+
+        if spell_system_states is None:
+            return None
+
+        return spell_system_states.get_conduit_resolution_state(conduit_id)
+
+    def validate_resolution(self, *, refresh_structural: bool = True) -> Optional["ConduitResolutionState"]:
+        """
+        Public API
+
+        Run structural and conduit-scoped resolution validation, then return the state.
+
+        Purpose:
+            Provide an explicit preflight validation hook after linking or
+            contracting spells so callers (including AI users) can check
+            readiness before performing work.
+        Contract:
+            - When refresh_structural is True, runs structural phases (1-4) first.
+            - Always runs resolution phases (5-7) for this conduit scope.
+            - Returns the conduit-scoped resolution state after validation.
+        Args:
+            refresh_structural:
+                Whether to re-run structural validation (phases 1-4) before
+                conduit-scoped phases. Defaults to True.
+        Returns:
+            ConduitResolutionState | None:
+                The resolution state for this conduit (or its root), if present.
+        Raises:
+            RuntimeError: If the conduit is cleaned or the root conduit is unavailable.
+            RuntimeError: If the Spellbook or SpellSystemStates are unavailable.
+            SpellbookValidationError:
+                Propagated if structural or resolution validation fails.
+        Threading:
+            Resolves conduit identity under the conduit lock but executes phase
+            pipelines outside of it to avoid long-held locks.
+        """
+        self.check_cleaned()
+
+        with self._lock:
+            conduit_id = self._id
+            if self._conduit_state is ConduitState.lesser:
+                if self._conduit_ward is None:
+                    self._logger.error(
+                        "Root conduit is not set for this lineage.",
+                        "validate_resolution",
+                    )
+                    raise RuntimeError("Root conduit is not set for this lineage.")
+                root_conduit = self._conduit_ward.root_conduit
+                conduit_id = root_conduit._id
+
+            spellbook = self._spellbook
+            if spellbook is None:
+                self._logger.error(
+                    "Spellbook is not available for this conduit.",
+                    "validate_resolution",
+                )
+                raise RuntimeError("Spellbook is not available for this conduit.")
+            spell_system_states = spellbook._spell_system_states
+
+        if spell_system_states is None:
+            self._logger.error(
+                "SpellSystemStates is not available for this conduit.",
+                "validate_resolution",
+            )
+            raise RuntimeError("SpellSystemStates is not available for this conduit.")
+
+        if refresh_structural:
+            spellbook._run_structural_phases()
+
+        spellbook._run_resolution_phases_for_conduit(conduit_id)
+
+        return spell_system_states.get_conduit_resolution_state(conduit_id)
+
+    #endregion Conduit Resolution Validation API
     #region Spell Contracting API
     def _qualify_contracts(self):
         """

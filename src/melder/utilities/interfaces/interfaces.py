@@ -3610,6 +3610,64 @@ class IConduit(ICleanable, Protocol):
         ...
 
     # ------------------------------------------------------------------
+    # Conduit Resolution Validation API
+    # ------------------------------------------------------------------
+    def get_resolution_state(self) -> Optional['IConduitResolutionState']:
+        """
+        Public API
+
+        Return the per-conduit resolution state for this conduit.
+
+        Purpose:
+            Expose conduit-scoped Phase 5-7 validity and diagnostics without
+            running validation.
+        Contract:
+            - Does not mutate or revalidate; returns existing state only.
+            - Lesser conduits resolve state via their root conduit id.
+            - Returns None when no resolution state has been recorded.
+        Returns:
+            Optional[IConduitResolutionState]:
+                Resolution state for this conduit (or its root), if present.
+        Raises:
+            RuntimeError: If the conduit is cleaned or the root conduit is unavailable.
+            RuntimeError: If the Spellbook is not available on this conduit.
+        Threading:
+            Implementations should resolve identity under conduit locks and
+            rely on SpellSystemStates for state-level synchronization.
+        """
+        ...
+
+    def validate_resolution(self, *, refresh_structural: bool = True) -> Optional['IConduitResolutionState']:
+        """
+        Public API
+
+        Run structural and conduit-scoped resolution validation, then return the state.
+
+        Purpose:
+            Provide an explicit preflight validation hook after linking or
+            contracting spells so callers can confirm readiness.
+        Contract:
+            - When refresh_structural is True, runs structural phases (1-4) first.
+            - Always runs resolution phases (5-7) for this conduit scope.
+            - Returns the conduit-scoped resolution state after validation.
+        Args:
+            refresh_structural:
+                Whether to run structural validation before conduit validation.
+        Returns:
+            Optional[IConduitResolutionState]:
+                Resolution state for this conduit (or its root), if present.
+        Raises:
+            RuntimeError: If the conduit is cleaned or the root conduit is unavailable.
+            RuntimeError: If the Spellbook or SpellSystemStates are unavailable.
+            SpellbookValidationError:
+                Propagated if structural or resolution validation fails.
+        Threading:
+            Implementations should avoid holding conduit locks while executing
+            phase pipelines to prevent long-held lock contention.
+        """
+        ...
+
+    # ------------------------------------------------------------------
     # Spell Contracting API
     # ------------------------------------------------------------------
     def _qualify_contracts(self) -> None:
