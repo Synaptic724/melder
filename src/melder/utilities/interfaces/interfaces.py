@@ -38,7 +38,7 @@ class ICleanable(Protocol):
         """
         ...
 
-    def cleanup(self) -> "None":
+    def  cleanup(self) -> "None":
         """
         Dispose must be implemented by subclasses.
 
@@ -81,11 +81,11 @@ class ICreations(ICleanable, Protocol):
     # Attributes
     # -----------------
     _lock: RLock
-    _unique: 'ConcurrentDict[str, object]'
-    _unique_per_scope: 'ConcurrentDict[str, object]'
-    _many: 'ConcurrentDict[str, ConcurrentList[object]]'
-    _unique_per_lineage: 'ConcurrentDict[str, object]'
-    _unique_per_cluster: 'ConcurrentDict[str, object]'
+    _unique: 'Dict[str, object]'
+    _unique_per_scope: 'Dict[str, object]'
+    _many: 'Dict[str, List[object]]'
+    _unique_per_lineage: 'Dict[str, object]'
+    _unique_per_cluster: 'Dict[str, object]'
     _disposal_enabled: bool
     _disposal_method_names: List[str]
     _id: str
@@ -277,8 +277,8 @@ class ILesserCreations(ICleanable, Protocol):
     # -----------------
     # Attributes
     # -----------------
-    _unique_per_scope: 'ConcurrentDict[str, object]'
-    _many: 'ConcurrentDict[str, ConcurrentList[object]]'
+    _unique_per_scope: 'Dict[str, object]'
+    _many: 'Dict[str, List[object]]'
     _disposal_enabled: bool
     _disposal_method_names: List[str]
     _lock: RLock
@@ -426,13 +426,13 @@ class ISpell(ICleanable, Protocol):
     permissions: Permissions
 
     # Arbitrary metadata
-    tags: 'ConcurrentList'
-    metadata: 'ConcurrentDict'
+    tags: 'List'
+    metadata: 'Dict'
     _mutation_override: dict
 
     # Dependency graph + requirements
     dependency_graph: Any
-    dependencies: 'ConcurrentList[str]'
+    dependencies: 'List[str]'
 
     # Spellbook
     _spellbook: Optional['ISpellbook']
@@ -449,9 +449,9 @@ class ISpell(ICleanable, Protocol):
     _owner_creations: Any
 
     # Lifecycle hooks
-    pre_hooks: 'ConcurrentList[Callable[..., Any]]'
-    activation_hooks: 'ConcurrentList[Callable[..., Any]]'
-    post_hooks: 'ConcurrentList[Callable[..., Any]]'
+    pre_hooks: 'List[Callable[..., Any]]'
+    activation_hooks: 'List[Callable[..., Any]]'
+    post_hooks: 'List[Callable[..., Any]]'
 
     _spell_system_states: 'ISpellSystemStates'
     _key: Tuple[str, str]
@@ -1512,7 +1512,7 @@ class ISpellbook(ICleanable, Protocol):
 
         After this runs:
             * Each `conduit_id` in `_contracted_spells` will have a
-              corresponding `ConcurrentSet[str]` in `_contracted_versions`
+              corresponding `Set[str]` in `_contracted_versions`
               containing **all version IDs** (SHA256) for that
               conduit’s spells.
         """
@@ -1918,12 +1918,12 @@ class IConduitWard(ICleanable, Protocol):
     _log_sysgroups: List[str]
     _policy_set: bool
     _policy: Optional['Policies']
-    _initiated_index: 'ConcurrentDict[str, str]'
-    _received_index: 'ConcurrentDict[str, str]'
-    _contracts: 'ConcurrentDict[str, Contract]'
+    _initiated_index: 'Dict[str, str]'
+    _received_index: 'Dict[str, str]'
+    _contracts: 'Dict[str, Contract]'
     _parent_conduit: Optional['IConduit']
     _root_conduit: Optional['IConduit']
-    _lesser_conduits: 'ConcurrentDict[str, IConduit]'
+    _lesser_conduits: 'Dict[str, IConduit]'
     _lock: Any
 
     # ------------------------------------------------------------------
@@ -4158,19 +4158,19 @@ class IAethericFrame(ICleanable, Protocol):
         name (str): The unique name of this frame.
         _configuration (Optional[Any]): The frozen configuration for this frame.
         _conduit_cloud (IConduitCloud): The abstract factory for named conduits.
-        _conduits (ConcurrentDict[str, IConduit]): Stores all root conduits.
-        _spell_registry (ConcurrentDict[str, ConcurrentSet[str]]): Maps
+        _conduits (Dict[str, IConduit]): Stores all root conduits.
+        _spell_registry (Dict[str, Set[str]]): Maps
             conduit ids to their owned spell IDs.
-        _conduit_clusters (ConcurrentDict[str, ConcurrentList[str]]): Organizes
+        _conduit_clusters (Dict[str, List[str]]): Organizes
             conduits into named groups.
     """
     name: str
     _id: str
     _configuration: Optional[Any]  # Use 'Configuration' if it's a known type
     _conduit_cloud: IConduitCloud
-    _conduits: 'ConcurrentDict[str, IConduit]'
-    _spell_registry: 'ConcurrentDict[str, ConcurrentSet[str]]'
-    _conduit_clusters: 'ConcurrentDict[str, ConcurrentList[str]]'
+    _conduits: 'Dict[str, IConduit]'
+    _spell_registry: 'Dict[str, Set[str]]'
+    _conduit_clusters: 'Dict[str, List[str]]'
 
 @runtime_checkable
 class IAether(ICleanable, Protocol):
@@ -4367,7 +4367,7 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> 'ConcurrentList[str]':
+    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> 'List[str]':
         """
         Gets a list of all conduit id in a specific cluster.
 
@@ -4376,7 +4376,7 @@ class IAether(ICleanable, Protocol):
             aetheric_frame_name (str): The name of the frame.
 
         Returns:
-            ConcurrentList[str]: A list of conduit ids.
+            List[str]: A list of conduit ids.
 
         Raises:
             ValueError: If the frame or cluster does not exist.
@@ -4415,13 +4415,13 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def _add_spells_to_aether(self, conduit_id: str, spell_set: 'ConcurrentSet[str]', aetheric_frame_name: str = "default"):
+    def _add_spells_to_aether(self, conduit_id: str, spell_set: 'Set[str]', aetheric_frame_name: str = "default"):
         """
         Registers a set of spell IDs as being owned by a specific conduit.
 
         Args:
             conduit_id (str): The id of the owning conduit.
-            spell_set (ConcurrentSet[str]): A set of spell IDs to register.
+            spell_set (Set[str]): A set of spell IDs to register.
             aetheric_frame_name (str): The name of the frame.
 
         Raises:
@@ -4450,9 +4450,9 @@ class IChannelLogger(ICleanable, Protocol):
     optional **overrides** that can be imposed by a higher-level controller.
 
     Additions:
-    - **groups** (membership): `ConcurrentSet[str]` of tokens (e.g., "SYSTEM", "PIPELINE_A").
+    - **groups** (membership): `Set[str]` of tokens (e.g., "SYSTEM", "PIPELINE_A").
       Snapshot is attached to each record as `record.groups` (List[str]).
-    - **properties** (key/value): `ConcurrentDict[str, Any]` of flat scalars you want
+    - **properties** (key/value): `Dict[str, Any]` of flat scalars you want
       stamped on every record (e.g., small IDs/flags). Snapshot is attached to each
       record as `record.properties` (Dict[str, Any]).
       (Thread/agent fields from `ContextFilter` are still injected separately.)
@@ -5075,7 +5075,7 @@ class IConfiguration(ICleanable, Protocol):
 
     # --- Attributes (surface expectations only) ---
     _frozen: bool
-    available_properties: 'ConcurrentDict[str, Type]'
+    available_properties: 'Dict[str, Type]'
     _logger_factory: 'Pack[[object], Any] | None'
     _aether_frame: str
     _id: str
@@ -5626,8 +5626,8 @@ class IContract(ICleanable, Protocol):
     _id: str
     _ward_a: IConduitWard
     _ward_b: IConduitWard
-    _details_a: 'ConcurrentDict[str, IDetail]'
-    _details_b: 'ConcurrentDict[str, IDetail]'
+    _details_a: 'Dict[str, IDetail]'
+    _details_b: 'Dict[str, IDetail]'
 
     def _clean_up(self) -> None:
         """
@@ -5656,7 +5656,7 @@ class IContract(ICleanable, Protocol):
         """
         ...
 
-    def _get_detail_map(self, ward: IConduitWard) -> 'ConcurrentDict[str, IDetail]':
+    def _get_detail_map(self, ward: IConduitWard) -> 'Dict[str, IDetail]':
         """
         Internal
 
@@ -6045,7 +6045,7 @@ class ISpellSystemStates(ICleanable, Protocol):
 
         Returns:
             A list of SpellSystemState objects. The list is detached from the
-            underlying ConcurrentDict so callers cannot accidentally keep a
+            underlying Dict so callers cannot accidentally keep a
             live iterator into internal state.
         """
         ...
@@ -6213,7 +6213,7 @@ class IIncidentManager(ICleanable, Protocol):
     - Does not enforce any policies; it is purely descriptive.
     """
     _lock: threading.RLock
-    _incidents_by_id: 'ConcurrentDict[str, Incident]'
+    _incidents_by_id: 'Dict[str, Incident]'
     _next_numeric_id: int
     # ------------------------------------------------------------------
     # Public API
@@ -6274,8 +6274,8 @@ class IChangeControlManager(ICleanable, Protocol):
     _lock: RLock
     _spell_system_states: "SpellSystemStates"
 
-    # spell_index_id -> ConcurrentDict[str, Any]
-    _pending_changes: 'ConcurrentDict[str, ConcurrentDict[str, Any]]'
+    # spell_index_id -> Dict[str, Any]
+    _pending_changes: 'Dict[str, Dict[str, Any]]'
     # ----------------------------------------------------------------------
     # Registration / updates
     # ----------------------------------------------------------------------
@@ -6284,7 +6284,7 @@ class IChangeControlManager(ICleanable, Protocol):
             spell_index: 'ISpellIndex',
             reason: str,
             metadata: Optional[
-                Union[Dict[str, Any], 'ConcurrentDict[str, Any]']
+                Union[Dict[str, Any], 'Dict[str, Any]']
             ] = None,
     ) -> None:
         """
@@ -6301,10 +6301,7 @@ class IChangeControlManager(ICleanable, Protocol):
                 Short, machine-/human-readable reason code
                 (e.g. "mutation_candidate", "rebinding", "config_change").
             metadata:
-                Optional free-form metadata. Can be a plain dict or a
-                ConcurrentDict; in both cases we wrap it into a new
-                ConcurrentDict instance so internal state is always nested
-                ConcurrentDict -> ConcurrentDict.
+                Optional free-form metadata.
         """
         ...
 
@@ -6319,7 +6316,7 @@ class IChangeControlManager(ICleanable, Protocol):
         Get a *snapshot* of the pending-change metadata for a specific lineage.
 
         Returns:
-            A plain dict copy of the inner ConcurrentDict metadata if present,
+            A plain dict copy of the inner Dict metadata if present,
             or None if no pending change exists for that lineage.
         """
         ...

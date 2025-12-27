@@ -64,9 +64,9 @@ class Bind(Cleanable):
             existence: Existence,
             *,
             aetheric_frame: str,
-            spell=None,
-            spellframe=None,
-            binding_name=None,
+            spell: Any = None,
+            spellframe: Any = None,
+            binding_name: str =None,
     ) -> Union[ISpell, Any]:
         """
         Public API

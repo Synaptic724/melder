@@ -1025,8 +1025,8 @@ class Spellbook(Cleanable):
             spell,
             existence: str | Existence,
             permissions: str = "create",
-            spellframe=None,
-            binding_name=None,
+            spellframe: Any = None,
+            binding_name: str = None,
             **kwargs,
     ) -> str:
         """

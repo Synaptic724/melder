@@ -8,6 +8,7 @@ Contract:
     - Instances store dependencies for inspection by integration tests.
 """
 
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from tests.integration.melder.live_sim.interfaces.protocols import ICache
 from tests.integration.melder.live_sim.interfaces.protocols import IConfig
 from tests.integration.melder.live_sim.interfaces.protocols import IHandler
@@ -25,12 +26,16 @@ class LiveSimCache:
     Contract:
         - Stores the injected config for assertions.
     """
-    def __init__(self, config: IConfig) -> None:
+    def __init__(
+        self,
+        config: IConfig = SpellContract(spellframe=IConfig),
+    ) -> None:
         """
         Purpose:
             Capture the injected config dependency.
         Contract:
             - Stores the config instance for inspection.
+            - Uses a SpellContract default to allow dynamic linking.
         Args:
             config: Injected configuration instance.
         Returns:
@@ -46,12 +51,17 @@ class LiveSimHandler:
     Contract:
         - Stores the injected service and cache dependencies.
     """
-    def __init__(self, service: IService, cache: ICache) -> None:
+    def __init__(
+        self,
+        service: IService = SpellContract(spellframe=IService),
+        cache: ICache = SpellContract(spellframe=ICache),
+    ) -> None:
         """
         Purpose:
             Capture handler dependencies.
         Contract:
             - Stores the service and cache instances for inspection.
+            - Uses SpellContract defaults to allow dynamic linking.
         Args:
             service: Injected service instance.
             cache: Injected cache instance.
@@ -69,12 +79,17 @@ class LiveSimWorker:
     Contract:
         - Stores the injected handler and repository dependencies.
     """
-    def __init__(self, handler: IHandler, repository: IRepository) -> None:
+    def __init__(
+        self,
+        handler: IHandler = SpellContract(spellframe=IHandler),
+        repository: IRepository = SpellContract(spellframe=IRepository),
+    ) -> None:
         """
         Purpose:
             Capture worker dependencies.
         Contract:
             - Stores the handler and repository instances for inspection.
+            - Uses SpellContract defaults to allow dynamic linking.
         Args:
             handler: Injected handler instance.
             repository: Injected repository instance.
@@ -95,15 +110,16 @@ class LiveSimApplication:
     """
     def __init__(
         self,
-        worker: IWorker,
-        logger: ILogger,
-        config: IConfig,
+        worker: IWorker = SpellContract(spellframe=IWorker),
+        logger: ILogger = SpellContract(spellframe=ILogger),
+        config: IConfig = SpellContract(spellframe=IConfig),
     ) -> None:
         """
         Purpose:
             Capture application dependencies.
         Contract:
             - Stores worker, logger, and config instances for inspection.
+            - Uses SpellContract defaults to allow dynamic linking.
         Args:
             worker: Injected worker instance.
             logger: Injected logger instance.
@@ -114,4 +130,3 @@ class LiveSimApplication:
         self.worker = worker
         self.logger = logger
         self.config = config
-

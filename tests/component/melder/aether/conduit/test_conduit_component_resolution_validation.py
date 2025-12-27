@@ -196,3 +196,44 @@ def test_component_conduit_validate_resolution_returns_valid_state() -> None:
     finally:
         borrower.cleanup()
         owner.cleanup()
+
+
+def test_component_conduit_upgrade_seeds_resolution_state_from_root() -> None:
+    """
+    Purpose:
+        Validate upgraded lesser conduits inherit root resolution state.
+    Contract:
+        - Root validation records a valid resolution state.
+        - Upgrading a lesser conduit seeds a distinct resolution state.
+        - Seeded state preserves root validity.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If upgraded resolution state is missing or invalid.
+    """
+    configuration = _make_dynamic_configuration()
+    spellbook = Spellbook(configuration=configuration)
+
+    depth3_ids = _bind_graph(
+        spellbook,
+        get_depth_3_classes(),
+        existence=Existence.unique,
+    )
+
+    root = spellbook.conjure(automatic=False, name="root")
+    lesser = root.create_lesser_conduit()
+    try:
+        root_state = root.validate_resolution()
+        assert root_state is not None
+        assert root_state.has_errors() is False
+        assert root_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
+
+        lesser.upgrade_to_normal(name="upgraded")
+        upgraded_state = lesser.get_resolution_state()
+
+        assert upgraded_state is not None
+        assert upgraded_state is not root_state
+        assert upgraded_state.has_errors() is False
+        assert upgraded_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
+    finally:
+        root.cleanup()

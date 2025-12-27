@@ -220,3 +220,65 @@ def test_conduit_validate_resolution_recovers_after_contract_changes() -> None:
     finally:
         borrower.cleanup()
         owner.cleanup()
+
+
+def test_conduit_validate_resolution_for_lesser_uses_root_and_survives_cleanup() -> None:
+    """
+    Purpose:
+        Validate lesser conduits reuse root resolution state and cleanup is isolated.
+    Contract:
+        - validate_resolution on a lesser conduit uses the root conduit id.
+        - lesser cleanup does not invalidate the root's resolution state.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If resolution state diverges or is lost after cleanup.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    borrower_book = Spellbook(configuration=configuration)
+
+    depth3_ids = _bind_graph(
+        owner_book,
+        get_depth_3_classes(),
+        existence=Existence.unique,
+    )
+    borrower_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        assert owner.link(borrower) is True
+        assert borrower.add_spell_to_contract(
+            spell_id=depth3_ids[Depth3Root],
+            conduit=owner,
+            permissions="create",
+            link_dependencies=True,
+        )
+
+        root_state = borrower.validate_resolution()
+        assert root_state is not None
+        assert root_state.has_errors() is False
+        assert root_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
+
+        lesser = borrower.create_lesser_conduit()
+        try:
+            lesser_state = lesser.validate_resolution(refresh_structural=False)
+            assert lesser_state is borrower.get_resolution_state()
+            assert lesser_state is root_state
+            assert lesser_state.has_errors() is False
+            assert lesser_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
+        finally:
+            lesser.cleanup()
+
+        refreshed_state = borrower.validate_resolution(refresh_structural=False)
+        assert refreshed_state is root_state
+        assert refreshed_state.has_errors() is False
+        assert refreshed_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
+    finally:
+        borrower.cleanup()
+        owner.cleanup()

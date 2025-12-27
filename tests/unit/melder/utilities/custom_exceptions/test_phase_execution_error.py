@@ -20,3 +20,5 @@ def test_phase_execution_error_message_and_fields() -> None:
     assert error.phase_name == "phase-1"
     assert error.errors == errors
     assert "2 error(s)" in str(error)
+    assert "ValueError" in str(error)
+    assert "RuntimeError" in str(error)
