@@ -179,3 +179,4 @@ cython_debug/
 .idea/
 /src/melder/testing_stuff/
 /src/melder/INFO/
+/TestIdeas/
