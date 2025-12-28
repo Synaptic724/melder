@@ -1,10 +1,13 @@
 """Unit tests for certification gating helpers."""
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
+import python_certified
+from ai_agents.tools import self_context
 from ai_agents.tools._shared import certification_guard
 
 
@@ -33,7 +36,7 @@ def test_parse_approval_token_approved() -> None:
     """
     Ensure approval token detection returns APPROVED.
     """
-    text = "All good. CERTIFY: APPROVED"
+    text = "CERTIFY: APPROVED"
     assert certification_guard.parse_approval_token(text) == "APPROVED"
 
 
@@ -50,6 +53,7 @@ def test_parse_approval_token_none() -> None:
     Ensure unknown responses return None.
     """
     assert certification_guard.parse_approval_token("looks fine") is None
+    assert certification_guard.parse_approval_token("CERTIFY: APPROVED ok") is None
 
 
 def test_ensure_certified_rejects_uncertified(tmp_path: Path) -> None:
@@ -95,3 +99,46 @@ def test_ensure_certified_accepts_certified(tmp_path: Path) -> None:
         },
     )
     certification_guard.ensure_certified(tmp_path)
+
+
+def test_certification_flow_blocks_then_allows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Ensure tools are blocked until certification is finalized.
+    """
+    state_path = certification_guard.certification_state_path(tmp_path)
+    _write_state(
+        state_path,
+        {
+            "schema_version": 1,
+            "state": "UNCERTIFIED",
+            "certified": False,
+            "certified_at": None,
+            "approved_at": None,
+            "approval_token": None,
+            "approved_by": None,
+            "self_certification_hash": None,
+            "notes": None,
+        },
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["self_context.py", "--repo-root", str(tmp_path), "--agent-id", "agent_1"],
+    )
+    with pytest.raises(SystemExit):
+        self_context.main()
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["python_certified.py", "--repo-root", str(tmp_path), "--approval-token", "CERTIFY: APPROVED"],
+    )
+    python_certified.main()
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["self_context.py", "--repo-root", str(tmp_path), "--agent-id", "agent_1"],
+    )
+    self_context.main()

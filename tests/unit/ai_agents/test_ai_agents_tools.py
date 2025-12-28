@@ -4,6 +4,7 @@ from pathlib import Path
 
 from ai_agents.tools import self_context
 from ai_agents.tools import skill_receipt
+from ai_agents.tools import lease
 from ai_agents.tools._shared import json_io
 from ai_agents.tools._shared import schema_validate
 
@@ -51,3 +52,16 @@ def test_upsert_receipt_adds_and_detects_no_change() -> None:
     no_change = skill_receipt._upsert_receipt(self_data, "python/10_docstrings", 1, "Summary")
     assert no_change is False
     assert len(self_data["skill_receipts"]) == 1
+
+
+def test_lock_path_for_uses_hash(tmp_path: Path) -> None:
+    """
+    Ensure lock path uses a hashed filename.
+    """
+    resource = Path("C:/repo/path/to/file.json")
+    lock_path = lease.lock_path_for(tmp_path, resource)
+    assert lock_path.parent == tmp_path
+    assert lock_path.name.endswith(".lock.json")
+    stem = lock_path.name.replace(".lock.json", "")
+    assert len(stem) == 64
+    assert all(ch in "0123456789abcdef" for ch in stem)
