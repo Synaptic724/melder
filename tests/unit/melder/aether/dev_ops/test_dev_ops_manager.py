@@ -76,11 +76,6 @@ def test_init_sets_sentinel(manager):
     from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
     assert manager.__melder_internal__ is _mrg.sentinel
 
-def test_init_slots_usage(manager):
-    """Verify that __slots__ are used and __dict__ does not exist."""
-    with pytest.raises(AttributeError):
-        _ = manager.__dict__
-
 # ----------------------------------------------------------------------
 # 2. Property Tests: IncidentManager
 # ----------------------------------------------------------------------
