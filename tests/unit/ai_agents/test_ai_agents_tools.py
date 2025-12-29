@@ -5,6 +5,11 @@ from pathlib import Path
 from ai_agents.tools import self_context
 from ai_agents.tools import skill_receipt
 from ai_agents.tools import lease
+from ai_agents.tools import work_item_add
+from ai_agents.tools import work_item_move
+from ai_agents.tools import work_item_close
+from ai_agents.tools import ticket_promote
+from ai_agents.tools import work_queue_add
 from ai_agents.tools.cleanup_agents import stale_agents
 from ai_agents.tools._shared import agent_presence
 from ai_agents.tools._shared import json_io
@@ -204,3 +209,364 @@ def test_stale_cleanup_marks_profiles_and_removes_active(tmp_path: Path) -> None
     profile_after = json_io.load_json(profile_path)
     assert active_after["agents"] == []
     assert profile_after["status"] == "stale"
+
+
+def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
+    """
+    Ensure stale cleanup moves active work items back to backlog.
+    """
+    repo_root = tmp_path
+    policies_path = repo_root / "ai_agents" / "config" / "policies.json"
+    policies_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        policies_path,
+        {
+            "agent_archive_after_seconds": 100000,
+            "agent_heartbeat_stale_seconds": 60,
+            "ci_fail_on_needs_review": False,
+            "ci_fail_states": ["missing", "stale", "blocked"],
+            "dir_review_every_n_scans_default": 20,
+            "lease_heartbeat_seconds": 30,
+            "lease_ttl_seconds": 300,
+            "lock_wait_seconds": 10,
+            "max_task_attempts": 3,
+            "review_every_n_scans_default": 30,
+            "schema_version": 1,
+        },
+    )
+
+    active_path = repo_root / "ai_agents" / "self_context" / "active_agents.json"
+    active_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        active_path,
+        {
+            "schema_version": 1,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "agents": [
+                {
+                    "agent_id": "agent_old",
+                    "mode": "agent",
+                    "started_at": "2025-01-01T00:00:00Z",
+                    "last_heartbeat_at": "2025-01-01T00:00:00Z",
+                    "current_task_id": None,
+                    "current_target": None,
+                    "lease": None,
+                    "notes": None,
+                }
+            ],
+        },
+    )
+
+    profile_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_old.profile.json"
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        profile_path,
+        {
+            "schema_version": 1,
+            "agent_id": "agent_old",
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "status": "active",
+            "last_heartbeat_at": "2025-01-01T00:00:00Z",
+            "last_checkin_at": "2025-01-01T00:00:00Z",
+            "last_checkout_at": None,
+            "mode": "agent",
+            "current_task_id": None,
+            "current_target": None,
+            "notes": None,
+            "last_command": None,
+        },
+    )
+
+    work_queue_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_old.work.json"
+    work_queue_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        work_queue_path,
+        {
+            "schema_version": 1,
+            "agent_id": "agent_old",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "queue": [
+                {
+                    "work_id": "task_requeue",
+                    "state": "in_progress",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_requeue",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    active_queue_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    active_queue_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        active_queue_path,
+        {
+            "schema_version": 1,
+            "repo_id": None,
+            "updated_at": None,
+            "queue": [
+                {
+                    "work_id": "task_requeue",
+                    "state": "in_progress",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_requeue",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    stale_agents.cleanup(repo_root, "runner", now="2025-01-01T00:02:00Z")
+
+    active_after = json_io.load_json(active_queue_path)
+    backlog_queue_path = repo_root / "ai_agents" / "work_management" / "backlog" / "tasks.json"
+    backlog_after = json_io.load_json(backlog_queue_path)
+    assert active_after["queue"] == []
+    assert backlog_after["queue"][0]["work_id"] == "task_requeue"
+
+
+def test_add_work_item_creates_queue(tmp_path: Path) -> None:
+    """
+    Ensure work_queue_add writes a work item with work_id into the agent queue.
+    """
+    item = {
+        "work_id": "work_123",
+        "state": "queued",
+        "kind": "task",
+        "target_path": "src/pkg/foo.py",
+        "ctx_path": "src/pkg/__foo__.json",
+        "reason": ["manual_add"],
+        "parent_work_id": None,
+        "root_work_id": "work_123",
+        "priority": 10,
+        "lease": None,
+        "attempts": 0,
+        "last_error_ref": None,
+        "created_at": "2025-01-01T00:00:00Z",
+        "updated_at": "2025-01-01T00:00:00Z",
+    }
+    work_queue_add.add_work_item(tmp_path, "agent_a", item, owner_id="agent_a")
+    queue_path = tmp_path / "ai_agents" / "self_context" / "agents" / "agent_a.work.json"
+    assert queue_path.exists()
+    data = json_io.load_json(queue_path)
+    assert data["agent_id"] == "agent_a"
+    assert data["queue"][0]["work_id"] == "work_123"
+
+
+def test_work_item_add_writes_queue(tmp_path: Path) -> None:
+    """
+    Ensure work_item_add writes a work item into work_management queues.
+    """
+    item = {
+        "work_id": "mission_001",
+        "state": "queued",
+        "kind": "mission",
+        "target_path": "ai_agents/github_intake/tickets/epic.md",
+        "ctx_path": "ai_agents/github_intake/tickets/epic.md",
+        "reason": ["github_intake"],
+        "parent_work_id": None,
+        "root_work_id": "mission_001",
+        "priority": 80,
+        "lease": None,
+        "attempts": 0,
+        "last_error_ref": None,
+        "created_at": "2025-01-01T00:00:00Z",
+        "updated_at": "2025-01-01T00:00:00Z",
+    }
+    queue_path = work_item_add.add_work_item(tmp_path, "active", "mission", item, owner_id="agent_a")
+    data = json_io.load_json(queue_path)
+    assert data["queue"][0]["work_id"] == "mission_001"
+
+
+def test_work_item_move_transfers_queue(tmp_path: Path) -> None:
+    """
+    Ensure work_item_move relocates items between buckets.
+    """
+    repo_root = tmp_path
+    source_path = repo_root / "ai_agents" / "work_management" / "backlog" / "tasks.json"
+    source_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        source_path,
+        {
+            "schema_version": 1,
+            "repo_id": None,
+            "updated_at": None,
+            "queue": [
+                {
+                    "work_id": "task_move",
+                    "state": "queued",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_move",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    work_item_move.move_work_item(repo_root, "task_move", "backlog", "active", "task", owner_id="agent_a")
+
+    source_after = json_io.load_json(source_path)
+    dest_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    dest_after = json_io.load_json(dest_path)
+    assert source_after["queue"] == []
+    assert dest_after["queue"][0]["work_id"] == "task_move"
+
+
+def test_ticket_promote_adds_root_and_child(tmp_path: Path) -> None:
+    """
+    Ensure ticket_promote writes a root item and child items.
+    """
+    repo_root = tmp_path
+    ticket_path = repo_root / "ai_agents" / "github_intake" / "tickets" / "epic.md"
+    ticket_path.parent.mkdir(parents=True, exist_ok=True)
+    ticket_path.write_text("# Epic\n", encoding="utf-8")
+
+    root_item = {
+        "work_id": "mission_root",
+        "state": "queued",
+        "kind": "mission",
+        "target_path": str(ticket_path),
+        "ctx_path": str(ticket_path),
+        "reason": ["github_intake"],
+        "parent_work_id": None,
+        "root_work_id": "mission_root",
+        "priority": 80,
+        "lease": None,
+        "attempts": 0,
+        "last_error_ref": None,
+        "created_at": "2025-01-01T00:00:00Z",
+        "updated_at": "2025-01-01T00:00:00Z",
+        "source_ticket": str(ticket_path),
+    }
+    children = [
+        {
+            "work_id": "task_child",
+            "kind": "task",
+            "target_path": "src/pkg/foo.py",
+            "ctx_path": "src/pkg/__foo__.json",
+        }
+    ]
+    updated = ticket_promote.promote_ticket(
+        repo_root,
+        ticket_path,
+        "backlog",
+        "mission",
+        root_item,
+        owner_id="agent_a",
+        children=children,
+    )
+    root_queue = json_io.load_json(updated[0])
+    child_queue = json_io.load_json(updated[1])
+    assert root_queue["queue"][0]["work_id"] == "mission_root"
+    assert child_queue["queue"][0]["work_id"] == "task_child"
+
+
+def test_work_item_close_moves_and_clears_queue(tmp_path: Path) -> None:
+    """
+    Ensure work_item_close moves the item and clears per-agent queues.
+    """
+    repo_root = tmp_path
+    active_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    active_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        active_path,
+        {
+            "schema_version": 1,
+            "repo_id": None,
+            "updated_at": None,
+            "queue": [
+                {
+                    "work_id": "task_close",
+                    "state": "in_progress",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_close",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+    work_queue_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_close.work.json"
+    work_queue_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        work_queue_path,
+        {
+            "schema_version": 1,
+            "agent_id": "agent_close",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "queue": [
+                {
+                    "work_id": "task_close",
+                    "state": "in_progress",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_close",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    work_item_close.close_work_item(
+        repo_root,
+        "task_close",
+        "task",
+        "active",
+        "completed",
+        owner_id="agent_close",
+        new_state="done",
+        queue_agent_id="agent_close",
+    )
+
+    active_after = json_io.load_json(active_path)
+    completed_path = repo_root / "ai_agents" / "work_management" / "completed" / "tasks.json"
+    completed_after = json_io.load_json(completed_path)
+    queue_after = json_io.load_json(work_queue_path)
+    assert active_after["queue"] == []
+    assert completed_after["queue"][0]["work_id"] == "task_close"
+    assert queue_after["queue"] == []
