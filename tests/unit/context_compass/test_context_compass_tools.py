@@ -20,9 +20,16 @@ from context_compass.tools import work_queue_add
 from context_compass.tools import context_profiles_read
 from context_compass.tools import context_profiles_review
 from context_compass.tools import context_profiles_resurvey
+from context_compass.tools import context_architecture_resurvey
+from context_compass.tools import command_registry_generate
+from context_compass.tools import memory_add
+from context_compass.tools import memory_read
+from context_compass.tools import memory_remove
+from context_compass.tools import memory_update
 from context_compass.tools import onboarding_bundle
 from context_compass.tools.cleanup_agents import stale_agents
 from context_compass.tools._shared import agent_presence
+from context_compass.tools._shared import architecture_contexts
 from context_compass.tools._shared import feature_guard
 from context_compass.tools._shared import work_mode_guard
 from context_compass.tools._shared import hashing
@@ -1284,6 +1291,79 @@ def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
     assert completed["queue"][0]["work_id"] == "task_resurvey"
 
 
+def test_architecture_resurvey_closes_task(tmp_path: Path) -> None:
+    """
+    Ensure architecture resurvey closes queued resurvey tasks.
+    """
+    repo_root = tmp_path
+    branch_root = _init_branch(repo_root)
+    ctx_path = repo_root / "src" / "pkg" / "__pkg__.dir.json"
+    ctx_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        ctx_path,
+        {
+            "schema_version": 1,
+            "kind": "dir_ctx",
+            "identity": {
+                "dir_path": "src/pkg",
+                "ctx_path": "src/pkg/__pkg__.dir.json",
+                "name": "pkg",
+            },
+            "agent": {"summary": {"one_liner": "pkg", "detail": "pkg detail"}},
+            "computed": {
+                "freshness_state": "fresh",
+                "checksums": {
+                    "subtree_hash_sha256": "current_hash",
+                    "ctx_semantic_hash_sha256": "current_semantic",
+                },
+            },
+        },
+    )
+
+    tasks_path = branch_root / "work_management" / "active" / "tasks.json"
+    tasks_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        tasks_path,
+        {
+            "schema_version": 1,
+            "repo_id": None,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "queue": [
+                {
+                    "work_id": "task_architecture",
+                    "state": "queued",
+                    "kind": "resurvey_architecture_context",
+                    "target_path": "context_compass/branch_management/test/state/architecture_context.json",
+                    "ctx_path": "context_compass/branch_management/test/state/architecture_context.json",
+                    "reason": ["architecture_context:stale"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_architecture",
+                    "priority": 90,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    closed = context_architecture_resurvey.resurvey_architecture(
+        repo_root=repo_root,
+        agent_id="agent_1",
+        mode="agent",
+        work_id="task_architecture",
+        select_all=False,
+        target="prod",
+    )
+    assert closed == ["task_architecture"]
+
+    completed_path = branch_root / "work_management" / "completed" / "tasks.json"
+    completed = json_io.load_json(completed_path)
+    assert completed["queue"][0]["work_id"] == "task_architecture"
+
+
 def test_onboarding_bundle_includes_core_docs(tmp_path: Path) -> None:
     """
     Ensure onboarding bundle includes core context_compass docs and skills.
@@ -1304,3 +1384,156 @@ def test_onboarding_bundle_includes_core_docs(tmp_path: Path) -> None:
     assert "context_compass/AGENTS.md" in paths
     assert "context_compass/SKILLS.md" in paths
     assert "context_compass/skills/example.md" in paths
+
+
+def test_architecture_context_thresholds() -> None:
+    """
+    Ensure architecture context thresholds map to the expected states.
+    """
+    thresholds = {"good": 0.9, "stale": 0.75, "faulty": 0.6}
+    assert architecture_contexts.derive_state(0.95, thresholds) == "good"
+    assert architecture_contexts.derive_state(0.8, thresholds) == "stale"
+    assert architecture_contexts.derive_state(0.65, thresholds) == "faulty"
+    assert architecture_contexts.derive_state(0.5, thresholds) == "faulty"
+    assert architecture_contexts.derive_state(None, thresholds) == "blocked"
+
+
+def test_architecture_context_matrix_detects_hash_mismatch(tmp_path: Path) -> None:
+    """
+    Ensure matrix evaluation flags ctx hash mismatches as holes.
+    """
+    repo_root = tmp_path
+    ctx_path = repo_root / "src" / "pkg" / "__pkg__.dir.json"
+    ctx_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        ctx_path,
+        {
+            "schema_version": 1,
+            "kind": "dir_ctx",
+            "identity": {
+                "dir_path": "src/pkg",
+                "ctx_path": "src/pkg/__pkg__.dir.json",
+                "name": "pkg",
+            },
+            "agent": {},
+            "computed": {
+                "freshness_state": "fresh",
+                "checksums": {
+                    "subtree_hash_sha256": "current_hash",
+                    "ctx_semantic_hash_sha256": "current_semantic",
+                },
+            },
+        },
+    )
+
+    matrix = [
+        {
+            "ctx_path": "src/pkg/__pkg__.dir.json",
+            "ctx_kind": "dir_ctx",
+            "subtree_hash_sha256": "expected_hash",
+            "ctx_semantic_hash_sha256": "current_semantic",
+            "freshness_state": "fresh",
+        }
+    ]
+    evaluation = architecture_contexts.evaluate_matrix(repo_root, matrix)
+    assert evaluation["holes_count"] == 1
+    assert "subtree_hash_mismatch" in evaluation["staleness_reasons"]
+
+
+def test_memory_add_update_remove(tmp_path: Path) -> None:
+    """
+    Ensure memory tools add, update, and remove entries.
+    """
+    repo_root = tmp_path
+    memory_id = memory_add.add_memory(
+        repo_root=repo_root,
+        store="user",
+        title="First memory",
+        content="Remember this",
+        tags=["alpha", "beta"],
+        agent_id="agent_1",
+        notes=None,
+        source_kind="agent",
+        source_ref=None,
+        memory_id=None,
+    )
+
+    store_path = repo_root / "context_compass" / "memory" / "user_memory.json"
+    data = json_io.load_json(store_path)
+    assert data["memories"][0]["memory_id"] == memory_id
+
+    memory_update.update_memory(
+        repo_root=repo_root,
+        store="user",
+        memory_id=memory_id,
+        agent_id="agent_2",
+        title="Updated memory",
+        content=None,
+        tags=None,
+        notes="note",
+        source_kind=None,
+        source_ref=None,
+        state="active",
+    )
+
+    updated = json_io.load_json(store_path)
+    assert updated["memories"][0]["title"] == "Updated memory"
+    assert updated["memories"][0]["updated_by"] == "agent_2"
+
+    removed = memory_remove.remove_memory(repo_root, "user", memory_id)
+    assert removed is True
+    after = json_io.load_json(store_path)
+    assert after["memories"] == []
+
+
+def test_memory_read_recent(tmp_path: Path) -> None:
+    """
+    Ensure memory_read filters recent entries.
+    """
+    repo_root = tmp_path
+    memory_add.add_memory(
+        repo_root=repo_root,
+        store="system",
+        title="Old",
+        content="Old content",
+        tags=[],
+        agent_id="agent_1",
+        notes=None,
+        source_kind="agent",
+        source_ref=None,
+        memory_id="mem_old",
+    )
+    memory_add.add_memory(
+        repo_root=repo_root,
+        store="system",
+        title="New",
+        content="New content",
+        tags=[],
+        agent_id="agent_1",
+        notes=None,
+        source_kind="agent",
+        source_ref=None,
+        memory_id="mem_new",
+    )
+
+    payload = memory_read.read_memory(
+        repo_root=repo_root,
+        store="system",
+        memory_id=None,
+        recent=1,
+        include_archived=False,
+    )
+    assert len(payload["memories"]) == 1
+
+
+def test_command_registry_generate_creates_files(tmp_path: Path) -> None:
+    """
+    Ensure command registry generation writes registry files.
+    """
+    repo_root = tmp_path
+    registries = command_registry_generate.generate_registries(repo_root, "agent_1")
+    commands_dir = repo_root / "context_compass" / "commands"
+    assert (commands_dir / "commands_user.json").exists()
+    assert (commands_dir / "commands_system.json").exists()
+    assert len(registries["user"]["commands"]) > 0
+    assert len(registries["system"]["commands"]) >= len(registries["user"]["commands"])

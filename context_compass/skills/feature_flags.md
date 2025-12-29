@@ -18,8 +18,12 @@ Configuration source
 
 Feature flags (tools must enforce)
 - environment_check: allow or block `context_compass/tools/environment_check.py`.
+- repo_state: allow or block repo_state assessment tooling.
 - scan: allow or block `context_compass/tools/scan.py`.
+- memory: allow or block memory store tools.
+- command_registry: allow or block command registry generation.
 - context_profiles: allow or block context profile survey/read/review/resurvey tools.
+- architecture_contexts: allow or block architecture/component context survey/check/resurvey tools.
 - work_management: allow or block work queue tools and any task emission into work queues.
 - ticket_intake: allow or block `context_compass/tools/ticket_promote.py`.
 - validation: allow or block `context_compass/tools/validate.py`.
@@ -40,10 +44,11 @@ Rules
 - Root `AGENTS.md` and any `AGENTS.override.md` remain authoritative unless explicitly overridden.
 - Always tell the user which skills are skipped due to configuration.
 - If environment preflight reports python unavailable, refuse operations until python is installed or AGENTS.md changes the requirement.
+- If repo_state tooling_policy disables a feature, refuse the tool until repo_state is updated.
 
 Required session report (example)
 - Config path: `context_compass/config/context_compass_configuration.json`
-- Enabled features: environment_check, scan, context_profiles, work_management, ticket_intake, validation
+- Enabled features: environment_check, repo_state, scan, context_profiles, architecture_contexts, work_management, ticket_intake, validation
 - Disabled features: (none)
 - Disabled skill ids: (none)
 - Disabled skill prefixes: (none)

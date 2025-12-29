@@ -32,6 +32,9 @@ Required flow
 - Run the scanner first (or read the newest scan output).
 - Resolve stale or missing context tasks before feature work.
 - Prefer knowledge order: directory ctx -> file ctx -> code last.
+- Structural understanding must come from directory ctx; if it is insufficient, stop and refresh dir ctx before proceeding.
+- Directory ctx must be generated from file ctx content, not by reading code directly.
+- Read repo_state.json before running scans or surveys; if tooling_policy is restricted, stop and request explicit enablement.
 - Acquire a lease lock and write JSON atomically for any ctx/state file.
 - Re-read the latest state after acquiring a lock and before writing.
 - If code changes, do not manually update ctx JSON; run scan to emit refresh tasks.

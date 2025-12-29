@@ -46,6 +46,18 @@ def _default_repo_state(repo_root: Path, now: str) -> dict:
         "last_scan_at": None,
         "scanner_version": None,
         "template_versions": {"file_ctx": None, "dir_ctx": None},
+        "lifecycle": {
+            "stage": "new",
+            "assessment": "Initial assessment pending",
+            "confidence": 0.0,
+            "assessed_at": None,
+        },
+        "tooling_policy": {
+            "mode": "restricted",
+            "disabled_features": ["scan", "context_profiles"],
+            "notes": "Auto-restricted for new repos; update repo_state to enable.",
+            "updated_at": now,
+        },
         "created_at": now,
         "updated_at": now,
     }

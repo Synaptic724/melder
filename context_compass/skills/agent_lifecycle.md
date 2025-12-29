@@ -24,7 +24,7 @@ Commands
   python context_compass/tools/agent_manage.py delete --repo-root . --agent-id <agent_id>
 - When acting on another agent, pass --owner-id to record the actor heartbeat.
 - Check in (start heartbeat):
-  python context_compass/tools/agent_checkin.py --repo-root . --agent-id <agent_id>
+  python context_compass/tools/agent_checkin.py --repo-root . --agent-id <agent_id> --agent-kind <kind> --model-name <model> --runtime <runtime>
 - Check out (stop heartbeat):
   python context_compass/tools/agent_checkout.py --repo-root . --agent-id <agent_id>
 - Run cleanup scripts directly (rare; normally automatic):
@@ -39,6 +39,7 @@ Commands
 Worklists
 - Per-agent queue lives at: context_compass/self_context/agents/<agent_id>.work.json
 - Agent profile (heartbeat) lives at: context_compass/self_context/agents/<agent_id>.profile.json
+- Agent metadata (agent_kind, model_name, runtime) is stored in the profile and active_agents registry.
 - Branch task queues live under context_compass/branch_management/<branch>/work_management/ (epics/stories/tasks).
 - Agents may have permissions to act on per-agent tasks only; confirm before pulling from global queues.
 

@@ -31,7 +31,7 @@ Step-by-step onboarding
    - Create agent profile/worklist:
      `python context_compass/tools/agent_manage.py create --repo-root . --agent-id <agent_id>`
    - Check in:
-     `python context_compass/tools/agent_checkin.py --repo-root . --agent-id <agent_id>`
+     `python context_compass/tools/agent_checkin.py --repo-root . --agent-id <agent_id> --agent-kind <kind> --model-name <model> --runtime <runtime>`
 
 5) Branch setup
    - Initialize branch state:
@@ -39,12 +39,23 @@ Step-by-step onboarding
    - Switch active branch:
      `python context_compass/tools/branch_switch.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
 
-6) Record environment
+6) Assess repo state
+   - If the repo is new or unstable, keep scans disabled:
+     `python context_compass/tools/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage new --assessment "early scaffolding"`
+   - When the repo matures, enable scans:
+     `python context_compass/tools/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage active_dev --tooling-mode normal --clear-disabled`
+
+7) Record environment
    - `python context_compass/tools/environment_check.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
 
-7) Load skills and start work
+8) Load skills and start work
    - Use `context_compass/SKILLS.md` to follow read order.
    - Use context JSON before opening code.
+
+9) Review available commands (optional)
+   - Generate registries:
+     `python context_compass/tools/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
+   - Read `context_compass/commands/commands_user.json` for user-facing tools.
 
 Notes
 - If any step is unclear, stop and ask.

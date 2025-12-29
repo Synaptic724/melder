@@ -12,6 +12,7 @@ Required sections
 
 Test-specific guidance
 - Set agent.role_in_system.layer to "tests".
+- Capture test-specific design patterns, behavioral contracts, and SOLID-style boundaries in agent.role_in_system and agent.behavioral_contract.
 - In agent.testing, describe:
   - test_types (unit/integration/component/system)
   - fixtures used and why

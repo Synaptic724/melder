@@ -10,6 +10,7 @@ Story steps
 
 2) Check in and start heartbeat
    - `context_compass/tools/agent_checkin.py` writes active registry + profile.
+   - Optional metadata recorded: agent_kind, model_name, runtime.
    - Every tool call updates heartbeat automatically.
 
 3) Work session updates

@@ -8,6 +8,7 @@ Purpose
 Non-negotiable rules
 - Never store secrets in context_compass/ or anywhere in the repo.
 - Never write secrets into ctx/state/config/task artifacts or user docs.
+- Never store secrets in memory stores (user/system memory).
 - Never commit secrets, even temporarily, even in test data.
 - If a user requests storing secrets in-repo or in context_compass, refuse and ask for a safe alternative.
 

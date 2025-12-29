@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 from context_compass.tools._shared import agent_presence
+from context_compass.tools._shared import architecture_contexts
 from context_compass.tools._shared import branch_paths
 from context_compass.tools._shared.certification_guard import ensure_certified
 from context_compass.tools._shared.work_mode_guard import ensure_work_mode
@@ -37,6 +38,18 @@ def _default_repo_state(repo_root: Path, now: str) -> dict:
         "last_scan_at": None,
         "scanner_version": None,
         "template_versions": {"file_ctx": None, "dir_ctx": None},
+        "lifecycle": {
+            "stage": "new",
+            "assessment": "Initial assessment pending",
+            "confidence": 0.0,
+            "assessed_at": None,
+        },
+        "tooling_policy": {
+            "mode": "restricted",
+            "disabled_features": ["scan", "context_profiles"],
+            "notes": "Auto-restricted for new repos; update repo_state to enable.",
+            "updated_at": now,
+        },
         "created_at": now,
         "updated_at": now,
     }
@@ -161,6 +174,34 @@ def _seed_branch_state(repo_root: Path, branch_name: str, now: str) -> Path:
     profiles_path = state_root / "context_profiles.json"
     if not profiles_path.exists():
         write_json_atomic(profiles_path, _default_context_profiles(now, limits))
+
+    architecture_path = state_root / "architecture_context.json"
+    if not architecture_path.exists():
+        write_json_atomic(
+            architecture_path,
+            architecture_contexts.default_architecture_context("architecture_context", now),
+        )
+
+    components_path = state_root / "component_contexts.json"
+    if not components_path.exists():
+        write_json_atomic(
+            components_path,
+            architecture_contexts.default_component_contexts("component_contexts", now),
+        )
+
+    test_architecture_path = state_root / "test_architecture_context.json"
+    if not test_architecture_path.exists():
+        write_json_atomic(
+            test_architecture_path,
+            architecture_contexts.default_architecture_context("test_architecture_context", now),
+        )
+
+    test_components_path = state_root / "test_component_contexts.json"
+    if not test_components_path.exists():
+        write_json_atomic(
+            test_components_path,
+            architecture_contexts.default_component_contexts("test_component_contexts", now),
+        )
 
     for bucket in ("active", "backlog", "completed", "denied"):
         bucket_dir = work_root / bucket

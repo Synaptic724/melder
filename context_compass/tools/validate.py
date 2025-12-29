@@ -101,11 +101,19 @@ def _required_files(root: Path) -> list[tuple[Path, Path]]:
         (root / "context_compass" / "config" / "source_roots.json", schemas_dir / "config_source_roots.schema.json"),
         (state_root / "repo_state.json", schemas_dir / "repo_state.schema.json"),
         (state_root / "context_profiles.json", schemas_dir / "context_profiles.schema.json"),
+        (state_root / "architecture_context.json", schemas_dir / "architecture_context.schema.json"),
+        (state_root / "test_architecture_context.json", schemas_dir / "architecture_context.schema.json"),
+        (state_root / "component_contexts.json", schemas_dir / "component_contexts.schema.json"),
+        (state_root / "test_component_contexts.json", schemas_dir / "component_contexts.schema.json"),
         (root / "context_compass" / "self_context" / "active_agents.json", schemas_dir / "active_agents.schema.json"),
         (
             root / "context_compass" / "self_context" / "certification_state.json",
             schemas_dir / "certification_state.schema.json",
         ),
+        (root / "context_compass" / "memory" / "user_memory.json", schemas_dir / "memory_store.schema.json"),
+        (root / "context_compass" / "memory" / "system_memory.json", schemas_dir / "memory_store.schema.json"),
+        (root / "context_compass" / "commands" / "commands_user.json", schemas_dir / "command_registry.schema.json"),
+        (root / "context_compass" / "commands" / "commands_system.json", schemas_dir / "command_registry.schema.json"),
     ]
 
     work_schema = schemas_dir / "tasks.schema.json"

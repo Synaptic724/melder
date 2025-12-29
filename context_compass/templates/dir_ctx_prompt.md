@@ -4,6 +4,10 @@ Purpose
 - Generate or refresh a __<DirectoryName>__.dir.json dir_ctx artifact.
 - Use dir_ctx_prompt_tests.md for directories under test_roots.
 
+Input sources (strict)
+- Build dir ctx from file ctx artifacts within the directory tree.
+- Do not read code directly unless file ctx is missing; refresh file ctx first.
+
 Required sections
 - identity (dir_path, ctx_path, name)
 - agent.summary, agent.architecture, agent.inventory

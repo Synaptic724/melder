@@ -28,6 +28,8 @@ Directory map and purpose
 - context_compass/templates/: ctx generation prompt templates.
 - context_compass/templates/*_tests.md: test-specific ctx templates for test_roots.
 - context_compass/branch_management/: branch-scoped state and work queues.
+- context_compass/memory/: global user and system memory stores plus locks.
+- context_compass/commands/: command registry JSON plus usage notes.
 - context_compass/self_context/: agent identity, certification, active agent registry, and profiles.
 - context_compass/tools/: scanner, leasing, validation, and self_context utilities.
 - context_compass/tools/cleanup_agents/: cleanup modules run by agent_cleanup and tool heartbeat.
@@ -91,8 +93,13 @@ Onboarding sequence (detailed)
 
 6) Establish context state
    - Run the scanner or read the newest scan output.
-   - Read the directory ctx first, then file ctx, then open code only if needed.
+   - Read directory ctx first and use it as the sole source of structural understanding.
+   - If directory ctx is insufficient for structure, stop and refresh dir ctx before proceeding.
+   - Read file ctx only after structure is established.
+   - Open code only if ctx is missing or insufficient.
+   - Read repo_state.json to confirm lifecycle stage and tooling_policy before running scan or surveys.
    - If ctx is stale or missing, resolve those tasks before feature work.
+   - If architecture/component contexts are stale or faulty, resurvey them before relying on them.
 
 7) Task execution rules
    - Use lease locks for any ctx/state writes.
@@ -124,6 +131,9 @@ Where the behavior contract lives
 - Policy router and workflow: context_compass/skills/policy_router.md
 - Context protocol and staleness: context_compass/skills/context_protocol.md, context_compass/skills/staleness_protocol.md
 - Certification handshake: context_compass/skills/self_certification.md, context_compass/skills/user_approved_certification.md
+- System orientation: context_compass/skills/system_orientation.md
+- Command registry: context_compass/skills/command_registry.md
+- Memory management: context_compass/skills/memory_management.md
 - Python discipline: context_compass/skills/python/*.md
 - Testing discipline: context_compass/skills/testing/*.md
 

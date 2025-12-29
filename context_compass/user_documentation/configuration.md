@@ -11,10 +11,18 @@ Configuration file
 Feature flags
 - environment_check: environment_check.py allowed.
 - scan: scan tool allowed.
+- memory: memory store tools allowed.
+- command_registry: command registry generation allowed.
 - context_profiles: profile survey/read/review/resurvey allowed.
+- architecture_contexts: architecture/component survey/check/resurvey allowed.
 - work_management: work queue tools allowed.
 - ticket_intake: ticket promotion allowed.
 - validation: schema validation allowed.
+
+Repo state gating
+- Feature flags are further gated by repo_state.json for the active branch.
+- If repo_state tooling_policy disables a feature, tools refuse to run even when config enables it.
+- Use repo_state_assess.py to update lifecycle stage and tooling_policy.
 
 Skill overrides
 - disabled_skill_ids: exact skill ids to skip (e.g., `python/docstrings`).

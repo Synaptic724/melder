@@ -41,14 +41,19 @@ Story steps
    - Switch active branch (if already initialized):
      - `python context_compass/tools/branch_switch.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
 
-6) Check in and start heartbeat
-   - `python context_compass/tools/agent_checkin.py --repo-root . --agent-id <agent_id>`
+6) Assess repo state
+   - If repo_state.json is missing, run an initial assessment:
+     - `python context_compass/tools/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage new --assessment "initial assessment"`
+   - Keep scans disabled until the repo is mature or the user requests scans.
+
+7) Check in and start heartbeat
+   - `python context_compass/tools/agent_checkin.py --repo-root . --agent-id <agent_id> --agent-kind <kind> --model-name <model> --runtime <runtime>`
    - Tool usage must update heartbeat automatically.
 
-7) Record environment state
+8) Record environment state
    - `python context_compass/tools/environment_check.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
 
-8) Load operational skills and examples
+9) Load operational skills and examples
    - Use `context_compass/SKILLS.md` to follow read order.
    - For Python edits, read `context_compass/skills/python/*.md` and mirror `context_compass/examples/python/*`.
 
@@ -65,6 +70,7 @@ Tools
 - `context_compass/tools/agent_manage.py`
 - `context_compass/tools/branch_init.py`
 - `context_compass/tools/branch_switch.py`
+- `context_compass/tools/repo_state_assess.py`
 - `context_compass/tools/agent_checkin.py`
 - `context_compass/tools/environment_check.py`
 

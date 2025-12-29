@@ -6,6 +6,7 @@ Purpose
 Hard rule
 - Secrets must never be written into context_compass/ or any repo file.
 - This includes ctx/state/config/task artifacts and user documentation.
+- This includes user/system memory stores under context_compass/memory/.
 
 If a user requests storing secrets
 - The agent must refuse the request.

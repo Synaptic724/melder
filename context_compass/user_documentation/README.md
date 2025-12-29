@@ -9,7 +9,11 @@ Quick navigation
 - getting_started.md: onboarding sequence, certification, and agent checkin.
 - environment_prereqs.md: OS and python requirements plus environment checks.
 - configuration.md: feature flags, work mode, and skill overrides.
+- repo_state.md: repo lifecycle assessment and tooling gating.
 - context_and_scan.md: ctx artifacts, scan workflow, and staleness handling.
+- architecture_contexts.md: architecture/component meta-contexts and resurvey flow.
+- commands.md: command registry and tool discovery.
+- memory.md: user and system memory stores.
 - work_management.md: queues, tickets, and agent work assignment.
 - branching_and_state.md: branch-scoped state and global self_context.
 - security_and_secrets.md: strict secret handling policy and refusal rules.

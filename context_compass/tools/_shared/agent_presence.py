@@ -64,6 +64,9 @@ def _upsert_active_agent(
     current_task_id: Optional[str],
     current_target: Optional[str],
     notes: Optional[str],
+    agent_kind: Optional[str],
+    model_name: Optional[str],
+    runtime: Optional[str],
     now: str,
 ) -> None:
     """
@@ -86,11 +89,20 @@ def _upsert_active_agent(
             entry["current_task_id"] = current_task_id
             entry["current_target"] = current_target
             entry["notes"] = notes
+            if agent_kind is not None:
+                entry["agent_kind"] = agent_kind
+            if model_name is not None:
+                entry["model_name"] = model_name
+            if runtime is not None:
+                entry["runtime"] = runtime
             return
     agents.append(
         {
             "agent_id": agent_id,
+            "agent_kind": agent_kind,
             "mode": mode,
+            "model_name": model_name,
+            "runtime": runtime,
             "started_at": now,
             "last_heartbeat_at": now,
             "current_task_id": current_task_id,
@@ -132,6 +144,7 @@ def _default_profile(agent_id: str, now: str) -> dict:
     return {
         "schema_version": 1,
         "agent_id": agent_id,
+        "agent_kind": None,
         "created_at": now,
         "updated_at": now,
         "status": "inactive",
@@ -139,9 +152,11 @@ def _default_profile(agent_id: str, now: str) -> dict:
         "last_checkin_at": None,
         "last_checkout_at": None,
         "mode": "agent",
+        "model_name": None,
         "current_task_id": None,
         "current_target": None,
         "notes": None,
+        "runtime": None,
         "last_command": None,
     }
 
@@ -176,6 +191,9 @@ def _update_profile(
     status: Optional[str],
     command_name: Optional[str],
     command_args: Optional[list[str]],
+    agent_kind: Optional[str],
+    model_name: Optional[str],
+    runtime: Optional[str],
     checkin: bool,
     checkout: bool,
 ) -> None:
@@ -212,6 +230,12 @@ def _update_profile(
         profile["current_task_id"] = current_task_id
         profile["current_target"] = current_target
     profile["notes"] = notes
+    if agent_kind is not None:
+        profile["agent_kind"] = agent_kind
+    if model_name is not None:
+        profile["model_name"] = model_name
+    if runtime is not None:
+        profile["runtime"] = runtime
     profile["last_heartbeat_at"] = now
     if command_name is not None:
         profile["last_command"] = {"name": command_name, "args": command_args or []}
@@ -324,6 +348,9 @@ def record_heartbeat(
     notes: Optional[str],
     command_name: Optional[str],
     command_args: Optional[list[str]],
+    agent_kind: Optional[str] = None,
+    model_name: Optional[str] = None,
+    runtime: Optional[str] = None,
     owner_id: Optional[str] = None,
     run_cleanup: bool = True,
 ) -> None:
@@ -362,7 +389,18 @@ def record_heartbeat(
     )
     try:
         active = _load_or_init_active_agents(active_path, now)
-        _upsert_active_agent(active, agent_id, mode, current_task_id, current_target, notes, now)
+        _upsert_active_agent(
+            active,
+            agent_id,
+            mode,
+            current_task_id,
+            current_target,
+            notes,
+            agent_kind,
+            model_name,
+            runtime,
+            now,
+        )
         active["updated_at"] = now
         write_json_atomic(active_path, active)
 
@@ -378,6 +416,9 @@ def record_heartbeat(
             status="active",
             command_name=command_name,
             command_args=command_args,
+            agent_kind=agent_kind,
+            model_name=model_name,
+            runtime=runtime,
             checkin=False,
             checkout=False,
         )
@@ -395,6 +436,9 @@ def checkin(
     notes: Optional[str],
     command_name: Optional[str],
     command_args: Optional[list[str]],
+    agent_kind: Optional[str] = None,
+    model_name: Optional[str] = None,
+    runtime: Optional[str] = None,
     owner_id: Optional[str] = None,
     run_cleanup: bool = True,
 ) -> None:
@@ -433,7 +477,18 @@ def checkin(
     )
     try:
         active = _load_or_init_active_agents(active_path, now)
-        _upsert_active_agent(active, agent_id, mode, current_task_id, current_target, notes, now)
+        _upsert_active_agent(
+            active,
+            agent_id,
+            mode,
+            current_task_id,
+            current_target,
+            notes,
+            agent_kind,
+            model_name,
+            runtime,
+            now,
+        )
         active["updated_at"] = now
         write_json_atomic(active_path, active)
 
@@ -449,6 +504,9 @@ def checkin(
             status="active",
             command_name=command_name,
             command_args=command_args,
+            agent_kind=agent_kind,
+            model_name=model_name,
+            runtime=runtime,
             checkin=True,
             checkout=False,
         )
@@ -516,6 +574,9 @@ def checkout(
             status="inactive",
             command_name=command_name,
             command_args=command_args,
+            agent_kind=None,
+            model_name=None,
+            runtime=None,
             checkin=False,
             checkout=True,
         )

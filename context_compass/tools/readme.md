@@ -33,8 +33,20 @@ Tools
 - context_profiles_read.py: emit consolidated context for a named profile and update usage.
 - context_profiles_review.py: record profile grades/notes and emit optimize/prune tasks.
 - context_profiles_resurvey.py: process resurvey_context_profile tasks and rebuild profiles.
+- context_architecture_survey.py: build architecture_context.json from directory ctx.
+- context_component_survey.py: build component_contexts.json from directory ctx.
+- context_architecture_check.py: report architecture_context freshness from the matrix.
+- context_component_check.py: report component_contexts freshness from the matrix.
+- context_architecture_resurvey.py: process resurvey_architecture_context tasks.
+- context_component_resurvey.py: process resurvey_component_contexts tasks.
 - environment_check.py: report OS/runtime/tool availability and optionally write environment state.
+- repo_state_assess.py: assess repo lifecycle stage and update repo_state.json.
 - onboarding_bundle.py: generate a consolidated onboarding bundle of context_compass docs (allowed pre-certification).
+- command_registry_generate.py: generate machine-readable command registries.
+- memory_add.py: add a memory entry to user/system memory stores.
+- memory_update.py: update a memory entry in user/system memory stores.
+- memory_remove.py: remove a memory entry from user/system memory stores.
+- memory_read.py: read memory entries from user/system memory stores.
 - work_queue_add.py: add a work item to a per-agent work queue.
 - work_item_add.py: add a work item to work_management epics/stories/tasks queues.
 - work_item_move.py: move a work item between work_management buckets.

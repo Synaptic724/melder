@@ -13,9 +13,14 @@ from pathlib import Path
 from typing import Optional
 
 from context_compass.tools import lease, update_state
-from context_compass.tools._shared import agent_presence, branch_paths
+from context_compass.tools._shared import agent_presence, architecture_contexts, branch_paths
 from context_compass.tools._shared.certification_guard import ensure_certified
-from context_compass.tools._shared.feature_guard import ensure_feature_enabled
+from context_compass.tools._shared.context_compass_configuration import load_configuration
+from context_compass.tools._shared.feature_guard import (
+    FeatureDisabledError,
+    RepoStateDisabledError,
+    ensure_feature_enabled,
+)
 from context_compass.tools._shared.work_mode_guard import ensure_work_mode
 from context_compass.tools._shared.hashing import hash_file, hash_json, hash_subtree
 from context_compass.tools._shared.ignore_rules import (
@@ -44,6 +49,9 @@ def _default_policies() -> dict:
         "review_every_n_scans_default": 30,
         "dir_review_every_n_scans_default": 20,
         "max_task_attempts": 3,
+        "architecture_context_good_ratio_threshold": 0.9,
+        "architecture_context_stale_ratio_threshold": 0.75,
+        "architecture_context_faulty_ratio_threshold": 0.6,
     }
 
 
@@ -158,7 +166,31 @@ def _priority_for_state(state: str) -> int:
         return 60
     if state == "blocked":
         return 90
+    if state == "faulty":
+        return 95
     return 50
+
+
+def _architecture_task_kind(kind: str) -> str:
+    """
+    Map architecture artifact kinds to resurvey task kinds.
+
+    Args:
+        kind (str): Artifact kind.
+
+    Returns:
+        str: Resurvey task kind.
+    """
+    mapping = {
+        "architecture_context": "resurvey_architecture_context",
+        "component_contexts": "resurvey_component_contexts",
+        "test_architecture_context": "resurvey_test_architecture_context",
+        "test_component_contexts": "resurvey_test_component_contexts",
+    }
+    task_kind = mapping.get(kind)
+    if not task_kind:
+        raise ValueError(f"Unknown architecture context kind: {kind}")
+    return task_kind
 
 
 def _needs_review(scan_counter: int, review_every: int, last_review_scan_id: Optional[int]) -> bool:
@@ -484,6 +516,184 @@ def _write_ctx_if_changed(
         write_json_atomic(ctx_path, ctx)
     finally:
         lease.release_lock(locks_dir, ctx_path, owner_id)
+
+
+def _write_architecture_if_changed(
+    repo_root: Path,
+    target_path: Path,
+    payload: dict,
+    original_computed: dict,
+    updated_computed: dict,
+    owner_id: str,
+    policies: dict,
+) -> None:
+    """
+    Write architecture/component context JSON if computed content changed.
+
+    Args:
+        repo_root (Path): Repository root.
+        target_path (Path): Target path.
+        payload (dict): Updated payload.
+        original_computed (dict): Original computed block.
+        updated_computed (dict): Updated computed block.
+        owner_id (str): Lock owner id.
+        policies (dict): Policy values.
+    """
+    if original_computed == updated_computed:
+        return
+    locks_dir = branch_paths.state_root(repo_root) / "locks"
+    locks_dir.mkdir(parents=True, exist_ok=True)
+    lease.acquire_lock(locks_dir, target_path, owner_id, ttl_seconds=policies["lease_ttl_seconds"])
+    try:
+        write_json_atomic(target_path, payload)
+    finally:
+        lease.release_lock(locks_dir, target_path, owner_id)
+
+
+def _check_architecture_artifact(
+    repo_root: Path,
+    kind: str,
+    policies: dict,
+    scan_id_value: str,
+    now: str,
+    update_ctx: bool,
+    agent_id: str,
+    tasks: list[dict],
+    scan_record: dict,
+    error_records: list[str],
+) -> None:
+    """
+    Evaluate an architecture/component context artifact and emit tasks if stale.
+
+    Args:
+        repo_root (Path): Repository root.
+        kind (str): Artifact kind.
+        policies (dict): Policy values.
+        scan_id_value (str): Scan identifier.
+        now (str): Timestamp.
+        update_ctx (bool): Whether to update computed fields.
+        agent_id (str): Agent identifier.
+        tasks (list[dict]): Task accumulator.
+        scan_record (dict): Scan record payload.
+        error_records (list[str]): Error id accumulator.
+    """
+    target_path = architecture_contexts.artifact_path(repo_root, kind)
+    rel_target = repo_relative_path(repo_root, target_path)
+    task_kind = _architecture_task_kind(kind)
+
+    if not target_path.exists():
+        tasks.append(
+            _build_task(
+                task_kind,
+                rel_target,
+                rel_target,
+                ["missing_architecture_context"],
+                _priority_for_state("missing"),
+                now,
+            )
+        )
+        scan_record.setdefault("architecture_contexts", []).append(
+            {"path": rel_target, "kind": kind, "state": "missing", "reasons": ["missing_architecture_context"]}
+        )
+        return
+
+    try:
+        payload = load_json(target_path)
+    except Exception as exc:
+        error_ref = _write_error_record(
+            repo_root,
+            agent_id,
+            target_path=rel_target,
+            ctx_path=rel_target,
+            category="parse_error",
+            message="invalid architecture context JSON",
+            details={"error": str(exc)},
+        )
+        error_records.append(error_ref)
+        tasks.append(
+            _build_task(
+                task_kind,
+                rel_target,
+                rel_target,
+                ["ctx_parse_error"],
+                _priority_for_state("blocked"),
+                now,
+                last_error_ref=error_ref,
+            )
+        )
+        scan_record.setdefault("architecture_contexts", []).append(
+            {"path": rel_target, "kind": kind, "state": "blocked", "reasons": ["ctx_parse_error"]}
+        )
+        return
+
+    if not isinstance(payload, dict):
+        tasks.append(
+            _build_task(
+                task_kind,
+                rel_target,
+                rel_target,
+                ["ctx_parse_error"],
+                _priority_for_state("blocked"),
+                now,
+            )
+        )
+        scan_record.setdefault("architecture_contexts", []).append(
+            {"path": rel_target, "kind": kind, "state": "blocked", "reasons": ["ctx_parse_error"]}
+        )
+        return
+
+    computed = payload.get("computed", {})
+    matrix = computed.get("matrix", []) if isinstance(computed, dict) else []
+    if not isinstance(matrix, list):
+        matrix = []
+
+    evaluation = architecture_contexts.evaluate_matrix(repo_root, matrix)
+    thresholds = architecture_contexts.thresholds_from_policies(policies)
+    state = architecture_contexts.derive_state(evaluation["good_ratio"], thresholds)
+    reasons = evaluation["staleness_reasons"]
+
+    scan_record.setdefault("architecture_contexts", []).append(
+        {"path": rel_target, "kind": kind, "state": state, "reasons": reasons}
+    )
+
+    if state in ("stale", "faulty", "blocked"):
+        tasks.append(
+            _build_task(
+                task_kind,
+                rel_target,
+                rel_target,
+                reasons or ["stale_architecture_context"],
+                _priority_for_state(state),
+                now,
+            )
+        )
+
+    if update_ctx:
+        original_computed = dict(computed) if isinstance(computed, dict) else {}
+        updated_computed = dict(original_computed)
+        updated_computed.update(
+            {
+                "freshness_state": state,
+                "holes_count": evaluation["holes_count"],
+                "holes_ratio": evaluation["holes_ratio"],
+                "good_ratio": evaluation["good_ratio"],
+                "inputs_hash": evaluation["inputs_hash"],
+                "last_checked_at": now,
+                "matrix": evaluation["matrix"],
+                "staleness_reasons": reasons,
+            }
+        )
+        payload["computed"] = updated_computed
+        payload["updated_at"] = now
+        _write_architecture_if_changed(
+            repo_root,
+            target_path,
+            payload,
+            original_computed,
+            updated_computed,
+            agent_id,
+            policies,
+        )
     return True
 
 
@@ -870,6 +1080,33 @@ def scan_repo(
             updated = _update_computed(ctx, state, reasons, checksums, review, scan_id_value, now)
             _write_ctx_if_changed(
                 repo_root, ctx_path, updated, original_computed, updated.get("computed", {}), agent_id, policies
+            )
+
+    config = load_configuration(repo_root)
+    allow_arch_contexts = config.get("features", {}).get("architecture_contexts", True)
+    if allow_arch_contexts:
+        try:
+            ensure_feature_enabled(repo_root, "architecture_contexts", "check architecture contexts")
+        except (FeatureDisabledError, RepoStateDisabledError):
+            allow_arch_contexts = False
+    if allow_arch_contexts:
+        for kind in (
+            "architecture_context",
+            "component_contexts",
+            "test_architecture_context",
+            "test_component_contexts",
+        ):
+            _check_architecture_artifact(
+                repo_root,
+                kind,
+                policies,
+                scan_id_value,
+                now,
+                update_ctx,
+                agent_id,
+                tasks,
+                scan_record,
+                error_records,
             )
 
     scan_record["summary"]["tasks_emitted"] = len(tasks)

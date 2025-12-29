@@ -15,7 +15,11 @@ def _default_features() -> dict:
     return {
         "scan": True,
         "context_profiles": True,
+        "architecture_contexts": True,
         "environment_check": True,
+        "repo_state": True,
+        "memory": True,
+        "command_registry": True,
         "work_management": True,
         "ticket_intake": True,
         "validation": True,

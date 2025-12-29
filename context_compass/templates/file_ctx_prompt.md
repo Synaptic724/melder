@@ -11,6 +11,11 @@ Required sections
 - agent.lifecycle, agent.testing, agent.examples
 - computed (preserve scanner-owned fields)
 
+Design and architecture capture
+- Capture design patterns, structural roles, and behavioral contracts explicitly in agent.role_in_system and agent.behavioral_contract.
+- Call out SOLID-style responsibilities and boundaries (single-responsibility, dependency direction, extension points).
+- Note architectural constraints or invariants in agent.role_in_system.invariants and pitfalls.
+
 Do not include
 - Timestamps in agent.*
 - Volatile counters in agent.*

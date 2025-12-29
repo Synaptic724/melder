@@ -20,6 +20,9 @@ def main() -> None:
     parser.add_argument("--current-task-id", default=None, help="Current task id")
     parser.add_argument("--current-target", default=None, help="Current target path")
     parser.add_argument("--notes", default=None, help="Optional notes")
+    parser.add_argument("--agent-kind", default=None, help="Agent kind (codex/gemini/etc)")
+    parser.add_argument("--model-name", default=None, help="Model name or variant")
+    parser.add_argument("--runtime", default=None, help="Runtime identifier (cli/api/ci)")
     parser.add_argument("--owner-id", default=None, help="Lock owner id override")
     args = parser.parse_args()
 
@@ -38,6 +41,9 @@ def main() -> None:
         notes=args.notes,
         command_name="agent_checkin",
         command_args=sys.argv[1:],
+        agent_kind=args.agent_kind,
+        model_name=args.model_name,
+        runtime=args.runtime,
         owner_id=args.owner_id,
     )
     logger.info("agent checked in: %s", args.agent_id)
