@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 import python_certified
-from ai_agents.tools import self_context
-from ai_agents.tools._shared import certification_guard
+from context_compass.tools import self_context
+from context_compass.tools._shared import certification_guard
 
 
 def _write_state(path: Path, state: dict) -> None:

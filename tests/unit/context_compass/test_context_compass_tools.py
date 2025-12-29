@@ -1,35 +1,35 @@
-"""Unit tests for ai_agents tooling helpers."""
+"""Unit tests for context_compass tooling helpers."""
 
 from pathlib import Path
 
 import pytest
 
-from ai_agents.tools import self_context
-from ai_agents.tools import skill_receipt
-from ai_agents.tools import lease
-from ai_agents.tools import update_state
-from ai_agents.tools import work_item_add
-from ai_agents.tools import work_item_move
-from ai_agents.tools import work_item_close
-from ai_agents.tools import work_item_global_to_branch
-from ai_agents.tools import work_item_branch_to_global
-from ai_agents.tools import work_item_agent_to_branch
-from ai_agents.tools import work_item_agent_to_global
-from ai_agents.tools import ticket_promote
-from ai_agents.tools import work_queue_add
-from ai_agents.tools import context_profiles_read
-from ai_agents.tools import context_profiles_review
-from ai_agents.tools import context_profiles_resurvey
-from ai_agents.tools import onboarding_bundle
-from ai_agents.tools.cleanup_agents import stale_agents
-from ai_agents.tools._shared import agent_presence
-from ai_agents.tools._shared import feature_guard
-from ai_agents.tools._shared import work_mode_guard
-from ai_agents.tools._shared import hashing
-from ai_agents.tools._shared import ignore_rules
-from ai_agents.tools._shared import json_io
-from ai_agents.tools._shared import paths
-from ai_agents.tools._shared import schema_validate
+from context_compass.tools import self_context
+from context_compass.tools import skill_receipt
+from context_compass.tools import lease
+from context_compass.tools import update_state
+from context_compass.tools import work_item_add
+from context_compass.tools import work_item_move
+from context_compass.tools import work_item_close
+from context_compass.tools import work_item_global_to_branch
+from context_compass.tools import work_item_branch_to_global
+from context_compass.tools import work_item_agent_to_branch
+from context_compass.tools import work_item_agent_to_global
+from context_compass.tools import ticket_promote
+from context_compass.tools import work_queue_add
+from context_compass.tools import context_profiles_read
+from context_compass.tools import context_profiles_review
+from context_compass.tools import context_profiles_resurvey
+from context_compass.tools import onboarding_bundle
+from context_compass.tools.cleanup_agents import stale_agents
+from context_compass.tools._shared import agent_presence
+from context_compass.tools._shared import feature_guard
+from context_compass.tools._shared import work_mode_guard
+from context_compass.tools._shared import hashing
+from context_compass.tools._shared import ignore_rules
+from context_compass.tools._shared import json_io
+from context_compass.tools._shared import paths
+from context_compass.tools._shared import schema_validate
 
 
 def _init_branch(repo_root: Path, branch_name: str = "test") -> Path:
@@ -43,7 +43,7 @@ def _init_branch(repo_root: Path, branch_name: str = "test") -> Path:
     Returns:
         Path: Branch root path.
     """
-    branch_root = repo_root / "ai_agents" / "branch_management" / branch_name
+    branch_root = repo_root / "context_compass" / "branch_management" / branch_name
     state_root = branch_root / "state"
     work_root = branch_root / "work_management"
     (state_root / "locks").mkdir(parents=True, exist_ok=True)
@@ -51,7 +51,7 @@ def _init_branch(repo_root: Path, branch_name: str = "test") -> Path:
     (state_root / "scans").mkdir(parents=True, exist_ok=True)
     for bucket in ("active", "backlog", "completed", "denied"):
         (work_root / bucket).mkdir(parents=True, exist_ok=True)
-    current_path = repo_root / "ai_agents" / "branch_management" / "current_branch.json"
+    current_path = repo_root / "context_compass" / "branch_management" / "current_branch.json"
     current_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         current_path,
@@ -127,7 +127,7 @@ def test_feature_guard_blocks_disabled_feature(tmp_path: Path) -> None:
     """
     Ensure feature_guard raises when a feature is disabled.
     """
-    config_path = tmp_path / "ai_agents" / "config" / "ai_agents_configuration.json"
+    config_path = tmp_path / "context_compass" / "config" / "context_compass_configuration.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         config_path,
@@ -153,7 +153,7 @@ def test_work_mode_guard_requires_work_id_in_hard_mode(tmp_path: Path) -> None:
     """
     Ensure work_mode_guard blocks missing work_id in hard mode.
     """
-    config_path = tmp_path / "ai_agents" / "config" / "ai_agents_configuration.json"
+    config_path = tmp_path / "context_compass" / "config" / "context_compass_configuration.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         config_path,
@@ -180,7 +180,7 @@ def test_work_mode_guard_allows_soft_mode(tmp_path: Path) -> None:
     """
     Ensure work_mode_guard allows missing work_id in soft mode.
     """
-    config_path = tmp_path / "ai_agents" / "config" / "ai_agents_configuration.json"
+    config_path = tmp_path / "context_compass" / "config" / "context_compass_configuration.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         config_path,
@@ -216,8 +216,8 @@ def test_record_heartbeat_creates_profile_and_active(tmp_path: Path) -> None:
         command_name="unit_test",
         command_args=["--flag"],
     )
-    active_path = tmp_path / "ai_agents" / "self_context" / "active_agents.json"
-    profile_path = tmp_path / "ai_agents" / "self_context" / "agents" / "agent_1.profile.json"
+    active_path = tmp_path / "context_compass" / "self_context" / "active_agents.json"
+    profile_path = tmp_path / "context_compass" / "self_context" / "agents" / "agent_1.profile.json"
     assert active_path.exists()
     assert profile_path.exists()
     active = json_io.load_json(active_path)
@@ -241,8 +241,8 @@ def test_checkin_and_checkout_updates_status(tmp_path: Path) -> None:
         command_name="checkin",
         command_args=[],
     )
-    active_path = tmp_path / "ai_agents" / "self_context" / "active_agents.json"
-    profile_path = tmp_path / "ai_agents" / "self_context" / "agents" / "agent_2.profile.json"
+    active_path = tmp_path / "context_compass" / "self_context" / "active_agents.json"
+    profile_path = tmp_path / "context_compass" / "self_context" / "agents" / "agent_2.profile.json"
     active = json_io.load_json(active_path)
     profile = json_io.load_json(profile_path)
     assert any(entry["agent_id"] == "agent_2" for entry in active["agents"])
@@ -269,7 +269,7 @@ def test_stale_cleanup_marks_profiles_and_removes_active(tmp_path: Path) -> None
     Ensure stale cleanup marks profiles and removes stale agents from active registry.
     """
     repo_root = tmp_path
-    policies_path = repo_root / "ai_agents" / "config" / "policies.json"
+    policies_path = repo_root / "context_compass" / "config" / "policies.json"
     policies_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         policies_path,
@@ -288,7 +288,7 @@ def test_stale_cleanup_marks_profiles_and_removes_active(tmp_path: Path) -> None
         },
     )
 
-    active_path = repo_root / "ai_agents" / "self_context" / "active_agents.json"
+    active_path = repo_root / "context_compass" / "self_context" / "active_agents.json"
     active_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         active_path,
@@ -310,7 +310,7 @@ def test_stale_cleanup_marks_profiles_and_removes_active(tmp_path: Path) -> None
         },
     )
 
-    profile_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_old.profile.json"
+    profile_path = repo_root / "context_compass" / "self_context" / "agents" / "agent_old.profile.json"
     profile_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         profile_path,
@@ -345,7 +345,7 @@ def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
     """
     repo_root = tmp_path
     branch_root = _init_branch(repo_root)
-    policies_path = repo_root / "ai_agents" / "config" / "policies.json"
+    policies_path = repo_root / "context_compass" / "config" / "policies.json"
     policies_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         policies_path,
@@ -364,7 +364,7 @@ def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
         },
     )
 
-    active_path = repo_root / "ai_agents" / "self_context" / "active_agents.json"
+    active_path = repo_root / "context_compass" / "self_context" / "active_agents.json"
     active_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         active_path,
@@ -386,7 +386,7 @@ def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
         },
     )
 
-    profile_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_old.profile.json"
+    profile_path = repo_root / "context_compass" / "self_context" / "agents" / "agent_old.profile.json"
     profile_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         profile_path,
@@ -407,7 +407,7 @@ def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
         },
     )
 
-    work_queue_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_old.work.json"
+    work_queue_path = repo_root / "context_compass" / "self_context" / "agents" / "agent_old.work.json"
     work_queue_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         work_queue_path,
@@ -495,7 +495,7 @@ def test_add_work_item_creates_queue(tmp_path: Path) -> None:
         "updated_at": "2025-01-01T00:00:00Z",
     }
     work_queue_add.add_work_item(tmp_path, "agent_a", item, owner_id="agent_a")
-    queue_path = tmp_path / "ai_agents" / "self_context" / "agents" / "agent_a.work.json"
+    queue_path = tmp_path / "context_compass" / "self_context" / "agents" / "agent_a.work.json"
     assert queue_path.exists()
     data = json_io.load_json(queue_path)
     assert data["agent_id"] == "agent_a"
@@ -511,8 +511,8 @@ def test_work_item_add_writes_queue(tmp_path: Path) -> None:
         "work_id": "epic_001",
         "state": "queued",
         "kind": "epic",
-        "target_path": "ai_agents/github_intake/tickets/epic.md",
-        "ctx_path": "ai_agents/github_intake/tickets/epic.md",
+        "target_path": "context_compass/github_intake/tickets/epic.md",
+        "ctx_path": "context_compass/github_intake/tickets/epic.md",
         "reason": ["github_intake"],
         "parent_work_id": None,
         "root_work_id": "epic_001",
@@ -578,7 +578,7 @@ def test_work_item_global_to_branch_moves_item(tmp_path: Path) -> None:
     """
     repo_root = tmp_path
     branch_root = _init_branch(repo_root)
-    global_path = repo_root / "ai_agents" / "work_management" / "backlog" / "tasks.json"
+    global_path = repo_root / "context_compass" / "work_management" / "backlog" / "tasks.json"
     global_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         global_path,
@@ -668,7 +668,7 @@ def test_work_item_branch_to_global_moves_item(tmp_path: Path) -> None:
     )
 
     branch_after = json_io.load_json(branch_path)
-    global_path = repo_root / "ai_agents" / "work_management" / "completed" / "tasks.json"
+    global_path = repo_root / "context_compass" / "work_management" / "completed" / "tasks.json"
     global_after = json_io.load_json(global_path)
     assert branch_after["queue"] == []
     assert global_after["queue"][0]["work_id"] == "task_branch"
@@ -680,7 +680,7 @@ def test_work_item_agent_to_branch_moves_item(tmp_path: Path) -> None:
     """
     repo_root = tmp_path
     branch_root = _init_branch(repo_root)
-    agent_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_a.work.json"
+    agent_path = repo_root / "context_compass" / "self_context" / "agents" / "agent_a.work.json"
     agent_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         agent_path,
@@ -731,7 +731,7 @@ def test_work_item_agent_to_global_moves_item(tmp_path: Path) -> None:
     """
     repo_root = tmp_path
     _init_branch(repo_root)
-    agent_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_b.work.json"
+    agent_path = repo_root / "context_compass" / "self_context" / "agents" / "agent_b.work.json"
     agent_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         agent_path,
@@ -770,7 +770,7 @@ def test_work_item_agent_to_global_moves_item(tmp_path: Path) -> None:
     )
 
     agent_after = json_io.load_json(agent_path)
-    global_path = repo_root / "ai_agents" / "work_management" / "backlog" / "tasks.json"
+    global_path = repo_root / "context_compass" / "work_management" / "backlog" / "tasks.json"
     global_after = json_io.load_json(global_path)
     assert agent_after["queue"] == []
     assert global_after["queue"][0]["work_id"] == "task_agent_global"
@@ -782,7 +782,7 @@ def test_ticket_promote_adds_root_and_child(tmp_path: Path) -> None:
     """
     repo_root = tmp_path
     _init_branch(repo_root)
-    ticket_path = repo_root / "ai_agents" / "github_intake" / "tickets" / "epic.md"
+    ticket_path = repo_root / "context_compass" / "github_intake" / "tickets" / "epic.md"
     ticket_path.parent.mkdir(parents=True, exist_ok=True)
     ticket_path.write_text("# Epic\n", encoding="utf-8")
 
@@ -860,7 +860,7 @@ def test_work_item_close_moves_and_clears_queue(tmp_path: Path) -> None:
             ],
         },
     )
-    work_queue_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_close.work.json"
+    work_queue_path = repo_root / "context_compass" / "self_context" / "agents" / "agent_close.work.json"
     work_queue_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         work_queue_path,
@@ -1254,7 +1254,7 @@ def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
                     "state": "queued",
                     "kind": "resurvey_context_profile",
                     "target_path": "context_profile:repo_overview",
-                    "ctx_path": f"ai_agents/branch_management/test/state/context_profiles.json",
+                    "ctx_path": f"context_compass/branch_management/test/state/context_profiles.json",
                     "reason": ["profile:repo_overview", "state:stale"],
                     "parent_work_id": None,
                     "root_work_id": "task_resurvey",
@@ -1286,21 +1286,21 @@ def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
 
 def test_onboarding_bundle_includes_core_docs(tmp_path: Path) -> None:
     """
-    Ensure onboarding bundle includes core ai_agents docs and skills.
+    Ensure onboarding bundle includes core context_compass docs and skills.
     """
     repo_root = tmp_path
     (repo_root / "AGENTS.md").write_text("Root agents", encoding="utf-8")
-    ai_agents_dir = repo_root / "ai_agents"
-    ai_agents_dir.mkdir(parents=True, exist_ok=True)
-    (ai_agents_dir / "AGENTS.md").write_text("AI agents", encoding="utf-8")
-    (ai_agents_dir / "SKILLS.md").write_text("- skills/example.md\n", encoding="utf-8")
-    skills_dir = ai_agents_dir / "skills"
+    context_compass_dir = repo_root / "context_compass"
+    context_compass_dir.mkdir(parents=True, exist_ok=True)
+    (context_compass_dir / "AGENTS.md").write_text("AI agents", encoding="utf-8")
+    (context_compass_dir / "SKILLS.md").write_text("- skills/example.md\n", encoding="utf-8")
+    skills_dir = context_compass_dir / "skills"
     skills_dir.mkdir(parents=True, exist_ok=True)
     (skills_dir / "example.md").write_text("Example skill", encoding="utf-8")
 
     payload = onboarding_bundle.build_bundle(repo_root)
     paths = [item["path"] for item in payload["files"]]
     assert "AGENTS.md" in paths
-    assert "ai_agents/AGENTS.md" in paths
-    assert "ai_agents/SKILLS.md" in paths
-    assert "ai_agents/skills/example.md" in paths
+    assert "context_compass/AGENTS.md" in paths
+    assert "context_compass/SKILLS.md" in paths
+    assert "context_compass/skills/example.md" in paths

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_agents.tools import agent_manage
+from context_compass.tools import agent_manage
 
 
 def _write_certified_state(repo_root: Path) -> None:
@@ -15,7 +15,7 @@ def _write_certified_state(repo_root: Path) -> None:
     Args:
         repo_root (Path): Repo root path.
     """
-    state_path = repo_root / "ai_agents" / "self_context" / "certification_state.json"
+    state_path = repo_root / "context_compass" / "self_context" / "certification_state.json"
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(
         (
@@ -41,7 +41,7 @@ def test_agent_create_delete_archive(tmp_path: Path, monkeypatch: pytest.MonkeyP
     )
     agent_manage.main()
 
-    agents_dir = tmp_path / "ai_agents" / "self_context" / "agents"
+    agents_dir = tmp_path / "context_compass" / "self_context" / "agents"
     self_path = agents_dir / f"{agent_id}.self.json"
     work_path = agents_dir / f"{agent_id}.work.json"
     assert self_path.exists()
@@ -54,7 +54,7 @@ def test_agent_create_delete_archive(tmp_path: Path, monkeypatch: pytest.MonkeyP
     )
     agent_manage.main()
 
-    archive_root = tmp_path / "ai_agents" / "archive" / "agents" / agent_id
+    archive_root = tmp_path / "context_compass" / "archive" / "agents" / agent_id
     assert archive_root.exists()
     assert not self_path.exists()
     assert not work_path.exists()

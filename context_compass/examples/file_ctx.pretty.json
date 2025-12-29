@@ -1,0 +1,230 @@
+{
+  "agent": {
+    "behavioral_contract": {
+      "error_model": {
+        "logging": "Pass-through to underlying logger; SafeLogger itself does not log errors.",
+        "raises": [
+          "TypeError when logger is not a logging.Logger or IChannelLogger",
+          "ValueError when level_name is not a supported level"
+        ],
+        "retryable": []
+      },
+      "inputs": [
+        "logger: Optional[Union[logging.Logger, IChannelLogger]]",
+        "level_name: str (debug/info/warning/error/critical)"
+      ],
+      "outputs": [
+        "None"
+      ],
+      "side_effects": [
+        "emits log calls on the underlying logger"
+      ]
+    },
+    "change_risk": {
+      "review_triggers": [
+        "Any change to channel vs stdlib branching",
+        "Any change to method signature or defaults"
+      ],
+      "risky_changes": [
+        "Change SafeLogger._emit routing rules",
+        "Alter default exc_info behavior",
+        "Modify mask_log semantics"
+      ],
+      "safe_changes": [
+        "Add new helpers that delegate to _emit without changing signatures",
+        "Add new metadata pass-through fields with defaults"
+      ]
+    },
+    "dependencies": {
+      "depends_on_files": [
+        "src/melder/utilities/interfaces/interfaces.py",
+        "src/melder/utilities/general_base/cleanable.py",
+        "src/melder/utilities/helpers/id_builder.py"
+      ],
+      "external_imports": [
+        "logging",
+        "typing"
+      ],
+      "internal_imports": [
+        "melder.utilities.general_base.cleanable",
+        "melder.utilities.interfaces.interfaces",
+        "melder.utilities.helpers.id_builder",
+        "melder.__melder_registration_guard__"
+      ],
+      "runtime_couplings": [
+        "Relies on IChannelLogger.mask_log for masked emissions",
+        "Relies on logging.Logger for stdlib fallback"
+      ]
+    },
+    "dependents": {
+      "notes": "SafeLogger is the default adapter for repo logging; treat signature changes as breaking.",
+      "used_by_dirs": [
+        "src/melder/**"
+      ],
+      "used_by_files": [
+        "src/melder/aether/conduit/conduit.py"
+      ]
+    },
+    "examples": {
+      "integration_flow": [
+        "Resolve logger from factory",
+        "Wrap with SafeLogger",
+        "Emit structured error with method name and metadata"
+      ],
+      "usage_snippets": [
+        {
+          "code": "logger = InitHelpers.resolve_safe_logger(logger_factory(self))\nlogger.error(\"msg\", \"method\", exc_info=True)",
+          "title": "Wrap an IrisLogger"
+        }
+      ]
+    },
+    "lifecycle": {
+      "cleanup": {
+        "has_cleanup": true,
+        "method_names": [
+          "cleanup"
+        ],
+        "order_constraints": [
+          "cleanup underlying logger before nulling references"
+        ]
+      },
+      "construction": "Instantiate with an optional logger; sets the logger level when provided.",
+      "ownership": "Owns a reference to the logger but does not manage logger lifetime beyond optional cleanup.",
+      "threading": {
+        "async": false,
+        "locks": [],
+        "thread_safe": true
+      }
+    },
+    "public_surface": {
+      "entrypoints": [
+        "SafeLogger.debug",
+        "SafeLogger.info",
+        "SafeLogger.warning",
+        "SafeLogger.error",
+        "SafeLogger.exception",
+        "SafeLogger.critical",
+        "SafeLogger.set_level",
+        "SafeLogger.set_level_by_name",
+        "SafeLogger.cleanup"
+      ],
+      "exports": [
+        "SafeLogger"
+      ],
+      "interfaces": {
+        "abc": [],
+        "datamodels": [],
+        "protocols": [
+          "IChannelLogger",
+          "ISafeLogger"
+        ]
+      }
+    },
+    "role_in_system": {
+      "invariants": [
+        "If _logger is None, emitters return without side effects",
+        "Stdlib logging path ignores masking",
+        "Channel logging path always uses _manual_stack and _method_name"
+      ],
+      "layer": "infra",
+      "non_goals": [
+        "No log sink configuration",
+        "No IO beyond emitting log calls",
+        "No policy decisions about message content"
+      ],
+      "pitfalls": [
+        "Passing non-logger objects raises TypeError",
+        "Assuming mask applies to stdlib logging"
+      ],
+      "responsibilities": [
+        "Provide a single logging API for ChannelLogger and stdlib loggers",
+        "Preserve method_name and manual stack metadata for channel logs",
+        "Keep stdlib logging as a secondary fallback"
+      ]
+    },
+    "summary": {
+      "detail": "Provides a unified logging surface with masking support for channel loggers and a safe stdlib fallback. It never emits when no logger is configured and avoids mutating caller state.",
+      "one_liner": "SafeLogger adapts IrisLogger/ChannelLogger and stdlib logging into one contract."
+    },
+    "testing": {
+      "commands": [
+        "python -m pytest tests/unit/melder/utilities/logger/test_safe_logger.py -q"
+      ],
+      "coverage_expectations": [
+        "Channel logger path uses mask_log with metadata",
+        "Stdlib path ignores masking",
+        "Invalid logger type raises TypeError",
+        "Invalid level name raises ValueError"
+      ],
+      "fixtures": [
+        "channel_logger_stub",
+        "stdlib_logger"
+      ],
+      "mocks": [
+        "IChannelLogger stub",
+        "logging.Logger"
+      ],
+      "test_types": [
+        "unit"
+      ]
+    }
+  },
+  "computed": {
+    "checksums": {
+      "analyzer_version": "scanner@v1",
+      "code_hash_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "ctx_semantic_hash_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "template_version": "file_ctx@v1"
+    },
+    "facts": {
+      "exports": [
+        "SafeLogger"
+      ],
+      "imports": [
+        "logging",
+        "typing",
+        "melder.utilities.general_base.cleanable",
+        "melder.utilities.interfaces.interfaces",
+        "melder.utilities.helpers.id_builder",
+        "melder.__melder_registration_guard__"
+      ],
+      "symbols": [
+        {
+          "docstring": "Unified logger adapter for channel and stdlib loggers.",
+          "kind": "class",
+          "lineno_end": 220,
+          "lineno_start": 9,
+          "name": "SafeLogger",
+          "signature": "SafeLogger(logger: Optional[Union[logging.Logger, IChannelLogger]], level_name: str = 'INFO')"
+        },
+        {
+          "docstring": "Internal: route to ChannelLogger or stdlib logger.",
+          "kind": "function",
+          "lineno_end": 170,
+          "lineno_start": 60,
+          "name": "_emit",
+          "signature": "_emit(level: int, msg: str, method_name: str, ...) -> None"
+        }
+      ]
+    },
+    "freshness_state": "fresh",
+    "last_scan": {
+      "scan_id": "scan_000042",
+      "scanned_at": "2025-12-28T00:00:00Z"
+    },
+    "review": {
+      "last_review_scan_id": "scan_000042",
+      "review_every_n_scans": 30,
+      "scan_counter": 1
+    },
+    "staleness_reasons": []
+  },
+  "identity": {
+    "ctx_path": "src/melder/utilities/logger/__safe_logger__.json",
+    "language": "python",
+    "module": "melder.utilities.logger.safe_logger",
+    "path": "src/melder/utilities/logger/safe_logger.py"
+  },
+  "kind": "file_ctx",
+  "schema_version": 1
+}

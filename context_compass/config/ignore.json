@@ -1,0 +1,1 @@
+{"code_extensions":[],"globs":[".git/",".idea/",".pytest_cache/",".mypy_cache/",".ruff_cache/",".tox/",".venv/","venv/","node_modules/","dist/","build/","coverage/",".coverage","__pycache__/","*.egg-info/","*.egg-info/**","context_compass/branch_management/","context_compass/branch_management/**"],"only_roots":[],"schema_version":1}
