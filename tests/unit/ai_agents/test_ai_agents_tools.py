@@ -11,6 +11,10 @@ from ai_agents.tools import update_state
 from ai_agents.tools import work_item_add
 from ai_agents.tools import work_item_move
 from ai_agents.tools import work_item_close
+from ai_agents.tools import work_item_global_to_branch
+from ai_agents.tools import work_item_branch_to_global
+from ai_agents.tools import work_item_agent_to_branch
+from ai_agents.tools import work_item_agent_to_global
 from ai_agents.tools import ticket_promote
 from ai_agents.tools import work_queue_add
 from ai_agents.tools import context_profiles_read
@@ -566,6 +570,210 @@ def test_work_item_move_transfers_queue(tmp_path: Path) -> None:
     dest_after = json_io.load_json(dest_path)
     assert source_after["queue"] == []
     assert dest_after["queue"][0]["work_id"] == "task_move"
+
+
+def test_work_item_global_to_branch_moves_item(tmp_path: Path) -> None:
+    """
+    Ensure global work items can be moved into branch queues.
+    """
+    repo_root = tmp_path
+    branch_root = _init_branch(repo_root)
+    global_path = repo_root / "ai_agents" / "work_management" / "backlog" / "tasks.json"
+    global_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        global_path,
+        {
+            "schema_version": 1,
+            "repo_id": None,
+            "updated_at": None,
+            "queue": [
+                {
+                    "work_id": "task_global",
+                    "state": "queued",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_global",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    work_item_global_to_branch.move_work_item(
+        repo_root,
+        "task_global",
+        "backlog",
+        "active",
+        "task",
+        owner_id="agent_a",
+    )
+
+    global_after = json_io.load_json(global_path)
+    dest_path = branch_root / "work_management" / "active" / "tasks.json"
+    dest_after = json_io.load_json(dest_path)
+    assert global_after["queue"] == []
+    assert dest_after["queue"][0]["work_id"] == "task_global"
+
+
+def test_work_item_branch_to_global_moves_item(tmp_path: Path) -> None:
+    """
+    Ensure branch work items can be moved into global queues.
+    """
+    repo_root = tmp_path
+    branch_root = _init_branch(repo_root)
+    branch_path = branch_root / "work_management" / "backlog" / "tasks.json"
+    branch_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        branch_path,
+        {
+            "schema_version": 1,
+            "repo_id": None,
+            "updated_at": None,
+            "queue": [
+                {
+                    "work_id": "task_branch",
+                    "state": "queued",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_branch",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    work_item_branch_to_global.move_work_item(
+        repo_root,
+        "task_branch",
+        "backlog",
+        "completed",
+        "task",
+        owner_id="agent_a",
+    )
+
+    branch_after = json_io.load_json(branch_path)
+    global_path = repo_root / "ai_agents" / "work_management" / "completed" / "tasks.json"
+    global_after = json_io.load_json(global_path)
+    assert branch_after["queue"] == []
+    assert global_after["queue"][0]["work_id"] == "task_branch"
+
+
+def test_work_item_agent_to_branch_moves_item(tmp_path: Path) -> None:
+    """
+    Ensure agent work items can be moved into branch queues.
+    """
+    repo_root = tmp_path
+    branch_root = _init_branch(repo_root)
+    agent_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_a.work.json"
+    agent_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        agent_path,
+        {
+            "schema_version": 1,
+            "agent_id": "agent_a",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "queue": [
+                {
+                    "work_id": "task_agent",
+                    "state": "queued",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_agent",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    work_item_agent_to_branch.move_work_item(
+        repo_root,
+        "agent_a",
+        "task_agent",
+        "active",
+        owner_id="agent_a",
+        work_type="task",
+    )
+
+    agent_after = json_io.load_json(agent_path)
+    dest_path = branch_root / "work_management" / "active" / "tasks.json"
+    dest_after = json_io.load_json(dest_path)
+    assert agent_after["queue"] == []
+    assert dest_after["queue"][0]["work_id"] == "task_agent"
+
+
+def test_work_item_agent_to_global_moves_item(tmp_path: Path) -> None:
+    """
+    Ensure agent work items can be moved into global queues.
+    """
+    repo_root = tmp_path
+    _init_branch(repo_root)
+    agent_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_b.work.json"
+    agent_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        agent_path,
+        {
+            "schema_version": 1,
+            "agent_id": "agent_b",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "queue": [
+                {
+                    "work_id": "task_agent_global",
+                    "state": "queued",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_agent_global",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    work_item_agent_to_global.move_work_item(
+        repo_root,
+        "agent_b",
+        "task_agent_global",
+        "backlog",
+        owner_id="agent_b",
+        work_type="task",
+    )
+
+    agent_after = json_io.load_json(agent_path)
+    global_path = repo_root / "ai_agents" / "work_management" / "backlog" / "tasks.json"
+    global_after = json_io.load_json(global_path)
+    assert agent_after["queue"] == []
+    assert global_after["queue"][0]["work_id"] == "task_agent_global"
 
 
 def test_ticket_promote_adds_root_and_child(tmp_path: Path) -> None:
