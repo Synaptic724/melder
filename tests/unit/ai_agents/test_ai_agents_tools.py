@@ -5,6 +5,7 @@ from pathlib import Path
 from ai_agents.tools import self_context
 from ai_agents.tools import skill_receipt
 from ai_agents.tools import lease
+from ai_agents.tools._shared import agent_presence
 from ai_agents.tools._shared import json_io
 from ai_agents.tools._shared import schema_validate
 
@@ -65,3 +66,65 @@ def test_lock_path_for_uses_hash(tmp_path: Path) -> None:
     stem = lock_path.name.replace(".lock.json", "")
     assert len(stem) == 64
     assert all(ch in "0123456789abcdef" for ch in stem)
+
+
+def test_record_heartbeat_creates_profile_and_active(tmp_path: Path) -> None:
+    """
+    Ensure heartbeat writes active_agents and agent profile files.
+    """
+    agent_presence.record_heartbeat(
+        tmp_path,
+        agent_id="agent_1",
+        mode="agent",
+        current_task_id=None,
+        current_target=None,
+        notes=None,
+        command_name="unit_test",
+        command_args=["--flag"],
+    )
+    active_path = tmp_path / "ai_agents" / "self_context" / "active_agents.json"
+    profile_path = tmp_path / "ai_agents" / "self_context" / "agents" / "agent_1.profile.json"
+    assert active_path.exists()
+    assert profile_path.exists()
+    active = json_io.load_json(active_path)
+    profile = json_io.load_json(profile_path)
+    assert active["agents"][0]["agent_id"] == "agent_1"
+    assert profile["status"] == "active"
+    assert profile["last_command"]["name"] == "unit_test"
+
+
+def test_checkin_and_checkout_updates_status(tmp_path: Path) -> None:
+    """
+    Ensure checkin and checkout update active_agents and profile status.
+    """
+    agent_presence.checkin(
+        tmp_path,
+        agent_id="agent_2",
+        mode="agent",
+        current_task_id=None,
+        current_target=None,
+        notes=None,
+        command_name="checkin",
+        command_args=[],
+    )
+    active_path = tmp_path / "ai_agents" / "self_context" / "active_agents.json"
+    profile_path = tmp_path / "ai_agents" / "self_context" / "agents" / "agent_2.profile.json"
+    active = json_io.load_json(active_path)
+    profile = json_io.load_json(profile_path)
+    assert any(entry["agent_id"] == "agent_2" for entry in active["agents"])
+    assert profile["status"] == "active"
+    assert profile["last_checkin_at"] is not None
+
+    agent_presence.checkout(
+        tmp_path,
+        agent_id="agent_2",
+        mode="agent",
+        notes=None,
+        command_name="checkout",
+        command_args=[],
+    )
+    active = json_io.load_json(active_path)
+    profile = json_io.load_json(profile_path)
+    assert all(entry["agent_id"] != "agent_2" for entry in active["agents"])
+    assert profile["status"] == "inactive"
+    assert profile["last_checkout_at"] is not None
