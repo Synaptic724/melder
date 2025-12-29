@@ -14,6 +14,7 @@ from ai_agents.tools import work_queue_add
 from ai_agents.tools import context_profiles_read
 from ai_agents.tools import context_profiles_review
 from ai_agents.tools import context_profiles_resurvey
+from ai_agents.tools import onboarding_bundle
 from ai_agents.tools.cleanup_agents import stale_agents
 from ai_agents.tools._shared import agent_presence
 from ai_agents.tools._shared import hashing
@@ -385,14 +386,14 @@ def test_work_item_add_writes_queue(tmp_path: Path) -> None:
     Ensure work_item_add writes a work item into work_management queues.
     """
     item = {
-        "work_id": "mission_001",
+        "work_id": "epic_001",
         "state": "queued",
-        "kind": "mission",
+        "kind": "epic",
         "target_path": "ai_agents/github_intake/tickets/epic.md",
         "ctx_path": "ai_agents/github_intake/tickets/epic.md",
         "reason": ["github_intake"],
         "parent_work_id": None,
-        "root_work_id": "mission_001",
+        "root_work_id": "epic_001",
         "priority": 80,
         "lease": None,
         "attempts": 0,
@@ -400,9 +401,9 @@ def test_work_item_add_writes_queue(tmp_path: Path) -> None:
         "created_at": "2025-01-01T00:00:00Z",
         "updated_at": "2025-01-01T00:00:00Z",
     }
-    queue_path = work_item_add.add_work_item(tmp_path, "active", "mission", item, owner_id="agent_a")
+    queue_path = work_item_add.add_work_item(tmp_path, "active", "epic", item, owner_id="agent_a")
     data = json_io.load_json(queue_path)
-    assert data["queue"][0]["work_id"] == "mission_001"
+    assert data["queue"][0]["work_id"] == "epic_001"
 
 
 def test_work_item_move_transfers_queue(tmp_path: Path) -> None:
@@ -458,14 +459,14 @@ def test_ticket_promote_adds_root_and_child(tmp_path: Path) -> None:
     ticket_path.write_text("# Epic\n", encoding="utf-8")
 
     root_item = {
-        "work_id": "mission_root",
+        "work_id": "epic_root",
         "state": "queued",
-        "kind": "mission",
+        "kind": "epic",
         "target_path": str(ticket_path),
         "ctx_path": str(ticket_path),
         "reason": ["github_intake"],
         "parent_work_id": None,
-        "root_work_id": "mission_root",
+        "root_work_id": "epic_root",
         "priority": 80,
         "lease": None,
         "attempts": 0,
@@ -486,14 +487,14 @@ def test_ticket_promote_adds_root_and_child(tmp_path: Path) -> None:
         repo_root,
         ticket_path,
         "backlog",
-        "mission",
+        "epic",
         root_item,
         owner_id="agent_a",
         children=children,
     )
     root_queue = json_io.load_json(updated[0])
     child_queue = json_io.load_json(updated[1])
-    assert root_queue["queue"][0]["work_id"] == "mission_root"
+    assert root_queue["queue"][0]["work_id"] == "epic_root"
     assert child_queue["queue"][0]["work_id"] == "task_child"
 
 
@@ -947,3 +948,25 @@ def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
     completed_path = repo_root / "ai_agents" / "work_management" / "completed" / "tasks.json"
     completed = json_io.load_json(completed_path)
     assert completed["queue"][0]["work_id"] == "task_resurvey"
+
+
+def test_onboarding_bundle_includes_core_docs(tmp_path: Path) -> None:
+    """
+    Ensure onboarding bundle includes core ai_agents docs and skills.
+    """
+    repo_root = tmp_path
+    (repo_root / "AGENTS.md").write_text("Root agents", encoding="utf-8")
+    ai_agents_dir = repo_root / "ai_agents"
+    ai_agents_dir.mkdir(parents=True, exist_ok=True)
+    (ai_agents_dir / "AGENTS.md").write_text("AI agents", encoding="utf-8")
+    (ai_agents_dir / "SKILLS.md").write_text("- skills/example.md\n", encoding="utf-8")
+    skills_dir = ai_agents_dir / "skills"
+    skills_dir.mkdir(parents=True, exist_ok=True)
+    (skills_dir / "example.md").write_text("Example skill", encoding="utf-8")
+
+    payload = onboarding_bundle.build_bundle(repo_root)
+    paths = [item["path"] for item in payload["files"]]
+    assert "AGENTS.md" in paths
+    assert "ai_agents/AGENTS.md" in paths
+    assert "ai_agents/SKILLS.md" in paths
+    assert "ai_agents/skills/example.md" in paths
