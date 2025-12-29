@@ -20,6 +20,7 @@ from ai_agents.tools import onboarding_bundle
 from ai_agents.tools.cleanup_agents import stale_agents
 from ai_agents.tools._shared import agent_presence
 from ai_agents.tools._shared import feature_guard
+from ai_agents.tools._shared import work_mode_guard
 from ai_agents.tools._shared import hashing
 from ai_agents.tools._shared import ignore_rules
 from ai_agents.tools._shared import json_io
@@ -109,6 +110,59 @@ def test_feature_guard_blocks_disabled_feature(tmp_path: Path) -> None:
 
     with pytest.raises(feature_guard.FeatureDisabledError):
         feature_guard.ensure_feature_enabled(tmp_path, "scan", "run scan")
+
+
+def test_work_mode_guard_requires_work_id_in_hard_mode(tmp_path: Path) -> None:
+    """
+    Ensure work_mode_guard blocks missing work_id in hard mode.
+    """
+    config_path = tmp_path / "ai_agents" / "config" / "ai_agents_configuration.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        config_path,
+        {
+            "schema_version": 1,
+            "features": {
+                "scan": True,
+                "context_profiles": True,
+                "work_management": True,
+                "ticket_intake": True,
+                "validation": True,
+            },
+            "skills": {"disabled_skill_ids": [], "disabled_skill_prefixes": []},
+            "work_mode": "hard",
+            "notes": None,
+        },
+    )
+
+    with pytest.raises(work_mode_guard.WorkModeError):
+        work_mode_guard.ensure_work_mode(tmp_path, None, "run scan")
+
+
+def test_work_mode_guard_allows_soft_mode(tmp_path: Path) -> None:
+    """
+    Ensure work_mode_guard allows missing work_id in soft mode.
+    """
+    config_path = tmp_path / "ai_agents" / "config" / "ai_agents_configuration.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        config_path,
+        {
+            "schema_version": 1,
+            "features": {
+                "scan": True,
+                "context_profiles": True,
+                "work_management": True,
+                "ticket_intake": True,
+                "validation": True,
+            },
+            "skills": {"disabled_skill_ids": [], "disabled_skill_prefixes": []},
+            "work_mode": "soft",
+            "notes": None,
+        },
+    )
+
+    work_mode_guard.ensure_work_mode(tmp_path, None, "run scan")
 
 
 def test_record_heartbeat_creates_profile_and_active(tmp_path: Path) -> None:
