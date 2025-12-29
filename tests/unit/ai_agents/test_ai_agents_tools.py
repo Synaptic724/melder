@@ -46,10 +46,10 @@ def test_upsert_receipt_adds_and_detects_no_change() -> None:
     Ensure skill receipts are added once and not duplicated.
     """
     self_data: dict = {"skill_receipts": []}
-    added = skill_receipt._upsert_receipt(self_data, "python/10_docstrings", 1, "Summary")
+    added = skill_receipt._upsert_receipt(self_data, "python/docstrings", 1, "Summary")
     assert added is True
     assert len(self_data["skill_receipts"]) == 1
-    no_change = skill_receipt._upsert_receipt(self_data, "python/10_docstrings", 1, "Summary")
+    no_change = skill_receipt._upsert_receipt(self_data, "python/docstrings", 1, "Summary")
     assert no_change is False
     assert len(self_data["skill_receipts"]) == 1
 
