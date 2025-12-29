@@ -13,6 +13,7 @@ from ai_agents.tools import ticket_promote
 from ai_agents.tools import work_queue_add
 from ai_agents.tools import context_profiles_read
 from ai_agents.tools import context_profiles_review
+from ai_agents.tools import context_profiles_resurvey
 from ai_agents.tools.cleanup_agents import stale_agents
 from ai_agents.tools._shared import agent_presence
 from ai_agents.tools._shared import hashing
@@ -850,3 +851,99 @@ def test_context_profiles_read_emits_resurvey_task(tmp_path: Path) -> None:
     tasks_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
     tasks = json_io.load_json(tasks_path)
     assert tasks["queue"][0]["kind"] == "resurvey_context_profile"
+
+
+def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
+    """
+    Ensure resurvey tool runs survey and closes queued resurvey tasks.
+    """
+    repo_root = tmp_path
+    code_path = repo_root / "src" / "pkg" / "foo.py"
+    code_path.parent.mkdir(parents=True, exist_ok=True)
+    code_path.write_text("value = 1\n", encoding="utf-8")
+
+    ctx_path = repo_root / "src" / "pkg" / "__foo__.json"
+    json_io.write_json_atomic(
+        ctx_path,
+        {
+            "kind": "file_ctx",
+            "schema_version": 1,
+            "identity": {"path": "src/pkg/foo.py", "ctx_path": "src/pkg/__foo__.json", "language": "python"},
+            "computed": {"checksums": {"code_hash_sha256": "mismatch"}, "freshness_state": "fresh"},
+            "agent": {},
+        },
+    )
+
+    profiles_path = repo_root / "ai_agents" / "state" / "context_profiles.json"
+    profiles_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        profiles_path,
+        {
+            "schema_version": 1,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "rules_version": "context_profiles@v1",
+            "limits": {"max_items_per_profile": 10, "max_bytes_per_profile": 1000},
+            "profiles": [
+                {
+                    "name": "repo_overview",
+                    "paths": ["src/pkg/__foo__.json"],
+                    "score": 0.1,
+                    "grade": "ok",
+                    "usage_count": 0,
+                    "last_used_at": None,
+                    "last_review_at": None,
+                    "review_counts": {"excellent": 0, "good": 0, "ok": 0, "poor": 0, "bad": 0},
+                    "reason": "test",
+                    "size_bytes": 10,
+                    "freshness_state": "stale",
+                    "staleness_reasons": ["hash_mismatch"],
+                    "inputs_hash": "seed",
+                    "last_checked_at": None,
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    tasks_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    tasks_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        tasks_path,
+        {
+            "schema_version": 1,
+            "repo_id": None,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "queue": [
+                {
+                    "work_id": "task_resurvey",
+                    "state": "queued",
+                    "kind": "resurvey_context_profile",
+                    "target_path": "context_profile:repo_overview",
+                    "ctx_path": "ai_agents/state/context_profiles.json",
+                    "reason": ["profile:repo_overview", "state:stale"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_resurvey",
+                    "priority": 50,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    closed = context_profiles_resurvey.resurvey_context_profiles(
+        repo_root,
+        agent_id="agent_1",
+        mode="agent",
+        work_id="task_resurvey",
+        select_all=False,
+        emit_tasks=False,
+    )
+    assert closed == ["task_resurvey"]
+
+    completed_path = repo_root / "ai_agents" / "work_management" / "completed" / "tasks.json"
+    completed = json_io.load_json(completed_path)
+    assert completed["queue"][0]["work_id"] == "task_resurvey"
