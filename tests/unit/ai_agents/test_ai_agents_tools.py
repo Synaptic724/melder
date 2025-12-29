@@ -28,6 +28,39 @@ from ai_agents.tools._shared import paths
 from ai_agents.tools._shared import schema_validate
 
 
+def _init_branch(repo_root: Path, branch_name: str = "test") -> Path:
+    """
+    Create a branch_management directory with default state and work roots.
+
+    Args:
+        repo_root (Path): Repository root.
+        branch_name (str): Branch name to initialize.
+
+    Returns:
+        Path: Branch root path.
+    """
+    branch_root = repo_root / "ai_agents" / "branch_management" / branch_name
+    state_root = branch_root / "state"
+    work_root = branch_root / "work_management"
+    (state_root / "locks").mkdir(parents=True, exist_ok=True)
+    (state_root / "errors").mkdir(parents=True, exist_ok=True)
+    (state_root / "scans").mkdir(parents=True, exist_ok=True)
+    for bucket in ("active", "backlog", "completed", "denied"):
+        (work_root / bucket).mkdir(parents=True, exist_ok=True)
+    current_path = repo_root / "ai_agents" / "branch_management" / "current_branch.json"
+    current_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        current_path,
+        {
+            "schema_version": 1,
+            "branch_name": branch_name,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "notes": None,
+        },
+    )
+    return branch_root
+
+
 def test_write_json_atomic_minified(tmp_path: Path) -> None:
     """
     Ensure write_json_atomic emits canonical minified JSON.
@@ -307,6 +340,7 @@ def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
     Ensure stale cleanup moves active work items back to backlog.
     """
     repo_root = tmp_path
+    branch_root = _init_branch(repo_root)
     policies_path = repo_root / "ai_agents" / "config" / "policies.json"
     policies_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
@@ -398,7 +432,7 @@ def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
         },
     )
 
-    active_queue_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    active_queue_path = branch_root / "work_management" / "active" / "tasks.json"
     active_queue_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         active_queue_path,
@@ -430,7 +464,7 @@ def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
     stale_agents.cleanup(repo_root, "runner", now="2025-01-01T00:02:00Z")
 
     active_after = json_io.load_json(active_queue_path)
-    backlog_queue_path = repo_root / "ai_agents" / "work_management" / "backlog" / "tasks.json"
+    backlog_queue_path = branch_root / "work_management" / "backlog" / "tasks.json"
     backlog_after = json_io.load_json(backlog_queue_path)
     assert active_after["queue"] == []
     assert backlog_after["queue"][0]["work_id"] == "task_requeue"
@@ -468,6 +502,7 @@ def test_work_item_add_writes_queue(tmp_path: Path) -> None:
     """
     Ensure work_item_add writes a work item into work_management queues.
     """
+    _init_branch(tmp_path)
     item = {
         "work_id": "epic_001",
         "state": "queued",
@@ -494,7 +529,8 @@ def test_work_item_move_transfers_queue(tmp_path: Path) -> None:
     Ensure work_item_move relocates items between buckets.
     """
     repo_root = tmp_path
-    source_path = repo_root / "ai_agents" / "work_management" / "backlog" / "tasks.json"
+    branch_root = _init_branch(repo_root)
+    source_path = branch_root / "work_management" / "backlog" / "tasks.json"
     source_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         source_path,
@@ -526,7 +562,7 @@ def test_work_item_move_transfers_queue(tmp_path: Path) -> None:
     work_item_move.move_work_item(repo_root, "task_move", "backlog", "active", "task", owner_id="agent_a")
 
     source_after = json_io.load_json(source_path)
-    dest_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    dest_path = branch_root / "work_management" / "active" / "tasks.json"
     dest_after = json_io.load_json(dest_path)
     assert source_after["queue"] == []
     assert dest_after["queue"][0]["work_id"] == "task_move"
@@ -537,6 +573,7 @@ def test_ticket_promote_adds_root_and_child(tmp_path: Path) -> None:
     Ensure ticket_promote writes a root item and child items.
     """
     repo_root = tmp_path
+    _init_branch(repo_root)
     ticket_path = repo_root / "ai_agents" / "github_intake" / "tickets" / "epic.md"
     ticket_path.parent.mkdir(parents=True, exist_ok=True)
     ticket_path.write_text("# Epic\n", encoding="utf-8")
@@ -586,7 +623,8 @@ def test_work_item_close_moves_and_clears_queue(tmp_path: Path) -> None:
     Ensure work_item_close moves the item and clears per-agent queues.
     """
     repo_root = tmp_path
-    active_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    branch_root = _init_branch(repo_root)
+    active_path = branch_root / "work_management" / "active" / "tasks.json"
     active_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         active_path,
@@ -655,7 +693,7 @@ def test_work_item_close_moves_and_clears_queue(tmp_path: Path) -> None:
     )
 
     active_after = json_io.load_json(active_path)
-    completed_path = repo_root / "ai_agents" / "work_management" / "completed" / "tasks.json"
+    completed_path = branch_root / "work_management" / "completed" / "tasks.json"
     completed_after = json_io.load_json(completed_path)
     queue_after = json_io.load_json(work_queue_path)
     assert active_after["queue"] == []
@@ -719,7 +757,8 @@ def test_update_work_item_state_updates_queue(tmp_path: Path) -> None:
     Ensure update_state can update a work item in place.
     """
     repo_root = tmp_path
-    queue_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    branch_root = _init_branch(repo_root)
+    queue_path = branch_root / "work_management" / "active" / "tasks.json"
     queue_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         queue_path,
@@ -763,7 +802,8 @@ def test_context_profiles_read_updates_usage(tmp_path: Path) -> None:
     Ensure context profile reads increment usage_count and return ctx items.
     """
     repo_root = tmp_path
-    profiles_path = repo_root / "ai_agents" / "state" / "context_profiles.json"
+    branch_root = _init_branch(repo_root)
+    profiles_path = branch_root / "state" / "context_profiles.json"
     profiles_path.parent.mkdir(parents=True, exist_ok=True)
     ctx_path = repo_root / "src" / "pkg" / "__foo__.json"
     ctx_path.parent.mkdir(parents=True, exist_ok=True)
@@ -818,7 +858,8 @@ def test_context_profiles_review_updates_grade_and_tasks(tmp_path: Path) -> None
     Ensure context profile reviews update grade and emit prune tasks.
     """
     repo_root = tmp_path
-    profiles_path = repo_root / "ai_agents" / "state" / "context_profiles.json"
+    branch_root = _init_branch(repo_root)
+    profiles_path = branch_root / "state" / "context_profiles.json"
     profiles_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         profiles_path,
@@ -863,7 +904,7 @@ def test_context_profiles_review_updates_grade_and_tasks(tmp_path: Path) -> None
     assert updated_profile["review_counts"]["poor"] == 1
     assert updated_profile["last_review_at"] is not None
 
-    tasks_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    tasks_path = branch_root / "work_management" / "active" / "tasks.json"
     tasks = json_io.load_json(tasks_path)
     assert tasks["queue"][0]["kind"] == "prune_context_profile"
 
@@ -873,6 +914,7 @@ def test_context_profiles_read_emits_resurvey_task(tmp_path: Path) -> None:
     Ensure context profile reads emit resurvey tasks when inputs drift.
     """
     repo_root = tmp_path
+    branch_root = _init_branch(repo_root)
     code_path = repo_root / "src" / "pkg" / "foo.py"
     code_path.parent.mkdir(parents=True, exist_ok=True)
     code_path.write_text("value = 1\n", encoding="utf-8")
@@ -889,7 +931,7 @@ def test_context_profiles_read_emits_resurvey_task(tmp_path: Path) -> None:
         },
     )
 
-    profiles_path = repo_root / "ai_agents" / "state" / "context_profiles.json"
+    profiles_path = branch_root / "state" / "context_profiles.json"
     profiles_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         profiles_path,
@@ -932,7 +974,7 @@ def test_context_profiles_read_emits_resurvey_task(tmp_path: Path) -> None:
         owner_id="agent_1",
     )
 
-    tasks_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    tasks_path = branch_root / "work_management" / "active" / "tasks.json"
     tasks = json_io.load_json(tasks_path)
     assert tasks["queue"][0]["kind"] == "resurvey_context_profile"
 
@@ -942,6 +984,7 @@ def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
     Ensure resurvey tool runs survey and closes queued resurvey tasks.
     """
     repo_root = tmp_path
+    branch_root = _init_branch(repo_root)
     code_path = repo_root / "src" / "pkg" / "foo.py"
     code_path.parent.mkdir(parents=True, exist_ok=True)
     code_path.write_text("value = 1\n", encoding="utf-8")
@@ -958,7 +1001,7 @@ def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
         },
     )
 
-    profiles_path = repo_root / "ai_agents" / "state" / "context_profiles.json"
+    profiles_path = branch_root / "state" / "context_profiles.json"
     profiles_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         profiles_path,
@@ -989,7 +1032,7 @@ def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
         },
     )
 
-    tasks_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    tasks_path = branch_root / "work_management" / "active" / "tasks.json"
     tasks_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
         tasks_path,
@@ -1003,7 +1046,7 @@ def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
                     "state": "queued",
                     "kind": "resurvey_context_profile",
                     "target_path": "context_profile:repo_overview",
-                    "ctx_path": "ai_agents/state/context_profiles.json",
+                    "ctx_path": f"ai_agents/branch_management/test/state/context_profiles.json",
                     "reason": ["profile:repo_overview", "state:stale"],
                     "parent_work_id": None,
                     "root_work_id": "task_resurvey",
@@ -1028,7 +1071,7 @@ def test_context_profiles_resurvey_closes_task(tmp_path: Path) -> None:
     )
     assert closed == ["task_resurvey"]
 
-    completed_path = repo_root / "ai_agents" / "work_management" / "completed" / "tasks.json"
+    completed_path = branch_root / "work_management" / "completed" / "tasks.json"
     completed = json_io.load_json(completed_path)
     assert completed["queue"][0]["work_id"] == "task_resurvey"
 
