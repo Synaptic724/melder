@@ -5,6 +5,7 @@ from pathlib import Path
 from ai_agents.tools import self_context
 from ai_agents.tools import skill_receipt
 from ai_agents.tools import lease
+from ai_agents.tools.cleanup_agents import stale_agents
 from ai_agents.tools._shared import agent_presence
 from ai_agents.tools._shared import json_io
 from ai_agents.tools._shared import schema_validate
@@ -128,3 +129,78 @@ def test_checkin_and_checkout_updates_status(tmp_path: Path) -> None:
     assert all(entry["agent_id"] != "agent_2" for entry in active["agents"])
     assert profile["status"] == "inactive"
     assert profile["last_checkout_at"] is not None
+
+
+def test_stale_cleanup_marks_profiles_and_removes_active(tmp_path: Path) -> None:
+    """
+    Ensure stale cleanup marks profiles and removes stale agents from active registry.
+    """
+    repo_root = tmp_path
+    policies_path = repo_root / "ai_agents" / "config" / "policies.json"
+    policies_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        policies_path,
+        {
+            "agent_archive_after_seconds": 100000,
+            "agent_heartbeat_stale_seconds": 60,
+            "ci_fail_on_needs_review": False,
+            "ci_fail_states": ["missing", "stale", "blocked"],
+            "dir_review_every_n_scans_default": 20,
+            "lease_heartbeat_seconds": 30,
+            "lease_ttl_seconds": 300,
+            "lock_wait_seconds": 10,
+            "max_task_attempts": 3,
+            "review_every_n_scans_default": 30,
+            "schema_version": 1,
+        },
+    )
+
+    active_path = repo_root / "ai_agents" / "self_context" / "active_agents.json"
+    active_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        active_path,
+        {
+            "schema_version": 1,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "agents": [
+                {
+                    "agent_id": "agent_old",
+                    "mode": "agent",
+                    "started_at": "2025-01-01T00:00:00Z",
+                    "last_heartbeat_at": "2025-01-01T00:00:00Z",
+                    "current_task_id": None,
+                    "current_target": None,
+                    "lease": None,
+                    "notes": None,
+                }
+            ],
+        },
+    )
+
+    profile_path = repo_root / "ai_agents" / "self_context" / "agents" / "agent_old.profile.json"
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        profile_path,
+        {
+            "schema_version": 1,
+            "agent_id": "agent_old",
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "status": "active",
+            "last_heartbeat_at": "2025-01-01T00:00:00Z",
+            "last_checkin_at": "2025-01-01T00:00:00Z",
+            "last_checkout_at": None,
+            "mode": "agent",
+            "current_task_id": None,
+            "current_target": None,
+            "notes": None,
+            "last_command": None,
+        },
+    )
+
+    stale_agents.cleanup(repo_root, "runner", now="2025-01-01T00:02:00Z")
+
+    active_after = json_io.load_json(active_path)
+    profile_after = json_io.load_json(profile_path)
+    assert active_after["agents"] == []
+    assert profile_after["status"] == "stale"
