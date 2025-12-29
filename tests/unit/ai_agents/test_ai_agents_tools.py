@@ -11,6 +11,8 @@ from ai_agents.tools import work_item_move
 from ai_agents.tools import work_item_close
 from ai_agents.tools import ticket_promote
 from ai_agents.tools import work_queue_add
+from ai_agents.tools import context_profiles_read
+from ai_agents.tools import context_profiles_review
 from ai_agents.tools.cleanup_agents import stale_agents
 from ai_agents.tools._shared import agent_presence
 from ai_agents.tools._shared import hashing
@@ -669,3 +671,182 @@ def test_update_work_item_state_updates_queue(tmp_path: Path) -> None:
         state="in_progress",
     )
     assert updated["state"] == "in_progress"
+
+
+def test_context_profiles_read_updates_usage(tmp_path: Path) -> None:
+    """
+    Ensure context profile reads increment usage_count and return ctx items.
+    """
+    repo_root = tmp_path
+    profiles_path = repo_root / "ai_agents" / "state" / "context_profiles.json"
+    profiles_path.parent.mkdir(parents=True, exist_ok=True)
+    ctx_path = repo_root / "src" / "pkg" / "__foo__.json"
+    ctx_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(ctx_path, {"kind": "file_ctx", "schema_version": 1})
+    json_io.write_json_atomic(
+        profiles_path,
+        {
+            "schema_version": 1,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "rules_version": "context_profiles@v1",
+            "limits": {"max_items_per_profile": 10, "max_bytes_per_profile": 1000},
+            "profiles": [
+                {
+                    "name": "repo_overview",
+                    "paths": ["src/pkg/__foo__.json"],
+                    "score": 0.1,
+                    "grade": "ok",
+                    "usage_count": 0,
+                    "last_used_at": None,
+                    "last_review_at": None,
+                    "review_counts": {"excellent": 0, "good": 0, "ok": 0, "poor": 0, "bad": 0},
+                    "reason": "test",
+                    "size_bytes": 10,
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    output = context_profiles_read.read_profile(
+        repo_root=repo_root,
+        profile_name="repo_overview",
+        agent_id="agent_1",
+        mode="agent",
+        max_items=None,
+        max_bytes=None,
+        update_usage=True,
+        emit_tasks=False,
+        owner_id="agent_1",
+    )
+    assert output["summary"]["total_items"] == 1
+    assert output["items"][0]["path"] == "src/pkg/__foo__.json"
+
+    updated = json_io.load_json(profiles_path)
+    profile = updated["profiles"][0]
+    assert profile["usage_count"] == 1
+    assert profile["last_used_at"] is not None
+
+
+def test_context_profiles_review_updates_grade_and_tasks(tmp_path: Path) -> None:
+    """
+    Ensure context profile reviews update grade and emit prune tasks.
+    """
+    repo_root = tmp_path
+    profiles_path = repo_root / "ai_agents" / "state" / "context_profiles.json"
+    profiles_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        profiles_path,
+        {
+            "schema_version": 1,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "rules_version": "context_profiles@v1",
+            "limits": {"max_items_per_profile": 10, "max_bytes_per_profile": 1000},
+            "profiles": [
+                {
+                    "name": "repo_overview",
+                    "paths": ["src/pkg/__foo__.json"],
+                    "score": 0.1,
+                    "grade": "ok",
+                    "usage_count": 1,
+                    "last_used_at": None,
+                    "last_review_at": None,
+                    "review_counts": {"excellent": 0, "good": 0, "ok": 0, "poor": 0, "bad": 0},
+                    "reason": "test",
+                    "size_bytes": 10,
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    profile = context_profiles_review.review_profile(
+        repo_root=repo_root,
+        profile_name="repo_overview",
+        grade="poor",
+        reviewer="agent_1",
+        notes="too broad",
+        agent_id="agent_1",
+        mode="agent",
+        emit_tasks=True,
+        owner_id="agent_1",
+    )
+    assert profile["grade"] == "poor"
+
+    updated = json_io.load_json(profiles_path)
+    updated_profile = updated["profiles"][0]
+    assert updated_profile["review_counts"]["poor"] == 1
+    assert updated_profile["last_review_at"] is not None
+
+    tasks_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    tasks = json_io.load_json(tasks_path)
+    assert tasks["queue"][0]["kind"] == "prune_context_profile"
+
+
+def test_context_profiles_read_emits_resurvey_task(tmp_path: Path) -> None:
+    """
+    Ensure context profile reads emit resurvey tasks when inputs drift.
+    """
+    repo_root = tmp_path
+    code_path = repo_root / "src" / "pkg" / "foo.py"
+    code_path.parent.mkdir(parents=True, exist_ok=True)
+    code_path.write_text("value = 1\n", encoding="utf-8")
+
+    ctx_path = repo_root / "src" / "pkg" / "__foo__.json"
+    json_io.write_json_atomic(
+        ctx_path,
+        {
+            "kind": "file_ctx",
+            "schema_version": 1,
+            "identity": {"path": "src/pkg/foo.py", "ctx_path": "src/pkg/__foo__.json", "language": "python"},
+            "computed": {"checksums": {"code_hash_sha256": "mismatch"}, "freshness_state": "fresh"},
+            "agent": {},
+        },
+    )
+
+    profiles_path = repo_root / "ai_agents" / "state" / "context_profiles.json"
+    profiles_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        profiles_path,
+        {
+            "schema_version": 1,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "rules_version": "context_profiles@v1",
+            "limits": {"max_items_per_profile": 10, "max_bytes_per_profile": 1000},
+            "profiles": [
+                {
+                    "name": "repo_overview",
+                    "paths": ["src/pkg/__foo__.json"],
+                    "score": 0.1,
+                    "grade": "ok",
+                    "usage_count": 0,
+                    "last_used_at": None,
+                    "last_review_at": None,
+                    "review_counts": {"excellent": 0, "good": 0, "ok": 0, "poor": 0, "bad": 0},
+                    "reason": "test",
+                    "size_bytes": 10,
+                    "freshness_state": "fresh",
+                    "staleness_reasons": [],
+                    "inputs_hash": "seed",
+                    "last_checked_at": None,
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    context_profiles_read.read_profile(
+        repo_root=repo_root,
+        profile_name="repo_overview",
+        agent_id="agent_1",
+        mode="agent",
+        max_items=None,
+        max_bytes=None,
+        update_usage=False,
+        emit_tasks=True,
+        owner_id="agent_1",
+    )
+
+    tasks_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    tasks = json_io.load_json(tasks_path)
+    assert tasks["queue"][0]["kind"] == "resurvey_context_profile"
