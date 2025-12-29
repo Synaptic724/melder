@@ -5,6 +5,7 @@ from pathlib import Path
 from ai_agents.tools import self_context
 from ai_agents.tools import skill_receipt
 from ai_agents.tools import lease
+from ai_agents.tools import update_state
 from ai_agents.tools import work_item_add
 from ai_agents.tools import work_item_move
 from ai_agents.tools import work_item_close
@@ -12,7 +13,10 @@ from ai_agents.tools import ticket_promote
 from ai_agents.tools import work_queue_add
 from ai_agents.tools.cleanup_agents import stale_agents
 from ai_agents.tools._shared import agent_presence
+from ai_agents.tools._shared import hashing
+from ai_agents.tools._shared import ignore_rules
 from ai_agents.tools._shared import json_io
+from ai_agents.tools._shared import paths
 from ai_agents.tools._shared import schema_validate
 
 
@@ -570,3 +574,98 @@ def test_work_item_close_moves_and_clears_queue(tmp_path: Path) -> None:
     assert active_after["queue"] == []
     assert completed_after["queue"][0]["work_id"] == "task_close"
     assert queue_after["queue"] == []
+
+
+def test_hash_subtree_is_stable(tmp_path: Path) -> None:
+    """
+    Ensure hashing helpers produce stable results.
+    """
+    file_path = tmp_path / "data.txt"
+    file_path.write_text("alpha", encoding="utf-8")
+    first = hashing.hash_file(file_path)
+    second = hashing.hash_file(file_path)
+    assert first == second
+    subtree = hashing.hash_subtree([f"data.txt:{first}"])
+    assert subtree == hashing.hash_subtree([f"data.txt:{second}"])
+
+
+def test_repo_relative_path_normalizes(tmp_path: Path) -> None:
+    """
+    Ensure repo_relative_path uses POSIX separators.
+    """
+    repo_root = tmp_path
+    file_path = repo_root / "src" / "pkg" / "file.py"
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_text("x", encoding="utf-8")
+    rel = paths.repo_relative_path(repo_root, file_path)
+    assert rel == "src/pkg/file.py"
+
+
+def test_ignore_rules_only_roots_and_globs(tmp_path: Path) -> None:
+    """
+    Ensure ignore rules honor only_roots and glob patterns.
+    """
+    repo_root = tmp_path
+    config = {
+        "schema_version": 1,
+        "globs": ["node_modules/"],
+        "only_roots": ["src"],
+        "code_extensions": [],
+    }
+    src_file = repo_root / "src" / "main.py"
+    src_file.parent.mkdir(parents=True, exist_ok=True)
+    src_file.write_text("x", encoding="utf-8")
+    ignored = ignore_rules.is_ignored_path(repo_root, src_file, config)
+    within = ignore_rules.is_within_only_roots(repo_root, src_file, config["only_roots"])
+    assert ignored is False
+    assert within is True
+
+    vendor_file = repo_root / "node_modules" / "pkg" / "index.js"
+    vendor_file.parent.mkdir(parents=True, exist_ok=True)
+    vendor_file.write_text("x", encoding="utf-8")
+    ignored_vendor = ignore_rules.is_ignored_path(repo_root, vendor_file, config)
+    assert ignored_vendor is True
+
+
+def test_update_work_item_state_updates_queue(tmp_path: Path) -> None:
+    """
+    Ensure update_state can update a work item in place.
+    """
+    repo_root = tmp_path
+    queue_path = repo_root / "ai_agents" / "work_management" / "active" / "tasks.json"
+    queue_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        queue_path,
+        {
+            "schema_version": 1,
+            "repo_id": None,
+            "updated_at": None,
+            "queue": [
+                {
+                    "work_id": "task_update",
+                    "state": "queued",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_update",
+                    "priority": 10,
+                    "lease": None,
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+    updated = update_state.update_work_item_state(
+        repo_root,
+        "active",
+        "task",
+        "task_update",
+        owner_id="agent_test",
+        state="in_progress",
+    )
+    assert updated["state"] == "in_progress"
