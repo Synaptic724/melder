@@ -10,6 +10,7 @@ Structure
 - <branch_name>/state/: branch-specific scans, locks, errors, repo_state, context_profiles.
 - <branch_name>/state/: also includes architecture_context.json and component_contexts.json (plus test variants).
 - <branch_name>/work_management/: branch-specific active/backlog/completed/denied queues.
+- archive/: archived branch directories created by branch_cleanup.py.
 
 Branch model
 - Global queues live in context_compass/work_management/ and are shared history.
@@ -25,6 +26,14 @@ Workflow
    (use context_compass/tools/work_item_branch_to_global.py).
 5) Pull global items into the branch when execution should begin
    (use context_compass/tools/work_item_global_to_branch.py).
+6) Clone branch state and queues when spinning a new branch
+   (use context_compass/tools/branch_clone.py).
+7) Copy context or work queues between branches without cloning
+   (use context_compass/tools/branch_copy_context.py and branch_copy_work.py).
+8) Clear branch queues or context without deleting the branch directory
+   (use context_compass/tools/branch_delete_work.py and branch_delete_context.py).
+9) Archive or delete branch directories when they are no longer needed
+   (use context_compass/tools/branch_cleanup.py).
 
 Notes
 - Branch directories mirror the work_management structure.

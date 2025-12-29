@@ -17,7 +17,8 @@ Read order (baseline)
 12) skills/context_profiles.md
 13) skills/architecture_contexts.md
 14) skills/agent_lifecycle.md
-15) skills/work_management.md
+15) skills/branch_management.md
+16) skills/work_management.md
 
 When to read what
 - Any session start: self_certification, user_approved_certification
@@ -29,6 +30,7 @@ When to read what
 - Context maintenance: policy_router, context_protocol, staleness_protocol
 - Context profile usage: context_profiles
 - Architecture/component contexts: architecture_contexts
+- Branch state and cloning: branch_management
 - Python code edits: policy_router, context_protocol, skills/python/*.md
 - Test work: skills/testing/*.md (plus policy_router)
 - Work intake/triage: work_management
@@ -48,6 +50,7 @@ Policy and workflow
 - skills/context_profiles.md
 - skills/architecture_contexts.md
 - skills/agent_lifecycle.md
+- skills/branch_management.md
 - skills/work_management.md
 
 Python discipline

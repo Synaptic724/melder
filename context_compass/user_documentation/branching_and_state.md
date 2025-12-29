@@ -24,6 +24,23 @@ Branch initialization
 Branch switching
 - `python context_compass/tools/branch_switch.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
 
+Branch cloning and copying
+- Clone a branch with state + queues:
+  `python context_compass/tools/branch_clone.py --repo-root . --source-branch <branch> --dest-branch <branch> --agent-id <agent_id> --work-id <work_id>`
+- Copy context files only:
+  `python context_compass/tools/branch_copy_context.py --repo-root . --source-branch <branch> --dest-branch <branch> --agent-id <agent_id> --work-id <work_id>`
+- Copy work queues only:
+  `python context_compass/tools/branch_copy_work.py --repo-root . --source-branch <branch> --dest-branch <branch> --agent-id <agent_id> --work-id <work_id>`
+
+Branch cleanup
+- Clear branch work queues:
+  `python context_compass/tools/branch_delete_work.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+- Delete context state files:
+  `python context_compass/tools/branch_delete_context.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+- Archive or delete a branch directory:
+  `python context_compass/tools/branch_cleanup.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+  - Archives are stored under `context_compass/branch_management/archive/`.
+
 Why branch state exists
 - Keeps task queues and scan results isolated per branch.
 - Avoids accidental cross-branch task contamination.

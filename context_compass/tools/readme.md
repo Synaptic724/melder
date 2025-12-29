@@ -29,6 +29,12 @@ Tools
 - agent_cleanup.py: run cleanup scripts under tools/cleanup_agents.
 - branch_init.py: initialize branch-scoped state and work queues.
 - branch_switch.py: switch the active branch pointer.
+- branch_clone.py: clone branch state and work queues into a new branch.
+- branch_copy_context.py: copy context state between branches.
+- branch_copy_work.py: copy work queues between branches.
+- branch_delete_context.py: delete context state files in a branch.
+- branch_delete_work.py: clear branch work queues.
+- branch_cleanup.py: archive or delete a branch directory.
 - context_profiles_survey.py: build context profile bundles from ctx and work queues.
 - context_profiles_read.py: emit consolidated context for a named profile and update usage.
 - context_profiles_review.py: record profile grades/notes and emit optimize/prune tasks.

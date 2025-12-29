@@ -21,6 +21,8 @@ from context_compass.tools import context_profiles_read
 from context_compass.tools import context_profiles_review
 from context_compass.tools import context_profiles_resurvey
 from context_compass.tools import context_architecture_resurvey
+from context_compass.tools import branch_copy_context
+from context_compass.tools import branch_copy_work
 from context_compass.tools import command_registry_generate
 from context_compass.tools import memory_add
 from context_compass.tools import memory_read
@@ -1537,3 +1539,103 @@ def test_command_registry_generate_creates_files(tmp_path: Path) -> None:
     assert (commands_dir / "commands_system.json").exists()
     assert len(registries["user"]["commands"]) > 0
     assert len(registries["system"]["commands"]) >= len(registries["user"]["commands"])
+
+
+def test_branch_copy_context_resets_repo_state(tmp_path: Path) -> None:
+    """
+    Ensure branch_copy_context resets scan counters by default.
+    """
+    repo_root = tmp_path
+    source_root = _init_branch(repo_root, "source")
+    _init_branch(repo_root, "dest")
+    src_state = source_root / "state"
+    json_io.write_json_atomic(
+        src_state / "repo_state.json",
+        {
+            "schema_version": 1,
+            "repo_id": "repo_1",
+            "repo_root": str(repo_root),
+            "git": {"head": "abc"},
+            "scan_counter": 5,
+            "last_scan_id": "scan_001",
+            "last_scan_at": "2025-01-01T00:00:00Z",
+            "scanner_version": "scanner@v1",
+            "template_versions": {"file_ctx": "v1", "dir_ctx": "v1"},
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+        },
+    )
+    json_io.write_json_atomic(
+        src_state / "context_profiles.json",
+        {
+            "schema_version": 1,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "rules_version": "context_profiles@v1",
+            "limits": {"max_items_per_profile": 10, "max_bytes_per_profile": 1000},
+            "profiles": [],
+        },
+    )
+
+    branch_copy_context.copy_context(
+        repo_root=repo_root,
+        source_branch="source",
+        dest_branch="dest",
+        preserve_repo_state=False,
+        owner_id="agent_1",
+    )
+
+    dest_state = repo_root / "context_compass" / "branch_management" / "dest" / "state"
+    copied = json_io.load_json(dest_state / "repo_state.json")
+    assert copied["scan_counter"] == 0
+    assert copied["last_scan_id"] is None
+    assert copied["last_scan_at"] is None
+
+
+def test_branch_copy_work_resets_leases(tmp_path: Path) -> None:
+    """
+    Ensure branch_copy_work resets leases and in_progress state by default.
+    """
+    repo_root = tmp_path
+    source_root = _init_branch(repo_root, "source")
+    _init_branch(repo_root, "dest")
+    src_queue = source_root / "work_management" / "active" / "tasks.json"
+    json_io.write_json_atomic(
+        src_queue,
+        {
+            "schema_version": 1,
+            "repo_id": None,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "queue": [
+                {
+                    "work_id": "task_copy",
+                    "state": "in_progress",
+                    "kind": "task",
+                    "target_path": "src/pkg/foo.py",
+                    "ctx_path": "src/pkg/__foo__.json",
+                    "reason": ["manual_add"],
+                    "parent_work_id": None,
+                    "root_work_id": "task_copy",
+                    "priority": 10,
+                    "lease": {"owner_id": "agent_1"},
+                    "attempts": 0,
+                    "last_error_ref": None,
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "updated_at": "2025-01-01T00:00:00Z",
+                }
+            ],
+        },
+    )
+
+    branch_copy_work.copy_work(
+        repo_root=repo_root,
+        source_branch="source",
+        dest_branch="dest",
+        preserve_state=False,
+        owner_id="agent_1",
+    )
+
+    dest_queue = repo_root / "context_compass" / "branch_management" / "dest" / "work_management" / "active" / "tasks.json"
+    copied = json_io.load_json(dest_queue)
+    item = copied["queue"][0]
+    assert item["state"] == "queued"
+    assert item["lease"] is None

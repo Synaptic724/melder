@@ -16,6 +16,7 @@ Stories (index)
 - `onboarding_and_certification.md`: repo entry, certification gate, and first checkin.
 - `agent_lifecycle_and_heartbeat.md`: agent_id, checkin/checkout, heartbeat, cleanup, archive.
 - `repo_state.md`: repo maturity assessment and tooling gating.
+- `branch_management.md`: branch init, clone, copy, and cleanup workflows.
 - `work_intake_and_execution.md`: GitHub intake to backlog, active work, and completion.
 - `context_maintenance_and_scan.md`: ctx freshness, scanner, staleness tasks, and validation.
 - `context_profiles_flow.md`: survey/read/review/resurvey of context bundles.

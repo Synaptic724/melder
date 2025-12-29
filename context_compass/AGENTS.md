@@ -136,5 +136,6 @@ Where the behavior contract lives
 - Memory management: context_compass/skills/memory_management.md
 - Python discipline: context_compass/skills/python/*.md
 - Testing discipline: context_compass/skills/testing/*.md
+- Branch state and cloning: context_compass/skills/branch_management.md
 
 If any policy conflicts or is unclear, stop and ask before proceeding.
