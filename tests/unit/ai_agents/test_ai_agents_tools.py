@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from ai_agents.tools import self_context
 from ai_agents.tools import skill_receipt
 from ai_agents.tools import lease
@@ -17,6 +19,7 @@ from ai_agents.tools import context_profiles_resurvey
 from ai_agents.tools import onboarding_bundle
 from ai_agents.tools.cleanup_agents import stale_agents
 from ai_agents.tools._shared import agent_presence
+from ai_agents.tools._shared import feature_guard
 from ai_agents.tools._shared import hashing
 from ai_agents.tools._shared import ignore_rules
 from ai_agents.tools._shared import json_io
@@ -80,6 +83,32 @@ def test_lock_path_for_uses_hash(tmp_path: Path) -> None:
     stem = lock_path.name.replace(".lock.json", "")
     assert len(stem) == 64
     assert all(ch in "0123456789abcdef" for ch in stem)
+
+
+def test_feature_guard_blocks_disabled_feature(tmp_path: Path) -> None:
+    """
+    Ensure feature_guard raises when a feature is disabled.
+    """
+    config_path = tmp_path / "ai_agents" / "config" / "ai_agents_configuration.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    json_io.write_json_atomic(
+        config_path,
+        {
+            "schema_version": 1,
+            "features": {
+                "scan": False,
+                "context_profiles": True,
+                "work_management": True,
+                "ticket_intake": True,
+                "validation": True,
+            },
+            "skills": {"disabled_skill_ids": [], "disabled_skill_prefixes": []},
+            "notes": None,
+        },
+    )
+
+    with pytest.raises(feature_guard.FeatureDisabledError):
+        feature_guard.ensure_feature_enabled(tmp_path, "scan", "run scan")
 
 
 def test_record_heartbeat_creates_profile_and_active(tmp_path: Path) -> None:
