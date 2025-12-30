@@ -1,5 +1,5 @@
 """
-Move a work item from the global work_management queues into the active branch queues.
+Move a work item from the global work_management queues into branch queues.
 """
 
 import argparse
@@ -43,7 +43,7 @@ def _bucket_choices() -> list[str]:
     Returns:
         list[str]: Allowed bucket values.
     """
-    return ["active", "backlog", "completed", "denied"]
+    return ["ready", "active", "backlog", "completed", "denied"]
 
 
 def _state_choices() -> list[str]:

@@ -10,7 +10,7 @@ GitHub intake
 
 Global queues
 - Located in `context_compass/work_management/`.
-- Buckets: backlog, active, completed, denied.
+- Buckets: ready, backlog, active, completed, denied.
 - Each bucket contains epics, stories, and tasks as JSON.
 
 Branch queues
@@ -24,7 +24,7 @@ Agent queues
 - Move agent work into branch or global queues when needed.
 
 Work IDs and linkage
-- Use a stable `work_id` for each epic/story/task.
+- Work ids are generated automatically when omitted (8-char alphanumeric).
 - Use `parent_work_id` and `root_work_id` to link stories/tasks to epics.
 
 Refusal and safety

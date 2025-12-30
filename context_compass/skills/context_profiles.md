@@ -53,7 +53,7 @@ Task emission rules
   - usage_count < threshold -> emit prune_context_profile
 - If freshness_state changes to stale/needs_review/blocked:
   - emit resurvey_context_profile so the bundle is rebuilt
-- Tasks land in the active branch queue at `context_compass/branch_management/<branch>/work_management/active/tasks.json`.
+- Tasks land in the ready branch queue at `context_compass/branch_management/<branch>/work_management/ready/tasks.json`.
 
 Feature flags
 - Requires context_profiles feature enabled in context_compass/config/context_compass_configuration.json.

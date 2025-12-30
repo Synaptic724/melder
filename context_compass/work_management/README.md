@@ -1,10 +1,11 @@
 # work_management
 
 Purpose
-- Track Epics, Stories, and Tasks across backlog, active, completed, and denied states.
+- Track Epics, Stories, and Tasks across ready, backlog, active, completed, and denied states.
 - Provide a machine-owned global queue that can be promoted from branch queues.
 
 Directory layout
+- context_compass/work_management/ready/
 - context_compass/work_management/backlog/
 - context_compass/work_management/active/
 - context_compass/work_management/completed/
@@ -20,16 +21,18 @@ Work item requirements
 - work_id is the uniform identifier for epics/stories/tasks.
 - kind is required (epic/story/task or a more specific type).
 - parent_work_id and root_work_id must be set (use null for top-level).
+- Tooling auto-generates work_id when omitted (8-char alphanumeric).
 
 Workflow
-- Triage tickets into the active branch backlog.
+- Triage tickets into the branch backlog or ready buckets.
+- Move ready items into active when work starts.
 - Work within branch queues during feature work.
 - Promote finished work into the global queues when you want shared history.
 
 Tooling
 - context_compass/tools/work_item_add.py can add epics/stories/tasks to any bucket.
 - Use --ticket-path to link back to the intake markdown.
-- context_compass/tools/work_item_move.py moves work items between backlog/active/completed/denied.
+- context_compass/tools/work_item_move.py moves work items between ready/backlog/active/completed/denied.
 - context_compass/tools/ticket_promote.py promotes a ticket into a root work item (optional child plan).
 - context_compass/tools/work_item_close.py closes work items and clears per-agent queues.
 - context_compass/tools/work_item_global_to_branch.py moves items from global queues to branch queues.

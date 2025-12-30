@@ -50,7 +50,7 @@ def _bucket_names() -> list[str]:
     Returns:
         list[str]: Bucket names.
     """
-    return ["active", "backlog", "completed", "denied"]
+    return ["ready", "active", "backlog", "completed", "denied"]
 
 
 def _work_files() -> list[str]:

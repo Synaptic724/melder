@@ -685,7 +685,7 @@ def _emit_profile_tasks(
     if dry_run or not tasks:
         return emitted
 
-    tasks_path = branch_paths.work_root(repo_root) / "active" / "tasks.json"
+    tasks_path = branch_paths.work_root(repo_root) / "ready" / "tasks.json"
     tasks_path.parent.mkdir(parents=True, exist_ok=True)
     locks_dir = branch_paths.state_root(repo_root) / "locks"
     locks_dir.mkdir(parents=True, exist_ok=True)
@@ -714,7 +714,7 @@ def _emit_profile_tasks(
 
 def _collect_active_ctx_paths(repo_root: Path) -> list[str]:
     """
-    Collect ctx_path values referenced by active work queues and agent queues.
+    Collect ctx_path values referenced by ready/active work queues and agent queues.
 
     Args:
         repo_root (Path): Repository root.
@@ -723,17 +723,19 @@ def _collect_active_ctx_paths(repo_root: Path) -> list[str]:
         list[str]: Context paths.
     """
     ctx_paths: list[str] = []
-    active_dir = branch_paths.work_root(repo_root) / "active"
-    for name in ("epics.json", "stories.json", "tasks.json"):
-        queue_path = active_dir / name
-        if not queue_path.exists():
-            continue
-        data = load_json(queue_path)
-        if not isinstance(data, dict):
-            continue
-        for item in data.get("queue", []):
-            if isinstance(item, dict) and item.get("ctx_path"):
-                ctx_paths.append(item["ctx_path"])
+    work_root = branch_paths.work_root(repo_root)
+    for bucket in ("ready", "active"):
+        bucket_dir = work_root / bucket
+        for name in ("epics.json", "stories.json", "tasks.json"):
+            queue_path = bucket_dir / name
+            if not queue_path.exists():
+                continue
+            data = load_json(queue_path)
+            if not isinstance(data, dict):
+                continue
+            for item in data.get("queue", []):
+                if isinstance(item, dict) and item.get("ctx_path"):
+                    ctx_paths.append(item["ctx_path"])
 
     agents_dir = repo_root / "context_compass" / "self_context" / "agents"
     if agents_dir.exists():

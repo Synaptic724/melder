@@ -13,6 +13,7 @@ from context_compass.tools._shared.feature_guard import ensure_feature_enabled
 from context_compass.tools._shared.work_mode_guard import ensure_work_mode
 from context_compass.tools._shared.json_io import load_json
 from context_compass.tools._shared.timeutils import utc_now_iso
+from context_compass.tools._shared.work_ids import generate_work_id
 
 
 def _bucket_choices() -> list[str]:
@@ -22,7 +23,7 @@ def _bucket_choices() -> list[str]:
     Returns:
         list[str]: Allowed bucket values.
     """
-    return ["active", "backlog", "completed", "denied"]
+    return ["ready", "active", "backlog", "completed", "denied"]
 
 
 def _state_choices() -> list[str]:
@@ -149,6 +150,8 @@ def _coerce_items(plan: object, root_work_id: str, ticket_path: str, bucket: str
             item["parent_work_id"] = root_work_id
         if item.get("root_work_id") is None:
             item["root_work_id"] = root_work_id
+        if item.get("work_id") in (None, ""):
+            item["work_id"] = generate_work_id()
         item.setdefault("reason", ["github_intake"])
         item.setdefault("priority", 50)
         item.setdefault("state", "queued")
@@ -189,13 +192,14 @@ def _normalize_child(
         raise ValueError(f"Invalid work type: {work_type}")
     work_id = child.get("work_id")
     if not work_id:
-        raise ValueError("child item missing work_id")
+        work_id = generate_work_id()
     target_path = child.get("target_path")
     ctx_path = child.get("ctx_path")
     if not target_path or not ctx_path:
         raise ValueError("child item missing target_path or ctx_path")
 
     payload = dict(child)
+    payload["work_id"] = work_id
     payload["kind"] = normalized_kind
     if payload.get("parent_work_id") is None:
         payload["parent_work_id"] = root_work_id
@@ -255,8 +259,8 @@ def main() -> None:
     parser.add_argument("--repo-root", default=".", help="Repo root path")
     parser.add_argument("--agent-id", required=True, help="Agent identifier")
     parser.add_argument("--ticket-path", required=True, help="Ticket markdown path")
-    parser.add_argument("--bucket", default="backlog", choices=_bucket_choices(), help="Root bucket")
-    parser.add_argument("--work-id", required=True, help="Root work identifier")
+    parser.add_argument("--bucket", default="ready", choices=_bucket_choices(), help="Root bucket")
+    parser.add_argument("--work-id", default=None, help="Root work identifier (auto-generated if omitted)")
     parser.add_argument("--kind", required=True, help="Root kind (epic/story/task allowed)")
     parser.add_argument("--work-type", choices=["epic", "story", "task"], help="Root work type override")
     parser.add_argument("--state", default="queued", choices=_state_choices(), help="Root state")
@@ -278,7 +282,8 @@ def main() -> None:
     ensure_certified(repo_root, args.owner_id or args.agent_id)
     ensure_feature_enabled(repo_root, "ticket_intake", "promote tickets")
     ensure_feature_enabled(repo_root, "work_management", "write work queues")
-    ensure_work_mode(repo_root, args.work_id, "promote tickets")
+    work_id = args.work_id or generate_work_id()
+    ensure_work_mode(repo_root, work_id, "promote tickets")
 
     ticket_path = Path(args.ticket_path)
     if not ticket_path.is_absolute():
@@ -295,9 +300,9 @@ def main() -> None:
     target_path = args.target_path or str(ticket_path)
     ctx_path = args.ctx_path or str(ticket_path)
     now = utc_now_iso()
-    root_work_id = args.root_work_id or args.work_id
+    root_work_id = args.root_work_id or work_id
     reasons = args.reason if args.reason else ["github_intake"]
-    root_item = _default_work_item(now, args.work_id, normalized_kind, target_path, ctx_path)
+    root_item = _default_work_item(now, work_id, normalized_kind, target_path, ctx_path)
     root_item["state"] = args.state
     root_item["parent_work_id"] = args.parent_work_id
     root_item["root_work_id"] = root_work_id
@@ -319,7 +324,7 @@ def main() -> None:
         repo_root,
         agent_id=args.agent_id,
         mode=args.mode,
-        current_task_id=args.work_id,
+        current_task_id=work_id,
         current_target=str(ticket_path),
         notes=None,
         command_name="ticket_promote",

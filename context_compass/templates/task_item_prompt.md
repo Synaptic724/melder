@@ -1,7 +1,7 @@
 # task_item_prompt
 
 Purpose
-- Standardize task creation for context_compass/branch_management/<branch>/work_management/active/tasks.json.
+- Standardize task creation for context_compass/branch_management/<branch>/work_management/ready/tasks.json.
 
 Required fields
 - work_id, state, kind, priority

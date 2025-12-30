@@ -12,7 +12,8 @@ Story steps
    - Architecture/component contexts are checked against their citation matrix and can emit resurvey tasks.
 
 2) Resolve ctx tasks first
-   - Generated tasks land in the active branch queue.
+   - Generated tasks land in the ready branch queue.
+   - Move ready items into active before executing them.
    - Refresh or regenerate ctx before feature work.
    - Refresh file ctx before regenerating dir ctx; dir ctx is derived from file ctx, not code.
 
@@ -34,7 +35,7 @@ Artifacts touched
 - `__<stem>__.json` and `__<dir>__.dir.json`
 - `context_compass/branch_management/<branch>/state/scans/scan_*.json`
 - `context_compass/branch_management/<branch>/state/repo_state.json`
-- `context_compass/branch_management/<branch>/work_management/active/tasks.json`
+- `context_compass/branch_management/<branch>/work_management/ready/tasks.json`
 
 Tools
 - `context_compass/tools/scan.py`

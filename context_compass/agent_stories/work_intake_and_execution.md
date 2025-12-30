@@ -20,7 +20,7 @@ Story steps
    - Stories must include `parent_work_id` and `root_work_id`.
 
 5) Move to active
-   - Use `context_compass/tools/work_item_move.py` to move items into `active/`.
+   - Use `context_compass/tools/work_item_move.py` to move items from `ready/` into `active/`.
    - Optionally add to a per-agent queue with `context_compass/tools/work_queue_add.py`.
    - If work is already in a per-agent queue, move it into branch queues:
      - `context_compass/tools/work_item_agent_to_branch.py`.
@@ -37,6 +37,7 @@ Story steps
 
 Buckets and files
 - `context_compass/branch_management/<branch>/work_management/backlog/` (triaged)
+- `context_compass/branch_management/<branch>/work_management/ready/` (queued)
 - `context_compass/branch_management/<branch>/work_management/active/` (in-flight)
 - `context_compass/branch_management/<branch>/work_management/completed/` (done)
 - `context_compass/branch_management/<branch>/work_management/denied/` (rejected)

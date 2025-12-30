@@ -23,7 +23,7 @@ Story steps
 
 Artifacts touched
 - `context_compass/branch_management/<branch>/state/context_profiles.json`
-- `context_compass/branch_management/<branch>/work_management/active/tasks.json`
+- `context_compass/branch_management/<branch>/work_management/ready/tasks.json`
 
 Tools
 - `context_compass/tools/context_profiles_survey.py`

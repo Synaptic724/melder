@@ -13,6 +13,7 @@ from context_compass.tools._shared.feature_guard import ensure_feature_enabled
 from context_compass.tools._shared.work_mode_guard import ensure_work_mode
 from context_compass.tools._shared.json_io import load_json, write_json_atomic
 from context_compass.tools._shared.timeutils import utc_now_iso
+from context_compass.tools._shared.work_ids import generate_work_id
 
 
 def _default_work_queue(agent_id: str, now: str) -> dict:
@@ -138,7 +139,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Add a work item to an agent queue")
     parser.add_argument("--repo-root", default=".", help="Repo root path")
     parser.add_argument("--agent-id", required=True, help="Agent identifier")
-    parser.add_argument("--work-id", required=True, help="Work item identifier")
+    parser.add_argument("--work-id", default=None, help="Work item identifier (auto-generated if omitted)")
     parser.add_argument("--kind", required=True, help="Work item kind")
     parser.add_argument("--state", default="queued", help="Work item state")
     parser.add_argument("--target-path", required=True, help="Target path")
@@ -157,15 +158,16 @@ def main() -> None:
     repo_root = Path(args.repo_root).resolve()
     ensure_certified(repo_root, args.owner_id or args.agent_id)
     ensure_feature_enabled(repo_root, "work_management", "add work items")
-    ensure_work_mode(repo_root, args.work_id, "add work items")
+    work_id = args.work_id or generate_work_id()
+    ensure_work_mode(repo_root, work_id, "add work items")
 
     reasons = args.reason if args.reason else ["manual_add"]
     created_at = utc_now_iso()
-    root_work_id = args.root_work_id or args.work_id
+    root_work_id = args.root_work_id or work_id
     if _requires_parent(args.kind) and args.parent_work_id in (None, ""):
         raise ValueError("parent_work_id is required for story kinds")
     item = _build_work_item(
-        work_id=args.work_id,
+        work_id=work_id,
         kind=args.kind,
         state=args.state,
         target_path=args.target_path,
@@ -183,13 +185,13 @@ def main() -> None:
         repo_root,
         agent_id=args.agent_id,
         mode=args.mode,
-        current_task_id=args.work_id,
+        current_task_id=work_id,
         current_target=args.target_path,
         notes=None,
         command_name="work_queue_add",
         command_args=sys.argv[1:],
     )
-    logger.info("work item added to %s queue: %s", args.agent_id, args.work_id)
+    logger.info("work item added to %s queue: %s", args.agent_id, work_id)
 
 
 if __name__ == "__main__":

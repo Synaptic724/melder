@@ -31,8 +31,8 @@ Commands
   python context_compass/tools/agent_cleanup.py --repo-root . --agent-id <agent_id>
 - Sweep agent profiles and count active agents:
   python context_compass/tools/agent_sweep.py --repo-root . --agent-id <agent_id>
-- Add a work item to a per-agent queue:
-  python context_compass/tools/work_queue_add.py --repo-root . --agent-id <agent_id> --work-id <work_id> --kind <kind> --target-path <path> --ctx-path <path> --root-work-id <root> --parent-work-id <parent>
+- Add a work item to a per-agent queue (work_id auto-generated if omitted):
+  python context_compass/tools/work_queue_add.py --repo-root . --agent-id <agent_id> --kind <kind> --target-path <path> --ctx-path <path> --root-work-id <root> --parent-work-id <parent>
 - Move an agent work item into branch queues:
   python context_compass/tools/work_item_agent_to_branch.py --repo-root . --agent-id <agent_id> --work-id <work_id> --dest-bucket <bucket>
 - Move an agent work item into global queues:

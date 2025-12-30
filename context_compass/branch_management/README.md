@@ -9,7 +9,7 @@ Structure
 - current_branch.json: active branch pointer (machine-owned, minified JSON).
 - <branch_name>/state/: branch-specific scans, locks, errors, repo_state, context_profiles.
 - <branch_name>/state/: also includes architecture_context.json and component_contexts.json (plus test variants).
-- <branch_name>/work_management/: branch-specific active/backlog/completed/denied queues.
+- <branch_name>/work_management/: branch-specific ready/active/backlog/completed/denied queues.
 - archive/: archived branch directories created by branch_cleanup.py.
 
 Branch model

@@ -6,33 +6,44 @@ from pathlib import Path
 import pytest
 
 from context_compass.tools import agent_manage
+from context_compass.tools._shared import agent_presence
+from context_compass.tools._shared import json_io
+from context_compass.tools._shared.certification_guard import default_certification_state
 
 
-def _write_certified_state(repo_root: Path) -> None:
+def _write_certified_state(repo_root: Path, agent_id: str) -> None:
     """
-    Write a certified state file for testing.
+    Write a certified agent profile for testing.
 
     Args:
         repo_root (Path): Repo root path.
+        agent_id (str): Agent identifier.
     """
-    state_path = repo_root / "context_compass" / "self_context" / "certification_state.json"
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(
-        (
-            '{"approval_token":"CERTIFY: APPROVED","approved_at":"2025-12-28T00:00:00Z",'
-            '"approved_by":"tester","certified":true,"certified_at":"2025-12-28T00:00:00Z",'
-            '"notes":null,"schema_version":1,"self_certification_hash":null,"state":"CERTIFIED"}'
-        ),
-        encoding="utf-8",
+    profile_path = repo_root / "context_compass" / "self_context" / "agents" / f"{agent_id}.profile.json"
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    agent_presence.ensure_profile_file(profile_path, agent_id)
+    profile = json_io.load_json(profile_path)
+    state = default_certification_state()
+    state.update(
+        {
+            "state": "CERTIFIED",
+            "certified": True,
+            "certified_at": "2025-12-28T00:00:00Z",
+            "approved_at": "2025-12-28T00:00:00Z",
+            "approval_token": "CERTIFY: APPROVED",
+            "approved_by": "tester",
+        }
     )
+    profile["certification_state"] = state
+    json_io.write_json_atomic(profile_path, profile)
 
 
 def test_agent_create_delete_archive(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Ensure agent lifecycle commands create, archive, and delete files.
     """
-    _write_certified_state(tmp_path)
     agent_id = "agent_1"
+    _write_certified_state(tmp_path, agent_id)
 
     monkeypatch.setattr(
         sys,
@@ -59,6 +70,7 @@ def test_agent_create_delete_archive(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert not self_path.exists()
     assert not work_path.exists()
 
+    _write_certified_state(tmp_path, agent_id)
     monkeypatch.setattr(
         sys,
         "argv",

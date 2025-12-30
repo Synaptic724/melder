@@ -58,7 +58,7 @@ def _init_branch(repo_root: Path, branch_name: str = "test") -> Path:
     (state_root / "locks").mkdir(parents=True, exist_ok=True)
     (state_root / "errors").mkdir(parents=True, exist_ok=True)
     (state_root / "scans").mkdir(parents=True, exist_ok=True)
-    for bucket in ("active", "backlog", "completed", "denied"):
+    for bucket in ("ready", "active", "backlog", "completed", "denied"):
         (work_root / bucket).mkdir(parents=True, exist_ok=True)
     current_path = repo_root / "context_compass" / "branch_management" / "current_branch.json"
     current_path.parent.mkdir(parents=True, exist_ok=True)
@@ -499,7 +499,7 @@ def test_work_item_add_writes_queue(tmp_path: Path) -> None:
         "created_at": "2025-01-01T00:00:00Z",
         "updated_at": "2025-01-01T00:00:00Z",
     }
-    queue_path = work_item_add.add_work_item(tmp_path, "active", "epic", item, owner_id="agent_a")
+    queue_path = work_item_add.add_work_item(tmp_path, "ready", "epic", item, owner_id="agent_a")
     data = json_io.load_json(queue_path)
     assert data["queue"][0]["work_id"] == "epic_001"
 
@@ -1088,7 +1088,7 @@ def test_context_profiles_review_updates_grade_and_tasks(tmp_path: Path) -> None
     assert updated_profile["review_counts"]["poor"] == 1
     assert updated_profile["last_review_at"] is not None
 
-    tasks_path = branch_root / "work_management" / "active" / "tasks.json"
+    tasks_path = branch_root / "work_management" / "ready" / "tasks.json"
     tasks = json_io.load_json(tasks_path)
     assert tasks["queue"][0]["kind"] == "prune_context_profile"
 
@@ -1158,7 +1158,7 @@ def test_context_profiles_read_emits_resurvey_task(tmp_path: Path) -> None:
         owner_id="agent_1",
     )
 
-    tasks_path = branch_root / "work_management" / "active" / "tasks.json"
+    tasks_path = branch_root / "work_management" / "ready" / "tasks.json"
     tasks = json_io.load_json(tasks_path)
     assert tasks["queue"][0]["kind"] == "resurvey_context_profile"
 

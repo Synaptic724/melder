@@ -203,7 +203,7 @@ def _seed_branch_state(repo_root: Path, branch_name: str, now: str) -> Path:
             architecture_contexts.default_component_contexts("test_component_contexts", now),
         )
 
-    for bucket in ("active", "backlog", "completed", "denied"):
+    for bucket in ("ready", "active", "backlog", "completed", "denied"):
         bucket_dir = work_root / bucket
         bucket_dir.mkdir(parents=True, exist_ok=True)
         for name in ("epics.json", "stories.json", "tasks.json"):

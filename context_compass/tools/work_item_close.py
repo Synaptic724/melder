@@ -22,7 +22,7 @@ def _bucket_choices() -> list[str]:
     Returns:
         list[str]: Allowed bucket values.
     """
-    return ["active", "backlog", "completed", "denied"]
+    return ["ready", "active", "backlog", "completed", "denied"]
 
 
 def _state_choices() -> list[str]:

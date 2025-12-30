@@ -5,7 +5,8 @@ Purpose
 
 Story steps
 1) Select work
-   - Pull from the active branch queue or a per-agent queue.
+   - Pull from the ready branch queue or a per-agent queue.
+   - Move ready work into active before you start execution.
    - If the work is still in global queues, move it into the branch first:
      - `context_compass/tools/work_item_global_to_branch.py`.
    - If the work is in a per-agent queue, move it into the branch queue:

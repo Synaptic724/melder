@@ -238,7 +238,11 @@ def main() -> None:
     scan_parser.add_argument("--dir-template-version", default=None, help="Dir ctx template version")
 
     work_parser = subparsers.add_parser("work-item", help="Update a work item in a queue")
-    work_parser.add_argument("--bucket", required=True, choices=["active", "backlog", "completed", "denied"])
+    work_parser.add_argument(
+        "--bucket",
+        required=True,
+        choices=["ready", "active", "backlog", "completed", "denied"],
+    )
     work_parser.add_argument("--work-type", required=True, choices=["epic", "story", "task"])
     work_parser.add_argument("--work-id", required=True, help="Work identifier")
     work_parser.add_argument("--state", default=None, help="New work item state")

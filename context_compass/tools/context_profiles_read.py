@@ -271,7 +271,7 @@ def _emit_resurvey_task(
         "updated_at": now,
     }
 
-    tasks_path = branch_paths.work_root(repo_root) / "active" / "tasks.json"
+    tasks_path = branch_paths.work_root(repo_root) / "ready" / "tasks.json"
     tasks_path.parent.mkdir(parents=True, exist_ok=True)
     locks_dir = branch_paths.state_root(repo_root) / "locks"
     locks_dir.mkdir(parents=True, exist_ok=True)

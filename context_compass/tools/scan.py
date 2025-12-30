@@ -1114,7 +1114,7 @@ def scan_repo(
     scan_record["errors"] = error_records
 
     if not dry_run and emit_tasks and tasks:
-        tasks_path = branch_paths.work_root(repo_root) / "active" / "tasks.json"
+        tasks_path = branch_paths.work_root(repo_root) / "ready" / "tasks.json"
         tasks_path.parent.mkdir(parents=True, exist_ok=True)
         locks_dir = branch_paths.state_root(repo_root) / "locks"
         locks_dir.mkdir(parents=True, exist_ok=True)
