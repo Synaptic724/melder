@@ -56,7 +56,7 @@ def _commands_catalog() -> list[dict]:
     return [
         {
             "name": "python_certified",
-            "entry": "python python_certified.py --approval-token \"CERTIFY: APPROVED\"",
+            "entry": "python python_certified.py --repo-root . --agent-id <agent_id> --approval-token \"CERTIFY: APPROVED\"",
             "summary": "Finalize certification state after approval.",
             "category": "certification",
             "requires_certification": False,
@@ -118,6 +118,17 @@ def _commands_catalog() -> list[dict]:
             "requires_work_id": False,
             "feature_flag": None,
             "notes": "Normally run automatically by tools.",
+            "audience": ["user", "system"],
+        },
+        {
+            "name": "agent_sweep",
+            "entry": "python context_compass/tools/agent_sweep.py --repo-root . --agent-id <agent_id>",
+            "summary": "Summarize agent profile status counts.",
+            "category": "lifecycle",
+            "requires_certification": True,
+            "requires_work_id": False,
+            "feature_flag": None,
+            "notes": "Sweeps profiles and reports active/inactive/stale totals.",
             "audience": ["user", "system"],
         },
         {
@@ -701,7 +712,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     ensure_feature_enabled(repo_root, "command_registry", "generate command registries")
     ensure_work_mode(repo_root, args.work_id, "generate command registries")
 

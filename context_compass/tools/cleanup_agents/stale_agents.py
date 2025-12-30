@@ -1,4 +1,4 @@
-"""Cleanup stale agents from active registry and archive if configured."""
+"""Cleanup stale agents from profiles and archive if configured."""
 
 import argparse
 import logging
@@ -42,24 +42,6 @@ def _load_policies(repo_root: Path) -> dict:
         if isinstance(data, dict):
             policies.update({k: v for k, v in data.items() if k in policies})
     return policies
-
-
-def _load_or_init_active_agents(path: Path, now: str) -> dict:
-    """
-    Load active_agents.json or initialize a default structure.
-
-    Args:
-        path (Path): active_agents.json path.
-        now (str): Current timestamp.
-
-    Returns:
-        dict: Active agents data.
-    """
-    if path.exists():
-        data = load_json(path)
-        if isinstance(data, dict):
-            return data
-    return {"schema_version": 1, "updated_at": now, "agents": []}
 
 
 def _is_stale(last_heartbeat_at: Optional[str], now: str, stale_seconds: int) -> bool:
@@ -197,7 +179,6 @@ def cleanup(repo_root: Path, agent_id: str, now: Optional[str] = None) -> None:
     Mark stale agents and optionally archive them.
 
     Contract:
-    - Removes stale agents from active_agents.json.
     - Marks profiles as stale with updated timestamps.
     - Requeues active work items for stale agents into backlog.
     - Archives agent files if archive threshold is met.
@@ -217,13 +198,11 @@ def cleanup(repo_root: Path, agent_id: str, now: Optional[str] = None) -> None:
 
     locks_dir = branch_paths.self_context_locks_dir(repo_root)
     locks_dir.mkdir(parents=True, exist_ok=True)
-    active_path = repo_root / "context_compass" / "self_context" / "active_agents.json"
     agents_dir = repo_root / "context_compass" / "self_context" / "agents"
-    active_path.parent.mkdir(parents=True, exist_ok=True)
     agents_dir.mkdir(parents=True, exist_ok=True)
     profile_paths = sorted(agents_dir.glob("*.profile.json"), key=lambda p: str(p))
 
-    resources = [active_path, *profile_paths]
+    resources = [*profile_paths]
     locked: list[Path] = []
     for resource in sorted({r.resolve() for r in resources}, key=lambda p: str(p)):
         lease.acquire_lock(locks_dir, resource, agent_id, policies["lease_ttl_seconds"])
@@ -232,36 +211,16 @@ def cleanup(repo_root: Path, agent_id: str, now: Optional[str] = None) -> None:
     stale_ids: set[str] = set()
     archive_ids: set[str] = set()
     try:
-        active = _load_or_init_active_agents(active_path, current)
-        active_agents = active.get("agents", [])
-        remaining_active = []
-
-        for entry in active_agents:
-            last_heartbeat = entry.get("last_heartbeat_at")
-            entry_id = entry.get("agent_id")
-            if entry_id and _is_stale(last_heartbeat, current, stale_seconds):
-                stale_ids.add(entry_id)
-                if _eligible_for_archive(last_heartbeat, current, archive_seconds):
-                    archive_ids.add(entry_id)
-            else:
-                remaining_active.append(entry)
-
-        if remaining_active != active_agents:
-            active["agents"] = remaining_active
-            active["updated_at"] = current
-            write_json_atomic(active_path, active)
-
         for path in profile_paths:
             data = load_json(path)
             if not isinstance(data, dict):
                 continue
             profile_id = data.get("agent_id")
             last_heartbeat = data.get("last_heartbeat_at")
-            is_profile_stale = profile_id in stale_ids
-            if not is_profile_stale and data.get("status") == "active":
-                if _is_stale(last_heartbeat, current, stale_seconds):
-                    is_profile_stale = True
-                    stale_ids.add(profile_id)
+            is_profile_stale = False
+            if profile_id and _is_stale(last_heartbeat, current, stale_seconds):
+                is_profile_stale = True
+                stale_ids.add(profile_id)
             if is_profile_stale:
                 data["status"] = "stale"
                 data["updated_at"] = current

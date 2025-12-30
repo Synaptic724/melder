@@ -9,12 +9,12 @@ Story steps
    - Create files via `context_compass/tools/agent_manage.py create`.
 
 2) Check in and start heartbeat
-   - `context_compass/tools/agent_checkin.py` writes active registry + profile.
+   - `context_compass/tools/agent_checkin.py` updates the agent profile heartbeat.
    - Optional metadata recorded: agent_kind, model_name, runtime.
    - Every tool call updates heartbeat automatically.
 
 3) Work session updates
-   - Tool invocations refresh `active_agents.json` and the profile.
+   - Tool invocations refresh the agent profile heartbeat.
    - Per-agent work queue stays at `context_compass/self_context/agents/<agent_id>.work.json`.
    - Move work out of per-agent queues when needed:
      - `context_compass/tools/work_item_agent_to_branch.py` (assign to branch work).
@@ -22,7 +22,7 @@ Story steps
 
 4) Cleanup on each tool run
    - Cleanup scripts run before heartbeat updates.
-   - Stale agents are marked and removed from the active registry.
+   - Stale agents are marked in their profiles.
 
 5) Check out when done
    - `context_compass/tools/agent_checkout.py` marks the agent inactive.
@@ -31,13 +31,15 @@ Story steps
    - Use `context_compass/tools/agent_manage.py archive` for audit retention.
    - Use `context_compass/tools/agent_manage.py delete` only after archiving.
 
+Optional diagnostics
+- `context_compass/tools/agent_sweep.py` reports active/inactive/stale counts from profiles.
+
 Staleness handling
-- `agent_heartbeat_stale_seconds` marks agents stale and removes them from active.
+- `agent_heartbeat_stale_seconds` marks agents stale in their profiles.
 - `agent_archive_after_seconds` moves stale agent files into `context_compass/archive/`.
 - Cleanup requeues active work items owned by stale agents back to backlog.
 
 Artifacts touched
-- `context_compass/self_context/active_agents.json`
 - `context_compass/self_context/agents/<agent_id>.profile.json`
 - `context_compass/self_context/agents/<agent_id>.work.json`
 - `context_compass/archive/`

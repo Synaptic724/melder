@@ -1,6 +1,5 @@
 """Unit tests for certification gating helpers."""
 
-import json
 import sys
 from pathlib import Path
 
@@ -9,26 +8,40 @@ import pytest
 import python_certified
 from context_compass.tools import self_context
 from context_compass.tools._shared import certification_guard
+from context_compass.tools._shared import json_io
 
 
-def _write_state(path: Path, state: dict) -> None:
+def _write_profile(path: Path, agent_id: str, state: dict) -> None:
     """
-    Write a certification state JSON file in minified form.
+    Write an agent profile JSON file with embedded certification state.
 
     Args:
-        path (Path): Target path for the JSON file.
+        path (Path): Target path for the profile file.
+        agent_id (str): Agent identifier.
         state (dict): Certification state data.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(
-            state,
-            separators=(",", ":"),
-            sort_keys=True,
-            ensure_ascii=False,
-            allow_nan=False,
-        ),
-        encoding="utf-8",
+    json_io.write_json_atomic(
+        path,
+        {
+            "schema_version": 1,
+            "agent_id": agent_id,
+            "agent_kind": None,
+            "created_at": "2025-12-28T00:00:00Z",
+            "updated_at": "2025-12-28T00:00:00Z",
+            "status": "inactive",
+            "last_heartbeat_at": None,
+            "last_checkin_at": None,
+            "last_checkout_at": None,
+            "mode": "agent",
+            "model_name": None,
+            "current_task_id": None,
+            "current_target": None,
+            "notes": None,
+            "runtime": None,
+            "last_command": None,
+            "certification_state": state,
+        },
     )
 
 
@@ -60,9 +73,10 @@ def test_ensure_certified_rejects_uncertified(tmp_path: Path) -> None:
     """
     Ensure the guard rejects UNCERTIFIED state.
     """
-    state_path = certification_guard.certification_state_path(tmp_path)
-    _write_state(
-        state_path,
+    profile_path = tmp_path / "context_compass" / "self_context" / "agents" / "agent_1.profile.json"
+    _write_profile(
+        profile_path,
+        "agent_1",
         {
             "schema_version": 1,
             "state": "UNCERTIFIED",
@@ -76,16 +90,17 @@ def test_ensure_certified_rejects_uncertified(tmp_path: Path) -> None:
         },
     )
     with pytest.raises(SystemExit):
-        certification_guard.ensure_certified(tmp_path)
+        certification_guard.ensure_certified(tmp_path, "agent_1")
 
 
 def test_ensure_certified_accepts_certified(tmp_path: Path) -> None:
     """
     Ensure the guard allows CERTIFIED state.
     """
-    state_path = certification_guard.certification_state_path(tmp_path)
-    _write_state(
-        state_path,
+    profile_path = tmp_path / "context_compass" / "self_context" / "agents" / "agent_1.profile.json"
+    _write_profile(
+        profile_path,
+        "agent_1",
         {
             "schema_version": 1,
             "state": "CERTIFIED",
@@ -98,16 +113,17 @@ def test_ensure_certified_accepts_certified(tmp_path: Path) -> None:
             "notes": None,
         },
     )
-    certification_guard.ensure_certified(tmp_path)
+    certification_guard.ensure_certified(tmp_path, "agent_1")
 
 
 def test_certification_flow_blocks_then_allows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Ensure tools are blocked until certification is finalized.
     """
-    state_path = certification_guard.certification_state_path(tmp_path)
-    _write_state(
-        state_path,
+    profile_path = tmp_path / "context_compass" / "self_context" / "agents" / "agent_1.profile.json"
+    _write_profile(
+        profile_path,
+        "agent_1",
         {
             "schema_version": 1,
             "state": "UNCERTIFIED",
@@ -132,7 +148,15 @@ def test_certification_flow_blocks_then_allows(tmp_path: Path, monkeypatch: pyte
     monkeypatch.setattr(
         sys,
         "argv",
-        ["python_certified.py", "--repo-root", str(tmp_path), "--approval-token", "CERTIFY: APPROVED"],
+        [
+            "python_certified.py",
+            "--repo-root",
+            str(tmp_path),
+            "--agent-id",
+            "agent_1",
+            "--approval-token",
+            "CERTIFY: APPROVED",
+        ],
     )
     python_certified.main()
 

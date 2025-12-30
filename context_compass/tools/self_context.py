@@ -1,4 +1,4 @@
-"""Manage context_compass self-context and active agent registry."""
+"""Manage context_compass self-context records."""
 
 import argparse
 import logging
@@ -126,7 +126,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     policies = _load_policies(repo_root)
     locks_dir = branch_paths.self_context_locks_dir(repo_root)
     locks_dir.mkdir(parents=True, exist_ok=True)

@@ -138,7 +138,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     agent_presence.record_heartbeat(
         repo_root,
         agent_id=args.agent_id,

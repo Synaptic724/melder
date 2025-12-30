@@ -230,7 +230,7 @@ def init_branch(
         mode (str): Agent mode.
         work_id (Optional[str]): Work id for work_mode enforcement.
     """
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     ensure_work_mode(repo_root, work_id, "initialize branch management state")
     now = utc_now_iso()
     _seed_branch_state(repo_root, branch_name, now)

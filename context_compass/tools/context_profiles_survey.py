@@ -951,7 +951,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     ensure_feature_enabled(repo_root, "context_profiles", "survey context profiles")
     if not args.no_emit_tasks:
         ensure_feature_enabled(repo_root, "work_management", "emit work tasks")

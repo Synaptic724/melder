@@ -42,40 +42,6 @@ def _load_policies(repo_root: Path) -> dict:
     return policies
 
 
-def _load_active_agents(path: Path) -> dict:
-    """
-    Load active_agents.json or initialize a default structure.
-
-    Args:
-        path (Path): active_agents.json path.
-
-    Returns:
-        dict: Active agents data.
-    """
-    if path.exists():
-        data = load_json(path)
-        if isinstance(data, dict):
-            return data
-    return {"schema_version": 1, "updated_at": utc_now_iso(), "agents": []}
-
-
-def _remove_active_agent(active: dict, agent_id: str) -> bool:
-    """
-    Remove an agent entry from active_agents data.
-
-    Args:
-        active (dict): Active agents data.
-        agent_id (str): Agent identifier.
-
-    Returns:
-        bool: True if an entry was removed.
-    """
-    agents = active.get("agents", [])
-    original = len(agents)
-    active["agents"] = [entry for entry in agents if entry.get("agent_id") != agent_id]
-    return len(active["agents"]) != original
-
-
 def _default_worklist(agent_id: str) -> dict:
     """
     Return a default per-agent worklist.
@@ -219,23 +185,17 @@ def delete_agent(repo_root: Path, agent_id: str, owner_id: str) -> None:
     locks_dir = branch_paths.self_context_locks_dir(repo_root)
     locks_dir.mkdir(parents=True, exist_ok=True)
     agents_dir = repo_root / "context_compass" / "self_context" / "agents"
-    active_path = repo_root / "context_compass" / "self_context" / "active_agents.json"
     self_path = agents_dir / f"{agent_id}.self.json"
     work_path = agents_dir / f"{agent_id}.work.json"
     profile_path = agents_dir / f"{agent_id}.profile.json"
 
     locked = _acquire_locks(
         locks_dir,
-        [active_path, self_path, work_path, profile_path],
+        [self_path, work_path, profile_path],
         owner_id,
         policies["lease_ttl_seconds"],
     )
     try:
-        if active_path.exists():
-            active = _load_active_agents(active_path)
-            if _remove_active_agent(active, agent_id):
-                active["updated_at"] = utc_now_iso()
-                write_json_atomic(active_path, active)
         if self_path.exists():
             self_path.unlink()
         if work_path.exists():
@@ -259,7 +219,6 @@ def archive_agent(repo_root: Path, agent_id: str, owner_id: str) -> None:
     locks_dir = branch_paths.self_context_locks_dir(repo_root)
     locks_dir.mkdir(parents=True, exist_ok=True)
     agents_dir = repo_root / "context_compass" / "self_context" / "agents"
-    active_path = repo_root / "context_compass" / "self_context" / "active_agents.json"
     self_path = agents_dir / f"{agent_id}.self.json"
     work_path = agents_dir / f"{agent_id}.work.json"
     profile_path = agents_dir / f"{agent_id}.profile.json"
@@ -267,16 +226,11 @@ def archive_agent(repo_root: Path, agent_id: str, owner_id: str) -> None:
 
     locked = _acquire_locks(
         locks_dir,
-        [active_path, self_path, work_path, profile_path],
+        [self_path, work_path, profile_path],
         owner_id,
         policies["lease_ttl_seconds"],
     )
     try:
-        if active_path.exists():
-            active = _load_active_agents(active_path)
-            if _remove_active_agent(active, agent_id):
-                active["updated_at"] = utc_now_iso()
-                write_json_atomic(active_path, active)
         _archive_agent_files(archive_root, agent_id, [self_path, work_path, profile_path])
     finally:
         _release_locks(locks_dir, locked, owner_id)
@@ -303,9 +257,8 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
-
     owner_id = args.owner_id or args.agent_id
+    ensure_certified(repo_root, owner_id)
     agent_presence.record_heartbeat(
         repo_root,
         agent_id=owner_id,

@@ -91,7 +91,7 @@ def clone_branch(
         activate (bool): Switch active branch to the destination if True.
         force (bool): Overwrite destination branch if it exists.
     """
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     ensure_work_mode(repo_root, work_id, "clone branch state")
     _ensure_source_branch(repo_root, source_branch)
     _prepare_destination(repo_root, dest_branch, force)

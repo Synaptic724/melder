@@ -105,11 +105,6 @@ def _required_files(root: Path) -> list[tuple[Path, Path]]:
         (state_root / "test_architecture_context.json", schemas_dir / "architecture_context.schema.json"),
         (state_root / "component_contexts.json", schemas_dir / "component_contexts.schema.json"),
         (state_root / "test_component_contexts.json", schemas_dir / "component_contexts.schema.json"),
-        (root / "context_compass" / "self_context" / "active_agents.json", schemas_dir / "active_agents.schema.json"),
-        (
-            root / "context_compass" / "self_context" / "certification_state.json",
-            schemas_dir / "certification_state.schema.json",
-        ),
         (root / "context_compass" / "memory" / "user_memory.json", schemas_dir / "memory_store.schema.json"),
         (root / "context_compass" / "memory" / "system_memory.json", schemas_dir / "memory_store.schema.json"),
         (root / "context_compass" / "commands" / "commands_user.json", schemas_dir / "command_registry.schema.json"),
@@ -191,7 +186,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     root = Path(args.repo_root).resolve()
-    ensure_certified(root)
+    ensure_certified(root, args.agent_id)
     ensure_feature_enabled(root, "validation", "validate context_compass artifacts")
     ensure_work_mode(root, args.work_id, "validate context_compass artifacts")
     agent_presence.record_heartbeat(

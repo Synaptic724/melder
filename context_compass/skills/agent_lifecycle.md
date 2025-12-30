@@ -29,6 +29,8 @@ Commands
   python context_compass/tools/agent_checkout.py --repo-root . --agent-id <agent_id>
 - Run cleanup scripts directly (rare; normally automatic):
   python context_compass/tools/agent_cleanup.py --repo-root . --agent-id <agent_id>
+- Sweep agent profiles and count active agents:
+  python context_compass/tools/agent_sweep.py --repo-root . --agent-id <agent_id>
 - Add a work item to a per-agent queue:
   python context_compass/tools/work_queue_add.py --repo-root . --agent-id <agent_id> --work-id <work_id> --kind <kind> --target-path <path> --ctx-path <path> --root-work-id <root> --parent-work-id <parent>
 - Move an agent work item into branch queues:
@@ -39,12 +41,13 @@ Commands
 Worklists
 - Per-agent queue lives at: context_compass/self_context/agents/<agent_id>.work.json
 - Agent profile (heartbeat) lives at: context_compass/self_context/agents/<agent_id>.profile.json
-- Agent metadata (agent_kind, model_name, runtime) is stored in the profile and active_agents registry.
+- Agent metadata (agent_kind, model_name, runtime) is stored in the profile.
+- Certification state lives in profile.certification_state.
 - Branch task queues live under context_compass/branch_management/<branch>/work_management/ (epics/stories/tasks).
 - Agents may have permissions to act on per-agent tasks only; confirm before pulling from global queues.
 
 Staleness and archive policy
-- agent_heartbeat_stale_seconds: mark stale and remove from active_agents.
+- agent_heartbeat_stale_seconds: mark stale in the profile.
 - agent_archive_after_seconds: archive self/work/profile after threshold.
 - Configure in context_compass/config/policies.json.
 - Defaults: 4 hours stale (14400s), 24 hours archive (86400s).

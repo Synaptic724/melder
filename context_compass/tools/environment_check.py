@@ -232,7 +232,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.owner_id or args.agent_id)
     ensure_feature_enabled(repo_root, "environment_check", "run environment check")
     ensure_work_mode(repo_root, args.work_id, "run environment check")
 

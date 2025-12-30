@@ -8,11 +8,12 @@ Certification gate (mandatory)
 - Complete skills/self_certification.md and wait for approval.
 - Request approval using skills/user_approved_certification.md.
 - Do not use tools or edit files until the user replies exactly: CERTIFY: APPROVED.
-- After approval, run: python python_certified.py --approval-token "CERTIFY: APPROVED"
-- Tools that mutate repo state must refuse to run unless certification_state.json is CERTIFIED.
+- After approval, run: python python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED"
+- Tools that mutate repo state must refuse to run unless the agent profile certification_state is CERTIFIED.
 
 Rules
 - Before any tool use or implementation, output a filled self-certification.
+- Before requesting certification, read every skill listed in context_compass/SKILLS.md.
 - Do not proceed until the user replies CERTIFY: APPROVED.
 - If the user replies CERTIFY: CHANGES, update this document and re-request approval.
 - While uncertified, only ask clarifying questions or revise this document.
@@ -27,6 +28,9 @@ Task Understanding (My Words):
 - ...
 
 Inputs Provided:
+- ...
+
+Skills Read (all entries in context_compass/SKILLS.md):
 - ...
 
 Outputs Expected:

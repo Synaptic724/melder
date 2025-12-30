@@ -26,7 +26,12 @@ def _normalize_glob(value: str) -> str:
     Returns:
         str: Normalized glob.
     """
-    return value.replace("\\", "/").lstrip("./")
+    normalized = value.replace("\\", "/")
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    if normalized.startswith("/"):
+        normalized = normalized[1:]
+    return normalized
 
 
 def _normalize_roots(roots: Iterable[str]) -> list[str]:

@@ -145,7 +145,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     ensure_work_mode(repo_root, args.work_id, "cleanup branch state")
 
     destination = cleanup_branch(

@@ -491,7 +491,7 @@ def main() -> None:
 
     Contract:
     - Emits minified JSON to stdout unless --output is provided.
-    - Requires certification_state.json to be CERTIFIED.
+    - Requires agent profile certification_state to be CERTIFIED.
     """
     parser = argparse.ArgumentParser(description="Read a context profile and emit ctx JSON")
     parser.add_argument("--repo-root", default=".", help="Repo root path")
@@ -510,7 +510,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     ensure_feature_enabled(repo_root, "context_profiles", "read context profiles")
     if not args.no_emit_tasks:
         ensure_feature_enabled(repo_root, "work_management", "emit work tasks")

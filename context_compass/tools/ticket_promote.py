@@ -275,7 +275,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.owner_id or args.agent_id)
     ensure_feature_enabled(repo_root, "ticket_intake", "promote tickets")
     ensure_feature_enabled(repo_root, "work_management", "write work queues")
     ensure_work_mode(repo_root, args.work_id, "promote tickets")

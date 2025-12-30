@@ -418,7 +418,7 @@ def main() -> None:
     CLI entrypoint for context profile reviews.
 
     Contract:
-    - Requires certification_state.json to be CERTIFIED.
+    - Requires agent profile certification_state to be CERTIFIED.
     - Emits optimize/prune tasks unless --no-emit-tasks is set.
     """
     parser = argparse.ArgumentParser(description="Review a context profile")
@@ -437,7 +437,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     ensure_feature_enabled(repo_root, "context_profiles", "review context profiles")
     if not args.no_emit_tasks:
         ensure_feature_enabled(repo_root, "work_management", "emit work tasks")

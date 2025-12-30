@@ -10,17 +10,38 @@ APPROVAL_TOKEN = "CERTIFY: APPROVED"
 CHANGES_TOKEN = "CERTIFY: CHANGES"
 
 
-def certification_state_path(repo_root: Path) -> Path:
+def default_certification_state() -> dict:
     """
-    Return the certification state path for the repo.
+    Return a default certification state payload.
+
+    Returns:
+        dict: Default certification state data.
+    """
+    return {
+        "schema_version": 1,
+        "state": "UNCERTIFIED",
+        "certified": False,
+        "certified_at": None,
+        "approved_at": None,
+        "approval_token": None,
+        "approved_by": None,
+        "self_certification_hash": None,
+        "notes": None,
+    }
+
+
+def certification_profile_path(repo_root: Path, agent_id: str) -> Path:
+    """
+    Return the agent profile path that stores certification state.
 
     Args:
         repo_root (Path): Repository root.
+        agent_id (str): Agent identifier.
 
     Returns:
-        Path: Path to certification_state.json.
+        Path: Path to the agent profile JSON.
     """
-    return repo_root / "context_compass" / "self_context" / "certification_state.json"
+    return repo_root / "context_compass" / "self_context" / "agents" / f"{agent_id}.profile.json"
 
 
 def parse_approval_token(text: str) -> Optional[str]:
@@ -54,22 +75,27 @@ def is_certified(state: dict) -> bool:
     return state.get("state") == "CERTIFIED" and state.get("certified") is True
 
 
-def ensure_certified(repo_root: Path) -> None:
+def ensure_certified(repo_root: Path, agent_id: str) -> None:
     """
     Fail fast if the repo is not in a certified state.
 
     Args:
         repo_root (Path): Repository root.
+        agent_id (str): Agent identifier.
 
     Raises:
         SystemExit: If certification is missing or not certified.
     """
     logger = logging.getLogger(__name__)
-    state_path = certification_state_path(repo_root)
-    if not state_path.exists():
-        logger.error("Missing certification state: %s", state_path)
+    profile_path = certification_profile_path(repo_root, agent_id)
+    if not profile_path.exists():
+        logger.error("Missing agent profile for certification: %s", profile_path)
         raise SystemExit(1)
-    state = load_json(state_path)
+    profile = load_json(profile_path)
+    if not isinstance(profile, dict):
+        logger.error("Invalid agent profile JSON: %s", profile_path)
+        raise SystemExit(1)
+    state = profile.get("certification_state")
     if not isinstance(state, dict) or not is_certified(state):
         logger.error("Certification required before running tools.")
         raise SystemExit(1)

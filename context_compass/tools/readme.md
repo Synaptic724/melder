@@ -6,10 +6,10 @@ Rules
 - Use minified JSON for any machine-owned artifact.
 - Always lease locks before writing shared state or ctx targets.
 - Publish JSON atomically using a tmp file and os.replace.
-- Tools that mutate repo state must refuse to run unless certification_state.json indicates CERTIFIED.
+- Tools that mutate repo state must refuse to run unless the agent profile certification_state indicates CERTIFIED.
 - Tools must honor context_compass/config/context_compass_configuration.json and refuse disabled features.
 - If work_mode is hard, tools must require a work_id for execution.
-- All tool invocations must update agent heartbeat state (active_agents + agent profile).
+- All tool invocations must update agent heartbeat state in the agent profile.
 - Invoke tools with --agent-id so heartbeat state can be recorded.
 - Cleanup scripts are executed before heartbeat updates to evict stale agents.
 - Exception: onboarding_bundle.py is allowed before certification and does not update heartbeat or state.
@@ -20,13 +20,14 @@ Tools
 - lease.py: lock acquisition and lease refresh.
 - validate.py: schema and staleness validation for CI.
 - update_state.py: safe state transitions for tasks and repo_state.
-- self_context.py: manage active_agents and agent self context records.
+- self_context.py: manage agent self context records.
 - skill_receipt.py: write deterministic skill read receipts.
 - agent_manage.py: create, archive, or delete agent worklists and self context.
 - agent_checkin.py: check in an agent and start heartbeat tracking.
 - agent_checkout.py: check out an agent and mark it inactive.
 - agent_id.py: generate a session-scoped agent id (ULID).
 - agent_cleanup.py: run cleanup scripts under tools/cleanup_agents.
+- agent_sweep.py: summarize agent profile status counts.
 - branch_init.py: initialize branch-scoped state and work queues.
 - branch_switch.py: switch the active branch pointer.
 - branch_clone.py: clone branch state and work queues into a new branch.

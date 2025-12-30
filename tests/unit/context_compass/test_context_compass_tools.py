@@ -211,9 +211,9 @@ def test_work_mode_guard_allows_soft_mode(tmp_path: Path) -> None:
     work_mode_guard.ensure_work_mode(tmp_path, None, "run scan")
 
 
-def test_record_heartbeat_creates_profile_and_active(tmp_path: Path) -> None:
+def test_record_heartbeat_creates_profile(tmp_path: Path) -> None:
     """
-    Ensure heartbeat writes active_agents and agent profile files.
+    Ensure heartbeat writes agent profile files.
     """
     agent_presence.record_heartbeat(
         tmp_path,
@@ -225,20 +225,16 @@ def test_record_heartbeat_creates_profile_and_active(tmp_path: Path) -> None:
         command_name="unit_test",
         command_args=["--flag"],
     )
-    active_path = tmp_path / "context_compass" / "self_context" / "active_agents.json"
     profile_path = tmp_path / "context_compass" / "self_context" / "agents" / "agent_1.profile.json"
-    assert active_path.exists()
     assert profile_path.exists()
-    active = json_io.load_json(active_path)
     profile = json_io.load_json(profile_path)
-    assert active["agents"][0]["agent_id"] == "agent_1"
     assert profile["status"] == "active"
     assert profile["last_command"]["name"] == "unit_test"
 
 
 def test_checkin_and_checkout_updates_status(tmp_path: Path) -> None:
     """
-    Ensure checkin and checkout update active_agents and profile status.
+    Ensure checkin and checkout update profile status.
     """
     agent_presence.checkin(
         tmp_path,
@@ -250,11 +246,8 @@ def test_checkin_and_checkout_updates_status(tmp_path: Path) -> None:
         command_name="checkin",
         command_args=[],
     )
-    active_path = tmp_path / "context_compass" / "self_context" / "active_agents.json"
     profile_path = tmp_path / "context_compass" / "self_context" / "agents" / "agent_2.profile.json"
-    active = json_io.load_json(active_path)
     profile = json_io.load_json(profile_path)
-    assert any(entry["agent_id"] == "agent_2" for entry in active["agents"])
     assert profile["status"] == "active"
     assert profile["last_checkin_at"] is not None
 
@@ -266,16 +259,14 @@ def test_checkin_and_checkout_updates_status(tmp_path: Path) -> None:
         command_name="checkout",
         command_args=[],
     )
-    active = json_io.load_json(active_path)
     profile = json_io.load_json(profile_path)
-    assert all(entry["agent_id"] != "agent_2" for entry in active["agents"])
     assert profile["status"] == "inactive"
     assert profile["last_checkout_at"] is not None
 
 
 def test_stale_cleanup_marks_profiles_and_removes_active(tmp_path: Path) -> None:
     """
-    Ensure stale cleanup marks profiles and removes stale agents from active registry.
+    Ensure stale cleanup marks profiles as stale.
     """
     repo_root = tmp_path
     policies_path = repo_root / "context_compass" / "config" / "policies.json"
@@ -297,28 +288,6 @@ def test_stale_cleanup_marks_profiles_and_removes_active(tmp_path: Path) -> None
         },
     )
 
-    active_path = repo_root / "context_compass" / "self_context" / "active_agents.json"
-    active_path.parent.mkdir(parents=True, exist_ok=True)
-    json_io.write_json_atomic(
-        active_path,
-        {
-            "schema_version": 1,
-            "updated_at": "2025-01-01T00:00:00Z",
-            "agents": [
-                {
-                    "agent_id": "agent_old",
-                    "mode": "agent",
-                    "started_at": "2025-01-01T00:00:00Z",
-                    "last_heartbeat_at": "2025-01-01T00:00:00Z",
-                    "current_task_id": None,
-                    "current_target": None,
-                    "lease": None,
-                    "notes": None,
-                }
-            ],
-        },
-    )
-
     profile_path = repo_root / "context_compass" / "self_context" / "agents" / "agent_old.profile.json"
     profile_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
@@ -337,14 +306,23 @@ def test_stale_cleanup_marks_profiles_and_removes_active(tmp_path: Path) -> None
             "current_target": None,
             "notes": None,
             "last_command": None,
+            "certification_state": {
+                "schema_version": 1,
+                "state": "UNCERTIFIED",
+                "certified": False,
+                "certified_at": None,
+                "approved_at": None,
+                "approval_token": None,
+                "approved_by": None,
+                "self_certification_hash": None,
+                "notes": None,
+            },
         },
     )
 
     stale_agents.cleanup(repo_root, "runner", now="2025-01-01T00:02:00Z")
 
-    active_after = json_io.load_json(active_path)
     profile_after = json_io.load_json(profile_path)
-    assert active_after["agents"] == []
     assert profile_after["status"] == "stale"
 
 
@@ -373,28 +351,6 @@ def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
         },
     )
 
-    active_path = repo_root / "context_compass" / "self_context" / "active_agents.json"
-    active_path.parent.mkdir(parents=True, exist_ok=True)
-    json_io.write_json_atomic(
-        active_path,
-        {
-            "schema_version": 1,
-            "updated_at": "2025-01-01T00:00:00Z",
-            "agents": [
-                {
-                    "agent_id": "agent_old",
-                    "mode": "agent",
-                    "started_at": "2025-01-01T00:00:00Z",
-                    "last_heartbeat_at": "2025-01-01T00:00:00Z",
-                    "current_task_id": None,
-                    "current_target": None,
-                    "lease": None,
-                    "notes": None,
-                }
-            ],
-        },
-    )
-
     profile_path = repo_root / "context_compass" / "self_context" / "agents" / "agent_old.profile.json"
     profile_path.parent.mkdir(parents=True, exist_ok=True)
     json_io.write_json_atomic(
@@ -413,6 +369,17 @@ def test_stale_cleanup_requeues_active_work(tmp_path: Path) -> None:
             "current_target": None,
             "notes": None,
             "last_command": None,
+            "certification_state": {
+                "schema_version": 1,
+                "state": "UNCERTIFIED",
+                "certified": False,
+                "certified_at": None,
+                "approved_at": None,
+                "approval_token": None,
+                "approved_by": None,
+                "self_certification_hash": None,
+                "notes": None,
+            },
         },
     )
 

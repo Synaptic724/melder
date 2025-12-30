@@ -215,7 +215,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     ensure_feature_enabled(repo_root, "architecture_contexts", "resurvey architecture contexts")
     closed = resurvey_architecture(
         repo_root=repo_root,

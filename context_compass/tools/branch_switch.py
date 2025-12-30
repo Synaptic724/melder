@@ -60,7 +60,7 @@ def switch_branch(
     Raises:
         FileNotFoundError: If the branch directory is missing.
     """
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
     ensure_work_mode(repo_root, work_id, "switch branch management state")
     now = utc_now_iso()
     branch_root = branch_paths.branch_root(repo_root, branch_name)

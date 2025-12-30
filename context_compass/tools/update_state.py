@@ -252,7 +252,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     repo_root = Path(args.repo_root).resolve()
-    ensure_certified(repo_root)
+    ensure_certified(repo_root, args.agent_id)
 
     if args.command == "scan":
         ensure_feature_enabled(repo_root, "scan", "update scan state")
