@@ -1,1 +1,0 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","additionalProperties":false,"properties":{"agent_summary":{"type":"string"},"read_at":{"type":"string"},"skill_id":{"type":"string"},"version":{"minimum":1,"type":"integer"}},"required":["skill_id","version","read_at","agent_summary"],"title":"skill_receipt","type":"object"}
