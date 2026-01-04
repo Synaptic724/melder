@@ -17,25 +17,22 @@ from melder.__melder_registration_guard__ import MelderRegistrationGuard
 __melder_registration_guard__ = MelderRegistrationGuard()
 
 DEBUG_MODE = True
-
-# ✅ Soft warning if not optimized Python version
-if sys.version_info < (3, 13):
-    warnings.warn(
-        f"melder is optimized for Python 3.13+ (no-GIL). "
-        f"You are running Python {sys.version_info.major}.{sys.version_info.minor}.",
-        UserWarning
-    )
-    sys.exit("melder requires Python 3.13 or higher.")
-
 # 🔧 Append "-dev" in DEBUG_MODE without mutating original
 __version__ = base_version + "-dev" if DEBUG_MODE else base_version
 
-__all__ = [
-    "__version__",
-    "__author__",
-    "__license__",
-    "__description__",
-]
+
+# ✅ Soft warning if not optimized Python version
+if sys.version_info < (3, 13, 0):
+    warnings.warn(
+        (
+            "melder is optimized for Python 3.13+ (no-GIL). "
+            f"You are running Python {sys.version_info.major}."
+            f"{sys.version_info.minor}.{sys.version_info.micro}. "
+            "Functionality will still work on older Pythons, but performance may be significantly degraded."
+        ),
+        category=UserWarning,
+        stacklevel=2,
+    )
 
 def _detect_nogil_mode() -> None:
     """
@@ -55,3 +52,13 @@ def _detect_nogil_mode() -> None:
         )
 
 _detect_nogil_mode()
+
+
+
+__all__ = [
+    "__version__",
+    "__author__",
+    "__license__",
+    "__description__",
+]
+
