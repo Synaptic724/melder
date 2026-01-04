@@ -5,6 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
+INFO
 INFO/
 # Distribution / packaging
 .Python
@@ -180,5 +181,7 @@ cython_debug/
 /src/melder/testing_stuff/
 /src/melder/INFO/
 /TestIdeas/
+/INFO/
+/INFO/
 /INFO/
 /INFO/
