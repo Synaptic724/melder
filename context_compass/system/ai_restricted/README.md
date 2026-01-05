@@ -35,7 +35,7 @@ System management
 - ai_restricted/system_management/branch_init.py: initialize branch-scoped state and work queues.
 - ai_restricted/system_management/branch_switch.py: switch the active branch pointer.
 - ai_restricted/system_management/command_registry_describe.py: describe command registry entries by scope or name.
-- ai_restricted/system_management/command_registry_generate.py: generate machine-readable command registries.
+- ai_restricted/system_management/command_registry_generate.py: generate machine-readable command registries (uses command_manifest.json; override with --manifest-path).
 - ai_restricted/system_management/environment_check.py: report OS/runtime/tool availability and persist environment_state in system.db.
 - ai_restricted/system_management/lease.py: lock acquisition and lease refresh.
 - ai_restricted/system_management/repo_state_assess.py: assess repo lifecycle stage and update repo_state records.

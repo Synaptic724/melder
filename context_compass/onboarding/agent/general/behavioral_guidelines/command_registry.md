@@ -8,8 +8,9 @@ Story steps
    - Ensure command_registry feature is enabled.
 
 2) Generate registries
-   - `python context_compass/system/ai_restricted/system_management/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
+   - `python context_compass/system/ai_restricted/system_management/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id> [--manifest-path <path>]`
    - This updates both user and system registry tables.
+   - Default manifest: `context_compass/system/ai_restricted/system_management/command_manifest.json`
    - Add `--export-json` to emit optional JSON exports.
 
 3) Use registries to respond

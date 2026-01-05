@@ -17,8 +17,9 @@ Rules
 - Report command availability based on feature flags and work_mode.
 
 Generator tool
-- `python context_compass/system/ai_restricted/system_management/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
+- `python context_compass/system/ai_restricted/system_management/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id> [--manifest-path <path>]`
 - The tool writes both registry tables in SQLite.
+- Default manifest: `context_compass/system/ai_restricted/system_management/command_manifest.json`
 
 Describe tool (path-safe)
 - `python context_compass/system/ai_restricted/system_management/command_registry_describe.py --repo-root . --agent-id <agent_id> --actor-id <actor_id> --scope <system|user> --command-name <command_name> --work-id <work_id>`

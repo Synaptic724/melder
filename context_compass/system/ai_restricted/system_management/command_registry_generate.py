@@ -8,6 +8,7 @@ Purpose
 
 Contract
 - Registry payloads are generated deterministically from the command catalog.
+- Command metadata is loaded from command_manifest.json (override with --manifest-path).
 - Writes to SQLite command_registry_system and command_registry_user tables.
 - Registry payloads are not exported to JSON files by this command.
 """
@@ -17,7 +18,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 
 from context_compass.system.ai_restricted._shared.command_payload import (
     PayloadError,
@@ -566,16 +567,22 @@ def _execution_spec(script_path: str) -> dict:
     }
 
 
-def _command_manifest_path(repo_root: Path) -> Path:
+def _command_manifest_path(repo_root: Path, manifest_path: Optional[str]) -> Path:
     """
     Resolve the command manifest path for this repository.
 
     Args:
         repo_root (Path): Repository root directory.
+        manifest_path (Optional[str]): Optional manifest path override.
 
     Returns:
         Path: Manifest JSON path.
     """
+    if manifest_path:
+        path = Path(manifest_path)
+        if not path.is_absolute():
+            path = repo_root / path
+        return path.resolve()
     return (
         repo_root
         / "context_compass"
@@ -586,12 +593,13 @@ def _command_manifest_path(repo_root: Path) -> Path:
     )
 
 
-def _load_command_manifest(repo_root: Path) -> list[dict]:
+def _load_command_manifest(repo_root: Path, manifest_path: Optional[str]) -> list[dict]:
     """
     Load the command manifest entries from JSON.
 
     Args:
         repo_root (Path): Repository root directory.
+        manifest_path (Optional[str]): Optional manifest path override.
 
     Returns:
         list[dict]: Command manifest entries.
@@ -600,13 +608,13 @@ def _load_command_manifest(repo_root: Path) -> list[dict]:
         FileNotFoundError: If the manifest is missing.
         ValueError: If the manifest payload is invalid.
     """
-    manifest_path = _command_manifest_path(repo_root)
-    if not manifest_path.exists():
-        raise FileNotFoundError(f"Command manifest not found: {manifest_path}")
+    resolved_manifest = _command_manifest_path(repo_root, manifest_path)
+    if not resolved_manifest.exists():
+        raise FileNotFoundError(f"Command manifest not found: {resolved_manifest}")
     try:
-        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        payload = json.loads(resolved_manifest.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise ValueError(f"Command manifest JSON is invalid: {manifest_path}") from exc
+        raise ValueError(f"Command manifest JSON is invalid: {resolved_manifest}") from exc
     if not isinstance(payload, dict):
         raise ValueError("Command manifest must be a JSON object.")
     schema_version = payload.get("schema_version")
@@ -621,12 +629,13 @@ def _load_command_manifest(repo_root: Path) -> list[dict]:
     return [dict(entry) for entry in commands]
 
 
-def _commands_catalog(repo_root: Path) -> list[dict]:
+def _commands_catalog(repo_root: Path, manifest_path: Optional[str]) -> list[dict]:
     """
     Return the canonical command catalog.
 
     Args:
         repo_root (Path): Repository root directory.
+        manifest_path (Optional[str]): Optional manifest path override.
 
     Returns:
         list[dict]: Command definitions with audience tags and execution specs.
@@ -636,7 +645,7 @@ def _commands_catalog(repo_root: Path) -> list[dict]:
         - Each command includes a path-based entry string.
         - Each command includes a spec.execution block for the runner.
     """
-    commands = _load_command_manifest(repo_root)
+    commands = _load_command_manifest(repo_root, manifest_path)
     for command in commands:
         name = command.get("name", "<unknown>")
         script_path = command.pop("script_path", None)
@@ -697,13 +706,18 @@ def _registry_payload(now: str, commands: list[dict]) -> dict:
     }
 
 
-def generate_registries(repo_root: Path, actor_id: str) -> dict:
+def generate_registries(
+    repo_root: Path,
+    actor_id: str,
+    manifest_path: Optional[str],
+) -> dict:
     """
     Generate both user and system command registries.
 
     Args:
         repo_root (Path): Repository root.
         actor_id (str): Actor identifier for audit logging.
+        manifest_path (Optional[str]): Optional manifest path override.
 
     Returns:
         dict: Registry payloads for user and system.
@@ -714,7 +728,7 @@ def generate_registries(repo_root: Path, actor_id: str) -> dict:
         sqlite_crud.SqliteCrudError: For unexpected CRUD failures.
     """
     now = utc_now_iso()
-    catalog = _commands_catalog(repo_root)
+    catalog = _commands_catalog(repo_root, manifest_path)
     user_commands = _filter_commands(catalog, "user")
     system_commands = _filter_commands(catalog, "system")
 
@@ -765,6 +779,7 @@ def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
         repo_root = Path(repo_root_value or ".").resolve()
         agent_id = require_string(payload, "agent_id", command_name)
         work_id = optional_string(payload, "work_id", command_name=command_name)
+        manifest_path = optional_string(payload, "manifest_path", command_name=command_name)
     except PayloadError as exc:
         return payload_error_result(command_name, exc)
 
@@ -772,7 +787,7 @@ def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
         ensure_certified(repo_root, agent_id)
         ensure_feature_enabled(repo_root, "command_registry", "generate command registries")
         ensure_work_mode(repo_root, work_id, "generate command registries")
-        registries = generate_registries(repo_root, agent_id)
+        registries = generate_registries(repo_root, agent_id, manifest_path)
         return ok_result(output={"registries": registries})
     except Exception as exc:
         return exception_result(command_name, exc)
@@ -792,6 +807,7 @@ def main() -> None:
     parser.add_argument("--repo-root", default=".", help="Repo root path")
     parser.add_argument("--agent-id", required=True, help="Agent identifier")
     parser.add_argument("--work-id", default=None, help="Work identifier for hard mode")
+    parser.add_argument("--manifest-path", default=None, help="Override command manifest path")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -801,6 +817,7 @@ def main() -> None:
         "repo_root": args.repo_root,
         "agent_id": args.agent_id,
         "work_id": args.work_id,
+        "manifest_path": args.manifest_path,
     }
     context = ExecutionContext(
         command_name="command_registry_generate",

@@ -74,7 +74,8 @@ Step-by-step onboarding
 
 11) Review available commands (optional)
     - Generate registries:
-      `python context_compass/system/ai_restricted/system_management/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
+      `python context_compass/system/ai_restricted/system_management/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id> [--manifest-path <path>]`
+    - Default manifest: `context_compass/system/ai_restricted/system_management/command_manifest.json`
     - Describe commands without SQL:
       `python context_compass/system/ai_restricted/system_management/command_registry_describe.py --repo-root . --agent-id <agent_id> --actor-id <actor_id> --scope user`
     - Optional: add `--export-json` to emit JSON files under `context_compass/commands/`.
