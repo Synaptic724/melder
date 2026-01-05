@@ -1726,7 +1726,7 @@ def scan_repo(
             )
 
     for directory in directories:
-        rel_dir = repo_relative_dir(repo_root, directory)
+        rel_dir = repo_relative_dir(repo_root, directory) or "."
         dir_name = directory.name
         ctx_path = directory / f"__{dir_name}__.dir.json"
         rel_ctx = repo_relative_path(repo_root, ctx_path)

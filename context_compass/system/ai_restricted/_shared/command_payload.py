@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
 
-@dataclass(frozen=True)
+@dataclass
 class PayloadError(Exception):
     """
     Error raised when command payload validation fails.

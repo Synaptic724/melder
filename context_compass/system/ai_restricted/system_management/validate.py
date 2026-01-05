@@ -497,7 +497,7 @@ def _validate_branch_sqlite_state(root: Path) -> list[str]:
         list[str]: Validation errors.
     """
     errors: list[str] = []
-    schemas_dir = root / "context_compass" / "schemas"
+    schemas_dir = root / "context_compass" / "system" / "schemas"
     actor_id = "system:validate"
     try:
         branch_name = _crud_read_current_branch(root, actor_id)
@@ -644,7 +644,7 @@ def _validate_self_context_sqlite_state(root: Path) -> list[str]:
         list[str]: Validation errors.
     """
     errors: list[str] = []
-    schema_path = root / "context_compass" / "schemas" / "self_context.schema.json"
+    schema_path = root / "context_compass" / "system" / "schemas" / "self_context.schema.json"
     actor_id = "system:validate"
     try:
         agent_ids = _crud_list_agent_ids(root, SELF_CONTEXT_TABLE, actor_id)
@@ -683,7 +683,7 @@ def _validate_agent_profile_sqlite_state(root: Path) -> list[str]:
         list[str]: Validation errors.
     """
     errors: list[str] = []
-    schema_path = root / "context_compass" / "schemas" / "agent_profile.schema.json"
+    schema_path = root / "context_compass" / "system" / "schemas" / "agent_profile.schema.json"
     actor_id = "system:validate"
     try:
         agent_ids = _crud_list_agent_ids(root, AGENT_PROFILE_TABLE, actor_id)
@@ -722,7 +722,7 @@ def _validate_command_registry_sqlite_state(root: Path) -> list[str]:
         list[str]: Validation errors.
     """
     errors: list[str] = []
-    registry_root = root / "context_compass" / "storage" / "sqlite"
+    registry_root = root / "context_compass" / "system" / "storage" / "sqlite"
     targets = [
         ("system", registry_root / "system.db", "command_registry_system"),
         ("user", registry_root / "user.db", "command_registry_user"),

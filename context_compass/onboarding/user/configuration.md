@@ -47,6 +47,7 @@ Scan ignore rules
 - Defaults exclude common noise directories: .git, .idea, .vscode, node_modules, dist, build,
   __pycache__, .pytest_cache, .mypy_cache, .ruff_cache, .venv, venv, and context_compass
   (including context_compass).
+- If you need to scan context_compass itself, remove it from excludes or add a targeted include rule.
 
 Policies
 - Runtime source: SQLite `system.db` tables (`config_policies_core`, `config_policies_ci_fail_states`).
@@ -64,7 +65,9 @@ Languages
   `config_languages_directory_hints`).
 - Optional seed override: `context_compass/system/config/languages.json` (if present).
 - extensions map file suffixes to languages; directory_hints map path patterns to languages.
+- If extensions are empty or missing for your code, scan will treat files as unknown and emit no file ctx tasks.
 - After editing an override file, re-run the SQLite build/seed steps to refresh system.db.
+  - Run: `python context_compass/system/installation/build_runner.py`
 
 Optional config overrides (if present)
 - `context_compass/system/config/ignore.json` (scan ignore rules seed)

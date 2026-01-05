@@ -38,6 +38,11 @@ Tooling gating rules
 - Tools refuse to run if repo_state disables their feature.
 - To fully disable tools, set tooling_policy.mode to restricted and disable all features listed in SQLite config_context_compass_* tables.
 
+What blocks scans
+- repo_state.tooling_policy.mode is restricted.
+- repo_state.tooling_policy.disabled_features includes scan.
+- If either is true, scan and scan-dependent tools refuse to run even if feature flags are enabled.
+
 Workflow
 1) Initialize branch state:
    `python context_compass/system/ai_restricted/system_management/branch_init.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
@@ -45,6 +50,8 @@ Workflow
    `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage new --assessment "early scaffolding"`
 3) Enable scans when ready:
    `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage active_dev --tooling-mode normal --clear-disabled`
+4) Re-enable scans after a restricted phase:
+   `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --tooling-mode normal --clear-disabled`
 
 Rules
 - Do not edit repo_state records manually; use repo_state_assess.

@@ -3,6 +3,12 @@
 Purpose
 - Explain how command registries work and where to find them.
 
+Quick start
+- Generate registries:
+  `python context_compass/system/ai_restricted/system_management/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
+- Describe commands without SQL:
+  `python context_compass/system/ai_restricted/system_management/command_registry_describe.py --repo-root . --agent-id <agent_id> --actor-id <actor_id> --scope user`
+
 Registry tables (source of truth)
 - System registry: `command_registry_system` in `context_compass/system/storage/sqlite/system.db`
 - User registry: `command_registry_user` in `context_compass/system/storage/sqlite/user.db`
@@ -13,6 +19,8 @@ Generation
   `python context_compass/system/ai_restricted/system_management/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
 - Add `--export-json` to emit JSON files under `context_compass/commands/`.
 - Use `--export-dir` to override the export directory.
+- Describe entries with:
+  `python context_compass/system/ai_restricted/system_management/command_registry_describe.py --repo-root . --agent-id <agent_id> --actor-id <actor_id> --scope user --command-name <name>`
 
 How to use
 - Query the user registry table for the user-facing command list.

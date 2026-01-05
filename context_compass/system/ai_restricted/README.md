@@ -34,6 +34,7 @@ System management
 - ai_restricted/system_management/branch_delete_work.py: clear branch work queues.
 - ai_restricted/system_management/branch_init.py: initialize branch-scoped state and work queues.
 - ai_restricted/system_management/branch_switch.py: switch the active branch pointer.
+- ai_restricted/system_management/command_registry_describe.py: describe command registry entries by scope or name.
 - ai_restricted/system_management/command_registry_generate.py: generate machine-readable command registries.
 - ai_restricted/system_management/environment_check.py: report OS/runtime/tool availability and persist environment_state in system.db.
 - ai_restricted/system_management/lease.py: lock acquisition and lease refresh.
@@ -61,7 +62,7 @@ Memory
 Work management
 - ai_restricted/work_management/work_item_add.py: add a work item to work_management epics/stories/tasks queues.
 - ai_restricted/work_management/work_item_move.py: move a work item between work_management buckets.
-- ai_restricted/work_management/work_item_bulk_move.py: move multiple work items between work_management buckets.
+- ai_restricted/work_management/work_item_bulk_move.py: move multiple work items between buckets (work_ids or quantity selection).
 - ai_restricted/work_management/work_item_close.py: close a work item and remove it from per-agent queues.
 - ai_restricted/work_management/work_item_global_to_branch.py: move a work item from global queues into the active branch queues.
 - ai_restricted/work_management/work_item_branch_to_global.py: move a work item from branch queues into the global queues.

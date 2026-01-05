@@ -31,12 +31,15 @@ Scan-first rule
 - Run scan to emit refresh tasks, then resolve them.
 - If repo_state tooling_policy is restricted, scans are disabled until explicitly enabled.
 - The scanner ignores `__init__.py` files when enumerating code and emitting ctx tasks (case-sensitive on Linux, best-effort on Windows).
+- File detection depends on the languages config; if extensions are missing, files are treated as unknown.
 
 Scan filtering
 - SQLite `system.db` tables (`config_ignore_core`, `config_ignore_rules`) control include/exclude rules.
 - Optional seed override: `context_compass/system/config/ignore.json` (if present).
 - Excludes always win; include_* acts as an allowlist when set.
 - Scan summaries report files_scanned, files_skipped (init/excluded/unknown), and effective_ignore_config.
+- Use include_dirs to target only `src` and `tests` when you want a narrow scan.
+- context_compass is excluded by default; remove it from ignore rules only if you intentionally want to scan the system itself.
 
 Staleness states
 - missing, stale, fresh, needs_review, blocked
@@ -58,3 +61,7 @@ Test vs prod
 - Test files use test-specific templates:
   - `context_compass/system/templates/file_ctx_prompt_tests.md`
   - `context_compass/system/templates/dir_ctx_prompt_tests.md`
+
+Troubleshooting
+- files_scanned is 0 and files_skipped.unknown is high: add language extensions in `context_compass/system/config/languages.json` and rerun `context_compass/system/installation/build_runner.py`.
+- Scan refuses to run: confirm repo_state tooling_policy allows scan and re-run `repo_state_assess.py` if needed.
