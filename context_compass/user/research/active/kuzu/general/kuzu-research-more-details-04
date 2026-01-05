@@ -1,0 +1,424 @@
+# Deep Technical Research Canvas: How KùzuDB Works
+
+> **Version context:** The sources below include Kùzu’s developer docs updated **Oct 10, 2025**, and note significant packaging/behavior changes around **v0.11.x** (e.g., single-file on-disk format, extension distribution). ([Kuzu][1])
+
+---
+
+## 0. The mental model
+
+Kùzu is best understood as an **embedded, disk-based, read-optimized graph DBMS** that is architected like a “modern analytical engine” (columnar + vectorized execution) but purpose-built for **property-graph pattern matching** and **multi-hop traversal**. It runs **in-process** (SQLite/DuckDB-style), not as a separate server daemon. ([CIDRDB][2])
+
+Kùzu’s research/design center of gravity is:
+
+* **Property graph model**, but **schema-first** (node/rel “tables” with typed properties). ([CIDRDB][2])
+* **Columnar storage** for properties + **CSR-based adjacency (“join indices”)** for topology. ([CIDRDB][2])
+* A **factorized, vectorized query processor** with specialized join/traversal operators (notably **ASP-Join**) designed to keep scans sequential and avoid intermediate blowups in graph pattern queries. ([CIDRDB][2])
+* **Serializable ACID** transactions with **one writer + multiple readers**, implemented with **WAL** and checkpointing. ([Kuzu][3])
+
+---
+
+## 1. High-level architecture (modules + dataflow)
+
+Kùzu follows a “classic DBMS pipeline” with explicit modules for parse → bind → plan → optimize → execute, plus storage/buffer/txn subsystems. ([Kuzu][4])
+
+```mermaid
+flowchart LR
+  Q[Cypher text] --> P[Parser<br/>antlr4 Cypher.g4]
+  P --> B[Binder<br/>semantic checks + name->ID binding<br/>rewrites]
+  B --> L[Planner<br/>LogicalPlan (relational algebra ops)]
+  L --> O[Optimizer<br/>rule transforms + join optimization]
+  O --> X[Processor<br/>PhysicalPlan + pipeline scheduler]
+  X --> E[Execution engine<br/>pipelines + morsel parallelism]
+  E --> R[Results]
+  subgraph Storage&Txn
+    S[Storage manager<br/>columns + CSR lists + indices]
+    BM[BufferManager<br/>page cache]
+    T[Transaction manager<br/>WAL + serializable]
+  end
+  X --> S
+  S --> BM
+  X --> T
+```
+
+Key specifics from Kùzu’s own developer internals:
+
+* **Parser**: parses into an antlr4 AST (Cypher grammar file `Cypher.g4`), then transforms to internal `Statement`. ([Kuzu][4])
+* **Binder**: binds names (e.g., table names) to internal IDs; performs **semantic rewrites** to improve evaluation without changing meaning. ([Kuzu][4])
+* **Planner → Optimizer**: produces and transforms a `LogicalPlan`. ([Kuzu][4])
+* **Processor**: maps logical ops (SCAN/FILTER/JOIN/…) to **specific physical algorithms**; also schedules pipelines for **morsel-driven parallelism**. ([Kuzu][4])
+
+---
+
+## 2. Data model: schema-first property graph
+
+### 2.1 “Node tables” and “rel tables”
+
+Kùzu models labeled nodes and edges with properties, but with a strong relational flavor:
+
+* A node label / edge label maps cleanly to a **relation**; Kùzu’s paper describes allowing **a single label per node/edge**, enabling representation as single relations. ([CIDRDB][2])
+* Node relations have **primary keys**; edges are identified by system-level global numeric IDs. ([CIDRDB][2])
+* Kùzu uses **openCypher** as the query language (with extensions for structured properties). ([CIDRDB][2])
+
+### 2.2 Structured + semi-structured properties
+
+Kùzu supports typed, structured properties, and (per the CIDR paper) also supports **semi-structured properties** stored in a dedicated “semi-structured” column for nodes (key–type–value triples). ([CIDRDB][2])
+
+---
+
+## 3. Storage engine: columnar properties + CSR topology
+
+Kùzu’s storage strategy is:
+**(A) store properties column-wise** and **(B) store graph edges as CSR adjacency lists** that act as **join indices**. ([CIDRDB][2])
+
+### 3.1 On-disk file layout (v0.11+)
+
+From Kùzu’s “On-disk files” documentation:
+
+* The database is stored as a **single file**: `<name>.kuzu` (since **v0.11.0**).
+* Write-ahead log: `<name>.kuzu.wal`
+* Checkpoint support files: `<name>.kuzu.shadow`
+* Temporary spill file: `<name>.kuzu.tmp`
+* Extensions are stored under `~/.kuzu/extensions` (download/install location). ([Kuzu][1])
+
+This is operationally important because “embedded” + “single-file” changes how you think about:
+
+* backups (file copy semantics, ensuring clean checkpoints),
+* file locking,
+* and multi-process access patterns (see concurrency section). ([Kuzu][5])
+
+### 3.2 Logical storage objects (developer view)
+
+Kùzu’s internal docs lay out the persistent storage building blocks:
+
+* **Column**: “vanilla column data structure”
+* **List**: “CSR-like data structure”
+* **NodeTable**: collection of multiple columns
+* **RelTable**: contains **forward** and **backward** `DirectedRelData`, each a collection of columns/lists
+* **NodeGroup**: horizontally partitioned table, similar to “row groups”
+* **Index**: **hash index** for primary keys
+* **WAL**: write-ahead log ([Kuzu][4])
+
+This is the key structural idea: Kùzu implements the property graph as a set of **table-like** structures, but uses CSR-like lists internally where graph topology demands it. ([Kuzu][4])
+
+### 3.3 CSR adjacency lists as “join indices”
+
+The CIDR paper describes Kùzu’s topology storage in concrete terms:
+
+* Edges are **double-indexed** and stored in **CSR-based adjacency list indices**.
+* These adjacency indices store destination node IDs (and sometimes labels).
+* Edge properties are stored in **parallel CSR-based structures**, also double-indexed.
+* The tradeoff: higher storage/update cost, but it guarantees you can scan a node’s edges and edge properties **sequentially** in both forward and backward directions. ([CIDRDB][2])
+
+This “CSR as join index” framing is crucial to how Kùzu avoids the classic graph DB pitfall where traversals degrade into many non-sequential property lookups. ([CIDRDB][2])
+
+### 3.4 Buffer manager: page cache + eviction policy
+
+The CIDR paper states:
+
+* Storage is accessed through a **buffer manager** with **fixed page size (4KB)** and **GClock** eviction. ([CIDRDB][2])
+
+So Kùzu looks like an embedded analytical engine, but still has a very DBMS-native buffer manager (not “just mmap”). ([CIDRDB][2])
+
+---
+
+## 4. Execution model: vectorized + factorized
+
+Kùzu is explicitly **column-oriented in memory** during execution, using “vector” abstractions, plus factorization to reduce redundancy in intermediates. ([Kuzu][6])
+
+### 4.1 ValueVector (the basic in-memory column chunk)
+
+From Kùzu’s “Vector types” internals:
+
+* **ValueVector** stores a chunk of a single type; capacity is `DEFAULT_VECTOR_CAPACITY = 2048`, chosen to fit in CPU cache (empirical).
+* Core fields:
+
+  * `data` (byte array)
+  * `nullMask` aligned with `data`
+  * `auxiliaryBuffer` for overflow / variable-sized payloads ([Kuzu][6])
+
+**Strings** are implemented as a **fixed 16-byte structure** (8-byte prefix + 8-byte pointer) with overflow stored in `auxiliaryBuffer`. ([Kuzu][6])
+
+**Nested types** (examples given in docs):
+
+* `STRUCT`: child vectors stored in `auxiliaryBuffer`
+* `VAR_LIST`: store `(offset, size)` in `data`, elements in `auxiliaryBuffer` ([Kuzu][6])
+
+### 4.2 SelectionState (filtering without copying)
+
+Kùzu tracks which positions are valid via `SelectionState`:
+
+* `selectedPositions` (vector of positions)
+* `selectedSize` (how many selected) ([Kuzu][6])
+
+This is classic vectorized execution technique: filters become metadata rather than materialized row copies. ([Kuzu][6])
+
+### 4.3 DataChunk and ResultSet
+
+* **DataChunk**: a set of value vectors that share the same state (conceptually a “batch” of tuples).
+* **ResultSet**: a collection of data chunks that forms a Cartesian product. ([Kuzu][6])
+
+---
+
+## 5. Query processing: from Cypher patterns to join plans
+
+### 5.1 Kùzu’s “classic DBMS” planner, with a graph-specific twist
+
+The CIDR paper describes:
+
+* Kùzu is “single node (multi-core), disk-based, transactional but read-optimized” and uses classic components: parser/binder/planner/storage/buffer/query processor/transaction manager. ([CIDRDB][2])
+* The planner generates an initial plan and then uses a **dynamic-programming join optimizer**, pushes filters, then maps to physical operators. ([CIDRDB][2])
+
+Kùzu’s internal docs reflect the same staged architecture and note JOIN can map to `INDEX_NESTED_LOOP_JOIN` or `HASH_JOIN` depending on choice. ([Kuzu][4])
+
+### 5.2 The core idea: keep scans sequential while preserving factorization
+
+A recurring problem in graph engines is that neighbor IDs often have poor locality, so naive “expand then lookup property” patterns lead to random I/O. Kùzu’s paper calls out these issues and motivates its approach. ([CIDRDB][2])
+
+Kùzu’s “key technical approach” in the paper is a modified join operator:
+
+### 5.3 ASP-Join (Accumulate → Semijoin → Probe)
+
+Kùzu’s CIDR paper defines **ASP-Join** (“accumulate-semijoin-probe”) as a **3-pipeline** variant of hash join:
+
+1. **Accumulate probe tuples** into a temporary factorized structure (Factorized Table, FT) and build a **semijoin filter** based on join keys.
+2. **Build hash table** but scan only the necessary build-side data **sequentially**, using sideways information passing (SIP) from that semijoin filter.
+3. **Rescan accumulated probe tuples** (still factorized) and probe the hash table.
+
+The paper states ASP-Join is the **core join operator** in Kùzu and is also central to its **multiway worst-case optimal join algorithm** for cyclic queries. ([CIDRDB][2])
+
+### 5.4 Multiway WCO ASP-Join (cyclic pattern matching)
+
+For cyclic patterns (e.g., triangle queries), Kùzu extends ASP-Join to implement a multiway worst-case optimal style join:
+
+* It accumulates prefix tuples,
+* builds multiple hash tables for adjacency lists that will be intersected,
+* then flattens bound variables as needed and intersects adjacency lists during probe,
+* while preserving sequential scans of adjacency lists. ([CIDRDB][2])
+
+### 5.5 Join optimization strategy (DP + factorization-aware costing)
+
+The CIDR paper provides optimizer details:
+
+* Kùzu models a Cypher `MATCH` clause as an **equi-join graph** (node vars and edge vars as relations).
+* It keeps best plans for different factorization structures (bounded to control explosion).
+* Picks among hash join / S-Join / ASP-Join based on factorization and SIP ability.
+* Enumerates at least one plan ending in a multiway ASP-Join when a subquery is cyclic.
+* Uses a cost metric based on number of factorized tuples; selectivity estimation uses heuristics (“magic constants”) except primary-key predicates. ([CIDRDB][2])
+
+---
+
+## 6. Physical execution: pipelines + morsel-driven parallelism
+
+Kùzu uses **morsel-driven parallelism** and explicitly breaks physical plans into pipelines.
+
+* Internal docs: the **processor** contains a task scheduler that breaks a physical plan into multiple pipelines for morsel-driven parallelism. ([Kuzu][4])
+* CIDR paper: parallel tasks run copies of the same pipeline and coordinate to fetch morsels of node IDs/properties to scan. ([CIDRDB][2])
+
+Conceptually:
+
+```mermaid
+flowchart TB
+  subgraph Pipeline_A["Pipeline A (Build)"]
+    A1[Scan] --> A2[Filter] --> A3[Build Hash Table]
+  end
+  subgraph Pipeline_B["Pipeline B (Probe)"]
+    B1[Rescan FT] --> B2[Probe Hash Table] --> B3[Produce]
+  end
+  Pipeline_A -->|dependency| Pipeline_B
+```
+
+This matters because:
+
+* operators like hash-table build are “blocking” and create pipeline boundaries,
+* and because graph joins/traversals can become very expensive if the engine can’t schedule and parallelize scans efficiently. ([Kuzu][7])
+
+---
+
+## 7. Concurrency and transactions (the “embedded database realities”)
+
+### 7.1 Two levels: **Database objects** vs **Connections**
+
+Kùzu’s concurrency model is described very concretely in the official docs:
+
+* A process creates a `Database` object (opened as `READ_WRITE` or `READ_ONLY`), then creates one or more `Connection` objects from it. ([Kuzu][5])
+
+### 7.2 The key restriction: database-object-level safety across processes
+
+Because internal components (e.g., buffer manager) cache disk state, Kùzu restricts how many **Database objects** can point at the same on-disk database concurrently:
+
+Allowed configurations:
+
+1. **One `READ_WRITE` Database object**, OR
+2. **Multiple `READ_ONLY` Database objects** ([Kuzu][5])
+
+Not allowed (and intentionally blocked):
+
+* one `READ_WRITE` DB object plus another separate `READ_ONLY`/`READ_WRITE` DB object concurrently on the same database files, because caches cannot be invalidated across distinct DB objects safely. ([Kuzu][5])
+
+### 7.3 Within one Database object: multiple concurrent connections are fine
+
+The same docs explain that the above does **not** prevent you from creating multiple connections (even concurrently) **as long as they’re created from the same `Database` object**, e.g., in multiple threads. ([Kuzu][5])
+
+### 7.4 Transactions: ACID + serializability + WAL + checkpoints
+
+Kùzu’s transactions documentation states:
+
+* Kùzu implements transactions that are **atomic** and **durable** and **support serializability** (ACID-compliant). ([Kuzu][3])
+* Every query / DDL / DML / `COPY FROM` is part of a transaction (manual or auto). ([Kuzu][3])
+* **Multiple read transactions, only one write transaction** at any point in time. ([Kuzu][3])
+* `CHECKPOINT` merges the WAL into the database file; checkpoint auto-triggers when WAL exceeds `CHECKPOINT_THRESHOLD` and there are no active transactions. ([Kuzu][3])
+
+The CIDR paper adds:
+
+* Kùzu uses **WAL** for atomicity/durability and has serializability “by design” by allowing one writer with multiple readers; more advanced multi-writer MVCC is described as future roadmap. ([CIDRDB][2])
+
+---
+
+## 8. Extension system: dynamic capability loading
+
+Kùzu has an extension API designed to load functionality at runtime and keep the core library smaller. ([Kuzu][8])
+
+Important operational notes from the official extension docs:
+
+* As of **v0.11.3**, Kùzu pre-installs and pre-loads four common extensions: `algo`, `fts`, `json`, `vector`. ([Kuzu][8])
+* Kùzu “no longer provides an official extensions server”; older versions or non-preinstalled extensions require hosting a **local extension server**. ([Kuzu][8])
+* Extensions are **scoped to a session**, so if they aren’t pre-loaded you must `LOAD` each new session. ([Kuzu][8])
+
+The official docs list available extensions including: `algo`, `fts`, `httpfs`, `json`, `llm`, `neo4j`, `postgres`, `sqlite`, `vector`, plus cloud/lakehouse connectors. ([Kuzu][8])
+
+---
+
+## 9. Vector search: disk-based HNSW integrated with Cypher
+
+### 9.1 What Kùzu implements
+
+The vector search extension provides a **native disk-based HNSW** index for similarity search over embeddings stored in Kùzu. ([Kuzu][9])
+
+Documented constraints/structure:
+
+* Indexing is currently supported for vectors stored as **node table properties**. ([Kuzu][9])
+* The HNSW index is described as having **two hierarchical layers**: a lower layer containing all vectors and an upper layer containing a sampled subset. ([Kuzu][9])
+* Primary functions: `CREATE_VECTOR_INDEX`, `QUERY_VECTOR_INDEX`, `DROP_VECTOR_INDEX`. ([Kuzu][9])
+
+### 9.2 Index creation API (tuning knobs that actually matter)
+
+Kùzu documents these `CREATE_VECTOR_INDEX` parameters:
+
+* `mu`: max degree in upper graph (smaller than `ml`)
+* `ml`: max degree in lower graph
+* `pu`: percentage sampled into upper graph
+* `metric`: `cosine`, `l2`, `l2sq`, `dotproduct`
+* `efc`: candidate width during construction
+* `cache_embeddings`: cache the embeddings column in memory during build ([Kuzu][9])
+
+### 9.3 Query API
+
+`QUERY_VECTOR_INDEX` takes:
+
+* table name, index name, query vector, `K`, optional `efs` (candidate width during search),
+  and returns `node` and `distance`. ([Kuzu][9])
+
+### 9.4 Filtered vector search (GraphRAG-style: “semantic then structural”)
+
+Kùzu supports combining vector search with filters using **projected graphs**:
+
+* Create a projected graph (`PROJECT_GRAPH`) with node filters,
+* run `QUERY_VECTOR_INDEX` against that projected graph,
+* then continue with Cypher pattern matching in the same query flow. ([Kuzu][9])
+
+For arbitrary Cypher-defined subsets, `PROJECT_GRAPH_CYPHER` can define the projection, with the constraint that the Cypher returns a single node variable matching the indexed table label. ([Kuzu][9])
+
+This is one of the most direct “GraphRAG” capabilities: retrieve semantically similar nodes, then traverse relationships from those nodes—without moving data into a separate vector DB first. ([Kuzu][9])
+
+---
+
+## 10. Full-text search (FTS): BM25 over node table string properties
+
+Kùzu’s FTS extension:
+
+* Builds an index over one or more **STRING properties** (node tables only, as documented). ([Kuzu][10])
+* `QUERY_FTS_INDEX` uses **Okapi BM25** scoring internally. ([Kuzu][10])
+* `CREATE_FTS_INDEX` supports:
+
+  * `stemmer` selection (many languages + `none`)
+  * custom `stopwords` sources (table or file, including remote with httpfs) ([Kuzu][10])
+
+This gives you “lexical retrieval” alongside vector retrieval, both integrated into Cypher workflows. ([Kuzu][10])
+
+---
+
+## 11. Putting it together: why Kùzu behaves differently from SQL engines under graph workloads
+
+### 11.1 Storage-level reason
+
+Relational engines model relationships via joins across tables; Kùzu stores the relationship topology in **CSR join indices** (double indexed forward/back), so traversals and neighbor expansions can be executed with sequential adjacency scans rather than repeated index lookups. ([CIDRDB][2])
+
+### 11.2 Execution-level reason
+
+Kùzu’s vectorized primitives (`ValueVector`, selection state, chunks) plus factorization are designed to reduce copying and keep tight CPU-cache-friendly loops. ([Kuzu][6])
+
+### 11.3 Plan-level reason
+
+Kùzu’s ASP-Join uses “accumulate + semijoin filter + probe” to:
+
+* preserve factorization structure,
+* and drive build-side scans using SIP (scan only necessary properties/edges sequentially). ([CIDRDB][2])
+
+---
+
+## 12. Practical engineering guidance (Python environments)
+
+### 12.1 Concurrency patterns that won’t fight the engine
+
+* If you need **multiple processes** against the same DB files:
+
+  * run exactly **one process** with `READ_WRITE`,
+  * allow other processes **only** `READ_ONLY` database objects. ([Kuzu][5])
+
+* If you need concurrency within one app:
+
+  * create **one** `Database` object and many `Connection`s (threads) from it. ([Kuzu][5])
+
+### 12.2 Operational hygiene
+
+* Know your files: `.kuzu`, `.kuzu.wal`, `.kuzu.shadow`, `.kuzu.tmp` and how checkpoints merge WAL into the base file. ([Kuzu][1])
+* If you want deterministic disk size / durability points, plan explicit `CHECKPOINT` when no active transactions exist. ([Kuzu][3])
+
+### 12.3 Retrieval architecture options inside one DB
+
+* **FTS (BM25)** for lexical retrieval. ([Kuzu][10])
+* **Vector (HNSW)** for semantic retrieval. ([Kuzu][9])
+* **Projected graphs** to enforce filter constraints before vector search. ([Kuzu][9])
+
+---
+
+## 13. Research & documentation bibliography (high signal)
+
+If you want to go even deeper (and/or cite these in your own technical docs), these are the most “load-bearing” references used in this canvas:
+
+1. **CIDR 2023 paper**: Kùzu’s research vision, CSR join indices, buffer manager properties, transaction model, ASP-Join, and multiway WCO joins. ([CIDRDB][2])
+2. **Developer Guide: Database Internals**: modules, storage object decomposition (`NodeGroup`, `RelTable`, CSR-like lists, pipeline scheduling). ([Kuzu][4])
+3. **Vector Types**: in-memory `ValueVector` layout, cache-sized vector capacity, string/nested overflow mechanics, selection state. ([Kuzu][6])
+4. **Execution Internals**: pipeline decomposition + morsel-driven parallelism mechanics (how work is broken into pipelines). ([Kuzu][7])
+5. **Connections & Concurrency**: the “Database object vs Connection” model and the hard rule: one RW DB object or many RO DB objects for the same DB files. ([Kuzu][5])
+6. **Transactions**: ACID/serializable semantics, WAL checkpoint behavior, auto vs manual transactions. ([Kuzu][3])
+7. **Extensions + Vector + FTS**: how Kùzu’s capabilities are packaged and the specific APIs for vector and full-text indexing. ([Kuzu][8])
+
+---
+
+If you want, I can also produce a **“systems-style” appendix** that rewrites this into:
+
+* **(A)** a formal spec doc (components + invariants + failure modes),
+* **(B)** a production readiness checklist (file locking, checkpoints, backup/restore, multi-process topology),
+* **(C)** and an agent-memory reference architecture using projected graphs + vector + traversal patterns—still in the same “canvas markdown” style.
+
+[1]: https://kuzudb.github.io/docs/developer-guide/files "On-disk files managed by Kuzu | Kuzu"
+[2]: https://www.cidrdb.org/cidr2023/papers/p48-jin.pdf "KÙZU^* Graph Database Management System"
+[3]: https://kuzudb.github.io/docs/cypher/transaction "Transactions | Kuzu"
+[4]: https://kuzudb.github.io/docs/developer-guide/database-internal "Database internals | Kuzu"
+[5]: https://kuzudb.github.io/docs/concurrency "Connections & Concurrency | Kuzu"
+[6]: https://kuzudb.github.io/docs/developer-guide/database-internal/vector "Vector types | Kuzu"
+[7]: https://kuzudb.github.io/docs/developer-guide/database-internal/execution "Execution | Kuzu"
+[8]: https://kuzudb.github.io/docs/extensions "Extensions | Kuzu"
+[9]: https://kuzudb.github.io/docs/extensions/vector "Vector search extension | Kuzu"
+[10]: https://kuzudb.github.io/docs/extensions/full-text-search "Full-text search extension | Kuzu"

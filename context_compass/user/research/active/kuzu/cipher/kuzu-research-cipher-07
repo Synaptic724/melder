@@ -1,0 +1,507 @@
+# Cypher in Kuzu — Markdown Canvas (deep-ish, SQL-minded)
+
+> Kuzu implements an **openCypher-based** query language (“Cypher”) for **structured property graphs** (schema-first). Cypher is the same language you’ll use in the CLI and via the Python API—only the “how you send the string” changes. ([Kuzu][1])
+
+---
+
+## 0) The mental model (if you’re coming from SQL Server / SQLite)
+
+### Think: “pattern matching + relational operators”
+
+* **SQL `FROM + JOIN`** ↔ **Cypher `MATCH` patterns**
+  You “join” by drawing edges and reusing variables, rather than writing explicit join predicates.
+* **SQL `SELECT`** ↔ **Cypher `RETURN`**
+* **SQL `WHERE`** ↔ **Cypher `WHERE`**
+* **SQL `GROUP BY`** ↔ **Cypher grouping is *implicit***: any non-aggregated expressions in `RETURN` become grouping keys when you use aggregates like `COUNT()`. ([Kuzu][2])
+* **SQL `LEFT JOIN`** ↔ **Cypher `OPTIONAL MATCH`** (unmatched variables become `NULL`). ([Kuzu][2])
+* **SQL `LIMIT/OFFSET`** ↔ **Cypher `LIMIT` / `SKIP`** (Kuzu supports these as query clauses). ([Kuzu][3])
+
+### Think: “tables still exist—just graph-shaped tables”
+
+Kuzu stores nodes and relationships in **tables** (node tables + relationship tables). Cypher’s pattern matching reads those tables through graph syntax. ([Kuzu][2])
+
+---
+
+## 1) Cypher syntax rules that matter in practice
+
+### Statement termination and whitespace
+
+* Queries can be multi-line (recommended).
+* Statements end with `;`. ([Kuzu][1])
+
+### Comments
+
+* `// single line`
+* `/* multi-line */` ([Kuzu][1])
+
+### Case insensitivity (this trips people up)
+
+Kuzu’s Cypher is broadly case-insensitive for:
+
+* table names / labels
+* column names
+* keywords
+* variable names ([Kuzu][1])
+
+### Escaping identifiers
+
+Use backticks if you need reserved words or special cases:
+
+```cypher
+CREATE NODE TABLE `Return` (id INT64 PRIMARY KEY, date TIMESTAMP);
+MATCH (n:`Return`) RETURN n.*;
+```
+
+([Kuzu][1])
+
+### Parameters (query templating)
+
+* Parameters are prefixed with `$` and can be used throughout queries (helps reuse + avoids injection). ([Kuzu][1])
+  Example shape:
+
+```cypher
+MATCH (u:User)
+WHERE u.username = $username
+RETURN u.*;
+```
+
+---
+
+## 2) The schema model (Kuzu’s big difference vs Neo4j “schema-optional” vibe)
+
+### Schema-first / “Structured Property Graph”
+
+Kuzu **requires defining schema before inserting data** (node/rel tables with typed properties + primary keys). ([Kuzu][4])
+
+### What you define
+
+* **Node tables**: label + typed properties + **PRIMARY KEY**.
+* **Relationship tables**: label + endpoints `FROM <NodeTable> TO <NodeTable>` + optional typed properties. ([Kuzu][5])
+
+---
+
+## 3) Loading data (bulk-first mindset)
+
+### `COPY FROM` is the bulk ingestion workhorse
+
+The Cypher tutorial uses `COPY` to load CSVs into node and relationship tables:
+
+```cypher
+COPY User FROM 'tutorial_data/node/user.csv';
+COPY Post FROM 'tutorial_data/node/post.csv';
+COPY LIKES FROM 'tutorial_data/relation/LIKES.csv';
+```
+
+([Kuzu][2])
+
+### For *large* inserts: prefer `COPY` over row-by-row `CREATE`
+
+Kuzu docs explicitly recommend:
+
+* use `CREATE/SET/DELETE` for **small** modifications
+* use `COPY FROM` for **large bulk insertions** ([Kuzu][6])
+
+### Neo4j note: `LOAD CSV FROM` vs Kuzu `LOAD FROM`
+
+Kuzu renames Neo4j’s `LOAD CSV FROM` to `LOAD FROM` because it can scan more than CSV. ([Kuzu][4])
+
+---
+
+## 4) Core read query shape: `MATCH ... RETURN ...`
+
+### 4.1 Match nodes
+
+```cypher
+MATCH (a:User)
+RETURN a.*     // wildcard: all properties
+LIMIT 3;
+```
+
+* `a.*` returns all properties for that node variable. ([Kuzu][2])
+
+### 4.2 Match a relationship pattern
+
+```cypher
+MATCH (a:User)-[r:LIKES]->(b:Post)
+RETURN a.username, b.*
+LIMIT 3;
+```
+
+([Kuzu][2])
+
+### 4.3 Match “anything” (no labels)
+
+```cypher
+MATCH (a)-[b]->(c)
+RETURN *
+LIMIT 3;
+```
+
+This returns **typed graph values** (NODE/REL) rather than just scalar columns. ([Kuzu][2])
+
+### 4.4 Bind an entire path
+
+```cypher
+MATCH p = ()-[]->()
+RETURN p
+LIMIT 3;
+```
+
+([Kuzu][2])
+
+### 4.5 Multiple patterns = graph-joins
+
+You can:
+
+* write multiple `MATCH` clauses, or
+* comma-separate patterns in one `MATCH`
+
+Example from tutorial:
+
+```cypher
+MATCH (a:User)-[:Follows]->(b:User)-[:Follows]->(c:User),
+      (a)-[:Follows]->(c)
+RETURN a.username AS user1, b.username AS user2, c.username AS user3
+LIMIT 3;
+```
+
+([Kuzu][2])
+
+---
+
+## 5) Variable-length relationships (Kleene star) + Kuzu-specific semantics
+
+### 5.1 Basic variable-length (k-hop)
+
+```cypher
+MATCH (a:User)-[:Follows*1..2]->(b:User)
+RETURN a.username, b.username
+LIMIT 5;
+```
+
+* Syntax: `*<low>..<high>`
+* You can do `*..<high>` (low defaults to 1)
+* Or `*<len>` for exact length ([Kuzu][2])
+
+### 5.2 Walk vs trail semantics (important!)
+
+* Neo4j defaults to **trail semantics** (no repeated edge in a matched pattern).
+* Kuzu adopts **walk semantics** (repeated edges allowed) for patterns in `MATCH`. ([Kuzu][4])
+  Kuzu mentions helper checks like `is_trail` / `is_acyclic` for validating a path. ([Kuzu][4])
+
+### 5.3 Upper bound requirement / termination behavior
+
+Because Kuzu is walk-based, variable-length relationships need an upper bound to guarantee termination; if you omit it, Kuzu assigns a default bound (documented as **30**). ([Kuzu][4])
+
+### 5.4 Shortest path syntax extension (Kuzu)
+
+Kuzu supports inserting `SHORTEST` / `ALL SHORTEST` between the `*` and bounds, e.g.:
+
+```cypher
+MATCH (n)-[r* SHORTEST 1..10]->(m)
+...
+```
+
+Kuzu also recommends `SHORTEST` when you don’t actually need full path materialization. ([Kuzu][4])
+
+---
+
+## 6) `DISTINCT`, `OPTIONAL MATCH`, `WHERE`
+
+### 6.1 DISTINCT
+
+```cypher
+MATCH (u:User)-[:LIKES]->(p:Post)
+RETURN DISTINCT u.username
+LIMIT 3;
+```
+
+([Kuzu][2])
+
+### 6.2 OPTIONAL MATCH (LEFT JOIN-ish)
+
+If an optional pattern doesn’t match, variables *introduced only there* become `NULL`.
+
+```cypher
+MATCH (u1:User)
+OPTIONAL MATCH (u2)-[:Follows]->(u1:User)
+RETURN u1.username, u2.username
+LIMIT 3;
+```
+
+([Kuzu][2])
+
+### 6.3 WHERE filtering (classic)
+
+Example filtering by date:
+
+```cypher
+MATCH (a:User)
+WHERE a.account_creation_date < DATE('2023-02-01')
+RETURN a.username, a.account_creation_date
+LIMIT 3;
+```
+
+([Kuzu][2])
+
+### 6.4 Kuzu-specific WHERE limitations vs Neo4j
+
+Kuzu does **not** support putting `WHERE` *inside* a node/relationship pattern like:
+
+```cypher
+MATCH (n:Person WHERE n.name = 'Andy') ...
+```
+
+Instead:
+
+```cypher
+MATCH (n:Person)
+WHERE n.name = 'Andy'
+...
+```
+
+Also, label predicates like `MATCH (n) WHERE n:Person` aren’t supported; use `MATCH (n:Person)` or `label(n) = 'Person'`. ([Kuzu][4])
+
+---
+
+## 7) Aggregation + ordering + pipelining
+
+### 7.1 Aggregation (no explicit GROUP BY)
+
+Cypher tutorial example:
+
+```cypher
+MATCH (u:User)-[:POSTED]->(p:Post)
+RETURN u.userID, COUNT(p) AS num_posts
+LIMIT 3;
+```
+
+Grouping is implied by `u.userID` since `COUNT(p)` is an aggregate. ([Kuzu][2])
+
+### 7.2 ORDER BY
+
+```cypher
+MATCH (u:User)-[:POSTED]->(p:Post)
+RETURN u.username, COUNT(p) AS num_posts
+ORDER BY num_posts DESC
+LIMIT 3;
+```
+
+([Kuzu][2])
+
+### 7.3 WITH (pipeline / staged query)
+
+Use `WITH` to pass forward computed values, apply top-k, then continue matching:
+
+```cypher
+MATCH (u:User)-[:POSTED]->(p:Post)
+WITH u, COUNT(p) AS num_posts
+ORDER BY num_posts DESC
+LIMIT 3
+WITH u
+MATCH (u2:User)-[:Follows]->(u)
+RETURN u.username AS most_prolific_user, u2.username AS follower
+LIMIT 8;
+```
+
+([Kuzu][2])
+
+---
+
+## 8) Lists + UNWIND + CASE
+
+### 8.1 UNWIND (explode a list into rows)
+
+```cypher
+UNWIND ["epicwolf202", "cooldragon866", "stormcat597"] AS user
+MATCH (u:User {username: user})
+RETURN u.username, u.account_creation_date;
+```
+
+([Kuzu][2])
+
+### 8.2 CASE (conditional logic)
+
+Example counting only posts after a cutoff date:
+
+```cypher
+MATCH (u:User)-[:POSTED]->(p:Post)
+RETURN u.username,
+       COUNT(CASE WHEN p.creation_date > DATE('2023-04-01') THEN p ELSE NULL END) AS num_posts
+ORDER BY num_posts DESC
+LIMIT 3;
+```
+
+([Kuzu][2])
+
+---
+
+## 9) Subqueries in Kuzu: `EXISTS { ... }` and `COUNT { ... }`
+
+### 9.1 Key rule: Cypher subqueries are `{ ... }` and **cannot contain RETURN**
+
+Kuzu’s Cypher subqueries execute in their own scope, are written in `{}`, and **cannot include a `RETURN` clause**. ([Kuzu][7])
+
+### 9.2 EXISTS subquery
+
+```cypher
+MATCH (a:User)
+WHERE a.age < 100
+  AND EXISTS { MATCH (a)-[:Follows*3..3]->(b:User) }
+RETURN a.name, a.age;
+```
+
+([Kuzu][7])
+
+Nested EXISTS is also supported. ([Kuzu][7])
+
+### 9.3 COUNT subquery (correlated counting)
+
+Count matches and bind to an alias:
+
+```cypher
+MATCH (a:User)
+RETURN a.name,
+       COUNT { MATCH (a)<-[:Follows]-(b:User) } AS num_follower
+ORDER BY num_follower;
+```
+
+You can also use `COUNT { ... }` inside `WHERE`, and `COUNT(DISTINCT ...)` patterns are shown in the docs. ([Kuzu][7])
+
+### 9.4 Neo4j difference
+
+`CALL <subquery>` is not supported in Kuzu. ([Kuzu][4])
+
+---
+
+## 10) Data modification (CREATE / MERGE / SET / DELETE)
+
+### 10.1 Kuzu’s official guidance
+
+* Kuzu supports `CREATE`, `SET`, `DELETE` (and `MERGE`) for manipulating data
+* Use these for **small modifications**
+* Use `COPY FROM` for **bulk insertions** ([Kuzu][6])
+
+### 10.2 Labeling best practice in CREATE / MERGE
+
+Kuzu recommends specifying node & relationship labels explicitly in `CREATE` and `MERGE`; otherwise it tries to infer labels from schema. ([Kuzu][4])
+
+### 10.3 SET specifics / limitations vs Neo4j
+
+* Update form: `n.prop = expression`
+* Neo4j-style “update a whole property map via `+=`” is **not supported**; update properties one-by-one. ([Kuzu][4])
+
+### 10.4 No REMOVE clause
+
+Neo4j `REMOVE` isn’t supported; use `SET n.prop = NULL` instead. ([Kuzu][4])
+
+---
+
+## 11) CALL, “SHOW …”, algorithms, and extensions
+
+### 11.1 Query clauses include CALL
+
+Kuzu lists `CALL` among the “reading” query clauses. ([Kuzu][3])
+
+### 11.2 SHOW becomes CALL show_*()
+
+Neo4j “SHOW …” statements become function calls in Kuzu, e.g.:
+
+* `SHOW FUNCTIONS` (Neo4j) ↔ `CALL show_functions() RETURN *` (Kuzu) ([Kuzu][4])
+
+### 11.3 Graph algorithms are procedures you CALL
+
+Example (K-core):
+
+```cypher
+CALL k_core_decomposition('Graph')
+RETURN node.name, k_degree
+ORDER BY k_degree DESC;
+```
+
+([Kuzu][8])
+
+### 11.4 Extensions + version note
+
+Kuzu has an extension mechanism; docs note that in **v0.11.3** four commonly used extensions (`algo`, `fts`, `json`, `vector`) are pre-installed and pre-loaded, and they show `CALL SHOW_OFFICIAL_EXTENSIONS()` style discovery. ([Kuzu][9])
+
+---
+
+## 12) Kuzu’s runtime graph value types (helps interpret results)
+
+### 12.1 NODE and REL are real types
+
+* `NODE` values contain internal `_ID` and `_LABEL` plus properties. ([Kuzu][10])
+* `REL` values contain `_SRC`, `_DST`, `_ID`, `_LABEL` plus relationship properties. ([Kuzu][10])
+
+### 12.2 Paths are represented as RECURSIVE_REL
+
+Kuzu documents `RECURSIVE_REL` as a struct-like type that stores `_NODES` and `_RELS` for a path, and shows `nodes(p)` to extract nodes from a path. ([Kuzu][10])
+
+---
+
+## 13) Quick “Kuzu vs Neo4j Cypher” cheat sheet (high-signal differences)
+
+* **Schema required** before inserts (structured property graph). ([Kuzu][4])
+* **Walk semantics** for `MATCH` patterns vs Neo4j trail semantics. ([Kuzu][4])
+* Variable-length relationships need an upper bound; default cap documented as **30** if omitted. ([Kuzu][4])
+* Adds `SHORTEST` / `ALL SHORTEST` syntax in variable-length patterns. ([Kuzu][4])
+* No `FINISH` (use `RETURN COUNT(*)`). ([Kuzu][4])
+* No `FOREACH` (use `UNWIND`). ([Kuzu][4])
+* No `REMOVE` (use `SET ... = NULL`). ([Kuzu][4])
+* No `USE graph` (each graph is a database; open a different DB). ([Kuzu][4])
+* `SHOW ...` becomes `CALL show_*()`. ([Kuzu][4])
+* Only `EXISTS` and `COUNT` Cypher subqueries; no `CALL <subquery>`. ([Kuzu][7])
+* Indexes/constraints: Kuzu doesn’t support manually creating arbitrary indexes/constraints; it creates a **primary key index** for the primary key column of a node table. ([Kuzu][4])
+
+---
+
+## 14) Practical “query recipes” (copy/paste starters)
+
+### Neighbors (1-hop)
+
+```cypher
+MATCH (u:User {username: $user})-[:Follows]->(v:User)
+RETURN v.username
+LIMIT 50;
+```
+
+(Uses standard `MATCH` + property match pattern style you see throughout the tutorial.) ([Kuzu][2])
+
+### K-hop traversal (bounded)
+
+```cypher
+MATCH (u:User {username: $user})-[:Follows*1..3]->(v:User)
+RETURN DISTINCT v.username
+LIMIT 200;
+```
+
+([Kuzu][2])
+
+### “Top posters” then “who follows them” (pipeline)
+
+Use the exact `WITH` pattern from the tutorial (section 7.3). ([Kuzu][2])
+
+---
+
+## 15) Practical best practices (Kuzu-flavored)
+
+* **Bulk load with `COPY FROM`**; reserve `CREATE/MERGE/SET/DELETE` for small changes. ([Kuzu][6])
+* **Always use `LIMIT`** when exploring to avoid huge outputs; the tutorial explicitly recommends controlling result size. ([Kuzu][2])
+* **Specify labels explicitly** in `CREATE` / `MERGE` when possible. ([Kuzu][4])
+* For variable-length traversals, **keep the upper bound tight**; consider `SHORTEST` if you only care about reachability/shortest distance and not enumerating many paths. ([Kuzu][4])
+
+---
+
+If you want, I can extend this canvas with **(a)** a “Cypher ⇄ SQL Server translation table” for common query shapes you run at work, and **(b)** a Kuzu-specific “gotchas” section around path explosion, walk semantics, and how to structure `WITH` stages to keep intermediate results small—still in the same markdown canvas format.
+
+[1]: https://kuzudb.github.io/docs/cypher/syntax/ "Syntax | Kuzu"
+[2]: https://kuzudb.github.io/docs/tutorials/cypher "Cypher Tutorial | Kuzu"
+[3]: https://kuzudb.github.io/docs/cypher/query-clauses "Query clauses | Kuzu"
+[4]: https://kuzudb.github.io/docs/cypher/difference "Differences between Kuzu and Neo4j | Kuzu"
+[5]: https://kuzudb.github.io/docs/cypher/data-definition "Data definition language | Kuzu"
+[6]: https://kuzudb.github.io/docs/cypher/data-manipulation-clauses "Data manipulation clauses | Kuzu"
+[7]: https://kuzudb.github.io/docs/cypher/subquery "Subqueries | Kuzu"
+[8]: https://kuzudb.github.io/docs/extensions/algo/kcore/?utm_source=chatgpt.com "K-Core Decomposition | Kuzu - Kuzu DB"
+[9]: https://kuzudb.github.io/docs/extensions/?utm_source=chatgpt.com "Extensions - Kuzu DB"
+[10]: https://kuzudb.github.io/docs/cypher/data-types/ "Data types | Kuzu"

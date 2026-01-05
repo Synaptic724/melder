@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "updated_at": "2025-01-01T00:00:00Z",
+  "generated_at": "2025-01-01T00:00:00Z",
+  "commands": [
+    {
+      "name": "scan",
+      "entry": "python context_compass/system/ai_restricted/system_management/scan.py --repo-root . --agent-id <agent_id> --work-id <work_id>",
+      "summary": "Scan repo for ctx freshness and emit tasks.",
+      "category": "scan",
+      "requires_certification": true,
+      "requires_work_id": true,
+      "feature_flag": "scan",
+      "notes": null
+    },
+    {
+      "name": "memory_read",
+      "entry": "python context_compass/system/ai_restricted/memory/memory_read.py --repo-root . --agent-id <agent_id> --work-id <work_id> --store <user|system>",
+      "summary": "Read memory entries.",
+      "category": "memory",
+      "requires_certification": true,
+      "requires_work_id": true,
+      "feature_flag": "memory",
+      "notes": "Use --recent to limit output."
+    }
+  ]
+}

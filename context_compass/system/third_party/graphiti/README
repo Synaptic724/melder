@@ -1,0 +1,26 @@
+# Third-Party Documentation — Graphiti (Zep docs site)
+
+This folder contains third-party documentation content sourced from Zep’s documentation site
+(`help.getzep.com`) for reference and local tooling/agent usage.
+
+## Source (public docs pages)
+- Graphiti docs landing / welcome:
+  https://help.getzep.com/graphiti/getting-started/welcome
+- Graphiti telemetry page (includes the “anonymous ID…” language):
+  https://help.getzep.com/graphiti/other/telemetry
+
+## Rights / ownership
+Zep’s Website Terms of Use state that the website is a copyrighted work belonging to **Zep Software, Inc.**
+and that site content is subject to restrictions described in those terms:
+https://www.getzep.com/legal/website-terms/
+
+## Changes
+Unmodified (verbatim copy) / or: Extracted as a contiguous slice from llms-full.txt; no substantive edits.
+(Write the truth here.)
+
+## Scope note
+This third-party content is **not** covered by this repository’s root LICENSE. It applies only to the
+materials stored under this folder.
+
+## Removal
+If the rights holder requests removal, this folder will be removed.
