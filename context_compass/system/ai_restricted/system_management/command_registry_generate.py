@@ -640,6 +640,18 @@ def _commands_catalog() -> list[dict]:
             "audience": ["user", "system"],
         },
         {
+            "name": "agent_status",
+            "script_path": "ai_restricted/agent_management/agent_status.py",
+            "cli_args": "--repo-root . --agent-id <agent_id> --work-id <work_id>",
+            "summary": "Report agent profile status and current branch.",
+            "category": "lifecycle",
+            "requires_certification": True,
+            "requires_work_id": True,
+            "feature_flag": None,
+            "notes": "Includes branch_error when current_branch is unavailable.",
+            "audience": ["user", "system"],
+        },
+        {
             "name": "branch_init",
             "script_path": "ai_restricted/system_management/branch_init.py",
             "cli_args": "--repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>",
@@ -983,6 +995,48 @@ def _commands_catalog() -> list[dict]:
             "audience": ["user", "system"],
         },
         {
+            "name": "work_item_claim",
+            "script_path": "ai_restricted/work_management/work_item_claim.py",
+            "cli_args": (
+                "--repo-root . --agent-id <agent_id> --work-id <work_id> "
+                "--work-type <epic|story|task> --source-bucket <bucket> --dest-bucket <bucket>"
+            ),
+            "summary": "Claim a work item by moving it into an active state.",
+            "category": "work_management",
+            "requires_certification": True,
+            "requires_work_id": True,
+            "feature_flag": "work_management",
+            "notes": "Defaults to ready -> active with state in_progress.",
+            "audience": ["user", "system"],
+        },
+        {
+            "name": "work_item_complete",
+            "script_path": "ai_restricted/work_management/work_item_complete.py",
+            "cli_args": (
+                "--repo-root . --agent-id <agent_id> --work-id <work_id> "
+                "--work-type <epic|story|task> --source-bucket <bucket> --dest-bucket <bucket>"
+            ),
+            "summary": "Complete a work item and move it to a terminal state.",
+            "category": "work_management",
+            "requires_certification": True,
+            "requires_work_id": True,
+            "feature_flag": "work_management",
+            "notes": "Defaults to active -> completed with state done.",
+            "audience": ["user", "system"],
+        },
+        {
+            "name": "work_queue_list",
+            "script_path": "ai_restricted/work_management/work_queue_list.py",
+            "cli_args": "--repo-root . --agent-id <agent_id> --work-id <work_id> --scope <branch|global>",
+            "summary": "List work queues with optional filters.",
+            "category": "work_management",
+            "requires_certification": True,
+            "requires_work_id": True,
+            "feature_flag": "work_management",
+            "notes": "Supports bucket, work_type, state, and work_id filters.",
+            "audience": ["user", "system"],
+        },
+        {
             "name": "work_queue_add",
             "script_path": "ai_restricted/work_management/work_queue_add.py",
             "cli_args": "--repo-root . --agent-id <agent_id>",
@@ -1226,6 +1280,51 @@ def _commands_catalog() -> list[dict]:
                 "side_effects": ["reads sqlite tables", "may seed sqlite registries"],
             },
             "audience": ["system"],
+        },
+        {
+            "name": "lock_acquire",
+            "script_path": "ai_restricted/system_management/lock_acquire.py",
+            "cli_args": (
+                "--repo-root . --agent-id <agent_id> --work-id <work_id> "
+                "--kind <file|dir|resource> --path <path> [--branch <branch>]"
+            ),
+            "summary": "Acquire a lease lock for a file, dir, or resource key.",
+            "category": "locks",
+            "requires_certification": True,
+            "requires_work_id": True,
+            "feature_flag": None,
+            "notes": "Use --resource for explicit lock keys; TTL defaults to policy.",
+            "audience": ["user", "system"],
+        },
+        {
+            "name": "lock_release",
+            "script_path": "ai_restricted/system_management/lock_release.py",
+            "cli_args": (
+                "--repo-root . --agent-id <agent_id> --work-id <work_id> "
+                "--kind <file|dir|resource> --path <path> [--branch <branch>]"
+            ),
+            "summary": "Release a lease lock for a file, dir, or resource key.",
+            "category": "locks",
+            "requires_certification": True,
+            "requires_work_id": True,
+            "feature_flag": None,
+            "notes": "Use --resource for explicit lock keys.",
+            "audience": ["user", "system"],
+        },
+        {
+            "name": "lock_status",
+            "script_path": "ai_restricted/system_management/lock_status.py",
+            "cli_args": (
+                "--repo-root . --agent-id <agent_id> --work-id <work_id> "
+                "[--owner-id <agent_id>] [--kind <file|dir|resource>]"
+            ),
+            "summary": "List lease locks by owner or resource filter.",
+            "category": "locks",
+            "requires_certification": True,
+            "requires_work_id": True,
+            "feature_flag": None,
+            "notes": "Supports filters for resource, lock_group_id, and ticket_id.",
+            "audience": ["user", "system"],
         },
         {
             "name": "sqlite_crud",
