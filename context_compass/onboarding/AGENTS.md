@@ -83,9 +83,13 @@ Onboarding sequence (detailed)
    - Confirm repo_root matches the working directory.
    - Locate AGENTS.override.md in the working directory, if present.
    - Load repository root AGENTS.md to confirm non-negotiables.
+   - Preflight and installation are user-initiated; ask the user before running them.
    - If python availability is unknown, run context_compass/system/ai_restricted/system_management/environment_check.ps1 or environment_check.sh (read-only preflight).
+   - Preflight reports repo root, active environment status, and presence of system/user SQLite DBs.
    - If preflight reports python unavailable, refuse all operations until python is installed or AGENTS.md is updated to allow a no-python mode.
    - Before running installation bootstraps, read the script and explain its actions to the user in detail (context_compass/system/installation/windows/bootstrap.ps1 or context_compass/system/installation/linux/bootstrap.sh), including what it installs, where it writes, and what it runs.
+   - If the user asks to install everything, use the onboarding wrappers (context_compass/onboarding/install_system.sh or install_system.ps1), which call the bootstraps.
+   - If re-entering after context compaction, state that you are reloading the environment and ask to rerun preflight and confirm the agent_id.
 
 2) Read context_compass configuration and report it
    - Load SQLite system.db config_context_compass_* tables.
@@ -107,7 +111,9 @@ Onboarding sequence (detailed)
    - For testing work, read onboarding/agent/general/skills/testing/*.md (testing_overview through evidence_reporting) and mirror test examples.
 
 5) Establish agent identity (mandatory for certification)
-   - If you need a session id, run python context_compass/system/ai_restricted/agent_management/agent_id.py --prefix agent.
+   - Use a user-defined agent_id supplied by the user.
+   - If the agent_id is missing or uncertain (e.g., after context compaction), stop and ask the user for it before running tools.
+   - Only generate a new agent_id with agent_id.py if the user explicitly requests it.
    - Keep this agent_id for certification and all tool invocations.
 
 6) Certification gate (mandatory)

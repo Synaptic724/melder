@@ -7,13 +7,15 @@ Rules
 - Use context_compass/system/ai_restricted/agent_management/agent_manage.py for lifecycle changes.
 - Use context_compass/system/ai_restricted/agent_management/agent_checkin.py at session start.
 - Use context_compass/system/ai_restricted/agent_management/agent_checkout.py at session end or when handing off work.
+- Use a user-defined agent_id supplied by the user; if the id is missing or uncertain (e.g., after context compaction), stop and ask before running tools.
+- Only generate an agent id when the user explicitly requests it.
 - Do not edit self_context or worklist records manually.
 - Archive before deletion when you need a record of past work.
 - Keep per-agent queues separate from the global queue.
 - Only agent_checkin/agent_checkout/agent_manage update agent profiles.
 
 Commands
-- Generate a session agent id (optional helper):
+- Generate a session agent id (only if the user explicitly requests it):
   python context_compass/system/ai_restricted/agent_management/agent_id.py --prefix agent
 - Create agent records:
   python context_compass/system/ai_restricted/agent_management/agent_manage.py create --repo-root . --agent-id <agent_id> --agent-role <role>

@@ -89,4 +89,4 @@ Shared helpers
 - ai_restricted/_shared contains canonical JSON IO, hashing, schema validation, ignore rules, paths, and agent presence helpers.
 
 Preflight scripts
-- ai_restricted/system_management/environment_check.ps1 and ai_restricted/system_management/environment_check.sh provide OS + python availability checks when python is missing.
+- ai_restricted/system_management/environment_check.ps1 and ai_restricted/system_management/environment_check.sh provide OS + python availability checks plus repo/env/db preflight.

@@ -10,15 +10,19 @@ Required
 - Network access is required if you run the uv-based installer (downloads Python and deps).
 
 Preflight checks
+- Preflight is user-initiated; ask before running scripts.
+- Preflight reports repo root, active environment status, and presence of system/user SQLite DBs.
 - Windows:
-  - `powershell -File context_compass/system/ai_restricted/system_management/environment_check.ps1`
+  - `powershell -File context_compass/system/ai_restricted/system_management/environment_check.ps1 [-RepoRoot <path>]`
 - Linux/macOS:
-  - `sh context_compass/system/ai_restricted/system_management/environment_check.sh`
+  - `sh context_compass/system/ai_restricted/system_management/environment_check.sh [--repo-root <path>]`
 
 Active environment bootstrap (recommended)
 - Install or repair the pinned environment:
-  - Linux/macOS: `bash context_compass/system/installation/environments/linux/install_active_env.sh`
-  - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\system\installation\environments\windows\install_active_env.ps1`
+  - Linux/macOS: `bash context_compass/onboarding/install_system.sh`
+  - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\onboarding\install_system.ps1`
+- The onboarding install wrappers invoke the system bootstrap (env + DB seeds).
+- If you only need the env, you can still run the install_active_env scripts directly.
 - The installer:
   - Reads `context_compass/system/installation/environments/python_version.md`.
   - Installs/uses `uv` and creates `context_compass/system/installation/environments/active_environments/context_compass_py<version>`.
@@ -30,6 +34,11 @@ If python is missing
 - The system must refuse operations until python is installed
   or the repo AGENTS.md explicitly allows a no-python mode.
 - Do not attempt tool execution without python.
+- Ask the user to run the installer instead of searching the repo for ad-hoc fixes.
+
+System validation (python)
+- After the active environment is available, validate core schemas with:
+  `python context_compass/system/ai_restricted/system_management/validate.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
 
 Runtime environment state
 - After checkin, run:

@@ -5,7 +5,10 @@ Purpose
 
 Story steps
 1) Create or reuse an agent id
-   - Generate with `context_compass/system/ai_restricted/agent_management/agent_id.py` if needed.
+   - Use a user-defined agent_id supplied by the user.
+   - If the agent_id is missing or uncertain (e.g., after context compaction), stop and ask the user before running tools.
+   - Only generate an agent id when the user explicitly requests it:
+     - `context_compass/system/ai_restricted/agent_management/agent_id.py`
    - Create files via `context_compass/system/ai_restricted/agent_management/agent_manage.py create`.
 
 2) Check in and mark active

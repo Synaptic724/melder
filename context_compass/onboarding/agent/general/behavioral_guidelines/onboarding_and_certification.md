@@ -37,7 +37,9 @@ Story steps
    - Read `context_compass/onboarding/agent/careers/<career>/SKILLS.md` and the matching examples.
 
 4) Establish agent identity (mandatory for certification)
-   - If needed, generate an agent id:
+   - Use a user-defined agent_id supplied by the user.
+   - If the agent_id is missing or uncertain (e.g., after context compaction), stop and ask the user before running tools.
+   - Only generate an agent id when the user explicitly requests it:
      - `python context_compass/system/ai_restricted/agent_management/agent_id.py --prefix agent`
    - After the career is chosen, create the agent profile:
      - `python context_compass/system/ai_restricted/agent_management/agent_onboarding_start.py --repo-root . --agent-id <agent_id> --agent-role <career>`

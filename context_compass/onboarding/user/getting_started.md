@@ -12,8 +12,8 @@ Prerequisites
 
 Quick start (experienced operators)
 1) Install the active environment if python or deps are missing:
-   - Linux/macOS: `bash context_compass/system/installation/environments/linux/install_active_env.sh`
-   - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\system\installation\environments\windows\install_active_env.ps1`
+   - Linux/macOS: `bash context_compass/onboarding/install_system.sh`
+   - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\onboarding\install_system.ps1`
 2) Seed config tables if system.db is missing or after config overrides:
    - `python context_compass/system/installation/build_runner.py`
 3) Certify and check in (agent_id, python_certified, agent_manage, agent_checkin).
@@ -22,13 +22,19 @@ Quick start (experienced operators)
 
 Step-by-step onboarding
 1) Preflight (optional but recommended)
+   - Ask the user before running preflight; this step is user-initiated.
    - Run `context_compass/system/ai_restricted/system_management/environment_check.ps1` (Windows) or
      `context_compass/system/ai_restricted/system_management/environment_check.sh` (Linux/macOS).
+   - Preflight reports repo root, active environment status, and presence of system/user SQLite DBs.
    - If python is missing, install the active environment before proceeding.
+   - If you are re-entering after context compaction, state that you are reloading the environment and ask to rerun preflight.
 
 2) Install/verify the active environment (if needed)
-   - Linux/macOS: `bash context_compass/system/installation/environments/linux/install_active_env.sh`
-   - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\system\installation\environments\windows\install_active_env.ps1`
+   - Ask the user before running installation; this step is user-initiated.
+   - Linux/macOS: `bash context_compass/onboarding/install_system.sh`
+   - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\onboarding\install_system.ps1`
+   - These wrappers invoke the system installation bootstrap (env + DB seeds).
+   - If you only need the env, you can still run the install_active_env scripts directly.
 
 3) Read configuration
    - Source: SQLite `system.db` tables (`config_context_compass_core`, `config_context_compass_flags`,
@@ -36,9 +42,13 @@ Step-by-step onboarding
    - If config tables are missing or overrides changed, run:
      `python context_compass/system/installation/build_runner.py`
    - Report enabled/disabled features and work_mode (hard/soft).
+   - After the environment is ready, optionally validate core schemas (user-initiated):
+     `python context_compass/system/ai_restricted/system_management/validate.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
 
 4) Agent identity
-   - Generate an agent id if needed:
+   - The user must provide the agent_id; do not invent one.
+   - If the agent_id is missing or uncertain (e.g., after context compaction), stop and ask the user before running tools.
+   - Only generate an agent id when the user explicitly requests it:
      `python context_compass/system/ai_restricted/agent_management/agent_id.py --prefix agent`
 
 5) Certification handshake

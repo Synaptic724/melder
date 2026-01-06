@@ -25,6 +25,9 @@ Certification gate (mandatory)
 - Exception: context_compass/system/ai_restricted/system_management/environment_check.ps1 or environment_check.sh may run pre-certification as read-only preflight.
 - If preflight reports python unavailable, refuse all operations until python is installed or AGENTS.md explicitly changes that requirement.
 
+Agent identity policy (mandatory)
+- Follow context_compass/onboarding/agent/general/policies/agent_id_policy.md.
+
 Required flow
 - Declare repo_root and repo_id before any work.
 - Read SQLite system.db `config_context_compass_*` tables and report enabled/disabled features.
