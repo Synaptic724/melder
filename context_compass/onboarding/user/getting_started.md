@@ -5,10 +5,8 @@ Purpose
 - Explain certification, checkin, and branch setup in clear steps.
 
 Prerequisites
-- Python installed and available on PATH.
-- Repo root is the current working directory.
-- Read the repo root AGENTS.md for the public library contract.
-- If the repo root AGENTS.md is missing, stop and request it before proceeding.
+- Context Compass must be placed top level in your repo for the workshop to properly activate
+- Agents must be directed into the directory so they can onboard and learn the system and its tools
 
 Quick start (experienced operators)
 1) Install the active environment if python or deps are missing:
