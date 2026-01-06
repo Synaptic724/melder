@@ -2,9 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-CONTEXT_ROOT="$(cd -- "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd)"
-REPO_ROOT="$(cd -- "${CONTEXT_ROOT}/.." >/dev/null 2>&1 && pwd)"
-BOOTSTRAP="${REPO_ROOT}/context_compass/system/installation/linux/bootstrap.sh"
+CONTEXT_ROOT="$(cd -- "${SCRIPT_DIR}/../../../.." >/dev/null 2>&1 && pwd)"
+BOOTSTRAP="${CONTEXT_ROOT}/system/installation/linux/bootstrap.sh"
 
 DRY_RUN="${DRY_RUN:-0}"
 args=()

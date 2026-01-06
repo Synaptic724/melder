@@ -2,9 +2,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$systemRoot = Resolve-Path (Join-Path $scriptDir "..\..")
-$repoRoot = Resolve-Path (Join-Path $systemRoot "..\..")
-$langFile = Join-Path $repoRoot "context_compass\system\config\languages.json"
+$contextRoot = Resolve-Path (Join-Path $scriptDir "..\..\..\..")
+$langFile = Join-Path $contextRoot "system\config\languages.json"
 
 $langDir = Split-Path -Parent $langFile
 if (-not (Test-Path -LiteralPath $langDir)) {
