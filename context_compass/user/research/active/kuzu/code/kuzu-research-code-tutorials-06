@@ -1,0 +1,612 @@
+# Kuzu for Python: Beginner‑to‑Master Technical Guide
+
+*Curated from Kuzu’s official Python tutorial + closely related official docs (getting started, Python API, import workflows, concurrency, and prepared statements).*
+
+---
+
+## Table of contents
+
+* [1) Mental model: what Kuzu is in a Python program](#1-mental-model-what-kuzu-is-in-a-python-program)
+* [2) Your first working graph (beginner quick start)](#2-your-first-working-graph-beginner-quick-start)
+* [3) Schema fundamentals: node tables vs relationship tables](#3-schema-fundamentals-node-tables-vs-relationship-tables)
+* [4) Querying with Cypher in Python](#4-querying-with-cypher-in-python)
+* [5) Safe + reusable queries: parameters and “prepared statement” patterns](#5-safe--reusable-queries-parameters-and-prepared-statement-patterns)
+* [6) Working with results: tuples, dicts, Pandas, Polars, Arrow](#6-working-with-results-tuples-dicts-pandas-polars-arrow)
+* [7) Import patterns: CSV at scale](#7-import-patterns-csv-at-scale)
+* [8) Import patterns: Pandas / Polars / Arrow Tables](#8-import-patterns-pandas--polars--arrow-tables)
+* [9) Transform‑as‑you‑load: LOAD FROM + COPY FROM subqueries](#9-transform-as-you-load-load-from--copy-from-subqueries)
+* [10) Concurrency + application architecture](#10-concurrency--application-architecture)
+* [11) Async in Python: AsyncConnection](#11-async-in-python-asyncconnection)
+* [12) Type system, casting, and “why imports fail”](#12-type-system-casting-and-why-imports-fail)
+* [13) Power features in Python: multi‑statement execution + UDFs](#13-power-features-in-python-multi-statement-execution--udfs)
+* [14) “Beginner → Master” learning path and checklists](#14-beginner--master-learning-path-and-checklists)
+
+---
+
+## 1) Mental model: what Kuzu is in a Python program
+
+Kuzu is an **embedded** database: you import a library, create a database handle, and execute queries directly in‑process—no server setup required. The core runtime objects to internalize are:
+
+* **`Database`**: points at your database storage (on-disk directory/file path) *or* an in-memory instance.
+* **`Connection`**: executes Cypher statements against a `Database`.
+* **`QueryResult`**: an iterable result set returned from query execution.
+
+Kuzu uses a **structured property graph model** and **requires a pre-defined schema**: you define **node tables** and **relationship tables**, with strongly typed properties. Node tables must have a **primary key**; relationship tables do not require a PK.
+
+### Persistence modes (important for real workflows)
+
+Kuzu supports:
+
+* **On‑disk** mode: you create a database with a filesystem path; Kuzu persists data and logs transactions to a **Write‑Ahead Log (WAL)** and periodically merges updates into database files at checkpoints.
+* **In‑memory** mode: you create a database with `""` or `:memory:`; no WAL writes, nothing persisted, everything is lost when the process ends.
+
+---
+
+## 2) Your first working graph (beginner quick start)
+
+This is the minimal “I can create schema → load data → run a Cypher query” loop.
+
+### Step 1 — Create an on-disk database + connection
+
+```python
+import kuzu
+
+db = kuzu.Database("example.kuzu")  # on-disk
+conn = kuzu.Connection(db)
+```
+
+### Step 2 — Define schema (node + relationship tables)
+
+```python
+conn.execute("CREATE NODE TABLE User(name STRING PRIMARY KEY, age INT64)")
+conn.execute("CREATE NODE TABLE City(name STRING PRIMARY KEY, population INT64)")
+conn.execute("CREATE REL TABLE Follows(FROM User TO User, since INT64)")
+conn.execute("CREATE REL TABLE LivesIn(FROM User TO City)")
+```
+
+### Step 3 — Bulk load from CSV (recommended for large datasets)
+
+```python
+conn.execute('COPY User FROM "./data/user.csv"')
+conn.execute('COPY City FROM "./data/city.csv"')
+conn.execute('COPY Follows FROM "./data/follows.csv"')
+conn.execute('COPY LivesIn FROM "./data/lives-in.csv"')
+```
+
+### Step 4 — Query with Cypher
+
+```python
+result = conn.execute("""
+MATCH (a:User)-[f:Follows]->(b:User)
+RETURN a.name, b.name, f.since;
+""")
+
+for row in result:
+    print(row)
+```
+
+---
+
+## 3) Schema fundamentals: node tables vs relationship tables
+
+Kuzu’s schema rules are the biggest “relational-to-graph” mental shift.
+
+### Node tables
+
+* Represent node types (labels) with typed properties.
+* **Must define a primary key** (PK).
+
+### Relationship tables
+
+* Represent edge types with optional typed properties.
+* No primary key required.
+* Relationships explicitly declare direction via `FROM <NodeTable> TO <NodeTable>`.
+
+### Why this matters for import + integrity
+
+* Most bulk import patterns assume **PK uniqueness**.
+* Relationship bulk load assumes **the referenced nodes already exist** (the docs explicitly recommend copying nodes before relationships).
+
+---
+
+## 4) Querying with Cypher in Python
+
+Kuzu uses Cypher syntax to describe graph pattern matches:
+
+* Nodes: `(n:Label {prop: value})`
+* Relationships: `-[:TYPE]->` (direction matters)
+* Typical structure: `MATCH ... WHERE ... RETURN ...`
+
+Example:
+
+```cypher
+MATCH (p:Person)-[:HAS_INSURANCE]->(i:InsuranceProvider)
+WHERE i.type = "health"
+RETURN p.*, i.*;
+```
+
+This style appears directly in Kuzu’s DataFrame ingest walkthrough, where the graph is built from nested data and then validated via a match query.
+
+### A “graph ETL” Cypher tool you’ll use constantly: UNWIND
+
+When you have nested/list data (common from JSON), you’ll often:
+
+* `LOAD FROM ...`
+* `UNWIND list_field AS x`
+* `RETURN ...`
+
+Kuzu’s Polars advanced example uses `UNWIND info.insurance_provider AS i` to explode a list of structs into rows.
+
+---
+
+## 5) Safe + reusable queries: parameters and “prepared statement” patterns
+
+If you’re building any real application—especially one that takes user input—**parameterization is not optional**.
+
+Kuzu explicitly calls out that, similar to SQL injection, **Cypher injection** can occur if you dynamically concatenate strings into queries; the recommended practice is to pass parameters instead.
+
+### Parameter syntax
+
+* Use `$name` inside the Cypher statement
+* Pass a Python dictionary via the `parameters` argument
+
+✅ Recommended pattern:
+
+```python
+min_age = 18
+max_age = 30
+
+conn.execute("""
+MATCH (p:Person)
+WHERE p.age > $min_age AND p.age < $max_age
+RETURN p.name;
+""", parameters={"min_age": min_age, "max_age": max_age})
+```
+
+🚫 Not recommended:
+
+```python
+conn.execute(f"""
+MATCH (p:Person)
+WHERE p.age > {min_age} AND p.age < {max_age}
+RETURN p.name;
+""")
+```
+
+### Why “prepared” matters operationally
+
+Even if you never face an attacker, parameters give you:
+
+* repeatable query templates
+* clearer separation between logic and inputs
+* simpler testing
+* safer DataFrame / external input workflows (see next sections)
+
+---
+
+## 6) Working with results: tuples, dicts, Pandas, Polars, Arrow
+
+Kuzu gives multiple “result materialization” paths depending on what you’re doing next.
+
+### Iterate rows (default)
+
+```python
+result = conn.execute("MATCH (p:Person) RETURN p.name, p.age")
+for row in result:
+    print(row)
+```
+
+The getting-started examples show iteration yielding row-like lists.
+
+### Output as dictionaries
+
+```python
+for row in result.rows_as_dict():
+    print(row)
+```
+
+This is shown directly in the “Create your first graph” page.
+
+### Pandas / Polars / Arrow outputs
+
+Kuzu supports:
+
+* `get_as_df()` → Pandas DataFrame
+* `get_as_pl()` → Polars DataFrame
+* `get_as_arrow()` → PyArrow Table
+
+Example:
+
+```python
+df = result.get_as_df()
+pl_df = result.get_as_pl()
+tbl = result.get_as_arrow()
+```
+
+### “Output utilities” for control
+
+The Python API documents utilities including:
+
+* `get_all()` (all rows)
+* `rows_as_dict().get_all()`
+* `get_n(n)` (first n rows)
+* `has_next()` / `get_next()`
+
+This becomes important in production when you’re:
+
+* streaming results
+* limiting memory usage
+* building APIs with pagination
+
+---
+
+## 7) Import patterns: CSV at scale
+
+If you’re building non-trivial databases, you’ll spend a lot of time here.
+
+### Why CSV COPY FROM is “the default professional” move
+
+Kuzu explicitly recommends `COPY FROM` for creating large databases. You can import into empty tables or append to existing ones.
+
+### The three CSV rules that prevent 80% of failures
+
+1. **Copy nodes before relationships**
+   Relationship CSV files refer to node PKs—those nodes must exist first.
+
+2. **Use quotes for strings (recommended)**
+   Kuzu accepts strings with or without quotes, but quoting reduces ambiguity with delimiters.
+
+3. **Avoid leading/trailing spaces**
+   Kuzu follows CSV rules and does not ignore spaces; malformed integers due to spaces can become NULLs.
+
+### Node table CSV imports
+
+* Create the table with typed columns and a PK
+* Use `COPY <Table> FROM "file.csv" (header=true)` if there’s a header row
+
+### Relationship table CSV imports: the “first two columns” rule
+
+When copying into a relationship table, Kuzu assumes:
+
+* column 1: PK of the `FROM` nodes
+* column 2: PK of the `TO` nodes
+* remaining columns: relationship properties
+
+This is a critical design constraint: your CSV layout must align with your relationship table definition.
+
+### Multi-file import patterns (scaling + partitioning)
+
+Kuzu supports importing multiple CSV files into one table via:
+
+* **glob patterns** (e.g., `"User*.csv"`)
+* **explicit list of files** (e.g., `["User0.csv", "User1.csv"]`)
+
+This is a clean way to:
+
+* load partitions
+* parallelize preprocessing
+* manage large datasets without one giant file
+
+### CSV configuration knobs (master-level essentials)
+
+You can set parameters inside `( ... )` at the end of `COPY FROM`. Kuzu also supports auto-detection for key parameters when not specified.
+
+Supported config parameters include (among others):
+
+* `HEADER` (true/false)
+* `DELIM` / `DELIMITER`
+* `QUOTE`
+* `ESCAPE`
+* `SKIP`
+* `PARALLEL`
+* `IGNORE_ERRORS` (skip malformed rows, inspect with warnings utilities)
+* `auto_detect`
+* `sample_size`
+* `NULL_STRINGS`
+
+#### Auto-detection behavior (useful when you ingest “unknown CSV”)
+
+* By default, Kuzu auto-detects `HEADER`, `DELIM`, `QUOTE`, `ESCAPE` if not specified.
+* Default sample size is **256 lines** for auto-detection; configurable via `sample_size`.
+
+Header detection approach (important to understand odd edge cases):
+
+* Kuzu parses the first line and checks whether each value can be cast to the target column’s type; if it can’t, it treats it as a header row.
+
+Delimiter/quote/escape auto-detection considers a set of options, including delimiters like `, | ; \t`.
+
+### Compressed CSV
+
+Kuzu supports scanning `*.csv.gz` files directly (gzip) without manual decompression.
+
+---
+
+## 8) Import patterns: Pandas / Polars / Arrow Tables
+
+This is where Kuzu really becomes “Python-native” in day-to-day work.
+
+Kuzu supports copying from:
+
+* Pandas DataFrames
+* Polars DataFrames
+* in-memory Arrow Tables
+  using `COPY FROM`.
+
+### Two ways to copy a DataFrame (and why only one is “professional grade”)
+
+#### 1) Use a query parameter (recommended, reliable)
+
+```python
+conn.execute("COPY Person FROM $dataframe", {"dataframe": df})
+```
+
+This is explicitly described as **the most reliable way** to import a dataframe.
+
+#### 2) Reference the dataframe by name (not recommended)
+
+```python
+conn.execute("COPY Person FROM df")
+```
+
+This only works if the variable exists locally in the same scope as the `conn.execute()` call, and it breaks in patterns like `COPY ... FROM get_df()` (the docs show an error case).
+
+**Master takeaway:** Always pass DataFrames via parameters to avoid “scope magic” failures and make imports testable and deterministic.
+
+### Ignoring malformed rows in DataFrame COPY
+
+When copying from DataFrames, you can ignore “malformed” rows due to duplicates, nulls, or missing primary keys using:
+
+```python
+conn.execute("COPY Person FROM $dataframe (ignore_errors=true)", {"dataframe": df})
+```
+
+The docs demonstrate this with duplicate PKs and null PKs.
+
+But there’s a strict boundary:
+
+* You **cannot** ignore parsing/type-casting errors when copying from DataFrames, because Kuzu is strictly typed.
+
+---
+
+## 9) Transform-as-you-load: LOAD FROM + COPY FROM subqueries
+
+This is the “intermediate → advanced” leap: stop thinking of import as “dump rows”; start thinking of it as **pipeline compilation**:
+
+* Use Pandas/Polars/Arrow for complex transformations
+* Use `LOAD FROM` to scan data without copying it into Kuzu
+* Use Cypher to reshape it
+* Use `COPY <Table> FROM (subquery)` to populate graph tables cleanly
+
+### LOAD FROM: scan without ingesting
+
+The Python API docs are explicit: scanning a DataFrame/Table using `LOAD FROM` **does not copy** data into Kuzu; it only reads it.
+
+This makes `LOAD FROM` ideal for:
+
+* inspection
+* validation
+* prototyping transformations
+* building deterministic “import views” before committing to writes
+
+### COPY FROM (subquery): the pro ingest pattern
+
+Kuzu’s Polars advanced example shows an end-to-end workflow on nested JSON-like data:
+
+1. Read JSON into Polars
+2. Inspect nested columns (structs + list-of-structs)
+3. Use `LOAD FROM $dataframe` + `UNWIND` to flatten list data
+4. Create Kuzu schema
+5. Use `COPY <NodeTable> FROM (LOAD FROM ... RETURN ...)`
+6. Use `COPY <RelTable> FROM (LOAD FROM ... RETURN from_pk, to_pk)`
+
+Key “master” moves from that example:
+
+### A) Inspect before you ingest
+
+They first query the DataFrame via `LOAD FROM` + `UNWIND` to verify shape and extract the nested struct fields row-wise.
+
+### B) Align return columns to schema (names + types)
+
+The example explicitly notes you must ensure returned columns align with the schema defined in `CREATE NODE TABLE`.
+
+### C) Use explicit CAST when the DataFrame’s type differs
+
+They cast `age` because Polars inferred a signed integer type while the Kuzu schema requires `UINT8`.
+
+### D) Use DISTINCT when loading node PKs from multi-row sources
+
+They use `RETURN DISTINCT i.*` when copying into a node table where `name` is the PK, ensuring uniqueness.
+
+### E) Relationship COPY requires FROM/TO columns in the subquery result
+
+For the relationship import, they return the patient id and insurance provider name in the right order so Kuzu can populate `FROM` and `TO`.
+
+---
+
+## 10) Concurrency + application architecture
+
+Kuzu’s concurrency model is one of the most important “production correctness” topics in the docs.
+
+### The two-step connection process (and why it matters)
+
+You connect in two steps:
+
+1. Create a `Database` object in either `READ_WRITE` (default) or `READ_ONLY`
+2. Create one or more `Connection` objects from that database
+
+### The key concurrency limitation (embedded + caching)
+
+Kuzu explains that the `Database` object contains components such as buffer/cache managers. Because of caching, Kuzu restricts how many `Database` objects can point at the same on-disk database:
+
+* Either:
+
+  1. **One READ_WRITE Database object**, or
+  2. **Multiple READ_ONLY Database objects**
+
+You cannot safely have a READ_WRITE `Database` and another READ_ONLY/READ_WRITE `Database` concurrently pointing to the same DB directory, because writes can invalidate caches in other database instances. Kuzu prevents this.
+
+### “It works in one process”: multiple connections from the same Database object
+
+The important nuance: the restriction is about **multiple Database objects**, not multiple connections.
+
+You *can* create multiple connections from the same `READ_WRITE` `Database` object and issue concurrent queries (e.g., via threads). Kuzu describes this as safe, and notes statements run inside transactions handled by the transaction manager in that `Database` instance.
+
+### Common dev pain: notebook file locks
+
+If you open a DB in a Jupyter notebook and also try to open the same DB via the CLI or another process, you may see a file lock error like:
+
+`RuntimeError: IO exception: Could not set lock on file ...`
+Kuzu recommends restarting/closing the notebook server to release the lock.
+
+### Production pattern for multi-process read/write
+
+If you need many external clients doing reads/writes, Kuzu recommends an architecture where:
+
+* A single API server process embeds Kuzu and opens the DB in READ_WRITE
+* Clients talk to the API server via HTTP/gRPC
+  Kuzu even references a REST-style API server implementation (Express.js), while noting that executing via HTTP can cost performance due to JSON/network serialization.
+
+---
+
+## 11) Async in Python: AsyncConnection
+
+Kuzu provides both synchronous and asynchronous Python APIs.
+
+### When AsyncConnection is the right tool
+
+Use the async API when:
+
+* you’re inside async web frameworks (e.g., FastAPI)
+* you want to run multiple Kuzu queries concurrently under an async scheduler
+
+### What it actually does under the hood
+
+The docs state the async API is backed by a **thread pool** that is automatically created/managed by the async connection. You control concurrency with `max_concurrent_queries`.
+
+Example pattern:
+
+```python
+import asyncio, kuzu
+
+async def main():
+    db = kuzu.Database("example.kuzu")
+    conn = kuzu.AsyncConnection(db, max_concurrent_queries=4)
+    await conn.execute("CREATE NODE TABLE ...")
+    # ...
+
+asyncio.run(main())
+```
+
+---
+
+## 12) Type system, casting, and “why imports fail”
+
+Kuzu is **strictly typed**:
+
+* Property keys are strongly typed
+* Types must be explicitly declared in schema
+
+### Practical consequences
+
+1. DataFrame COPY can ignore some row-level issues (duplicates/null PKs) with `ignore_errors=true`,
+   but it cannot ignore parsing/type-casting errors.
+
+2. When your source types differ from schema, you should **cast explicitly** during `COPY FROM (subquery)` import steps. The Polars advanced example does exactly this (casting age to `UINT8`).
+
+### Python type notation mapping (useful for UDFs and annotations)
+
+The Python API page includes a mapping from Python types to Kuzu logical types (e.g., `int → INT64`, `str → STRING`, `date → DATE`, `dict → MAP`, etc.).
+
+---
+
+## 13) Power features in Python: multi-statement execution + UDFs
+
+### A) Run multiple queries in one execution
+
+If you submit multiple Cypher statements separated by semicolons in a single `execute()` call, the Python API returns a **list of `QueryResult` objects** instead of a single one.
+
+That enables patterns like:
+
+* schema bootstrap + data load + sanity query in one call
+* migration scripts
+* test harnesses
+
+### B) User Defined Functions (UDFs)
+
+The Python API supports registering Python UDFs and using them in Cypher queries.
+
+But Kuzu calls out a key engineering tradeoff:
+
+* Python UDFs can have **performance implications**
+* Prefer native Cypher functions where possible, as native functions run faster.
+
+---
+
+## 14) Beginner → Master learning path and checklists
+
+Here’s a practical progression that matches how people actually succeed with Kuzu in Python.
+
+---
+
+### Level 1: Beginner (1–2 days)
+
+**Goal:** get comfortable with the objects and core commands.
+
+Checklist:
+
+* [ ] Create an on-disk DB + connection (`Database` / `Connection`)
+* [ ] Define node + relationship tables (PK required for nodes)
+* [ ] Import via `COPY FROM` for nodes, then relationships
+* [ ] Run basic `MATCH ... RETURN ...` and iterate results
+* [ ] Convert results to Pandas/Polars/Arrow when needed
+
+---
+
+### Level 2: Intermediate (1–2 weeks)
+
+**Goal:** build reliable data flows and app-safe queries.
+
+Checklist:
+
+* [ ] Use parameters (`$var`) and pass a dict into `execute()`
+* [ ] Use output utilities (`get_all`, `get_n`, `rows_as_dict`) for control
+* [ ] Learn CSV config tuning: header/delim/quote/escape autodetect, null strings, sample_size
+* [ ] Import multiple CSV files via glob or lists
+* [ ] Start using `LOAD FROM` to inspect and prototype transformations without ingesting
+
+---
+
+### Level 3: Advanced / “Master” (ongoing)
+
+**Goal:** treat Kuzu as an embedded graph analytics engine with deterministic ingest + production-safe concurrency.
+
+Checklist:
+
+* [ ] Prefer DataFrame ingestion via query parameters (`COPY ... FROM $df`)
+* [ ] Use `COPY FROM (subquery)` pipelines to reshape data during ingest
+* [ ] Handle nested JSON by combining `LOAD FROM`, `UNWIND`, `RETURN DISTINCT`, and `CAST`
+* [ ] Design concurrency correctly:
+
+  * one READ_WRITE `Database` object at a time per on-disk DB
+  * multiple connections from that DB are OK (threads)
+  * multiple processes only if all are READ_ONLY
+  * for many writers across processes: route through a single API server process
+* [ ] Use async API in async apps (`AsyncConnection`, `max_concurrent_queries`)
+* [ ] Use UDFs only when needed; prefer native functions for speed
+
+---
+
+## Closing: how to “execute work” with Kuzu like an expert
+
+If you want one “north star” workflow that scales from toy examples to production:
+
+1. **Schema first** (strong types + PKs)
+2. **Bulk load** with `COPY FROM` (CSV or DataFrames)
+3. **Transform on ingest** with `LOAD FROM` + `UNWIND` + `COPY FROM (subquery)`
+4. **Parameterize everything** (avoid Cypher injection; reuse queries)
+5. **Respect concurrency constraints** (single READ_WRITE database object; share it; avoid multi-process writers)
+6. **Materialize results** to the structure you’re working in (dict/Pandas/Polars/Arrow)
+
+---
+
+If you want, paste a small sample of *your* data shape (CSV header + 5 rows, or a representative JSON snippet), and I’ll map it to a Kuzu schema + an ingest pipeline using the exact “LOAD FROM → validate → COPY FROM subquery” pattern from the docs.
