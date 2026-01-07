@@ -29,7 +29,7 @@ from context_compass.system.ai_restricted.database_management.orm_session import
 )
 from context_compass.system.ai_restricted.database_management.system_orm_models import LeaseLock
 from context_compass.system.ai_restricted.system_management import lease
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -162,7 +162,7 @@ def _serialize_lock(row: LeaseLock) -> Dict[str, Any]:
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    List lease locks using the command runner contract.
+    List lease locks using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

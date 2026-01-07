@@ -21,7 +21,7 @@ from context_compass.system.ai_restricted._shared.command_payload import (
     require_bool,
     require_string,
 )
-from context_compass.system.ai_restricted._shared.command_results import (
+from context_compass.system.ai_restricted._shared.sql_command_results import (
     error_result,
     exception_result,
     ok_result,
@@ -38,7 +38,7 @@ from context_compass.system.ai_restricted.database_management.user_orm_models im
     AgentProfileLastCommandArg,
 )
 from context_compass.system.ai_restricted._shared.certification_state import default_certification_state
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )

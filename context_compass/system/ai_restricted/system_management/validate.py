@@ -20,7 +20,7 @@ from context_compass.system.ai_restricted._shared.schema_validate import load_sc
 from context_compass.system.ai_restricted.database_management import sqlite_crud
 from context_compass.system.ai_restricted.database_management import sqlite_query
 from context_compass.system.ai_restricted.system_management import command_registry_validator
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -765,7 +765,7 @@ def validate_repo(root: Path) -> list[str]:
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Validate context_compass artifacts using the command runner contract.
+    Validate context_compass artifacts using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

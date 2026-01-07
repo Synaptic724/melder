@@ -29,7 +29,7 @@ from context_compass.system.ai_restricted._shared.command_results import (
 )
 from context_compass.system.ai_restricted._shared.certification_guard import ensure_certified
 from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_work_mode
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -223,7 +223,7 @@ def move_research_items(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Move research artifacts using the command runner contract.
+    Move research artifacts using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

@@ -32,6 +32,7 @@ Core references
 - Configuration: `context_compass/onboarding/user/configuration.md`
 - Onboarding bundle: `context_compass/system/ai_restricted/agent_management/onboarding_bundle.py`
 - Command registry: SQLite tables `command_registry_user` and `command_registry_system`
+- Command execution: `context_compass/system/ai_restricted/system_management/tool_execute.py` (ToolCommandAPI + hooks)
 
 Suggested user-facing explanation flow
 1) "Here is the authority chain and where behavior lives."
@@ -40,6 +41,7 @@ Suggested user-facing explanation flow
 4) "Here are the user docs that mirror those stories."
 5) "Here is the active configuration (features + work_mode)."
 6) "Here is the command registry and how to list available tools."
+7) "Here is how to execute commands with hooks (ToolCommandAPI via tool_execute)."
 
 Example response outline (short)
 - Authority chain and doc locations.

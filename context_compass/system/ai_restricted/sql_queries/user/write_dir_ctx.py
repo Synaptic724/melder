@@ -21,7 +21,7 @@ from context_compass.system.ai_restricted._shared.command_payload import (
     require_bool,
     require_string,
 )
-from context_compass.system.ai_restricted._shared.command_results import (
+from context_compass.system.ai_restricted._shared.sql_command_results import (
     error_result,
     exception_result,
     ok_result,
@@ -35,7 +35,7 @@ from context_compass.system.ai_restricted.sql_queries.user._dir_ctx_payloads imp
     load_dir_ctx_snapshot,
     persist_dir_ctx_payload,
 )
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )

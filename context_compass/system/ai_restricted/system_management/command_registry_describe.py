@@ -39,7 +39,7 @@ from context_compass.system.ai_restricted.database_management import sqlite_crud
 from context_compass.system.ai_restricted.system_management.command_registry_bootstrap import (
     ensure_registry_seeded,
 )
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )

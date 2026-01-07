@@ -12,7 +12,7 @@ from context_compass.system.ai_restricted._shared.command_results import (
     ok_result,
     payload_error_result,
 )
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -83,7 +83,7 @@ def generate_agent_id(prefix: Optional[str] = None, now_ms: Optional[int] = None
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Generate an agent id using the command runner contract.
+    Generate an agent id using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

@@ -31,7 +31,7 @@ from context_compass.system.ai_restricted._shared.memory_store import (
 from context_compass.system.ai_restricted._shared import policies as policy_store
 from context_compass.system.ai_restricted._shared.timeutils import utc_now_iso
 from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_work_mode
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -151,7 +151,7 @@ def add_memory(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Add a memory entry using the command runner contract.
+    Add a memory entry using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

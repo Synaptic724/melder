@@ -34,7 +34,7 @@ from context_compass.system.ai_restricted.database_management.user_orm_models im
     WorkQueueItemLease,
     WorkQueueItemReason,
 )
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -229,7 +229,7 @@ def _build_item_payloads(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    List work queues using the command runner contract.
+    List work queues using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

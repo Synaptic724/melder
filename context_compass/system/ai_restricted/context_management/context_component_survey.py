@@ -31,7 +31,7 @@ from context_compass.system.ai_restricted._shared.ignore_rules import load_ignor
 from context_compass.system.ai_restricted._shared.paths import repo_relative_path
 from context_compass.system.ai_restricted._shared.timeutils import utc_now_iso
 from context_compass.system.ai_restricted.database_management import sqlite_crud, sqlite_query
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -447,7 +447,7 @@ def survey_components(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Survey component contexts using the command runner contract.
+    Survey component contexts using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

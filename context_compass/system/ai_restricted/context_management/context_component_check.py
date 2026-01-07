@@ -28,7 +28,7 @@ from context_compass.system.ai_restricted._shared.feature_guard import ensure_fe
 from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_work_mode
 from context_compass.system.ai_restricted._shared.timeutils import utc_now_iso
 from context_compass.system.ai_restricted.database_management import sqlite_crud, sqlite_query
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -349,7 +349,7 @@ def check_components(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Check component context freshness using the command runner contract.
+    Check component context freshness using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

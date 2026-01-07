@@ -25,7 +25,7 @@ from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_
 from context_compass.system.ai_restricted._shared.timeutils import utc_now_iso
 from context_compass.system.ai_restricted._shared.work_ids import generate_work_id
 from context_compass.system.ai_restricted.database_management import sqlite_crud
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -402,7 +402,7 @@ def _resolve_paths(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Add a work item using the command runner contract.
+    Add a work item using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

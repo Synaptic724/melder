@@ -33,7 +33,7 @@ from context_compass.system.ai_restricted._shared.command_results import (
     payload_error_result,
 )
 from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_work_mode
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )

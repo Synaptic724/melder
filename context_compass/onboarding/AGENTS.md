@@ -62,6 +62,7 @@ Directory map and purpose
 - SQLite user.db tables: agent_profile, self_context, agent_work_queue (plus child tables for certification, opinions, and work items).
 - SQLite system.db lease_locks: lease locks for self-context and agent records.
 - context_compass/system/ai_restricted/: command scripts and operational tooling.
+- context_compass/workspace/plans/: basic planning notes (not tickets).
 - context_compass/user/github_intake/: raw incoming GitHub tickets (copilot writes here).
 - SQLite user.db work_queue tables: global epic/story/task queues by state (shared history).
 - context_compass/onboarding/agent/general/behavioral_guidelines/: narrative flows for onboarding, context, and work execution.
@@ -174,7 +175,7 @@ Onboarding sequence (detailed)
 - If not run, report "Not run."
 
 14) Check out when work ends
-   - Run python context_compass/system/ai_restricted/agent_management/agent_checkout.py --repo-root . --agent-id <agent_id>.
+- Run python context_compass/system/ai_restricted/agent_management/agent_checkout.py --repo-root . --agent-id <agent_id>.
 
 Where the behavior contract lives
 - Feature flags and skill overrides: context_compass/onboarding/agent/general/skills/feature_flags.md

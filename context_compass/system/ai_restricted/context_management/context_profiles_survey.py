@@ -38,7 +38,7 @@ from context_compass.system.ai_restricted._shared.ignore_rules import (
 from context_compass.system.ai_restricted._shared.paths import repo_relative_dir, repo_relative_path
 from context_compass.system.ai_restricted._shared.source_roots import load_source_roots
 from context_compass.system.ai_restricted._shared.timeutils import utc_now_iso
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -1402,7 +1402,7 @@ def survey_profiles(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Survey context profiles using the command runner contract.
+    Survey context profiles using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

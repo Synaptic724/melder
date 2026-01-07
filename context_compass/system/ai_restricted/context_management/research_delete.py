@@ -28,7 +28,7 @@ from context_compass.system.ai_restricted._shared.command_results import (
 )
 from context_compass.system.ai_restricted._shared.certification_guard import ensure_certified
 from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_work_mode
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -191,7 +191,7 @@ def delete_research_items(repo_root: Path, bucket: str, names: list[str]) -> dic
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Delete research artifacts using the command runner contract.
+    Delete research artifacts using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

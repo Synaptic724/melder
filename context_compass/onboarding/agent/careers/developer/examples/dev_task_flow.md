@@ -2,7 +2,7 @@
 
 Context
 - The user asks for a small refactor with tests.
-- The repo uses the command runner + SQLite tooling.
+- The repo uses ToolCommandAPI + SQLite tooling.
 
 Example flow (concise)
 1) Confirm scope and list files to be changed.

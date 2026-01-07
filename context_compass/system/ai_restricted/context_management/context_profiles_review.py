@@ -27,7 +27,7 @@ from context_compass.system.ai_restricted._shared.feature_guard import ensure_fe
 from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_work_mode
 from context_compass.system.ai_restricted._shared.hashing import hash_json
 from context_compass.system.ai_restricted._shared.timeutils import utc_now_iso
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -644,7 +644,7 @@ def review_profile(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Review a context profile using the command runner contract.
+    Review a context profile using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

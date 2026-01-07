@@ -26,7 +26,7 @@ from context_compass.system.ai_restricted._shared.hashing import hash_text
 from context_compass.system.ai_restricted._shared.json_io import dump_minified
 from context_compass.system.ai_restricted._shared.timeutils import utc_now_iso
 from context_compass.system.ai_restricted.database_management import sqlite_query
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -349,7 +349,7 @@ def build_bundle(repo_root: Path) -> dict:
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Generate an onboarding bundle using the command runner contract.
+    Generate an onboarding bundle using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

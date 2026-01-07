@@ -1,19 +1,18 @@
 """
-SQLite-backed command runner for registry-driven command execution.
+Registry-backed command API for tool execution.
 
 Purpose
-- Resolve command metadata from SQLite command registry tables.
-- Provide an in-process execution surface for command and hook pipelines.
+- Provide a single entrypoint that resolves registry scope, builds an execution
+  context internally, and runs the command pipeline with hooks.
+- Execute commands by name using the same hook phases/order as the legacy runner.
 
 Contract
-- Registry lookups are read-only and happen per invocation.
-- Hooks are discovered from SQLite hook registries via sqlite_crud.
-- Commands execute through their declared execution spec (module/script).
+- Callers supply command_name, payload, and required identifiers.
+- ExecutionContext is created inside the API, not by callers.
 """
 
 from __future__ import annotations
 
-import importlib
 import importlib.util
 import json
 from dataclasses import dataclass, field
@@ -21,8 +20,16 @@ from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
+from context_compass.system.ai_restricted._shared import agent_profile_store
+from context_compass.system.ai_restricted._shared import certification_guard
+from context_compass.system.ai_restricted._shared import command_contracts as shared_contracts
 from context_compass.system.ai_restricted._shared.command_contracts import (
     build_error_details,
+)
+from context_compass.system.ai_restricted._shared.feature_guard import (
+    FeatureDisabledError,
+    RepoStateDisabledError,
+    ensure_feature_enabled,
 )
 
 if TYPE_CHECKING:
@@ -51,7 +58,7 @@ DEFAULT_ENTRYPOINT = "run_hook"
 COMMAND_REGISTRY_SYSTEM_TABLE = "command_registry_system"
 COMMAND_REGISTRY_USER_TABLE = "command_registry_user"
 COMMAND_REGISTRY_ACTION = "by_command_name"
-COMMAND_REGISTRY_ACTOR = "system:command_runner"
+COMMAND_REGISTRY_ACTOR = "system:tool_command_api"
 HOOK_REGISTRY_SYSTEM_TABLE = "hook_registry_system"
 HOOK_REGISTRY_USER_TABLE = "hook_registry_user"
 HOOK_REGISTRY_OPERATION = "read"
@@ -59,9 +66,9 @@ HOOK_REGISTRY_ACTION = "list_hooks"
 
 
 @dataclass(frozen=True)
-class ExecutionContext:
+class ExecutionContext(shared_contracts.ExecutionContext):
     """
-    Execution context passed through the command runner pipeline.
+    Execution context passed through the command pipeline.
 
     Attributes:
         command_name (str): Command name being executed.
@@ -74,18 +81,14 @@ class ExecutionContext:
     Contract:
         - command_name identifies the command entry resolved from the registry.
         - annotations is caller-owned and may be mutated by hook pipelines.
+        - This type aliases _shared.command_contracts.ExecutionContext.
     """
 
-    command_name: str
-    agent_id: str | None
-    work_id: str | None
-    correlation_id: str | None
-    chain_depth: int = 0
-    annotations: dict[str, Any] = field(default_factory=dict)
+    pass
 
 
 @dataclass(frozen=True)
-class CommandError:
+class CommandError(shared_contracts.CommandError):
     """
     Structured error payload emitted by command execution.
 
@@ -97,15 +100,14 @@ class CommandError:
     Contract:
         - code must be stable and non-empty.
         - meaning should be actionable and concise.
+        - This type aliases _shared.command_contracts.CommandError.
     """
 
-    code: str
-    meaning: str
-    details: str | None = None
+    pass
 
 
 @dataclass(frozen=True)
-class CommandResult:
+class CommandResult(shared_contracts.CommandResult):
     """
     Result envelope for command execution.
 
@@ -120,18 +122,14 @@ class CommandResult:
     Contract:
         - output is treated as immutable by hooks.
         - metadata may be extended by interceptors and decorators.
+        - This type aliases _shared.command_contracts.CommandResult.
     """
 
-    status: str
-    output: dict[str, Any] = field(default_factory=dict)
-    metadata: dict[str, Any] = field(default_factory=dict)
-    artifacts: list[str] = field(default_factory=list)
-    errors: list[CommandError] = field(default_factory=list)
-    queries: list[dict[str, Any]] = field(default_factory=list)
+    pass
 
 
 @dataclass(frozen=True)
-class NextAction:
+class NextAction(shared_contracts.NextAction):
     """
     Follow-on action emitted by an activation hook.
 
@@ -141,14 +139,14 @@ class NextAction:
 
     Contract:
         - command_name must match a registered command.
+        - This type aliases _shared.command_contracts.NextAction.
     """
 
-    command_name: str
-    payload: dict[str, Any]
+    pass
 
 
 @dataclass(frozen=True)
-class HookResult:
+class HookResult(shared_contracts.HookResult):
     """
     Result returned by a hook invocation.
 
@@ -160,11 +158,10 @@ class HookResult:
     Contract:
         - metadata_patch merges into result metadata.
         - next_actions are only honored during activation.
+        - This type aliases _shared.command_contracts.HookResult.
     """
 
-    metadata_patch: dict[str, Any] = field(default_factory=dict)
-    next_actions: list[NextAction] = field(default_factory=list)
-    errors: list[CommandError] = field(default_factory=list)
+    pass
 
 
 @dataclass(frozen=True)
@@ -174,7 +171,7 @@ class HookSpec:
 
     Attributes:
         hook_id (str): Stable hook identifier.
-        phase (str): Hook phase (pre, activation, post).
+        phase (str): Hook phase (pre, activation, post, on_error).
         order (int): Ordering within the phase.
         script_kind (str): Script kind (python).
         path (Path): Path to the hook script.
@@ -207,7 +204,7 @@ class CommandRecord:
         entry (str): Execution entry string.
         summary (str): Short human-readable summary.
         requires_certification (bool): Whether certification is required.
-        requires_work_id (bool): Whether a work id is required.
+        requires_work_id (bool): Whether a work id is required (advisory only).
         feature_flag (str | None): Feature flag gate for the command.
         notes (str | None): Additional notes for operators.
         spec (dict[str, Any] | None): Optional rich command spec.
@@ -238,7 +235,7 @@ class CommandRecord:
         Convert the record into a JSON-serializable dictionary.
 
         Returns:
-            dict[str, Any]: JSON-friendly command record representation.
+            dict[str, Any]: JSON-ready representation.
         """
 
         return {
@@ -307,144 +304,189 @@ class ExecutionSpec:
     entrypoint: str
 
 
-def _command_registry_scope(table_name: str) -> str:
+@dataclass(frozen=True)
+class CommandApiPaths:
     """
-    Resolve the CRUD scope for a command registry table name.
+    Resolved paths for CommandAPI execution.
+
+    Attributes:
+        repo_root (Path): Repository root path.
+        context_root (Path): context_compass/system root.
+        system_db (Path): system registry database path.
+        user_db (Path): user registry database path.
+    """
+
+    repo_root: Path
+    context_root: Path
+    system_db: Path
+    user_db: Path
+
+
+def execute_command(
+    *,
+    command_name: str,
+    payload: Mapping[str, Any],
+    repo_root: str | Path,
+    agent_id: str | None,
+    work_id: str | None,
+    correlation_id: str | None = None,
+    annotations: Mapping[str, Any] | None = None,
+    max_chain_depth: int = 3,
+) -> CommandResult:
+    """
+    Execute a command by name using the ToolCommandAPI.
 
     Args:
-        table_name (str): Registry table name.
+        command_name (str): Command name to execute.
+        payload (Mapping[str, Any]): JSON-serializable payload for the command.
+        repo_root (str | Path): Repository root path.
+        agent_id (str | None): Agent identifier for certification/work tracking.
+        work_id (str | None): Work identifier for hard-mode enforcement (advisory).
+        correlation_id (str | None): Optional correlation id for tracing.
+        annotations (Mapping[str, Any] | None): Optional mutable annotations.
+        max_chain_depth (int): Maximum activation chain depth.
 
     Returns:
-        str: CRUD scope name (system or user).
-
-    Raises:
-        RuntimeError: If the table is not a supported command registry.
+        CommandResult: Structured command result.
     """
 
-    if table_name == COMMAND_REGISTRY_SYSTEM_TABLE:
-        return "system"
-    if table_name == COMMAND_REGISTRY_USER_TABLE:
-        return "user"
-    raise RuntimeError(
-        "CommandRunner only supports system or user command registries."
+    api = ToolCommandAPI(repo_root=repo_root, max_chain_depth=max_chain_depth)
+    return api.execute(
+        command_name=command_name,
+        payload=payload,
+        agent_id=agent_id,
+        work_id=work_id,
+        correlation_id=correlation_id,
+        annotations=annotations,
     )
 
 
-def _record_dict_to_row(record: Mapping[str, Any]) -> tuple:
+class ToolCommandAPI:
     """
-    Convert a registry record mapping into a COMMAND_COLUMNS tuple.
+    Top-level orchestrator for registry-backed command execution.
 
-    Args:
-        record (Mapping[str, Any]): Registry record mapping.
-
-    Returns:
-        tuple: Row values in COMMAND_COLUMNS order.
-
-    Raises:
-        ValueError: If required columns are missing from the record.
+    Contract:
+        - Uses command registries to resolve command metadata.
+        - Executes pre/activation/post/on_error hooks for commands.
+        - Creates ExecutionContext internally per invocation.
     """
 
-    try:
-        return tuple(record[column] for column in COMMAND_COLUMNS)
-    except KeyError as exc:
-        raise ValueError(
-            "Command registry record is missing required columns."
-        ) from exc
-
-
-class CommandRunner:
-    """
-    Resolve and execute commands backed by SQLite command registries.
-
-    Purpose
-    - Load command metadata from the registry.
-    - Execute commands and hook pipelines deterministically.
-
-    Contract
-    - Registry access is read-only and per-call to avoid shared state.
-    - Hook ordering is deterministic based on phase, order, and id.
-    """
-
-    def __init__(
-        self,
-        db_path: Path,
-        table_name: str,
-        context_compass_root: Path,
-        max_chain_depth: int = 3,
-    ) -> None:
+    def __init__(self, repo_root: str | Path, max_chain_depth: int = 3) -> None:
         """
-        Initialize the command runner for a specific registry table.
+        Initialize the CommandAPI for a repository.
 
         Args:
-            db_path (Path): SQLite database path.
-            table_name (str): Registry table name.
-            context_compass_root (Path): Root directory of context_compass.
+            repo_root (str | Path): Repository root containing context_compass/.
             max_chain_depth (int): Maximum activation chain depth.
-
-        Raises:
-            ValueError: If configuration arguments are invalid.
         """
 
-        if not isinstance(table_name, str) or not table_name.strip():
-            raise ValueError("table_name must be a non-empty string.")
-        if any(char in table_name for char in ("\"", "'", ";", " ")):
-            raise ValueError("table_name contains unsafe characters.")
-        if max_chain_depth < 0:
-            raise ValueError("max_chain_depth must be zero or positive.")
-        self._db_path = db_path
-        self._table_name = table_name
-        self._context_compass_root = context_compass_root
+        self._paths = _resolve_paths(repo_root)
         self._max_chain_depth = max_chain_depth
 
     def describe_command(self, command_name: str) -> CommandRecord | None:
         """
-        Load a command record by name.
+        Describe a command by name across system/user registries.
 
         Args:
-            command_name (str): Command name to load.
+            command_name (str): Command name to look up.
 
         Returns:
-            CommandRecord | None: Parsed command record, or None if missing.
-
-        Raises:
-            ValueError: If stored spec JSON is invalid.
+            CommandRecord | None: Command record when found.
         """
 
-        row = self._fetch_command_row(command_name)
+        row = self._fetch_command_row(COMMAND_REGISTRY_SYSTEM_TABLE, command_name)
+        if row is None:
+            row = self._fetch_command_row(COMMAND_REGISTRY_USER_TABLE, command_name)
         if row is None:
             return None
         return self._row_to_record(row)
 
     def execute(
-        self, command_name: str, payload: Mapping[str, Any], context: ExecutionContext
+        self,
+        *,
+        command_name: str,
+        payload: Mapping[str, Any],
+        agent_id: str | None,
+        work_id: str | None,
+        correlation_id: str | None = None,
+        annotations: Mapping[str, Any] | None = None,
     ) -> CommandResult:
         """
-        Execute a command using the registry-backed interface.
+        Execute a command by name with registry-driven hooks.
 
         Args:
             command_name (str): Command name to execute.
-            payload (Mapping[str, Any]): JSON-serializable kwargs payload.
-            context (ExecutionContext): Execution context for the run.
+            payload (Mapping[str, Any]): JSON-serializable payload for the command.
+            agent_id (str | None): Agent identifier for certification/work tracking.
+            work_id (str | None): Work identifier for hard-mode enforcement (advisory).
+            correlation_id (str | None): Optional correlation id for tracing.
+            annotations (Mapping[str, Any] | None): Optional mutable annotations.
 
         Returns:
-            CommandResult: Structured result payload.
+            CommandResult: Structured command result.
+        """
 
-        Contract:
-            - Returns command_not_found when the registry entry is missing.
-            - Returns execution_not_configured when execution metadata is missing.
-            - Applies on_error hooks for any error outcome.
+        if not isinstance(command_name, str) or not command_name.strip():
+            return error_result(
+                code="invalid_command_name",
+                meaning="command_name must be a non-empty string.",
+                details={"command_name": command_name},
+            )
+        if not isinstance(payload, Mapping):
+            return error_result(
+                code="invalid_payload",
+                meaning="payload must be a mapping.",
+                details={
+                    "command_name": command_name,
+                    "payload_type": type(payload).__name__,
+                },
+            )
+
+        merged_payload, merge_error = _merge_payload(
+            payload,
+            repo_root=self._paths.repo_root,
+            agent_id=agent_id,
+            work_id=work_id,
+            command_name=command_name,
+        )
+        if merge_error is not None:
+            return merge_error
+
+        context = ExecutionContext(
+            command_name=command_name,
+            agent_id=agent_id,
+            work_id=work_id,
+            correlation_id=correlation_id,
+            chain_depth=0,
+            annotations=dict(annotations or {}),
+        )
+        return self._execute_with_context(command_name, merged_payload, context)
+
+    def _execute_with_context(
+        self, command_name: str, payload: Mapping[str, Any], context: ExecutionContext
+    ) -> CommandResult:
+        """
+        Execute a command using an existing ExecutionContext.
+
+        Args:
+            command_name (str): Command name to execute.
+            payload (Mapping[str, Any]): Command payload.
+            context (ExecutionContext): Execution context.
+
+        Returns:
+            CommandResult: Structured command result.
         """
 
         normalized_context = self._normalize_context(context, command_name)
         record = self.describe_command(command_name)
         if record is None:
-            return self._error_result(
+            return error_result(
                 code="command_not_found",
                 meaning="Command is not registered.",
                 details={"command_name": command_name},
             )
         if normalized_context.chain_depth > self._max_chain_depth:
-            return self._error_result(
+            return error_result(
                 code="chain_depth_exceeded",
                 meaning="Activation chain depth exceeded.",
                 details={
@@ -454,10 +496,14 @@ class CommandRunner:
                 },
             )
 
+        requirement_error = self._enforce_requirements(record, normalized_context)
+        if requirement_error is not None:
+            return requirement_error
+
         try:
             hooks = self._load_hooks(normalized_context)
         except HookRegistryLoadError as exc:
-            return self._error_result(
+            return error_result(
                 code=exc.code,
                 meaning=exc.meaning,
                 details=exc.details,
@@ -474,7 +520,7 @@ class CommandRunner:
                 record,
                 normalized_context,
                 payload,
-                self._error_result(
+                error_result(
                     code="invalid_hook_phase",
                     meaning="Pre-hooks cannot emit activation actions.",
                     details={"phase": "pre", "command_name": command_name},
@@ -539,8 +585,7 @@ class CommandRunner:
                 if chained_result.status == "pending_input":
                     return chained_result
                 return self._apply_error_hooks(
-                    hooks,
-                    record, normalized_context, payload, chained_result
+                    hooks, record, normalized_context, payload, chained_result
                 )
 
         post_hooks = self._select_hooks(hooks, "post", record)
@@ -553,7 +598,7 @@ class CommandRunner:
                 record,
                 normalized_context,
                 payload,
-                self._error_result(
+                error_result(
                     code="invalid_hook_phase",
                     meaning="Post-hooks cannot emit activation actions.",
                     details={"phase": "post", "command_name": command_name},
@@ -606,6 +651,107 @@ class CommandRunner:
             annotations=dict(context.annotations),
         )
 
+    def _enforce_requirements(
+        self, record: CommandRecord, context: ExecutionContext
+    ) -> CommandResult | None:
+        """
+        Enforce registry requirements before running hooks or commands.
+
+        Args:
+            record (CommandRecord): Command record for requirement flags.
+            context (ExecutionContext): Execution context for identifiers.
+
+        Returns:
+            CommandResult | None: Error result when requirements fail; None otherwise.
+
+        Contract:
+            - work_id is advisory only; work_mode enforcement remains in tools.
+            - Certification checks are required when the registry flag is set.
+            - Feature flags are enforced when a feature name is present.
+        """
+
+        if record.requires_certification:
+            if not context.agent_id:
+                return error_result(
+                    code="agent_id_required",
+                    meaning="agent_id is required for certified commands.",
+                    details={"command_name": record.command_name},
+                )
+            try:
+                snapshot = agent_profile_store.load_profile(
+                    self._paths.repo_root,
+                    context.agent_id,
+                    actor_id=context.agent_id,
+                )
+            except FileNotFoundError as exc:
+                return error_result(
+                    code="certification_unavailable",
+                    meaning="Agent profile database is unavailable for certification.",
+                    details={
+                        "command_name": record.command_name,
+                        "agent_id": context.agent_id,
+                        "error": str(exc),
+                    },
+                )
+            except Exception as exc:
+                return error_result(
+                    code="certification_lookup_failed",
+                    meaning="Failed to load certification state.",
+                    details={
+                        "command_name": record.command_name,
+                        "agent_id": context.agent_id,
+                        "exception_type": exc.__class__.__name__,
+                        "exception_message": str(exc),
+                    },
+                )
+            if not snapshot.exists:
+                return error_result(
+                    code="certification_required",
+                    meaning="Agent profile is missing or uncertified.",
+                    details={
+                        "command_name": record.command_name,
+                        "agent_id": context.agent_id,
+                    },
+                )
+            state = snapshot.payload.get("certification_state")
+            if not isinstance(state, dict) or not certification_guard.is_certified(state):
+                return error_result(
+                    code="certification_required",
+                    meaning="Certification required before executing this command.",
+                    details={
+                        "command_name": record.command_name,
+                        "agent_id": context.agent_id,
+                    },
+                )
+
+        if record.feature_flag:
+            try:
+                ensure_feature_enabled(
+                    self._paths.repo_root,
+                    record.feature_flag,
+                    f"execute {record.command_name}",
+                )
+            except FeatureDisabledError as exc:
+                return error_result(
+                    code="feature_disabled",
+                    meaning=str(exc),
+                    details={
+                        "command_name": record.command_name,
+                        "feature": record.feature_flag,
+                    },
+                )
+            except RepoStateDisabledError as exc:
+                return error_result(
+                    code="feature_disabled_by_repo_state",
+                    meaning=str(exc),
+                    details={
+                        "command_name": record.command_name,
+                        "feature": record.feature_flag,
+                    },
+                )
+
+        return None
+
     def _load_hooks(self, context: ExecutionContext) -> list[HookSpec]:
         """
         Load hook specs from SQLite hook registries via sqlite_crud.
@@ -620,17 +766,16 @@ class CommandRunner:
             HookRegistryLoadError: If hook registry data cannot be loaded.
         """
 
-        repo_root = self._resolve_repo_root()
         records: list[dict[str, Any]] = []
         records.extend(
-            self._fetch_hook_records(
-                repo_root, "system", HOOK_REGISTRY_SYSTEM_TABLE
-            )
+            self._fetch_hook_records("system", HOOK_REGISTRY_SYSTEM_TABLE)
         )
         records.extend(
-            self._fetch_hook_records(repo_root, "user", HOOK_REGISTRY_USER_TABLE)
+            self._fetch_hook_records("user", HOOK_REGISTRY_USER_TABLE)
         )
-        hooks: list[HookSpec] = [self._parse_hook_record(record, context) for record in records]
+        hooks: list[HookSpec] = [
+            self._parse_hook_record(record, context) for record in records
+        ]
         hook_map: dict[str, HookSpec] = {}
         for hook in hooks:
             if hook.hook_id in hook_map:
@@ -652,7 +797,6 @@ class CommandRunner:
 
     def _fetch_hook_records(
         self,
-        repo_root: Path,
         scope: str,
         table_name: str,
     ) -> list[dict[str, Any]]:
@@ -660,7 +804,6 @@ class CommandRunner:
         Fetch hook registry records for a scope via sqlite_crud.
 
         Args:
-            repo_root (Path): Repository root path.
             scope (str): Registry scope (system or user).
             table_name (str): Hook registry table name.
 
@@ -682,7 +825,7 @@ class CommandRunner:
             actor_id=COMMAND_REGISTRY_ACTOR,
         )
         try:
-            response = sqlite_crud.execute_request(repo_root, request)
+            response = sqlite_crud.execute_request(self._paths.repo_root, request)
         except sqlite_crud.SqliteCrudError as exc:
             raise HookRegistryLoadError(
                 code="hook_registry_lookup_failed",
@@ -711,9 +854,7 @@ class CommandRunner:
         return [record for record in records if isinstance(record, dict)]
 
     def _parse_hook_record(
-        self,
-        record: Mapping[str, Any],
-        context: ExecutionContext,
+        self, record: Mapping[str, Any], context: ExecutionContext
     ) -> HookSpec:
         """
         Parse a hook registry record into a HookSpec.
@@ -803,7 +944,7 @@ class CommandRunner:
         if candidate.is_absolute():
             resolved = candidate
         else:
-            resolved = self._context_compass_root / candidate
+            resolved = self._paths.context_root / candidate
         if not resolved.exists():
             raise HookRegistryLoadError(
                 code="hook_script_missing",
@@ -867,12 +1008,8 @@ class CommandRunner:
             normalized[key] = value
         return normalized or None
 
-
     def _select_hooks(
-        self,
-        hooks: Sequence[HookSpec],
-        phase: str,
-        record: CommandRecord,
+        self, hooks: Sequence[HookSpec], phase: str, record: CommandRecord
     ) -> list[HookSpec]:
         """
         Select hooks for a phase that apply to a command record.
@@ -1001,7 +1138,7 @@ class CommandRunner:
         except RuntimeError as exc:
             return HookResult(
                 errors=[
-                    self._build_error(
+                    build_error(
                         code="hook_import_failed",
                         meaning="Hook module could not be imported.",
                         details={
@@ -1017,7 +1154,7 @@ class CommandRunner:
         except AttributeError as exc:
             return HookResult(
                 errors=[
-                    self._build_error(
+                    build_error(
                         code="hook_entrypoint_missing",
                         meaning="Hook entrypoint is missing.",
                         details={
@@ -1032,7 +1169,7 @@ class CommandRunner:
         if not callable(entrypoint):
             return HookResult(
                 errors=[
-                    self._build_error(
+                    build_error(
                         code="hook_entrypoint_invalid",
                         meaning="Hook entrypoint is not callable.",
                         details={
@@ -1048,7 +1185,7 @@ class CommandRunner:
         except Exception as exc:
             return HookResult(
                 errors=[
-                    self._build_error(
+                    build_error(
                         code="hook_execution_failed",
                         meaning="Hook execution raised an exception.",
                         details={
@@ -1063,10 +1200,10 @@ class CommandRunner:
             )
         if hook_result is None:
             return HookResult()
-        if not isinstance(hook_result, HookResult):
+        if not isinstance(hook_result, shared_contracts.HookResult):
             return HookResult(
                 errors=[
-                    self._build_error(
+                    build_error(
                         code="hook_result_invalid",
                         meaning="Hook did not return HookResult.",
                         details={
@@ -1132,16 +1269,30 @@ class CommandRunner:
 
         chain_results: list[dict[str, Any]] = []
         for action in next_actions:
-            child_context = ExecutionContext(
-                command_name=action.command_name,
+            merged_payload, merge_error = _merge_payload(
+                action.payload,
+                repo_root=self._paths.repo_root,
                 agent_id=context.agent_id,
                 work_id=context.work_id,
-                correlation_id=context.correlation_id,
-                chain_depth=context.chain_depth + 1,
-                annotations=dict(context.annotations),
+                command_name=action.command_name,
             )
-            child_result = self.execute(action.command_name, action.payload, child_context)
-            chain_results.append(self._summarize_result(action.command_name, child_result))
+            if merge_error is not None:
+                child_result = merge_error
+            else:
+                child_context = ExecutionContext(
+                    command_name=action.command_name,
+                    agent_id=context.agent_id,
+                    work_id=context.work_id,
+                    correlation_id=context.correlation_id,
+                    chain_depth=context.chain_depth + 1,
+                    annotations=dict(context.annotations),
+                )
+                child_result = self._execute_with_context(
+                    action.command_name, merged_payload, child_context
+                )
+            chain_results.append(
+                self._summarize_result(action.command_name, child_result)
+            )
             if child_result.status == "pending_input":
                 metadata = self._merge_metadata(
                     result.metadata, {"chain_results": chain_results}
@@ -1220,13 +1371,13 @@ class CommandRunner:
         try:
             spec = self._resolve_execution_spec(record)
         except ValueError as exc:
-            return self._error_result(
+            return error_result(
                 code="execution_not_configured",
                 meaning="Command execution metadata is invalid.",
                 details={"command_name": record.command_name, "error": str(exc)},
             )
         if spec is None:
-            return self._error_result(
+            return error_result(
                 code="execution_not_configured",
                 meaning="Command execution metadata is missing.",
                 details={"command_name": record.command_name},
@@ -1234,7 +1385,7 @@ class CommandRunner:
         try:
             entrypoint = self._load_command_callable(spec, record.command_name)
         except RuntimeError as exc:
-            return self._error_result(
+            return error_result(
                 code="execution_not_configured",
                 meaning="Command entrypoint could not be loaded.",
                 details={"command_name": record.command_name, "error": str(exc)},
@@ -1242,7 +1393,7 @@ class CommandRunner:
         try:
             result = entrypoint(dict(payload), context)
         except Exception as exc:
-            return self._error_result(
+            return error_result(
                 code="execution_failed",
                 meaning="Command execution raised an exception.",
                 details={
@@ -1251,8 +1402,8 @@ class CommandRunner:
                     "exception_message": str(exc),
                 },
             )
-        if not isinstance(result, CommandResult):
-            return self._error_result(
+        if not isinstance(result, shared_contracts.CommandResult):
+            return error_result(
                 code="invalid_result",
                 meaning="Command did not return CommandResult.",
                 details={"command_name": record.command_name},
@@ -1294,7 +1445,7 @@ class CommandRunner:
             raise ValueError("spec.execution.script_path must be a non-empty string.")
         candidate = Path(script_path)
         resolved_path: Path = (
-            candidate if candidate.is_absolute() else self._context_compass_root / candidate
+            candidate if candidate.is_absolute() else self._paths.context_root / candidate
         )
         entrypoint = execution.get("entrypoint")
         if not isinstance(entrypoint, str) or not entrypoint.strip():
@@ -1305,9 +1456,7 @@ class CommandRunner:
             entrypoint=entrypoint,
         )
 
-    def _load_command_callable(
-        self, spec: ExecutionSpec, command_name: str
-    ) -> Any:
+    def _load_command_callable(self, spec: ExecutionSpec, command_name: str) -> Any:
         """
         Load a callable entrypoint for a command execution spec.
 
@@ -1377,7 +1526,7 @@ class CommandRunner:
         errors = list(updated_result.errors)
         if next_actions:
             errors.append(
-                self._build_error(
+                build_error(
                     code="invalid_hook_phase",
                     meaning="on_error hooks cannot emit activation actions.",
                     details={"phase": "on_error", "command_name": record.command_name},
@@ -1394,80 +1543,12 @@ class CommandRunner:
             queries=updated_result.queries,
         )
 
-    def _build_error(
-        self, code: str, meaning: str, details: Mapping[str, Any]
-    ) -> CommandError:
-        """
-        Build a CommandError with JSON-encoded details.
-
-        Args:
-            code (str): Stable error code identifier.
-            meaning (str): Human-readable error description.
-            details (Mapping[str, Any]): Structured details payload.
-
-        Returns:
-            CommandError: Structured error with JSON details.
-
-        Contract:
-            - details are JSON-encoded for machine parsing.
-        """
-
-        return CommandError(
-            code=code,
-            meaning=meaning,
-            details=build_error_details(details),
-        )
-
-    def _error_result(
-        self,
-        *,
-        code: str,
-        meaning: str,
-        details: Mapping[str, Any],
-        output: Mapping[str, Any] | None = None,
-        metadata: Mapping[str, Any] | None = None,
-        artifacts: Sequence[str] | None = None,
-        queries: Sequence[dict[str, Any]] | None = None,
-        extra_errors: Sequence[CommandError] | None = None,
-    ) -> CommandResult:
-        """
-        Build a structured error CommandResult with JSON details.
-
-        Args:
-            code (str): Stable error code identifier.
-            meaning (str): Human-readable error description.
-            details (Mapping[str, Any]): Structured details payload.
-            output (Mapping[str, Any] | None): Optional output payload.
-            metadata (Mapping[str, Any] | None): Optional metadata payload.
-            artifacts (Sequence[str] | None): Optional artifacts list.
-            queries (Sequence[dict[str, Any]] | None): Optional pending queries.
-            extra_errors (Sequence[CommandError] | None): Additional errors to append.
-
-        Returns:
-            CommandResult: Error payload for the runner.
-
-        Contract:
-            - Always includes the primary error in the errors list.
-            - Metadata and output are shallow-copied to avoid mutation.
-        """
-
-        errors = [self._build_error(code, meaning, details)]
-        if extra_errors:
-            errors.extend(extra_errors)
-        return CommandResult(
-            status="error",
-            output=dict(output or {}),
-            metadata=dict(metadata or {}),
-            artifacts=list(artifacts or []),
-            errors=errors,
-            queries=list(queries or []),
-        )
-
-    def _fetch_command_row(self, command_name: str) -> tuple | None:
+    def _fetch_command_row(self, table_name: str, command_name: str) -> tuple | None:
         """
         Fetch a raw command row from SQLite via sqlite_crud.
 
         Args:
+            table_name (str): Registry table name.
             command_name (str): Command name to query.
 
         Returns:
@@ -1480,54 +1561,34 @@ class CommandRunner:
 
         from context_compass.system.ai_restricted.database_management import sqlite_crud
 
-        repo_root = self._resolve_repo_root()
-        scope = _command_registry_scope(self._table_name)
+        scope = _command_registry_scope(table_name)
         request = sqlite_crud.SqliteCrudRequest(
             operation="read",
             scope=scope,
-            table_name=self._table_name,
+            table_name=table_name,
             action=COMMAND_REGISTRY_ACTION,
             payload={"record_id": command_name},
             actor_id=COMMAND_REGISTRY_ACTOR,
         )
         try:
-            response = sqlite_crud.execute_request(repo_root, request)
+            response = sqlite_crud.execute_request(self._paths.repo_root, request)
         except sqlite_crud.SqliteCrudError as exc:
-            return self._handle_registry_crud_error(exc)
+            return self._handle_registry_crud_error(exc, table_name)
 
         record = response.output.get("result", {}).get("record")
         if not isinstance(record, dict):
             raise ValueError("Command registry read returned an invalid record payload.")
         return _record_dict_to_row(record)
 
-    def _resolve_repo_root(self) -> Path:
+    def _handle_registry_crud_error(
+        self, exc: "SqliteCrudError", table_name: str
+    ) -> tuple | None:
         """
-        Resolve the repository root based on the configured context root.
-
-        Returns:
-            Path: Repository root path used for SQLite path resolution.
-
-        Contract:
-            - When context_compass_root is under context_compass/system, the
-              repo root is the parent of context_compass.
-            - If the context root does not match the expected layout, fallback
-              to using the immediate parent.
-        """
-
-        context_root = self._context_compass_root
-        if (
-            context_root.name == "system"
-            and context_root.parent.name == "context_compass"
-        ):
-            return context_root.parent.parent
-        return context_root.parent
-
-    def _handle_registry_crud_error(self, exc: "SqliteCrudError") -> tuple | None:
-        """
-        Map CRUD registry lookup errors to CommandRunner behavior.
+        Map CRUD registry lookup errors to command API behavior.
 
         Args:
             exc (SqliteCrudError): CRUD error raised by sqlite_crud.
+            table_name (str): Registry table name.
 
         Returns:
             tuple | None: None when the registry record is not found.
@@ -1540,9 +1601,12 @@ class CommandRunner:
 
         if exc.code == "record_not_found":
             return None
+        db_path = self._paths.system_db
+        if table_name == COMMAND_REGISTRY_USER_TABLE:
+            db_path = self._paths.user_db
         if exc.code == "db_missing":
             raise FileNotFoundError(
-                f"Command registry database not found: {self._db_path}"
+                f"Command registry database not found: {db_path}"
             ) from exc
         if exc.code in {
             "table_missing",
@@ -1621,3 +1685,188 @@ class CommandRunner:
         except Exception as exc:
             raise RuntimeError(f"Failed to import {path}: {exc}") from exc
         return module
+
+
+def _command_registry_scope(table_name: str) -> str:
+    """
+    Resolve the CRUD scope for a command registry table name.
+
+    Args:
+        table_name (str): Registry table name.
+
+    Returns:
+        str: CRUD scope name (system or user).
+
+    Raises:
+        RuntimeError: If the table is not a supported command registry.
+    """
+
+    if table_name == COMMAND_REGISTRY_SYSTEM_TABLE:
+        return "system"
+    if table_name == COMMAND_REGISTRY_USER_TABLE:
+        return "user"
+    raise RuntimeError(
+        "ToolCommandAPI only supports system or user command registries."
+    )
+
+
+def _record_dict_to_row(record: Mapping[str, Any]) -> tuple:
+    """
+    Convert a registry record mapping into a COMMAND_COLUMNS tuple.
+
+    Args:
+        record (Mapping[str, Any]): Registry record mapping.
+
+    Returns:
+        tuple: Row values in COMMAND_COLUMNS order.
+
+    Raises:
+        ValueError: If required columns are missing from the record.
+    """
+
+    try:
+        return tuple(record[column] for column in COMMAND_COLUMNS)
+    except KeyError as exc:
+        raise ValueError(
+            "Command registry record is missing required columns."
+        ) from exc
+
+
+def _resolve_paths(repo_root: str | Path) -> CommandApiPaths:
+    """
+    Resolve repo and storage paths for the command API.
+
+    Args:
+        repo_root (str | Path): Repository root or context_compass root.
+
+    Returns:
+        CommandApiPaths: Resolved paths.
+    """
+
+    root = Path(repo_root).resolve()
+    context_root = root / "context_compass" / "system"
+    if not context_root.exists() and root.name == "context_compass":
+        context_root = root / "system"
+        root = root.parent
+    if not context_root.exists():
+        raise FileNotFoundError(
+            f"context_compass/system not found under repo_root: {root}"
+        )
+    sqlite_root = context_root / "storage" / "sqlite"
+    return CommandApiPaths(
+        repo_root=root,
+        context_root=context_root,
+        system_db=sqlite_root / "system.db",
+        user_db=sqlite_root / "user.db",
+    )
+
+
+def _merge_payload(
+    payload: Mapping[str, Any],
+    *,
+    repo_root: Path,
+    agent_id: str | None,
+    work_id: str | None,
+    command_name: str,
+) -> tuple[dict[str, Any], CommandResult | None]:
+    """
+    Inject repo_root/agent_id/work_id into payload when missing.
+
+    Args:
+        payload (Mapping[str, Any]): Command payload.
+        repo_root (Path): Repository root to inject.
+        agent_id (str | None): Agent id to inject.
+        work_id (str | None): Work id to inject.
+        command_name (str): Command name for error context.
+
+    Returns:
+        tuple[dict[str, Any], CommandResult | None]: Merged payload or error result.
+    """
+
+    merged = dict(payload)
+    for field, value in (
+        ("repo_root", str(repo_root)),
+        ("agent_id", agent_id),
+        ("work_id", work_id),
+    ):
+        if value is None:
+            continue
+        if field in merged and merged[field] not in (None, value):
+            return {}, error_result(
+                code="payload_conflict",
+                meaning="Payload field conflicts with CommandAPI argument.",
+                details={
+                    "command_name": command_name,
+                    "field": field,
+                    "payload_value": merged[field],
+                    "argument_value": value,
+                },
+            )
+        if field not in merged or merged[field] is None:
+            merged[field] = value
+    return merged, None
+
+
+def build_error(code: str, meaning: str, details: Mapping[str, Any]) -> CommandError:
+    """
+    Build a CommandError with JSON-encoded details.
+
+    Args:
+        code (str): Stable error code identifier.
+        meaning (str): Human-readable error description.
+        details (Mapping[str, Any]): Structured details payload.
+
+    Returns:
+        CommandError: Structured error with JSON details.
+    """
+
+    return CommandError(
+        code=code,
+        meaning=meaning,
+        details=build_error_details(details),
+    )
+
+
+def error_result(
+    *,
+    code: str,
+    meaning: str,
+    details: Mapping[str, Any],
+    output: Mapping[str, Any] | None = None,
+    metadata: Mapping[str, Any] | None = None,
+    artifacts: Sequence[str] | None = None,
+    queries: Sequence[dict[str, Any]] | None = None,
+    extra_errors: Sequence[CommandError] | None = None,
+) -> CommandResult:
+    """
+    Build a structured error CommandResult with JSON details.
+
+    Args:
+        code (str): Stable error code identifier.
+        meaning (str): Human-readable error description.
+        details (Mapping[str, Any]): Structured details payload.
+        output (Mapping[str, Any] | None): Optional output payload.
+        metadata (Mapping[str, Any] | None): Optional metadata payload.
+        artifacts (Sequence[str] | None): Optional artifacts list.
+        queries (Sequence[dict[str, Any]] | None): Optional pending queries.
+        extra_errors (Sequence[CommandError] | None): Additional errors to append.
+
+    Returns:
+        CommandResult: Error payload for the runner.
+
+    Contract:
+        - Always includes the primary error in the errors list.
+        - Metadata and output are shallow-copied to avoid mutation.
+    """
+
+    errors = [build_error(code, meaning, details)]
+    if extra_errors:
+        errors.extend(extra_errors)
+    return CommandResult(
+        status="error",
+        output=dict(output or {}),
+        metadata=dict(metadata or {}),
+        artifacts=list(artifacts or []),
+        errors=errors,
+        queries=list(queries or []),
+    )

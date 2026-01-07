@@ -31,7 +31,7 @@ from context_compass.system.ai_restricted._shared.command_results import (
     payload_error_result,
 )
 from context_compass.system.ai_restricted.database_management import sqlite_crud
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -447,7 +447,7 @@ def _restore_files(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Restore onboarding bundle files using the command runner contract.
+    Restore onboarding bundle files using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

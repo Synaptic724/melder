@@ -10,6 +10,12 @@ Registry location
 - System registry table: `command_registry_system` in `context_compass/system/storage/sqlite/system.db`
 - Schema: `context_compass/system/schemas/command_registry.tables.json`
 
+Execution model
+- ToolCommandAPI resolves registry entries and runs hooks for non-SQL tools.
+- Use `tool_execute.py` (CLI) or `execute_command(...)` (python) to run commands with hooks.
+- Direct tool execution bypasses hooks and is a last resort.
+- SQL CRUD/query scripts are DB-only and are not executed through ToolCommandAPI.
+
 Rules
 - Registries are machine-owned and stored in SQLite.
 - Do not edit registry rows by hand; use the generator tool.

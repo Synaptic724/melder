@@ -21,7 +21,7 @@ from context_compass.system.ai_restricted._shared.command_payload import (
     require_bool,
     require_string,
 )
-from context_compass.system.ai_restricted._shared.command_results import (
+from context_compass.system.ai_restricted._shared.sql_command_results import (
     error_result,
     exception_result,
     ok_result,
@@ -35,7 +35,7 @@ from context_compass.system.ai_restricted.sql_queries.user._global_work_queue_pa
     load_global_queue_snapshot,
     persist_global_queue,
 )
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )

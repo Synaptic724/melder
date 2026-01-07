@@ -27,7 +27,7 @@ from context_compass.system.ai_restricted._shared.memory_store import load_store
 from context_compass.system.ai_restricted._shared.timeutils import utc_now_iso
 from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_work_mode
 from context_compass.system.ai_restricted._shared.json_io import dump_minified
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -121,7 +121,7 @@ def read_memory(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Read memory entries using the command runner contract.
+    Read memory entries using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

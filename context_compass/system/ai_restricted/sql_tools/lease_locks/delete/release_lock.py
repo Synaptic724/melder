@@ -19,7 +19,7 @@ from context_compass.system.ai_restricted._shared.command_payload import (
     optional_string,
     require_string,
 )
-from context_compass.system.ai_restricted._shared.command_results import (
+from context_compass.system.ai_restricted._shared.sql_command_results import (
     error_result,
     exception_result,
     ok_result,
@@ -30,7 +30,7 @@ from context_compass.system.ai_restricted.database_management.orm_session import
     system_db_path,
 )
 from context_compass.system.ai_restricted.database_management.system_orm_models import LeaseLock
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )

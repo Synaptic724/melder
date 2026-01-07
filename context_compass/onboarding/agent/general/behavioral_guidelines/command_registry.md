@@ -20,3 +20,5 @@ Story steps
 Notes
 - Registries are machine-owned; never edit by hand.
 - Commands remain subject to feature flags and repo_state gating.
+- Commands run with hooks through ToolCommandAPI via `tool_execute.py`.
+- Direct tool execution is a last resort and bypasses hooks.

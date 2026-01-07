@@ -14,12 +14,12 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
-from context_compass.system.ai_restricted._shared.command_contracts import build_error_details
-from context_compass.system.ai_restricted._shared.command_payload import PayloadError
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandError,
     CommandResult,
+    build_error_details,
 )
+from context_compass.system.ai_restricted._shared.command_payload import PayloadError
 
 
 def error_result(

@@ -49,7 +49,7 @@ from context_compass.system.ai_restricted.database_management.user_orm_models im
     DbOperationLog as UserOperationLog,
     DbQueryRegistry as UserQueryRegistry,
 )
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )

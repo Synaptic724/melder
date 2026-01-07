@@ -28,7 +28,7 @@ from context_compass.system.ai_restricted._shared.command_results import (
 )
 from context_compass.system.ai_restricted._shared.timeutils import utc_now_iso
 from context_compass.system.ai_restricted.database_management import sqlite_crud, sqlite_query
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -649,7 +649,7 @@ def archive_agent(repo_root: Path, agent_id: str, owner_id: str) -> None:
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Manage agent lifecycle using the command runner contract.
+    Manage agent lifecycle using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

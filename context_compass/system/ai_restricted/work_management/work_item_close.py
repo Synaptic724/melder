@@ -29,7 +29,7 @@ from context_compass.system.ai_restricted._shared.certification_guard import ens
 from context_compass.system.ai_restricted._shared.feature_guard import ensure_feature_enabled
 from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_work_mode
 from context_compass.system.ai_restricted.database_management import sqlite_crud
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -271,7 +271,7 @@ def close_work_item(
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Close a work item using the command runner contract.
+    Close a work item using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.

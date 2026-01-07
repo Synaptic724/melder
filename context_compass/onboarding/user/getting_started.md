@@ -5,8 +5,10 @@ Purpose
 - Explain certification, checkin, and branch setup in clear steps.
 
 Prerequisites
-- Context Compass must be placed top level in your repo for the workshop to properly activate
-- Agents must be directed into the directory so they can onboard and learn the system and its tools
+- Python installed and available on PATH.
+- Repo root is the current working directory.
+- Read the repo root AGENTS.md for the public library contract.
+- If the repo root AGENTS.md is missing, stop and request it before proceeding.
 
 Quick start (experienced operators)
 1) Install the active environment if python or deps are missing:
@@ -91,6 +93,8 @@ Step-by-step onboarding
    - Describe commands without SQL:
      `python context_compass/system/ai_restricted/system_management/command_registry_describe.py --repo-root . --agent-id <agent_id> --actor-id <actor_id> --scope user`
    - Optional: add `--export-json` to emit JSON files under `context_compass/commands/`.
+   - Execute a command with hooks via:
+     `python context_compass/system/ai_restricted/system_management/tool_execute.py --command-name <name> --payload-json '{}' --repo-root . --agent-id <agent_id> [--work-id <work_id>]`
 
 Notes
 - If any step is unclear, stop and ask.

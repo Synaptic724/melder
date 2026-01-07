@@ -22,7 +22,7 @@ from context_compass.system.ai_restricted._shared.command_results import (
 from context_compass.system.ai_restricted._shared.certification_guard import ensure_certified
 from context_compass.system.ai_restricted._shared.work_mode_guard import ensure_work_mode
 from context_compass.system.ai_restricted.database_management import sqlite_query
-from context_compass.system.ai_restricted.system_management.command_runner import (
+from context_compass.system.ai_restricted._shared.command_contracts import (
     CommandResult,
     ExecutionContext,
 )
@@ -82,7 +82,7 @@ def _try_current_branch(repo_root: Path) -> Tuple[Optional[str], Optional[str]]:
 
 def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
     """
-    Report agent status using the command runner contract.
+    Report agent status using the ToolCommandAPI contract.
 
     Args:
         payload (dict): JSON-serializable kwargs payload.
