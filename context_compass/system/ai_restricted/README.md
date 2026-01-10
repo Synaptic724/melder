@@ -40,6 +40,8 @@ System management
 - ai_restricted/system_management/lease.py: lock acquisition and lease refresh.
 - ai_restricted/system_management/repo_state_assess.py: assess repo lifecycle stage and update repo_state records.
 - ai_restricted/system_management/scan.py: repository scan, staleness detection, task emission.
+- ai_restricted/system_management/tool_execute.py: execute registry-backed commands via ToolCommandAPI.
+- ai_restricted/system_management/tool_registry_describe.py: describe ToolCommandAPI registry entries with full details.
 - ai_restricted/system_management/update_state.py: safe state transitions for tasks and repo_state.
 - ai_restricted/system_management/validate.py: schema and staleness validation for CI.
 
@@ -84,6 +86,12 @@ Context management
 - ai_restricted/context_management/context_profiles_resurvey.py: process resurvey_context_profile tasks and rebuild profiles.
 - ai_restricted/context_management/research_move.py: move research artifacts between lifecycle buckets.
 - ai_restricted/context_management/research_delete.py: delete research artifacts from a lifecycle bucket.
+
+Database management
+- ai_restricted/database_management/sql_command_registry_describe.py: describe SQLite CRUD action registry entries with full details.
+- ai_restricted/database_management/sql_query_command_registry_describe.py: describe SQLite query registry entries with full details.
+- ai_restricted/database_management/sqlite_crud_command.py: execute registry-backed CRUD operations for SQLite tables.
+- ai_restricted/database_management/sqlite_query_command.py: execute registry-backed SQLite queries by name.
 
 Shared helpers
 - ai_restricted/_shared contains canonical JSON IO, hashing, schema validation, ignore rules, paths, and agent presence helpers.

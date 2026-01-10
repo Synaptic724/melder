@@ -58,7 +58,7 @@ def default_configuration() -> dict:
         "schema_version": 1,
         "features": _default_features(),
         "skills": _default_skills(),
-        "work_mode": "hard",
+        "work_mode": "soft",
         "notes": None,
     }
 

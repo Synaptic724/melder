@@ -59,7 +59,7 @@ Step-by-step onboarding
    - Fill `context_compass/onboarding/agent/general/skills/self_certification.md`.
    - Ask for approval using `context_compass/onboarding/agent/general/skills/user_approved_certification.md`.
    - Wait for `CERTIFY: APPROVED`.
-   - Run: `python context_compass/system/ai_restricted/agent_management/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED"`.
+   - Run: `python context_compass/onboarding/system/certification/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED"`.
 
 6) Agent files and checkin
    - Create agent profile/worklist:
@@ -88,13 +88,19 @@ Step-by-step onboarding
 
 11) Review available commands (optional)
    - Generate registries:
-     `python context_compass/system/ai_restricted/system_management/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id> [--manifest-path <path>]`
+     `python context_compass/workspace/tools/general/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id> [--manifest-path <path>]`
    - Default manifest: `context_compass/system/ai_restricted/system_management/command_manifest.json`
    - Describe commands without SQL:
-     `python context_compass/system/ai_restricted/system_management/command_registry_describe.py --repo-root . --agent-id <agent_id> --actor-id <actor_id> --scope user`
+     `python context_compass/workspace/tools/general/command_registry_describe.py --repo-root . --agent-id <agent_id> --actor-id <actor_id> --scope user`
+   - Describe ToolCommandAPI registry entries (full details):
+     `python context_compass/workspace/tools/general/tool_registry_describe.py --repo-root . --agent-id <agent_id> --work-id <work_id> --scope both`
+   - Describe SQL registries (full details):
+     `python context_compass/workspace/tools/sql/crud/sql_command_registry_describe.py --repo-root . --agent-id <agent_id> --work-id <work_id> --scope all`
+     `python context_compass/workspace/tools/sql/query/sql_query_command_registry_describe.py --repo-root . --agent-id <agent_id> --work-id <work_id> --scope all`
    - Optional: add `--export-json` to emit JSON files under `context_compass/commands/`.
    - Execute a command with hooks via:
-     `python context_compass/system/ai_restricted/system_management/tool_execute.py --command-name <name> --payload-json '{}' --repo-root . --agent-id <agent_id> [--work-id <work_id>]`
+     `python context_compass/workspace/tools/general/tool_execute.py --command-name <name> --payload-json '{}' --repo-root . --agent-id <agent_id> [--work-id <work_id>]`
+   - Use workspace SQL facades for CRUD/query execution when needed.
 
 Notes
 - If any step is unclear, stop and ask.

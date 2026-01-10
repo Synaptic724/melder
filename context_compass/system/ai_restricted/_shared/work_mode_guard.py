@@ -25,9 +25,9 @@ def ensure_work_mode(repo_root: Path, work_id: Optional[str], action: str) -> No
         WorkModeError: If hard mode is enabled and work_id is missing.
     """
     config = load_configuration(repo_root)
-    mode = config.get("work_mode", "hard")
+    mode = config.get("work_mode", "soft")
     if mode not in ("hard", "soft"):
-        mode = "hard"
+        mode = "soft"
     if mode == "soft":
         return
     if work_id:

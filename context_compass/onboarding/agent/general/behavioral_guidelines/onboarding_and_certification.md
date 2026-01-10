@@ -49,7 +49,7 @@ Story steps
     - Confirm the template lists all skills read from `context_compass/onboarding/agent/SKILLS.md`.
     - Ask for approval using `context_compass/onboarding/agent/general/skills/user_approved_certification.md`.
     - Wait for exact token: `CERTIFY: APPROVED`.
-    - Run: `python context_compass/system/ai_restricted/agent_management/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED"`.
+    - Run: `python context_compass/onboarding/system/certification/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED"`.
     - Exception: `context_compass/system/ai_restricted/agent_management/onboarding_bundle.py` may run before certification to gather docs.
 
 6) Select branch runtime
@@ -82,7 +82,7 @@ Artifacts touched
 - SQLite system.db table: `environment_state`
 
 Tools
-- `context_compass/system/ai_restricted/agent_management/python_certified.py`
+- `context_compass/onboarding/system/certification/python_certified.py`
 - `context_compass/system/ai_restricted/agent_management/agent_id.py`
 - `context_compass/system/ai_restricted/agent_management/agent_manage.py`
 - `context_compass/system/ai_restricted/system_management/branch_init.py`

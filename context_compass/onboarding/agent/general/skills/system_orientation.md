@@ -32,7 +32,8 @@ Core references
 - Configuration: `context_compass/onboarding/user/configuration.md`
 - Onboarding bundle: `context_compass/system/ai_restricted/agent_management/onboarding_bundle.py`
 - Command registry: SQLite tables `command_registry_user` and `command_registry_system`
-- Command execution: `context_compass/system/ai_restricted/system_management/tool_execute.py` (ToolCommandAPI + hooks)
+- Command execution: `context_compass/workspace/tools/general/tool_execute.py` (ToolCommandAPI + hooks)
+- Tool discovery: `context_compass/workspace/tools/general/tool_registry_describe.py`
 
 Suggested user-facing explanation flow
 1) "Here is the authority chain and where behavior lives."

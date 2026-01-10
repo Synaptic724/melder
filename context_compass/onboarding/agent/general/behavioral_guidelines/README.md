@@ -13,6 +13,7 @@ How to use
 - Then read the story that matches the work you are about to do.
 
 Stories (index)
+- `onboarding_summary.md`: concise onboarding checklist and references.
 - `onboarding_and_certification.md`: repo entry, certification gate, and first checkin.
 - `agent_lifecycle_and_heartbeat.md`: agent_id, checkin/checkout, archive, and reuse.
 - `repo_state.md`: repo maturity assessment and tooling gating.

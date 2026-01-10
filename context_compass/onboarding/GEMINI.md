@@ -1,4 +1,4 @@
-# AGENTS.md - context_compass Work Router
+# GEMINI.md - context_compass Work Router
 
 Purpose
 - Provide the operational entrypoint for agents working in this repo.
@@ -81,76 +81,76 @@ Secrets policy (non-negotiable)
 
 Onboarding sequence (detailed)
 1) Resolve repo root
-   - Confirm repo_root matches the working directory.
-   - Locate AGENTS.override.md in the working directory, if present.
-   - Load repository root AGENTS.md to confirm non-negotiables.
-   - Preflight and installation are user-initiated; ask the user before running them.
-   - If python availability is unknown, run context_compass/system/ai_restricted/system_management/environment_check.ps1 or environment_check.sh (read-only preflight).
-   - Preflight reports repo root, active environment status, and presence of system/user SQLite DBs.
-   - If preflight reports python unavailable, refuse all operations until python is installed or AGENTS.md is updated to allow a no-python mode.
-   - Before running installation bootstraps, read the script and explain its actions to the user in detail (context_compass/system/installation/windows/bootstrap.ps1 or context_compass/system/installation/linux/bootstrap.sh), including what it installs, where it writes, and what it runs.
-   - If the user asks to install everything, use the onboarding wrappers:
-      - context_compass/onboarding/system/linux/install_system.sh
-      - context_compass/onboarding/system/windows/install_system.ps1
-   - Onboarding system scripts are OS-specific and user-initiated; use them for install/setup tasks.
-   - If re-entering after context compaction, state that you are reloading the environment and ask to rerun preflight and confirm the agent_id.
+    - Confirm repo_root matches the working directory.
+    - Locate AGENTS.override.md in the working directory, if present.
+    - Load repository root AGENTS.md to confirm non-negotiables.
+    - Preflight and installation are user-initiated; ask the user before running them.
+    - If python availability is unknown, run context_compass/system/ai_restricted/system_management/environment_check.ps1 or environment_check.sh (read-only preflight).
+    - Preflight reports repo root, active environment status, and presence of system/user SQLite DBs.
+    - If preflight reports python unavailable, refuse all operations until python is installed or AGENTS.md is updated to allow a no-python mode.
+    - Before running installation bootstraps, read the script and explain its actions to the user in detail (context_compass/system/installation/windows/bootstrap.ps1 or context_compass/system/installation/linux/bootstrap.sh), including what it installs, where it writes, and what it runs.
+    - If the user asks to install everything, use the onboarding wrappers:
+        - context_compass/onboarding/system/linux/install_system.sh
+        - context_compass/onboarding/system/windows/install_system.ps1
+    - Onboarding system scripts are OS-specific and user-initiated; use them for install/setup tasks.
+    - If re-entering after context compaction, state that you are reloading the environment and ask to rerun preflight and confirm the agent_id.
 
 2) Read context_compass configuration and report it
-   - Load SQLite system.db config_context_compass_* tables.
-   - Summarize enabled/disabled features for the user at session start.
-   - Report work_mode (hard/soft) and how it affects tool usage.
-   - If skills are disabled, state which ones are skipped and why.
-   - Optional: set python-only language config before seeding:
-      - context_compass/onboarding/system/linux/set_language.sh
-      - context_compass/onboarding/system/windows/set_language.ps1
-   - If config tables are missing, run build/seed steps to apply defaults.
+    - Load SQLite system.db config_context_compass_* tables.
+    - Summarize enabled/disabled features for the user at session start.
+    - Report work_mode (hard/soft) and how it affects tool usage.
+    - If skills are disabled, state which ones are skipped and why.
+    - Optional: set python-only language config before seeding:
+        - context_compass/onboarding/system/linux/set_language.sh
+        - context_compass/onboarding/system/windows/set_language.ps1
+    - If config tables are missing, run build/seed steps to apply defaults.
 
 3) Select agent career (mandatory)
-   - Ask the user which career to activate before reading skills.
-   - Valid careers: developer, analyst, project_manager.
-   - If the user does not choose, stop and ask again.
+    - Ask the user which career to activate before reading skills.
+    - Valid careers: developer, analyst, project_manager.
+    - If the user does not choose, stop and ask again.
 
 4) Load operational skills and examples (mandatory pre-cert)
-   - Read every skill listed in context_compass/onboarding/agent/general/SKILLS.md, even if a feature is disabled.
-   - Read career-specific additions in context_compass/onboarding/agent/careers/<career>/SKILLS.md.
-   - Use context_compass/onboarding/agent/general/SKILLS.md as the shared read-order index.
-   - For Python edits, read onboarding/agent/general/skills/python/*.md (docstrings through refactor_limits) and mirror examples/python/*.
-   - For testing work, read onboarding/agent/general/skills/testing/*.md (testing_overview through evidence_reporting) and mirror test examples.
+    - Read every skill listed in context_compass/onboarding/agent/general/SKILLS.md, even if a feature is disabled.
+    - Read career-specific additions in context_compass/onboarding/agent/careers/<career>/SKILLS.md.
+    - Use context_compass/onboarding/agent/general/SKILLS.md as the shared read-order index.
+    - For Python edits, read onboarding/agent/general/skills/python/*.md (docstrings through refactor_limits) and mirror examples/python/*.
+    - For testing work, read onboarding/agent/general/skills/testing/*.md (testing_overview through evidence_reporting) and mirror test examples.
 
 5) Establish agent identity (mandatory for certification)
-   - Use a user-defined agent_id supplied by the user.
-   - If the agent_id is missing or uncertain (e.g., after context compaction), stop and ask the user for it before running tools.
-   - Only generate a new agent_id with agent_id.py if the user explicitly requests it.
-   - Keep this agent_id for certification and all tool invocations.
+    - Use a user-defined agent_id supplied by the user.
+    - If the agent_id is missing or uncertain (e.g., after context compaction), stop and ask the user for it before running tools.
+    - Only generate a new agent_id with agent_id.py if the user explicitly requests it.
+    - Keep this agent_id for certification and all tool invocations.
 
 6) Certification gate (mandatory)
-   - Read context_compass/onboarding/agent/general/skills/self_certification.md and produce the filled template.
-   - Ask for approval using context_compass/onboarding/agent/general/skills/user_approved_certification.md.
-   - Wait for the exact approval token: CERTIFY: APPROVED.
-   - Run python context_compass/onboarding/system/certification/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED".
-   - Do not run tools or edit files until certification is confirmed.
-   - Exception: context_compass/system/ai_restricted/agent_management/onboarding_bundle.py may run before certification to gather docs.
+    - Read context_compass/onboarding/agent/general/skills/self_certification.md and produce the filled template.
+    - Ask for approval using context_compass/onboarding/agent/general/skills/user_approved_certification.md.
+    - Wait for the exact approval token: CERTIFY: APPROVED.
+    - Run python context_compass/onboarding/system/certification/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED".
+    - Do not run tools or edit files until certification is confirmed.
+    - Exception: context_compass/system/ai_restricted/agent_management/onboarding_bundle.py may run before certification to gather docs.
 
 7) Select branch runtime (mandatory)
-   - Run branch_init.py once per branch to seed branch state and queues.
-   - Run branch_switch.py to set the active branch pointer.
-   - Confirm the SQLite user.db `current_branch` table (record_id: current) matches the active branch.
+    - Run branch_init.py once per branch to seed branch state and queues.
+    - Run branch_switch.py to set the active branch pointer.
+    - Confirm the SQLite user.db `current_branch` table (record_id: current) matches the active branch.
 
 8) Check in and mark the agent active
-   - If the agent profile/worklist records do not exist, run:
-     python context_compass/system/ai_restricted/agent_management/agent_manage.py create --repo-root . --agent-id <agent_id>
-   - Run python context_compass/system/ai_restricted/agent_management/agent_checkin.py --repo-root . --agent-id <agent_id>.
-   - After checkin, run python context_compass/system/ai_restricted/system_management/environment_check.py --repo-root . --agent-id <agent_id> --work-id <work_id> to record OS/runtime state.
+    - If the agent profile/worklist records do not exist, run:
+      python context_compass/system/ai_restricted/agent_management/agent_manage.py create --repo-root . --agent-id <agent_id>
+    - Run python context_compass/system/ai_restricted/agent_management/agent_checkin.py --repo-root . --agent-id <agent_id>.
+    - After checkin, run python context_compass/system/ai_restricted/system_management/environment_check.py --repo-root . --agent-id <agent_id> --work-id <work_id> to record OS/runtime state.
 
 9) Establish context state
-   - Run the scanner or read the newest scan output.
-   - Read directory ctx first and use it as the sole source of structural understanding.
-   - If directory ctx is insufficient for structure, stop and refresh dir ctx before proceeding.
-   - Read file ctx only after structure is established.
-   - Open code only if ctx is missing or insufficient.
-   - Read `branch_<branch>_repo_state` in SQLite to confirm lifecycle stage and tooling_policy before running scan or surveys.
-   - If ctx is stale or missing, resolve those tasks before feature work.
-   - If architecture/component contexts are stale or faulty, resurvey them before relying on them.
+    - Run the scanner or read the newest scan output.
+    - Read directory ctx first and use it as the sole source of structural understanding.
+    - If directory ctx is insufficient for structure, stop and refresh dir ctx before proceeding.
+    - Read file ctx only after structure is established.
+    - Open code only if ctx is missing or insufficient.
+    - Read `branch_<branch>_repo_state` in SQLite to confirm lifecycle stage and tooling_policy before running scan or surveys.
+    - If ctx is stale or missing, resolve those tasks before feature work.
+    - If architecture/component contexts are stale or faulty, resurvey them before relying on them.
 
 10) Task execution rules
 - Use lease locks for any ctx/state writes.

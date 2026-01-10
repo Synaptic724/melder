@@ -20,7 +20,7 @@ Certification gate (mandatory)
 - Complete onboarding/agent/general/skills/self_certification.md and wait for approval.
 - Request approval using onboarding/agent/general/skills/user_approved_certification.md.
 - Do not use tools or edit files until the user replies exactly: CERTIFY: APPROVED.
-- After approval, run: python context_compass/system/ai_restricted/agent_management/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED"
+- After approval, run: python context_compass/onboarding/system/certification/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED"
 - Tools that mutate repo state must refuse to run unless the agent profile certification_state is CERTIFIED.
 - Exception: context_compass/system/ai_restricted/system_management/environment_check.ps1 or environment_check.sh may run pre-certification as read-only preflight.
 - If preflight reports python unavailable, refuse all operations until python is installed or AGENTS.md explicitly changes that requirement.
