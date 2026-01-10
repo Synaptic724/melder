@@ -17,6 +17,8 @@ Preflight checks
   - `powershell -File context_compass/onboarding/system/windows/preflight/environment_check.ps1 [-RepoRoot <path>]`
 - Linux/macOS:
   - `sh context_compass/onboarding/system/linux/preflight/environment_check.sh [--repo-root <path>]`
+- If you see errors like `/usr/bin/env: 'bash\r': No such file or directory` or `^M`, normalize line endings to LF:
+  - `find context_compass -name '*.sh' -print0 | xargs -0 sed -i 's/\r$//'`
 
 Active environment bootstrap (recommended)
 - Install or repair the pinned environment:
