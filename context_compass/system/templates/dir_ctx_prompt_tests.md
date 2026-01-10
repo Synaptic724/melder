@@ -6,6 +6,7 @@ Purpose
 Input sources (strict)
 - Build dir ctx from file ctx artifacts within the test directory tree.
 - Do not read test code directly unless file ctx is missing; refresh file ctx first.
+- If required file ctx is missing and cannot be generated, return or defer the dir ctx task.
 
 Required sections
 - identity (dir_path, ctx_path, name)

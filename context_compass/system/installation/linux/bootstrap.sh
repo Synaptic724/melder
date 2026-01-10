@@ -47,7 +47,7 @@ read_py_version() {
 env_path_for_version() {
   local py_version="$1"
   local env_name="context_compass_py${py_version//./_}"
-  printf '%s' "${ENV_ROOT}/${env_name}"
+  printf '%s' "${ENV_ROOT}/linux/${env_name}"
 }
 
 main() {

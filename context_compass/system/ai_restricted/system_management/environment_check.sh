@@ -41,7 +41,7 @@ if [ "$repo_root_exists" = "true" ] && [ -d "$context_compass_root" ]; then
     context_compass_exists=true
 fi
 
-active_env_root="$context_compass_root/system/installation/environments/active_environments"
+active_env_root="$context_compass_root/system/installation/environments/active_environments/linux"
 active_env_exists=false
 active_env_path=""
 if [ "$context_compass_exists" = "true" ] && [ -d "$active_env_root" ]; then

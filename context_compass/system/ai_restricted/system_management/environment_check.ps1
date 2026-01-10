@@ -26,7 +26,7 @@ if ($RepoRoot) {
 $contextCompassRoot = Join-Path $RepoRoot "context_compass"
 $contextCompassExists = $repoRootExists -and (Test-Path -LiteralPath $contextCompassRoot)
 
-$activeEnvRoot = Join-Path $contextCompassRoot "system\installation\environments\active_environments"
+$activeEnvRoot = Join-Path $contextCompassRoot "system\installation\environments\active_environments\windows"
 $activeEnvExists = $false
 $activeEnvPath = $null
 if ($contextCompassExists -and (Test-Path -LiteralPath $activeEnvRoot)) {

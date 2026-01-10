@@ -1,9 +1,9 @@
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
-
 param(
     [switch]$DryRun
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $contextRoot = Resolve-Path (Join-Path $scriptDir "..\..\..\..")

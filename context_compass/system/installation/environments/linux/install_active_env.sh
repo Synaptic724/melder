@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-ENV_ROOT="${SCRIPT_DIR}/../active_environments"
+ENV_ROOT="${SCRIPT_DIR}/../active_environments/linux"
 PY_VERSION_FILE="${SCRIPT_DIR}/../python_version.md"
 REQS_FILE="${SCRIPT_DIR}/../requirements.txt"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../../../.." >/dev/null 2>&1 && pwd)"

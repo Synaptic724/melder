@@ -2,7 +2,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$envRoot = [IO.Path]::GetFullPath((Join-Path $scriptDir "..\active_environments"))
+$envRoot = [IO.Path]::GetFullPath((Join-Path $scriptDir "..\active_environments\windows"))
 $pyVersionFile = Join-Path $scriptDir "..\python_version.md"
 $requirementsFile = Join-Path $scriptDir "..\requirements.txt"
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $scriptDir "..\..\..\..\.."))
@@ -15,6 +15,10 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
         throw "uv install failed: $($_.Exception.Message)"
     }
     $cargoBin = Join-Path $HOME ".cargo\bin"
+    $localBin = Join-Path $HOME ".local\bin"
+    if (Test-Path $localBin) {
+        $env:Path = "$localBin;$env:Path"
+    }
     if (Test-Path $cargoBin) {
         $env:Path = "$cargoBin;$env:Path"
     }

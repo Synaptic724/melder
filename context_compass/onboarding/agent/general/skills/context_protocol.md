@@ -25,6 +25,7 @@ Rules
 - If directory ctx lacks required architectural detail, stop and emit/resolve a dir ctx refresh task before proceeding.
 - Directory ctx must be generated from file ctx content, not by reading code directly.
 - If file ctx is missing or stale, refresh file ctx first, then regenerate dir ctx.
+- If a dir ctx task is queued but required file ctx is missing and you cannot refresh it, return or defer the dir ctx task until file ctx exists.
 - If ctx is stale or missing, regenerate it before feature work.
 - Prefer targeted refreshes over repo-wide scans.
 - After code edits, run scan to emit refresh tasks; resolve those tasks before continuing.

@@ -43,6 +43,18 @@ Active environment bootstrap (recommended)
     - Check for `context_compass_repo.pth` in that directory.
 - Read the script before running if you need to audit write locations or network actions.
 
+Handling Already Active Systems
+- If the system is already bootstrapped (e.g., by another agent on a different OS), databases are shared.
+- Seeding scripts are idempotent (safe to re-run). They use `IF NOT EXISTS` and upsert logic.
+- Environments are OS-specific and effectively isolated:
+  - Windows: `system/installation/environments/active_environments/windows/`
+  - Linux: `system/installation/environments/active_environments/linux/`
+- Running the installer for your OS will not harm the environments of other agents.
+
+Seeding Specific Environments
+- Run the OS-specific install command to create or repair your local environment.
+- This creates the OS-specific virtual environment and ensures the database registry matches the current manifest.
+
 If python is missing
 - The system must refuse operations until python is installed
   or context_compass/onboarding/AGENTS.md explicitly allows a no-python mode.

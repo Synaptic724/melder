@@ -5,12 +5,12 @@
 # - Installs dependencies from installation/environments/requirements.txt.
 # - Seeds SQLite/Kuzu DBs via installation/build_runner.py.
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
-
 param(
   [switch]$DryRun
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 function Say([string]$Msg) { Write-Host $Msg }
 function Run([string]$Cmd) {
@@ -24,7 +24,7 @@ $SystemRoot = Resolve-Path (Join-Path $InstallRoot "..")
 $RepoRoot = Resolve-Path (Join-Path $SystemRoot "..\..")
 $EnvScript = Join-Path $InstallRoot "environments\windows\install_active_env.ps1"
 $PyVersionFile = Join-Path $InstallRoot "environments\python_version.md"
-$EnvRoot = Join-Path $InstallRoot "environments\active_environments"
+$EnvRoot = Join-Path $InstallRoot "environments\active_environments\windows"
 
 if (-not (Test-Path $EnvScript)) {
   throw "Missing env installer at $EnvScript"
