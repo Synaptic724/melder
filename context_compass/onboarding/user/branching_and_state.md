@@ -25,26 +25,26 @@ Global (not branch-scoped)
 - `context_compass/commands/` (command registries).
 
 Branch initialization
-- `python context_compass/system/ai_restricted/system_management/branch_init.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+- Use ToolCommandAPI command `branch_init` (see `context_compass/onboarding/user/commands.md` for payloads).
 
 Branch switching
-- `python context_compass/system/ai_restricted/system_management/branch_switch.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+- Use ToolCommandAPI command `branch_switch`.
 
 Branch cloning and copying
 - Clone a branch with state + queues:
-  `python context_compass/system/ai_restricted/system_management/branch_clone.py --repo-root . --source-branch <branch> --dest-branch <branch> --agent-id <agent_id> --work-id <work_id>`
+  Use ToolCommandAPI command `branch_clone`.
 - Copy context files only:
-  `python context_compass/system/ai_restricted/system_management/branch_copy_context.py --repo-root . --source-branch <branch> --dest-branch <branch> --agent-id <agent_id> --work-id <work_id>`
+  Use ToolCommandAPI command `branch_copy_context`.
 - Copy work queues only:
-  `python context_compass/system/ai_restricted/system_management/branch_copy_work.py --repo-root . --source-branch <branch> --dest-branch <branch> --agent-id <agent_id> --work-id <work_id>`
+  Use ToolCommandAPI command `branch_copy_work`.
 
 Branch deletion
 - Clear branch work queues:
-  `python context_compass/system/ai_restricted/system_management/branch_delete_work.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+  Use ToolCommandAPI command `branch_delete_work`.
 - Delete context state records:
-  `python context_compass/system/ai_restricted/system_management/branch_delete_context.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+  Use ToolCommandAPI command `branch_delete_context`.
 - Hard-delete a branch (deletes branch rows from shared tables):
-  `python context_compass/system/ai_restricted/system_management/branch_delete.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+  Use ToolCommandAPI command `branch_delete`.
 
 Why branch state exists
 - Keeps task queues and scan results isolated per branch.

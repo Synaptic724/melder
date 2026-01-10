@@ -4,9 +4,9 @@ Purpose
 - Define how to create, check in, check out, archive, and delete agent records and worklists.
 
 Rules
-- Use context_compass/system/ai_restricted/agent_management/agent_manage.py for lifecycle changes.
-- Use context_compass/system/ai_restricted/agent_management/agent_checkin.py at session start.
-- Use context_compass/system/ai_restricted/agent_management/agent_checkout.py at session end or when handing off work.
+- Use ToolCommandAPI command `agent_manage` for lifecycle changes.
+- Use ToolCommandAPI command `agent_checkin` at session start.
+- Use ToolCommandAPI command `agent_checkout` at session end or when handing off work.
 - Use a user-defined agent_id supplied by the user; if the id is missing or uncertain (e.g., after context compaction), stop and ask before running tools.
 - Only generate an agent id when the user explicitly requests it.
 - Do not edit self_context or worklist records manually.
@@ -15,25 +15,16 @@ Rules
 - Only agent_checkin/agent_checkout/agent_manage update agent profiles.
 
 Commands
-- Generate a session agent id (only if the user explicitly requests it):
-  python context_compass/system/ai_restricted/agent_management/agent_id.py --prefix agent
-- Create agent records:
-  python context_compass/system/ai_restricted/agent_management/agent_manage.py create --repo-root . --agent-id <agent_id> --agent-role <role>
-- Archive agent records:
-  python context_compass/system/ai_restricted/agent_management/agent_manage.py archive --repo-root . --agent-id <agent_id> --agent-role <role>
-- Delete agent records:
-  python context_compass/system/ai_restricted/agent_management/agent_manage.py delete --repo-root . --agent-id <agent_id> --agent-role <role>
-- When acting on another agent, pass --owner-id to record the actor.
-- Check in (mark active):
-  python context_compass/system/ai_restricted/agent_management/agent_checkin.py --repo-root . --agent-id <agent_id> --agent-role <role> --agent-kind <kind> --model-name <model> --runtime <runtime>
-- Check out (mark inactive):
-  python context_compass/system/ai_restricted/agent_management/agent_checkout.py --repo-root . --agent-id <agent_id> --agent-role <role>
-- Add a work item to a per-agent queue (work_id auto-generated if omitted):
-  python context_compass/system/ai_restricted/work_management/work_queue_add.py --repo-root . --agent-id <agent_id> --kind <kind> --target-path <path> --ctx-path <path> --root-work-id <root> --parent-work-id <parent>
-- Move an agent work item into branch queues:
-  python context_compass/system/ai_restricted/work_management/work_item_agent_to_branch.py --repo-root . --agent-id <agent_id> --work-id <work_id> --dest-bucket <bucket>
-- Move an agent work item into global queues:
-  python context_compass/system/ai_restricted/work_management/work_item_agent_to_global.py --repo-root . --agent-id <agent_id> --work-id <work_id> --dest-bucket <bucket>
+- Generate a session agent id (only if the user explicitly requests it): ToolCommandAPI command `agent_id`.
+- Create agent records: ToolCommandAPI command `agent_manage` (action=create).
+- Archive agent records: ToolCommandAPI command `agent_manage` (action=archive).
+- Delete agent records: ToolCommandAPI command `agent_manage` (action=delete).
+- When acting on another agent, set payload field owner_id to record the actor.
+- Check in (mark active): ToolCommandAPI command `agent_checkin`.
+- Check out (mark inactive): ToolCommandAPI command `agent_checkout`.
+- Add a work item to a per-agent queue: ToolCommandAPI command `work_queue_add`.
+- Move an agent work item into branch queues: ToolCommandAPI command `work_item_agent_to_branch`.
+- Move an agent work item into global queues: ToolCommandAPI command `work_item_agent_to_global`.
 
 Worklists
 - Per-agent queue lives in SQLite user.db table `agent_work_queue` with items in `agent_work_items`.

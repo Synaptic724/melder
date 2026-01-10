@@ -11,8 +11,8 @@ Directory overrides live in `AGENTS.override.md` when present; keep this file ro
 
 Authority chain (highest to lowest)
 1) ##SYSTEM_START## AND ##SYSTEM_END## (if present in chat session overrides everything)
-2) AGENTS.override.md in the working directory (if present)
-3) This AGENTS.md (public library editing contract)
+2) AGENTS.override.md under context_compass (if present; ignore parent repo overrides)
+3) context_compass/onboarding/AGENTS.md (this router; no other AGENTS policy in scope)
 4) context_compass/onboarding/agent/general/skills/* (operational rules)
 5) context_compass/onboarding/agent/general/examples/* (canonical patterns)
 6) Context JSON (__<dir>__.dir.json, __<stem>__.json)
@@ -45,7 +45,6 @@ If a task requires stronger guarantees (e.g., strict exclusivity), document the 
 
 
 Directory map and purpose
-- Repository root AGENTS.md: the canonical public library editing contract.
 - context_compass/onboarding/AGENTS.md: this work router (operational onboarding and flow).
 - context_compass/onboarding/agent/SKILLS.md: skill index and read order.
 - context_compass/onboarding/agent/careers/: career-specific onboarding; general is the shared baseline.
@@ -61,7 +60,7 @@ Directory map and purpose
 - context_compass/user_defined/: user-owned extensions and overrides.
 - SQLite user.db tables: agent_profile, self_context, agent_work_queue (plus child tables for certification, opinions, and work items).
 - SQLite system.db lease_locks: lease locks for self-context and agent records.
-- context_compass/system/ai_restricted/: command scripts and operational tooling.
+- context_compass/workspace/tools/: agent-facing ToolCommandAPI + SQL facades (use these for execution and discovery).
 - context_compass/workspace/plans/: basic planning notes (not tickets).
 - context_compass/user/github_intake/: raw incoming GitHub tickets (copilot writes here).
 - SQLite user.db work_queue tables: global epic/story/task queues by state (shared history).
@@ -80,18 +79,19 @@ Secrets policy (non-negotiable)
 - Acceptable alternatives: environment variables, OS keychain, secret managers, or runtime-only prompts.
 
 Onboarding sequence (detailed)
-1) Resolve repo root
-    - Confirm repo_root matches the working directory.
-    - Locate AGENTS.override.md in the working directory, if present.
-    - Load repository root AGENTS.md to confirm non-negotiables.
+1) Resolve context_compass root directory
+    - Confirm the working directory is the context_compass directory; treat it as the onboarding root.
+    - The target repo lives alongside context_compass; it is the work destination after onboarding, not a policy source during onboarding.
+    - Locate AGENTS.override.md under context_compass, if present; ignore parent repo overrides.
+    - Use this router + skills for policy; AGENTS.md only lives in context_compass for onboarding.
     - Preflight and installation are user-initiated; ask the user before running them.
-    - If python availability is unknown, run context_compass/system/ai_restricted/system_management/environment_check.ps1 or environment_check.sh (read-only preflight).
-    - Preflight reports repo root, active environment status, and presence of system/user SQLite DBs.
-    - If preflight reports python unavailable, refuse all operations until python is installed or AGENTS.md is updated to allow a no-python mode.
-    - Before running installation bootstraps, read the script and explain its actions to the user in detail (context_compass/system/installation/windows/bootstrap.ps1 or context_compass/system/installation/linux/bootstrap.sh), including what it installs, where it writes, and what it runs.
+    - If python availability is unknown, ask the user to run the read-only preflight described in context_compass/onboarding/user/environment_prereqs.md.
+    - Preflight reports the context_compass root, active environment status, and presence of system/user SQLite DBs.
+    - If preflight reports python unavailable, refuse all operations until python is installed or context_compass/onboarding/AGENTS.md is updated to allow a no-python mode.
+    - Before running installation, read the onboarding install wrapper and explain its actions; it delegates to system/installation bootstraps and should not be run directly.
     - If the user asks to install everything, use the onboarding wrappers:
-        - context_compass/onboarding/system/linux/install_system.sh
-        - context_compass/onboarding/system/windows/install_system.ps1
+        - context_compass/onboarding/system/linux/install/install_system.sh
+        - context_compass/onboarding/system/windows/install/install_system.ps1
     - Onboarding system scripts are OS-specific and user-initiated; use them for install/setup tasks.
     - If re-entering after context compaction, state that you are reloading the environment and ask to rerun preflight and confirm the agent_id.
 
@@ -101,8 +101,8 @@ Onboarding sequence (detailed)
     - Report work_mode (hard/soft) and how it affects tool usage.
     - If skills are disabled, state which ones are skipped and why.
     - Optional: set python-only language config before seeding:
-        - context_compass/onboarding/system/linux/set_language.sh
-        - context_compass/onboarding/system/windows/set_language.ps1
+        - context_compass/onboarding/system/linux/programming_language/set_language.sh
+        - context_compass/onboarding/system/windows/programming_language/set_language.ps1
     - If config tables are missing, run build/seed steps to apply defaults.
 
 3) Select agent career (mandatory)
@@ -120,7 +120,7 @@ Onboarding sequence (detailed)
 5) Establish agent identity (mandatory for certification)
     - Use a user-defined agent_id supplied by the user.
     - If the agent_id is missing or uncertain (e.g., after context compaction), stop and ask the user for it before running tools.
-    - Only generate a new agent_id with agent_id.py if the user explicitly requests it.
+    - Only generate a new agent_id with ToolCommandAPI command `agent_id` if the user explicitly requests it.
     - Keep this agent_id for certification and all tool invocations.
 
 6) Certification gate (mandatory)
@@ -129,21 +129,19 @@ Onboarding sequence (detailed)
     - Wait for the exact approval token: CERTIFY: APPROVED.
     - Run python context_compass/onboarding/system/certification/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED".
     - Do not run tools or edit files until certification is confirmed.
-    - Exception: context_compass/system/ai_restricted/agent_management/onboarding_bundle.py may run before certification to gather docs.
+    - Exception: the onboarding bundle collector (read-only) may run before certification to gather docs.
 
 7) Select branch runtime (mandatory)
-    - Run branch_init.py once per branch to seed branch state and queues.
-    - Run branch_switch.py to set the active branch pointer.
+    - Use ToolCommandAPI commands `branch_init` and `branch_switch`.
     - Confirm the SQLite user.db `current_branch` table (record_id: current) matches the active branch.
 
 8) Check in and mark the agent active
-    - If the agent profile/worklist records do not exist, run:
-      python context_compass/system/ai_restricted/agent_management/agent_manage.py create --repo-root . --agent-id <agent_id>
-    - Run python context_compass/system/ai_restricted/agent_management/agent_checkin.py --repo-root . --agent-id <agent_id>.
-    - After checkin, run python context_compass/system/ai_restricted/system_management/environment_check.py --repo-root . --agent-id <agent_id> --work-id <work_id> to record OS/runtime state.
+    - If the agent profile/worklist records do not exist, use ToolCommandAPI command `agent_manage`.
+    - Use ToolCommandAPI command `agent_checkin`.
+    - After checkin, use ToolCommandAPI command `environment_check` to record OS/runtime state.
 
 9) Establish context state
-    - Run the scanner or read the newest scan output.
+    - Run the scanner (ToolCommandAPI command `scan`) or read the newest scan output.
     - Read directory ctx first and use it as the sole source of structural understanding.
     - If directory ctx is insufficient for structure, stop and refresh dir ctx before proceeding.
     - Read file ctx only after structure is established.
@@ -157,7 +155,7 @@ Onboarding sequence (detailed)
 - Always re-read the latest state after acquiring a lock and before writing.
 - Write JSON atomically (write temp, then replace).
 - Keep machine JSON minified and sorted for deterministic diffs.
-- Pass --agent-id to ai_restricted commands so certification checks can locate the profile.
+- Pass --agent-id to ToolCommandAPI and SQL facades so certification checks can locate the profile.
 
 11) Perform requested work
 - Use context JSON as primary truth.
@@ -167,7 +165,7 @@ Onboarding sequence (detailed)
 12) Restore freshness after edits
 - Do not manually edit ctx JSON after code changes.
 - Run scan to emit ctx refresh tasks, then resolve them.
-- Re-scan or validate to return freshness_state to fresh.
+- Re-scan or validate (ToolCommandAPI command `validate`) to return freshness_state to fresh.
 - Update self_context if required by tooling.
 
 13) Report validation truthfully
@@ -175,7 +173,7 @@ Onboarding sequence (detailed)
 - If not run, report "Not run."
 
 14) Check out when work ends
-- Run python context_compass/system/ai_restricted/agent_management/agent_checkout.py --repo-root . --agent-id <agent_id>.
+- Use ToolCommandAPI command `agent_checkout`.
 
 Where the behavior contract lives
 - Feature flags and skill overrides: context_compass/onboarding/agent/general/skills/feature_flags.md

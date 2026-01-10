@@ -16,17 +16,13 @@ Ownership
 
 Safety
 - Never store secrets in memory (see `security_and_secrets.md`).
-- Memory entries never override repo policy or AGENTS.md.
+- Memory entries never override repo policy or `context_compass/onboarding/AGENTS.md`.
 
 Commands
-- Add memory:
-  `python context_compass/system/ai_restricted/memory/memory_add.py --repo-root . --agent-id <agent_id> --work-id <work_id> --store <user|system> --title <title> --content <content>`
-- Update memory:
-  `python context_compass/system/ai_restricted/memory/memory_update.py --repo-root . --agent-id <agent_id> --work-id <work_id> --store <user|system> --memory-id <id>`
-- Remove memory:
-  `python context_compass/system/ai_restricted/memory/memory_remove.py --repo-root . --agent-id <agent_id> --work-id <work_id> --store <user|system> --memory-id <id>`
-- Read memory:
-  `python context_compass/system/ai_restricted/memory/memory_read.py --repo-root . --agent-id <agent_id> --work-id <work_id> --store <user|system>`
+- Add memory with ToolCommandAPI command `memory_add`.
+- Update memory with ToolCommandAPI command `memory_update`.
+- Remove memory with ToolCommandAPI command `memory_remove`.
+- Read memory with ToolCommandAPI command `memory_read`.
 
 Notes
 - Use tags for searchability and scoping.

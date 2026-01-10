@@ -4,16 +4,16 @@ Purpose
 - Describe the exact steps an agent follows when it first enters the repo.
 
 Preconditions
-- Repo root is the current working directory.
+- The working directory is the context_compass root.
 - No tool execution or file edits before certification is complete.
-- Exception: environment_check.ps1/sh may run as a read-only preflight.
-- If preflight reports python unavailable, stop and request python install or an explicit AGENTS.md change.
+- Exception: onboarding preflight wrappers may run as a read-only preflight.
+- If preflight reports python unavailable, stop and request python install or an explicit context_compass/onboarding/AGENTS.md change.
 
 Story steps
-1) Resolve repo root and policy sources
-    - Confirm the working directory is the repo root.
-    - If present, read `AGENTS.override.md` in the working directory.
-    - Read repository root `AGENTS.md` for the public library contract.
+1) Resolve context_compass root and policy sources
+    - Confirm the working directory is the context_compass root.
+    - If present, read `AGENTS.override.md` under context_compass.
+    - Read `context_compass/onboarding/AGENTS.md` for policy.
 
 2) Read context_compass configuration and report it
     - Load SQLite system.db `config_context_compass_*` tables.
@@ -40,9 +40,9 @@ Story steps
     - Use a user-defined agent_id supplied by the user.
     - If the agent_id is missing or uncertain (e.g., after context compaction), stop and ask the user before running tools.
     - Only generate an agent id when the user explicitly requests it:
-        - `python context_compass/system/ai_restricted/agent_management/agent_id.py --prefix agent`
+        - ToolCommandAPI command `agent_id`
     - After the career is chosen, create the agent profile:
-        - `python context_compass/system/ai_restricted/agent_management/agent_onboarding_start.py --repo-root . --agent-id <agent_id> --agent-role <career>`
+        - ToolCommandAPI command `agent_onboarding_start`
 
 5) Certification gate (mandatory)
     - Read `context_compass/onboarding/agent/general/skills/self_certification.md` and output the filled template.
@@ -50,27 +50,23 @@ Story steps
     - Ask for approval using `context_compass/onboarding/agent/general/skills/user_approved_certification.md`.
     - Wait for exact token: `CERTIFY: APPROVED`.
     - Run: `python context_compass/onboarding/system/certification/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED"`.
-    - Exception: `context_compass/system/ai_restricted/agent_management/onboarding_bundle.py` may run before certification to gather docs.
+    - Exception: the onboarding bundle collector (read-only) may run before certification to gather docs.
 
 6) Select branch runtime
-    - Initialize branch state:
-        - `python context_compass/system/ai_restricted/system_management/branch_init.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
-    - Switch active branch (if already initialized):
-        - `python context_compass/system/ai_restricted/system_management/branch_switch.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+    - Initialize branch state with ToolCommandAPI command `branch_init`.
+    - Switch active branch (if already initialized) with ToolCommandAPI command `branch_switch`.
 
 7) Assess repo state
-    - If repo_state is missing, run an initial assessment:
-        - `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage new --assessment "initial assessment"`
+    - If repo_state is missing, run an initial assessment with ToolCommandAPI command `repo_state_assess`.
     - Keep scans disabled until the repo is mature or the user requests scans.
 
 8) Check in and mark active
-    - If agent files are missing, create them:
-        - `python context_compass/system/ai_restricted/agent_management/agent_manage.py create --repo-root . --agent-id <agent_id> --agent-role <role>`
-    - `python context_compass/system/ai_restricted/agent_management/agent_checkin.py --repo-root . --agent-id <agent_id> --agent-role <role> --agent-kind <kind> --model-name <model> --runtime <runtime>`
+    - If agent files are missing, create them with ToolCommandAPI command `agent_manage`.
+    - Use ToolCommandAPI command `agent_checkin`.
     - Tool usage does not update agent profiles automatically.
 
 9) Record environment state
-    - `python context_compass/system/ai_restricted/system_management/environment_check.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
+    - Use ToolCommandAPI command `environment_check`.
 
 10) Load operational skills and examples (only if scope changes)
     - Re-read any skills needed for new scope or tool changes.
@@ -83,13 +79,8 @@ Artifacts touched
 
 Tools
 - `context_compass/onboarding/system/certification/python_certified.py`
-- `context_compass/system/ai_restricted/agent_management/agent_id.py`
-- `context_compass/system/ai_restricted/agent_management/agent_manage.py`
-- `context_compass/system/ai_restricted/system_management/branch_init.py`
-- `context_compass/system/ai_restricted/system_management/branch_switch.py`
-- `context_compass/system/ai_restricted/system_management/repo_state_assess.py`
-- `context_compass/system/ai_restricted/agent_management/agent_checkin.py`
-- `context_compass/system/ai_restricted/system_management/environment_check.py`
+- ToolCommandAPI commands: `agent_id`, `agent_manage`, `agent_checkin`, `branch_init`,
+  `branch_switch`, `repo_state_assess`, `environment_check`.
 
 References
 - `context_compass/onboarding/AGENTS.md`

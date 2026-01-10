@@ -2,10 +2,10 @@
 
 Purpose
 - Provide onboarding-owned facades for certification tooling.
-- Keep onboarding entrypoints thin and delegated to ai_restricted tools.
+- Keep onboarding entrypoints thin and delegated to the core implementation.
 
 Scripts
-- python_certified.py -> context_compass/system/ai_restricted/agent_management/python_certified.py
+- python_certified.py delegates to the core certification implementation.
 
 Usage
 - Finalize certification after approval:

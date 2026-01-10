@@ -25,8 +25,7 @@ Required behavior
 
 Onboarding command usage
 - After the career is chosen, create the agent profile:
-  - python context_compass/system/ai_restricted/agent_management/agent_onboarding_start.py \
-    --repo-root . --agent-id <agent_id> --agent-role <career>
+  - Use ToolCommandAPI command `agent_onboarding_start` with the selected career.
 - If defaulting to developer, you may omit --agent-role and state the default in the
   onboarding response.
 

@@ -26,7 +26,7 @@ Rules
 Generator tool
 - `python context_compass/workspace/tools/general/command_registry_generate.py --repo-root . --agent-id <agent_id> --work-id <work_id> [--manifest-path <path>]`
 - The tool writes both registry tables in SQLite.
-- Default manifest: `context_compass/system/ai_restricted/system_management/command_manifest.json`
+- Default manifest path: `python context_compass/workspace/tools/general/command_registry_path.py --repo-root .`
 
 Describe tool (path-safe)
 - `python context_compass/workspace/tools/general/command_registry_describe.py --repo-root . --agent-id <agent_id> --actor-id <actor_id> --scope <system|user> --command-name <command_name> --work-id <work_id>`

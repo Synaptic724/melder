@@ -11,22 +11,22 @@ Required
 
 Preflight checks
 - Preflight is user-initiated; ask before running scripts.
-- Preflight reports repo root, active environment status, and presence of system/user SQLite DBs.
+- Preflight reports the context_compass root, active environment status, and presence of system/user SQLite DBs.
 - Windows:
-  - `powershell -File context_compass/system/ai_restricted/system_management/environment_check.ps1 [-RepoRoot <path>]`
+  - `powershell -File context_compass/onboarding/system/windows/preflight/environment_check.ps1 [-RepoRoot <path>]`
 - Linux/macOS:
-  - `sh context_compass/system/ai_restricted/system_management/environment_check.sh [--repo-root <path>]`
+  - `sh context_compass/onboarding/system/linux/preflight/environment_check.sh [--repo-root <path>]`
 
 Active environment bootstrap (recommended)
 - Install or repair the pinned environment:
-  - Linux/macOS: `bash context_compass/onboarding/system/linux/install_system.sh`
-  - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\onboarding\system\windows\install_system.ps1`
+  - Linux/macOS: `bash context_compass/onboarding/system/linux/install/install_system.sh`
+  - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\onboarding\system\windows\install\install_system.ps1`
 - The onboarding install wrappers invoke the system bootstrap (env + DB seeds).
 - If you only need the env, you can still run the install_active_env scripts directly.
 - OS-specific onboarding scripts live under `context_compass/onboarding/system/`.
 - Optional: set python-only language config before seeding:
-  - Linux/macOS: `bash context_compass/onboarding/system/linux/set_language.sh`
-  - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\onboarding\system\windows\set_language.ps1`
+  - Linux/macOS: `bash context_compass/onboarding/system/linux/programming_language/set_language.sh`
+  - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\onboarding\system\windows\programming_language\set_language.ps1`
 - The installer:
   - Reads `context_compass/system/installation/environments/python_version.md`.
   - Installs/uses `uv` and creates `context_compass/system/installation/environments/active_environments/context_compass_py<version>`.
@@ -36,17 +36,15 @@ Active environment bootstrap (recommended)
 
 If python is missing
 - The system must refuse operations until python is installed
-  or the repo AGENTS.md explicitly allows a no-python mode.
+  or context_compass/onboarding/AGENTS.md explicitly allows a no-python mode.
 - Do not attempt tool execution without python.
 - Ask the user to run the installer instead of searching the repo for ad-hoc fixes.
 
 System validation (python)
-- After the active environment is available, validate core schemas with:
-  `python context_compass/system/ai_restricted/system_management/validate.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
+- After the active environment is available, validate core schemas via ToolCommandAPI command `validate` (see `context_compass/onboarding/user/commands.md` for execution).
 
 Runtime environment state
-- After checkin, run:
-  `python context_compass/system/ai_restricted/system_management/environment_check.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
+- After checkin, run ToolCommandAPI command `environment_check` (see `context_compass/onboarding/user/commands.md` for execution).
 - This persists `environment_state` in system.db and emits minified JSON to stdout.
 
 Tool availability

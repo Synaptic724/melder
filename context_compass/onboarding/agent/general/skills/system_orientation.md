@@ -30,7 +30,7 @@ Core references
 - Agent stories: `context_compass/onboarding/agent/general/behavioral_guidelines/README.md`
 - User docs: `context_compass/onboarding/user/README.md`
 - Configuration: `context_compass/onboarding/user/configuration.md`
-- Onboarding bundle: `context_compass/system/ai_restricted/agent_management/onboarding_bundle.py`
+- Onboarding bundle: ToolCommandAPI command `onboarding_bundle` (read-only)
 - Command registry: SQLite tables `command_registry_user` and `command_registry_system`
 - Command execution: `context_compass/workspace/tools/general/tool_execute.py` (ToolCommandAPI + hooks)
 - Tool discovery: `context_compass/workspace/tools/general/tool_registry_describe.py`
@@ -52,4 +52,4 @@ Example response outline (short)
 
 Notes
 - Use clear, direct language; avoid restating full policy documents.
-- Keep the explanation faithful to the repo root `AGENTS.md`.
+- Keep the explanation faithful to `context_compass/onboarding/AGENTS.md`.

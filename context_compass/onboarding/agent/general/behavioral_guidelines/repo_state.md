@@ -9,8 +9,7 @@ Story steps
    - Locate repo_state in SQLite user.db table `repo_state` keyed by branch_name.
 
 2) Seed repo_state (if missing)
-   - Run:
-     `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage new --assessment "initial assessment"`
+   - Run ToolCommandAPI command `repo_state_assess`.
 
 3) Assess lifecycle stage
    - Use repo size, stability, and test maturity to choose a stage.
@@ -28,7 +27,7 @@ Artifacts touched
 - SQLite user.db table `repo_state` (branch_name key).
 
 Tools
-- `context_compass/system/ai_restricted/system_management/repo_state_assess.py`
+- ToolCommandAPI command `repo_state_assess`.
 
 References
 - `context_compass/onboarding/agent/general/skills/repo_state.md`

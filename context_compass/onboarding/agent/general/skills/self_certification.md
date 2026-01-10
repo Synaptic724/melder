@@ -18,7 +18,7 @@ Rules
 - If the user replies CERTIFY: CHANGES, update this document and re-request approval.
 - While uncertified, only ask clarifying questions or revise this document.
 - Do not write files, apply patches, or run tools before approval.
-- Exception: context_compass/system/ai_restricted/agent_management/onboarding_bundle.py may be run before certification to gather docs.
+- Exception: ToolCommandAPI command `onboarding_bundle` may be run before certification to gather docs.
 
 Required template (fill in every section)
 ```

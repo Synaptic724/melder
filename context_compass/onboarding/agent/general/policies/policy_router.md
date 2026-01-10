@@ -6,10 +6,10 @@ Purpose
 When to use
 - At the start of every session and before editing in a new directory.
 
-Canonical Contract (verbatim from context_compass/onboarding/AGENTS.md)
+Canonical Contract (from context_compass/onboarding/AGENTS.md)
 This repository is a **public library**. Code quality and documentation are first-class deliverables.
 
-Placement: Put this file at the repository root. You may add per-directory variants when needed.
+Placement: Put this file at the context_compass root. You may add per-directory variants when needed.
 * `AGENTS.md` - normal rules for the directory
 * `AGENTS.override.md` - directory-specific override/patch rules (highest priority)
 
@@ -22,14 +22,14 @@ Certification gate (mandatory)
 - Do not use tools or edit files until the user replies exactly: CERTIFY: APPROVED.
 - After approval, run: python context_compass/onboarding/system/certification/python_certified.py --repo-root . --agent-id <agent_id> --approval-token "CERTIFY: APPROVED"
 - Tools that mutate repo state must refuse to run unless the agent profile certification_state is CERTIFIED.
-- Exception: context_compass/system/ai_restricted/system_management/environment_check.ps1 or environment_check.sh may run pre-certification as read-only preflight.
-- If preflight reports python unavailable, refuse all operations until python is installed or AGENTS.md explicitly changes that requirement.
+- Exception: the onboarding preflight wrappers may run pre-certification as read-only preflight.
+- If preflight reports python unavailable, refuse all operations until python is installed or context_compass/onboarding/AGENTS.md explicitly changes that requirement.
 
 Agent identity policy (mandatory)
 - Follow context_compass/onboarding/agent/general/policies/agent_id_policy.md.
 
 Required flow
-- Declare repo_root and repo_id before any work.
+- Declare the context_compass root and target repo_id before any work.
 - Read SQLite system.db `config_context_compass_*` tables and report enabled/disabled features.
 - If work_mode is hard, require a work_id for tool usage and report the task linkage.
 - Run the scanner first (or read the newest scan output).
@@ -97,8 +97,8 @@ Summary
 * Tests must buy real confidence - attribute checks are bottom-tier.
 
 Order of authority (highest to lowest)
-1) AGENTS.override.md in the working directory (if present)
-2) Repository root AGENTS.md (public library editing contract)
+1) AGENTS.override.md in the working directory (if present; context_compass only)
+2) context_compass/onboarding/AGENTS.md
 3) context_compass/onboarding/agent/general/skills/* (operational rules)
 4) context_compass/onboarding/agent/general/examples/* (canonical patterns)
 5) Context JSON (__<dir>__.dir.json, __<stem>__.json)
@@ -113,7 +113,7 @@ Operational guidance (enriched)
 
 Workflow
 1) Check for AGENTS.override.md in the target directory.
-2) Read root AGENTS.md to confirm non-negotiables.
+2) Read context_compass/onboarding/AGENTS.md to confirm non-negotiables.
 3) Read the specific skills for the change type.
 4) Review relevant examples and mirror the pattern.
 5) Use context JSON before opening code.

@@ -21,9 +21,6 @@ Artifacts touched
 - SQLite user.db table `component_contexts` (branch_name + kind=component_contexts/test_component_contexts).
 
 Tools
-- `context_compass/system/ai_restricted/context_management/context_architecture_survey.py`
-- `context_compass/system/ai_restricted/context_management/context_component_survey.py`
-- `context_compass/system/ai_restricted/context_management/context_architecture_check.py`
-- `context_compass/system/ai_restricted/context_management/context_component_check.py`
-- `context_compass/system/ai_restricted/context_management/context_architecture_resurvey.py`
-- `context_compass/system/ai_restricted/context_management/context_component_resurvey.py`
+- ToolCommandAPI commands: `context_architecture_survey`, `context_component_survey`,
+  `context_architecture_check`, `context_component_check`,
+  `context_architecture_resurvey`, `context_component_resurvey`.

@@ -7,7 +7,11 @@ from typing import Optional
 
 from context_compass.system.ai_restricted.system_management import lease
 from context_compass.system.ai_restricted._shared import agent_presence
-from context_compass.system.ai_restricted._shared.certification_guard import APPROVAL_TOKEN, parse_approval_token
+from context_compass.system.ai_restricted._shared.certification_guard import (
+    APPROVAL_TOKEN,
+    is_certified,
+    parse_approval_token,
+)
 from context_compass.system.ai_restricted._shared.certification_state import default_certification_state
 from context_compass.system.ai_restricted._shared.command_payload import (
     PayloadError,
@@ -60,6 +64,27 @@ def _normalize_schema_version(value: object) -> int:
     except (TypeError, ValueError):
         return 1
     return version if version >= 1 else 1
+
+
+def _already_certified(existing_state: object, approval_token: str) -> bool:
+    """
+    Return True when certification is already finalized with the same token.
+
+    Args:
+        existing_state (object): Existing certification_state payload.
+        approval_token (str): Approval token to compare.
+
+    Returns:
+        bool: True if certification is already complete with the same token.
+    """
+    if not isinstance(existing_state, dict):
+        return False
+    if not is_certified(existing_state):
+        return False
+    stored_token = existing_state.get("approval_token")
+    if not isinstance(stored_token, str) or not stored_token:
+        return False
+    return stored_token == approval_token
 
 
 def _load_profile(repo_root: Path, agent_id: str, actor_id: str) -> tuple[dict, bool]:
@@ -167,7 +192,8 @@ def _apply_certification_state(
     state["approval_token"] = approval_token
     state["state"] = "CERTIFIED"
     state["certified"] = True
-    state["certified_at"] = now
+    if not state.get("certified_at"):
+        state["certified_at"] = now
     return state
 
 
@@ -269,6 +295,8 @@ def run(payload: dict, ctx: ExecutionContext) -> CommandResult:
         try:
             profile, exists = _load_profile(repo_root, agent_id, actor_id=agent_id)
             profile = dict(profile)
+            if _already_certified(profile.get("certification_state"), approval_token):
+                return ok_result(output={"agent_id": agent_id, "certified": True})
             now = utc_now_iso()
             profile["certification_state"] = _apply_certification_state(
                 profile.get("certification_state"),

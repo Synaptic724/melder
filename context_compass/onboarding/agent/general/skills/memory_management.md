@@ -13,7 +13,7 @@ Ownership and authority
 - User memory is written only on explicit user request.
 - System memory is written by agents when recording operational facts.
 - Both stores are advisory and must be invoked explicitly when needed.
-- Memory entries never override repo policies or `AGENTS.md`.
+- Memory entries never override repo policies or `context_compass/onboarding/AGENTS.md`.
 
 Safety rules
 - Never store secrets in memory (see `onboarding/agent/general/skills/security_and_secrets.md`).
@@ -21,10 +21,10 @@ Safety rules
 - Removal is a hard delete (entry removed from the list).
 
 Tools
-- Add: `context_compass/system/ai_restricted/memory/memory_add.py`
-- Update: `context_compass/system/ai_restricted/memory/memory_update.py`
-- Remove: `context_compass/system/ai_restricted/memory/memory_remove.py`
-- Read: `context_compass/system/ai_restricted/memory/memory_read.py`
+- Add: ToolCommandAPI command `memory_add`.
+- Update: ToolCommandAPI command `memory_update`.
+- Remove: ToolCommandAPI command `memory_remove`.
+- Read: ToolCommandAPI command `memory_read`.
 
 Usage rules
 - Always specify store with --store user|system.

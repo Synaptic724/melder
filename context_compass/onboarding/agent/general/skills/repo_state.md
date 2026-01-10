@@ -35,18 +35,18 @@ Tooling policy (machine-owned, tool-updated)
 
 Rules
 - For new repos, default to restricted tooling and disable scan/context_profiles until explicitly enabled.
-- If tooling is restricted and the user wants scans/surveys, use repo_state_assess.py to enable.
+- If tooling is restricted and the user wants scans/surveys, use ToolCommandAPI command `repo_state_assess` to enable.
 - To fully disable tooling, set tooling_policy.mode to restricted and disable all features listed in SQLite config_context_compass_* tables.
-- repo_state records are created by branch_init.py or repo_state_assess.py.
+- repo_state records are created by ToolCommandAPI commands `branch_init` or `repo_state_assess`.
 - Do not edit repo_state records manually; use tooling.
 
 Commands
 - Update lifecycle and tooling policy:
-  `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage active_dev`
+  Use ToolCommandAPI command `repo_state_assess`.
 - Restrict tooling explicitly:
-  `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage new --tooling-mode restricted --disable-feature scan --disable-feature context_profiles`
+  Use ToolCommandAPI command `repo_state_assess`.
 - Clear disabled features:
-  `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage active_dev --clear-disabled --tooling-mode normal`
+  Use ToolCommandAPI command `repo_state_assess`.
 
 References
 - context_compass/onboarding/user/repo_state.md

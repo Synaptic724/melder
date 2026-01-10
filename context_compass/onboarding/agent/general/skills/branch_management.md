@@ -13,22 +13,14 @@ Rules
 - Always acquire lease locks in system.db before branch writes.
 
 Commands
-- Initialize branch state:
-  `python context_compass/system/ai_restricted/system_management/branch_init.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
-- Switch active branch:
-  `python context_compass/system/ai_restricted/system_management/branch_switch.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
-- Clone a branch (context + work):
-  `python context_compass/system/ai_restricted/system_management/branch_clone.py --repo-root . --source-branch <branch> --dest-branch <branch> --agent-id <agent_id> --work-id <work_id>`
-- Copy context only:
-  `python context_compass/system/ai_restricted/system_management/branch_copy_context.py --repo-root . --source-branch <branch> --dest-branch <branch> --agent-id <agent_id> --work-id <work_id>`
-- Copy work queues only:
-  `python context_compass/system/ai_restricted/system_management/branch_copy_work.py --repo-root . --source-branch <branch> --dest-branch <branch> --agent-id <agent_id> --work-id <work_id>`
-- Clear branch work queues:
-  `python context_compass/system/ai_restricted/system_management/branch_delete_work.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
-- Delete context records:
-  `python context_compass/system/ai_restricted/system_management/branch_delete_context.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
-- Hard-delete a branch:
-  `python context_compass/system/ai_restricted/system_management/branch_delete.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+- Initialize branch state: ToolCommandAPI command `branch_init`.
+- Switch active branch: ToolCommandAPI command `branch_switch`.
+- Clone a branch (context + work): ToolCommandAPI command `branch_clone`.
+- Copy context only: ToolCommandAPI command `branch_copy_context`.
+- Copy work queues only: ToolCommandAPI command `branch_copy_work`.
+- Clear branch work queues: ToolCommandAPI command `branch_delete_work`.
+- Delete context records: ToolCommandAPI command `branch_delete_context`.
+- Hard-delete a branch: ToolCommandAPI command `branch_delete`.
 
 Notes
 - Branch state lives in SQLite user.db tables (repo_state, contexts, scans, errors).

@@ -25,4 +25,4 @@ Non-negotiables (summary)
 - Context JSON is updated only by scan tasks after code edits.
 - All machine-owned JSON is minified and written atomically with locks.
 
-If any policy conflicts with repo rules, the repo root AGENTS.md wins.
+If any policy conflicts or is unclear, follow `context_compass/onboarding/AGENTS.md`.

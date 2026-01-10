@@ -24,7 +24,4 @@ Artifacts
 - context_compass/system/memory/system_memory.json
 
 Tools
-- context_compass/system/ai_restricted/memory/memory_add.py
-- context_compass/system/ai_restricted/memory/memory_update.py
-- context_compass/system/ai_restricted/memory/memory_remove.py
-- context_compass/system/ai_restricted/memory/memory_read.py
+- ToolCommandAPI commands: `memory_add`, `memory_update`, `memory_remove`, `memory_read`.

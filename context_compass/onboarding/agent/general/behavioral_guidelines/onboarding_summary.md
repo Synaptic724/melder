@@ -4,10 +4,10 @@ Purpose
 - Provide a concise, general onboarding checklist for agents.
 
 Checklist (short form)
-1) Confirm repo root + policy sources
-   - Read `AGENTS.override.md` (if present), repo root `AGENTS.md`, and `context_compass/onboarding/AGENTS.md`.
+1) Confirm context_compass root + policy sources
+   - Read `AGENTS.override.md` (if present) and `context_compass/onboarding/AGENTS.md`.
 2) Preflight (user-initiated, optional)
-   - Run `environment_check.ps1` or `environment_check.sh`.
+   - Run the preflight wrapper in `context_compass/onboarding/system/`.
    - If python is missing, stop and request installation before proceeding.
 3) Install/seed (if needed)
    - Use the OS onboarding installer under `context_compass/onboarding/system/`.

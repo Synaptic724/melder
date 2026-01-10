@@ -13,5 +13,5 @@ Exceptions
 - Only allowed with explicit user approval, documented in the response.
 
 References
-- `src/AGENTS.md`
+- `context_compass/onboarding/AGENTS.md`
 - `context_compass/onboarding/agent/general/skills/testing/evidence_reporting.md`

@@ -33,9 +33,9 @@ Enforcement rule
 - Do not hand-edit ctx JSON in response to code changes; run scan so tasks drive refresh.
 
 Scanner tooling
-- Use context_compass/system/ai_restricted/system_management/scan.py to detect staleness and emit tasks.
+- Use ToolCommandAPI command `scan` to detect staleness and emit tasks.
 - The scanner relies on ignore_rules, hashing, and paths helpers for deterministic output.
-- SQLite `repo_state` (branch_name key) is updated via context_compass/system/ai_restricted/system_management/update_state.py (scan subcommand).
+- SQLite `repo_state` (branch_name key) is updated via ToolCommandAPI command `update_state` (scan subcommand).
 
 Example transitions
 - missing -> fresh after ctx generation.

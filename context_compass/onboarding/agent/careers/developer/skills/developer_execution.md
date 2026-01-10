@@ -4,7 +4,7 @@ Purpose
 - Define how developer agents plan and implement code changes in context_compass.
 
 Core rules
-- Follow `src/AGENTS.md` and the shared baseline skills in `general`.
+- Follow `context_compass/onboarding/AGENTS.md` and the shared baseline skills in `general`.
 - Propose a plan before editing; keep scope tight and reviewable.
 - Use SQLite CRUD for single-table operations; use Query API only for atomic multi-table work.
 - Update docstrings for every touched function/class and add tests for behavioral changes.

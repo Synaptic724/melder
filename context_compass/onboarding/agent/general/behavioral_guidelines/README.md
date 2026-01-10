@@ -5,7 +5,7 @@ Purpose
 - Organize the flows so humans and agents can reason about the system consistently.
 
 Source of truth
-- Behavior rules live in `AGENTS.md` (root) and `context_compass/onboarding/agent/general/skills/*`.
+- Behavior rules live in `context_compass/onboarding/AGENTS.md` and `context_compass/onboarding/agent/general/skills/*`.
 - These stories are descriptive and must not override policy.
 
 How to use

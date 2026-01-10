@@ -36,13 +36,9 @@ Tasks emitted by scan
 - resurvey_test_component_contexts
 
 Commands
-- Build architecture context:
-  `python context_compass/system/ai_restricted/context_management/context_architecture_survey.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
-- Build component contexts:
-  `python context_compass/system/ai_restricted/context_management/context_component_survey.py --repo-root . --agent-id <agent_id> --work-id <work_id>`
-- Test variants:
-  `python context_compass/system/ai_restricted/context_management/context_architecture_survey.py --repo-root . --agent-id <agent_id> --work-id <work_id> --target test`
-  `python context_compass/system/ai_restricted/context_management/context_component_survey.py --repo-root . --agent-id <agent_id> --work-id <work_id> --target test`
+- Build architecture context with ToolCommandAPI command `context_architecture_survey`.
+- Build component contexts with ToolCommandAPI command `context_component_survey`.
+- Test variants use the same commands with a test target in the payload.
 
 Rules
 - Do not read code directly when generating these artifacts.

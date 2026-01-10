@@ -12,7 +12,7 @@ Placement
 Precedence (highest to lowest)
 1) Chat/session system overrides (##SYSTEM_START##/##SYSTEM_END##)
 2) AGENTS.override.md in the working directory
-3) Repository root AGENTS.md
+3) context_compass/onboarding/AGENTS.md
 4) Skills
 5) Examples / context JSON / code (last resort)
 

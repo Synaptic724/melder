@@ -45,13 +45,13 @@ What blocks scans
 
 Workflow
 1) Initialize branch state:
-   `python context_compass/system/ai_restricted/system_management/branch_init.py --repo-root . --branch-name <branch> --agent-id <agent_id> --work-id <work_id>`
+   Use ToolCommandAPI command `branch_init`.
 2) Assess lifecycle:
-   `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage new --assessment "early scaffolding"`
+   Use ToolCommandAPI command `repo_state_assess`.
 3) Enable scans when ready:
-   `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --stage active_dev --tooling-mode normal --clear-disabled`
+   Use ToolCommandAPI command `repo_state_assess`.
 4) Re-enable scans after a restricted phase:
-   `python context_compass/system/ai_restricted/system_management/repo_state_assess.py --repo-root . --agent-id <agent_id> --work-id <work_id> --tooling-mode normal --clear-disabled`
+   Use ToolCommandAPI command `repo_state_assess`.
 
 Rules
 - Do not edit repo_state records manually; use repo_state_assess.

@@ -3,11 +3,10 @@ Onboarding facade for python_certified.
 
 Purpose
 - Provide an onboarding-owned entrypoint for certification finalization.
-- Delegate execution to the ai_restricted python_certified tool.
+- Delegate execution to the core certification tool.
 
 Contract
-- Accepts the same CLI arguments as
-  context_compass.system.ai_restricted.agent_management.python_certified.
+- Accepts the same CLI arguments as the core certification tool.
 - Preserves exit status and logging behavior from the delegated tool.
 """
 
