@@ -80,6 +80,25 @@ if [ "$context_compass_exists" = "true" ] && [ "$system_db_exists" = "true" ] &&
     system_ready=true
 fi
 
+preflight_status="ready"
+preflight_message="System ready for this OS."
+if [ "$repo_root_exists" != "true" ]; then
+    preflight_status="missing_repo_root"
+    preflight_message="Repo root not found; pass --repo-root."
+elif [ "$context_compass_exists" != "true" ]; then
+    preflight_status="missing_context_compass"
+    preflight_message="context_compass directory not found under repo root."
+elif [ "$system_ready" != "true" ] && [ "$active_env_python_exists" != "true" ]; then
+    preflight_status="needs_install"
+    preflight_message="Databases and active environment are missing."
+elif [ "$system_ready" != "true" ]; then
+    preflight_status="needs_databases"
+    preflight_message="Databases are missing; run install or build_runner."
+elif [ "$active_env_python_exists" != "true" ]; then
+    preflight_status="needs_active_env"
+    preflight_message="Active environment missing for this OS."
+fi
+
 checked_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 os_name=$(uname -s 2>/dev/null || echo "unknown")
 platform=$(uname -s 2>/dev/null || echo "unknown")
@@ -146,6 +165,8 @@ printf '"databases":{"system_db":{"path":%s,"exists":%s},"user_db":{"path":%s,"e
     "$(json_string "$system_db_path")" "$system_db_exists" "$(json_string "$user_db_path")" "$user_db_exists" "$system_ready"
 printf '"environment":{"active_env_root":%s,"active_env_exists":%s,"active_env_path":%s,"active_env_python":%s,"active_env_python_exists":%s},' \
     "$(json_string "$active_env_root")" "$active_env_exists" "$(json_string "$active_env_path")" "$(json_string "$active_env_python_path")" "$active_env_python_exists"
+printf '"preflight":{"status":%s,"message":%s},' \
+    "$(json_string "$preflight_status")" "$(json_string "$preflight_message")"
 printf '"system_ready":%s' "$system_ready"
 printf '}\n'
 

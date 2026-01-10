@@ -20,6 +20,14 @@ Preflight checks
 - If you see errors like `/usr/bin/env: 'bash\r': No such file or directory` or `^M`, normalize line endings to LF:
   - `find context_compass -name '*.sh' -print0 | xargs -0 sed -i 's/\r$//'`
 
+Interpreting preflight output
+- preflight.status=ready means the system DBs exist and the active environment for this OS is available.
+- preflight.status=needs_active_env means DBs are present but the OS-specific environment is missing.
+- preflight.status=needs_databases means the environment exists but DBs are missing.
+- preflight.status=needs_install means both DBs and the OS-specific environment are missing.
+- preflight.status=missing_repo_root or missing_context_compass means the repo root/path is wrong.
+- If preflight.status is unavailable, check system_ready plus environment.active_env_python_exists.
+
 Active environment bootstrap (recommended)
 - Install or repair the pinned environment:
 - If you are in WSL, run the Linux/macOS command from within WSL.

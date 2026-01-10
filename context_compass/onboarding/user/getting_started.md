@@ -27,6 +27,8 @@ Note
    - Run `context_compass/onboarding/system/windows/preflight/environment_check.ps1` (Windows) or
      `context_compass/onboarding/system/linux/preflight/environment_check.sh` (Linux/macOS).
    - Preflight reports the context_compass root, active environment status, and presence of system/user SQLite DBs.
+   - If preflight.status=ready, the system is operational for this OS; skip install.
+   - If preflight.status indicates missing env or DBs, run the install step for your OS.
    - If python is missing, install the active environment before proceeding.
    - If you are re-entering after context compaction, state that you are reloading the environment and ask to rerun preflight.
 

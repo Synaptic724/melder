@@ -51,6 +51,25 @@ $systemDbExists = $contextCompassExists -and (Test-Path -LiteralPath $systemDbPa
 $userDbExists = $contextCompassExists -and (Test-Path -LiteralPath $userDbPath)
 $systemReady = $contextCompassExists -and $systemDbExists -and $userDbExists
 
+$preflightStatus = "ready"
+$preflightMessage = "System ready for this OS."
+if (-not $repoRootExists) {
+    $preflightStatus = "missing_repo_root"
+    $preflightMessage = "Repo root not found; pass -RepoRoot."
+} elseif (-not $contextCompassExists) {
+    $preflightStatus = "missing_context_compass"
+    $preflightMessage = "context_compass directory not found under repo root."
+} elseif (-not $systemReady -and -not $activeEnvPythonExists) {
+    $preflightStatus = "needs_install"
+    $preflightMessage = "Databases and active environment are missing."
+} elseif (-not $systemReady) {
+    $preflightStatus = "needs_databases"
+    $preflightMessage = "Databases are missing; run install or build_runner."
+} elseif (-not $activeEnvPythonExists) {
+    $preflightStatus = "needs_active_env"
+    $preflightMessage = "Active environment missing for this OS."
+}
+
 $pythonAvailable = ($pythonCmd -ne $null) -or ($python3Cmd -ne $null)
 $pythonExe = $null
 if ($pythonCmd -ne $null) {
@@ -101,6 +120,10 @@ $payload = @{
         active_env_path = $activeEnvPath
         active_env_python = $activeEnvPython
         active_env_python_exists = $activeEnvPythonExists
+    }
+    preflight = @{
+        status = $preflightStatus
+        message = $preflightMessage
     }
     system_ready = $systemReady
 }
