@@ -1,0 +1,69 @@
+{
+    "agent": {
+        "architecture": {
+            "core_concepts": [
+                "Directory context",
+                "permissions structure"
+            ],
+            "dependency_rules": {},
+            "key_flows": [],
+            "non_goals": [],
+            "responsibilities": [
+                "Hold permissions directory contents",
+                "Define local structure"
+            ]
+        },
+        "integration": {
+            "entrypoints": [],
+            "runtime_notes": [],
+            "used_by": [],
+            "uses": []
+        },
+        "inventory": {
+            "files": [
+                {
+                    "name": "__init__.py"
+                },
+                {
+                    "name": "__permissions__.json"
+                },
+                {
+                    "name": "permissions.py"
+                }
+            ],
+            "subdirs": [
+                {
+                    "name": "__pycache__"
+                }
+            ]
+        },
+        "summary": {
+            "detail": "Directory context for src/melder/aether/conduit/conduit_ward/permissions.",
+            "one_liner": "permissions directory."
+        },
+        "testing": {
+            "commands": [],
+            "recommended_when_changed": [],
+            "required_when_changed": []
+        }
+    },
+    "computed": {
+        "checksums": {
+            "analyzer_version": null,
+            "ctx_semantic_hash_sha256": null,
+            "subtree_hash_sha256": null,
+            "template_version": "dir_ctx@v1"
+        },
+        "freshness_state": "fresh",
+        "last_scan": {},
+        "review": {},
+        "staleness_reasons": []
+    },
+    "identity": {
+        "ctx_path": "src/melder/aether/conduit/conduit_ward/permissions/__permissions__.dir.json",
+        "dir_path": "src/melder/aether/conduit/conduit_ward/permissions",
+        "name": "permissions"
+    },
+    "kind": "dir_ctx",
+    "schema_version": 1
+}

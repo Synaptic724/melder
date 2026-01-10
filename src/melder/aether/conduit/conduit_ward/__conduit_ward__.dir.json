@@ -1,0 +1,81 @@
+{
+    "agent": {
+        "architecture": {
+            "core_concepts": [
+                "Directory context",
+                "conduit_ward structure"
+            ],
+            "dependency_rules": {},
+            "key_flows": [],
+            "non_goals": [],
+            "responsibilities": [
+                "Hold conduit_ward directory contents",
+                "Define local structure"
+            ]
+        },
+        "integration": {
+            "entrypoints": [],
+            "runtime_notes": [],
+            "used_by": [],
+            "uses": []
+        },
+        "inventory": {
+            "files": [
+                {
+                    "name": "__conduit_ward__.json"
+                },
+                {
+                    "name": "__init__.py"
+                },
+                {
+                    "name": "conduit_ward.py"
+                }
+            ],
+            "subdirs": [
+                {
+                    "name": "__pycache__"
+                },
+                {
+                    "name": "contract"
+                },
+                {
+                    "name": "permissions"
+                },
+                {
+                    "name": "policies"
+                },
+                {
+                    "name": "transfer"
+                }
+            ]
+        },
+        "summary": {
+            "detail": "Directory context for src/melder/aether/conduit/conduit_ward.",
+            "one_liner": "conduit_ward directory."
+        },
+        "testing": {
+            "commands": [],
+            "recommended_when_changed": [],
+            "required_when_changed": []
+        }
+    },
+    "computed": {
+        "checksums": {
+            "analyzer_version": null,
+            "ctx_semantic_hash_sha256": null,
+            "subtree_hash_sha256": null,
+            "template_version": "dir_ctx@v1"
+        },
+        "freshness_state": "fresh",
+        "last_scan": {},
+        "review": {},
+        "staleness_reasons": []
+    },
+    "identity": {
+        "ctx_path": "src/melder/aether/conduit/conduit_ward/__conduit_ward__.dir.json",
+        "dir_path": "src/melder/aether/conduit/conduit_ward",
+        "name": "conduit_ward"
+    },
+    "kind": "dir_ctx",
+    "schema_version": 1
+}

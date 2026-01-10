@@ -1,0 +1,84 @@
+{
+    "agent": {
+        "architecture": {
+            "core_concepts": [
+                "Directory context",
+                "contract structure"
+            ],
+            "dependency_rules": {},
+            "key_flows": [],
+            "non_goals": [],
+            "responsibilities": [
+                "Hold contract directory contents",
+                "Define local structure"
+            ]
+        },
+        "integration": {
+            "entrypoints": [],
+            "runtime_notes": [],
+            "used_by": [],
+            "uses": []
+        },
+        "inventory": {
+            "files": [
+                {
+                    "name": "__contract__.json"
+                },
+                {
+                    "name": "__detail_reason__.json"
+                },
+                {
+                    "name": "__details__.json"
+                },
+                {
+                    "name": "__init__.py"
+                },
+                {
+                    "name": "contract.py"
+                },
+                {
+                    "name": "detail_reason.py"
+                },
+                {
+                    "name": "details.py"
+                }
+            ],
+            "subdirs": [
+                {
+                    "name": "__pycache__"
+                },
+                {
+                    "name": "contract_types"
+                }
+            ]
+        },
+        "summary": {
+            "detail": "Directory context for src/melder/aether/conduit/conduit_ward/contract.",
+            "one_liner": "contract directory."
+        },
+        "testing": {
+            "commands": [],
+            "recommended_when_changed": [],
+            "required_when_changed": []
+        }
+    },
+    "computed": {
+        "checksums": {
+            "analyzer_version": null,
+            "ctx_semantic_hash_sha256": null,
+            "subtree_hash_sha256": null,
+            "template_version": "dir_ctx@v1"
+        },
+        "freshness_state": "fresh",
+        "last_scan": {},
+        "review": {},
+        "staleness_reasons": []
+    },
+    "identity": {
+        "ctx_path": "src/melder/aether/conduit/conduit_ward/contract/__contract__.dir.json",
+        "dir_path": "src/melder/aether/conduit/conduit_ward/contract",
+        "name": "contract"
+    },
+    "kind": "dir_ctx",
+    "schema_version": 1
+}

@@ -1,0 +1,69 @@
+{
+    "agent": {
+        "architecture": {
+            "core_concepts": [
+                "Directory context",
+                "conduit_state structure"
+            ],
+            "dependency_rules": {},
+            "key_flows": [],
+            "non_goals": [],
+            "responsibilities": [
+                "Hold conduit_state directory contents",
+                "Define local structure"
+            ]
+        },
+        "integration": {
+            "entrypoints": [],
+            "runtime_notes": [],
+            "used_by": [],
+            "uses": []
+        },
+        "inventory": {
+            "files": [
+                {
+                    "name": "__conduit_state__.json"
+                },
+                {
+                    "name": "__init__.py"
+                },
+                {
+                    "name": "conduit_state.py"
+                }
+            ],
+            "subdirs": [
+                {
+                    "name": "__pycache__"
+                }
+            ]
+        },
+        "summary": {
+            "detail": "Directory context for src/melder/aether/conduit/conduit_state.",
+            "one_liner": "conduit_state directory."
+        },
+        "testing": {
+            "commands": [],
+            "recommended_when_changed": [],
+            "required_when_changed": []
+        }
+    },
+    "computed": {
+        "checksums": {
+            "analyzer_version": null,
+            "ctx_semantic_hash_sha256": null,
+            "subtree_hash_sha256": null,
+            "template_version": "dir_ctx@v1"
+        },
+        "freshness_state": "fresh",
+        "last_scan": {},
+        "review": {},
+        "staleness_reasons": []
+    },
+    "identity": {
+        "ctx_path": "src/melder/aether/conduit/conduit_state/__conduit_state__.dir.json",
+        "dir_path": "src/melder/aether/conduit/conduit_state",
+        "name": "conduit_state"
+    },
+    "kind": "dir_ctx",
+    "schema_version": 1
+}
