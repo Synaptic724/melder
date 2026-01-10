@@ -12,6 +12,7 @@ Required
 Preflight checks
 - Preflight is user-initiated; ask before running scripts.
 - Preflight reports the context_compass root, active environment status, and presence of system/user SQLite DBs.
+- Use the command that matches your current shell and OS. If you are in WSL, use the Linux/macOS command from within WSL (not Windows PowerShell).
 - Windows:
   - `powershell -File context_compass/onboarding/system/windows/preflight/environment_check.ps1 [-RepoRoot <path>]`
 - Linux/macOS:
@@ -19,6 +20,7 @@ Preflight checks
 
 Active environment bootstrap (recommended)
 - Install or repair the pinned environment:
+- If you are in WSL, run the Linux/macOS command from within WSL.
   - Linux/macOS: `bash context_compass/onboarding/system/linux/install/install_system.sh`
   - Windows: `powershell -ExecutionPolicy Bypass -File context_compass\onboarding\system\windows\install\install_system.ps1`
 - The onboarding install wrappers invoke the system bootstrap (env + DB seeds).
@@ -32,6 +34,11 @@ Active environment bootstrap (recommended)
   - Installs/uses `uv` and creates `context_compass/system/installation/environments/active_environments/context_compass_py<version>`.
   - Installs dependencies from `context_compass/system/installation/environments/requirements.txt`.
 - Activate the environment or call its python directly when running tools.
+- The installer writes `context_compass_repo.pth` into the active env's site-packages so
+  `import context_compass` works when running scripts by file path.
+  - Verify with the active env python:
+    - `python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"`
+    - Check for `context_compass_repo.pth` in that directory.
 - Read the script before running if you need to audit write locations or network actions.
 
 If python is missing

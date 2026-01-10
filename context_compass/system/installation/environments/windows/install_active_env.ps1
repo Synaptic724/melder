@@ -5,6 +5,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $envRoot = [IO.Path]::GetFullPath((Join-Path $scriptDir "..\active_environments"))
 $pyVersionFile = Join-Path $scriptDir "..\python_version.md"
 $requirementsFile = Join-Path $scriptDir "..\requirements.txt"
+$repoRoot = [IO.Path]::GetFullPath((Join-Path $scriptDir "..\..\..\..\.."))
 
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     Write-Output "uv is not installed. Installing uv..."
@@ -50,5 +51,13 @@ if (-not (Test-Path $envPath)) {
 
 & (Join-Path $envPath "Scripts\Activate.ps1")
 uv pip install -r $requirementsFile
+
+$pythonExe = Join-Path $envPath "Scripts\python.exe"
+$sitePackages = & $pythonExe -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+if (-not $sitePackages) {
+    throw "Failed to resolve site-packages for $envPath"
+}
+$pthPath = Join-Path $sitePackages "context_compass_repo.pth"
+Set-Content -Path $pthPath -Value $repoRoot -Encoding ASCII
 
 Write-Output "Environment ready: $envPath"

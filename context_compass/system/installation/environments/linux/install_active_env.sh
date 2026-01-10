@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 ENV_ROOT="${SCRIPT_DIR}/../active_environments"
 PY_VERSION_FILE="${SCRIPT_DIR}/../python_version.md"
 REQS_FILE="${SCRIPT_DIR}/../requirements.txt"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../../../.." >/dev/null 2>&1 && pwd)"
 
 if ! command -v uv >/dev/null 2>&1; then
   echo "uv is not installed. Installing uv..."
@@ -52,5 +53,12 @@ fi
 # shellcheck disable=SC1091
 source "${ENV_PATH}/bin/activate"
 uv pip install -r "${REQS_FILE}"
+
+site_packages="$("${ENV_PATH}/bin/python" -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
+if [[ -z "${site_packages}" ]]; then
+  echo "Failed to resolve site-packages for ${ENV_PATH}"
+  exit 1
+fi
+printf '%s\n' "${REPO_ROOT}" > "${site_packages}/context_compass_repo.pth"
 
 echo "Environment ready: ${ENV_PATH}"
