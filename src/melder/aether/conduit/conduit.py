@@ -1693,32 +1693,39 @@ class Conduit(Cleanable, IConduit):
 
         Direct spell activation facade for this Conduit.
 
-        At the Conduit boundary, `meld` is a **string-only** API:
-        callers must always provide a concrete `spell` identifier
-        (the spell's `spell_id`), and may optionally supply a
-        logical `spellframe` and `binding_name` for metadata or
-        downstream consumers.
+        At the Conduit boundary, `meld` supports multiple root entry modes.
+        Callers may resolve by:
+
+        - `spell` as a **string** (treated as the canonical spell_id), or
+        - `spell` as a **spell object** (class/function), or
+        - `spellframe` as a **frame/protocol** (or string frame key), or
+        - `spell_name` as a **logical name key** (string).
+
+        These inputs are normalized and delegated to the underlying `Meld`
+        instance, which resolves a concrete spell_id via SpellInputUtils.
 
         Resolution, reuse, and lifecycle behavior are delegated to
         the underlying ``Meld`` instance.
 
         Args:
             spell_name:
-                Simple name of the spell (string).
+                Logical spell name (string). When provided without an explicit
+                `spell` or `spellframe`, this is treated as the name-based key
+                for resolution (via SpellInputUtils normalization).
             spell:
-                The unique spell identifier (string) to resolve.
-                This is typically the SHA256 version ID of the spell.
+                Primary spell identifier. If a string, this is treated as the
+                unique spell_id (typically the SHA256 version ID). If an
+                object (class/function), it participates in key normalization.
             spellframe:
-                Optional logical spellframe identifier (string).
-                Not used for resolution at this layer, but may be
-                useful for tracing, logging, or future behavior.
+                Optional spellframe / protocol / string frame key used for
+                resolution. If provided, it becomes the primary frame key.
             binding_name:
                 Optional binding name (string) associated with the
-                spell. Also not used for resolution here, but passed
-                through to ``Meld.meld`` for potential consumers.
+                spell. Used as the binding key during resolution.
             spell_override:
-                Optional payload (dict / list / tuple) attached to the
-                Spell's metadata under the key ``"spell_override"``.
+                Optional per-call override payload (dict / list / tuple)
+                passed through to ``Meld.meld`` for constructor/factory
+                argument overrides.
 
         Returns:
             Any:
@@ -1729,9 +1736,10 @@ class Conduit(Cleanable, IConduit):
             RuntimeError:
                 - If the Conduit has been cleaned.
                 - If the underlying ``Meld`` instance is missing.
+            ValueError:
+                - If none of `spell_name`, `spell`, or `spellframe` are provided.
             TypeError:
-                - If `spell` is not a non-empty string.
-                - If `spellframe` is not a string when provided.
+                - If `spell_name` is not a string when provided.
                 - If `binding_name` is not a string when provided.
             KeyError:
                 Propagated from ``Meld.meld`` when a spell_id cannot be

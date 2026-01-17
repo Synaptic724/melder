@@ -107,19 +107,21 @@ class SpellSpace(Cleanable, ISpellSpace):
         """
         Delegate to the owner Conduit’s `meld`, enforcing this SpellSpace is active.
 
-        Mirrors `Conduit.meld(...)`:
-        - `meld` is a **string-only** API: callers should provide a concrete `spell`
-          identifier (spell_id), and may optionally supply `spellframe` and
-          `binding_name` for metadata/tracing.
-        - Resolution, reuse, and lifecycle behavior are delegated to the owner
-          Conduit’s `Meld`.
+        Mirrors `Conduit.meld(...)` and supports the same root entry modes:
+        - `spell` as a string spell_id
+        - `spell` as a spell object (class/function)
+        - `spellframe` as a protocol/frame (or string frame key)
+        - `spell_name` as a logical name key
+
+        Resolution, reuse, and lifecycle behavior are delegated to the owner
+        Conduit’s `Meld`.
 
         Args:
-            spell_name: Simple name of the spell (string).
-            spell: Unique spell identifier (typically SHA256 version ID).
-            spellframe: Optional logical spellframe identifier (metadata only here).
-            binding_name: Optional binding name (string) associated with the spell.
-            spell_override: Optional payload attached to spell metadata under "spell_override".
+            spell_name: Logical spell name (string) used for name-based resolution.
+            spell: Primary spell identifier (spell_id string or spell object).
+            spellframe: Optional spellframe / protocol / string frame key.
+            binding_name: Optional binding name (string) used for resolution.
+            spell_override: Optional per-call override payload (dict/list/tuple).
 
         Returns:
             Any: The resolved component instance as returned by the owner Conduit’s `meld`.
@@ -127,7 +129,7 @@ class SpellSpace(Cleanable, ISpellSpace):
         Raises:
             SpellSpaceScopeError: If this spellspace is not the active one on the owner.
             RuntimeError: If this SpellSpace has been cleaned.
-            Other errors: Propagated from the owner Conduit’s `meld` (TypeError/KeyError/NotImplementedError/etc.).
+            Other errors: Propagated from the owner Conduit’s `meld` (ValueError/TypeError/KeyError/NotImplementedError/etc.).
         """
         self.check_cleaned()
         if self._owner_conduit.get_active_spellspace() is not self:
