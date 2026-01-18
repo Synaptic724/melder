@@ -1,6 +1,6 @@
 import threading
 import time
-from concurrent.futures import wait, ALL_COMPLETED
+from concurrent.futures import wait, FIRST_EXCEPTION
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from collections import deque
 from melder.utilities.interfaces.interfaces import IConfiguration, ISpellbook
@@ -477,15 +477,43 @@ class PhaseScheduler(Cleanable):
 
         timeout_sec = self._barrier_timeout_ms / 1000.0
 
-        # Barrier: wait for all futures tied to this phase to complete.
+        # Barrier: wait for futures tied to this phase to complete or fail.
         start = time.monotonic()
-        done, not_done = wait(units, timeout=timeout_sec, return_when=ALL_COMPLETED)
-        elapsed_ms = int((time.monotonic() - start) * 1000.0)
+        deadline = start + timeout_sec
+        pending = set(units)
+        done: set[UnitOfWork] = set()
 
-        if not_done:
-            # Timed out: signal cancellation and raise.
-            self._cancel_signal.cancel()
-            raise PhaseTimeoutError(phase_name, self._barrier_timeout_ms)
+        while pending:
+            if self._cancel_signal.is_set:
+                errors = [uow.exception() for uow in done if uow.exception() is not None]
+                if errors:
+                    raise PhaseExecutionError(phase_name, errors)
+                raise PhaseSchedulerError(
+                    f"Phase '{phase_name}' cancelled during execution."
+                )
+
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                # Timed out: signal cancellation and raise.
+                self._cancel_signal.cancel()
+                raise PhaseTimeoutError(phase_name, self._barrier_timeout_ms)
+
+            # Poll in tight intervals so we can fail fast on exceptions/cancel.
+            wait_timeout = min(0.001, remaining)
+            done_now, pending = wait(
+                pending,
+                timeout=wait_timeout,
+                return_when=FIRST_EXCEPTION,
+            )
+
+            if done_now:
+                done.update(done_now)
+                errors = [uow.exception() for uow in done_now if uow.exception() is not None]
+                if errors:
+                    # Cancel downstream phases.
+                    self._cancel_signal.cancel()
+                    all_errors = [uow.exception() for uow in done if uow.exception() is not None]
+                    raise PhaseExecutionError(phase_name, all_errors)
 
         # All Futures completed (either with result, exception, or cancellation).
         errors: List[BaseException] = []

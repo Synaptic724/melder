@@ -70,6 +70,55 @@ def test_run_single_phase_timeout():
     scheduler.cleanup()
 
 
+def test_run_single_phase_fail_fast_on_exception():
+    cfg = DummyConfig(workers=2, timeout_ms=200)
+    scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
+    block_event = threading.Event()
+
+    def blocking():
+        block_event.wait()
+        return "done"
+
+    err = RuntimeError("boom")
+    failing = UnitOfWork(lambda: (_ for _ in ()).throw(err))
+    blocking_uow = UnitOfWork(blocking)
+
+    scheduler.register_phase("p1", lambda: [blocking_uow, failing])
+    try:
+        with pytest.raises(PhaseExecutionError):
+            scheduler.run_all_phases("cid")
+    finally:
+        block_event.set()
+        scheduler.cleanup()
+
+
+def test_run_single_phase_fail_fast_on_cancel():
+    cfg = DummyConfig(workers=1, timeout_ms=500)
+    scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
+    block_event = threading.Event()
+
+    def blocking():
+        block_event.wait()
+        return "done"
+
+    uow = UnitOfWork(blocking)
+
+    scheduler.register_phase("p1", lambda: [uow])
+
+    def trigger_cancel():
+        time.sleep(0.05)
+        scheduler.cancel()
+
+    canceller = threading.Thread(target=trigger_cancel, daemon=True)
+    canceller.start()
+    try:
+        with pytest.raises(PhaseSchedulerError):
+            scheduler.run_all_phases("cid")
+    finally:
+        block_event.set()
+        scheduler.cleanup()
+
+
 def test_cleanup_idempotent_and_cancels():
     cfg = DummyConfig()
     scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
