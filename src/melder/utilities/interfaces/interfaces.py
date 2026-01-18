@@ -1205,6 +1205,10 @@ class ISpellbook(ICleanable, Protocol):
         This method profiles the spell, computes a unique SHA256 ID,
         stores it locally, and assigns lifecycle + permission policies.
 
+        Binding requires an active binding transaction. Use
+        ``begin_binding_transaction()`` before binding and
+        ``end_binding_transaction()`` once registration is complete.
+
         Permissions (access control to other conduits):
             - ``"read"``:
                 Other conduits may *use* the spell but not create
@@ -1249,6 +1253,8 @@ class ISpellbook(ICleanable, Protocol):
         Raises:
             RuntimeError:
                 If a spell with the same ID already exists in the Aether registry.
+            RuntimeError:
+                If no binding transaction is active for this Spellbook.
             TypeError:
                 If any provided hook is not callable.
             ValueError:
@@ -1267,6 +1273,10 @@ class ISpellbook(ICleanable, Protocol):
         submodules. Any object marked with `scan_bind` must originate from the
         scanned module, otherwise the scan fails.
 
+        Scanning requires an active binding transaction. Use
+        ``begin_binding_transaction()`` before scanning and
+        ``end_binding_transaction()`` once registration is complete.
+
         Args:
             module (ModuleType): The module to scan for decorated spell targets.
         Returns:
@@ -1274,7 +1284,62 @@ class ISpellbook(ICleanable, Protocol):
         Raises:
             TypeError: If `module` is not a module or metadata is invalid.
             ValueError: If a decorated object is not owned by the module.
+            RuntimeError: If no binding transaction is active for this Spellbook.
             RuntimeError: Propagated from Spellbook.bind on binding errors.
+        """
+        ...
+
+    def begin_binding_transaction(self) -> None:
+        """
+        Public API
+
+        Begin a binding transaction for this Spellbook.
+
+        Purpose:
+            Enable binding operations (bind/scan) in a controlled transaction window.
+        Contract:
+            - Only one binding transaction may be active at a time.
+            - While active, `bind(...)` and `scan(...)` are allowed.
+            - When inactive, `bind(...)` and `scan(...)` raise.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If a binding transaction is already active.
+        """
+        ...
+
+    def end_binding_transaction(self) -> None:
+        """
+        Public API
+
+        End the active binding transaction for this Spellbook.
+
+        Purpose:
+            Disable binding operations until a new transaction is started.
+        Contract:
+            - Binding transactions must be explicitly closed.
+            - When inactive, `bind(...)` and `scan(...)` raise.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If no binding transaction is active.
+        """
+        ...
+
+    def binding_transaction(self) -> "ISpellbook":
+        """
+        Public API
+
+        Context-managed binding transaction for this Spellbook.
+
+        Contract:
+            - Starts a binding transaction on entry.
+            - Ends the transaction on exit, even if an exception is raised.
+            - Nested usage raises on begin (transaction already active).
+        Returns:
+            ISpellbook: The current Spellbook instance.
+        Raises:
+            RuntimeError: If a binding transaction is already active.
         """
         ...
 
@@ -3356,6 +3421,7 @@ class IConduit(ICleanable, Protocol):
         Raises:
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
+            RuntimeError: If no binding transaction is active for this Spellbook.
             RuntimeError: If the spell is already bound in the registry.
             TypeError: If invalid hook types are provided.
         """
@@ -3378,9 +3444,66 @@ class IConduit(ICleanable, Protocol):
             list[str]: Spell IDs bound during the scan, in module dict order.
         Raises:
             RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If no binding transaction is active for this Spellbook.
             TypeError: If `module` is not a module or metadata is invalid.
             ValueError: If a decorated object is not owned by the module.
             RuntimeError: Propagated from Spellbook.bind on binding errors.
+        """
+        ...
+
+    def begin_binding_transaction(self) -> None:
+        """
+        Public API
+
+        Begin a binding transaction for this Conduit.
+
+        Purpose:
+            Enable binding operations (bind/scan) through this Conduit.
+        Contract:
+            - Only normal conduits may begin a binding transaction.
+            - Binding transactions must be explicitly ended.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If a binding transaction is already active.
+        """
+        ...
+
+    def end_binding_transaction(self) -> None:
+        """
+        Public API
+
+        End the active binding transaction for this Conduit.
+
+        Purpose:
+            Disable binding operations until a new transaction is started.
+        Contract:
+            - Only normal conduits may end a binding transaction.
+            - The transaction must be active when ending.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If no binding transaction is active.
+        """
+        ...
+
+    def binding_transaction(self) -> "IConduit":
+        """
+        Public API
+
+        Context-managed binding transaction for this Conduit.
+
+        Contract:
+            - Starts a binding transaction on entry.
+            - Ends the transaction on exit, even if an exception is raised.
+            - Only normal conduits may enter this context.
+        Returns:
+            IConduit: The current Conduit instance.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If a binding transaction is already active.
         """
         ...
 

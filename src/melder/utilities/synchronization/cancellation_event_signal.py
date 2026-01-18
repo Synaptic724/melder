@@ -168,7 +168,6 @@ class CancellationEventSignal(Cleanable):
         # Null everything
         self._flag = None
         self._event = None
-
         self._cleaned = True
 
 

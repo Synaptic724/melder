@@ -1447,6 +1447,83 @@ class Conduit(Cleanable, IConduit):
             default_permissions=default_permissions,
         )
 
+    def begin_binding_transaction(self) -> None:
+        """
+        Public API
+
+        Begin a binding transaction for this Conduit.
+
+        Purpose:
+            Enable binding operations (bind/scan) through this Conduit.
+        Contract:
+            - Only normal conduits may begin a binding transaction.
+            - Binding transactions must be explicitly ended.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If a binding transaction is already active.
+        """
+        self.check_cleaned()
+        if not self._conduit_state == ConduitState.normal:
+            self._logger.error("begin_binding_transaction called when conduit not normal", "begin_binding_transaction")
+            raise RuntimeError("Only normal conduits can start binding transactions.")
+        with self._lock:
+            self._spellbook._begin_binding_transaction(owner_label="Conduit")
+
+    def end_binding_transaction(self) -> None:
+        """
+        Public API
+
+        End the active binding transaction for this Conduit.
+
+        Purpose:
+            Disable binding operations until a new transaction is started.
+        Contract:
+            - Only normal conduits may end a binding transaction.
+            - The transaction must be active when ending.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If no binding transaction is active.
+        """
+        self.check_cleaned()
+        if not self._conduit_state == ConduitState.normal:
+            self._logger.error("end_binding_transaction called when conduit not normal", "end_binding_transaction")
+            raise RuntimeError("Only normal conduits can end binding transactions.")
+        with self._lock:
+            self._spellbook._end_binding_transaction(owner_label="Conduit")
+
+    @contextmanager
+    def binding_transaction(self) -> "Conduit":
+        """
+        Public API
+
+        Context-managed binding transaction for this Conduit.
+
+        Usage:
+            with conduit.binding_transaction():
+                conduit.bind(...)
+                conduit.scan(...)
+
+        Contract:
+            - Starts a binding transaction on entry.
+            - Ends the transaction on exit, even if an exception is raised.
+            - Only normal conduits may enter this context.
+
+        Returns:
+            Conduit: The current Conduit instance.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If a binding transaction is already active.
+        """
+        self.begin_binding_transaction()
+        try:
+            yield self
+        finally:
+            self.end_binding_transaction()
+
     def bind(self, *, spell, existence: str, permissions: str = "create", spellframe=None, binding_name=None, **kwargs) -> str:
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
@@ -1525,6 +1602,7 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
+            RuntimeError: If no binding transaction is active for this Spellbook.
             RuntimeError: If the spell is already bound in the registry.
             TypeError: If invalid hook types are provided.
         """
@@ -1559,6 +1637,7 @@ class Conduit(Cleanable, IConduit):
             list[str]: Spell IDs bound during the scan, in module dict order.
         Raises:
             RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If no binding transaction is active for this Spellbook.
             TypeError: If `module` is not a module or metadata is invalid.
             ValueError: If a decorated object is not owned by the module.
             RuntimeError: Propagated from Spellbook.bind on binding errors.

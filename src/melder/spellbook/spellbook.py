@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
 from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set
 import threading
@@ -82,6 +83,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
         self._conjured = False
+        self._binding_transaction_active: bool = True
         self._conduit: Optional[Conduit] = None
         self._aetheric_frame: str = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
@@ -237,6 +239,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._id = None
         self._conduit = None
         self._conjured = None
+        self._binding_transaction_active = None
         self._spell_system_states = None
         self._configuration_locked = None
 
@@ -1020,6 +1023,149 @@ class Spellbook(Cleanable, ISpellbook):
             default_permissions=default_permissions,
         )
 
+    def begin_binding_transaction(self) -> None:
+        """
+        Public API
+
+        Begin a binding transaction for this Spellbook.
+
+        Purpose:
+            Enable binding operations (bind/scan) in a controlled transaction window.
+        Contract:
+            - Only one binding transaction may be active at a time.
+            - While active, `bind(...)` and `scan(...)` are allowed.
+            - When inactive, `bind(...)` and `scan(...)` raise.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If a binding transaction is already active.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._begin_binding_transaction(owner_label="Spellbook")
+
+    def end_binding_transaction(self) -> None:
+        """
+        Public API
+
+        End the active binding transaction for this Spellbook.
+
+        Purpose:
+            Disable binding operations until a new transaction is started.
+        Contract:
+            - Binding transactions must be explicitly closed.
+            - When inactive, `bind(...)` and `scan(...)` raise.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If no binding transaction is active.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._end_binding_transaction(owner_label="Spellbook")
+
+    @contextmanager
+    def binding_transaction(self) -> "Spellbook":
+        """
+        Public API
+
+        Context-managed binding transaction for this Spellbook.
+
+        Usage:
+            with spellbook.binding_transaction():
+                spellbook.bind(...)
+                spellbook.scan(...)
+
+        Contract:
+            - Starts a binding transaction on entry.
+            - Ends the transaction on exit, even if an exception is raised.
+            - Nested usage raises on begin (transaction already active).
+
+        Returns:
+            Spellbook: The current Spellbook instance.
+        Raises:
+            RuntimeError: If a binding transaction is already active.
+        """
+        self.begin_binding_transaction()
+        try:
+            yield self
+        finally:
+            self.end_binding_transaction()
+
+    def _begin_binding_transaction(self, *, owner_label: str) -> None:
+        """
+        Internal
+
+        Begin a binding transaction with a caller-specific error message.
+
+        Args:
+            owner_label: Label used to tailor error messages (Spellbook or Conduit).
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If a binding transaction is already active.
+        """
+        with self._lock:
+            if self._binding_transaction_active:
+                self._logger.error(
+                    f"{owner_label} binding transaction already active",
+                    "begin_binding_transaction",
+                )
+                raise RuntimeError(
+                    f"[{owner_label.upper()}] Binding transaction already active. "
+                    "End the current transaction before starting another."
+                )
+            self._binding_transaction_active = True
+
+    def _end_binding_transaction(self, *, owner_label: str) -> None:
+        """
+        Internal
+
+        End a binding transaction with a caller-specific error message.
+
+        Args:
+            owner_label: Label used to tailor error messages (Spellbook or Conduit).
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If no binding transaction is active.
+        """
+        with self._lock:
+            if not self._binding_transaction_active:
+                self._logger.error(
+                    f"{owner_label} binding transaction is not active",
+                    "end_binding_transaction",
+                )
+                raise RuntimeError(
+                    f"[{owner_label.upper()}] Binding transaction is not active. "
+                    "Start a transaction before ending it."
+                )
+            self._binding_transaction_active = False
+
+    def _ensure_binding_transaction_active(self, *, action: str) -> None:
+        """
+        Internal
+
+        Raise if a binding transaction is not active for the given action.
+
+        Args:
+            action: Operation name for diagnostics (e.g., "bind" or "scan").
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If no binding transaction is active.
+        """
+        with self._lock:
+            if not self._binding_transaction_active:
+                self._logger.error(
+                    f"{action} requires an active binding transaction",
+                    action,
+                )
+                raise RuntimeError(
+                    f"[SPELLBOOK] {action} requires an active binding transaction. "
+                    "Call begin_binding_transaction() before binding or scanning."
+                )
+
     def bind(
             self,
             *,
@@ -1037,6 +1183,10 @@ class Spellbook(Cleanable, ISpellbook):
         associating it with a lifecycle (`Existence`), a permission policy, and optional metadata.
         Once bound, the spell becomes available for resolution and casting within its conduit
         or across systems (depending on permissions).
+
+        Binding requires an active binding transaction. Use
+        ``begin_binding_transaction()`` before binding and
+        ``end_binding_transaction()`` once registration is complete.
 
         ──────────────────────────────────────────────
         🧠 Binding Overview:
@@ -1106,11 +1256,14 @@ class Spellbook(Cleanable, ISpellbook):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If no binding transaction is active for this Spellbook.
             RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
             RuntimeError: If the spell is already bound in the registry.
             RuntimeError: If the normalized binding key is already in use locally.
             TypeError: If invalid hook types are provided.
         """
+        self.check_cleaned()
+        self._ensure_binding_transaction_active(action="bind")
         try:
             permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
             existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
@@ -1208,6 +1361,10 @@ class Spellbook(Cleanable, ISpellbook):
         submodules. Any object marked with `scan_bind` must originate from the
         scanned module, otherwise the scan fails.
 
+        Scanning requires an active binding transaction. Use
+        ``begin_binding_transaction()`` before scanning and
+        ``end_binding_transaction()`` once registration is complete.
+
         Args:
             module (ModuleType): The module to scan for decorated spell targets.
         Returns:
@@ -1215,9 +1372,11 @@ class Spellbook(Cleanable, ISpellbook):
         Raises:
             TypeError: If `module` is not a module or metadata is invalid.
             ValueError: If a decorated object is not owned by the module.
+            RuntimeError: If no binding transaction is active for this Spellbook.
             RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
         self.check_cleaned()
+        self._ensure_binding_transaction_active(action="scan")
         scanner = Scan(self)
         return scanner.scan_module(module)
 
@@ -1453,6 +1612,8 @@ class Spellbook(Cleanable, ISpellbook):
         Creates a new **Conduit** (execution channel) from this Spellbook.
 
         This method finalizes the configuration, validates all local spells, and instantiates the `Conduit`.
+        Conjuring disables the default binding transaction; post-conjure bind/scan
+        requires an explicit `begin_binding_transaction()` call.
 
         Args:
             policy (str, optional):
@@ -1570,6 +1731,7 @@ class Spellbook(Cleanable, ISpellbook):
             # Mark this Spellbook as having conjured its single conduit
             self._conjured = True
             self._conduit = conduit
+            self._binding_transaction_active = False
 
             # 3) ACTIVATED: conduit exists but is not yet wired into spells.
             self._fire_conjure_hooks(
