@@ -1,5 +1,6 @@
 import threading
 from threading import RLock
+from types import ModuleType
 from typing import runtime_checkable, Type, Protocol, Optional, List, Union, Dict, Any, Iterable, Iterator, Callable, \
     Tuple, Mapping, Set, Sequence
 
@@ -1253,6 +1254,27 @@ class ISpellbook(ICleanable, Protocol):
             ValueError:
                 If the ``permissions`` string cannot be converted into a
                 valid `Permissions` enum.
+        """
+        ...
+
+    def scan(self, module: ModuleType) -> list[str]:
+        """
+        Public API
+
+        Scan a module for `scan_bind`-decorated objects and bind them.
+
+        This is a module-only scan: it does not traverse packages or import
+        submodules. Any object marked with `scan_bind` must originate from the
+        scanned module, otherwise the scan fails.
+
+        Args:
+            module (ModuleType): The module to scan for decorated spell targets.
+        Returns:
+            list[str]: Spell IDs bound during the scan, in module dict order.
+        Raises:
+            TypeError: If `module` is not a module or metadata is invalid.
+            ValueError: If a decorated object is not owned by the module.
+            RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
         ...
 
@@ -3336,6 +3358,29 @@ class IConduit(ICleanable, Protocol):
             RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
             RuntimeError: If the spell is already bound in the registry.
             TypeError: If invalid hook types are provided.
+        """
+        ...
+
+    def scan(self, module: ModuleType) -> list[str]:
+        """
+        Public API
+
+        Scan a module for `scan_bind`-decorated objects and bind them into this
+        Conduit's Spellbook.
+
+        This is a module-only scan: it does not traverse packages or import
+        submodules. Any object marked with `scan_bind` must originate from the
+        scanned module, otherwise the scan fails.
+
+        Args:
+            module (ModuleType): The module to scan for decorated spell targets.
+        Returns:
+            list[str]: Spell IDs bound during the scan, in module dict order.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            TypeError: If `module` is not a module or metadata is invalid.
+            ValueError: If a decorated object is not owned by the module.
+            RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
         ...
 

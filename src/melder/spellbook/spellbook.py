@@ -1,9 +1,10 @@
-from types import MappingProxyType
+from types import MappingProxyType, ModuleType
 from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set
 import threading
 # Melder Imports
 from melder.aether.aether import Aether
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.bind.scan import Scan
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
 from melder.spellbook.spellbinder import SpellBinder
@@ -1196,6 +1197,29 @@ class Spellbook(Cleanable, ISpellbook):
         except Exception as e:
             self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
             raise
+
+    def scan(self, module: ModuleType) -> list[str]:
+        """
+        Public API
+
+        Scan a module for `scan_bind`-decorated objects and bind them.
+
+        This is a module-only scan: it does not traverse packages or import
+        submodules. Any object marked with `scan_bind` must originate from the
+        scanned module, otherwise the scan fails.
+
+        Args:
+            module (ModuleType): The module to scan for decorated spell targets.
+        Returns:
+            list[str]: Spell IDs bound during the scan, in module dict order.
+        Raises:
+            TypeError: If `module` is not a module or metadata is invalid.
+            ValueError: If a decorated object is not owned by the module.
+            RuntimeError: Propagated from Spellbook.bind on binding errors.
+        """
+        self.check_cleaned()
+        scanner = Scan(self)
+        return scanner.scan_module(module)
 
     def _add_hooks_to_spell(self, spell: ISpell, **kwargs) -> None:
         """
