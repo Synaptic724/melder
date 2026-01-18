@@ -142,13 +142,14 @@ def test_post_conjure_bind_collection_dependencies_require_rerun() -> None:
         assert state is not None
         assert state.direct_dependencies == {service_a_id}
 
-        service_b_id = spellbook.bind(
-            spell=ServiceB,
-            existence=Existence.unique,
-            permissions="create",
-            spellframe=IService,
-            binding_name="b",
-        )
+        with spellbook.binding_transaction():
+            service_b_id = spellbook.bind(
+                spell=ServiceB,
+                existence=Existence.unique,
+                permissions="create",
+                spellframe=IService,
+                binding_name="b",
+            )
 
         assert set(consumer_spell.dependencies) == {service_a_id}
         state = consumer_spell.system_state
