@@ -207,11 +207,12 @@ def test_aether_remove_single_spell_index_updates_registry() -> None:
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
-    config_id = spellbook.bind(
-        spell=BasicConfig,
-        existence=Existence.unique,
-        permissions="create",
-    )
+    with spellbook.binding_transaction():
+        config_id = spellbook.bind(
+            spell=BasicConfig,
+            existence=Existence.unique,
+            permissions="create",
+        )
     aether = Aether()
     try:
         assert aether._check_for_spell(service_id, frame_name) is not None

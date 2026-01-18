@@ -71,7 +71,7 @@ class _SpellSystemStatesStub:
     Purpose:
         Capture lineage registrations for Spellbook bind operations.
     Contract:
-        - register_lineage records SpellIndex and spell references in order.
+        - register_lineage records SpellIndex and Spell instances in order.
     """
     def __init__(self) -> None:
         """
@@ -92,7 +92,7 @@ class _SpellSystemStatesStub:
             - Appends (spell_index, spell) to registered_lineages.
         Args:
             spell_index: SpellIndex registered for the lineage.
-            spell: Underlying spell callable/class registered.
+            spell: Bound Spell instance registered.
         Returns:
             None.
         """
@@ -143,7 +143,7 @@ def test_component_spellbook_bind_registers_lineage_and_states() -> None:
     Purpose:
         Validate Spellbook.bind registers lineage and uses spell system states.
     Contract:
-        - register_lineage receives the SpellIndex and original spell callable.
+        - register_lineage receives the SpellIndex and bound Spell instance.
         - The bound Spell references the injected SpellSystemStates instance.
     Returns:
         None.
@@ -163,11 +163,12 @@ def test_component_spellbook_bind_registers_lineage_and_states() -> None:
 
         assert len(states.registered_lineages) == 1
         registered_index, registered_spell = states.registered_lineages[0]
-        assert registered_spell is BasicService
         assert registered_index in spellbook.spells
 
         bound_spell = _get_spell_by_version_id(spellbook, spell_id)
         assert bound_spell is not None
+        assert registered_spell is bound_spell
+        assert registered_spell.spell is BasicService
         assert bound_spell._spell_system_states is states
         assert bound_spell.spell_index.current == spell_id
     finally:

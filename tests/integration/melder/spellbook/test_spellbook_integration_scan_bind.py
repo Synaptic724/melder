@@ -164,6 +164,9 @@ def test_conduit_scan_integration_binds_after_conjure() -> None:
             spell_ids = conduit.scan(scan_bind_module_core)
         assert len(spell_ids) == 3
         assert len(spellbook.spells) == 3
+        spell = conduit.get_spell_by_id(spell_ids[0])
+        assert spell is not None
+        assert spell.validation_result_phase4 is not None
     finally:
         conduit.cleanup()
 

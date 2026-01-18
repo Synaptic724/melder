@@ -344,13 +344,48 @@ def test_spellbook_integration_existing_object_bind_after_conjure_reuses_instanc
     conduit = spellbook.conjure(name="root")
     try:
         existing = BasicConfig(label="existing")
-        spell_id = spellbook.bind(
-            spell=existing,
-            existence=Existence.unique,
-            permissions="create",
-        )
+        with spellbook.binding_transaction():
+            spell_id = spellbook.bind(
+                spell=existing,
+                existence=Existence.unique,
+                permissions="create",
+            )
         resolved = conduit.meld(spell=spell_id)
         assert resolved is existing
+    finally:
+        conduit.cleanup()
+
+
+def test_spellbook_integration_post_conjure_bind_runs_structural_phases() -> None:
+    """
+    Purpose:
+        Validate post-conjure binds run structural phases for new spells.
+    Contract:
+        - Requirements, symbolic graph, local frame, and phase 4 validation are populated.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If structural phase artifacts are missing.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        with spellbook.binding_transaction():
+            spell_id = spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+
+        spell = conduit.get_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.requirements is not None
+        assert spell.symbolic_graph is not None
+        assert spell.resolution_frame is not None
+        assert spell.validation_result_phase4 is not None
     finally:
         conduit.cleanup()
 
@@ -687,7 +722,8 @@ def test_spellbook_integration_fluent_binding_existing_object_reuses_instance() 
     try:
         existing = BasicConfig(label="binder-existing")
         binder = spellbook.create_binder()
-        spell_id = binder.bind(existing).as_unique().finalize()
+        with spellbook.binding_transaction():
+            spell_id = binder.bind(existing).as_unique().finalize()
         assert conduit.meld(spell=spell_id) is existing
     finally:
         conduit.cleanup()

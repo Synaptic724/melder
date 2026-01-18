@@ -9,6 +9,7 @@ from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidi
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from tests.mocks.spellbook.core_classes import BasicConfig, BasicService
 from tests.mocks.spellbook.protocols import IService
 
@@ -324,6 +325,16 @@ def test_spell_crafter_spellmap_default_resolves_dependency() -> None:
         consumer_spell.run_phase_local_frame()
 
         assert set(consumer_spell.dependencies) == {config_id}
+        topology = consumer_spell._spell_system_states.get_local_topology(
+            consumer_spell.spell_index
+        )
+        assert topology is not None
+        sockets = topology.get_sockets_for_param("config")
+        assert len(sockets) == 1
+        assert sockets[0].dependency_key == SpellInputUtils.normalize_spell_key(
+            spellframe=BasicConfig,
+            binding_name=None,
+        )
     finally:
         conduit.cleanup()
 
@@ -632,6 +643,10 @@ def test_spell_crafter_spellmap_frame_only_resolves_dependency() -> None:
         assert len(sockets) == 1
         assert sockets[0].socket_kind is SocketKind.NORMAL
         assert set(sockets[0].target_spell_ids) == {service_id}
+        assert sockets[0].dependency_key == SpellInputUtils.normalize_spell_key(
+            spellframe=IService,
+            binding_name="primary",
+        )
     finally:
         conduit.cleanup()
 
@@ -752,17 +767,26 @@ def test_spell_crafter_local_topology_records_plain_and_collection_sockets() -> 
         assert config_socket[0].socket_kind is SocketKind.NORMAL
         assert not config_socket[0].is_collection
         assert set(config_socket[0].target_spell_ids) == {config_id}
+        assert config_socket[0].dependency_key == SpellInputUtils.normalize_spell_key(
+            spellframe=BasicConfig,
+            binding_name=None,
+        )
 
         assert len(services_socket) == 1
         assert services_socket[0].socket_kind is SocketKind.NORMAL
         assert services_socket[0].is_collection
         assert set(services_socket[0].target_spell_ids) == {service_a_id, service_b_id}
+        assert services_socket[0].dependency_key == SpellInputUtils.normalize_spell_key(
+            spellframe=IService,
+            binding_name=None,
+        )
 
         assert len(count_socket) == 1
         assert count_socket[0].socket_kind is SocketKind.NORMAL
         assert not count_socket[0].is_collection
         assert count_socket[0].is_optional
         assert count_socket[0].target_spell_ids == ()
+        assert count_socket[0].dependency_key is None
     finally:
         conduit.cleanup()
 

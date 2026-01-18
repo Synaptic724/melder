@@ -333,11 +333,12 @@ def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
     lesser = root.create_lesser_conduit()
     try:
         lesser.upgrade_to_normal(name="upgraded")
-        config_id = lesser.bind(
-            spell=BasicConfig,
-            existence=Existence.unique,
-            permissions="create",
-        )
+        with lesser.binding_transaction():
+            config_id = lesser.bind(
+                spell=BasicConfig,
+                existence=Existence.unique,
+                permissions="create",
+            )
         assert isinstance(lesser.meld(spell=config_id), BasicConfig)
         assert root.get_conduit_by_name("upgraded") is lesser
     finally:

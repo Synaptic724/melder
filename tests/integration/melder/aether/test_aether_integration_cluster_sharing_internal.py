@@ -91,11 +91,12 @@ def test_aether_share_new_spell_to_clusters_registers_shared_spell() -> None:
     try:
         aether._add_conduit_to_cluster(conduit, "cluster-a", frame_name)
 
-        shareable_id = spellbook.bind(
-            spell=BasicConfig,
-            existence=Existence.unique_per_conduit_cluster,
-            permissions="create",
-        )
+        with spellbook.binding_transaction():
+            shareable_id = spellbook.bind(
+                spell=BasicConfig,
+                existence=Existence.unique_per_conduit_cluster,
+                permissions="create",
+            )
         shareable_spell = next(
             spell for idx, spell in spellbook._spells.items() if idx.current == shareable_id
         )
@@ -141,11 +142,12 @@ def test_aether_share_new_spell_to_clusters_ignores_non_shareable() -> None:
     try:
         aether._add_conduit_to_cluster(conduit, "cluster-a", frame_name)
 
-        non_shareable_id = spellbook.bind(
-            spell=BasicConfig,
-            existence=Existence.unique,
-            permissions="create",
-        )
+        with spellbook.binding_transaction():
+            non_shareable_id = spellbook.bind(
+                spell=BasicConfig,
+                existence=Existence.unique,
+                permissions="create",
+            )
         non_shareable_spell = next(
             spell for idx, spell in spellbook._spells.items() if idx.current == non_shareable_id
         )
@@ -187,16 +189,17 @@ def test_aether_refresh_cluster_shares_for_conduit_picks_up_new_shareables() -> 
     try:
         aether._add_conduit_to_cluster(conduit, "cluster-a", frame_name)
 
-        config_id = spellbook.bind(
-            spell=BasicConfig,
-            existence=Existence.unique_per_conduit_cluster,
-            permissions="create",
-        )
-        logger_id = spellbook.bind(
-            spell=BasicLogger,
-            existence=Existence.unique_per_conduit_cluster,
-            permissions="create",
-        )
+        with spellbook.binding_transaction():
+            config_id = spellbook.bind(
+                spell=BasicConfig,
+                existence=Existence.unique_per_conduit_cluster,
+                permissions="create",
+            )
+            logger_id = spellbook.bind(
+                spell=BasicLogger,
+                existence=Existence.unique_per_conduit_cluster,
+                permissions="create",
+            )
         config_index = next(
             idx for idx in spellbook._spells.keys() if idx.current == config_id
         )

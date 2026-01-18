@@ -24,6 +24,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 
 class _CleanableStub(Cleanable):
@@ -804,7 +805,7 @@ class _SpellMapStub:
     Purpose:
         Provide a minimal SpellMap-like stub for resolution tests.
     Contract:
-        Exposes spell, spellframe, and binding_name attributes.
+        Exposes spell, spellframe, binding_name, and canonical_key attributes.
     """
 
     def __init__(
@@ -829,6 +830,22 @@ class _SpellMapStub:
         self.spell = spell
         self.spellframe = spellframe
         self.binding_name = binding_name
+
+    @property
+    def canonical_key(self) -> tuple[str, str]:
+        """
+        Purpose:
+            Provide the normalized SpellMap key for dependency mapping.
+        Contract:
+            Uses SpellInputUtils.normalize_spell_key for spell or spellframe.
+        Returns:
+            tuple[str, str]: Normalized (frame_key, binding_key).
+        """
+        return SpellInputUtils.normalize_spell_key(
+            spell=self.spell,
+            spellframe=self.spellframe,
+            binding_name=self.binding_name,
+        )
 
 
 class _DagStub:

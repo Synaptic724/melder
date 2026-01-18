@@ -111,11 +111,13 @@ def test_component_conduit_registers_existing_object_after_conjure() -> None:
     conduit = spellbook.conjure(name="root")
     existing = BasicService(marker="existing")
     try:
+        spellbook.begin_binding_transaction()
         existing_id = spellbook.bind(
             spell=existing,
             existence=Existence.unique,
             permissions="create",
         )
+        spellbook.end_binding_transaction()
         creations = conduit._creations
         creation = creations._unique.get(existing_id)
         assert creation is not None

@@ -3,9 +3,34 @@ import uuid
 
 import pytest
 
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.scan import scan_bind
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_unit_scan_bind() -> None:
+    """
+    Purpose:
+        Ensure unit scan_bind tests start with a clean Aether singleton.
+    Contract:
+        - Resets the Aether singleton before the test runs.
+        - Rebinds Spellbook._aether and Conduit._aether to the new instance.
+        - Resets the singleton again after the test for isolation.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
 
 
 def _make_spellbook() -> Spellbook:
@@ -154,7 +179,8 @@ def test_conduit_scan_after_conjure() -> None:
     ConduitSpell.__module__ = module.__name__
     module.ConduitSpell = ConduitSpell
 
-    spell_ids = conduit.scan(module)
+    with conduit.binding_transaction():
+        spell_ids = conduit.scan(module)
 
     assert len(spell_ids) == 1
     assert len(spellbook.spells) == 1

@@ -8,6 +8,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex, ISpellSystemStates
@@ -24,6 +25,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
       (for convenience when you only know the version id).
     - Tracks which lineages are currently dirty so higher-level
       DevOps/validation flows can decide what to re-run.
+    - Tracks collection dependency indices per Spellbook so targeted
+      revalidation can gate only local list[Frame] consumers.
 
     Intended lifecycle:
 
@@ -46,6 +49,9 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         "_dirty_lineages",
         "_local_topologies",
         "_resolution_by_conduit_id",
+        "_lineage_owner_spellbook_id",
+        "_collection_frames_by_lineage",
+        "_collection_dependents_by_spellbook",
     ]
 
     def __init__(self, frame: "AethericFrame") -> None:
@@ -71,6 +77,10 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         self._local_topologies: Dict[str, 'SpellLocalTopology'] = {}
         # Per-conduit resolution state for Phases 5-7.
         self._resolution_by_conduit_id: Optional[Dict[str, ConduitResolutionState]] = {}
+        # Spellbook-scoped indices for collection dependencies (list[Frame]).
+        self._lineage_owner_spellbook_id: Optional[Dict[str, str]] = {}
+        self._collection_frames_by_lineage: Optional[Dict[str, Set[str]]] = {}
+        self._collection_dependents_by_spellbook: Optional[Dict[str, Dict[str, Set[str]]]] = {}
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -130,6 +140,30 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 self._resolution_by_conduit_id.clear()
                 self._resolution_by_conduit_id = None
 
+            if self._collection_dependents_by_spellbook is not None:
+                for book_map in list(self._collection_dependents_by_spellbook.values()):
+                    try:
+                        for dependents in list(book_map.values()):
+                            dependents.clear()
+                    except Exception:
+                        pass
+                    book_map.clear()
+                self._collection_dependents_by_spellbook.clear()
+                self._collection_dependents_by_spellbook = None
+
+            if self._collection_frames_by_lineage is not None:
+                for frames in list(self._collection_frames_by_lineage.values()):
+                    try:
+                        frames.clear()
+                    except Exception:
+                        pass
+                self._collection_frames_by_lineage.clear()
+                self._collection_frames_by_lineage = None
+
+            if self._lineage_owner_spellbook_id is not None:
+                self._lineage_owner_spellbook_id.clear()
+                self._lineage_owner_spellbook_id = None
+
             self._frame = None
 
         # Drop lock last
@@ -149,6 +183,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
           `spell_index.current`.
         - Update the spell-id index so `get_by_spell_id(...)` can resolve
           by current version id.
+        - Record the owning Spellbook id for targeted, spellbook-scoped
+          collection revalidation.
         - Mark the lineage as structurally gated with reason
           SpellStateChangeReason.register_or_rebind and add it to the dirty set.
 
@@ -178,6 +214,15 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
             # Refresh the spell-id index as well
             self._states_by_spell_id[current_id] = state
+
+            owner_spellbook_id = self._resolve_spellbook_id(spell)
+            if owner_spellbook_id is not None and self._lineage_owner_spellbook_id is not None:
+                existing_owner = self._lineage_owner_spellbook_id.get(index_id)
+                if existing_owner is not None and existing_owner != owner_spellbook_id:
+                    self._remove_lineage_from_collection_index(existing_owner, index_id)
+                    if self._collection_frames_by_lineage is not None:
+                        self._collection_frames_by_lineage.pop(index_id, None)
+                self._lineage_owner_spellbook_id[index_id] = owner_spellbook_id
 
             # Any (re)binding is treated as structural change.
             state.mark_structural_change(change_reason=SpellStateChangeReason.register_or_rebind)
@@ -219,6 +264,70 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             if self._states_by_spell_id is None:
                 return None
             return self._states_by_spell_id.get(spell_id)
+
+    # ------------------------------------------------------------------
+    # Internal indexing helpers
+    # ------------------------------------------------------------------
+    def _resolve_spellbook_id(self, spell: ISpell) -> Optional[str]:
+        """
+        Internal
+
+        Resolve the owning Spellbook id for a spell, if available.
+
+        Args:
+            spell: Spell instance that may carry a Spellbook reference.
+        Returns:
+            Optional[str]: Spellbook id or None if unavailable.
+        """
+        if spell is None:
+            return None
+        try:
+            spellbook = spell._spellbook
+        except AttributeError:
+            return None
+        if spellbook is None:
+            return None
+        try:
+            return spellbook._id
+        except AttributeError:
+            return None
+
+    def _remove_lineage_from_collection_index(
+            self,
+            spellbook_id: str,
+            lineage_id: str,
+    ) -> None:
+        """
+        Internal
+
+        Remove a lineage from the collection-dependency index for a spellbook.
+        """
+        if not spellbook_id or not lineage_id:
+            return
+        if (
+            self._collection_dependents_by_spellbook is None
+            or self._collection_frames_by_lineage is None
+        ):
+            return
+
+        frames = self._collection_frames_by_lineage.get(lineage_id)
+        if not frames:
+            return
+
+        book_index = self._collection_dependents_by_spellbook.get(spellbook_id)
+        if not book_index:
+            return
+
+        for frame_key in frames:
+            dependents = book_index.get(frame_key)
+            if dependents is None:
+                continue
+            dependents.discard(lineage_id)
+            if not dependents:
+                book_index.pop(frame_key, None)
+
+        if not book_index:
+            self._collection_dependents_by_spellbook.pop(spellbook_id, None)
 
     # ------------------------------------------------------------------
     # Dependency wiring (Phase 3/4 integration)
@@ -602,6 +711,64 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             return
         state.clear_dirty(validated_at)
 
+    def mark_collection_dependents_dirty(
+            self,
+            *,
+            spellbook_id: str,
+            frame_keys: Iterable[str],
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> Set[str]:
+        """
+        Mark list[Frame] consumers dirty for a specific Spellbook scope.
+
+        Args:
+            spellbook_id:
+                Owning Spellbook id used to scope the collection index.
+            frame_keys:
+                Frame keys whose collection memberships changed.
+            change_reason:
+                Optional change reason override; defaults to dependencies_changed.
+        Returns:
+            Set[str]: Lineage ids marked dirty by this call.
+        """
+        self.check_cleaned()
+        if not spellbook_id:
+            return set()
+
+        impacted: Set[str] = set()
+        frame_key_set = {key for key in frame_keys if key}
+        if not frame_key_set:
+            return impacted
+
+        if change_reason is None:
+            change_reason = SpellStateChangeReason.dependencies_changed
+
+        with self._lock:
+            if (
+                self._states_by_index_id is None
+                or self._dirty_lineages is None
+                or self._collection_dependents_by_spellbook is None
+            ):
+                return impacted
+
+            book_index = self._collection_dependents_by_spellbook.get(spellbook_id)
+            if not book_index:
+                return impacted
+
+            for frame_key in frame_key_set:
+                dependents = book_index.get(frame_key)
+                if not dependents:
+                    continue
+                for lineage_id in list(dependents):
+                    state = self._states_by_index_id.get(lineage_id)
+                    if state is None:
+                        continue
+                    state.mark_dependency_change(change_reason=change_reason)
+                    self._dirty_lineages.add(lineage_id)
+                    impacted.add(lineage_id)
+
+        return impacted
+
 
     def register_local_topology(
             self,
@@ -615,6 +782,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
         This is called by :class:`SpellCrafter` during Phase 3 and is the
         primary entry point for building higher-level blueprints in phases 5–7.
+        It also refreshes the collection-dependency index used for targeted
+        list[Frame] revalidation within the owning Spellbook scope.
         """
         self.check_cleaned()
         if spell_index is None:
@@ -625,6 +794,21 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         with self._lock:
             spell_id = spell_index.current
             self._local_topologies[spell_id] = topology
+            if (
+                self._lineage_owner_spellbook_id is None
+                or self._collection_dependents_by_spellbook is None
+                or self._collection_frames_by_lineage is None
+            ):
+                return
+            owner_spellbook_id = self._lineage_owner_spellbook_id.get(spell_index.id)
+            if owner_spellbook_id is None:
+                return
+            collection_frames = self._extract_collection_frame_keys(topology)
+            self._update_collection_index(
+                spellbook_id=owner_spellbook_id,
+                lineage_id=spell_index.id,
+                frame_keys=collection_frames,
+            )
 
     def get_local_topology(
             self,
@@ -657,3 +841,73 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
         with self._lock:
             return self._local_topologies.get(spell_id)
+
+    def _extract_collection_frame_keys(
+            self,
+            topology: 'SpellLocalTopology',
+    ) -> Set[str]:
+        """
+        Internal
+
+        Extract collection frame keys from a local topology.
+        """
+        frames: Set[str] = set()
+        if topology is None:
+            return frames
+        for socket in topology.iter_sockets():
+            if socket.socket_kind is not SocketKind.NORMAL:
+                continue
+            if not socket.is_collection:
+                continue
+            if socket.dependency_key is None:
+                continue
+            frames.add(socket.dependency_key[0])
+        return frames
+
+    def _update_collection_index(
+            self,
+            *,
+            spellbook_id: str,
+            lineage_id: str,
+            frame_keys: Set[str],
+    ) -> None:
+        """
+        Internal
+
+        Update the collection-dependency index for a lineage within a spellbook.
+        """
+        if not spellbook_id or not lineage_id:
+            return
+        if (
+            self._collection_dependents_by_spellbook is None
+            or self._collection_frames_by_lineage is None
+        ):
+            return
+
+        existing_frames = self._collection_frames_by_lineage.get(lineage_id, set())
+        removed = existing_frames - frame_keys
+        added = frame_keys - existing_frames
+
+        if removed:
+            book_index = self._collection_dependents_by_spellbook.get(spellbook_id)
+            if book_index is not None:
+                for frame_key in removed:
+                    dependents = book_index.get(frame_key)
+                    if dependents is None:
+                        continue
+                    dependents.discard(lineage_id)
+                    if not dependents:
+                        book_index.pop(frame_key, None)
+                if not book_index:
+                    self._collection_dependents_by_spellbook.pop(spellbook_id, None)
+
+        if added:
+            book_index = self._collection_dependents_by_spellbook.setdefault(spellbook_id, {})
+            for frame_key in added:
+                dependents = book_index.setdefault(frame_key, set())
+                dependents.add(lineage_id)
+
+        if frame_keys:
+            self._collection_frames_by_lineage[lineage_id] = set(frame_keys)
+        else:
+            self._collection_frames_by_lineage.pop(lineage_id, None)

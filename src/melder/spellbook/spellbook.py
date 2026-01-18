@@ -24,6 +24,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
@@ -84,6 +85,8 @@ class Spellbook(Cleanable, ISpellbook):
         self._id: str = IDBuilder.create_id()
         self._conjured = False
         self._binding_transaction_active: bool = True
+        self._pending_binding_frame_keys: Set[str] = set()
+        self._pending_structural_spells: List[ISpell] = []
         self._conduit: Optional[Conduit] = None
         self._aetheric_frame: str = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
@@ -240,6 +243,8 @@ class Spellbook(Cleanable, ISpellbook):
         self._conduit = None
         self._conjured = None
         self._binding_transaction_active = None
+        self._pending_binding_frame_keys = None
+        self._pending_structural_spells = None
         self._spell_system_states = None
         self._configuration_locked = None
 
@@ -838,7 +843,8 @@ class Spellbook(Cleanable, ISpellbook):
         Raises:
             RuntimeError: If the contracted spell's binding key collides with existing bindings.
         """
-
+        frame_key = None
+        should_mark = False
         with self._lock:
             if conduit_id not in self._contracted_spells:
                 self._create_link_contract(conduit_id)
@@ -865,6 +871,12 @@ class Spellbook(Cleanable, ISpellbook):
             if versions:
                 for version_id in versions:
                     versions_set.add(version_id)
+
+            frame_key = spell.key[0]
+            should_mark = bool(self._conjured)
+
+        if should_mark and frame_key:
+            self._mark_collection_dependents_dirty({frame_key})
 
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
@@ -1055,6 +1067,8 @@ class Spellbook(Cleanable, ISpellbook):
         Contract:
             - Binding transactions must be explicitly closed.
             - When inactive, `bind(...)` and `scan(...)` raise.
+            - If the Spellbook has conjured a Conduit, ending a transaction
+              gates list[Frame] consumers and runs structural phases for new spells.
         Returns:
             None.
         Raises:
@@ -1080,6 +1094,8 @@ class Spellbook(Cleanable, ISpellbook):
             - Starts a binding transaction on entry.
             - Ends the transaction on exit, even if an exception is raised.
             - Nested usage raises on begin (transaction already active).
+            - If the Spellbook has conjured a Conduit, exit gates list[Frame]
+              consumers and runs structural phases for new spells.
 
         Returns:
             Spellbook: The current Spellbook instance.
@@ -1116,12 +1132,23 @@ class Spellbook(Cleanable, ISpellbook):
                     "End the current transaction before starting another."
                 )
             self._binding_transaction_active = True
+            if self._pending_binding_frame_keys is None:
+                self._pending_binding_frame_keys = set()
+            else:
+                self._pending_binding_frame_keys.clear()
+            if self._pending_structural_spells is None:
+                self._pending_structural_spells = []
+            else:
+                self._pending_structural_spells.clear()
 
     def _end_binding_transaction(self, *, owner_label: str) -> None:
         """
         Internal
 
         End a binding transaction with a caller-specific error message.
+
+        When the Spellbook has already conjured a Conduit, this method also
+        gates list[Frame] consumers for targeted revalidation.
 
         Args:
             owner_label: Label used to tailor error messages (Spellbook or Conduit).
@@ -1130,6 +1157,9 @@ class Spellbook(Cleanable, ISpellbook):
         Raises:
             RuntimeError: If no binding transaction is active.
         """
+        pending_frame_keys: Set[str] = set()
+        pending_spells: List[ISpell] = []
+        conjured = False
         with self._lock:
             if not self._binding_transaction_active:
                 self._logger.error(
@@ -1141,6 +1171,18 @@ class Spellbook(Cleanable, ISpellbook):
                     "Start a transaction before ending it."
                 )
             self._binding_transaction_active = False
+            if self._pending_binding_frame_keys is not None:
+                pending_frame_keys = set(self._pending_binding_frame_keys)
+                self._pending_binding_frame_keys.clear()
+            if self._pending_structural_spells is not None:
+                pending_spells = list(self._pending_structural_spells)
+                self._pending_structural_spells.clear()
+            conjured = bool(self._conjured)
+
+        if conjured and pending_frame_keys:
+            self._mark_collection_dependents_dirty(pending_frame_keys)
+        if conjured and pending_spells:
+            self._run_post_conjure_structural_phases(pending_spells)
 
     def _ensure_binding_transaction_active(self, *, action: str) -> None:
         """
@@ -1165,6 +1207,37 @@ class Spellbook(Cleanable, ISpellbook):
                     f"[SPELLBOOK] {action} requires an active binding transaction. "
                     "Call begin_binding_transaction() before binding or scanning."
                 )
+
+    def _mark_collection_dependents_dirty(self, frame_keys: Set[str]) -> None:
+        """
+        Internal
+
+        Mark list[Frame] consumers dirty for this Spellbook after binding changes.
+
+        Args:
+            frame_keys: Frame keys whose collection membership changed.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the spell system state is unavailable.
+        """
+        if not frame_keys:
+            return
+        if self._spell_system_states is None:
+            self._logger.error("SpellSystemStates unavailable for revalidation", "_mark_collection_dependents_dirty")
+            raise RuntimeError("SpellSystemStates unavailable for revalidation.")
+        try:
+            self._spell_system_states.mark_collection_dependents_dirty(
+                spellbook_id=self._id,
+                frame_keys=frame_keys,
+            )
+        except Exception as e:
+            self._logger.error(
+                f"Failed to mark collection dependents dirty: {e}",
+                "_mark_collection_dependents_dirty",
+                exc_info=True,
+            )
+            raise
 
     def bind(
             self,
@@ -1338,8 +1411,12 @@ class Spellbook(Cleanable, ISpellbook):
 
             self._spell_system_states.register_lineage(
                 spell_index=new_spell.spell_index,
-                spell=spell,
+                spell=new_spell,
             )
+            if self._pending_binding_frame_keys is not None:
+                self._pending_binding_frame_keys.add(new_spell.key[0])
+            if self._pending_structural_spells is not None:
+                self._pending_structural_spells.append(new_spell)
             if self._conjured and self._conduit is not None:
                 Spellbook._aether._register_single_spell_index(
                     self._conduit._id,
@@ -1732,6 +1809,8 @@ class Spellbook(Cleanable, ISpellbook):
             self._conjured = True
             self._conduit = conduit
             self._binding_transaction_active = False
+            if self._pending_binding_frame_keys is not None:
+                self._pending_binding_frame_keys.clear()
 
             # 3) ACTIVATED: conduit exists but is not yet wired into spells.
             self._fire_conjure_hooks(
@@ -2074,6 +2153,70 @@ class Spellbook(Cleanable, ISpellbook):
                 self._logger.error(
                     "PhaseScheduler.cleanup() raised during _run_structural_phases",
                     "_run_structural_phases",
+                    exc_info=True,
+                )
+
+    def _run_post_conjure_structural_phases(self, spells: Sequence[ISpell]) -> None:
+        """
+        Internal
+
+        Run Phases 1-4 for newly bound spells after conjure.
+
+        Args:
+            spells: Newly bound spells that require structural phases.
+        Returns:
+            None.
+        Raises:
+            SpellbookValidationError: If any of the new spells validate as broken.
+            Exception: Propagates structural phase errors.
+        """
+        self.check_cleaned()
+        if not spells:
+            return
+
+        cancel_signal = CancellationEventSignal()
+        cancel_event = cancel_signal.event
+        try:
+            for spell in spells:
+                spell.run_structural_phases(cancel_event=cancel_event)
+
+            broken_spells: list[ISpell] = []
+            for spell in spells:
+                try:
+                    if spell.is_broken:
+                        broken_spells.append(spell)
+                except Exception:
+                    broken_spells.append(spell)
+
+            if broken_spells:
+                broken_spell_ids = [spell.spell_id for spell in broken_spells]
+                broken_spell_names = [spell.spell_name for spell in broken_spells]
+                self._logger.error(
+                    "Post-conjure structural pipeline completed with broken spells; "
+                    f"raising SpellbookValidationError. "
+                    f"broken_spell_ids={broken_spell_ids}, "
+                    f"broken_spell_names={broken_spell_names}",
+                    "_run_post_conjure_structural_phases",
+                )
+                raise SpellbookValidationError(broken_spells)
+        except Exception as exc:
+            try:
+                cancel_signal.cancel()
+            except Exception:
+                pass
+            self._logger.error(
+                f"Post-conjure structural phase execution failed: {exc}",
+                "_run_post_conjure_structural_phases",
+                exc_info=True,
+            )
+            raise
+        finally:
+            try:
+                cancel_signal.cleanup()
+            except Exception:
+                self._logger.error(
+                    "CancellationEventSignal.cleanup() raised during post-conjure structural phases",
+                    "_run_post_conjure_structural_phases",
                     exc_info=True,
                 )
 

@@ -1482,6 +1482,8 @@ class Conduit(Cleanable, IConduit):
         Contract:
             - Only normal conduits may end a binding transaction.
             - The transaction must be active when ending.
+            - Ending the transaction gates list[Frame] consumers for targeted
+              revalidation when this conduit owns the Spellbook.
         Returns:
             None.
         Raises:
@@ -1524,7 +1526,7 @@ class Conduit(Cleanable, IConduit):
         finally:
             self.end_binding_transaction()
 
-    def bind(self, *, spell, existence: str, permissions: str = "create", spellframe=None, binding_name=None, **kwargs) -> str:
+    def bind(self, *, spell, existence: str | Existence, permissions: str = "create", spellframe=None, binding_name=None, **kwargs) -> str:
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
 

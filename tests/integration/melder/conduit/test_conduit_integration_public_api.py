@@ -273,12 +273,13 @@ def test_conduit_public_api_bind_and_binder_register_spells() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        config_id = conduit.bind(
-            spell=BasicConfig,
-            existence=Existence.unique,
-            permissions="create",
-        )
-        logger_id = conduit.create_binder().bind(BasicLogger).as_unique().finalize()
+        with conduit.binding_transaction():
+            config_id = conduit.bind(
+                spell=BasicConfig,
+                existence=Existence.unique,
+                permissions="create",
+            )
+            logger_id = conduit.create_binder().bind(BasicLogger).as_unique().finalize()
 
         config_spell = conduit.get_spell_by_id(config_id)
         logger_spell = conduit.get_spell_by_id(logger_id)

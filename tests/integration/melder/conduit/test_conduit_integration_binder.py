@@ -89,8 +89,9 @@ def test_conduit_binder_reuse_and_named_binding() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         binder = conduit.create_binder()
-        config_id = binder.bind(BasicConfig).named("primary").finalize()
-        logger_id = binder.bind(BasicLogger).as_unique().finalize()
+        with spellbook.binding_transaction():
+            config_id = binder.bind(BasicConfig).named("primary").finalize()
+            logger_id = binder.bind(BasicLogger).as_unique().finalize()
 
         resolved_id = conduit.find_spell_id("BasicConfig", BasicConfig.__name__, "primary")
         assert resolved_id == config_id
@@ -157,7 +158,8 @@ def test_conduit_binder_defaults_apply_permissions_and_existence() -> None:
             default_existence=Existence.many,
             default_permissions="read",
         )
-        spell_id = binder.bind(BasicConfig).finalize()
+        with spellbook.binding_transaction():
+            spell_id = binder.bind(BasicConfig).finalize()
 
         first = conduit.meld(spell=spell_id)
         second = conduit.meld(spell=spell_id)
@@ -192,13 +194,14 @@ def test_conduit_binder_named_spellframe_resolution_and_lookup() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         binder = conduit.create_binder()
-        spell_id = (
-            binder.bind(BasicService)
-            .under_spellframe(IService)
-            .named("primary")
-            .with_permissions("create")
-            .finalize()
-        )
+        with conduit.binding_transaction():
+            spell_id = (
+                binder.bind(BasicService)
+                .under_spellframe(IService)
+                .named("primary")
+                .with_permissions("create")
+                .finalize()
+            )
 
         resolved = conduit.meld(spellframe=IService, binding_name="primary")
         assert isinstance(resolved, BasicService)
@@ -272,15 +275,16 @@ def test_conduit_binder_hooks_execute_in_order() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        spell_id = (
-            conduit.create_binder()
-            .bind(BasicService)
-            .as_unique()
-            .with_pre_hook(pre_hook)
-            .with_activation_hook(activation_hook)
-            .with_post_hook(post_hook)
-            .finalize()
-        )
+        with spellbook.binding_transaction():
+            spell_id = (
+                conduit.create_binder()
+                .bind(BasicService)
+                .as_unique()
+                .with_pre_hook(pre_hook)
+                .with_activation_hook(activation_hook)
+                .with_post_hook(post_hook)
+                .finalize()
+            )
 
         first = conduit.meld(spell=spell_id)
         second = conduit.meld(spell=spell_id)

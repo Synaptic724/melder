@@ -3338,7 +3338,7 @@ class IConduit(ICleanable, Protocol):
             self,
             *,
             spell,
-            existence: str,
+            existence: str | Existence,
             permissions: str = "create",
             spellframe=None,
             binding_name=None,
@@ -3528,24 +3528,76 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    # ------------------------------------------------------------------
-    # fakemeld
-    # ------------------------------------------------------------------
-    def meld(self, spell_name: str, spell_type: str, spellframe: Type = None):
+    def meld(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+            spell_override: Optional[dict | list | tuple] = None,
+    ) -> Optional[Any]:
         """
         Public API
 
-        Placeholder for the service resolution/dependency injection mechanism.
+        Direct spell activation facade for this Conduit.
+
+        At the Conduit boundary, `meld` supports multiple root entry modes.
+        Callers may resolve by:
+
+        - `spell` as a **string** (treated as the canonical spell_id), or
+        - `spell` as a **spell object** (class/function), or
+        - `spellframe` as a **frame/protocol** (or string frame key), or
+        - `spell_name` as a **logical name key** (string).
+
+        These inputs are normalized and delegated to the underlying `Meld`
+        instance, which resolves a concrete spell_id via SpellInputUtils.
+
+        Resolution, reuse, and lifecycle behavior are delegated to
+        the underlying ``Meld`` instance.
 
         Args:
-            spell_name (str): The name of the spell to resolve.
-            spell_type (str): The expected type ("class" or "method").
-            spellframe (Type, optional): An optional interface or type to validate against.
+            spell_name:
+                Logical spell name (string). When provided without an explicit
+                `spell` or `spellframe`, this is treated as the name-based key
+                for resolution (via SpellInputUtils normalization).
+            spell:
+                Primary spell identifier. If a string, this is treated as the
+                unique spell_id (typically the SHA256 version ID). If an
+                object (class/function), it participates in key normalization.
+            spellframe:
+                Optional spellframe / protocol / string frame key used for
+                resolution. If provided, it becomes the primary frame key.
+            binding_name:
+                Optional binding name (string) associated with the
+                spell. Used as the binding key during resolution.
+            spell_override:
+                Optional per-call override payload (dict / list / tuple)
+                passed through to ``Meld.meld`` for constructor/factory
+                argument overrides.
+
+        Returns:
+            Any:
+                The resolved component instance (reused or newly
+                created) as returned by ``Meld.meld``.
 
         Raises:
-            NotImplementedError: As this method is not yet fully implemented.
-            ValueError: If no spell is registered for the given name/type.
-            TypeError: If the resolved instance does not comply with the required SpellFrame.
+            RuntimeError:
+                - If the Conduit has been cleaned.
+                - If the underlying ``Meld`` instance is missing.
+            ValueError:
+                - If none of `spell_name`, `spell`, or `spellframe` are provided.
+            TypeError:
+                - If `spell_name` is not a string when provided.
+                - If `binding_name` is not a string when provided.
+            KeyError:
+                Propagated from ``Meld.meld`` when a spell_id cannot be
+                resolved.
+            NotImplementedError:
+                Propagated from ``Meld.meld`` for spell types or
+                existence modes not yet implemented.
+            HookExecutionError:
+                Propagated from ``Meld.meld`` if hook execution fails.
         """
         ...
 
@@ -6017,6 +6069,8 @@ class ISpellSystemStates(ICleanable, Protocol):
       (for convenience when you only know the version id).
     - Tracks which lineages are currently dirty so higher-level
       DevOps/validation flows can decide what to re-run.
+    - Tracks collection dependency indices per Spellbook for targeted
+      list[Frame] revalidation.
 
     Intended lifecycle:
 
@@ -6036,6 +6090,9 @@ class ISpellSystemStates(ICleanable, Protocol):
     _states_by_spell_id: Optional[Dict[str, 'SpellSystemState']]
     _dirty_lineages: Optional['Set[str]']
     _resolution_by_conduit_id: Optional[Dict[str, 'IConduitResolutionState']]
+    _lineage_owner_spellbook_id: Optional[Dict[str, str]]
+    _collection_frames_by_lineage: Optional[Dict[str, 'Set[str]']]
+    _collection_dependents_by_spellbook: Optional[Dict[str, Dict[str, 'Set[str]']]]
 
     # ------------------------------------------------------------------
     # Registration / lookup
@@ -6122,6 +6179,28 @@ class ISpellSystemStates(ICleanable, Protocol):
         - Ensure a SpellSystemState exists for the lineage.
         - Mark it structurally gated with the provided reason.
         - Add the lineage id to `_dirty_lineages`.
+        """
+        ...
+
+    def mark_collection_dependents_dirty(
+            self,
+            *,
+            spellbook_id: str,
+            frame_keys: Iterable[str],
+            change_reason: Optional['SpellStateChangeReason'] = None,
+    ) -> Set[str]:
+        """
+        Mark list[Frame] consumers dirty for a specific Spellbook scope.
+
+        Args:
+            spellbook_id:
+                Owning Spellbook id used to scope the collection index.
+            frame_keys:
+                Frame keys whose collection memberships changed.
+            change_reason:
+                Optional reason override; defaults to dependencies_changed.
+        Returns:
+            Set[str]: Lineage ids marked dirty by this call.
         """
         ...
 

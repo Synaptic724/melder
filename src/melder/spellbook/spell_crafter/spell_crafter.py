@@ -23,6 +23,7 @@ from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemN
 from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import SpellSystemRootBlueprintBuilder
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
@@ -712,6 +713,47 @@ class SpellCrafter(Cleanable):
 
         return SocketKind.NORMAL
 
+    def _dependency_key_for_dep(
+            self,
+            dep: SpellSymbolicDependency,
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Internal
+
+        Resolve the canonical dependency key for a NORMAL DI socket.
+
+        For SpellMap defaults, this uses the SpellMap's canonical key.
+        For annotation-driven shapes (single/collection), this normalizes
+        the frame key from the target annotation using the default binding.
+
+        Args:
+            dep: Symbolic dependency being mapped.
+        Returns:
+            Optional[Tuple[str, str]]: The normalized (frame_key, binding_key),
+            or None if the dependency does not participate in DI keying.
+        """
+        if dep is None:
+            return None
+
+        if dep.di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
+            spellmap = dep.spellmap_default
+            if spellmap is None:
+                return None
+            return spellmap.canonical_key
+
+        if dep.di_shape in (
+            ParameterDIShape.SINGLE_BY_ANNOTATION,
+            ParameterDIShape.COLLECTION_BY_ANNOTATION,
+        ):
+            if dep.target_annotation is None:
+                return None
+            return SpellInputUtils.normalize_spell_key(
+                spellframe=dep.target_annotation,
+                binding_name=None,
+            )
+
+        return None
+
     def _resolve_spellmap_default(
             self,
             scanner: SpellbookScanner,
@@ -1004,6 +1046,10 @@ class SpellCrafter(Cleanable):
 
             socket_kind = self._socket_kind_for_dep(dep)
 
+            dependency_key = None
+            if socket_kind is SocketKind.NORMAL:
+                dependency_key = self._dependency_key_for_dep(dep)
+
             descriptor = SpellSocketDescriptor(
                   spell_id=spell_id,
                   param_name=dep.param_name,
@@ -1012,6 +1058,7 @@ class SpellCrafter(Cleanable):
                   is_collection=dep.is_collection,
                   is_optional=dep.is_optional,
                   target_spell_ids=target_spell_ids,
+                  dependency_key=dependency_key,
                   contract_key=dep.contract_key,
                   contract_late_binding=dep.contract_late_binding,
             )

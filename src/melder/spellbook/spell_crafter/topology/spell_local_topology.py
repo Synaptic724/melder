@@ -46,6 +46,13 @@ class SpellSocketDescriptor:
             For contract / mutation sockets that are not yet resolved, this
             will typically be an empty tuple.
 
+        dependency_key:
+            Canonical ``(frame_key, binding_key)`` for NORMAL DI sockets.
+            This is populated for single/collection/SpellMap sockets that
+            participate in DI resolution. For collection sockets, the frame
+            key is used for targeted revalidation, while the binding key
+            remains informational.
+
         contract_key:
             Canonical ``(frame_key, binding_key)`` for contract sockets.
             This is populated for SPELL_CONTRACT and MUTATION_CONTRACT
@@ -63,6 +70,7 @@ class SpellSocketDescriptor:
     is_collection: bool
     is_optional: bool
     target_spell_ids: Tuple[str, ...]
+    dependency_key: Optional[Tuple[str, str]] = None
     contract_key: Optional[Tuple[str, str]] = None
     contract_late_binding: Optional[bool] = None
 
