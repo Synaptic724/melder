@@ -416,7 +416,7 @@ def test_scan_bind_integration_scan_multiple_modules() -> None:
 
     assert len(spellbook.spells) == 5
 
-@pytest.mark.skip(reason="Stalls; revisit after phase scheduler investigation. .PhaseTimeoutError: Phase 'root_blueprints' exceeded barrier timeout (60000 ms). Resolution pipeline aborted.")
+#@pytest.mark.skip(reason="Stalls; revisit after phase scheduler investigation. .PhaseTimeoutError: Phase 'root_blueprints' exceeded barrier timeout (60000 ms). Resolution pipeline aborted.")
 def test_conduit_scan_integration_melds_after_scan() -> None:
     """
     Purpose:
@@ -437,7 +437,7 @@ def test_conduit_scan_integration_melds_after_scan() -> None:
     finally:
         conduit.cleanup()
 
-@pytest.mark.skip(reason="Stalls; revisit after phase scheduler investigation. .PhaseTimeoutError: Phase 'root_blueprints' exceeded barrier timeout (60000 ms). Resolution pipeline aborted.")
+#@pytest.mark.skip(reason="Stalls; revisit after phase scheduler investigation. .PhaseTimeoutError: Phase 'root_blueprints' exceeded barrier timeout (60000 ms). Resolution pipeline aborted.")
 def test_scan_bind_integration_spellbook_scan_after_conjure_registers_in_aether() -> None:
     """
     Purpose:
