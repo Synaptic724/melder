@@ -299,6 +299,71 @@ def test_change_control_manager_admit_request_enabled_tracks_in_flight(manager) 
     manager.commit_request(request.request_id)
     assert manager.transaction_manager().get_in_flight(request.request_id) is None
 
+
+def test_change_control_manager_commit_hook_invoked(manager) -> None:
+    """
+    Purpose:
+        Validate commit hooks are invoked through the manager facade.
+    Contract:
+        - Commit hook receives the staged mutation when committing a request.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If commit hook is not called.
+    """
+    called: list[str] = []
+
+    def _hook(staged) -> None:
+        called.append(staged.request_id)
+
+    manager.set_commit_hook(_hook)
+    request = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope:spellbook:spellbook-1"],
+    )
+    admission = manager.admit_request(request)
+    assert admission.admitted is True
+
+    manager.commit_request(request.request_id)
+    assert called == [request.request_id]
+
+
+def test_change_control_manager_commit_validator_failure_aborts(manager) -> None:
+    """
+    Purpose:
+        Validate commit validator failures trigger abort hooks and cleanup.
+    Contract:
+        - Validator errors propagate and clear in-flight state.
+        - Abort hook is invoked for the staged mutation.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If abort hook or cleanup does not occur.
+    """
+    abort_called: list[str] = []
+
+    def _validator(staged) -> None:
+        raise RuntimeError("validation failed")
+
+    def _abort_hook(staged) -> None:
+        abort_called.append(staged.request_id)
+
+    manager.set_commit_validator(_validator)
+    manager.set_abort_hook(_abort_hook)
+    request = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope:spellbook:spellbook-1"],
+    )
+    admission = manager.admit_request(request)
+    assert admission.admitted is True
+
+    with pytest.raises(RuntimeError):
+        manager.commit_request(request.request_id)
+    assert manager.transaction_manager().get_in_flight(request.request_id) is None
+    assert abort_called == [request.request_id]
+
 def test_revalidate_keeps_dirty_on_failure(manager):
     """
     Verify dirty state is preserved if revalidation fails.

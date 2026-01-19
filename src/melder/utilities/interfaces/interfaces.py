@@ -6812,6 +6812,63 @@ class IChangeControlManager(ICleanable, Protocol):
         """
         ...
 
+    def set_commit_validator(
+            self,
+            fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
+    ) -> None:
+        """
+        Public API
+
+        Register a commit validator hook for admitted requests.
+
+        Args:
+            fn:
+                Callable that validates a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
+    def set_commit_hook(
+            self,
+            fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
+    ) -> None:
+        """
+        Public API
+
+        Register a commit hook for admitted requests.
+
+        Args:
+            fn:
+                Callable invoked with a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
+    def set_abort_hook(
+            self,
+            fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
+    ) -> None:
+        """
+        Public API
+
+        Register an abort hook for admitted requests.
+
+        Args:
+            fn:
+                Callable invoked with a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
     def admit_request(
             self,
             request: 'ChangeControlTransactionRequest',

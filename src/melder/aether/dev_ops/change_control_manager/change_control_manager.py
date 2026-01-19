@@ -11,6 +11,9 @@ from melder.aether.dev_ops.change_control_manager.embargo_manager.embargo_manage
 from melder.aether.dev_ops.change_control_manager.orchestrator.orchestrator import (
     ChangeControlOrchestrator,
 )
+from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+    ChangeControlStagedMutation,
+)
 from melder.aether.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
 )
@@ -281,6 +284,84 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self.check_cleaned()
         with self._lock:
             self._transaction_manager.set_audit_logger(fn)
+
+    def set_commit_validator(
+            self,
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
+    ) -> None:
+        """
+        Register a commit validator hook for admitted requests.
+
+        Purpose:
+            Provide a hook for pre-commit structural validation.
+        Contract:
+            - Passing None disables validation.
+            - Hook is invoked outside the orchestrator lock.
+        Args:
+            fn:
+                Callable that validates a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while updating the hook reference.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._orchestrator.set_commit_validator(fn)
+
+    def set_commit_hook(
+            self,
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
+    ) -> None:
+        """
+        Register a commit hook for admitted requests.
+
+        Purpose:
+            Provide a hook for commit-time side effects (dirty marking, etc.).
+        Contract:
+            - Passing None disables the hook.
+            - Hook is invoked outside the orchestrator lock.
+        Args:
+            fn:
+                Callable invoked with a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while updating the hook reference.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._orchestrator.set_commit_hook(fn)
+
+    def set_abort_hook(
+            self,
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
+    ) -> None:
+        """
+        Register an abort hook for admitted requests.
+
+        Purpose:
+            Provide a hook for abort-time cleanup side effects.
+        Contract:
+            - Passing None disables the hook.
+            - Hook is invoked outside the orchestrator lock.
+        Args:
+            fn:
+                Callable invoked with a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while updating the hook reference.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._orchestrator.set_abort_hook(fn)
 
     def transaction_manager(self) -> ChangeControlTransactionManager:
         """
