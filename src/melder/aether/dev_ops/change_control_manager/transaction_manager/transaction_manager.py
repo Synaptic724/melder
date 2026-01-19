@@ -22,6 +22,12 @@ class ChangeControlTransactionManager(Cleanable):
         - In-flight registry is a snapshot of admitted requests.
         - Link mirror is keyed by provider conduit id and lists borrower conduits.
         - Audit logging is optional and invoked outside locks to avoid deadlocks.
+    Args:
+        None.
+    Returns:
+        None.
+    Raises:
+        None.
     Ownership:
         Owns the in-flight registry, link mirror registry, and audit callback reference.
     Threading:

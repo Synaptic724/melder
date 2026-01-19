@@ -51,6 +51,13 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         - Tracks component-of and dirty root state for targeted revalidation.
         - Provides accessors for change-control scaffolding managers.
         - Does not own SpellSystemStates lifecycle.
+    Args:
+        spell_system_states:
+            Spell system state container for this frame.
+    Returns:
+        None.
+    Raises:
+        ValueError: If spell_system_states is None.
     Ownership:
         Owns internal registries and the change-control manager instances.
     Threading:

@@ -20,8 +20,23 @@ class ChangeControlEmbargoRecord:
     Contract:
         - Instances are immutable.
         - owner_request_id ties the embargo to a specific transaction.
+    Args:
+        scope_key:
+            Scope key under embargo.
+        reason_tag:
+            Short reason code for diagnostics.
+        owner_request_id:
+            Request id that owns the embargo.
+        created_at:
+            Unix timestamp (seconds) when the embargo was created.
+    Returns:
+        None.
+    Raises:
+        None.
     Threading:
         Safe to share across threads because instances are immutable.
+    Lifecycle:
+        Immutable; no cleanup required.
     """
     __melder_internal__ = _mrg.sentinel
     scope_key: str
@@ -41,6 +56,12 @@ class ChangeControlEmbargoManager(Cleanable):
         - Embargoes are internal, transaction-driven state (not standalone
           transactions).
         - Embargoes are released on commit/abort of their owning request.
+    Args:
+        None.
+    Returns:
+        None.
+    Raises:
+        None.
     Threading:
         All state mutations are guarded by an internal RLock.
     Lifecycle:

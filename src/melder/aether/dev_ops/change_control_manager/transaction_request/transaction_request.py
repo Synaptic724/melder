@@ -16,6 +16,16 @@ class ChangeTransactionType(str, Enum):
         - Values must remain stable because they become part of transaction
           request payloads and logs.
         - No "scan" or "embargo" transaction types are modeled here.
+    Args:
+        None.
+    Returns:
+        None.
+    Raises:
+        None.
+    Threading:
+        Stateless; safe to share across threads.
+    Lifecycle:
+        No cleanup required.
     """
     __melder_internal__ = _mrg.sentinel
     BIND = "bind"
@@ -38,8 +48,37 @@ class ChangeControlTransactionRequest:
         - Instances are immutable.
         - `request_id` and `initiator_conduit_id` must be non-empty strings.
         - Scope keys and hashes must be normalized by the caller.
+    Args:
+        request_id:
+            Unique identifier for the request.
+        request_type:
+            Change-control transaction type.
+        created_at:
+            Unix timestamp (seconds) when the request was created.
+        initiator_conduit_id:
+            Conduit id initiating the request.
+        spellbook_id:
+            Optional spellbook id associated with the request.
+        conduit_ids:
+            Conduit ids participating in the request.
+        scope_keys:
+            Normalized scope keys derived by the caller.
+        scope_hashes:
+            Normalized scope hashes derived by the caller.
+        binding_keys:
+            Binding keys affected by the request.
+        contract_keys:
+            Contract keys affected by the request.
+        metadata:
+            Caller-supplied metadata for diagnostics.
+    Returns:
+        None.
+    Raises:
+        None.
     Threading:
         Safe to share across threads because instances are immutable.
+    Lifecycle:
+        Immutable; no cleanup required.
     """
     __melder_internal__ = _mrg.sentinel
     request_id: str
@@ -65,8 +104,23 @@ class ChangeControlAdmissionResult:
     Contract:
         - `admitted=True` implies the request was accepted for execution.
         - `conflicts` and `embargoes` contain identifiers explaining rejection.
+    Args:
+        admitted:
+            True if the request was accepted for execution.
+        reasons:
+            Short reason codes explaining a rejection, if any.
+        conflicts:
+            Conflicting request ids, if any.
+        embargoes:
+            Embargoed scope keys, if any.
+    Returns:
+        None.
+    Raises:
+        None.
     Threading:
         Safe to share across threads because instances are immutable.
+    Lifecycle:
+        Immutable; no cleanup required.
     """
     __melder_internal__ = _mrg.sentinel
     admitted: bool

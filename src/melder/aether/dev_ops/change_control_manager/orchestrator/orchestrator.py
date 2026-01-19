@@ -28,6 +28,12 @@ class ChangeControlOrchestrator(Cleanable):
         - Admission is serialized under the orchestrator lock.
         - Accepted requests are registered as in-flight.
         - Rejected requests return evidence (conflict/embargo).
+    Args:
+        None.
+    Returns:
+        None.
+    Raises:
+        None.
     Threading:
         Uses an internal RLock to serialize admission/commit/abort paths.
     Lifecycle:

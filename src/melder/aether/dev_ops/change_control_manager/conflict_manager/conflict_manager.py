@@ -18,6 +18,12 @@ class ChangeControlConflictManager(Cleanable):
     Contract:
         - Compares scope hashes when provided; falls back to scope keys.
         - Returns request ids of conflicting in-flight requests.
+    Args:
+        None.
+    Returns:
+        None.
+    Raises:
+        None.
     Threading:
         All state reads are guarded by an internal RLock.
     Lifecycle:
