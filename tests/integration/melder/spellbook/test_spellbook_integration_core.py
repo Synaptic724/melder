@@ -356,6 +356,66 @@ def test_spellbook_integration_existing_object_bind_after_conjure_reuses_instanc
         conduit.cleanup()
 
 
+def test_spellbook_integration_begin_transaction_bind_allows_post_conjure_bind() -> None:
+    """
+    Purpose:
+        Validate begin_transaction("bind") opens the bind/scan window after conjure.
+    Contract:
+        - bind succeeds inside a begin/end transaction window.
+        - meld resolves the newly bound spell.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If binding or meld resolution fails.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        spellbook.begin_transaction("bind")
+        spell_id = spellbook.bind(
+            spell=BasicConfig,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spellbook.end_transaction("bind")
+
+        resolved = conduit.meld(spell=spell_id)
+        assert isinstance(resolved, BasicConfig)
+    finally:
+        conduit.cleanup()
+
+
+def test_spellbook_integration_begin_transaction_conflict_rejects_overlapping_scope() -> None:
+    """
+    Purpose:
+        Validate change-control admission rejects conflicting scope keys.
+    Contract:
+        - A second transaction with overlapping scope keys is denied.
+        - The denied transaction does not replace the active request.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conflict admission is not enforced.
+    """
+    spellbook_a = Spellbook(aetheric_frame="shared-frame")
+    spellbook_b = Spellbook(aetheric_frame="shared-frame")
+
+    spellbook_a.begin_transaction("link", scope_keys=["shared-scope"])
+    try:
+        with pytest.raises(RuntimeError, match="Change-control admission denied"):
+            spellbook_b.begin_transaction("link", scope_keys=["shared-scope"])
+    finally:
+        spellbook_a.end_transaction("link")
+
+
 def test_spellbook_integration_post_conjure_bind_runs_structural_phases() -> None:
     """
     Purpose:

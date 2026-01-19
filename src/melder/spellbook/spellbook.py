@@ -1,9 +1,13 @@
 from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
-from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set
+from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple
 import threading
 # Melder Imports
 from melder.aether.aether import Aether
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeControlTransactionRequest,
+    ChangeTransactionType,
+)
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.bind.scan import Scan
 from melder.spellbook.configuration.system_state import SystemState
@@ -85,6 +89,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._id: str = IDBuilder.create_id()
         self._conjured = False
         self._binding_transaction_active: bool = True
+        self._active_change_request: Optional[ChangeControlTransactionRequest] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[ISpell] = []
         self._conduit: Optional[Conduit] = None
@@ -243,6 +248,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._conduit = None
         self._conjured = None
         self._binding_transaction_active = None
+        self._active_change_request = None
         self._pending_binding_frame_keys = None
         self._pending_structural_spells = None
         self._spell_system_states = None
@@ -1035,6 +1041,268 @@ class Spellbook(Cleanable, ISpellbook):
             default_permissions=default_permissions,
         )
 
+    def _normalize_change_transaction_type(
+            self,
+            value: ChangeTransactionType | str,
+    ) -> ChangeTransactionType:
+        """
+        Internal
+
+        Normalize a transaction type input to ChangeTransactionType.
+
+        Purpose:
+            Convert string inputs into the canonical ChangeTransactionType enum.
+        Contract:
+            - Accepts ChangeTransactionType values or their string values.
+            - Comparison is case-insensitive for string inputs.
+        Args:
+            value:
+                Transaction type as an enum or string.
+        Returns:
+            ChangeTransactionType:
+                Normalized transaction type.
+        Raises:
+            ValueError: If the value is empty or not a valid transaction type.
+            TypeError: If the value is not a string or ChangeTransactionType.
+        """
+        if isinstance(value, ChangeTransactionType):
+            return value
+        if isinstance(value, str):
+            candidate = value.strip().lower()
+            if not candidate:
+                raise ValueError("transaction_type cannot be empty.")
+            try:
+                return ChangeTransactionType(candidate)
+            except ValueError as exc:
+                valid = [item.value for item in ChangeTransactionType]
+                raise ValueError(
+                    f"Invalid transaction_type '{value}'. Expected one of: {valid}."
+                ) from exc
+        raise TypeError(
+            "transaction_type must be a ChangeTransactionType or string."
+        )
+
+    def begin_transaction(
+            self,
+            transaction_type: ChangeTransactionType | str,
+            *,
+            conduit_id: Optional[str] = None,
+            conduit_ids: Optional[Iterable[str]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Public API
+
+        Begin a change-control transaction for this Spellbook.
+
+        Purpose:
+            Admit a mutation request through the ChangeControlManager and,
+            for bind transactions, open the binding transaction window.
+        Contract:
+            - Only one change-control transaction may be active per Spellbook.
+            - Admission is serialized by the ChangeControlOrchestrator.
+            - Bind transactions open the binding transaction window.
+            - Scan is not a transaction type; it must run inside a bind transaction.
+        Args:
+            transaction_type:
+                Transaction type enum or string value (e.g. "bind", "link").
+            conduit_id:
+                Optional initiator conduit id for logging. Defaults to the
+                conjured conduit id when available.
+            conduit_ids:
+                Optional list of conduits participating in the request.
+            scope_keys:
+                Optional normalized scope keys for conflict checks.
+            scope_hashes:
+                Optional normalized scope hashes for conflict checks.
+            binding_keys:
+                Optional binding keys affected by the request.
+            contract_keys:
+                Optional contract keys affected by the request.
+            metadata:
+                Optional structured metadata for diagnostics.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If a change transaction is already active.
+            RuntimeError: If binding transaction is already active for bind requests.
+            RuntimeError: If change-control admission is denied.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        Threading:
+            Admission uses the orchestrator lock; local state uses the Spellbook lock.
+        """
+        self.check_cleaned()
+        request_type = self._normalize_change_transaction_type(transaction_type)
+
+        with self._lock:
+            if self._active_change_request is not None:
+                self._logger.error(
+                    "Change transaction already active",
+                    "begin_transaction",
+                )
+                raise RuntimeError(
+                    "[SPELLBOOK] Change transaction already active. "
+                    "End the current transaction before starting another."
+                )
+            if request_type is ChangeTransactionType.BIND and self._binding_transaction_active:
+                self._logger.error(
+                    "Binding transaction already active",
+                    "begin_transaction",
+                )
+                raise RuntimeError(
+                    "[SPELLBOOK] Binding transaction already active. "
+                    "End the current transaction before starting another."
+                )
+
+        initiator = conduit_id
+        if not initiator and self._conduit is not None:
+            initiator = self._conduit._id
+        if not initiator:
+            initiator = f"spellbook:{self._id}"
+
+        scope_values = list(scope_keys) if scope_keys else []
+        base_scope = f"spellbook:{self._id}"
+        if base_scope not in scope_values:
+            scope_values.append(base_scope)
+
+        conduit_values = list(conduit_ids) if conduit_ids else []
+        if initiator and initiator not in conduit_values and not initiator.startswith("spellbook:"):
+            conduit_values.append(initiator)
+
+        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        transaction_manager = change_control.transaction_manager()
+        conflict_manager = change_control.conflict_manager()
+        embargo_manager = change_control.embargo_manager()
+        orchestrator = change_control.orchestrator()
+
+        request = transaction_manager.build_request(
+            request_type=request_type,
+            initiator_conduit_id=initiator,
+            spellbook_id=self._id,
+            conduit_ids=conduit_values,
+            scope_keys=scope_values,
+            scope_hashes=scope_hashes,
+            binding_keys=binding_keys,
+            contract_keys=contract_keys,
+            metadata=metadata,
+        )
+        admission = orchestrator.admit_request(
+            request,
+            transaction_manager=transaction_manager,
+            conflict_manager=conflict_manager,
+            embargo_manager=embargo_manager,
+        )
+
+        if not admission.admitted:
+            details = []
+            if admission.conflicts:
+                details.append(f"conflicts={admission.conflicts}")
+            if admission.embargoes:
+                details.append(f"embargoes={admission.embargoes}")
+            detail_msg = "; ".join(details) if details else "no conflict metadata available"
+            raise RuntimeError(
+                "[SPELLBOOK] Change-control admission denied "
+                f"(reasons={admission.reasons}). {detail_msg}"
+            )
+
+        try:
+            with self._lock:
+                if self._active_change_request is not None:
+                    raise RuntimeError(
+                        "[SPELLBOOK] Change transaction already active. "
+                        "End the current transaction before starting another."
+                    )
+                if request_type is ChangeTransactionType.BIND and self._binding_transaction_active:
+                    raise RuntimeError(
+                        "[SPELLBOOK] Binding transaction already active. "
+                        "End the current transaction before starting another."
+                    )
+                if request_type is ChangeTransactionType.BIND:
+                    self._begin_binding_transaction(owner_label="Spellbook")
+                self._active_change_request = request
+        except Exception:
+            orchestrator.abort_request(
+                request.request_id,
+                transaction_manager=transaction_manager,
+                embargo_manager=embargo_manager,
+            )
+            raise
+
+    def end_transaction(
+            self,
+            transaction_type: ChangeTransactionType | str | None = None,
+    ) -> None:
+        """
+        Public API
+
+        End the active change-control transaction for this Spellbook.
+
+        Purpose:
+            Finalize an admitted change-control request and release any
+            implicit embargo state tracked by the ChangeControlManager.
+        Contract:
+            - Ends the active request tracked by this Spellbook.
+            - Bind transactions close the binding transaction window.
+            - Raises if no change transaction is active.
+        Args:
+            transaction_type:
+                Optional transaction type assertion for safety checks.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If no change transaction is active.
+            RuntimeError: If transaction_type does not match the active request.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        Threading:
+            Uses the Spellbook lock for local state; orchestrator handles admission state.
+        """
+        self.check_cleaned()
+        request: Optional[ChangeControlTransactionRequest] = None
+        expected_type: Optional[ChangeTransactionType] = None
+        with self._lock:
+            request = self._active_change_request
+        if request is None:
+            raise RuntimeError("[SPELLBOOK] No active change transaction to end.")
+
+        if transaction_type is not None:
+            expected_type = self._normalize_change_transaction_type(transaction_type)
+            if request.request_type is not expected_type:
+                raise RuntimeError(
+                    "[SPELLBOOK] Active change transaction does not match the requested type."
+                )
+
+        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        transaction_manager = change_control.transaction_manager()
+        embargo_manager = change_control.embargo_manager()
+        orchestrator = change_control.orchestrator()
+
+        try:
+            if request.request_type is ChangeTransactionType.BIND:
+                self._end_binding_transaction(owner_label="Spellbook")
+        except Exception:
+            orchestrator.abort_request(
+                request.request_id,
+                transaction_manager=transaction_manager,
+                embargo_manager=embargo_manager,
+            )
+            with self._lock:
+                self._active_change_request = None
+            raise
+
+        orchestrator.commit_request(
+            request.request_id,
+            transaction_manager=transaction_manager,
+            embargo_manager=embargo_manager,
+        )
+        with self._lock:
+            self._active_change_request = None
+
     def begin_binding_transaction(self) -> None:
         """
         Public API
@@ -1052,9 +1320,7 @@ class Spellbook(Cleanable, ISpellbook):
         Raises:
             RuntimeError: If a binding transaction is already active.
         """
-        self.check_cleaned()
-        with self._lock:
-            self._begin_binding_transaction(owner_label="Spellbook")
+        self.begin_transaction(ChangeTransactionType.BIND)
 
     def end_binding_transaction(self) -> None:
         """
@@ -1076,7 +1342,15 @@ class Spellbook(Cleanable, ISpellbook):
         """
         self.check_cleaned()
         with self._lock:
-            self._end_binding_transaction(owner_label="Spellbook")
+            active_request = self._active_change_request
+        if active_request is not None:
+            if active_request.request_type is not ChangeTransactionType.BIND:
+                raise RuntimeError(
+                    "[SPELLBOOK] Active change transaction is not a bind transaction."
+                )
+            self.end_transaction(ChangeTransactionType.BIND)
+            return
+        self._end_binding_transaction(owner_label="Spellbook")
 
     @contextmanager
     def binding_transaction(self) -> "Spellbook":
@@ -1205,7 +1479,8 @@ class Spellbook(Cleanable, ISpellbook):
                 )
                 raise RuntimeError(
                     f"[SPELLBOOK] {action} requires an active binding transaction. "
-                    "Call begin_binding_transaction() before binding or scanning."
+                    "Call begin_transaction('bind') or begin_binding_transaction() "
+                    "before binding or scanning."
                 )
 
     def _mark_collection_dependents_dirty(self, frame_keys: Set[str]) -> None:
@@ -1258,8 +1533,9 @@ class Spellbook(Cleanable, ISpellbook):
         or across systems (depending on permissions).
 
         Binding requires an active binding transaction. Use
-        ``begin_binding_transaction()`` before binding and
-        ``end_binding_transaction()`` once registration is complete.
+        ``begin_transaction("bind")`` (or ``begin_binding_transaction()``)
+        before binding and ``end_binding_transaction()`` once registration
+        is complete.
 
         ──────────────────────────────────────────────
         🧠 Binding Overview:
@@ -1439,8 +1715,9 @@ class Spellbook(Cleanable, ISpellbook):
         scanned module, otherwise the scan fails.
 
         Scanning requires an active binding transaction. Use
-        ``begin_binding_transaction()`` before scanning and
-        ``end_binding_transaction()`` once registration is complete.
+        ``begin_transaction("bind")`` (or ``begin_binding_transaction()``)
+        before scanning and ``end_binding_transaction()`` once registration
+        is complete.
 
         Args:
             module (ModuleType): The module to scan for decorated spell targets.

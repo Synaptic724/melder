@@ -2,7 +2,7 @@ import threading
 from contextvars import ContextVar
 from contextlib import contextmanager
 from types import ModuleType
-from typing import Optional, Type, Any, Tuple, Callable
+from typing import Optional, Type, Any, Tuple, Callable, Iterable, Dict
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -23,6 +23,9 @@ from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #TODO: @GPT5, please inform Mark that he needs to implement Conduits hooks, for pre- during, and post activations so we can add Aspect Oriented Programming here
@@ -1447,6 +1450,114 @@ class Conduit(Cleanable, IConduit):
             default_permissions=default_permissions,
         )
 
+    def begin_transaction(
+            self,
+            transaction_type: ChangeTransactionType | str,
+            *,
+            conduit_ids: Optional[Iterable[str]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Public API
+
+        Begin a change-control transaction for this Conduit.
+
+        Purpose:
+            Admit a mutation request through the ChangeControlManager and,
+            for bind transactions, open the binding transaction window.
+        Contract:
+            - Only normal conduits may begin change-control transactions.
+            - Admission is serialized by the ChangeControlOrchestrator.
+            - Bind transactions open the binding transaction window.
+        Args:
+            transaction_type:
+                Transaction type enum or string value (e.g. "bind", "link").
+            conduit_ids:
+                Optional list of conduits participating in the request.
+            scope_keys:
+                Optional normalized scope keys for conflict checks.
+            scope_hashes:
+                Optional normalized scope hashes for conflict checks.
+            binding_keys:
+                Optional binding keys affected by the request.
+            contract_keys:
+                Optional contract keys affected by the request.
+            metadata:
+                Optional structured metadata for diagnostics.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If change-control admission is denied.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        Threading:
+            Uses the Spellbook lock for local state; orchestrator handles admission state.
+        """
+        self.check_cleaned()
+        if not self._conduit_state == ConduitState.normal:
+            self._logger.error("begin_transaction called when conduit not normal", "begin_transaction")
+            raise RuntimeError("Only normal conduits can start change transactions.")
+
+        scope_values = list(scope_keys) if scope_keys else []
+        base_scope = f"conduit:{self._id}"
+        if base_scope not in scope_values:
+            scope_values.append(base_scope)
+
+        conduit_values = list(conduit_ids) if conduit_ids else []
+        if self._id not in conduit_values:
+            conduit_values.append(self._id)
+
+        self._spellbook.begin_transaction(
+            transaction_type,
+            conduit_id=self._id,
+            conduit_ids=conduit_values,
+            scope_keys=scope_values,
+            scope_hashes=scope_hashes,
+            binding_keys=binding_keys,
+            contract_keys=contract_keys,
+            metadata=metadata,
+        )
+
+    def end_transaction(
+            self,
+            transaction_type: ChangeTransactionType | str | None = None,
+    ) -> None:
+        """
+        Public API
+
+        End the active change-control transaction for this Conduit.
+
+        Purpose:
+            Finalize an admitted change-control request and release any
+            implicit embargo state tracked by the ChangeControlManager.
+        Contract:
+            - Only normal conduits may end change-control transactions.
+            - Raises if no change transaction is active.
+        Args:
+            transaction_type:
+                Optional transaction type assertion for safety checks.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If no change transaction is active.
+            RuntimeError: If transaction_type does not match the active request.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        Threading:
+            Uses the Spellbook lock for local state; orchestrator handles admission state.
+        """
+        self.check_cleaned()
+        if not self._conduit_state == ConduitState.normal:
+            self._logger.error("end_transaction called when conduit not normal", "end_transaction")
+            raise RuntimeError("Only normal conduits can end change transactions.")
+        self._spellbook.end_transaction(transaction_type=transaction_type)
+
     def begin_binding_transaction(self) -> None:
         """
         Public API
@@ -1464,12 +1575,7 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the Conduit is cleaned or not normal.
             RuntimeError: If a binding transaction is already active.
         """
-        self.check_cleaned()
-        if not self._conduit_state == ConduitState.normal:
-            self._logger.error("begin_binding_transaction called when conduit not normal", "begin_binding_transaction")
-            raise RuntimeError("Only normal conduits can start binding transactions.")
-        with self._lock:
-            self._spellbook._begin_binding_transaction(owner_label="Conduit")
+        self.begin_transaction(ChangeTransactionType.BIND)
 
     def end_binding_transaction(self) -> None:
         """
@@ -1494,8 +1600,7 @@ class Conduit(Cleanable, IConduit):
         if not self._conduit_state == ConduitState.normal:
             self._logger.error("end_binding_transaction called when conduit not normal", "end_binding_transaction")
             raise RuntimeError("Only normal conduits can end binding transactions.")
-        with self._lock:
-            self._spellbook._end_binding_transaction(owner_label="Conduit")
+        self._spellbook.end_binding_transaction()
 
     @contextmanager
     def binding_transaction(self) -> "Conduit":

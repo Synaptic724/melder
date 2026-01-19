@@ -293,6 +293,43 @@ def test_conduit_public_api_bind_and_binder_register_spells() -> None:
         conduit.cleanup()
 
 
+def test_conduit_public_api_begin_transaction_bind_allows_post_conjure_bind() -> None:
+    """
+    Purpose:
+        Validate begin_transaction("bind") opens the bind window for Conduit.
+    Contract:
+        - Conduit.bind succeeds inside a begin/end transaction window.
+        - Conduit.meld resolves the new spell by id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If binding or meld resolution fails.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        conduit.begin_transaction("bind")
+        config_id = conduit.bind(
+            spell=BasicConfig,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        conduit.end_transaction("bind")
+
+        resolved = conduit.meld(spell=config_id)
+        assert isinstance(resolved, BasicConfig)
+    finally:
+        conduit.cleanup()
+
+
 def test_conduit_public_api_cleanup_lesser_conduits() -> None:
     """
     Purpose:
