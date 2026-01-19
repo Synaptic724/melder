@@ -121,3 +121,54 @@ class ChangeControlStagedMutation:
             contract_keys=contract_keys,
             metadata=dict(metadata) if metadata else {},
         )
+
+    def with_updates(
+            self,
+            *,
+            scope_keys: Optional[Tuple[str, ...]] = None,
+            binding_keys: Optional[Tuple[Tuple[str, str], ...]] = None,
+            contract_keys: Optional[Tuple[Tuple[str, str, str], ...]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> "ChangeControlStagedMutation":
+        """
+        Return a new staged mutation with updated metadata.
+
+        Purpose:
+            Produce a new immutable staged record that preserves identity and
+            staging time while allowing metadata fields to be updated.
+        Contract:
+            - `request_id`, `request_type`, and `staged_at` are preserved.
+            - None values keep the existing field data.
+            - metadata merges into the existing metadata when provided.
+        Args:
+            scope_keys:
+                Optional replacement scope keys for the staged record.
+            binding_keys:
+                Optional replacement binding keys for the staged record.
+            contract_keys:
+                Optional replacement contract keys for the staged record.
+            metadata:
+                Optional metadata to merge into the staged record.
+        Returns:
+            ChangeControlStagedMutation:
+                A new immutable staged mutation record.
+        Raises:
+            None.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        merged_metadata = dict(self.metadata)
+        if metadata is not None:
+            merged_metadata.update(metadata)
+        return ChangeControlStagedMutation(
+            request_id=self.request_id,
+            request_type=self.request_type,
+            staged_at=self.staged_at,
+            initiator_conduit_id=self.initiator_conduit_id,
+            spellbook_id=self.spellbook_id,
+            conduit_ids=self.conduit_ids,
+            scope_keys=scope_keys if scope_keys is not None else self.scope_keys,
+            binding_keys=binding_keys if binding_keys is not None else self.binding_keys,
+            contract_keys=contract_keys if contract_keys is not None else self.contract_keys,
+            metadata=merged_metadata,
+        )

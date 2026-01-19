@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -222,6 +222,68 @@ class ChangeControlOrchestrator(Cleanable):
         self.check_cleaned()
         with self._lock:
             return tuple(self._staged.values())
+
+    def update_staged(
+            self,
+            request_id: str,
+            *,
+            scope_keys: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        Update staged mutation metadata for an admitted request.
+
+        Purpose:
+            Allow callers to refresh staged metadata discovered after admission
+            (e.g., binding keys or contract keys discovered during a transaction).
+        Contract:
+            - Returns False when no staged record exists for the request id.
+            - Updates only the supplied fields; None keeps existing values.
+            - Metadata is merged into the staged record when provided.
+        Args:
+            request_id:
+                Request identifier to update.
+            scope_keys:
+                Optional updated scope keys for the staged mutation.
+            binding_keys:
+                Optional updated binding keys for the staged mutation.
+            contract_keys:
+                Optional updated contract keys for the staged mutation.
+            metadata:
+                Optional metadata to merge into the staged record.
+        Returns:
+            bool:
+                True if the staged record was updated, False otherwise.
+        Raises:
+            RuntimeError: If the orchestrator has been cleaned.
+        Threading:
+            Acquires the admission lock while updating staged metadata.
+        """
+        self.check_cleaned()
+        if not request_id:
+            return False
+        normalized_scope_keys = (
+            tuple(scope_keys) if scope_keys is not None else None
+        )
+        normalized_binding_keys = (
+            tuple(binding_keys) if binding_keys is not None else None
+        )
+        normalized_contract_keys = (
+            tuple(contract_keys) if contract_keys is not None else None
+        )
+        with self._lock:
+            staged = self._staged.get(request_id) if self._staged is not None else None
+            if staged is None:
+                return False
+            self._staged[request_id] = staged.with_updates(
+                scope_keys=normalized_scope_keys,
+                binding_keys=normalized_binding_keys,
+                contract_keys=normalized_contract_keys,
+                metadata=metadata,
+            )
+            return True
 
     def _stage_request(
             self,

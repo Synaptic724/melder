@@ -1504,7 +1504,7 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError("Only normal conduits can start change transactions.")
 
         scope_values = list(scope_keys) if scope_keys else []
-        base_scope = f"conduit:{self._id}"
+        base_scope = f"scope:conduit:{self._id}"
         if base_scope not in scope_values:
             scope_values.append(base_scope)
 

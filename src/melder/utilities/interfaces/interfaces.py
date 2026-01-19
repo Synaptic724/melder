@@ -6937,6 +6937,44 @@ class IChangeControlManager(ICleanable, Protocol):
         """
         ...
 
+    def update_staged_request(
+            self,
+            request_id: str,
+            *,
+            scope_keys: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        Public API
+
+        Update staged mutation metadata for an admitted request.
+
+        Purpose:
+            Allow callers to refresh staged metadata discovered after admission.
+        Contract:
+            - Returns False if the request is not staged.
+            - Updates only supplied fields; None keeps existing values.
+            - Metadata merges into the staged record when provided.
+        Args:
+            request_id:
+                Request identifier to update.
+            scope_keys:
+                Optional updated scope keys for the staged mutation.
+            binding_keys:
+                Optional updated binding keys for the staged mutation.
+            contract_keys:
+                Optional updated contract keys for the staged mutation.
+            metadata:
+                Optional metadata to merge into the staged record.
+        Returns:
+            bool: True if the staged record was updated.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
     def commit_request(self, request_id: str) -> None:
         """
         Public API

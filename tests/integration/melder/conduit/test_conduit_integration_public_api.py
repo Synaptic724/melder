@@ -330,6 +330,33 @@ def test_conduit_public_api_begin_transaction_bind_allows_post_conjure_bind() ->
         conduit.cleanup()
 
 
+def test_conduit_begin_transaction_sets_conduit_scope_key() -> None:
+    """
+    Purpose:
+        Validate Conduit transactions advertise conduit scope keys for conflicts.
+    Contract:
+        - Conduit begin_transaction emits a scope key that conflicts with other requests.
+        - Overlapping scope keys are rejected by change-control admission.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conflict admission is not enforced.
+    """
+    frame_name = "shared-conduit-scope"
+    spellbook_a = Spellbook(aetheric_frame=frame_name)
+    spellbook_b = Spellbook(aetheric_frame=frame_name)
+    conduit_a = spellbook_a.conjure(name="conduit-a")
+    change_control = spellbook_a._aether._get_change_control_manager(frame_name)
+    scope_key = change_control.transaction_manager().make_scope_key_conduit(conduit_a.id)
+    try:
+        conduit_a.begin_transaction("link")
+        with pytest.raises(RuntimeError, match="Change-control admission denied"):
+            spellbook_b.begin_transaction("link", scope_keys=[scope_key])
+    finally:
+        conduit_a.end_transaction("link")
+        conduit_a.cleanup()
+
+
 def test_conduit_public_api_cleanup_lesser_conduits() -> None:
     """
     Purpose:

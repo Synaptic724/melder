@@ -444,41 +444,69 @@ def test_change_control_manager_dirty_marker_precedes_commit_hook(manager) -> No
     assert events == ["marker", "hook"]
 
 
-def test_change_control_manager_default_dirty_marker_marks_dependents(manager) -> None:
+def test_change_control_manager_update_staged_request_updates_metadata(manager) -> None:
     """
     Purpose:
-        Validate the default dirty marker delegates to SpellSystemStates.
+        Validate staged metadata updates after admission.
     Contract:
-        - frame_keys are derived from binding keys.
-        - SpellSystemStates receives the owning spellbook id.
+        - update_staged_request returns True when the request is staged.
+        - Updated binding keys and metadata are reflected in the staged record.
+        - Metadata updates merge into existing staged metadata.
     Returns:
         None.
     Raises:
-        AssertionError: If dirty marking is not delegated correctly.
+        AssertionError: If staged metadata is not updated.
     """
-    staged = ChangeControlStagedMutation.from_request(
-        request_id="req-default-marker",
+    request = manager.transaction_manager().build_request(
         request_type=ChangeTransactionType.BIND,
         initiator_conduit_id="conduit-1",
-        spellbook_id="spellbook-1",
-        conduit_ids=(),
-        scope_keys=(),
-        binding_keys=(
-            ("frame_a", "__default__"),
-            ("frame_b", "alpha"),
-            ("frame_a", "secondary"),
-            ("", "__default__"),
-        ),
-        contract_keys=(),
-        metadata=None,
+        scope_keys=["scope:spellbook:spellbook-1"],
+        metadata={"seed": "value"},
     )
+    admission = manager.admit_request(request)
+    assert admission.admitted is True
 
-    manager._default_dirty_marker(staged)
-
-    manager._spell_system_states.mark_collection_dependents_dirty.assert_called_once_with(
-        spellbook_id="spellbook-1",
-        frame_keys={"frame_a", "frame_b"},
+    updated = manager.update_staged_request(
+        request.request_id,
+        binding_keys=[("frame", "__default__")],
+        metadata={"note": "test"},
     )
+    assert updated is True
+
+    staged = manager.orchestrator().get_staged(request.request_id)
+    assert staged is not None
+    assert staged.binding_keys == (("frame", "__default__"),)
+    assert staged.metadata["seed"] == "value"
+    assert staged.metadata["note"] == "test"
+
+
+def test_change_control_manager_update_staged_request_noops_when_disabled(manager) -> None:
+    """
+    Purpose:
+        Validate staged updates are disabled when change control is disabled.
+    Contract:
+        - update_staged_request returns False when staging is not active.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If update_staged_request returns True while disabled.
+    """
+    manager.disable_change_control()
+    request = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope:spellbook:spellbook-1"],
+    )
+    admission = manager.admit_request(request)
+    assert admission.admitted is True
+
+    updated = manager.update_staged_request(
+        request.request_id,
+        binding_keys=[("frame", "__default__")],
+    )
+    assert updated is False
+
+
 
 def test_revalidate_keeps_dirty_on_failure(manager):
     """

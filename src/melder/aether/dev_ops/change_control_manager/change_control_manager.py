@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import Any, Callable, Dict, Optional, Set, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple, Union
 
 from melder.aether.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
     ChangeControlConflictManager,
@@ -132,9 +132,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self._commit_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         self._abort_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         self._structural_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
-        self._dirty_marker: Optional[Callable[[ChangeControlStagedMutation], None]] = (
-            self._default_dirty_marker
-        )
+        self._dirty_marker: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         self._orchestrator.set_commit_validator(self._dispatch_commit_validator)
         self._orchestrator.set_commit_hook(self._dispatch_commit_hook)
         self._orchestrator.set_abort_hook(self._dispatch_abort_hook)
@@ -393,6 +391,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             Provide a hook for marking dependency state dirty on commit.
         Contract:
             - Passing None disables dirty marking.
+            - Default is None (spellbooks own dirty marking).
         Args:
             fn:
                 Callable invoked with a staged mutation, or None.
@@ -677,6 +676,61 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             transaction_manager=self._transaction_manager,
             conflict_manager=self._conflict_manager,
             embargo_manager=self._embargo_manager,
+        )
+
+    def update_staged_request(
+            self,
+            request_id: str,
+            *,
+            scope_keys: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        Update staged mutation metadata for an admitted request.
+
+        Purpose:
+            Refresh staged metadata discovered after admission without
+            mutating the in-flight request payload.
+        Contract:
+            - Returns False if no staged record exists for the request.
+            - Updates only supplied fields; None keeps existing values.
+            - Metadata merges into the staged record when provided.
+            - No effect when change-control admission is disabled.
+        Args:
+            request_id:
+                Request identifier to update.
+            scope_keys:
+                Optional updated scope keys for the staged mutation.
+            binding_keys:
+                Optional updated binding keys for the staged mutation.
+            contract_keys:
+                Optional updated contract keys for the staged mutation.
+            metadata:
+                Optional metadata to merge into the staged record.
+        Returns:
+            bool: True if the staged record was updated.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+            ValueError: If request_id is empty.
+        Threading:
+            Uses the internal lock to read enable state; orchestrator uses
+            its lock for staged updates.
+        """
+        self.check_cleaned()
+        if not request_id:
+            raise ValueError("request_id cannot be empty")
+        with self._lock:
+            enabled = bool(self._change_control_enabled)
+        if not enabled:
+            return False
+        return self._orchestrator.update_staged(
+            request_id,
+            scope_keys=scope_keys,
+            binding_keys=binding_keys,
+            contract_keys=contract_keys,
+            metadata=metadata,
         )
 
     def commit_request(self, request_id: str) -> None:
