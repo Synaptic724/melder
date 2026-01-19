@@ -7,6 +7,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -390,6 +391,55 @@ def test_spellbook_integration_begin_transaction_bind_allows_post_conjure_bind()
         resolved = conduit.meld(spell=spell_id)
         assert isinstance(resolved, BasicConfig)
     finally:
+        conduit.cleanup()
+
+
+def test_spellbook_integration_bind_updates_staged_binding_keys() -> None:
+    """
+    Purpose:
+        Validate bind updates staged change-control metadata during a bind transaction.
+    Contract:
+        - Staged binding keys start empty for the admitted request.
+        - Binding a spell updates staged binding keys with the normalized key.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If staged binding keys are not updated.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    change_control = spellbook._aether._get_change_control_manager(spellbook._aetheric_frame)
+    transaction_started = False
+    try:
+        spellbook.begin_transaction("bind")
+        transaction_started = True
+        request = spellbook._active_change_request
+        assert request is not None
+
+        staged_before = change_control.orchestrator().get_staged(request.request_id)
+        assert staged_before is not None
+        assert staged_before.binding_keys == ()
+
+        spellbook.bind(
+            spell=BasicConfig,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        expected_key = SpellInputUtils.normalize_spell_key(spell=BasicConfig)
+        staged_after = change_control.orchestrator().get_staged(request.request_id)
+        assert staged_after is not None
+        assert staged_after.binding_keys == (expected_key,)
+    finally:
+        if transaction_started:
+            spellbook.end_transaction("bind")
         conduit.cleanup()
 
 

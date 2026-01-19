@@ -1524,6 +1524,54 @@ class Spellbook(Cleanable, ISpellbook):
                     "before binding or scanning."
                 )
 
+    def _try_update_staged_binding_keys(self) -> None:
+        """
+        Internal
+
+        Update staged binding keys for an active bind transaction.
+
+        Purpose:
+            Refresh staged binding metadata with the normalized keys for spells
+            bound during the active change-control bind transaction.
+        Contract:
+            - No-op if no change transaction is active or it is not a bind request.
+            - No-op if there are no pending structural spells to report.
+            - Uses the pending structural spells list as the source of truth.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Spellbook has been cleaned.
+        Threading:
+            Captures staged inputs under the Spellbook lock; change-control
+            update is performed without the Spellbook lock.
+        """
+        self.check_cleaned()
+        request: Optional[ChangeControlTransactionRequest] = None
+        pending_spells: List[ISpell] = []
+        with self._lock:
+            request = self._active_change_request
+            if self._pending_structural_spells is not None:
+                pending_spells = list(self._pending_structural_spells)
+        if request is None:
+            return
+        if request.request_type is not ChangeTransactionType.BIND:
+            return
+        if not pending_spells:
+            return
+        binding_keys: List[Tuple[str, str]] = []
+        seen_keys: Set[Tuple[str, str]] = set()
+        for spell in pending_spells:
+            key = spell.key
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            binding_keys.append(key)
+        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        change_control.update_staged_request(
+            request.request_id,
+            binding_keys=binding_keys,
+        )
+
     def _mark_collection_dependents_dirty(self, frame_keys: Set[str]) -> None:
         """
         Internal
@@ -1577,6 +1625,10 @@ class Spellbook(Cleanable, ISpellbook):
         ``begin_transaction("bind")`` (or ``begin_binding_transaction()``)
         before binding and ``end_binding_transaction()`` once registration
         is complete.
+
+        When a change-control bind transaction is active, binding updates the
+        staged request metadata with the normalized binding keys for the spells
+        registered in that transaction.
 
         ──────────────────────────────────────────────
         🧠 Binding Overview:
@@ -1734,6 +1786,7 @@ class Spellbook(Cleanable, ISpellbook):
                 self._pending_binding_frame_keys.add(new_spell.key[0])
             if self._pending_structural_spells is not None:
                 self._pending_structural_spells.append(new_spell)
+            self._try_update_staged_binding_keys()
             if self._conjured and self._conduit is not None:
                 Spellbook._aether._register_single_spell_index(
                     self._conduit._id,
