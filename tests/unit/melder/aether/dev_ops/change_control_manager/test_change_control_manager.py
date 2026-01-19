@@ -1,6 +1,9 @@
 import pytest
 from unittest.mock import MagicMock, call, patch
 from melder.aether.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+    ChangeControlStagedMutation,
+)
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
@@ -363,6 +366,119 @@ def test_change_control_manager_commit_validator_failure_aborts(manager) -> None
         manager.commit_request(request.request_id)
     assert manager.transaction_manager().get_in_flight(request.request_id) is None
     assert abort_called == [request.request_id]
+
+
+def test_change_control_manager_structural_validator_precedes_commit_validator(manager) -> None:
+    """
+    Purpose:
+        Validate structural validators run before commit validators.
+    Contract:
+        - Structural validator is invoked before commit validator.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If validator ordering is incorrect.
+    """
+    events: list[str] = []
+
+    def _structural(staged: ChangeControlStagedMutation) -> None:
+        events.append("structural")
+
+    def _validator(staged: ChangeControlStagedMutation) -> None:
+        events.append("validator")
+
+    manager.set_structural_validator(_structural)
+    manager.set_commit_validator(_validator)
+
+    staged = ChangeControlStagedMutation.from_request(
+        request_id="req-structural",
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        spellbook_id="spellbook-1",
+        conduit_ids=(),
+        scope_keys=(),
+        binding_keys=(),
+        contract_keys=(),
+        metadata=None,
+    )
+    manager._dispatch_commit_validator(staged)
+
+    assert events == ["structural", "validator"]
+
+
+def test_change_control_manager_dirty_marker_precedes_commit_hook(manager) -> None:
+    """
+    Purpose:
+        Validate dirty markers run before commit hooks.
+    Contract:
+        - Dirty marker is invoked before commit hook.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If hook ordering is incorrect.
+    """
+    events: list[str] = []
+
+    def _marker(staged: ChangeControlStagedMutation) -> None:
+        events.append("marker")
+
+    def _hook(staged: ChangeControlStagedMutation) -> None:
+        events.append("hook")
+
+    manager.set_dirty_marker(_marker)
+    manager.set_commit_hook(_hook)
+
+    staged = ChangeControlStagedMutation.from_request(
+        request_id="req-marker",
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        spellbook_id="spellbook-1",
+        conduit_ids=(),
+        scope_keys=(),
+        binding_keys=(),
+        contract_keys=(),
+        metadata=None,
+    )
+    manager._dispatch_commit_hook(staged)
+
+    assert events == ["marker", "hook"]
+
+
+def test_change_control_manager_default_dirty_marker_marks_dependents(manager) -> None:
+    """
+    Purpose:
+        Validate the default dirty marker delegates to SpellSystemStates.
+    Contract:
+        - frame_keys are derived from binding keys.
+        - SpellSystemStates receives the owning spellbook id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dirty marking is not delegated correctly.
+    """
+    staged = ChangeControlStagedMutation.from_request(
+        request_id="req-default-marker",
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        spellbook_id="spellbook-1",
+        conduit_ids=(),
+        scope_keys=(),
+        binding_keys=(
+            ("frame_a", "__default__"),
+            ("frame_b", "alpha"),
+            ("frame_a", "secondary"),
+            ("", "__default__"),
+        ),
+        contract_keys=(),
+        metadata=None,
+    )
+
+    manager._default_dirty_marker(staged)
+
+    manager._spell_system_states.mark_collection_dependents_dirty.assert_called_once_with(
+        spellbook_id="spellbook-1",
+        frame_keys={"frame_a", "frame_b"},
+    )
 
 def test_revalidate_keeps_dirty_on_failure(manager):
     """

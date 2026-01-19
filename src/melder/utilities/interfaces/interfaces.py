@@ -6831,6 +6831,30 @@ class IChangeControlManager(ICleanable, Protocol):
         """
         ...
 
+    def set_structural_validator(
+            self,
+            fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
+    ) -> None:
+        """
+        Public API
+
+        Register a structural validation hook for admitted requests.
+
+        Purpose:
+            Provide a hook for running structural phase validation before commit.
+        Contract:
+            - Passing None disables the hook.
+            - Hook is invoked before the commit validator.
+        Args:
+            fn:
+                Callable that validates a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
     def set_commit_hook(
             self,
             fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
@@ -6840,6 +6864,30 @@ class IChangeControlManager(ICleanable, Protocol):
 
         Register a commit hook for admitted requests.
 
+        Args:
+            fn:
+                Callable invoked with a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
+    def set_dirty_marker(
+            self,
+            fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
+    ) -> None:
+        """
+        Public API
+
+        Register a commit-time dirty-marker hook.
+
+        Purpose:
+            Provide a hook for marking dependency state dirty after commit.
+        Contract:
+            - Passing None disables dirty marking.
+            - Hook is invoked before the commit hook.
         Args:
             fn:
                 Callable invoked with a staged mutation, or None.

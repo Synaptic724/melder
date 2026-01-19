@@ -83,6 +83,11 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         "_conflict_manager",
         "_embargo_manager",
         "_orchestrator",
+        "_commit_validator",
+        "_commit_hook",
+        "_abort_hook",
+        "_structural_validator",
+        "_dirty_marker",
     ]
 
     def __init__(self, spell_system_states: "SpellSystemStates") -> None:
@@ -123,6 +128,16 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self._conflict_manager: ChangeControlConflictManager = ChangeControlConflictManager()
         self._embargo_manager: ChangeControlEmbargoManager = ChangeControlEmbargoManager()
         self._orchestrator: ChangeControlOrchestrator = ChangeControlOrchestrator()
+        self._commit_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        self._commit_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        self._abort_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        self._structural_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        self._dirty_marker: Optional[Callable[[ChangeControlStagedMutation], None]] = (
+            self._default_dirty_marker
+        )
+        self._orchestrator.set_commit_validator(self._dispatch_commit_validator)
+        self._orchestrator.set_commit_hook(self._dispatch_commit_hook)
+        self._orchestrator.set_abort_hook(self._dispatch_abort_hook)
     # ----------------------------------------------------------------------
     # Cleanup
     # ----------------------------------------------------------------------
@@ -188,6 +203,11 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             if self._orchestrator is not None:
                 self._orchestrator.cleanup()
                 self._orchestrator = None
+            self._commit_validator = None
+            self._commit_hook = None
+            self._abort_hook = None
+            self._structural_validator = None
+            self._dirty_marker = None
 
             # We do *not* own spell_system_states' lifecycle here; that will
             # be cleaned by the Aetheric Frame / DevOpsManager. We only drop
@@ -309,7 +329,32 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         self.check_cleaned()
         with self._lock:
-            self._orchestrator.set_commit_validator(fn)
+            self._commit_validator = fn
+
+    def set_structural_validator(
+            self,
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
+    ) -> None:
+        """
+        Register a structural validation hook for admitted requests.
+
+        Purpose:
+            Provide a placeholder hook for running structural phases before commit.
+        Contract:
+            - Passing None disables the hook.
+        Args:
+            fn:
+                Callable that validates a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while updating the hook reference.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._structural_validator = fn
 
     def set_commit_hook(
             self,
@@ -335,7 +380,32 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         self.check_cleaned()
         with self._lock:
-            self._orchestrator.set_commit_hook(fn)
+            self._commit_hook = fn
+
+    def set_dirty_marker(
+            self,
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
+    ) -> None:
+        """
+        Register a commit-time dirty-marking hook.
+
+        Purpose:
+            Provide a hook for marking dependency state dirty on commit.
+        Contract:
+            - Passing None disables dirty marking.
+        Args:
+            fn:
+                Callable invoked with a staged mutation, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while updating the hook reference.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._dirty_marker = fn
 
     def set_abort_hook(
             self,
@@ -361,7 +431,136 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         self.check_cleaned()
         with self._lock:
-            self._orchestrator.set_abort_hook(fn)
+            self._abort_hook = fn
+
+    def _dispatch_commit_validator(self, staged: ChangeControlStagedMutation) -> None:
+        """
+        Internal
+
+        Dispatch commit validators in a stable order.
+
+        Purpose:
+            Sequence structural validation ahead of the general commit validator.
+        Contract:
+            - Structural validator runs before the commit validator.
+            - Hook references are captured under the lock, then executed
+              without holding the lock to avoid deadlocks.
+            - No-op if both hooks are None.
+        Args:
+            staged:
+                Staged mutation metadata to validate.
+        Returns:
+            None.
+        Raises:
+            Exception: Propagates any exception raised by the validators.
+        Threading:
+            Uses the internal lock to snapshot hook references.
+        """
+        validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        structural: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        with self._lock:
+            validator = self._commit_validator
+            structural = self._structural_validator
+        if structural is not None:
+            structural(staged)
+        if validator is not None:
+            validator(staged)
+
+    def _dispatch_commit_hook(self, staged: ChangeControlStagedMutation) -> None:
+        """
+        Internal
+
+        Dispatch commit hooks in a stable order.
+
+        Purpose:
+            Sequence dirty marking ahead of the user-supplied commit hook.
+        Contract:
+            - Dirty marker runs before the commit hook.
+            - Hook references are captured under the lock, then executed
+              without holding the lock to avoid deadlocks.
+            - No-op if both hooks are None.
+        Args:
+            staged:
+                Staged mutation metadata to process.
+        Returns:
+            None.
+        Raises:
+            Exception: Propagates any exception raised by hooks.
+        Threading:
+            Uses the internal lock to snapshot hook references.
+        """
+        marker: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        with self._lock:
+            marker = self._dirty_marker
+            hook = self._commit_hook
+        if marker is not None:
+            marker(staged)
+        if hook is not None:
+            hook(staged)
+
+    def _dispatch_abort_hook(self, staged: ChangeControlStagedMutation) -> None:
+        """
+        Internal
+
+        Dispatch abort hooks.
+
+        Purpose:
+            Invoke the abort hook for staged mutations when a commit fails.
+        Contract:
+            - Hook reference is captured under the lock and invoked without
+              holding the lock.
+            - No-op if no hook is registered.
+        Args:
+            staged:
+                Staged mutation metadata to process.
+        Returns:
+            None.
+        Raises:
+            Exception: Propagates any exception raised by the abort hook.
+        Threading:
+            Uses the internal lock to snapshot hook references.
+        """
+        hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        with self._lock:
+            hook = self._abort_hook
+        if hook is not None:
+            hook(staged)
+
+    def _default_dirty_marker(self, staged: ChangeControlStagedMutation) -> None:
+        """
+        Internal
+
+        Default dirty-marker for commit events.
+
+        Purpose:
+            Mark list[Frame] consumers dirty for the owning Spellbook when
+            bindings change as part of a transaction commit.
+        Contract:
+            - No-op if the staged mutation has no spellbook id.
+            - No-op if no binding keys are present or frame keys are empty.
+            - Delegates to SpellSystemStates for scoped dirty marking.
+        Args:
+            staged:
+                Staged mutation metadata containing binding keys.
+        Returns:
+            None.
+        Raises:
+            Exception: Propagates exceptions raised by SpellSystemStates.
+        Threading:
+            Uses SpellSystemStates internal locking; does not hold the manager lock.
+        """
+        if staged.spellbook_id is None:
+            return
+        if not staged.binding_keys:
+            return
+        frame_keys = {frame_key for frame_key, _ in staged.binding_keys if frame_key}
+        if not frame_keys:
+            return
+        self._spell_system_states.mark_collection_dependents_dirty(
+            spellbook_id=staged.spellbook_id,
+            frame_keys=frame_keys,
+        )
 
     def transaction_manager(self) -> ChangeControlTransactionManager:
         """
