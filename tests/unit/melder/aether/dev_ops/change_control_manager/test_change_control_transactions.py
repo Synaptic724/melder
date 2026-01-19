@@ -481,7 +481,10 @@ def test_orchestrator_staging_registry_tracks_requests() -> None:
     request = transaction_manager.build_request(
         request_type=ChangeTransactionType.LINK,
         initiator_conduit_id="conduit-1",
+        conduit_ids=["conduit-1", "conduit-2"],
         scope_keys=["scope:conduit:conduit-1"],
+        binding_keys=[("frame", "__default__")],
+        contract_keys=[("frame", "__default__", "conduit-2")],
     )
     admission = orchestrator.admit_request(
         request,
@@ -493,6 +496,9 @@ def test_orchestrator_staging_registry_tracks_requests() -> None:
     staged = orchestrator.get_staged(request.request_id)
     assert staged is not None
     assert staged.request_id == request.request_id
+    assert staged.conduit_ids == ("conduit-1", "conduit-2")
+    assert staged.binding_keys == (("frame", "__default__"),)
+    assert staged.contract_keys == (("frame", "__default__", "conduit-2"),)
 
     orchestrator.commit_request(
         request.request_id,
@@ -538,6 +544,136 @@ def test_orchestrator_abort_clears_in_flight_and_staged() -> None:
         transaction_manager=transaction_manager,
         embargo_manager=embargo_manager,
     )
+    assert transaction_manager.get_in_flight(request.request_id) is None
+    assert orchestrator.get_staged(request.request_id) is None
+
+
+def test_orchestrator_commit_hook_invoked() -> None:
+    """
+    Purpose:
+        Validate commit hooks are invoked for staged requests.
+    Contract:
+        - Commit hook receives the staged mutation record.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If commit hook is not called.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    conflict_manager = ChangeControlConflictManager()
+    embargo_manager = ChangeControlEmbargoManager()
+    orchestrator = ChangeControlOrchestrator()
+    called = []
+
+    def _commit_hook(staged) -> None:
+        called.append(staged.request_id)
+
+    orchestrator.set_commit_hook(_commit_hook)
+    request = transaction_manager.build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope:spellbook:spellbook-1"],
+    )
+    admission = orchestrator.admit_request(
+        request,
+        transaction_manager=transaction_manager,
+        conflict_manager=conflict_manager,
+        embargo_manager=embargo_manager,
+    )
+    assert admission.admitted is True
+
+    orchestrator.commit_request(
+        request.request_id,
+        transaction_manager=transaction_manager,
+        embargo_manager=embargo_manager,
+    )
+    assert called == [request.request_id]
+
+
+def test_orchestrator_abort_hook_invoked() -> None:
+    """
+    Purpose:
+        Validate abort hooks are invoked for staged requests.
+    Contract:
+        - Abort hook receives the staged mutation record.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If abort hook is not called.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    conflict_manager = ChangeControlConflictManager()
+    embargo_manager = ChangeControlEmbargoManager()
+    orchestrator = ChangeControlOrchestrator()
+    called = []
+
+    def _abort_hook(staged) -> None:
+        called.append(staged.request_id)
+
+    orchestrator.set_abort_hook(_abort_hook)
+    request = transaction_manager.build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope:spellbook:spellbook-1"],
+    )
+    admission = orchestrator.admit_request(
+        request,
+        transaction_manager=transaction_manager,
+        conflict_manager=conflict_manager,
+        embargo_manager=embargo_manager,
+    )
+    assert admission.admitted is True
+
+    orchestrator.abort_request(
+        request.request_id,
+        transaction_manager=transaction_manager,
+        embargo_manager=embargo_manager,
+    )
+    assert called == [request.request_id]
+
+
+def test_orchestrator_commit_validator_failure_aborts() -> None:
+    """
+    Purpose:
+        Validate commit validation failures abort and clean up state.
+    Contract:
+        - Validator error removes in-flight and staged records.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup does not occur on validation failure.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    conflict_manager = ChangeControlConflictManager()
+    embargo_manager = ChangeControlEmbargoManager()
+    orchestrator = ChangeControlOrchestrator()
+
+    def _validator(staged) -> None:
+        raise RuntimeError("validation failed")
+
+    orchestrator.set_commit_validator(_validator)
+    request = transaction_manager.build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope:spellbook:spellbook-1"],
+    )
+    admission = orchestrator.admit_request(
+        request,
+        transaction_manager=transaction_manager,
+        conflict_manager=conflict_manager,
+        embargo_manager=embargo_manager,
+    )
+    assert admission.admitted is True
+
+    try:
+        orchestrator.commit_request(
+            request.request_id,
+            transaction_manager=transaction_manager,
+            embargo_manager=embargo_manager,
+        )
+    except RuntimeError:
+        pass
+
     assert transaction_manager.get_in_flight(request.request_id) is None
     assert orchestrator.get_staged(request.request_id) is None
 import hashlib
