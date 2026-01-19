@@ -1,32 +1,62 @@
 from threading import RLock
-from typing import Optional, Any, Dict, Union, Set, Callable
-# Melder imports
+from typing import Any, Callable, Dict, Optional, Set, Union
+
+from melder.aether.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
+    ChangeControlConflictManager,
+)
+from melder.aether.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
+    ChangeControlEmbargoManager,
+    ChangeControlEmbargoRecord,
+)
+from melder.aether.dev_ops.change_control_manager.orchestrator.orchestrator import (
+    ChangeControlOrchestrator,
+)
+from melder.aether.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
+    ChangeControlTransactionManager,
+)
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeControlAdmissionResult,
+    ChangeControlTransactionRequest,
+    ChangeTransactionType,
+)
+from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+    RootResolutionBlueprint,
+)
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpellIndex, IChangeControlManager  # for identity / lineage
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
+from melder.utilities.interfaces.interfaces import IChangeControlManager, ISpellIndex
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
+__all__ = [
+    "ChangeTransactionType",
+    "ChangeControlTransactionRequest",
+    "ChangeControlAdmissionResult",
+    "ChangeControlEmbargoRecord",
+    "ChangeControlTransactionManager",
+    "ChangeControlConflictManager",
+    "ChangeControlEmbargoManager",
+    "ChangeControlOrchestrator",
+    "ChangeControlManager",
+]
+
 class ChangeControlManager(Cleanable, IChangeControlManager):
     """
-    High-level change/release tracker for an Aetheric Frame.
+    Change-control registry for an Aetheric Frame.
 
-    This is *not* the hot-path resolution guard. It is the DevOps-facing layer
-    that knows about:
-      - which spell lineages (SpellIndex.id) have pending changes or promotions,
-      - lightweight, structured metadata about those changes.
-
-    It does not apply changes or run policies itself; it's a registry that
-    higher-level tools (AI agents, DevOps flows, IncidentManager) can inspect
-    and update.
-
-    Internal state:
-        _pending_changes:
-            ConcurrentDict[str, ConcurrentDict[str, Any]]
-
-        - Outer key  : SpellIndex.id (lineage id)
-        - Inner dict : free-form metadata for that lineage's pending change
-                       (e.g. "reason", "ticket_id", "workspace_id", etc.)
+    Purpose:
+        Provide DevOps-facing bookkeeping for spell lineages, dirty roots, and
+        change-control admission helpers. This is not a hot-path resolver.
+    Contract:
+        - Tracks pending change metadata by SpellIndex id.
+        - Tracks component-of and dirty root state for targeted revalidation.
+        - Provides accessors for change-control scaffolding managers.
+        - Does not own SpellSystemStates lifecycle.
+    Ownership:
+        Owns internal registries and the change-control manager instances.
+    Threading:
+        All state mutations are guarded by an internal RLock.
+    Lifecycle:
+        cleanup() is idempotent and nulls internal references.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -38,9 +68,29 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         "_dirty_roots",
         "_monitor_active",
         "_revalidate_fn",
+        "_transaction_manager",
+        "_conflict_manager",
+        "_embargo_manager",
+        "_orchestrator",
     ]
 
     def __init__(self, spell_system_states: "SpellSystemStates") -> None:
+        """
+        Initialize a ChangeControlManager.
+
+        Purpose:
+            Seed change-control registries for the supplied spell system state.
+        Contract:
+            - Requires a non-null SpellSystemStates reference.
+            - Creates per-manager scaffolding components.
+        Args:
+            spell_system_states:
+                Spell system state container for this frame.
+        Raises:
+            ValueError: If spell_system_states is None.
+        Threading:
+            Safe to publish after initialization; internal lock guards state.
+        """
         if spell_system_states is None:
             raise ValueError("spell_system_states cannot be None")
 
@@ -57,18 +107,28 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self._dirty_roots: Set[str] = set()
         self._monitor_active: bool = False
         self._revalidate_fn: Optional[Callable[[Set[str], Optional[CancellationEvent]], None]] = None
+        self._transaction_manager: ChangeControlTransactionManager = ChangeControlTransactionManager()
+        self._conflict_manager: ChangeControlConflictManager = ChangeControlConflictManager()
+        self._embargo_manager: ChangeControlEmbargoManager = ChangeControlEmbargoManager()
+        self._orchestrator: ChangeControlOrchestrator = ChangeControlOrchestrator()
     # ----------------------------------------------------------------------
     # Cleanup
     # ----------------------------------------------------------------------
     def cleanup(self) -> None:
         """
-        Idempotent cleanup.
+        Idempotent cleanup for change-control state.
 
-        - Marks this manager as cleaned.
-        - Cleans and nulls the internal ConcurrentDict.
-        - Releases references to SpellSystemStates and lock.
-
-        After this, the object must not be used.
+        Purpose:
+            Release registries and manager references held by this instance.
+        Contract:
+            - Safe to call multiple times.
+            - After cleanup, check_cleaned() raises on use.
+        Returns:
+            None.
+        Threading:
+            Acquires the internal lock while mutating state.
+        Lifecycle:
+            Does not own SpellSystemStates; drops its reference only.
         """
         if self._cleaned:
             return
@@ -100,6 +160,22 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             self._monitor_active = False
             self._revalidate_fn = None
 
+            if self._transaction_manager is not None:
+                self._transaction_manager.cleanup()
+                self._transaction_manager = None
+
+            if self._conflict_manager is not None:
+                self._conflict_manager.cleanup()
+                self._conflict_manager = None
+
+            if self._embargo_manager is not None:
+                self._embargo_manager.cleanup()
+                self._embargo_manager = None
+
+            if self._orchestrator is not None:
+                self._orchestrator.cleanup()
+                self._orchestrator = None
+
             # We do *not* own spell_system_states' lifecycle here; that will
             # be cleaned by the Aetheric Frame / DevOpsManager. We only drop
             # our reference so GC can do its job.
@@ -109,33 +185,115 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self._lock = None
 
     # ----------------------------------------------------------------------
+    # Accessors
+    # ----------------------------------------------------------------------
+    def transaction_manager(self) -> ChangeControlTransactionManager:
+        """
+        Return the transaction manager (admission facade).
+
+        Purpose:
+            Provide access to the transaction manager used for admission logging.
+        Contract:
+            - Returned reference is owned by this ChangeControlManager.
+        Returns:
+            ChangeControlTransactionManager:
+                The manager instance.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Thread-safe; no state mutation beyond check_cleaned().
+        """
+        self.check_cleaned()
+        return self._transaction_manager
+
+    def conflict_manager(self) -> ChangeControlConflictManager:
+        """
+        Return the conflict manager (scope overlap rules).
+
+        Purpose:
+            Provide access to the conflict manager used for overlap checks.
+        Contract:
+            - Returned reference is owned by this ChangeControlManager.
+        Returns:
+            ChangeControlConflictManager:
+                The manager instance.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Thread-safe; no state mutation beyond check_cleaned().
+        """
+        self.check_cleaned()
+        return self._conflict_manager
+
+    def embargo_manager(self) -> ChangeControlEmbargoManager:
+        """
+        Return the embargo manager (scope gating + hints).
+
+        Purpose:
+            Provide access to the embargo manager used for scope gating.
+        Contract:
+            - Returned reference is owned by this ChangeControlManager.
+        Returns:
+            ChangeControlEmbargoManager:
+                The manager instance.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Thread-safe; no state mutation beyond check_cleaned().
+        """
+        self.check_cleaned()
+        return self._embargo_manager
+
+    def orchestrator(self) -> ChangeControlOrchestrator:
+        """
+        Return the orchestrator (single admission gate).
+
+        Purpose:
+            Provide access to the orchestrator used for admission sequencing.
+        Contract:
+            - Returned reference is owned by this ChangeControlManager.
+        Returns:
+            ChangeControlOrchestrator:
+                The manager instance.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Thread-safe; no state mutation beyond check_cleaned().
+        """
+        self.check_cleaned()
+        return self._orchestrator
+
+    # ----------------------------------------------------------------------
     # Registration / updates
     # ----------------------------------------------------------------------
     def register_pending_change(
             self,
             spell_index: ISpellIndex,
             reason: str,
-            metadata: Optional[
-                Union[Dict[str, Any], Dict[str, Any]]
-            ] = None,
+            metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Record that a given lineage has a pending change (mutation candidate,
-        promotion proposal, config swap, etc.).
+        Record a pending change for a spell lineage.
 
-        This is *bookkeeping only* – it does not apply the change, it just
-        surfaces it for DevOps / AI tooling.
-
+        Purpose:
+            Track DevOps/AI-visible metadata for a SpellIndex lineage.
+        Contract:
+            - Stores metadata keyed by spell_index.id.
+            - Last-write-wins for duplicate lineage ids.
         Args:
             spell_index:
-                The SpellIndex for the lineage we're tracking.
+                The SpellIndex for the lineage being tracked.
             reason:
-                Short, machine-/human-readable reason code
-                (e.g. "mutation_candidate", "rebinding", "config_change").
+                Short reason code (e.g. "mutation_candidate").
             metadata:
-                Optional free-form metadata. Can be a plain dict or a
-                Dict; in both cases we wrap it into a new
-                Dict instance so internal state is always nested
+                Optional free-form metadata stored alongside the reason.
+        Returns:
+            None.
+        Raises:
+            ValueError: If spell_index is None or reason is empty.
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while updating state.
         """
         self.check_cleaned()
         if spell_index is None:
@@ -144,10 +302,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             raise ValueError("reason cannot be empty")
 
         index_id = spell_index.id
-
-        # Wrap metadata into a ConcurrentDict without manual iteration here.
-        # ConcurrentDict supports being constructed from any Mapping.
-        details = metadata if metadata is not None else {}
+        details = dict(metadata) if metadata is not None else {}
         details["reason"] = reason
 
         with self._lock:
@@ -162,11 +317,23 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             spell_index_id: str,
     ) -> Optional[Dict[str, Any]]:
         """
-        Get a *snapshot* of the pending-change metadata for a specific lineage.
+        Return a snapshot of pending change metadata for a lineage.
 
+        Purpose:
+            Provide tooling with a stable view of pending change metadata.
+        Contract:
+            - Returns a shallow copy; callers cannot mutate internal state.
+        Args:
+            spell_index_id:
+                SpellIndex id of the lineage to query.
         Returns:
-            A plain dict copy of the inner ConcurrentDict metadata if present,
-            or None if no pending change exists for that lineage.
+            Optional[Dict[str, Any]]:
+                Snapshot metadata if present, otherwise None.
+        Raises:
+            ValueError: If spell_index_id is empty.
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while copying state.
         """
         self.check_cleaned()
         if not spell_index_id:
@@ -182,14 +349,19 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
     def list_pending_changes(self) -> Dict[str, Dict[str, Any]]:
         """
-        Return a snapshot of all pending changes:
+        Return a snapshot of all pending changes.
 
-            {
-              spell_index_id: { ...metadata... },
-              ...
-            }
-
-        This is intended for DevOps / AI tooling – not for hot-path use.
+        Purpose:
+            Provide a tooling-friendly snapshot of all pending lineage changes.
+        Contract:
+            - Returns a new mapping; callers cannot mutate internal state.
+        Returns:
+            Dict[str, Dict[str, Any]]:
+                Mapping of SpellIndex id to metadata snapshots.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while copying state.
         """
         self.check_cleaned()
         snapshot: Dict[str, Dict[str, Any]] = {}
@@ -203,18 +375,28 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     # ----------------------------------------------------------------------
     def clear_pending_change(self, spell_index_id: str) -> None:
         """
-        Remove the pending-change entry for the given lineage, if any.
+        Clear pending-change metadata for a lineage.
 
-        This is typically called after a release is either:
-          - successfully applied, or
-          - explicitly cancelled/abandoned.
+        Purpose:
+            Remove stale pending-change metadata after completion or cancelation.
+        Contract:
+            - No error if no pending entry exists.
+        Args:
+            spell_index_id:
+                SpellIndex id to clear.
+        Returns:
+            None.
+        Raises:
+            ValueError: If spell_index_id is empty.
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while mutating state.
         """
         self.check_cleaned()
         if not spell_index_id:
             raise ValueError("spell_index_id cannot be empty")
 
         with self._lock:
-            # ConcurrentDict supports pop-like semantics via del / get+del
             if spell_index_id in self._pending_changes:
                 del self._pending_changes[spell_index_id]
 
@@ -226,9 +408,23 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             fn: Callable[[Set[str], Optional[CancellationEvent]], None],
     ) -> None:
         """
-        Register a callable that performs revalidation for the supplied dirty roots.
+        Register a callable that performs revalidation for dirty roots.
 
-        Signature: fn(dirty_roots: Set[str], cancel_event: Optional[CancellationEvent]) -> None
+        Purpose:
+            Provide a hook to revalidate roots after change detection.
+        Contract:
+            - Stored callable is invoked by revalidate_dirty_roots().
+            - Callable signature: fn(dirty_roots, cancel_event) -> None.
+        Args:
+            fn:
+                Callable that performs revalidation on supplied root ids.
+        Returns:
+            None.
+        Raises:
+            ValueError: If fn is None.
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while updating state.
         """
         self.check_cleaned()
         if fn is None:
@@ -241,7 +437,23 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             root_blueprints: Dict[str, RootResolutionBlueprint],
     ) -> None:
         """
-        Rebuild the component-of index (spell_id -> root_ids) from deep root blueprints.
+        Rebuild the component-of index from root blueprints.
+
+        Purpose:
+            Recompute root dependencies used for targeted revalidation.
+        Contract:
+            - Clears existing component-of mappings.
+            - Resets dirty tracking and monitoring flags.
+        Args:
+            root_blueprints:
+                Mapping of root spell_id to root resolution blueprint.
+        Returns:
+            None.
+        Raises:
+            ValueError: If root_blueprints is None.
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while rebuilding mappings.
         """
         self.check_cleaned()
         if root_blueprints is None:
@@ -263,6 +475,22 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     def notify_spell_changed(self, spell_id: str) -> None:
         """
         Mark a spell as changed and flag dependent roots as dirty.
+
+        Purpose:
+            Record change signals that may require root revalidation.
+        Contract:
+            - Marks the spell id dirty.
+            - Marks dependent roots dirty and enables monitoring.
+        Args:
+            spell_id:
+                Versioned spell id that changed.
+        Returns:
+            None.
+        Raises:
+            ValueError: If spell_id is empty.
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while updating dirty flags.
         """
         self.check_cleaned()
         if not spell_id:
@@ -276,7 +504,22 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
     def notify_provider_changed(self, spell_id: str) -> None:
         """
-        Alias for provider changes; currently identical to notify_spell_changed.
+        Alias for provider changes.
+
+        Purpose:
+            Maintain a stable API for provider-driven change signals.
+        Contract:
+            - Delegates to notify_spell_changed().
+        Args:
+            spell_id:
+                Versioned spell id that changed.
+        Returns:
+            None.
+        Raises:
+            ValueError: If spell_id is empty.
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Delegates to notify_spell_changed() which is lock-protected.
         """
         self.notify_spell_changed(spell_id)
 
@@ -284,7 +527,22 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Invoke the registered revalidator for current dirty roots.
 
-        On success, clears dirty flags; on failure, dirty sets remain.
+        Purpose:
+            Execute the revalidator callback on the current dirty root set.
+        Contract:
+            - Uses a snapshot of dirty roots.
+            - Calls the revalidator outside the lock.
+            - Clears dirty flags only for roots that were validated.
+        Args:
+            cancel_event:
+                Optional cancellation signal to abort validation.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+            OperationCancelledError: If the cancel_event is set.
+        Threading:
+            Copies state under lock and executes revalidation without the lock.
         """
         self.check_cleaned()
         if cancel_event is not None and cancel_event.is_set:
@@ -306,8 +564,22 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     # ----------------------------------------------------------------------
     def is_root_dirty(self, root_id: str) -> bool:
         """
-        Return True if the supplied root spell_id is currently marked dirty
-        under change control and monitoring is active.
+        Return True if the supplied root id is marked dirty.
+
+        Purpose:
+            Allow callers to check if a root requires revalidation.
+        Contract:
+            - Returns False if monitoring is inactive.
+        Args:
+            root_id:
+                Versioned root spell id to check.
+        Returns:
+            bool:
+                True if the root is dirty and monitoring is active.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while reading state.
         """
         self.check_cleaned()
         if not root_id:
@@ -320,6 +592,18 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     def describe(self) -> Dict[str, Any]:
         """
         Diagnostic snapshot of change-control state.
+
+        Purpose:
+            Provide a tooling-friendly snapshot of change-control registries.
+        Contract:
+            - Returns a new mapping containing copies of internal state.
+        Returns:
+            Dict[str, Any]:
+                Snapshot of change-control state for diagnostics.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while copying state.
         """
         self.check_cleaned()
         with self._lock:
@@ -330,4 +614,14 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
                 "component_of": {k: set(v) for k, v in self._component_of.items()},
                 "monitor_active": self._monitor_active,
                 "revalidator_registered": self._revalidate_fn is not None,
+                "transaction_manager": (
+                    self._transaction_manager.describe()
+                    if self._transaction_manager is not None
+                    else None
+                ),
+                "embargo_manager": (
+                    self._embargo_manager.describe()
+                    if self._embargo_manager is not None
+                    else None
+                ),
             }
