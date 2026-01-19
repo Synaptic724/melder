@@ -222,14 +222,91 @@ class ChangeControlEmbargoManager(Cleanable):
                     blocked.append(scope_key)
         return tuple(blocked)
 
+    def list_advisory_hints(
+            self,
+            scope_keys: Iterable[str],
+    ) -> Tuple[ChangeControlEmbargoRecord, ...]:
+        """
+        Return advisory embargo records for the supplied scope keys.
+
+        Purpose:
+            Provide soft-lock hints that agents can honor before mutation.
+        Contract:
+            - Returns a tuple of embargo records (may be empty).
+            - Does not block or mutate state.
+        Args:
+            scope_keys:
+                Scope keys to check for advisory hints.
+        Returns:
+            Tuple[ChangeControlEmbargoRecord, ...]:
+                Embargo records covering the supplied scopes.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        Threading:
+            Acquires the internal lock while copying records.
+        """
+        self.check_cleaned()
+        hints: List[ChangeControlEmbargoRecord] = []
+        with self._lock:
+            for scope_key in scope_keys:
+                records = self._embargoes_by_scope.get(scope_key)
+                if not records:
+                    continue
+                hints.extend(records)
+        return tuple(hints)
+
+    def collect_scope_keys(
+            self,
+            request: ChangeControlTransactionRequest,
+    ) -> Tuple[str, ...]:
+        """
+        Build a scope-key set for embargo checks from a request payload.
+
+        Purpose:
+            Normalize scope keys used for implicit embargo checks to ensure
+            admission uses consistent scope comparisons.
+        Contract:
+            - Includes request.scope_keys.
+            - Adds derived spellbook/conduit/binding/contract scopes when present.
+        Args:
+            request:
+                Transaction request to normalize.
+        Returns:
+            Tuple[str, ...]:
+                Normalized scope keys for embargo checks.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        scope_keys: Set[str] = set()
+        if request.scope_keys:
+            scope_keys.update(key for key in request.scope_keys if key)
+        if request.spellbook_id:
+            scope_keys.add(f"scope:spellbook:{request.spellbook_id}")
+        if request.conduit_ids:
+            for conduit_id in request.conduit_ids:
+                if conduit_id:
+                    scope_keys.add(f"scope:conduit:{conduit_id}")
+        if request.binding_keys:
+            for frame_key, binding_key in request.binding_keys:
+                if frame_key and binding_key:
+                    scope_keys.add(f"binding:{frame_key}:{binding_key}")
+        if request.contract_keys:
+            for frame_key, binding_key, peer_conduit_id in request.contract_keys:
+                if frame_key and binding_key and peer_conduit_id:
+                    scope_keys.add(f"contract:{frame_key}:{binding_key}:{peer_conduit_id}")
+        return tuple(sorted(scope_keys))
+
     def apply_implicit_embargoes(self, request: ChangeControlTransactionRequest) -> None:
         """
         Scaffolding hook for implicit embargo rules (bind/link/etc.).
 
         Purpose:
-            Reserve a place for orchestrator-driven implicit embargo policies.
+            Apply implicit embargoes for the admitted request.
         Contract:
-            - No-op until policies are defined.
+            - Opens embargoes for derived scope keys tied to the request.
         Args:
             request:
                 Admitted request for which to apply implicit embargoes.
@@ -238,19 +315,26 @@ class ChangeControlEmbargoManager(Cleanable):
         Raises:
             RuntimeError: If the manager has been cleaned.
         Threading:
-            Safe for concurrent use; no internal state is mutated.
+            Acquires the internal lock while updating registries.
         """
         self.check_cleaned()
-        _ = request
+        scope_keys = self.collect_scope_keys(request)
+        if not scope_keys:
+            return
+        self.open_embargo(
+            scope_keys=scope_keys,
+            reason_tag=request.request_type.value,
+            owner_request_id=request.request_id,
+        )
 
     def release_implicit_embargoes(self, request: ChangeControlTransactionRequest) -> None:
         """
         Scaffolding hook for releasing implicit embargoes.
 
         Purpose:
-            Reserve a place for orchestrator-driven embargo release policies.
+            Release implicit embargoes opened for the supplied request.
         Contract:
-            - No-op until policies are defined.
+            - Closes all embargoes owned by the request id.
         Args:
             request:
                 Admitted request whose implicit embargoes should be released.
@@ -262,7 +346,7 @@ class ChangeControlEmbargoManager(Cleanable):
             Safe for concurrent use; no internal state is mutated.
         """
         self.check_cleaned()
-        _ = request
+        self.close_embargo(request.request_id)
 
     def describe(self) -> Dict[str, Any]:
         """

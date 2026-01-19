@@ -1558,6 +1558,66 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError("Only normal conduits can end change transactions.")
         self._spellbook.end_transaction(transaction_type=transaction_type)
 
+    @contextmanager
+    def transaction(
+            self,
+            transaction_type: ChangeTransactionType | str,
+            *,
+            conduit_ids: Optional[Iterable[str]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> "Conduit":
+        """
+        Public API
+
+        Context-managed change-control transaction for this Conduit.
+
+        Purpose:
+            Provide a safe begin/end wrapper for change-control transactions.
+        Contract:
+            - Begins a change-control transaction on entry.
+            - Ends the transaction on exit, even if an exception is raised.
+            - Only normal conduits may enter this context.
+        Args:
+            transaction_type:
+                Transaction type enum or string value (e.g. "bind", "link").
+            conduit_ids:
+                Optional list of conduits participating in the request.
+            scope_keys:
+                Optional normalized scope keys for conflict checks.
+            scope_hashes:
+                Optional normalized scope hashes for conflict checks.
+            binding_keys:
+                Optional binding keys affected by the request.
+            contract_keys:
+                Optional contract keys affected by the request.
+            metadata:
+                Optional structured metadata for diagnostics.
+        Returns:
+            Conduit: The current Conduit instance.
+        Raises:
+            RuntimeError: If the Conduit is cleaned or not normal.
+            RuntimeError: If change-control admission is denied.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        """
+        self.begin_transaction(
+            transaction_type,
+            conduit_ids=conduit_ids,
+            scope_keys=scope_keys,
+            scope_hashes=scope_hashes,
+            binding_keys=binding_keys,
+            contract_keys=contract_keys,
+            metadata=metadata,
+        )
+        try:
+            yield self
+        finally:
+            self.end_transaction(transaction_type=transaction_type)
+
     def begin_binding_transaction(self) -> None:
         """
         Public API

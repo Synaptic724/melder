@@ -75,6 +75,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         "_dirty_roots",
         "_monitor_active",
         "_revalidate_fn",
+        "_change_control_enabled",
         "_transaction_manager",
         "_conflict_manager",
         "_embargo_manager",
@@ -114,6 +115,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self._dirty_roots: Set[str] = set()
         self._monitor_active: bool = False
         self._revalidate_fn: Optional[Callable[[Set[str], Optional[CancellationEvent]], None]] = None
+        self._change_control_enabled: bool = True
         self._transaction_manager: ChangeControlTransactionManager = ChangeControlTransactionManager()
         self._conflict_manager: ChangeControlConflictManager = ChangeControlConflictManager()
         self._embargo_manager: ChangeControlEmbargoManager = ChangeControlEmbargoManager()
@@ -166,6 +168,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
             self._monitor_active = False
             self._revalidate_fn = None
+            self._change_control_enabled = None
 
             if self._transaction_manager is not None:
                 self._transaction_manager.cleanup()
@@ -194,6 +197,91 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     # ----------------------------------------------------------------------
     # Accessors
     # ----------------------------------------------------------------------
+    def enable_change_control(self) -> None:
+        """
+        Enable change-control admission for this frame.
+
+        Purpose:
+            Allow the orchestrator admission gate to evaluate requests.
+        Contract:
+            - When enabled, admission checks apply conflict/embargo rules.
+            - Calling enable while already enabled is a no-op.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while mutating state.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._change_control_enabled = True
+
+    def disable_change_control(self) -> None:
+        """
+        Disable change-control admission for this frame.
+
+        Purpose:
+            Allow transactions to proceed without conflict/embargo gating.
+        Contract:
+            - When disabled, admission returns accepted without conflict checks.
+            - Calling disable while already disabled is a no-op.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while mutating state.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._change_control_enabled = False
+
+    def is_change_control_enabled(self) -> bool:
+        """
+        Return whether change-control admission is enabled.
+
+        Purpose:
+            Expose admission gating state for callers and diagnostics.
+        Contract:
+            - Returns True when admission gating is enabled.
+        Returns:
+            bool: True if change-control admission is enabled.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while reading state.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return bool(self._change_control_enabled)
+
+    def set_audit_logger(
+            self,
+            fn: Optional[Callable[[ChangeControlTransactionRequest], None]],
+    ) -> None:
+        """
+        Register an audit logger for admitted change-control requests.
+
+        Purpose:
+            Forward audit logging callbacks to the transaction manager.
+        Contract:
+            - Passing None disables audit logging.
+            - Callback is invoked outside internal locks by the transaction manager.
+        Args:
+            fn:
+                Callable that receives the admitted request, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while updating the callback.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._transaction_manager.set_audit_logger(fn)
+
     def transaction_manager(self) -> ChangeControlTransactionManager:
         """
         Return the transaction manager (admission facade).
@@ -269,6 +357,113 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         self.check_cleaned()
         return self._orchestrator
+
+    # ----------------------------------------------------------------------
+    # Admission facade
+    # ----------------------------------------------------------------------
+    def admit_request(
+            self,
+            request: ChangeControlTransactionRequest,
+    ) -> ChangeControlAdmissionResult:
+        """
+        Admit a transaction request through the change-control gate.
+
+        Purpose:
+            Centralize admission logic and enable/disable gating behavior.
+        Contract:
+            - When enabled, admission is serialized by the orchestrator and
+              conflict/embargo checks are enforced.
+            - When disabled, the request is accepted and tracked as in-flight.
+        Args:
+            request:
+                Transaction request to admit.
+        Returns:
+            ChangeControlAdmissionResult:
+                Admission decision with evidence for rejection.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Uses the internal lock for enable/disable reads and in-flight updates.
+        """
+        self.check_cleaned()
+        enabled = True
+        with self._lock:
+            enabled = bool(self._change_control_enabled)
+        if not enabled:
+            self._transaction_manager.add_in_flight(request)
+            return ChangeControlAdmissionResult(admitted=True)
+        return self._orchestrator.admit_request(
+            request,
+            transaction_manager=self._transaction_manager,
+            conflict_manager=self._conflict_manager,
+            embargo_manager=self._embargo_manager,
+        )
+
+    def commit_request(self, request_id: str) -> None:
+        """
+        Commit an in-flight request and release implicit embargoes.
+
+        Purpose:
+            Provide a single commit hook for callers after mutation succeeds.
+        Contract:
+            - When enabled, delegates to the orchestrator to release embargoes
+              and remove in-flight state.
+            - When disabled, removes the in-flight entry directly.
+        Args:
+            request_id:
+                Request id to finalize.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Uses the internal lock to read enable state.
+        """
+        self.check_cleaned()
+        enabled = True
+        with self._lock:
+            enabled = bool(self._change_control_enabled)
+        if not enabled:
+            self._transaction_manager.remove_in_flight(request_id)
+            return
+        self._orchestrator.commit_request(
+            request_id,
+            transaction_manager=self._transaction_manager,
+            embargo_manager=self._embargo_manager,
+        )
+
+    def abort_request(self, request_id: str) -> None:
+        """
+        Abort an in-flight request and release implicit embargoes.
+
+        Purpose:
+            Provide a single abort hook for callers when mutation fails.
+        Contract:
+            - When enabled, delegates to the orchestrator to release embargoes
+              and remove in-flight state.
+            - When disabled, removes the in-flight entry directly.
+        Args:
+            request_id:
+                Request id to abort.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Uses the internal lock to read enable state.
+        """
+        self.check_cleaned()
+        enabled = True
+        with self._lock:
+            enabled = bool(self._change_control_enabled)
+        if not enabled:
+            self._transaction_manager.remove_in_flight(request_id)
+            return
+        self._orchestrator.abort_request(
+            request_id,
+            transaction_manager=self._transaction_manager,
+            embargo_manager=self._embargo_manager,
+        )
 
     # ----------------------------------------------------------------------
     # Registration / updates

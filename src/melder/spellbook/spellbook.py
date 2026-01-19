@@ -1165,20 +1165,17 @@ class Spellbook(Cleanable, ISpellbook):
         if not initiator:
             initiator = f"spellbook:{self._id}"
 
+        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        transaction_manager = change_control.transaction_manager()
+
         scope_values = list(scope_keys) if scope_keys else []
-        base_scope = f"spellbook:{self._id}"
+        base_scope = transaction_manager.make_scope_key_spellbook(self._id)
         if base_scope not in scope_values:
             scope_values.append(base_scope)
 
         conduit_values = list(conduit_ids) if conduit_ids else []
         if initiator and initiator not in conduit_values and not initiator.startswith("spellbook:"):
             conduit_values.append(initiator)
-
-        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
-        transaction_manager = change_control.transaction_manager()
-        conflict_manager = change_control.conflict_manager()
-        embargo_manager = change_control.embargo_manager()
-        orchestrator = change_control.orchestrator()
 
         request = transaction_manager.build_request(
             request_type=request_type,
@@ -1191,12 +1188,7 @@ class Spellbook(Cleanable, ISpellbook):
             contract_keys=contract_keys,
             metadata=metadata,
         )
-        admission = orchestrator.admit_request(
-            request,
-            transaction_manager=transaction_manager,
-            conflict_manager=conflict_manager,
-            embargo_manager=embargo_manager,
-        )
+        admission = change_control.admit_request(request)
 
         if not admission.admitted:
             details = []
@@ -1226,11 +1218,7 @@ class Spellbook(Cleanable, ISpellbook):
                     self._begin_binding_transaction(owner_label="Spellbook")
                 self._active_change_request = request
         except Exception:
-            orchestrator.abort_request(
-                request.request_id,
-                transaction_manager=transaction_manager,
-                embargo_manager=embargo_manager,
-            )
+            change_control.abort_request(request.request_id)
             raise
 
     def end_transaction(
@@ -1278,30 +1266,83 @@ class Spellbook(Cleanable, ISpellbook):
                 )
 
         change_control = self._aether._get_change_control_manager(self._aetheric_frame)
-        transaction_manager = change_control.transaction_manager()
-        embargo_manager = change_control.embargo_manager()
-        orchestrator = change_control.orchestrator()
-
         try:
             if request.request_type is ChangeTransactionType.BIND:
                 self._end_binding_transaction(owner_label="Spellbook")
         except Exception:
-            orchestrator.abort_request(
-                request.request_id,
-                transaction_manager=transaction_manager,
-                embargo_manager=embargo_manager,
-            )
+            change_control.abort_request(request.request_id)
             with self._lock:
                 self._active_change_request = None
             raise
 
-        orchestrator.commit_request(
-            request.request_id,
-            transaction_manager=transaction_manager,
-            embargo_manager=embargo_manager,
-        )
+        change_control.commit_request(request.request_id)
         with self._lock:
             self._active_change_request = None
+
+    @contextmanager
+    def transaction(
+            self,
+            transaction_type: ChangeTransactionType | str,
+            *,
+            conduit_id: Optional[str] = None,
+            conduit_ids: Optional[Iterable[str]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> "Spellbook":
+        """
+        Public API
+
+        Context-managed change-control transaction for this Spellbook.
+
+        Purpose:
+            Provide a safe begin/end wrapper for change-control transactions.
+        Contract:
+            - Begins a change-control transaction on entry.
+            - Ends the transaction on exit, even if an exception is raised.
+            - Bind transactions open/close the binding transaction window.
+        Args:
+            transaction_type:
+                Transaction type enum or string value (e.g. "bind", "link").
+            conduit_id:
+                Optional initiator conduit id for logging.
+            conduit_ids:
+                Optional list of conduits participating in the request.
+            scope_keys:
+                Optional normalized scope keys for conflict checks.
+            scope_hashes:
+                Optional normalized scope hashes for conflict checks.
+            binding_keys:
+                Optional binding keys affected by the request.
+            contract_keys:
+                Optional contract keys affected by the request.
+            metadata:
+                Optional structured metadata for diagnostics.
+        Returns:
+            Spellbook: The current Spellbook instance.
+        Raises:
+            RuntimeError: If a change transaction is already active.
+            RuntimeError: If binding transaction is already active for bind requests.
+            RuntimeError: If change-control admission is denied.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        """
+        self.begin_transaction(
+            transaction_type,
+            conduit_id=conduit_id,
+            conduit_ids=conduit_ids,
+            scope_keys=scope_keys,
+            scope_hashes=scope_hashes,
+            binding_keys=binding_keys,
+            contract_keys=contract_keys,
+            metadata=metadata,
+        )
+        try:
+            yield self
+        finally:
+            self.end_transaction(transaction_type)
 
     def begin_binding_transaction(self) -> None:
         """

@@ -1,6 +1,9 @@
 import pytest
 from unittest.mock import MagicMock, call, patch
 from melder.aether.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.utilities.interfaces.interfaces import ISpellIndex, ISpellSystemStates
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -239,6 +242,62 @@ def test_revalidate_does_nothing_if_clean(manager):
     
     manager.revalidate_dirty_roots()
     validator.assert_not_called()
+
+
+# ----------------------------------------------------------------------
+# 4. Change-Control Admission Facade
+# ----------------------------------------------------------------------
+
+def test_change_control_manager_admit_request_disabled_accepts(manager) -> None:
+    """
+    Purpose:
+        Validate admission bypass when change control is disabled.
+    Contract:
+        - disable_change_control accepts requests without conflict checks.
+        - Request is tracked as in-flight and removed on commit.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If admission or cleanup behavior is incorrect.
+    """
+    manager.disable_change_control()
+    request = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope-disabled"],
+    )
+    admission = manager.admit_request(request)
+    assert admission.admitted is True
+    assert manager.transaction_manager().get_in_flight(request.request_id) is request
+
+    manager.commit_request(request.request_id)
+    assert manager.transaction_manager().get_in_flight(request.request_id) is None
+
+
+def test_change_control_manager_admit_request_enabled_tracks_in_flight(manager) -> None:
+    """
+    Purpose:
+        Validate admission path when change control is enabled.
+    Contract:
+        - Enabled admission registers the request as in-flight.
+        - Commit clears the in-flight request.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If admission or cleanup behavior is incorrect.
+    """
+    manager.enable_change_control()
+    request = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.LINK,
+        initiator_conduit_id="conduit-2",
+        scope_keys=["scope-enabled"],
+    )
+    admission = manager.admit_request(request)
+    assert admission.admitted is True
+    assert manager.transaction_manager().get_in_flight(request.request_id) is request
+
+    manager.commit_request(request.request_id)
+    assert manager.transaction_manager().get_in_flight(request.request_id) is None
 
 def test_revalidate_keeps_dirty_on_failure(manager):
     """

@@ -1,6 +1,7 @@
 import inspect
 import threading
-from typing import List, Optional, Any, Tuple, Dict
+from contextlib import contextmanager
+from typing import List, Optional, Any, Tuple, Dict, Iterable
 # Melder Imports
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
@@ -14,6 +15,9 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
@@ -267,6 +271,154 @@ class ConduitWard(Cleanable, IConduitWard):
             raise RuntimeError("Root conduit must be a normal conduit.")
         return root_conduit
     #endregion Properties
+    #region Change Control
+    def begin_transaction(
+            self,
+            transaction_type: ChangeTransactionType | str,
+            *,
+            conduit_ids: Optional[Iterable[str]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Public API
+
+        Begin a change-control transaction through the owning Conduit.
+
+        Purpose:
+            Provide a ward-level facade for change-control transactions used by
+            link/contract operations.
+        Contract:
+            - Delegates to the owning Conduit transaction facade.
+            - Raises if the conduit is not in a normal state.
+        Args:
+            transaction_type:
+                Transaction type enum or string value (e.g. "link", "bind").
+            conduit_ids:
+                Optional list of conduits participating in the request.
+            scope_keys:
+                Optional normalized scope keys for conflict checks.
+            scope_hashes:
+                Optional normalized scope hashes for conflict checks.
+            binding_keys:
+                Optional binding keys affected by the request.
+            contract_keys:
+                Optional contract keys affected by the request.
+            metadata:
+                Optional structured metadata for diagnostics.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the ConduitWard is cleaned.
+            RuntimeError: If the owning Conduit is not normal.
+            RuntimeError: If change-control admission is denied.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        """
+        self.check_cleaned()
+        self._conduit.begin_transaction(
+            transaction_type,
+            conduit_ids=conduit_ids,
+            scope_keys=scope_keys,
+            scope_hashes=scope_hashes,
+            binding_keys=binding_keys,
+            contract_keys=contract_keys,
+            metadata=metadata,
+        )
+
+    def end_transaction(
+            self,
+            transaction_type: ChangeTransactionType | str | None = None,
+    ) -> None:
+        """
+        Public API
+
+        End the active change-control transaction through the owning Conduit.
+
+        Purpose:
+            Provide a ward-level facade for terminating change-control requests.
+        Contract:
+            - Delegates to the owning Conduit transaction facade.
+        Args:
+            transaction_type:
+                Optional transaction type assertion for safety checks.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the ConduitWard is cleaned.
+            RuntimeError: If the owning Conduit is not normal.
+            RuntimeError: If no change transaction is active.
+            RuntimeError: If transaction_type does not match the active request.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        """
+        self.check_cleaned()
+        self._conduit.end_transaction(transaction_type=transaction_type)
+
+    @contextmanager
+    def transaction(
+            self,
+            transaction_type: ChangeTransactionType | str,
+            *,
+            conduit_ids: Optional[Iterable[str]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> "ConduitWard":
+        """
+        Public API
+
+        Context-managed change-control transaction for this ConduitWard.
+
+        Purpose:
+            Provide a safe begin/end wrapper for ward-level change transactions.
+        Contract:
+            - Begins a change-control transaction on entry.
+            - Ends the transaction on exit, even if an exception is raised.
+        Args:
+            transaction_type:
+                Transaction type enum or string value (e.g. "link", "bind").
+            conduit_ids:
+                Optional list of conduits participating in the request.
+            scope_keys:
+                Optional normalized scope keys for conflict checks.
+            scope_hashes:
+                Optional normalized scope hashes for conflict checks.
+            binding_keys:
+                Optional binding keys affected by the request.
+            contract_keys:
+                Optional contract keys affected by the request.
+            metadata:
+                Optional structured metadata for diagnostics.
+        Returns:
+            ConduitWard: The current ConduitWard instance.
+        Raises:
+            RuntimeError: If the ConduitWard is cleaned.
+            RuntimeError: If the owning Conduit is not normal.
+            RuntimeError: If change-control admission is denied.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        """
+        self.begin_transaction(
+            transaction_type,
+            conduit_ids=conduit_ids,
+            scope_keys=scope_keys,
+            scope_hashes=scope_hashes,
+            binding_keys=binding_keys,
+            contract_keys=contract_keys,
+            metadata=metadata,
+        )
+        try:
+            yield self
+        finally:
+            self.end_transaction(transaction_type=transaction_type)
+
+    #endregion Change Control
 
     #region Conduit Ward Configuration
     def _convert_to_normal_conduit(self) -> None:

@@ -1,5 +1,6 @@
 import time
 import uuid
+import hashlib
 from threading import RLock
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -172,6 +173,10 @@ class ChangeControlTransactionManager(Cleanable):
         self.check_cleaned()
         request_id = f"tx-{uuid.uuid4().hex}"
         created_at = time.time()
+        normalized_scope_keys = tuple(scope_keys) if scope_keys else ()
+        normalized_scope_hashes = tuple(scope_hashes) if scope_hashes else ()
+        if normalized_scope_keys and not normalized_scope_hashes:
+            normalized_scope_hashes = self._normalize_scope_hashes(normalized_scope_keys)
         return ChangeControlTransactionRequest(
             request_id=request_id,
             request_type=request_type,
@@ -179,12 +184,179 @@ class ChangeControlTransactionManager(Cleanable):
             initiator_conduit_id=initiator_conduit_id,
             spellbook_id=spellbook_id,
             conduit_ids=tuple(conduit_ids) if conduit_ids else (),
-            scope_keys=tuple(scope_keys) if scope_keys else (),
-            scope_hashes=tuple(scope_hashes) if scope_hashes else (),
+            scope_keys=normalized_scope_keys,
+            scope_hashes=normalized_scope_hashes,
             binding_keys=tuple(binding_keys) if binding_keys else (),
             contract_keys=tuple(contract_keys) if contract_keys else (),
             metadata=dict(metadata) if metadata else {},
         )
+
+    def _normalize_scope_hashes(self, scope_keys: Iterable[str]) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Normalize scope hashes from supplied scope keys.
+
+        Purpose:
+            Provide deterministic scope hashes for conflict checks when callers
+            supply only scope keys.
+        Contract:
+            - Keys are normalized by sorting and de-duplicating.
+            - Each normalized key is hashed with SHA256.
+        Args:
+            scope_keys:
+                Scope keys to normalize and hash.
+        Returns:
+            Tuple[str, ...]:
+                Deterministic scope hash values.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        unique_keys = sorted({key for key in scope_keys if key})
+        hashes: List[str] = []
+        for key in unique_keys:
+            digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
+            hashes.append(digest)
+        return tuple(hashes)
+
+    def make_scope_key_spellbook(self, spellbook_id: str) -> str:
+        """
+        Build a normalized spellbook scope key.
+
+        Purpose:
+            Provide a stable key for conflict and embargo checks.
+        Contract:
+            - Returns "scope:spellbook:<id>".
+        Args:
+            spellbook_id:
+                Spellbook identifier to normalize.
+        Returns:
+            str:
+                Normalized spellbook scope key.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+            ValueError: If spellbook_id is empty.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        if not spellbook_id:
+            raise ValueError("spellbook_id cannot be empty")
+        return f"scope:spellbook:{spellbook_id}"
+
+    def make_scope_key_conduit(self, conduit_id: str) -> str:
+        """
+        Build a normalized conduit scope key.
+
+        Purpose:
+            Provide a stable key for conflict and embargo checks.
+        Contract:
+            - Returns "scope:conduit:<id>".
+        Args:
+            conduit_id:
+                Conduit identifier to normalize.
+        Returns:
+            str:
+                Normalized conduit scope key.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+            ValueError: If conduit_id is empty.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty")
+        return f"scope:conduit:{conduit_id}"
+
+    def make_scope_key_cluster(self, cluster_id: str) -> str:
+        """
+        Build a normalized cluster scope key.
+
+        Purpose:
+            Provide a stable key for conflict and embargo checks.
+        Contract:
+            - Returns "scope:cluster:<id>".
+        Args:
+            cluster_id:
+                Cluster identifier to normalize.
+        Returns:
+            str:
+                Normalized cluster scope key.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+            ValueError: If cluster_id is empty.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        if not cluster_id:
+            raise ValueError("cluster_id cannot be empty")
+        return f"scope:cluster:{cluster_id}"
+
+    def make_scope_key_binding(self, frame_key: str, binding_key: str) -> str:
+        """
+        Build a normalized binding scope key.
+
+        Purpose:
+            Provide a stable key for frame/binding conflict checks.
+        Contract:
+            - Returns "binding:<frame_key>:<binding_key>".
+        Args:
+            frame_key:
+                Normalized frame key.
+            binding_key:
+                Normalized binding key.
+        Returns:
+            str:
+                Normalized binding scope key.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+            ValueError: If frame_key or binding_key is empty.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        if not frame_key or not binding_key:
+            raise ValueError("frame_key and binding_key are required")
+        return f"binding:{frame_key}:{binding_key}"
+
+    def make_scope_key_contract(
+            self,
+            frame_key: str,
+            binding_key: str,
+            peer_conduit_id: str,
+    ) -> str:
+        """
+        Build a normalized contract scope key.
+
+        Purpose:
+            Provide a stable key for borrower/provider contract checks.
+        Contract:
+            - Returns "contract:<frame_key>:<binding_key>:<peer_conduit_id>".
+        Args:
+            frame_key:
+                Normalized frame key.
+            binding_key:
+                Normalized binding key.
+            peer_conduit_id:
+                Peer conduit identifier involved in the contract.
+        Returns:
+            str:
+                Normalized contract scope key.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+            ValueError: If any identifier is empty.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        if not frame_key or not binding_key or not peer_conduit_id:
+            raise ValueError("frame_key, binding_key, and peer_conduit_id are required")
+        return f"contract:{frame_key}:{binding_key}:{peer_conduit_id}"
 
     def add_in_flight(self, request: ChangeControlTransactionRequest) -> None:
         """

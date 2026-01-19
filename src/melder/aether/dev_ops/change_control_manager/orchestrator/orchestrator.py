@@ -1,10 +1,14 @@
 from threading import RLock
+from typing import Callable, Dict, Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlAdmissionResult,
     ChangeControlTransactionRequest,
+)
+from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+    ChangeControlStagedMutation,
 )
 from melder.aether.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
@@ -42,6 +46,10 @@ class ChangeControlOrchestrator(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
+        "_staged",
+        "_commit_validator",
+        "_commit_hook",
+        "_abort_hook",
     ]
 
     def __init__(self) -> None:
@@ -59,6 +67,10 @@ class ChangeControlOrchestrator(Cleanable):
         """
         super().__init__()
         self._lock: RLock = RLock()
+        self._staged: Dict[str, ChangeControlStagedMutation] = {}
+        self._commit_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        self._commit_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        self._abort_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
 
     def cleanup(self) -> None:
         """
@@ -79,7 +91,175 @@ class ChangeControlOrchestrator(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            if self._staged is not None:
+                self._staged.clear()
+                self._staged = None
+            self._commit_validator = None
+            self._commit_hook = None
+            self._abort_hook = None
         self._lock = None
+
+    def set_commit_validator(
+            self,
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
+    ) -> None:
+        """
+        Register a commit validator hook.
+
+        Purpose:
+            Provide a pre-commit validation hook (e.g., structural phase checks).
+        Contract:
+            - Passing None disables validation.
+            - Hook is invoked outside the orchestrator lock.
+        Args:
+            fn:
+                Callable that validates the staged mutation.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the orchestrator has been cleaned.
+        Threading:
+            Acquires the internal lock while updating the hook reference.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._commit_validator = fn
+
+    def set_commit_hook(
+            self,
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
+    ) -> None:
+        """
+        Register a commit hook.
+
+        Purpose:
+            Provide a post-validation hook for commit-time side effects.
+        Contract:
+            - Passing None disables the hook.
+            - Hook is invoked outside the orchestrator lock.
+        Args:
+            fn:
+                Callable invoked before commit finalization.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the orchestrator has been cleaned.
+        Threading:
+            Acquires the internal lock while updating the hook reference.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._commit_hook = fn
+
+    def set_abort_hook(
+            self,
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
+    ) -> None:
+        """
+        Register an abort hook.
+
+        Purpose:
+            Provide a hook for abort-time cleanup side effects.
+        Contract:
+            - Passing None disables the hook.
+            - Hook is invoked outside the orchestrator lock.
+        Args:
+            fn:
+                Callable invoked before abort finalization.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the orchestrator has been cleaned.
+        Threading:
+            Acquires the internal lock while updating the hook reference.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._abort_hook = fn
+
+    def get_staged(self, request_id: str) -> Optional[ChangeControlStagedMutation]:
+        """
+        Return a staged mutation record for a request id.
+
+        Purpose:
+            Provide access to staged metadata for diagnostics and tests.
+        Contract:
+            - Returns None if no staged record exists.
+        Args:
+            request_id:
+                Request identifier to look up.
+        Returns:
+            Optional[ChangeControlStagedMutation]:
+                Staged record if present.
+        Raises:
+            RuntimeError: If the orchestrator has been cleaned.
+        Threading:
+            Acquires the internal lock while reading state.
+        """
+        self.check_cleaned()
+        if not request_id:
+            return None
+        with self._lock:
+            return self._staged.get(request_id)
+
+    def list_staged(self) -> Tuple[ChangeControlStagedMutation, ...]:
+        """
+        Return a snapshot of staged mutation records.
+
+        Purpose:
+            Provide a stable snapshot of staged requests for diagnostics.
+        Contract:
+            - Returns a tuple snapshot (may be empty).
+        Returns:
+            Tuple[ChangeControlStagedMutation, ...]:
+                Snapshot of staged mutation records.
+        Raises:
+            RuntimeError: If the orchestrator has been cleaned.
+        Threading:
+            Acquires the internal lock while copying state.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return tuple(self._staged.values())
+
+    def _stage_request(
+            self,
+            request: ChangeControlTransactionRequest,
+            scope_keys: Tuple[str, ...],
+    ) -> None:
+        """
+        Internal
+
+        Stage a mutation record for the admitted request.
+
+        Purpose:
+            Capture staged metadata for later commit/abort cleanup.
+        Contract:
+            - Overwrites any existing staged record for the request id.
+        Args:
+            request:
+                Admitted transaction request.
+            scope_keys:
+                Normalized scope keys for staging/embargo checks.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the orchestrator has been cleaned.
+        Threading:
+            Caller must hold the orchestrator lock.
+        """
+        self.check_cleaned()
+        self._staged[request.request_id] = ChangeControlStagedMutation.from_request(
+            request_id=request.request_id,
+            request_type=request.request_type,
+            initiator_conduit_id=request.initiator_conduit_id,
+            spellbook_id=request.spellbook_id,
+            conduit_ids=request.conduit_ids,
+            scope_keys=scope_keys,
+            binding_keys=request.binding_keys,
+            contract_keys=request.contract_keys,
+            metadata=request.metadata,
+        )
 
     def admit_request(
             self,
@@ -121,7 +301,8 @@ class ChangeControlOrchestrator(Cleanable):
                 request,
                 transaction_manager.list_in_flight(),
             )
-            embargoes = embargo_manager.find_embargoes(request.scope_keys)
+            embargo_scope_keys = embargo_manager.collect_scope_keys(request)
+            embargoes = embargo_manager.find_embargoes(embargo_scope_keys)
             if conflicts or embargoes:
                 reasons = []
                 if conflicts:
@@ -137,6 +318,7 @@ class ChangeControlOrchestrator(Cleanable):
 
             transaction_manager.add_in_flight(request)
             embargo_manager.apply_implicit_embargoes(request)
+            self._stage_request(request, embargo_scope_keys)
             return ChangeControlAdmissionResult(admitted=True)
 
     def commit_request(
@@ -168,12 +350,49 @@ class ChangeControlOrchestrator(Cleanable):
             Acquires the admission lock while finalizing.
         """
         self.check_cleaned()
+        request: Optional[ChangeControlTransactionRequest] = None
+        staged: Optional[ChangeControlStagedMutation] = None
+        commit_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        commit_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        abort_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        with self._lock:
+            request = transaction_manager.get_in_flight(request_id)
+            if request is None:
+                return
+            staged = self._staged.get(request_id) if self._staged is not None else None
+            commit_validator = self._commit_validator
+            commit_hook = self._commit_hook
+            abort_hook = self._abort_hook
+
+        try:
+            if staged is not None and commit_validator is not None:
+                commit_validator(staged)
+            if staged is not None and commit_hook is not None:
+                commit_hook(staged)
+        except Exception:
+            if staged is not None and abort_hook is not None:
+                try:
+                    abort_hook(staged)
+                except Exception:
+                    pass
+            with self._lock:
+                request = transaction_manager.get_in_flight(request_id)
+                if request is None:
+                    return
+                embargo_manager.release_implicit_embargoes(request)
+                transaction_manager.remove_in_flight(request_id)
+                if self._staged is not None and request_id in self._staged:
+                    del self._staged[request_id]
+            raise
+
         with self._lock:
             request = transaction_manager.get_in_flight(request_id)
             if request is None:
                 return
             embargo_manager.release_implicit_embargoes(request)
             transaction_manager.remove_in_flight(request_id)
+            if self._staged is not None and request_id in self._staged:
+                del self._staged[request_id]
 
     def abort_request(
             self,
@@ -203,8 +422,23 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the admission lock while finalizing.
         """
-        self.commit_request(
-            request_id,
-            transaction_manager=transaction_manager,
-            embargo_manager=embargo_manager,
-        )
+        self.check_cleaned()
+        staged: Optional[ChangeControlStagedMutation] = None
+        abort_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        with self._lock:
+            if self._staged is not None:
+                staged = self._staged.get(request_id)
+            abort_hook = self._abort_hook
+        if staged is not None and abort_hook is not None:
+            try:
+                abort_hook(staged)
+            except Exception:
+                pass
+        with self._lock:
+            request = transaction_manager.get_in_flight(request_id)
+            if request is None:
+                return
+            embargo_manager.release_implicit_embargoes(request)
+            transaction_manager.remove_in_flight(request_id)
+            if self._staged is not None and request_id in self._staged:
+                del self._staged[request_id]

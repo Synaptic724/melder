@@ -2154,6 +2154,75 @@ class IConduitWard(ICleanable, Protocol):
         ...
 
     # ------------------------------------------------------------------
+    # Change Control
+    # ------------------------------------------------------------------
+    def begin_transaction(
+            self,
+            transaction_type: "ChangeTransactionType | str",
+            *,
+            conduit_ids: Optional[Iterable[str]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Public API
+
+        Begin a change-control transaction through the owning Conduit.
+
+        Args:
+            transaction_type:
+                Transaction type enum or string value (e.g. "link", "bind").
+            conduit_ids:
+                Optional list of conduits participating in the request.
+            scope_keys:
+                Optional normalized scope keys for conflict checks.
+            scope_hashes:
+                Optional normalized scope hashes for conflict checks.
+            binding_keys:
+                Optional binding keys affected by the request.
+            contract_keys:
+                Optional contract keys affected by the request.
+            metadata:
+                Optional structured metadata for diagnostics.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the ConduitWard is cleaned.
+            RuntimeError: If the owning Conduit is not normal.
+            RuntimeError: If change-control admission is denied.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        """
+        ...
+
+    def end_transaction(
+            self,
+            transaction_type: "ChangeTransactionType | str | None" = None,
+    ) -> None:
+        """
+        Public API
+
+        End the active change-control transaction through the owning Conduit.
+
+        Args:
+            transaction_type:
+                Optional transaction type assertion for safety checks.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the ConduitWard is cleaned.
+            RuntimeError: If the owning Conduit is not normal.
+            RuntimeError: If no change transaction is active.
+            RuntimeError: If transaction_type does not match the active request.
+            ValueError: If transaction_type is invalid.
+            TypeError: If transaction_type has an invalid type.
+        """
+        ...
+
+    # ------------------------------------------------------------------
     # Conduit Ward Configuration
     # ------------------------------------------------------------------
     @property
@@ -6672,6 +6741,128 @@ class IChangeControlManager(ICleanable, Protocol):
 
     # spell_index_id -> Dict[str, Any]
     _pending_changes: 'Dict[str, Dict[str, Any]]'
+    _change_control_enabled: bool
+
+    # ----------------------------------------------------------------------
+    # Change-control admission controls
+    # ----------------------------------------------------------------------
+    def enable_change_control(self) -> None:
+        """
+        Public API
+
+        Enable change-control admission for this frame.
+
+        Purpose:
+            Allow the orchestrator admission gate to evaluate requests.
+        Contract:
+            - When enabled, admission checks apply conflict/embargo rules.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
+    def disable_change_control(self) -> None:
+        """
+        Public API
+
+        Disable change-control admission for this frame.
+
+        Purpose:
+            Allow transactions to proceed without conflict/embargo gating.
+        Contract:
+            - When disabled, admission returns accepted without conflict checks.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
+    def is_change_control_enabled(self) -> bool:
+        """
+        Public API
+
+        Return whether change-control admission is enabled.
+
+        Returns:
+            bool: True if admission gating is enabled.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
+    def set_audit_logger(
+            self,
+            fn: Optional[Callable[['ChangeControlTransactionRequest'], None]],
+    ) -> None:
+        """
+        Public API
+
+        Register an audit logger for admitted change-control requests.
+
+        Args:
+            fn:
+                Callable that receives the admitted request, or None.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
+    def admit_request(
+            self,
+            request: 'ChangeControlTransactionRequest',
+    ) -> 'ChangeControlAdmissionResult':
+        """
+        Public API
+
+        Admit a transaction request through the change-control gate.
+
+        Args:
+            request:
+                Transaction request to admit.
+        Returns:
+            ChangeControlAdmissionResult:
+                Admission decision with evidence for rejection.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
+    def commit_request(self, request_id: str) -> None:
+        """
+        Public API
+
+        Commit an in-flight request and release implicit embargoes.
+
+        Args:
+            request_id:
+                Request id to finalize.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
+
+    def abort_request(self, request_id: str) -> None:
+        """
+        Public API
+
+        Abort an in-flight request and release implicit embargoes.
+
+        Args:
+            request_id:
+                Request id to abort.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        """
+        ...
     # ----------------------------------------------------------------------
     # Registration / updates
     # ----------------------------------------------------------------------
