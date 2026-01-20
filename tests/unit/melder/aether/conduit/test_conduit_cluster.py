@@ -165,6 +165,7 @@ class _ConduitStub:
             transaction_type: Union[ChangeTransactionType, str],
             *,
             conduit_ids: Optional[Iterable[str]] = None,
+            conduits: Optional[Iterable[Any]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -183,6 +184,7 @@ class _ConduitStub:
         Args:
             transaction_type: Change-control transaction type identifier.
             conduit_ids: Optional conduit ids participating in the request.
+            conduits: Optional conduit objects participating in the request.
             scope_keys: Optional scope keys for conflict checks.
             scope_hashes: Optional scope hashes for conflict checks.
             binding_keys: Optional binding keys for the request.

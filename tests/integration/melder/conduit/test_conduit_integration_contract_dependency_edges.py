@@ -123,11 +123,12 @@ def test_conduit_add_spell_to_contract_with_dependencies_links_transitive_depend
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract_with_dependencies(
-            spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract_with_dependencies(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+            )
 
         spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner.id)
         inbound_ids = set(_inbound_spell_ids(spells_by_conduit))

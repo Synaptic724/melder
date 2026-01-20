@@ -135,12 +135,13 @@ def test_conduit_validate_resolution_reports_missing_contract_dependencies() -> 
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-            permissions="create",
-            link_dependencies=False,
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=False,
+            )
 
         state = borrower.validate_resolution()
         assert state is not None
@@ -184,22 +185,24 @@ def test_conduit_validate_resolution_recovers_after_contract_changes() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-            permissions="create",
-            link_dependencies=True,
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
 
         state = borrower.validate_resolution()
         assert state is not None
         assert state.has_errors() is False
         assert state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
 
-        assert borrower.remove_spell_from_contract(
-            spell_id=depth3_ids[Depth3Layer2A],
-            conduit=owner,
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.remove_spell_from_contract(
+                spell_id=depth3_ids[Depth3Layer2A],
+                conduit=owner,
+            )
 
         broken_state = borrower.validate_resolution()
         assert broken_state is not None
@@ -207,11 +210,12 @@ def test_conduit_validate_resolution_recovers_after_contract_changes() -> None:
         assert "visibility_gap_dependency_filtered" in _diagnostic_codes(broken_state)
         assert broken_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.invalid
 
-        assert borrower.add_spell_to_contract(
-            spell_id=depth3_ids[Depth3Layer2A],
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=depth3_ids[Depth3Layer2A],
+                conduit=owner,
+                permissions="create",
+            )
 
         recovered_state = borrower.validate_resolution()
         assert recovered_state is not None
@@ -253,12 +257,13 @@ def test_conduit_validate_resolution_for_lesser_uses_root_and_survives_cleanup()
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-            permissions="create",
-            link_dependencies=True,
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
 
         root_state = borrower.validate_resolution()
         assert root_state is not None
@@ -315,12 +320,13 @@ def test_conduit_validate_resolution_matches_get_resolution_state() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-            permissions="create",
-            link_dependencies=True,
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
 
         state = borrower.validate_resolution()
         assert state is not None

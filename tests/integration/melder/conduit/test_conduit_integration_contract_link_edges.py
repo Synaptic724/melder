@@ -134,14 +134,15 @@ def test_conduit_remove_all_spells_from_contract_clears_inbound_keeps_link() -> 
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spells_to_contract(
-            spell_ids=[service_id, config_id],
-            conduit=owner,
-            permissions="create",
-        ) == {service_id: True, config_id: True}
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spells_to_contract(
+                spell_ids=[service_id, config_id],
+                conduit=owner,
+                permissions="create",
+            ) == {service_id: True, config_id: True}
 
-        assert borrower.get_spells_in_contract_by_conduit(owner.id) is not None
-        assert borrower._remove_all_spells_from_contract(conduit=owner) is True
+            assert borrower.get_spells_in_contract_by_conduit(owner.id) is not None
+            assert borrower._remove_all_spells_from_contract(conduit=owner) is True
         assert borrower.get_spells_in_contract_by_conduit(owner.id) is None
 
         contracted = borrower.get_contracted_conduits()
@@ -182,16 +183,17 @@ def test_conduit_describe_contract_reports_spell_count_and_permissions() -> None
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        ) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=config_id,
-            conduit=owner,
-            permissions="read",
-        ) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            ) is True
+            assert borrower.add_spell_to_contract(
+                spell_id=config_id,
+                conduit=owner,
+                permissions="read",
+            ) is True
 
         description = owner._describe_contract(borrower.id)
         assert description["spell_count"] == 2
@@ -232,17 +234,18 @@ def test_conduit_add_spell_to_contract_permission_mismatch_raises() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        ) is True
-        with pytest.raises(RuntimeError, match="different permissions"):
-            borrower.add_spell_to_contract(
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
                 spell_id=service_id,
                 conduit=owner,
-                permissions="read",
-            )
+                permissions="create",
+            ) is True
+            with pytest.raises(RuntimeError, match="different permissions"):
+                borrower.add_spell_to_contract(
+                    spell_id=service_id,
+                    conduit=owner,
+                    permissions="read",
+                )
     finally:
         borrower.cleanup()
         owner.cleanup()
@@ -298,21 +301,22 @@ def test_conduit_remove_root_from_contracts_preserves_shared_dependencies() -> N
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract_with_dependencies(
-            spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-            permissions="create",
-        )
-        assert borrower.add_spell_to_contract_with_dependencies(
-            spell_id=depth3_ids[Depth3Layer2A],
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract_with_dependencies(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+            )
+            assert borrower.add_spell_to_contract_with_dependencies(
+                spell_id=depth3_ids[Depth3Layer2A],
+                conduit=owner,
+                permissions="create",
+            )
 
-        report = borrower.remove_root_from_contracts(
-            root_spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-        )
+            report = borrower.remove_root_from_contracts(
+                root_spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+            )
         assert report["failed"] == {}
 
         inbound_ids = set(_inbound_spell_ids(borrower.get_spells_in_contract_by_conduit(owner.id)))

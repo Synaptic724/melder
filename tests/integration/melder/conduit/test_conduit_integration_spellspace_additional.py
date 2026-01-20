@@ -214,11 +214,12 @@ def test_conduit_spellspace_contract_isolation_between_owner_and_borrower() -> N
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        ) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            ) is True
 
         with owner.enter_spellspace() as owner_space:
             owner_instance = owner_space.meld(spell=spell_id)

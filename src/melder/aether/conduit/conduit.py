@@ -1455,6 +1455,7 @@ class Conduit(Cleanable, IConduit):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
+            conduits: Optional[Iterable[IConduit]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -1473,11 +1474,17 @@ class Conduit(Cleanable, IConduit):
             - Only normal conduits may begin change-control transactions.
             - Admission is serialized by the ChangeControlOrchestrator.
             - Bind transactions open the binding transaction window.
+            - Link transactions must explicitly include the local conduit and peers.
+            - Link, transfer, mutation, and cluster link require dynamic mode.
         Args:
             transaction_type:
                 Transaction type enum or string value (e.g. "bind", "link").
             conduit_ids:
-                Optional list of conduits participating in the request.
+                Optional list of conduits participating in non-link requests.
+                Link transactions require explicit conduit objects.
+            conduits:
+                Optional list of conduit objects participating in the request.
+                For link transactions, include the local conduit and peers.
             scope_keys:
                 Optional normalized scope keys for conflict checks.
             scope_hashes:
@@ -1493,6 +1500,7 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If the Conduit is cleaned or not normal.
             RuntimeError: If change-control admission is denied.
+            RuntimeError: If a link transaction omits required conduit objects.
             ValueError: If transaction_type is invalid.
             TypeError: If transaction_type has an invalid type.
         Threading:
@@ -1503,14 +1511,80 @@ class Conduit(Cleanable, IConduit):
             self._logger.error("begin_transaction called when conduit not normal", "begin_transaction")
             raise RuntimeError("Only normal conduits can start change transactions.")
 
+        request_type_value: Optional[str] = None
+        if isinstance(transaction_type, ChangeTransactionType):
+            request_type_value = transaction_type.value
+        elif isinstance(transaction_type, str):
+            request_type_value = transaction_type.strip().lower()
+
+        dynamic_only = {
+            ChangeTransactionType.LINK.value,
+            ChangeTransactionType.TRANSFER_OWNERSHIP.value,
+            ChangeTransactionType.MUTATION.value,
+            ChangeTransactionType.CLUSTER_LINK.value,
+        }
+        if request_type_value in dynamic_only and not self.__dynamic_environment__:
+            self._logger.error(
+                "begin_transaction in non-dynamic env",
+                "begin_transaction",
+            )
+            raise RuntimeError(
+                "[CONDUIT] Change transactions require dynamic mode. "
+                f"transaction_type='{request_type_value}'."
+            )
+
         scope_values = list(scope_keys) if scope_keys else []
         base_scope = f"scope:conduit:{self._id}"
         if base_scope not in scope_values:
             scope_values.append(base_scope)
 
-        conduit_values = list(conduit_ids) if conduit_ids else []
-        if self._id not in conduit_values:
-            conduit_values.append(self._id)
+        conduit_values: list[str] = []
+        if conduits:
+            for conduit in conduits:
+                if not isinstance(conduit, IConduit):
+                    self._logger.error(
+                        "begin_transaction received non-conduit object",
+                        "begin_transaction",
+                    )
+                    raise TypeError(
+                        "conduits must contain IConduit instances."
+                    )
+                if conduit._id not in conduit_values:
+                    conduit_values.append(conduit._id)
+
+        if request_type_value == ChangeTransactionType.LINK.value:
+            if not conduits:
+                self._logger.error(
+                    "link transaction missing conduit list",
+                    "begin_transaction",
+                )
+                raise RuntimeError(
+                    "[CONDUIT] Link transactions require conduits=[borrower, peer, ...]."
+                )
+            if self._id not in conduit_values:
+                self._logger.error(
+                    "link transaction missing local conduit",
+                    "begin_transaction",
+                )
+                raise RuntimeError(
+                    "[CONDUIT] Link transactions must include the local conduit."
+                )
+            peer_ids = [conduit_id for conduit_id in conduit_values if conduit_id != self._id]
+            if not peer_ids:
+                self._logger.error(
+                    "link transaction missing peer conduits",
+                    "begin_transaction",
+                )
+                raise RuntimeError(
+                    "[CONDUIT] Link transactions must include at least one peer conduit."
+                )
+        else:
+            if conduit_ids:
+                for conduit_id in conduit_ids:
+                    if conduit_id not in conduit_values:
+                        conduit_values.append(conduit_id)
+            if self._id not in conduit_values:
+                conduit_values.append(self._id)
 
         self._spellbook.begin_transaction(
             transaction_type,
@@ -1564,6 +1638,7 @@ class Conduit(Cleanable, IConduit):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
+            conduits: Optional[Iterable[IConduit]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -1581,11 +1656,17 @@ class Conduit(Cleanable, IConduit):
             - Begins a change-control transaction on entry.
             - Ends the transaction on exit, even if an exception is raised.
             - Only normal conduits may enter this context.
+            - Link transactions must explicitly include the local conduit and peers.
+            - Link, transfer, mutation, and cluster link require dynamic mode.
         Args:
             transaction_type:
                 Transaction type enum or string value (e.g. "bind", "link").
             conduit_ids:
-                Optional list of conduits participating in the request.
+                Optional list of conduits participating in non-link requests.
+                Link transactions require explicit conduit objects.
+            conduits:
+                Optional list of conduit objects participating in the request.
+                For link transactions, include the local conduit and peers.
             scope_keys:
                 Optional normalized scope keys for conflict checks.
             scope_hashes:
@@ -1601,12 +1682,14 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If the Conduit is cleaned or not normal.
             RuntimeError: If change-control admission is denied.
+            RuntimeError: If a link transaction omits required conduit objects.
             ValueError: If transaction_type is invalid.
             TypeError: If transaction_type has an invalid type.
         """
         self.begin_transaction(
             transaction_type,
             conduit_ids=conduit_ids,
+            conduits=conduits,
             scope_keys=scope_keys,
             scope_hashes=scope_hashes,
             binding_keys=binding_keys,
@@ -2627,7 +2710,8 @@ class Conduit(Cleanable, IConduit):
             )
             raise RuntimeError(
                 "[CONDUIT] Contract mutation requires an active link transaction. "
-                "Call begin_transaction('link') on the borrower and include the peer conduit id."
+                "Call begin_transaction('link') on the borrower and include both "
+                "borrower and peer conduits."
             )
         if request.request_type is not ChangeTransactionType.LINK:
             self._logger.error(
@@ -2658,7 +2742,7 @@ class Conduit(Cleanable, IConduit):
             )
             raise RuntimeError(
                 "[CONDUIT] Link transaction missing conduit ids required for contract mutation. "
-                f"Missing={unique_missing}. Pass conduit_ids including borrower and peer "
+                f"Missing={unique_missing}. Pass conduits including borrower and peer "
                 "to begin_transaction('link')."
             )
 

@@ -1153,6 +1153,34 @@ class Spellbook(Cleanable, ISpellbook):
         """
         self.check_cleaned()
         request_type = self._normalize_change_transaction_type(transaction_type)
+        dynamic_only = {
+            ChangeTransactionType.LINK,
+            ChangeTransactionType.TRANSFER_OWNERSHIP,
+            ChangeTransactionType.MUTATION,
+            ChangeTransactionType.CLUSTER_LINK,
+        }
+        if request_type in dynamic_only:
+            system_state = None
+            if self._configuration is not None and self._configuration.has_property("system_state"):
+                system_state = self._configuration.get_property("system_state")
+            if system_state is None:
+                self._logger.error(
+                    "Change transaction requires dynamic mode with missing system_state",
+                    "begin_transaction",
+                )
+                raise RuntimeError(
+                    "[SPELLBOOK] Change transactions require dynamic mode, but system_state is unavailable."
+                )
+            state_enum = EnumHelpers.convert_enum_and_check(system_state, SystemState)
+            if state_enum is not SystemState.dynamic:
+                self._logger.error(
+                    "Change transaction denied in automatic mode",
+                    "begin_transaction",
+                )
+                raise RuntimeError(
+                    "[SPELLBOOK] Change transactions require dynamic mode. "
+                    f"transaction_type='{request_type.value}'."
+                )
 
         with self._lock:
             if self._active_change_request is not None:

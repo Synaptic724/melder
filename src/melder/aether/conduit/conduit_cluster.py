@@ -277,7 +277,7 @@ class ConduitCluster(Cleanable):
                 try:
                     with peer.transaction(
                         ChangeTransactionType.LINK,
-                        conduit_ids=[owner._id],
+                        conduits=[peer, owner],
                     ):
                         peer.add_spell_to_contract(
                             spell=spell,
@@ -316,7 +316,7 @@ class ConduitCluster(Cleanable):
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 with peer.transaction(
                     ChangeTransactionType.LINK,
-                    conduit_ids=[owner._id],
+                    conduits=[peer, owner],
                 ):
                     peer.remove_root_from_contracts(
                         root_spell_id=cluster_root_id,
@@ -329,7 +329,7 @@ class ConduitCluster(Cleanable):
                 try:
                     with peer.transaction(
                         ChangeTransactionType.LINK,
-                        conduit_ids=[owner._id],
+                        conduits=[peer, owner],
                     ):
                         peer.add_spell_to_contract(
                             spell=spell,
@@ -366,7 +366,7 @@ class ConduitCluster(Cleanable):
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 with borrower.transaction(
                     ChangeTransactionType.LINK,
-                    conduit_ids=[owner._id],
+                    conduits=[borrower, owner],
                 ):
                     borrower.add_spell_to_contract(
                         spell=spell,
@@ -403,7 +403,7 @@ class ConduitCluster(Cleanable):
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 with borrower.transaction(
                     ChangeTransactionType.LINK,
-                    conduit_ids=[owner._id],
+                    conduits=[borrower, owner],
                 ):
                     borrower.remove_root_from_contracts(
                         root_spell_id=cluster_root_id,

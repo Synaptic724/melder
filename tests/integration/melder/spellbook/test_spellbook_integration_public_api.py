@@ -111,11 +111,12 @@ def test_spellbook_public_api_contracted_spells_mapping_read_only() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         contracted = borrower_book.contracted_spells
         assert owner.id in contracted

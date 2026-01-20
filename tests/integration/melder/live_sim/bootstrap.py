@@ -326,20 +326,21 @@ def link_live_sim_dynamic(
     """
     assert owner.conduit.link(borrower.conduit) is True
 
-    report = borrower.conduit.add_spells_to_contract(
-        spell_ids=[
-            owner.bindings.config_id,
-            owner.bindings.logger_id,
-            owner.bindings.repository_id,
-            owner.bindings.cache_id,
-            owner.bindings.service_id,
-            owner.bindings.handler_id,
-            owner.bindings.worker_id,
-        ],
-        conduit=owner.conduit,
-        permissions="create",
-        link_dependencies=True,
-    )
+    with borrower.conduit.transaction("link", conduits=[borrower.conduit, owner.conduit]):
+        report = borrower.conduit.add_spells_to_contract(
+            spell_ids=[
+                owner.bindings.config_id,
+                owner.bindings.logger_id,
+                owner.bindings.repository_id,
+                owner.bindings.cache_id,
+                owner.bindings.service_id,
+                owner.bindings.handler_id,
+                owner.bindings.worker_id,
+            ],
+            conduit=owner.conduit,
+            permissions="create",
+            link_dependencies=True,
+        )
     assert all(value is True for value in report.values())
 
     return LiveSimDynamicContext(

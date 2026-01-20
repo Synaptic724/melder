@@ -175,12 +175,13 @@ def test_conduit_contract_add_remove_and_lookup() -> None:
     try:
         owner.link(borrower)
 
-        results = borrower.add_spells_to_contract(
-            spell_ids=[service_id, config_id],
-            conduit=owner,
-            permissions="create",
-        )
-        assert results == {service_id: True, config_id: True}
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            results = borrower.add_spells_to_contract(
+                spell_ids=[service_id, config_id],
+                conduit=owner,
+                permissions="create",
+            )
+            assert results == {service_id: True, config_id: True}
 
         spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner.id)
         assert set(_inbound_spell_ids(spells_by_conduit)) == {service_id, config_id}
@@ -206,14 +207,15 @@ def test_conduit_contract_add_remove_and_lookup() -> None:
         assert all(isinstance(value, bool) for value in validation.values())
         assert borrower.validate_received_contracts() is True
 
-        assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
-        assert borrower.get_spell_in_contracts(service_id) is None
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
+            assert borrower.get_spell_in_contracts(service_id) is None
 
-        remove_results = borrower.remove_spells_from_contract(
-            spell_ids=[config_id],
-            conduit=owner,
-        )
-        assert remove_results == {config_id: True}
+            remove_results = borrower.remove_spells_from_contract(
+                spell_ids=[config_id],
+                conduit=owner,
+            )
+            assert remove_results == {config_id: True}
         assert borrower.get_spell_in_contracts(config_id) is None
         assert _inbound_spell_ids(borrower.get_spells_in_contract_by_conduit(owner.id)) == []
     finally:
@@ -246,16 +248,17 @@ def test_conduit_remove_root_from_contracts_clears_root() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract_with_dependencies(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract_with_dependencies(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
-        report = borrower.remove_root_from_contracts(
-            root_spell_id=spell_id,
-            conduit=owner,
-        )
+            report = borrower.remove_root_from_contracts(
+                root_spell_id=spell_id,
+                conduit=owner,
+            )
         assert report["failed"] == {}
         assert borrower.get_spell_in_contracts(spell_id) is None
     finally:
@@ -379,11 +382,12 @@ def test_conduit_spell_contract_resolves_after_dynamic_link() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -570,11 +574,12 @@ def test_conduit_spell_contract_prefers_contracted_spell() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -646,11 +651,12 @@ def test_conduit_spell_contract_applies_override_payload() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -753,17 +759,19 @@ def test_conduit_spell_contract_ambiguous_contracted_raises() -> None:
     try:
         owner_a.link(borrower)
         owner_b.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=owner_a_id,
-            conduit=owner_a,
-            permissions="create",
-        )
-        with pytest.raises(RuntimeError, match="binding key collision"):
-            borrower.add_spell_to_contract(
-                spell_id=owner_b_id,
-                conduit=owner_b,
+        with borrower.transaction("link", conduits=[borrower, owner_a]):
+            assert borrower.add_spell_to_contract(
+                spell_id=owner_a_id,
+                conduit=owner_a,
                 permissions="create",
             )
+        with borrower.transaction("link", conduits=[borrower, owner_b]):
+            with pytest.raises(RuntimeError, match="binding key collision"):
+                borrower.add_spell_to_contract(
+                    spell_id=owner_b_id,
+                    conduit=owner_b,
+                    permissions="create",
+                )
     finally:
         borrower.cleanup()
         owner_a.cleanup()

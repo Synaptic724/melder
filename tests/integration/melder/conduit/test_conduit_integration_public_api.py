@@ -343,17 +343,20 @@ def test_conduit_begin_transaction_sets_conduit_scope_key() -> None:
         AssertionError: If conflict admission is not enforced.
     """
     frame_name = "shared-conduit-scope"
-    spellbook_a = Spellbook(aetheric_frame=frame_name)
-    spellbook_b = Spellbook(aetheric_frame=frame_name)
-    conduit_a = spellbook_a.conjure(name="conduit-a")
+    configuration = Configuration(frame_name).dynamic_defaults().finalize()
+    spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit_a = spellbook_a.conjure(automatic=False, name="conduit-a")
+    conduit_peer = spellbook_b.conjure(automatic=False, name="conduit-peer")
     change_control = spellbook_a._aether._get_change_control_manager(frame_name)
     scope_key = change_control.transaction_manager().make_scope_key_conduit(conduit_a.id)
     try:
-        conduit_a.begin_transaction("link")
+        conduit_a.begin_transaction("link", conduits=[conduit_a, conduit_peer])
         with pytest.raises(RuntimeError, match="Change-control admission denied"):
             spellbook_b.begin_transaction("link", scope_keys=[scope_key])
     finally:
         conduit_a.end_transaction("link")
+        conduit_peer.cleanup()
         conduit_a.cleanup()
 
 

@@ -124,7 +124,7 @@ def test_validation_system_resolves_contracted_dependency_without_dangling() -> 
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        with borrower.transaction("link", conduit_ids=[owner._id]):
+        with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
                 spell_id=service_id,
                 conduit=owner,
@@ -242,7 +242,7 @@ def test_validation_system_duplicate_spell_name_across_contracted() -> None:
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        with borrower.transaction("link", conduit_ids=[owner._id]):
+        with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
                 spell_id=owner_id,
                 conduit=owner,
@@ -329,7 +329,7 @@ def test_validation_system_updates_after_contract_removal_and_readd() -> None:
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        with borrower.transaction("link", conduit_ids=[owner._id]):
+        with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
                 spell_id=dependency_id,
                 conduit=owner,
@@ -352,7 +352,7 @@ def test_validation_system_updates_after_contract_removal_and_readd() -> None:
         finally:
             result.cleanup()
 
-        with borrower.transaction("link", conduit_ids=[owner._id]):
+        with borrower.transaction("link", conduits=[borrower, owner]):
             removed = borrower.remove_spell_from_contract(
                 spell_id=dependency_id,
                 conduit=owner,
@@ -372,7 +372,7 @@ def test_validation_system_updates_after_contract_removal_and_readd() -> None:
             result.cleanup()
 
         assert owner.link(borrower) is True
-        with borrower.transaction("link", conduit_ids=[owner._id]):
+        with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
                 spell_id=dependency_id,
                 conduit=owner,
@@ -450,7 +450,7 @@ def test_validation_system_reports_dangling_after_sever_link() -> None:
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        with borrower.transaction("link", conduit_ids=[owner._id]):
+        with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
                 spell_id=dependency_id,
                 conduit=owner,
@@ -535,11 +535,12 @@ def test_validation_system_detects_cross_boundary_cycle() -> None:
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=owner_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=owner_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         owner_spell = _get_spell_by_version_id(owner_book, owner_id)
         borrower_spell = _get_spell_by_version_id(borrower_book, borrower_id)
@@ -656,11 +657,12 @@ def test_validation_system_duplicate_name_clears_after_unlink() -> None:
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=owner_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=owner_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         local_spell = _get_spell_by_version_id(borrower_book, borrower_id)
         assert local_spell is not None

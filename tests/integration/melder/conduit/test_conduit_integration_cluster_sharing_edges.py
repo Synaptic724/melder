@@ -216,11 +216,12 @@ def test_conduit_cluster_leave_preserves_manual_contracts() -> None:
         owner.join_cluster("cluster-a")
         borrower.join_cluster("cluster-a")
 
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        ) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            ) is True
 
         borrower.leave_cluster("cluster-a")
 

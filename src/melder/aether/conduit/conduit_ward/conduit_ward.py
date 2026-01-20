@@ -277,6 +277,7 @@ class ConduitWard(Cleanable, IConduitWard):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
+            conduits: Optional[Iterable[IConduit]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -298,7 +299,9 @@ class ConduitWard(Cleanable, IConduitWard):
             transaction_type:
                 Transaction type enum or string value (e.g. "link", "bind").
             conduit_ids:
-                Optional list of conduits participating in the request.
+                Optional list of conduits participating in non-link requests.
+            conduits:
+                Optional list of conduit objects participating in the request.
             scope_keys:
                 Optional normalized scope keys for conflict checks.
             scope_hashes:
@@ -322,6 +325,7 @@ class ConduitWard(Cleanable, IConduitWard):
         self._conduit.begin_transaction(
             transaction_type,
             conduit_ids=conduit_ids,
+            conduits=conduits,
             scope_keys=scope_keys,
             scope_hashes=scope_hashes,
             binding_keys=binding_keys,
@@ -364,6 +368,7 @@ class ConduitWard(Cleanable, IConduitWard):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
+            conduits: Optional[Iterable[IConduit]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -384,7 +389,9 @@ class ConduitWard(Cleanable, IConduitWard):
             transaction_type:
                 Transaction type enum or string value (e.g. "link", "bind").
             conduit_ids:
-                Optional list of conduits participating in the request.
+                Optional list of conduits participating in non-link requests.
+            conduits:
+                Optional list of conduit objects participating in the request.
             scope_keys:
                 Optional normalized scope keys for conflict checks.
             scope_hashes:
@@ -407,6 +414,7 @@ class ConduitWard(Cleanable, IConduitWard):
         self.begin_transaction(
             transaction_type,
             conduit_ids=conduit_ids,
+            conduits=conduits,
             scope_keys=scope_keys,
             scope_hashes=scope_hashes,
             binding_keys=binding_keys,

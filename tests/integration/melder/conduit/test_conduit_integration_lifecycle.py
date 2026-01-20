@@ -189,11 +189,12 @@ def test_conduit_cleanup_severs_links_and_clears_contracts() -> None:
     owner_id = owner.id
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        ) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            ) is True
 
         assert borrower.find_contracted_spell(spell_id) is not None
         assert borrower.get_spells_in_contract_by_conduit(owner_id) is not None
@@ -456,11 +457,12 @@ def test_conduit_find_contracted_spell_returns_contract_entry() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         contracted = borrower.find_contracted_spell(spell_id)
         assert contracted is not None
@@ -496,18 +498,20 @@ def test_conduit_find_contracted_spell_returns_none_after_remove() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        ) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            ) is True
 
         assert borrower.find_contracted_spell(spell_id) is not None
 
-        assert borrower.remove_spell_from_contract(
-            spell_id=spell_id,
-            conduit=owner,
-        ) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.remove_spell_from_contract(
+                spell_id=spell_id,
+                conduit=owner,
+            ) is True
         assert borrower.find_contracted_spell(spell_id) is None
         assert borrower.get_spell_in_contracts(spell_id) is None
     finally:

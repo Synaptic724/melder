@@ -2161,6 +2161,7 @@ class IConduitWard(ICleanable, Protocol):
             transaction_type: "ChangeTransactionType | str",
             *,
             conduit_ids: Optional[Iterable[str]] = None,
+            conduits: Optional[Iterable["IConduit"]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -2176,7 +2177,9 @@ class IConduitWard(ICleanable, Protocol):
             transaction_type:
                 Transaction type enum or string value (e.g. "link", "bind").
             conduit_ids:
-                Optional list of conduits participating in the request.
+                Optional list of conduits participating in non-link requests.
+            conduits:
+                Optional list of conduit objects participating in the request.
             scope_keys:
                 Optional normalized scope keys for conflict checks.
             scope_hashes:
@@ -3609,6 +3612,7 @@ class IConduit(ICleanable, Protocol):
             transaction_type: "ChangeTransactionType | str",
             *,
             conduit_ids: Optional[Iterable[str]] = None,
+            conduits: Optional[Iterable["IConduit"]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -3627,11 +3631,17 @@ class IConduit(ICleanable, Protocol):
             - Only normal conduits may begin change-control transactions.
             - Admission is serialized by the ChangeControlOrchestrator.
             - Bind transactions open the binding transaction window.
+            - Link transactions must explicitly include the local conduit and peers.
+            - Link, transfer, mutation, and cluster link require dynamic mode.
         Args:
             transaction_type:
                 Transaction type enum or string value (e.g. "bind", "link").
             conduit_ids:
-                Optional list of conduits participating in the request.
+                Optional list of conduits participating in non-link requests.
+                Link transactions require explicit conduit objects.
+            conduits:
+                Optional list of conduit objects participating in the request.
+                For link transactions, include the local conduit and peers.
             scope_keys:
                 Optional normalized scope keys for conflict checks.
             scope_hashes:

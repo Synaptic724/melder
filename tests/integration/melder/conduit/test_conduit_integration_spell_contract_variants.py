@@ -112,11 +112,12 @@ def test_spell_contract_resolves_by_explicit_spell_class_binding_normalized() ->
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -194,11 +195,12 @@ def test_spell_contract_dual_occurrence_many_providers_distinct() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -242,11 +244,12 @@ def test_spell_contract_dual_occurrence_unique_providers_shared() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -289,11 +292,12 @@ def test_spell_contract_override_list_payload_applies() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -335,11 +339,12 @@ def test_spell_contract_override_tuple_payload_applies() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -381,11 +386,12 @@ def test_spell_contract_override_dict_args_payload_applies() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -501,11 +507,12 @@ def test_spell_contract_missing_dependency_does_not_gate_provider_state() -> Non
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         provider_state = owner_book._spell_system_states.get_by_spell_id(service_id)
@@ -573,11 +580,12 @@ def test_spell_contract_runtime_error_does_not_gate_provider_state() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         provider_state = owner_book._spell_system_states.get_by_spell_id(service_id)
@@ -632,17 +640,19 @@ def test_spell_contract_contract_removed_falls_back_to_local() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
         assert isinstance(instance.service, ContractServiceRemote)
 
-        assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
         assert borrower.validate_contracts_and_define() == {}
 
         fallback_instance = borrower.meld(spell=consumer_id)
@@ -683,11 +693,12 @@ def test_spell_contract_secondary_binding_resolves() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -728,11 +739,12 @@ def test_spell_contract_config_frame_resolves() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=config_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=config_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)
@@ -774,11 +786,12 @@ def test_spell_contract_transfer_ownership_force_unshare_allows_local() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(spell=consumer_id)

@@ -312,7 +312,8 @@ def test_conduit_contract_by_spell_id_dynamic_link() -> None:
 
     owner.link(borrower)
     try:
-        borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner, permissions="create")
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner, permissions="create")
 
         spell_in_contracts = borrower.get_spell_in_contracts(spell_id)
         assert spell_in_contracts is not None
@@ -370,7 +371,8 @@ def test_conduit_contract_by_spell_object_dynamic_link() -> None:
 
     owner.link(borrower)
     try:
-        borrower.add_spell_to_contract(spell=owner_spell, conduit=owner, permissions="create")
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(spell=owner_spell, conduit=owner, permissions="create")
 
         spell_in_contracts = borrower.get_spell_in_contracts(spell_id)
         assert spell_in_contracts is not None

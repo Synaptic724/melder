@@ -166,11 +166,12 @@ def test_conduit_set_new_policy_block_all_rejects_with_contracts() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         with pytest.raises(
             RuntimeError,
             match="Cannot set policy to 'block_all' or 'whitelist_all' when there are existing contracts.",

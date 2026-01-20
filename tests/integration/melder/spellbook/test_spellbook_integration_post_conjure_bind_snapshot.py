@@ -442,11 +442,12 @@ def test_post_conjure_contract_addition_marks_local_collection_consumers() -> No
         borrower_book._spell_system_states.consume_dirty_lineages()
 
         owner.link(borrower)
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         dirty_lineages = borrower_book._spell_system_states.consume_dirty_lineages()
         assert borrower_consumer_spell.spell_index.id in dirty_lineages

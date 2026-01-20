@@ -1,4 +1,5 @@
 import logging
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,6 +7,10 @@ import pytest
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeControlTransactionRequest,
+    ChangeTransactionType,
+)
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
@@ -482,6 +487,20 @@ def test_resolve_peer_conduit_for_contract_hooks_uses_aether_for_ids(
         events.append((left, right))
 
     conduit_dynamic_normal._conduit_hooks = {"on_contract_created": [hook]}
+    spellbook = conduit_dynamic_normal._spellbook
+    spellbook._active_change_request = ChangeControlTransactionRequest(
+        request_id="tx-test-link",
+        request_type=ChangeTransactionType.LINK,
+        created_at=time.time(),
+        initiator_conduit_id=conduit_dynamic_normal._id,
+        spellbook_id=spellbook._id,
+        conduit_ids=(conduit_dynamic_normal._id, "peer-1"),
+        scope_keys=(),
+        scope_hashes=(),
+        binding_keys=(),
+        contract_keys=(),
+        metadata={},
+    )
 
     result = conduit_dynamic_normal.add_spell_to_contract(
         spell_id="sha-1",

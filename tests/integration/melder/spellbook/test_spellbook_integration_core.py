@@ -957,11 +957,12 @@ def test_spellbook_integration_contracted_spells_visible() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         contracted = borrower_book.contracted_spells.get(owner.id)
         assert contracted is not None
@@ -1004,17 +1005,19 @@ def test_spellbook_integration_contract_removal_clears_access() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.get_spell_in_contracts(spell_id) is not None
 
-        removed = borrower.remove_spell_from_contract(
-            spell_id=spell_id,
-            conduit=owner,
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            removed = borrower.remove_spell_from_contract(
+                spell_id=spell_id,
+                conduit=owner,
+            )
         assert removed is True
         assert borrower.get_spell_in_contracts(spell_id) is None
     finally:
@@ -1050,11 +1053,12 @@ def test_spellbook_integration_sever_link_clears_contracts() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert borrower.get_spell_in_contracts(spell_id) is not None
 
         unlinked = owner.sever_link(borrower)
@@ -1092,11 +1096,12 @@ def test_spellbook_integration_find_spell_index_and_key_for_contracted_spell() -
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         spell_index = borrower_book.find_spell_index(IService, BasicService.__name__, "primary")
         spell_key = borrower_book.find_spell_key(IService, BasicService.__name__, "primary")

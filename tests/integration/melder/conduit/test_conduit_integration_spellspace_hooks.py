@@ -257,13 +257,15 @@ def test_conduit_hooks_fire_for_meld_link_contract_and_cleanup() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spells_to_contract(
-            spell_ids=[service_id, config_id],
-            conduit=owner,
-            permissions="create",
-        ) == {service_id: True, config_id: True}
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spells_to_contract(
+                spell_ids=[service_id, config_id],
+                conduit=owner,
+                permissions="create",
+            ) == {service_id: True, config_id: True}
         assert owner.meld(spell=service_id) is not None
-        assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
         assert owner.sever_link(borrower) is True
     finally:
         borrower.cleanup()

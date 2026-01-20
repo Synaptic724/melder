@@ -134,12 +134,13 @@ def test_conduit_add_spell_to_contract_with_dependencies_requires_link() -> None
     owner = owner_book.conjure(automatic=False, name="owner")
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
-        with pytest.raises(RuntimeError, match="No contract found"):
-            borrower.add_spell_to_contract_with_dependencies(
-                spell_id=spell_id,
-                conduit=owner,
-                permissions="create",
-            )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            with pytest.raises(RuntimeError, match="No contract found"):
+                borrower.add_spell_to_contract_with_dependencies(
+                    spell_id=spell_id,
+                    conduit=owner,
+                    permissions="create",
+                )
         assert borrower.get_spells_in_contract_by_conduit(owner.id) is None
     finally:
         borrower.cleanup()

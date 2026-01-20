@@ -96,11 +96,12 @@ def test_spellbook_scanner_iter_contracted_spells_yields_contracted_spell() -> N
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         scanner = SpellbookScanner(borrower_book)
         try:
@@ -143,11 +144,12 @@ def test_spellbook_scanner_iter_all_spells_includes_local_and_contracted() -> No
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         scanner = SpellbookScanner(borrower_book)
         try:
@@ -184,11 +186,12 @@ def test_spellbook_scanner_find_by_frame_and_binding_includes_contracted_when_en
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         scanner = SpellbookScanner(borrower_book)
         try:
@@ -240,11 +243,12 @@ def test_spellbook_scanner_find_single_by_frame_and_binding_reports_ambiguity() 
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         scanner = SpellbookScanner(borrower_book)
         try:
@@ -293,11 +297,12 @@ def test_spellbook_scanner_find_by_index_resolves_contracted_spell() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         contracted_map = borrower_book.contracted_spells.get(owner.id)
         assert contracted_map is not None
