@@ -3151,7 +3151,8 @@ class Conduit(Cleanable, IConduit):
             conduit_id (str): id of the target peer conduit.
 
         Returns:
-            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
+            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None
+            if not found. If a contract exists but has no spells, inbound/outbound lists are empty.
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).

@@ -230,7 +230,7 @@ def _assert_basic_config(instance: Any) -> None:
 
 
 def _get_inbound_spell_ids(
-    spells_by_conduit: dict[str, list[tuple[str, Any]]],
+    spells_by_conduit: dict[str, list[tuple[str, Any]]] | None,
 ) -> list[str]:
     """
     Purpose:
@@ -239,11 +239,14 @@ def _get_inbound_spell_ids(
         - Returns spell IDs from inbound entries only.
         - Preserves duplicates so callers can assert idempotence.
     Args:
-        spells_by_conduit: Contract snapshot keyed by inbound/outbound.
+        spells_by_conduit: Contract snapshot keyed by inbound/outbound or None
+            when no contracted spells are present.
     Returns:
         list[str]: Spell IDs found in inbound entries.
     """
     inbound_ids: list[str] = []
+    if not spells_by_conduit:
+        return inbound_ids
     for spell_id, _spell in spells_by_conduit.get("inbound", []):
         inbound_ids.append(spell_id)
     return inbound_ids

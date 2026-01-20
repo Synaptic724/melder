@@ -2460,7 +2460,8 @@ class ConduitWard(Cleanable, IConduitWard):
         Returns:
             dict[str, list[tuple[str, ISpell]]] | None: A dictionary mapping roles
             ("inbound", "outbound") to lists of (spell_id, ISpell) tuples, or None
-            if no such conduit is linked.
+            if no such conduit is linked. If a contract exists but has no spells,
+            the lists are empty.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2495,7 +2496,7 @@ class ConduitWard(Cleanable, IConduitWard):
                 if spell is not None:
                     spells_result["outbound"].append((sid, spell))
 
-        return spells_result if spells_result["inbound"] or spells_result["outbound"] else None
+        return spells_result
 
 
     def _get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> dict[str, list[tuple[str, ISpell]]] | None:
@@ -2511,6 +2512,7 @@ class ConduitWard(Cleanable, IConduitWard):
 
         Returns:
             dict[str, list[tuple[str, ISpell]]] | None: A dictionary of spells exchanged (inbound/outbound), or None if not found.
+            When a contract exists but contains no spells, inbound/outbound lists are empty.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.

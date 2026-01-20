@@ -2853,7 +2853,8 @@ class IConduitWard(ICleanable, Protocol):
         Returns:
             dict[str, list[tuple[str, ISpell]]] | None: A dictionary mapping roles
             ("inbound", "outbound") to lists of (spell_id, ISpell) tuples, or None
-            if no such conduit is linked.
+            if no such conduit is linked. When a contract exists but contains no
+            spells, the inbound/outbound lists are empty.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2876,6 +2877,7 @@ class IConduitWard(ICleanable, Protocol):
 
         Returns:
             dict[str, list[tuple[str, ISpell]]] | None: A dictionary of spells exchanged (inbound/outbound), or None if not found.
+            When a contract exists but contains no spells, inbound/outbound lists are empty.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -4409,7 +4411,8 @@ class IConduit(ICleanable, Protocol):
             conduit_id (str): id of the target peer conduit.
 
         Returns:
-            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
+            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None
+            if not found. When a contract exists but contains no spells, inbound/outbound lists are empty.
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).

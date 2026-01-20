@@ -141,9 +141,13 @@ def test_conduit_remove_all_spells_from_contract_clears_inbound_keeps_link() -> 
                 permissions="create",
             ) == {service_id: True, config_id: True}
 
-            assert borrower.get_spells_in_contract_by_conduit(owner.id) is not None
+        assert borrower.get_spells_in_contract_by_conduit(owner.id) is not None
+        with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower._remove_all_spells_from_contract(conduit=owner) is True
-        assert borrower.get_spells_in_contract_by_conduit(owner.id) is None
+        assert borrower.get_spells_in_contract_by_conduit(owner.id) == {
+            "inbound": [],
+            "outbound": [],
+        }
 
         contracted = borrower.get_contracted_conduits()
         assert contracted is not None

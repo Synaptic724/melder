@@ -1963,14 +1963,16 @@ def test_add_spells_to_contract_with_link_dependencies_links_each(
     }
 
 
-def test_get_spells_in_contract_by_conduit_returns_none_when_no_spells_in_contract(
+def test_get_spells_in_contract_by_conduit_returns_empty_when_no_spells_in_contract(
     conduit_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
-    """Verify empty contracts return None for spell listings. No inbound or outbound spells should be reported."""
+    """Verify empty contracts return empty spell listings. No inbound or outbound spells should be reported."""
     owner, borrower = conduit_pair
     borrower._conduit_ward._create_new_contract(owner)
 
-    assert borrower._conduit_ward._get_spells_in_contract_by_conduit(owner._id) is None
+    result = borrower._conduit_ward._get_spells_in_contract_by_conduit(owner._id)
+
+    assert result == {"inbound": [], "outbound": []}
 
 
 def test_get_spells_in_contract_by_conduit_skips_missing_outbound_spell(
