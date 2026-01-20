@@ -145,7 +145,7 @@ class ChangeControlTransactionManager(Cleanable):
             - Does not register the request as in-flight.
         Args:
             request_type:
-                Transaction type to record (bind/link/unlink/etc).
+                Transaction type to record (bind/link/transfer_ownership/etc).
             initiator_conduit_id:
                 Conduit id that initiated the transaction.
             spellbook_id:

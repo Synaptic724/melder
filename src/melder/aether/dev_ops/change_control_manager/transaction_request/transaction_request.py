@@ -30,10 +30,9 @@ class ChangeTransactionType(str, Enum):
     __melder_internal__ = _mrg.sentinel
     BIND = "bind"
     LINK = "link"
-    UNLINK = "unlink"
     TRANSFER_OWNERSHIP = "transfer_ownership"
     MUTATION = "mutation"
-    CLUSTER_SHARE = "cluster_share"
+    CLUSTER_LINK = "cluster_link"
 
 
 @dataclass(frozen=True)

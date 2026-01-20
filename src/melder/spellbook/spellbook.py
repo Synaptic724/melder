@@ -843,6 +843,10 @@ class Spellbook(Cleanable, ISpellbook):
         Adds a specific spell (borrowed from a peer) to the contracted spells
         and updates the key and version caches for the given conduit.
 
+        When a link transaction is active, this also refreshes staged contract
+        keys for the peer conduit so change-control commit hooks can observe
+        the updated contract scope.
+
         Args:
             spell (ISpell): The spell object to add.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
@@ -883,6 +887,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         if should_mark and frame_key:
             self._mark_collection_dependents_dirty({frame_key})
+        self._try_update_staged_contract_keys(conduit_id)
 
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
@@ -890,6 +895,10 @@ class Spellbook(Cleanable, ISpellbook):
         Internal
 
         Removes a specific contracted spell from the internal registry.
+
+        When a link transaction is active, this also refreshes staged contract
+        keys for the peer conduit so change-control commit hooks can observe
+        the updated contract scope.
 
         Args:
             spell_id (str): The version SHA of the spell to remove.
@@ -939,6 +948,7 @@ class Spellbook(Cleanable, ISpellbook):
             if versions:
                 for version_id in versions:
                     versions_set.discard(version_id)
+        self._try_update_staged_contract_keys(conduit_id)
 
 
     def _clear_contracted_spells_for_conduit(self, conduit_id: str) -> None:
@@ -947,6 +957,10 @@ class Spellbook(Cleanable, ISpellbook):
 
         Clears all spells associated with a contracted conduit, retaining
         the contract structure and zeroing the version cache.
+
+        When a link transaction is active, this also refreshes staged contract
+        keys for the peer conduit so change-control commit hooks can observe
+        the updated contract scope.
 
         Args:
             conduit_id (str): The ID of the peer conduit whose contracted spells are to be cleared
@@ -968,6 +982,7 @@ class Spellbook(Cleanable, ISpellbook):
             self._contracted_spells[conduit_id].clear()
             self._lookup_contracted_spells[conduit_id].clear()
             self._contracted_versions[conduit_id].clear()
+        self._try_update_staged_contract_keys(conduit_id)
 
 
     def _sever_link_contract(self, conduit_id: str) -> None:
@@ -1570,6 +1585,59 @@ class Spellbook(Cleanable, ISpellbook):
         change_control.update_staged_request(
             request.request_id,
             binding_keys=binding_keys,
+        )
+
+    def _try_update_staged_contract_keys(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Update staged contract keys for an active link transaction.
+
+        Purpose:
+            Refresh staged contract metadata for a peer conduit after contract
+            changes are applied to the contracted spell maps.
+        Contract:
+            - No-op if no change transaction is active or it is not a link request.
+            - Replaces contract keys for the supplied conduit id while preserving
+              staged keys for other peers.
+            - No-op if conduit_id is empty.
+        Args:
+            conduit_id:
+                Peer conduit id whose contract keys should be refreshed.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Spellbook has been cleaned.
+        Threading:
+            Captures current contracted lookup keys under the Spellbook lock;
+            change-control updates run without holding the Spellbook lock.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            return
+        request: Optional[ChangeControlTransactionRequest] = None
+        lookup_keys: List[Tuple[str, str]] = []
+        with self._lock:
+            request = self._active_change_request
+            if self._lookup_contracted_spells is not None:
+                lookup_map = self._lookup_contracted_spells.get(conduit_id)
+                if lookup_map:
+                    lookup_keys = list(lookup_map.keys())
+        if request is None:
+            return
+        if request.request_type is not ChangeTransactionType.LINK:
+            return
+
+        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        staged = change_control.orchestrator().get_staged(request.request_id)
+        existing_keys = staged.contract_keys if staged is not None else request.contract_keys
+        filtered_keys = [key for key in existing_keys if key[2] != conduit_id]
+        for frame_key, binding_key in lookup_keys:
+            filtered_keys.append((frame_key, binding_key, conduit_id))
+
+        change_control.update_staged_request(
+            request.request_id,
+            contract_keys=filtered_keys,
         )
 
     def _mark_collection_dependents_dirty(self, frame_keys: Set[str]) -> None:

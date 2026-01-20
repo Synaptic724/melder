@@ -179,11 +179,12 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         borrower_book.begin_binding_transaction()
         consumer_id = borrower_book.bind(
             spell=Consumer,
@@ -273,11 +274,12 @@ def test_component_phase5_contract_dependencies_generate_nested_socket_paths() -
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract_with_dependencies(
-            spell_id=root_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            assert borrower.add_spell_to_contract_with_dependencies(
+                spell_id=root_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         borrower_book.begin_binding_transaction()
         consumer_id = borrower_book.bind(
@@ -395,11 +397,12 @@ def test_component_phase5_contracts_exclude_uncontracted_remote_spells() -> None
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
 
         with borrower_book.binding_transaction() as txn:
             consumer_id = txn.bind(

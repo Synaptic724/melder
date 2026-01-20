@@ -10,12 +10,16 @@ full integration flows.
 from __future__ import annotations
 
 import threading
-from typing import Any, Optional
+from contextlib import contextmanager
+from typing import Any, Optional, Iterable, Dict, Union, Tuple
 
 import pytest
 
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 
@@ -154,6 +158,40 @@ class _ConduitStub:
         )
         if self._should_raise("remove", root_spell_id):
             raise RuntimeError("simulated removal failure")
+
+    @contextmanager
+    def transaction(
+            self,
+            transaction_type: Union[ChangeTransactionType, str],
+            *,
+            conduit_ids: Optional[Iterable[str]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> "_ConduitStub":
+        """
+        Provide a no-op transaction context manager for cluster tests.
+
+        Purpose:
+            Allow ConduitCluster to call transaction(...) on stub conduits
+            without affecting test behavior.
+        Contract:
+            - Accepts transaction parameters but does not enforce them.
+            - Yields self and performs no cleanup.
+        Args:
+            transaction_type: Change-control transaction type identifier.
+            conduit_ids: Optional conduit ids participating in the request.
+            scope_keys: Optional scope keys for conflict checks.
+            scope_hashes: Optional scope hashes for conflict checks.
+            binding_keys: Optional binding keys for the request.
+            contract_keys: Optional contract keys for the request.
+            metadata: Optional diagnostic metadata.
+        Returns:
+            _ConduitStub: The stub conduit instance.
+        """
+        yield self
 
 
 class _ConduitNoFrameStub:

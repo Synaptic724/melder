@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+from typing import Any, Dict, Iterable, Optional, Tuple, Union
+
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
@@ -135,6 +141,37 @@ class _ContractingConduitStub:
                 "aetheric_frame": aetheric_frame,
             }
         )
+
+    @contextmanager
+    def transaction(
+        self,
+        transaction_type: Union[ChangeTransactionType, str],
+        *,
+        conduit_ids: Optional[Iterable[str]] = None,
+        scope_keys: Optional[Iterable[str]] = None,
+        scope_hashes: Optional[Iterable[str]] = None,
+        binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+        contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> "_ContractingConduitStub":
+        """
+        Purpose:
+            Provide a no-op transaction context manager for cluster component tests.
+        Contract:
+            - Accepts change-control parameters but does not enforce them.
+            - Yields self and performs no cleanup.
+        Args:
+            transaction_type: Change-control transaction type identifier.
+            conduit_ids: Optional conduit ids participating in the request.
+            scope_keys: Optional scope keys for conflict checks.
+            scope_hashes: Optional scope hashes for conflict checks.
+            binding_keys: Optional binding keys for the request.
+            contract_keys: Optional contract keys for the request.
+            metadata: Optional diagnostic metadata.
+        Returns:
+            _ContractingConduitStub: The stub conduit instance.
+        """
+        yield self
 
 
 class _FrameStub:

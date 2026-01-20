@@ -419,24 +419,27 @@ def test_conduit_linked_concurrent_meld_across_four_conduits() -> None:
         for borrower in borrowers:
             owner.link(borrower)
 
-        borrowers[0].add_spell_to_contract(
-            spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-            permissions="create",
-            link_dependencies=True,
-        )
-        borrowers[1].add_spell_to_contract(
-            spell_id=depth5_ids[Depth5Root],
-            conduit=owner,
-            permissions="create",
-            link_dependencies=True,
-        )
-        borrowers[2].add_spell_to_contract(
-            spell_id=depth7_ids[Depth7Root],
-            conduit=owner,
-            permissions="create",
-            link_dependencies=True,
-        )
+        with borrowers[0].transaction("link", conduit_ids=[owner._id]):
+            borrowers[0].add_spell_to_contract(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
+        with borrowers[1].transaction("link", conduit_ids=[owner._id]):
+            borrowers[1].add_spell_to_contract(
+                spell_id=depth5_ids[Depth5Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
+        with borrowers[2].transaction("link", conduit_ids=[owner._id]):
+            borrowers[2].add_spell_to_contract(
+                spell_id=depth7_ids[Depth7Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
 
         tasks = [
             ("owner", owner, depth9_ids[Depth9Root], _assert_depth9_root),
@@ -540,12 +543,13 @@ def test_conduit_concurrent_meld_across_linked_conduits_isolated_per_conduit() -
     try:
         for borrower in borrowers:
             owner.link(borrower)
-            borrower.add_spell_to_contract(
-                spell_id=depth3_ids[Depth3Root],
-                conduit=owner,
-                permissions="create",
-                link_dependencies=True,
-            )
+            with borrower.transaction("link", conduit_ids=[owner._id]):
+                borrower.add_spell_to_contract(
+                    spell_id=depth3_ids[Depth3Root],
+                    conduit=owner,
+                    permissions="create",
+                    link_dependencies=True,
+                )
         tasks = [
             ("owner", owner, depth3_ids[Depth3Root], _assert_depth3_root),
             ("borrower-1", borrowers[0], depth3_ids[Depth3Root], _assert_depth3_root),
@@ -664,42 +668,43 @@ def test_conduit_concurrent_contract_additions_idempotent() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        barrier = Barrier(4)
-        lock = Lock()
-        errors: list[Exception] = []
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            barrier = Barrier(4)
+            lock = Lock()
+            errors: list[Exception] = []
 
-        def worker() -> None:
-            """
-            Purpose:
-                Concurrently attempt to add the same spell to a contract.
-            Contract:
-                - Any exception is captured for assertions.
-            Returns:
-                None.
-            """
-            try:
-                barrier.wait(timeout=5)
-                borrower.add_spell_to_contract(
-                    spell_id=depth3_ids[Depth3Root],
-                    conduit=owner,
-                    permissions="create",
-                    link_dependencies=True,
-                )
-            except Exception as exc:
-                with lock:
-                    errors.append(exc)
+            def worker() -> None:
+                """
+                Purpose:
+                    Concurrently attempt to add the same spell to a contract.
+                Contract:
+                    - Any exception is captured for assertions.
+                Returns:
+                    None.
+                """
+                try:
+                    barrier.wait(timeout=5)
+                    borrower.add_spell_to_contract(
+                        spell_id=depth3_ids[Depth3Root],
+                        conduit=owner,
+                        permissions="create",
+                        link_dependencies=True,
+                    )
+                except Exception as exc:
+                    with lock:
+                        errors.append(exc)
 
-        threads = [Thread(target=worker) for _ in range(4)]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
+            threads = [Thread(target=worker) for _ in range(4)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
 
-        assert errors == []
-        spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
-        assert spells_by_conduit is not None
-        inbound_ids = _get_inbound_spell_ids(spells_by_conduit)
-        assert inbound_ids.count(depth3_ids[Depth3Root]) == 1
+            assert errors == []
+            spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
+            assert spells_by_conduit is not None
+            inbound_ids = _get_inbound_spell_ids(spells_by_conduit)
+            assert inbound_ids.count(depth3_ids[Depth3Root]) == 1
     finally:
         borrower.cleanup()
         owner.cleanup()
@@ -794,11 +799,12 @@ def test_conduit_concurrent_shared_unique_contract_reuses_owner_instance() -> No
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        borrower.add_spell_to_contract(
-            spell_id=spell_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
         barrier = Barrier(2)
         lock = Lock()
         results: list[Any] = []
@@ -1025,7 +1031,8 @@ def test_conduit_concurrent_contract_additions_multiple_spells() -> None:
                 link_dependencies=True,
             )
 
-        _results, errors = _run_concurrent_calls(functions=[add_depth3, add_depth5])
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            _results, errors = _run_concurrent_calls(functions=[add_depth3, add_depth5])
         assert errors == []
         spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
         assert spells_by_conduit is not None
@@ -1090,11 +1097,12 @@ def test_conduit_concurrent_contract_additions_same_spell_multiple_borrowers() -
                 Returns:
                     None.
                 """
-                borrower.add_spell_to_contract(
-                    spell_id=spell_id,
-                    conduit=owner,
-                    permissions="create",
-                )
+                with borrower.transaction("link", conduit_ids=[owner._id]):
+                    borrower.add_spell_to_contract(
+                        spell_id=spell_id,
+                        conduit=owner,
+                        permissions="create",
+                    )
             return _add
 
         functions = [add_for(borrower) for borrower in borrowers]
@@ -1142,11 +1150,12 @@ def test_conduit_concurrent_meld_many_across_borrowers_distinct_instances() -> N
     try:
         for borrower in borrowers:
             owner.link(borrower)
-            borrower.add_spell_to_contract(
-                spell_id=spell_id,
-                conduit=owner,
-                permissions="create",
-            )
+            with borrower.transaction("link", conduit_ids=[owner._id]):
+                borrower.add_spell_to_contract(
+                    spell_id=spell_id,
+                    conduit=owner,
+                    permissions="create",
+                )
 
         def meld_owner() -> BasicService:
             """
@@ -1228,11 +1237,12 @@ def test_conduit_concurrent_meld_unique_across_multiple_borrowers_shared_instanc
     try:
         for borrower in borrowers:
             owner.link(borrower)
-            borrower.add_spell_to_contract(
-                spell_id=spell_id,
-                conduit=owner,
-                permissions="create",
-            )
+            with borrower.transaction("link", conduit_ids=[owner._id]):
+                borrower.add_spell_to_contract(
+                    spell_id=spell_id,
+                    conduit=owner,
+                    permissions="create",
+                )
 
         def meld_owner() -> BasicService:
             """
@@ -1515,7 +1525,8 @@ def test_conduit_concurrent_bulk_contract_additions() -> None:
                 permissions="create",
             )
 
-        _results, errors = _run_concurrent_calls(functions=[add_batch_a, add_batch_b])
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            _results, errors = _run_concurrent_calls(functions=[add_batch_a, add_batch_b])
         assert errors == []
         spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
         assert spells_by_conduit is not None

@@ -1,3 +1,4 @@
+import threading
 from unittest.mock import MagicMock
 
 import pytest
@@ -56,6 +57,8 @@ def spellbook_stub() -> MagicMock:
     """
     spellbook = MagicMock()
     spellbook._id = "spellbook-1"
+    spellbook._lock = threading.RLock()
+    spellbook._active_change_request = None
     spellbook._spells = {}
     spellbook._contracted_spells = {}
     spellbook._lookup_spells = {}

@@ -2525,6 +2525,143 @@ class Conduit(Cleanable, IConduit):
             self._logger.error("_qualify_contracts: non-dynamic env", "_qualify_contracts")
             raise RuntimeError("Dynamic environment is not enabled. Cannot interact with spell contracts.")
 
+    def _resolve_contract_peer_ids(
+            self,
+            *,
+            conduit: Optional[IConduit],
+            conduit_id: Optional[str],
+            allow_all_links: bool,
+    ) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Resolve peer conduit ids for contract gating.
+
+        Purpose:
+            Normalize the peer conduit targets used to validate a link
+            transaction before contract mutation.
+        Contract:
+            - Returns a tuple of peer conduit ids to require in the active
+              link transaction.
+            - Raises if no peer is supplied and allow_all_links is False.
+            - When allow_all_links is True, returns all currently linked peers.
+        Args:
+            conduit:
+                Optional peer conduit instance.
+            conduit_id:
+                Optional peer conduit id.
+            allow_all_links:
+                When True, fall back to all current linked peers.
+        Returns:
+            Tuple[str, ...]:
+                Peer conduit ids to validate in the active link transaction.
+        Raises:
+            RuntimeError: If no peer can be resolved and allow_all_links is False.
+        Threading:
+            Reads linked peers via ConduitWard which guards its state.
+        """
+        if conduit is not None:
+            return (conduit._id,)
+        if conduit_id is not None:
+            return (conduit_id,)
+        if not allow_all_links:
+            raise RuntimeError(
+                "[CONDUIT] Contract mutation requires a target conduit or conduit_id."
+            )
+        peers = self._conduit_ward._get_links()
+        peer_ids = {peer._id for peer in peers if peer is not None}
+        return tuple(peer_ids)
+
+    def _require_link_transaction_for_contract(
+            self,
+            *,
+            conduit: Optional[IConduit],
+            conduit_id: Optional[str],
+            allow_all_links: bool,
+    ) -> None:
+        """
+        Internal
+
+        Require an active link change transaction for contract mutations.
+
+        Purpose:
+            Ensure contract mutations are performed only under a validated
+            link transaction that names all participating conduits.
+        Contract:
+            - Requires an active change transaction of type LINK.
+            - The active request must include this conduit id and the peer
+              conduit ids in its conduit_ids list.
+            - Raises with a descriptive error if the requirement is not met.
+        Args:
+            conduit:
+                Optional peer conduit instance supplied to the contract call.
+            conduit_id:
+                Optional peer conduit id supplied to the contract call.
+            allow_all_links:
+                When True, allows peer resolution from all current links.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If no change transaction is active.
+            RuntimeError: If the active transaction is not a link transaction.
+            RuntimeError: If required conduit ids are missing from the transaction.
+            RuntimeError: If the spellbook is unavailable.
+        Threading:
+            Reads the active request under the Spellbook lock.
+        """
+        spellbook = self._spellbook
+        if spellbook is None:
+            self._logger.error(
+                "Spellbook unavailable for contract transaction check",
+                "_require_link_transaction_for_contract",
+            )
+            raise RuntimeError("[CONDUIT] Spellbook is not available for contract operations.")
+
+        with spellbook._lock:
+            request = spellbook._active_change_request
+
+        if request is None:
+            self._logger.error(
+                "Contract mutation requires active link transaction",
+                "_require_link_transaction_for_contract",
+            )
+            raise RuntimeError(
+                "[CONDUIT] Contract mutation requires an active link transaction. "
+                "Call begin_transaction('link') on the borrower and include the peer conduit id."
+            )
+        if request.request_type is not ChangeTransactionType.LINK:
+            self._logger.error(
+                "Contract mutation requires link transaction",
+                "_require_link_transaction_for_contract",
+            )
+            raise RuntimeError(
+                "[CONDUIT] Active change transaction is not a link transaction."
+            )
+
+        required_ids = self._resolve_contract_peer_ids(
+            conduit=conduit,
+            conduit_id=conduit_id,
+            allow_all_links=allow_all_links,
+        )
+        missing: list[str] = []
+        if self._id not in request.conduit_ids:
+            missing.append(self._id)
+        for peer_id in required_ids:
+            if peer_id not in request.conduit_ids:
+                missing.append(peer_id)
+
+        if missing:
+            unique_missing = sorted(set(missing))
+            self._logger.error(
+                f"Link transaction missing conduit ids: {unique_missing}",
+                "_require_link_transaction_for_contract",
+            )
+            raise RuntimeError(
+                "[CONDUIT] Link transaction missing conduit ids required for contract mutation. "
+                f"Missing={unique_missing}. Pass conduit_ids including borrower and peer "
+                "to begin_transaction('link')."
+            )
+
 
 
     def add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: str = None,
@@ -2539,7 +2676,8 @@ class Conduit(Cleanable, IConduit):
         to/from a peer conduit. The contract defines the permissions under which the spell can be used.
 
         You must provide either a `spell` object or a `spell_id`. The target conduit must be specified
-        either directly or resolved via its ID and aetheric frame.
+        either directly or resolved via its ID and aetheric frame. Contract mutations require an
+        active link transaction that includes both conduits.
 
         Args:
             spell (ISpell, optional): The spell object to contract.
@@ -2554,8 +2692,14 @@ class Conduit(Cleanable, IConduit):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         self._qualify_contracts()
+        self._require_link_transaction_for_contract(
+            conduit=conduit,
+            conduit_id=conduit_id,
+            allow_all_links=False,
+        )
 
         result = self._conduit_ward._add_spell_to_contract(
             spell=spell,
@@ -2605,8 +2749,14 @@ class Conduit(Cleanable, IConduit):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         self._qualify_contracts()
+        self._require_link_transaction_for_contract(
+            conduit=conduit,
+            conduit_id=conduit_id,
+            allow_all_links=False,
+        )
 
         report = self._conduit_ward._add_spells_to_contract(
             spell_ids=spell_ids,
@@ -2665,8 +2815,14 @@ class Conduit(Cleanable, IConduit):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         self._qualify_contracts()
+        self._require_link_transaction_for_contract(
+            conduit=conduit,
+            conduit_id=conduit_id,
+            allow_all_links=False,
+        )
 
         result = self._conduit_ward._remove_spell_from_contract(
             spell=spell,
@@ -2708,8 +2864,14 @@ class Conduit(Cleanable, IConduit):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         self._qualify_contracts()
+        self._require_link_transaction_for_contract(
+            conduit=conduit,
+            conduit_id=conduit_id,
+            allow_all_links=False,
+        )
 
         report = self._conduit_ward._remove_spells_from_contract(
             spell_ids=spell_ids,
@@ -2750,8 +2912,16 @@ class Conduit(Cleanable, IConduit):
         Removes a root spell_id (and any dependency Details attributed to it) from one
         contract or all contracts. Orphaned Details trigger contracted spell removal;
         empty contracts are severed.
+
+        Contract mutations require an active link transaction that includes the
+        borrower and the peer conduits involved in the contract cleanup.
         """
         self._qualify_contracts()
+        self._require_link_transaction_for_contract(
+            conduit=conduit,
+            conduit_id=conduit_id,
+            allow_all_links=True,
+        )
         return self._conduit_ward._remove_root_from_contracts(
             root_spell_id=root_spell_id,
             conduit=conduit,
@@ -2807,8 +2977,14 @@ class Conduit(Cleanable, IConduit):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         self._qualify_contracts()
+        self._require_link_transaction_for_contract(
+            conduit=conduit,
+            conduit_id=conduit_id,
+            allow_all_links=False,
+        )
 
         result = self._conduit_ward._remove_all_spells_from_contract(
             conduit=conduit,

@@ -4,6 +4,9 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ConduitCluster(Cleanable):
@@ -272,15 +275,19 @@ class ConduitCluster(Cleanable):
             if link_deps:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 try:
-                    peer.add_spell_to_contract(
-                        spell=spell,
-                        conduit=owner,
-                        permissions=getattr(spell, "permissions", "create"),
-                        aetheric_frame=aetheric_frame_name,
-                        reason=DetailReason.root,
-                        root_spell_id=cluster_root_id,
-                        link_dependencies=True,
-                    )
+                    with peer.transaction(
+                        ChangeTransactionType.LINK,
+                        conduit_ids=[owner._id],
+                    ):
+                        peer.add_spell_to_contract(
+                            spell=spell,
+                            conduit=owner,
+                            permissions=getattr(spell, "permissions", "create"),
+                            aetheric_frame=aetheric_frame_name,
+                            reason=DetailReason.root,
+                            root_spell_id=cluster_root_id,
+                            link_dependencies=True,
+                        )
                 except Exception:
                     continue
 
@@ -307,24 +314,32 @@ class ConduitCluster(Cleanable):
                 continue
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
-                peer.remove_root_from_contracts(
-                    root_spell_id=cluster_root_id,
-                    conduit=owner,
-                    aetheric_frame=aetheric_frame_name,
-                )
+                with peer.transaction(
+                    ChangeTransactionType.LINK,
+                    conduit_ids=[owner._id],
+                ):
+                    peer.remove_root_from_contracts(
+                        root_spell_id=cluster_root_id,
+                        conduit=owner,
+                        aetheric_frame=aetheric_frame_name,
+                    )
             except Exception:
                 continue
             else:
                 try:
-                    peer.add_spell_to_contract(
-                        spell=spell,
-                        conduit=owner,
-                        permissions=getattr(spell, "permissions", "create"),
-                        aetheric_frame=aetheric_frame_name,
-                        reason=DetailReason.manual,
-                        root_spell_id=spell.spell_id,
-                        link_dependencies=False,
-                    )
+                    with peer.transaction(
+                        ChangeTransactionType.LINK,
+                        conduit_ids=[owner._id],
+                    ):
+                        peer.add_spell_to_contract(
+                            spell=spell,
+                            conduit=owner,
+                            permissions=getattr(spell, "permissions", "create"),
+                            aetheric_frame=aetheric_frame_name,
+                            reason=DetailReason.manual,
+                            root_spell_id=spell.spell_id,
+                            link_dependencies=False,
+                        )
                 except Exception:
                     continue
 
@@ -349,15 +364,19 @@ class ConduitCluster(Cleanable):
                 continue
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
-                borrower.add_spell_to_contract(
-                    spell=spell,
-                    conduit=owner,
-                    permissions=getattr(spell, "permissions", "create"),
-                    aetheric_frame=getattr(owner, "_aetheric_frame", "default"),
-                    reason=DetailReason.root,
-                    root_spell_id=cluster_root_id,
-                    link_dependencies=link_deps,
-                )
+                with borrower.transaction(
+                    ChangeTransactionType.LINK,
+                    conduit_ids=[owner._id],
+                ):
+                    borrower.add_spell_to_contract(
+                        spell=spell,
+                        conduit=owner,
+                        permissions=getattr(spell, "permissions", "create"),
+                        aetheric_frame=getattr(owner, "_aetheric_frame", "default"),
+                        reason=DetailReason.root,
+                        root_spell_id=cluster_root_id,
+                        link_dependencies=link_deps,
+                    )
             except Exception:
                 continue
 
@@ -382,11 +401,15 @@ class ConduitCluster(Cleanable):
                 continue
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
-                borrower.remove_root_from_contracts(
-                    root_spell_id=cluster_root_id,
-                    conduit=owner,
-                    aetheric_frame=aetheric_frame,
-                )
+                with borrower.transaction(
+                    ChangeTransactionType.LINK,
+                    conduit_ids=[owner._id],
+                ):
+                    borrower.remove_root_from_contracts(
+                        root_spell_id=cluster_root_id,
+                        conduit=owner,
+                        aetheric_frame=aetheric_frame,
+                    )
             except Exception:
                 continue
 

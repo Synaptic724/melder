@@ -4155,7 +4155,8 @@ class IConduit(ICleanable, Protocol):
         to/from a peer conduit. The contract defines the permissions under which the spell can be used.
 
         You must provide either a `spell` object or a `spell_id`. The target conduit must be specified
-        either directly or resolved via its ID and aetheric frame.
+        either directly or resolved via its ID and aetheric frame. Contract mutations require an
+        active link transaction that includes both conduits.
 
         Args:
             spell (ISpell, optional): The spell object to contract.
@@ -4170,6 +4171,7 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
 
@@ -4203,6 +4205,7 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
 
@@ -4237,6 +4240,7 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
 
@@ -4268,6 +4272,7 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
 
@@ -4279,6 +4284,9 @@ class IConduit(ICleanable, Protocol):
         Removes a root spell_id (and any dependency Details attributed to it) from one
         contract or all contracts. Orphaned Details trigger contracted spell removal;
         empty contracts are severed.
+
+        Contract mutations require an active link transaction that includes the
+        borrower and the peer conduits involved in the contract cleanup.
         """
         ...
 
@@ -4325,6 +4333,7 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
 

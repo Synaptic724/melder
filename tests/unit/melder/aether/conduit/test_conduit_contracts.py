@@ -1,3 +1,4 @@
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,7 +7,42 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeControlTransactionRequest,
+    ChangeTransactionType,
+)
 from melder.spellbook.configuration.configuration import Configuration
+
+
+def _set_active_link_transaction(conduit: Conduit, peer_id: str) -> None:
+    """
+    Configure a link transaction on the conduit spellbook for contract tests.
+
+    Purpose:
+        Provide the active link request required by contract mutations.
+    Contract:
+        - Updates the spellbook active request with borrower + peer ids.
+        - Uses a deterministic request payload for unit tests.
+    Args:
+        conduit: Borrower conduit that owns the spellbook.
+        peer_id: Peer conduit id involved in the contract mutation.
+    Returns:
+        None.
+    """
+    spellbook = conduit._spellbook
+    spellbook._active_change_request = ChangeControlTransactionRequest(
+        request_id="tx-test-link",
+        request_type=ChangeTransactionType.LINK,
+        created_at=time.time(),
+        initiator_conduit_id=conduit._id,
+        spellbook_id=spellbook._id,
+        conduit_ids=(conduit._id, peer_id),
+        scope_keys=(),
+        scope_hashes=(),
+        binding_keys=(),
+        contract_keys=(),
+        metadata={},
+    )
 
 
 def test_link_raises_when_not_dynamic(
@@ -298,6 +334,7 @@ def test_add_spell_to_contract_delegates_and_fires_hook(
         events.append((left, right))
 
     conduit_dynamic_normal._conduit_hooks = {"on_contract_created": [hook]}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
 
     result = conduit_dynamic_normal.add_spell_to_contract(
         spell_id="sha-1",
@@ -358,6 +395,7 @@ def test_add_spell_to_contract_skips_hook_on_false(
         events.append((left, right))
 
     conduit_dynamic_normal._conduit_hooks = {"on_contract_created": [hook]}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
 
     result = conduit_dynamic_normal.add_spell_to_contract(
         spell_id="sha-1",
@@ -406,6 +444,7 @@ def test_add_spells_to_contract_fires_hook_on_any_success(
         events.append((left, right))
 
     conduit_dynamic_normal._conduit_hooks = {"on_contract_created": [hook]}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
 
     result = conduit_dynamic_normal.add_spells_to_contract(
         ["a", "b"],
@@ -453,6 +492,7 @@ def test_add_spells_to_contract_skips_hook_when_none_succeed(
         events.append((left, right))
 
     conduit_dynamic_normal._conduit_hooks = {"on_contract_created": [hook]}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
 
     result = conduit_dynamic_normal.add_spells_to_contract(
         ["a"],
@@ -498,6 +538,7 @@ def test_remove_spell_from_contract_fires_hook_on_success(
         events.append((left, right))
 
     conduit_dynamic_normal._conduit_hooks = {"on_contract_removed": [hook]}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
 
     result = conduit_dynamic_normal.remove_spell_from_contract(
         spell_id="sha-1",
@@ -547,6 +588,7 @@ def test_remove_spells_from_contract_fires_hook_on_any_success(
         events.append((left, right))
 
     conduit_dynamic_normal._conduit_hooks = {"on_contract_removed": [hook]}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
 
     result = conduit_dynamic_normal.remove_spells_from_contract(
         spell_ids=["a", "b"],
@@ -575,6 +617,7 @@ def test_remove_root_from_contracts_delegates_to_ward(
     """
     conduit_dynamic_normal._conduit_ward = MagicMock()
     conduit_dynamic_normal._conduit_ward._remove_root_from_contracts.return_value = {"peer": True}
+    _set_active_link_transaction(conduit_dynamic_normal, "peer")
 
     result = conduit_dynamic_normal.remove_root_from_contracts(
         root_spell_id="root-1",
@@ -665,6 +708,7 @@ def test_remove_all_spells_from_contract_fires_hook_on_success(
         events.append((left, right))
 
     conduit_dynamic_normal._conduit_hooks = {"on_contract_removed": [hook]}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
 
     result = conduit_dynamic_normal._remove_all_spells_from_contract(
         conduit=conduit_lesser,

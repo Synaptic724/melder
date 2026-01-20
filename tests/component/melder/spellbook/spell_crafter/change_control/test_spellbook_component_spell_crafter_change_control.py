@@ -280,11 +280,12 @@ def test_component_change_control_tracks_contracted_dependency_in_component_of()
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         borrower_book.begin_binding_transaction()
         consumer_id = borrower_book.bind(
             spell=Consumer,
@@ -391,11 +392,12 @@ def test_component_change_control_excludes_uncontracted_remote_spells() -> None:
         owner = owner_book.conjure(automatic=False, name="owner")
         borrower = borrower_book.conjure(automatic=False, name="borrower")
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=service_id,
-            conduit=owner,
-            permissions="create",
-        )
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
         borrower_book.begin_binding_transaction()
         consumer_id = borrower_book.bind(
             spell=Consumer,

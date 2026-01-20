@@ -134,12 +134,13 @@ def test_component_conduit_validate_resolution_reports_missing_dependencies() ->
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-            permissions="create",
-            link_dependencies=False,
-        )
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            assert borrower.add_spell_to_contract(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=False,
+            )
 
         state = borrower.validate_resolution()
         assert state is not None
@@ -182,12 +183,13 @@ def test_component_conduit_validate_resolution_returns_valid_state() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        assert borrower.add_spell_to_contract(
-            spell_id=depth3_ids[Depth3Root],
-            conduit=owner,
-            permissions="create",
-            link_dependencies=True,
-        )
+        with borrower.transaction("link", conduit_ids=[owner._id]):
+            assert borrower.add_spell_to_contract(
+                spell_id=depth3_ids[Depth3Root],
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
 
         state = borrower.validate_resolution()
         assert state is not None
