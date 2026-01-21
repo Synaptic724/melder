@@ -8,6 +8,9 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
 )
+from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+    ChangeControlStagedMutation,
+)
 
 
 @dataclass(frozen=True)
@@ -164,6 +167,56 @@ class ChangeControlEmbargoManager(Cleanable):
                 self._embargoes_by_scope.setdefault(scope_key, []).append(record)
                 self._embargoes_by_owner.setdefault(owner_request_id, set()).add(scope_key)
 
+    def extend_embargoes(
+            self,
+            *,
+            owner_request_id: str,
+            scope_keys: Iterable[str],
+            reason_tag: str,
+    ) -> None:
+        """
+        Extend embargoes for an existing request with additional scope keys.
+
+        Purpose:
+            Allow staged metadata updates to add new embargo scopes without
+            duplicating existing records.
+        Contract:
+            - Only new scope keys are added for the owner_request_id.
+            - Existing embargoes are preserved.
+        Args:
+            owner_request_id:
+                Request id that owns the embargoes.
+            scope_keys:
+                Scope keys to add as embargoes.
+            reason_tag:
+                Reason tag for the embargo records.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+            ValueError: If owner_request_id or reason_tag is empty.
+        Threading:
+            Acquires the internal lock while updating registries.
+        """
+        self.check_cleaned()
+        if not owner_request_id or not reason_tag:
+            raise ValueError("owner_request_id and reason_tag are required")
+        created_at = time.time()
+        with self._lock:
+            existing = set(self._embargoes_by_owner.get(owner_request_id, set()))
+            for scope_key in scope_keys:
+                if not scope_key or scope_key in existing:
+                    continue
+                record = ChangeControlEmbargoRecord(
+                    scope_key=scope_key,
+                    reason_tag=reason_tag,
+                    owner_request_id=owner_request_id,
+                    created_at=created_at,
+                )
+                self._embargoes_by_scope.setdefault(scope_key, []).append(record)
+                self._embargoes_by_owner.setdefault(owner_request_id, set()).add(scope_key)
+                existing.add(scope_key)
+
     def close_embargo(self, owner_request_id: str) -> None:
         """
         Close all embargoes owned by the supplied request id.
@@ -280,24 +333,104 @@ class ChangeControlEmbargoManager(Cleanable):
             Thread-safe without locks; no shared state is mutated.
         """
         self.check_cleaned()
-        scope_keys: Set[str] = set()
-        if request.scope_keys:
-            scope_keys.update(key for key in request.scope_keys if key)
-        if request.spellbook_id:
-            scope_keys.add(f"scope:spellbook:{request.spellbook_id}")
-        if request.conduit_ids:
-            for conduit_id in request.conduit_ids:
+        return self._collect_scope_keys_from_fields(
+            scope_keys=request.scope_keys,
+            spellbook_id=request.spellbook_id,
+            conduit_ids=request.conduit_ids,
+            binding_keys=request.binding_keys,
+            contract_keys=request.contract_keys,
+        )
+
+    def collect_scope_keys_from_staged(
+            self,
+            staged: ChangeControlStagedMutation,
+    ) -> Tuple[str, ...]:
+        """
+        Build scope keys for embargo checks from staged mutation metadata.
+
+        Purpose:
+            Normalize scope keys when staged metadata updates occur after admission.
+        Contract:
+            - Returns an empty tuple if staged is None.
+        Args:
+            staged:
+                Staged mutation to normalize.
+        Returns:
+            Tuple[str, ...]:
+                Normalized scope keys for embargo checks.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        if staged is None:
+            return ()
+        return self._collect_scope_keys_from_fields(
+            scope_keys=staged.scope_keys,
+            spellbook_id=staged.spellbook_id,
+            conduit_ids=staged.conduit_ids,
+            binding_keys=staged.binding_keys,
+            contract_keys=staged.contract_keys,
+        )
+
+    def _collect_scope_keys_from_fields(
+            self,
+            *,
+            scope_keys: Iterable[str],
+            spellbook_id: str | None,
+            conduit_ids: Iterable[str],
+            binding_keys: Iterable[Tuple[str, str]],
+            contract_keys: Iterable[Tuple[str, str, str]],
+    ) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Build normalized scope keys from field values.
+
+        Purpose:
+            Provide a shared scope-key derivation for requests and staged updates.
+        Contract:
+            - Returns sorted, de-duplicated scope keys.
+        Args:
+            scope_keys:
+                Optional explicit scope keys.
+            spellbook_id:
+                Optional spellbook id to normalize.
+            conduit_ids:
+                Optional conduit ids to normalize.
+            binding_keys:
+                Optional binding keys to normalize.
+            contract_keys:
+                Optional contract keys to normalize.
+        Returns:
+            Tuple[str, ...]:
+                Normalized scope keys for embargo checks.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        scope_set: Set[str] = set()
+        if scope_keys:
+            scope_set.update(key for key in scope_keys if key)
+        if spellbook_id:
+            scope_set.add(f"scope:spellbook:{spellbook_id}")
+        if conduit_ids:
+            for conduit_id in conduit_ids:
                 if conduit_id:
-                    scope_keys.add(f"scope:conduit:{conduit_id}")
-        if request.binding_keys:
-            for frame_key, binding_key in request.binding_keys:
+                    scope_set.add(f"scope:conduit:{conduit_id}")
+        if binding_keys:
+            for frame_key, binding_key in binding_keys:
                 if frame_key and binding_key:
-                    scope_keys.add(f"binding:{frame_key}:{binding_key}")
-        if request.contract_keys:
-            for frame_key, binding_key, peer_conduit_id in request.contract_keys:
+                    scope_set.add(f"binding:{frame_key}:{binding_key}")
+        if contract_keys:
+            for frame_key, binding_key, peer_conduit_id in contract_keys:
                 if frame_key and binding_key and peer_conduit_id:
-                    scope_keys.add(f"contract:{frame_key}:{binding_key}:{peer_conduit_id}")
-        return tuple(sorted(scope_keys))
+                    scope_set.add(f"contract:{frame_key}:{binding_key}:{peer_conduit_id}")
+        return tuple(sorted(scope_set))
+
 
     def apply_implicit_embargoes(self, request: ChangeControlTransactionRequest) -> None:
         """

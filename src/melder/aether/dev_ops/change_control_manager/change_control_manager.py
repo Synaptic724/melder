@@ -893,6 +893,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             - Returns False if no staged record exists for the request.
             - Updates only supplied fields; None keeps existing values.
             - Metadata merges into the staged record when provided.
+            - Extends implicit embargo scopes when new staged metadata arrives.
             - No effect when change-control admission is disabled.
         Args:
             request_id:
@@ -921,13 +922,28 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             enabled = bool(self._change_control_enabled)
         if not enabled:
             return False
-        return self._orchestrator.update_staged(
+        updated = self._orchestrator.update_staged(
             request_id,
             scope_keys=scope_keys,
             binding_keys=binding_keys,
             contract_keys=contract_keys,
             metadata=metadata,
         )
+        if not updated:
+            return False
+        staged = self._orchestrator.get_staged(request_id)
+        if staged is None:
+            return True
+        if self._embargo_manager is None:
+            return True
+        scope_keys = self._embargo_manager.collect_scope_keys_from_staged(staged)
+        if scope_keys:
+            self._embargo_manager.extend_embargoes(
+                owner_request_id=request_id,
+                scope_keys=scope_keys,
+                reason_tag=staged.request_type.value,
+            )
+        return True
 
     def commit_request(self, request_id: str) -> None:
         """

@@ -480,6 +480,40 @@ def test_change_control_manager_update_staged_request_updates_metadata(manager) 
     assert staged.metadata["note"] == "test"
 
 
+def test_change_control_manager_update_staged_request_extends_embargoes(manager) -> None:
+    """
+    Purpose:
+        Validate staged updates extend implicit embargo scopes.
+    Contract:
+        - Updating binding keys adds the derived binding scope to embargoes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If embargo scopes do not update.
+    """
+    request = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        spellbook_id="spellbook-1",
+        scope_keys=["scope:spellbook:spellbook-1"],
+    )
+    admission = manager.admit_request(request)
+    assert admission.admitted is True
+
+    embargo_manager = manager.embargo_manager()
+    embargoed_before = set(embargo_manager.describe()["embargoed_scopes"])
+    assert "binding:frame:__default__" not in embargoed_before
+
+    updated = manager.update_staged_request(
+        request.request_id,
+        binding_keys=[("frame", "__default__")],
+    )
+    assert updated is True
+
+    embargoed_after = set(embargo_manager.describe()["embargoed_scopes"])
+    assert "binding:frame:__default__" in embargoed_after
+
+
 def test_change_control_manager_update_staged_request_noops_when_disabled(manager) -> None:
     """
     Purpose:
