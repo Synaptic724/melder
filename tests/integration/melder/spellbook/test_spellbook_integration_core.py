@@ -456,10 +456,10 @@ def test_spellbook_integration_begin_transaction_conflict_rejects_overlapping_sc
     Raises:
         AssertionError: If conflict admission is not enforced.
     """
-    spellbook_a = Spellbook(aetheric_frame="shared-frame")
-    spellbook_b = Spellbook(aetheric_frame="shared-frame")
-    spellbook_a.get_configuration().set_property("system_state", SystemState.dynamic)
-    spellbook_b.get_configuration().set_property("system_state", SystemState.dynamic)
+    configuration = Configuration("shared-frame")
+    configuration.dynamic_defaults()
+    spellbook_a = Spellbook(aetheric_frame="shared-frame", configuration=configuration)
+    spellbook_b = Spellbook(aetheric_frame="shared-frame", configuration=configuration)
 
     spellbook_a.begin_transaction("link", scope_keys=["shared-scope"])
     try:

@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
 from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple
 import threading
+import time
 # Melder Imports
 from melder.aether.aether import Aether
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -452,6 +453,65 @@ class Spellbook(Cleanable, ISpellbook):
             conduit_id: MappingProxyType(dict(spells))
             for conduit_id, spells in self._contracted_spells.items()
         })
+
+    def snapshot_state(self) -> Dict[str, Any]:
+        """
+        Public API
+
+        Build a read-only snapshot of Spellbook state.
+
+        Purpose:
+            Provide a stable view of local and contracted spell registries while
+            transactions may be in-flight.
+        Contract:
+            - Returns detached copies of internal maps; mutating the snapshot
+              does not affect the Spellbook registries.
+            - Includes a snapshot id for observability.
+        Returns:
+            Dict[str, Any]:
+                Snapshot payload with local and contracted spell maps, lookup maps,
+                and version caches.
+        Raises:
+            RuntimeError: If the Spellbook has been cleaned.
+        Threading:
+            Acquires the Spellbook lock while copying state.
+        """
+        self.check_cleaned()
+        snapshot_id = IDBuilder.create_id()
+        captured_at_ms = int(time.time() * 1000.0)
+
+        with self._lock:
+            local_spells = dict(self._spells) if self._spells is not None else {}
+            lookup_spells = dict(self._lookup_spells) if self._lookup_spells is not None else {}
+            spell_versions = set(self._spell_versions) if self._spell_versions is not None else set()
+
+            contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = {}
+            if self._contracted_spells is not None:
+                for conduit_id, spells in self._contracted_spells.items():
+                    contracted_spells[conduit_id] = dict(spells)
+
+            lookup_contracted_spells: Dict[str, Dict[Tuple[str, str], SpellIndex]] = {}
+            if self._lookup_contracted_spells is not None:
+                for conduit_id, lookup_map in self._lookup_contracted_spells.items():
+                    lookup_contracted_spells[conduit_id] = dict(lookup_map)
+
+            contracted_versions: Dict[str, Set[str]] = {}
+            if self._contracted_versions is not None:
+                for conduit_id, versions in self._contracted_versions.items():
+                    contracted_versions[conduit_id] = set(versions)
+
+        return {
+            "snapshot_id": snapshot_id,
+            "captured_at_ms": captured_at_ms,
+            "spellbook_id": self._id,
+            "aetheric_frame": self._aetheric_frame,
+            "local_spells": local_spells,
+            "lookup_spells": lookup_spells,
+            "spell_versions": spell_versions,
+            "contracted_spells": contracted_spells,
+            "lookup_contracted_spells": lookup_contracted_spells,
+            "contracted_versions": contracted_versions,
+        }
 
     #endregion Properties
 

@@ -1,4 +1,5 @@
 import threading
+import time
 from contextvars import ContextVar
 from contextlib import contextmanager
 from types import ModuleType
@@ -3205,6 +3206,54 @@ class Conduit(Cleanable, IConduit):
         """
         self._qualify_contracts()
         return self._conduit_ward._get_contracted_conduits()
+
+    def snapshot_state(self) -> Dict[str, Any]:
+        """
+        Public API
+
+        Build a read-only snapshot of Conduit state.
+
+        Purpose:
+            Provide a stable view of conduit metadata and Spellbook registries
+            for diagnostics while transactions may be in-flight.
+        Contract:
+            - Returns detached copies of metadata and Spellbook snapshot data.
+            - Includes a snapshot id for observability.
+        Returns:
+            Dict[str, Any]:
+                Snapshot payload with conduit metadata and Spellbook snapshot.
+        Raises:
+            RuntimeError: If the Conduit has been cleaned.
+        Threading:
+            Acquires the Conduit lock while copying local metadata, then
+            snapshots the Spellbook outside the lock.
+        """
+        self.check_cleaned()
+        snapshot_id = IDBuilder.create_id()
+        captured_at_ms = int(time.time() * 1000.0)
+
+        with self._lock:
+            conduit_id = self._id
+            conduit_name = self._name
+            conduit_state = str(self._conduit_state)
+            dynamic_environment = self.__dynamic_environment__
+            aetheric_frame = self._aetheric_frame
+            spellbook = self._spellbook
+
+        spellbook_snapshot = None
+        if spellbook is not None:
+            spellbook_snapshot = spellbook.snapshot_state()
+
+        return {
+            "snapshot_id": snapshot_id,
+            "captured_at_ms": captured_at_ms,
+            "conduit_id": conduit_id,
+            "conduit_name": conduit_name,
+            "conduit_state": conduit_state,
+            "dynamic_environment": dynamic_environment,
+            "aetheric_frame": aetheric_frame,
+            "spellbook_snapshot": spellbook_snapshot,
+        }
 
     def _describe_contract(self, conduit_id: str) -> dict:
         """

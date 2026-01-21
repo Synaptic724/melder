@@ -1183,6 +1183,25 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
+    def snapshot_state(self) -> Dict[str, Any]:
+        """
+        Public API
+
+        Build a read-only snapshot of Spellbook state.
+
+        Purpose:
+            Provide a stable view of local and contracted spell registries while
+            transactions may be in-flight.
+        Contract:
+            - Returns detached copies of internal maps; mutating the snapshot
+              does not affect the Spellbook registries.
+            - Includes a snapshot id for observability.
+        Returns:
+            Dict[str, Any]: Snapshot payload containing local/contracted maps
+            and lookup caches.
+        """
+        ...
+
     # ------------------------------------------------------------------
     # Binding / inspection / lookup API
     # ------------------------------------------------------------------
@@ -3181,6 +3200,24 @@ class IConduit(ICleanable, Protocol):
 
         Returns a string representation of the Conduit instance.
         :return:
+        """
+        ...
+
+    def snapshot_state(self) -> Dict[str, Any]:
+        """
+        Public API
+
+        Build a read-only snapshot of Conduit state.
+
+        Purpose:
+            Provide a stable view of conduit metadata and Spellbook registries
+            while transactions may be in-flight.
+        Contract:
+            - Returns detached copies of metadata and Spellbook snapshot data.
+            - Includes a snapshot id for observability.
+        Returns:
+            Dict[str, Any]: Snapshot payload with conduit metadata and a
+            Spellbook snapshot.
         """
         ...
 
