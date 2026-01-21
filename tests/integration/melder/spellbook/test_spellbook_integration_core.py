@@ -5,6 +5,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -457,6 +458,8 @@ def test_spellbook_integration_begin_transaction_conflict_rejects_overlapping_sc
     """
     spellbook_a = Spellbook(aetheric_frame="shared-frame")
     spellbook_b = Spellbook(aetheric_frame="shared-frame")
+    spellbook_a.get_configuration().set_property("system_state", SystemState.dynamic)
+    spellbook_b.get_configuration().set_property("system_state", SystemState.dynamic)
 
     spellbook_a.begin_transaction("link", scope_keys=["shared-scope"])
     try:

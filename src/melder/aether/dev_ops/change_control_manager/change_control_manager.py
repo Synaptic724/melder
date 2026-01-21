@@ -136,6 +136,8 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self._orchestrator.set_commit_validator(self._dispatch_commit_validator)
         self._orchestrator.set_commit_hook(self._dispatch_commit_hook)
         self._orchestrator.set_abort_hook(self._dispatch_abort_hook)
+        self.set_structural_validator(self._default_structural_validator)
+        self.set_dirty_marker(self._default_dirty_marker)
     # ----------------------------------------------------------------------
     # Cleanup
     # ----------------------------------------------------------------------
@@ -526,6 +528,196 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         if hook is not None:
             hook(staged)
 
+    def _resolve_frame(self) -> Optional[Any]:
+        """
+        Internal
+
+        Resolve the owning AethericFrame from SpellSystemStates.
+
+        Purpose:
+            Provide access to frame-level conduit registries for change-control
+            validators without introducing an Aether dependency.
+        Contract:
+            - Returns None if the frame reference is unavailable or cleaned.
+        Returns:
+            Optional[Any]:
+                The owning frame instance when available.
+        """
+        states = self._spell_system_states
+        if states is None:
+            return None
+        frame = getattr(states, "_frame", None)
+        if frame is None:
+            return None
+        try:
+            frame.check_cleaned()
+        except Exception:
+            return None
+        return frame
+
+    def _resolve_conduit_by_id(self, conduit_id: str) -> Optional[Any]:
+        """
+        Internal
+
+        Resolve a conduit instance by id from the owning frame.
+
+        Purpose:
+            Allow structural validators to locate the conduit/Spellbook involved
+            in a staged mutation.
+        Contract:
+            - Returns None if the conduit cannot be resolved.
+        Args:
+            conduit_id:
+                Conduit id to resolve.
+        Returns:
+            Optional[Any]:
+                The resolved conduit instance, if found.
+        """
+        if not conduit_id:
+            return None
+        frame = self._resolve_frame()
+        if frame is None:
+            return None
+        lock = getattr(frame, "_lock", None)
+        conduits = getattr(frame, "_conduits", None)
+        if lock is None or conduits is None:
+            return None
+        with lock:
+            return conduits.get(conduit_id)
+
+    def _resolve_spellbook_for_staged(
+            self,
+            staged: ChangeControlStagedMutation,
+    ) -> Optional[Any]:
+        """
+        Internal
+
+        Resolve a Spellbook instance for a staged mutation.
+
+        Purpose:
+            Map staged mutation metadata to the owning Spellbook so structural
+            validation can run locally.
+        Contract:
+            - Prefers initiator conduit when available.
+            - Skips spellbook-only initiator ids (spellbook:{id}).
+            - Returns None when no matching Spellbook can be resolved.
+        Args:
+            staged:
+                Staged mutation metadata.
+        Returns:
+            Optional[Any]:
+                The resolved Spellbook instance, if available.
+        """
+        if staged is None:
+            return None
+        candidate_ids: list[str] = []
+        initiator_id = staged.initiator_conduit_id
+        if initiator_id and not initiator_id.startswith("spellbook:"):
+            candidate_ids.append(initiator_id)
+        for conduit_id in staged.conduit_ids:
+            if conduit_id not in candidate_ids:
+                candidate_ids.append(conduit_id)
+
+        for conduit_id in candidate_ids:
+            conduit = self._resolve_conduit_by_id(conduit_id)
+            if conduit is None:
+                continue
+            spellbook = getattr(conduit, "_spellbook", None)
+            if spellbook is None:
+                continue
+            if staged.spellbook_id and getattr(spellbook, "_id", None) != staged.spellbook_id:
+                continue
+            try:
+                spellbook.check_cleaned()
+            except Exception:
+                continue
+            return spellbook
+        return None
+
+    def _resolve_spells_for_binding_keys(
+            self,
+            spellbook: Any,
+            binding_keys: Iterable[Tuple[str, str]],
+    ) -> list:
+        """
+        Internal
+
+        Resolve spell instances for staged binding keys.
+
+        Purpose:
+            Translate staged binding keys into live spell objects for validation.
+        Contract:
+            - Returns an empty list if no spellbook or keys are provided.
+        Args:
+            spellbook:
+                Spellbook to search.
+            binding_keys:
+                Normalized binding keys to resolve.
+        Returns:
+            list:
+                List of resolved spell instances.
+        """
+        if spellbook is None or not binding_keys:
+            return []
+        resolved: list = []
+        seen: set = set()
+        with spellbook._lock:
+            lookup_map = spellbook._lookup_spells
+            spell_map = spellbook._spells
+            if lookup_map is None or spell_map is None:
+                return []
+            for frame_key, binding_key in binding_keys:
+                key = (frame_key, binding_key)
+                if key in seen:
+                    continue
+                seen.add(key)
+                spell_index = lookup_map.get(key)
+                if spell_index is None:
+                    continue
+                spell = spell_map.get(spell_index)
+                if spell is None:
+                    continue
+                resolved.append(spell)
+        return resolved
+
+    def _default_structural_validator(self, staged: ChangeControlStagedMutation) -> None:
+        """
+        Internal
+
+        Default structural validation hook for bind transactions.
+
+        Purpose:
+            Run Phases 1-4 for newly bound spells before a bind transaction commits
+            when a Conduit already owns the Spellbook.
+        Contract:
+            - Only runs for bind transactions.
+            - No-op if the Spellbook is unavailable or not conjured.
+            - Skips spells that already have Phase-4 validation results.
+        Args:
+            staged:
+                Staged mutation metadata to validate.
+        Returns:
+            None.
+        Raises:
+            Exception: Propagates structural phase errors from Spellbook.
+        """
+        if staged.request_type is not ChangeTransactionType.BIND:
+            return
+        if not staged.binding_keys:
+            return
+        spellbook = self._resolve_spellbook_for_staged(staged)
+        if spellbook is None:
+            return
+        if not getattr(spellbook, "_conjured", False):
+            return
+        spells = self._resolve_spells_for_binding_keys(spellbook, staged.binding_keys)
+        if not spells:
+            return
+        pending = [spell for spell in spells if spell.validation_result_phase4 is None]
+        if not pending:
+            return
+        spellbook._run_post_conjure_structural_phases(pending)
+
     def _default_dirty_marker(self, staged: ChangeControlStagedMutation) -> None:
         """
         Internal
@@ -534,14 +726,15 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
         Purpose:
             Mark list[Frame] consumers dirty for the owning Spellbook when
-            bindings change as part of a transaction commit.
+            bindings or contracted spell maps change as part of a transaction
+            commit.
         Contract:
             - No-op if the staged mutation has no spellbook id.
-            - No-op if no binding keys are present or frame keys are empty.
+            - No-op if no binding/contract keys are present or frame keys are empty.
             - Delegates to SpellSystemStates for scoped dirty marking.
         Args:
             staged:
-                Staged mutation metadata containing binding keys.
+                Staged mutation metadata containing binding/contract keys.
         Returns:
             None.
         Raises:
@@ -551,9 +744,12 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         if staged.spellbook_id is None:
             return
-        if not staged.binding_keys:
+        if not staged.binding_keys and not staged.contract_keys:
             return
         frame_keys = {frame_key for frame_key, _ in staged.binding_keys if frame_key}
+        frame_keys.update(
+            {frame_key for frame_key, _, _ in staged.contract_keys if frame_key}
+        )
         if not frame_keys:
             return
         self._spell_system_states.mark_collection_dependents_dirty(
