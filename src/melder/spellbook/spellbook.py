@@ -858,6 +858,7 @@ class Spellbook(Cleanable, ISpellbook):
                 self._contracted_spells[conduit_id] = {}
                 self._lookup_contracted_spells[conduit_id] = {}
                 self._contracted_versions[conduit_id] = set()
+        self._register_link_mirror(conduit_id)
 
 
     def _remove_link_contract(self, conduit_id: str):
@@ -1061,6 +1062,71 @@ class Spellbook(Cleanable, ISpellbook):
 
         # 2) Remove the contract structure itself (three maps in lockstep)
         self._remove_link_contract(conduit_id)
+        self._unregister_link_mirror(conduit_id)
+
+    def _register_link_mirror(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Register a link-mirror entry for this Spellbook's conduit.
+
+        Purpose:
+            Record a borrower->provider relationship for change-control checks.
+        Contract:
+            - No-op when the Spellbook has no conjured conduit.
+            - Delegates to the ChangeControlTransactionManager registry.
+        Args:
+            conduit_id:
+                Provider conduit id associated with the link.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Spellbook has been cleaned.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            return
+        owner = self._conduit
+        if owner is None:
+            return
+        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        transaction_manager = change_control.transaction_manager()
+        transaction_manager.register_link(
+            borrower_conduit_id=owner._id,
+            provider_conduit_id=conduit_id,
+        )
+
+    def _unregister_link_mirror(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Remove a link-mirror entry for this Spellbook's conduit.
+
+        Purpose:
+            Remove borrower->provider tracking when a link is severed.
+        Contract:
+            - No-op when the Spellbook has no conjured conduit.
+            - Delegates to the ChangeControlTransactionManager registry.
+        Args:
+            conduit_id:
+                Provider conduit id associated with the link.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If the Spellbook has been cleaned.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            return
+        owner = self._conduit
+        if owner is None:
+            return
+        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        transaction_manager = change_control.transaction_manager()
+        transaction_manager.unregister_link(
+            borrower_conduit_id=owner._id,
+            provider_conduit_id=conduit_id,
+        )
 
 
 

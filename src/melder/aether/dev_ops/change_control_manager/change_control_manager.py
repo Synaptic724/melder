@@ -122,7 +122,9 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self._dirty_spells: Set[str] = set()
         self._dirty_roots: Set[str] = set()
         self._monitor_active: bool = False
-        self._revalidate_fn: Optional[Callable[[Set[str], Optional[CancellationEvent]], None]] = None
+        self._revalidate_fn: Optional[
+            Callable[[Set[str], Optional[CancellationEvent]], Optional[Set[str]]]
+        ] = None
         self._change_control_enabled: bool = True
         self._transaction_manager: ChangeControlTransactionManager = ChangeControlTransactionManager()
         self._conflict_manager: ChangeControlConflictManager = ChangeControlConflictManager()
@@ -1153,7 +1155,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     # ----------------------------------------------------------------------
     def set_revalidator(
             self,
-            fn: Callable[[Set[str], Optional[CancellationEvent]], None],
+            fn: Callable[[Set[str], Optional[CancellationEvent]], Optional[Set[str]]],
     ) -> None:
         """
         Register a callable that performs revalidation for dirty roots.
@@ -1162,7 +1164,9 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             Provide a hook to revalidate roots after change detection.
         Contract:
             - Stored callable is invoked by revalidate_dirty_roots().
-            - Callable signature: fn(dirty_roots, cancel_event) -> None.
+            - Callable signature: fn(dirty_roots, cancel_event) -> Optional[Set[str]].
+            - Returning None indicates all supplied roots were validated.
+            - Returning a subset allows partial validation without clearing all roots.
         Args:
             fn:
                 Callable that performs revalidation on supplied root ids.
@@ -1280,7 +1284,8 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         Contract:
             - Uses a snapshot of dirty roots.
             - Calls the revalidator outside the lock.
-            - Clears dirty flags only for roots that were validated.
+            - Clears dirty flags only for roots reported as validated.
+            - A None return from the revalidator implies all supplied roots validated.
         Args:
             cancel_event:
                 Optional cancellation signal to abort validation.
@@ -1300,9 +1305,13 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
                 return
             dirty_roots = set(self._dirty_roots)
         # Call outside the lock to avoid deadlocks.
-        self._revalidate_fn(dirty_roots, cancel_event)
+        validated_roots = self._revalidate_fn(dirty_roots, cancel_event)
+        if validated_roots is None:
+            validated_roots = dirty_roots
+        else:
+            validated_roots = set(validated_roots)
         with self._lock:
-            self._dirty_roots.difference_update(dirty_roots)
+            self._dirty_roots.difference_update(validated_roots)
             if not self._dirty_roots:
                 self._dirty_spells.clear()
                 self._monitor_active = False

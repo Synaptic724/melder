@@ -937,6 +937,58 @@ def test_find_spell_and_contracted_spell():
     assert sb._find_contracted_spell(idx) is spell
 
 
+def test_link_contract_registers_link_mirror() -> None:
+    """
+    Purpose:
+        Validate link mirror registration during link contract lifecycle.
+    Contract:
+        - _create_link_contract registers borrower->provider in the mirror.
+        - _sever_link_contract unregisters the mirror entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If link mirror registration is missing.
+    """
+    spellbook = Spellbook()
+    conduit = spellbook.conjure(name="owner")
+
+    register_calls: list[tuple[str, str]] = []
+    unregister_calls: list[tuple[str, str]] = []
+
+    class _TransactionManagerStub:
+        def register_link(self, *, borrower_conduit_id: str, provider_conduit_id: str) -> None:
+            register_calls.append((borrower_conduit_id, provider_conduit_id))
+
+        def unregister_link(self, *, borrower_conduit_id: str, provider_conduit_id: str) -> None:
+            unregister_calls.append((borrower_conduit_id, provider_conduit_id))
+
+    class _ChangeControlStub:
+        def __init__(self, manager: _TransactionManagerStub) -> None:
+            self._manager = manager
+
+        def transaction_manager(self) -> _TransactionManagerStub:
+            return self._manager
+
+    class _AetherStub:
+        def __init__(self, change_control: _ChangeControlStub) -> None:
+            self._change_control = change_control
+
+        def _get_change_control_manager(self, frame_name: str = "default") -> _ChangeControlStub:
+            return self._change_control
+
+    spellbook._aether = _AetherStub(_ChangeControlStub(_TransactionManagerStub()))
+
+    try:
+        spellbook._create_link_contract("peer-1")
+        assert register_calls == [(conduit._id, "peer-1")]
+
+        spellbook._sever_link_contract("peer-1")
+        assert unregister_calls == [(conduit._id, "peer-1")]
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
 def test_set_policy_state_toggles_flags():
     """
     Purpose:

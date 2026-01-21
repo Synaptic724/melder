@@ -18,10 +18,12 @@ class ChangeControlTransactionManager(Cleanable):
 
     Purpose:
         Track in-flight transaction requests and maintain a link-mirror registry
-        used by conflict and embargo checks.
+        used for diagnostics and future admission expansion.
     Contract:
         - In-flight registry is a snapshot of admitted requests.
         - Link mirror is keyed by provider conduit id and lists borrower conduits.
+        - Admission currently uses explicit scope keys and conduit ids; link
+          mirror data is informational unless promoted by policy.
         - Audit logging is optional and invoked outside locks to avoid deadlocks.
     Args:
         None.
@@ -167,10 +169,16 @@ class ChangeControlTransactionManager(Cleanable):
                 Immutable request payload.
         Raises:
             RuntimeError: If the manager has been cleaned.
+            TypeError: If initiator_conduit_id is not a string.
+            ValueError: If initiator_conduit_id is empty.
         Threading:
             Thread-safe without lock; no shared state is mutated.
         """
         self.check_cleaned()
+        if not isinstance(initiator_conduit_id, str):
+            raise TypeError("initiator_conduit_id must be a string.")
+        if not initiator_conduit_id.strip():
+            raise ValueError("initiator_conduit_id must not be empty.")
         request_id = f"tx-{uuid.uuid4().hex}"
         created_at = time.time()
         normalized_scope_keys = tuple(scope_keys) if scope_keys else ()
@@ -453,7 +461,8 @@ class ChangeControlTransactionManager(Cleanable):
 
     def register_link(self, *, borrower_conduit_id: str, provider_conduit_id: str) -> None:
         """
-        Track an active link (borrower -> provider) for conflict/embargo checks.
+        Track an active link (borrower -> provider) for diagnostics or future
+        admission policy checks.
 
         Purpose:
             Update the link mirror registry to reflect a new contract link.

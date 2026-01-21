@@ -1509,9 +1509,16 @@ class SpellCrafter(Cleanable):
             if change_control_manager is not None:
                 change_control_manager.rebuild_component_of(root_blueprints)
 
-                def _revalidate_dirty_roots(dirty_roots: Set[str], cancel_event: Optional[CancellationEvent]) -> None:
+                def _revalidate_dirty_roots(
+                        dirty_roots: Set[str],
+                        cancel_event: Optional[CancellationEvent],
+                ) -> Set[str]:
                     """
                     Re-run Phases 1-7 for the supplied root spell_ids.
+
+                    Returns:
+                        Set[str]:
+                            Root ids that successfully revalidated.
                     """
                     # Scanner scoped to this invocation to avoid stale spell refs.
                     scanner = SpellbookScanner(spellbook)
@@ -1519,6 +1526,7 @@ class SpellCrafter(Cleanable):
                     for spell_index, spell_instance in scanner.iter_spells():
                         version_to_spell[spell_index.current] = spell_instance
 
+                    validated_roots: Set[str] = set()
                     for root_id in dirty_roots:
                         if cancel_event is not None and cancel_event.is_set:
                             cancel_event.throw_if_set()
@@ -1533,6 +1541,9 @@ class SpellCrafter(Cleanable):
                         except Exception:
                             # Leave dirty flags intact on failure.
                             raise
+                        validated_roots.add(root_id)
+
+                    return validated_roots
 
                 change_control_manager.set_revalidator(_revalidate_dirty_roots)
         except Exception:
@@ -1742,12 +1753,16 @@ class SpellCrafter(Cleanable):
                 change_control_manager.rebuild_component_of(self._entire_dag_blueprint_phase5)
             # Register revalidator if missing.
             if change_control_manager._revalidate_fn is None:
-                def _revalidate_dirty_roots(dirty_roots: Set[str], cancel_event: Optional[CancellationEvent]) -> None:
+                def _revalidate_dirty_roots(
+                        dirty_roots: Set[str],
+                        cancel_event: Optional[CancellationEvent],
+                ) -> Set[str]:
                     scanner = SpellbookScanner(spellbook)
                     version_to_spell: Dict[str, ISpell] = {}
                     for spell_index, spell_instance in scanner.iter_spells():
                         version_to_spell[spell_index.current] = spell_instance
 
+                    validated_roots: Set[str] = set()
                     for root_id in dirty_roots:
                         if cancel_event is not None and cancel_event.is_set:
                             cancel_event.throw_if_set()
@@ -1758,6 +1773,9 @@ class SpellCrafter(Cleanable):
                         if crafter is None:
                             continue
                         crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
+                        validated_roots.add(root_id)
+
+                    return validated_roots
 
                 change_control_manager.set_revalidator(_revalidate_dirty_roots)
         except Exception:

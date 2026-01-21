@@ -1,3 +1,5 @@
+import hashlib
+
 from melder.aether.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
     ChangeControlConflictManager,
 )
@@ -11,6 +13,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_manager.transactio
     ChangeControlTransactionManager,
 )
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
 
@@ -73,6 +76,36 @@ def test_transaction_manager_build_request_normalizes_scope_hashes() -> None:
 
     expected = hashlib.sha256(scope_key.encode("utf-8")).hexdigest()
     assert request.scope_hashes == (expected,)
+
+
+def test_transaction_manager_build_request_rejects_empty_initiator() -> None:
+    """
+    Purpose:
+        Validate initiator conduit ids are required.
+    Contract:
+        - Empty or whitespace initiator ids raise ValueError.
+        - Non-string initiator ids raise TypeError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If invalid initiators are accepted.
+    """
+    manager = ChangeControlTransactionManager()
+    with pytest.raises(ValueError, match="initiator_conduit_id must not be empty"):
+        manager.build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="",
+        )
+    with pytest.raises(ValueError, match="initiator_conduit_id must not be empty"):
+        manager.build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="   ",
+        )
+    with pytest.raises(TypeError, match="initiator_conduit_id must be a string"):
+        manager.build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id=None,  # type: ignore[arg-type]
+        )
 
 
 def test_transaction_manager_scope_key_helpers() -> None:
@@ -188,6 +221,42 @@ def test_conflict_manager_detects_scope_overlap() -> None:
         scope_keys=["other-scope"],
     )
     assert conflict_manager.find_conflicts(disjoint, [active]) == ()
+
+
+def test_conflict_manager_matches_hash_only_to_key_only() -> None:
+    """
+    Purpose:
+        Validate hash-only requests conflict with key-only requests.
+    Contract:
+        - Derived hashes from scope keys overlap with explicit scope hashes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If mixed hash/key conflicts are missed.
+    """
+    conflict_manager = ChangeControlConflictManager()
+    scope_key = "shared-scope"
+    scope_hash = hashlib.sha256(scope_key.encode("utf-8")).hexdigest()
+
+    active = ChangeControlTransactionRequest(
+        request_id="tx-active",
+        request_type=ChangeTransactionType.BIND,
+        created_at=0.0,
+        initiator_conduit_id="conduit-1",
+        scope_keys=(scope_key,),
+        scope_hashes=(),
+    )
+    incoming = ChangeControlTransactionRequest(
+        request_id="tx-incoming",
+        request_type=ChangeTransactionType.LINK,
+        created_at=0.0,
+        initiator_conduit_id="conduit-2",
+        scope_keys=(),
+        scope_hashes=(scope_hash,),
+    )
+
+    conflicts = conflict_manager.find_conflicts(incoming, [active])
+    assert conflicts == (active.request_id,)
 
 
 def test_embargo_manager_open_close_and_find() -> None:

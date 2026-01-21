@@ -1,5 +1,6 @@
+import hashlib
 from threading import RLock
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Set, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -16,7 +17,8 @@ class ChangeControlConflictManager(Cleanable):
         Decide whether a new request can run in parallel or must be serialized
         based on scope-key overlap with in-flight requests.
     Contract:
-        - Compares scope hashes when provided; falls back to scope keys.
+        - Compares scope hashes when available; derives hashes from keys when missing.
+        - Falls back to raw scope keys when both requests supply keys.
         - Returns request ids of conflicting in-flight requests.
     Args:
         None.
@@ -82,7 +84,8 @@ class ChangeControlConflictManager(Cleanable):
         Purpose:
             Provide deterministic conflict detection for admission decisions.
         Contract:
-            - Uses scope_hashes if present; otherwise uses scope_keys.
+            - Uses scope_hashes when available; otherwise derives from scope_keys.
+            - Also checks raw scope_keys when both requests provide keys.
             - Returns an empty tuple when no conflicts are found.
         Args:
             request:
@@ -101,12 +104,57 @@ class ChangeControlConflictManager(Cleanable):
         if request is None:
             return ()
         with self._lock:
-            req_keys = set(request.scope_hashes or request.scope_keys)
-            if not req_keys:
+            req_hashes = self._normalize_hashes(request.scope_keys, request.scope_hashes)
+            req_keys = set(request.scope_keys)
+            if not req_hashes and not req_keys:
                 return ()
             conflicts: List[str] = []
             for active in in_flight:
-                active_keys = set(active.scope_hashes or active.scope_keys)
-                if req_keys.intersection(active_keys):
+                active_hashes = self._normalize_hashes(active.scope_keys, active.scope_hashes)
+                active_keys = set(active.scope_keys)
+                if req_hashes and active_hashes and req_hashes.intersection(active_hashes):
+                    conflicts.append(active.request_id)
+                    continue
+                if req_keys and active_keys and req_keys.intersection(active_keys):
                     conflicts.append(active.request_id)
             return tuple(conflicts)
+
+    def _normalize_hashes(
+            self,
+            scope_keys: Iterable[str],
+            scope_hashes: Iterable[str],
+    ) -> Set[str]:
+        """
+        Internal
+
+        Normalize scope hashes for conflict comparison.
+
+        Purpose:
+            Ensure hash-only and key-only requests still overlap during
+            conflict checks by deriving hashes when needed.
+        Contract:
+            - Returns provided scope_hashes when present.
+            - Derives SHA256 hashes from scope_keys when hashes are empty.
+        Args:
+            scope_keys:
+                Raw scope keys provided by the request.
+            scope_hashes:
+                Precomputed scope hashes provided by the request.
+        Returns:
+            Set[str]:
+                Normalized hash set for conflict comparison.
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
+        """
+        self.check_cleaned()
+        if scope_hashes:
+            return {hash_value for hash_value in scope_hashes if hash_value}
+        if not scope_keys:
+            return set()
+        return {
+            hashlib.sha256(key.encode("utf-8")).hexdigest()
+            for key in scope_keys
+            if key
+        }

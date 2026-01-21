@@ -198,7 +198,7 @@ def test_revalidate_dirty_roots_success(manager):
     assert manager.is_root_dirty("Root")
     
     # Register revalidator
-    validator = MagicMock()
+    validator = MagicMock(return_value={"Root"})
     manager.set_revalidator(validator)
     
     # Revalidate
@@ -212,6 +212,34 @@ def test_revalidate_dirty_roots_success(manager):
     # Check state cleared
     assert not manager.is_root_dirty("Root")
     assert not manager._monitor_active
+
+def test_revalidate_dirty_roots_partial(manager):
+    """
+    Verify partial revalidation only clears validated roots.
+
+    Contract:
+    - The revalidator may return a subset of roots that were validated.
+    - Only validated roots are cleared; remaining roots stay dirty.
+    """
+    bp_a = MagicMock(spec=RootResolutionBlueprint)
+    bp_a.dag.nodes.keys.return_value = ["LeafA"]
+    bp_b = MagicMock(spec=RootResolutionBlueprint)
+    bp_b.dag.nodes.keys.return_value = ["LeafB"]
+    manager.rebuild_component_of({"RootA": bp_a, "RootB": bp_b})
+
+    manager.notify_spell_changed("LeafA")
+    manager.notify_spell_changed("LeafB")
+
+    validator = MagicMock(return_value={"RootA"})
+    manager.set_revalidator(validator)
+
+    manager.revalidate_dirty_roots()
+
+    args, _ = validator.call_args
+    assert args[0] == {"RootA", "RootB"}
+    assert not manager.is_root_dirty("RootA")
+    assert manager.is_root_dirty("RootB")
+    assert manager._monitor_active
 
 def test_revalidate_handles_cancel(manager):
     """
