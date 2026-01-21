@@ -950,7 +950,7 @@ def test_link_contract_registers_link_mirror() -> None:
         AssertionError: If link mirror registration is missing.
     """
     spellbook = Spellbook()
-    conduit = spellbook.conjure(name="owner")
+    spellbook._conduit = types.SimpleNamespace(_id="owner-1")
 
     register_calls: list[tuple[str, str]] = []
     unregister_calls: list[tuple[str, str]] = []
@@ -980,12 +980,11 @@ def test_link_contract_registers_link_mirror() -> None:
 
     try:
         spellbook._create_link_contract("peer-1")
-        assert register_calls == [(conduit._id, "peer-1")]
+        assert register_calls == [("owner-1", "peer-1")]
 
         spellbook._sever_link_contract("peer-1")
-        assert unregister_calls == [(conduit._id, "peer-1")]
+        assert unregister_calls == [("owner-1", "peer-1")]
     finally:
-        conduit.cleanup()
         spellbook.cleanup()
 
 

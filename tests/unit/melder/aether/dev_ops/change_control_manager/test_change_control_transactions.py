@@ -9,6 +9,9 @@ from melder.aether.dev_ops.change_control_manager.embargo_manager.embargo_manage
 from melder.aether.dev_ops.change_control_manager.orchestrator.orchestrator import (
     ChangeControlOrchestrator,
 )
+from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+    ChangeControlStagedMutation,
+)
 from melder.aether.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
 )
@@ -259,6 +262,30 @@ def test_conflict_manager_matches_hash_only_to_key_only() -> None:
     assert conflicts == (active.request_id,)
 
 
+def test_conflict_manager_handles_empty_scopes() -> None:
+    """
+    Purpose:
+        Validate conflicts are not reported when scopes are empty.
+    Contract:
+        - Empty scope keys and hashes yield no conflicts.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conflicts are reported for empty scopes.
+    """
+    conflict_manager = ChangeControlConflictManager()
+    request = ChangeControlTransactionRequest(
+        request_id="tx-empty",
+        request_type=ChangeTransactionType.BIND,
+        created_at=0.0,
+        initiator_conduit_id="conduit-1",
+        scope_keys=(),
+        scope_hashes=(),
+    )
+
+    assert conflict_manager.find_conflicts(request, []) == ()
+
+
 def test_embargo_manager_open_close_and_find() -> None:
     """
     Purpose:
@@ -301,6 +328,28 @@ def test_embargo_manager_advisory_hints() -> None:
     assert hints[0].reason_tag == "bind"
 
 
+def test_embargo_manager_extend_adds_only_new_scopes() -> None:
+    """
+    Purpose:
+        Validate extend_embargoes adds only new scope keys.
+    Contract:
+        - Existing scope keys are not duplicated.
+        - New scope keys become embargoed.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If embargo records duplicate existing scopes.
+    """
+    manager = ChangeControlEmbargoManager()
+    manager.open_embargo(scope_keys=["scope-a"], reason_tag="bind", owner_request_id="tx-1")
+
+    manager.extend_embargoes(owner_request_id="tx-1", scope_keys=["scope-a", "scope-b"], reason_tag="bind")
+
+    assert set(manager.find_embargoes(["scope-a", "scope-b"])) == {"scope-a", "scope-b"}
+    hints = manager.list_advisory_hints(["scope-a", "scope-b"])
+    assert len(hints) == 2
+
+
 def test_embargo_manager_collect_scope_keys_includes_derived_keys() -> None:
     """
     Purpose:
@@ -328,6 +377,34 @@ def test_embargo_manager_collect_scope_keys_includes_derived_keys() -> None:
     assert "scope:spellbook:spellbook-1" in scope_keys
     assert "scope:conduit:conduit-1" in scope_keys
     assert "scope:conduit:conduit-2" in scope_keys
+    assert "binding:frame:__default__" in scope_keys
+    assert "contract:frame:__default__:conduit-2" in scope_keys
+
+
+def test_embargo_manager_collect_scope_keys_from_staged() -> None:
+    """
+    Purpose:
+        Validate staged mutation scope collection includes derived keys.
+    Contract:
+        - Derived scope keys appear for binding and contract keys.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If derived keys are missing.
+    """
+    manager = ChangeControlEmbargoManager()
+    staged = ChangeControlStagedMutation.from_request(
+        request_id="tx-1",
+        request_type=ChangeTransactionType.LINK,
+        initiator_conduit_id="conduit-1",
+        spellbook_id="spellbook-1",
+        conduit_ids=("conduit-1", "conduit-2"),
+        scope_keys=("scope:spellbook:spellbook-1",),
+        binding_keys=(("frame", "__default__"),),
+        contract_keys=(("frame", "__default__", "conduit-2"),),
+    )
+
+    scope_keys = manager.collect_scope_keys_from_staged(staged)
     assert "binding:frame:__default__" in scope_keys
     assert "contract:frame:__default__:conduit-2" in scope_keys
 
@@ -374,6 +451,47 @@ def test_orchestrator_rejects_conflicting_request() -> None:
         embargo_manager=embargo_manager,
     )
     assert rejected.admitted is False
+
+
+def test_orchestrator_rejects_with_conflict_and_embargo() -> None:
+    """
+    Purpose:
+        Validate admission reports both conflict and embargo evidence.
+    Contract:
+        - Rejection reasons include conflict and embargo when both apply.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If combined evidence is missing.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    conflict_manager = ChangeControlConflictManager()
+    embargo_manager = ChangeControlEmbargoManager()
+    orchestrator = ChangeControlOrchestrator()
+
+    active = transaction_manager.build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope-a"],
+    )
+    transaction_manager.add_in_flight(active)
+    embargo_manager.open_embargo(scope_keys=["scope-a"], reason_tag="bind", owner_request_id="tx-embargo")
+
+    incoming = transaction_manager.build_request(
+        request_type=ChangeTransactionType.LINK,
+        initiator_conduit_id="conduit-2",
+        scope_keys=["scope-a"],
+    )
+    rejected = orchestrator.admit_request(
+        incoming,
+        transaction_manager=transaction_manager,
+        conflict_manager=conflict_manager,
+        embargo_manager=embargo_manager,
+    )
+
+    assert rejected.admitted is False
+    assert "conflict" in rejected.reasons
+    assert "embargo" in rejected.reasons
     assert rejected.conflicts == (active.request_id,)
     assert transaction_manager.get_in_flight(incoming.request_id) is None
 
