@@ -3,6 +3,7 @@ import pytest
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.change_control_manager.change_control_manager import (
     ChangeControlManager,
+    ChangeTransactionType,
 )
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
@@ -236,6 +237,479 @@ def test_component_change_control_pending_change_round_trip() -> None:
 
         manager.clear_pending_change(index.id)
         assert manager.get_pending_change(index.id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_admit_request_disabled_tracks_in_flight() -> None:
+    """
+    Purpose:
+        Validate admission bypass when change-control is disabled.
+    Contract:
+        - admit_request returns admitted when disabled.
+        - Request is tracked as in-flight.
+        - No staged mutation is recorded.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If in-flight or staging state is incorrect.
+    """
+    frame = AethericFrame("component-ccm-disabled-admit")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        manager.disable_change_control()
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        admission = manager.admit_request(request)
+        assert admission.admitted is True
+        assert manager.transaction_manager().get_in_flight(request.request_id) is request
+        assert manager.orchestrator().get_staged(request.request_id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_update_staged_request_disabled_returns_false() -> None:
+    """
+    Purpose:
+        Validate staged updates are ignored when change-control is disabled.
+    Contract:
+        - update_staged_request returns False when disabled.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If disabled updates return True.
+    """
+    frame = AethericFrame("component-ccm-update-disabled")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        manager.disable_change_control()
+        assert manager.update_staged_request("missing") is False
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_commit_request_disabled_removes_in_flight() -> None:
+    """
+    Purpose:
+        Validate commit removes in-flight state when disabled.
+    Contract:
+        - commit_request clears the in-flight entry when change-control is disabled.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If in-flight state remains after commit.
+    """
+    frame = AethericFrame("component-ccm-commit-disabled")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        manager.disable_change_control()
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        manager.admit_request(request)
+        manager.commit_request(request.request_id)
+        assert manager.transaction_manager().get_in_flight(request.request_id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_abort_request_disabled_removes_in_flight() -> None:
+    """
+    Purpose:
+        Validate abort removes in-flight state when disabled.
+    Contract:
+        - abort_request clears the in-flight entry when change-control is disabled.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If in-flight state remains after abort.
+    """
+    frame = AethericFrame("component-ccm-abort-disabled")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        manager.disable_change_control()
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.LINK,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:conduit:conduit-1"],
+        )
+        manager.admit_request(request)
+        manager.abort_request(request.request_id)
+        assert manager.transaction_manager().get_in_flight(request.request_id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_update_staged_request_extends_embargoes() -> None:
+    """
+    Purpose:
+        Validate staged updates extend implicit embargo scopes.
+    Contract:
+        - update_staged_request adds embargoes derived from new binding keys.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If embargo scopes are not extended.
+    """
+    frame = AethericFrame("component-ccm-update-embargo")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        admission = manager.admit_request(request)
+        assert admission.admitted is True
+
+        updated = manager.update_staged_request(
+            request.request_id,
+            binding_keys=[("frame", "__default__")],
+        )
+        assert updated is True
+
+        binding_scope = manager.transaction_manager().make_scope_key_binding(
+            "frame",
+            "__default__",
+        )
+        embargoes = manager.embargo_manager().find_embargoes([binding_scope])
+        assert embargoes == (binding_scope,)
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_commit_hook_runs_after_dirty_marker() -> None:
+    """
+    Purpose:
+        Validate commit hook dispatch order for staged mutations.
+    Contract:
+        - Dirty marker runs before the commit hook.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If hook order is incorrect.
+    """
+    frame = AethericFrame("component-ccm-commit-hook-order")
+    manager = frame.dev_ops_manager.change_control_manager
+    calls: list[str] = []
+
+    def _marker(_staged) -> None:
+        calls.append("marker")
+
+    def _hook(_staged) -> None:
+        calls.append("hook")
+
+    try:
+        manager.set_dirty_marker(_marker)
+        manager.set_commit_hook(_hook)
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        admission = manager.admit_request(request)
+        assert admission.admitted is True
+
+        manager.commit_request(request.request_id)
+        assert calls == ["marker", "hook"]
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_commit_validator_runs_structural_first() -> None:
+    """
+    Purpose:
+        Validate structural validation runs before commit validators.
+    Contract:
+        - Structural validator executes before commit validator.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If validator order is incorrect.
+    """
+    frame = AethericFrame("component-ccm-commit-validator-order")
+    manager = frame.dev_ops_manager.change_control_manager
+    calls: list[str] = []
+
+    def _structural(_staged) -> None:
+        calls.append("structural")
+
+    def _validator(_staged) -> None:
+        calls.append("validator")
+
+    try:
+        manager.set_structural_validator(_structural)
+        manager.set_commit_validator(_validator)
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        admission = manager.admit_request(request)
+        assert admission.admitted is True
+
+        manager.commit_request(request.request_id)
+        assert calls == ["structural", "validator"]
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_describe_includes_manager_snapshots() -> None:
+    """
+    Purpose:
+        Validate describe returns manager snapshot metadata.
+    Contract:
+        - transaction_manager and embargo_manager snapshots are present.
+        - Embargo count reflects admitted requests.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If describe omits manager snapshots.
+    """
+    frame = AethericFrame("component-ccm-describe")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        manager.admit_request(request)
+        info = manager.describe()
+        assert info["transaction_manager"] is not None
+        assert info["embargo_manager"] is not None
+        assert info["embargo_manager"]["embargo_count"] == 1
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_admit_request_scope_hash_conflict() -> None:
+    """
+    Purpose:
+        Validate scope-hash conflicts are detected in admission.
+    Contract:
+        - Request with overlapping hash is denied.
+        - Conflict evidence contains the first request id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If hash conflicts are not enforced.
+    """
+    frame = AethericFrame("component-ccm-hash-conflict")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request_a = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-a",
+            scope_keys=["scope:shared"],
+        )
+        request_b = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-b",
+            scope_hashes=request_a.scope_hashes,
+        )
+        assert manager.admit_request(request_a).admitted is True
+        admission_b = manager.admit_request(request_b)
+        assert admission_b.admitted is False
+        assert admission_b.conflicts == (request_a.request_id,)
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_commit_clears_staged_record() -> None:
+    """
+    Purpose:
+        Validate commit removes staged mutation entries.
+    Contract:
+        - Staged entry exists after admission.
+        - commit_request clears the staged record.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If staged entries persist after commit.
+    """
+    frame = AethericFrame("component-ccm-commit-staged")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        manager.admit_request(request)
+        assert manager.orchestrator().get_staged(request.request_id) is not None
+        manager.commit_request(request.request_id)
+        assert manager.orchestrator().get_staged(request.request_id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_abort_clears_staged_record() -> None:
+    """
+    Purpose:
+        Validate abort removes staged mutation entries.
+    Contract:
+        - Staged entry exists after admission.
+        - abort_request clears the staged record.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If staged entries persist after abort.
+    """
+    frame = AethericFrame("component-ccm-abort-staged")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        manager.admit_request(request)
+        assert manager.orchestrator().get_staged(request.request_id) is not None
+        manager.abort_request(request.request_id)
+        assert manager.orchestrator().get_staged(request.request_id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_update_staged_merges_metadata() -> None:
+    """
+    Purpose:
+        Validate staged metadata updates merge rather than replace.
+    Contract:
+        - Metadata from admission remains after update.
+        - New metadata keys are merged into the staged record.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If metadata is not merged.
+    """
+    frame = AethericFrame("component-ccm-staged-metadata")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+            metadata={"origin": "admit"},
+        )
+        manager.admit_request(request)
+        assert manager.update_staged_request(
+            request.request_id,
+            metadata={"ticket": "T-200"},
+        )
+        staged = manager.orchestrator().get_staged(request.request_id)
+        assert staged is not None
+        assert staged.metadata["origin"] == "admit"
+        assert staged.metadata["ticket"] == "T-200"
+    finally:
+        frame.cleanup()
+
+def test_component_change_control_admit_request_rejects_conflict() -> None:
+    """
+    Purpose:
+        Validate admission rejects requests with overlapping scope keys.
+    Contract:
+        - Second admission is denied with conflict evidence.
+        - In-flight registry retains only the first request.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conflict admission is not enforced.
+    """
+    frame = AethericFrame("component-ccm-conflict")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request_a = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-a",
+            scope_keys=["scope:shared"],
+        )
+        request_b = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-b",
+            scope_keys=["scope:shared"],
+        )
+
+        admission_a = manager.admit_request(request_a)
+        admission_b = manager.admit_request(request_b)
+        assert admission_a.admitted is True
+        assert admission_b.admitted is False
+        assert admission_b.conflicts == (request_a.request_id,)
+        assert manager.transaction_manager().list_in_flight() == [request_a]
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_admit_request_rejects_embargo() -> None:
+    """
+    Purpose:
+        Validate embargoed scopes block admission.
+    Contract:
+        - Second admission is denied with embargo evidence.
+        - Conflict evidence remains empty when scopes do not overlap.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If embargo admission is not enforced.
+    """
+    frame = AethericFrame("component-ccm-embargo")
+    manager = frame.dev_ops_manager.change_control_manager
+    binding_scope = manager.transaction_manager().make_scope_key_binding(
+        "frame",
+        "__default__",
+    )
+    try:
+        request_a = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-a",
+            binding_keys=[("frame", "__default__")],
+        )
+        request_b = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-b",
+            scope_keys=[binding_scope],
+        )
+        assert manager.admit_request(request_a).admitted is True
+        admission_b = manager.admit_request(request_b)
+        assert admission_b.admitted is False
+        assert admission_b.conflicts == ()
+        assert admission_b.embargoes == (binding_scope,)
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_abort_request_releases_embargoes() -> None:
+    """
+    Purpose:
+        Validate abort releases implicit embargoes for a request.
+    Contract:
+        - Embargo scopes are present after admission.
+        - abort_request clears embargoes and in-flight state.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If embargoes remain after abort.
+    """
+    frame = AethericFrame("component-ccm-abort-embargo")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-a",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        assert manager.admit_request(request).admitted is True
+        assert manager.embargo_manager().describe()["embargo_count"] == 1
+
+        manager.abort_request(request.request_id)
+        assert manager.transaction_manager().list_in_flight() == []
+        assert manager.embargo_manager().describe()["embargo_count"] == 0
     finally:
         frame.cleanup()
 

@@ -267,6 +267,181 @@ def test_component_spellbook_bind_existing_object_registers_to_creations() -> No
         spellbook.cleanup()
 
 
+def test_component_spellbook_transaction_context_allows_post_conjure_bind() -> None:
+    """
+    Purpose:
+        Validate change-control bind transactions re-open binding after conjure.
+    Contract:
+        - Binding after conjure requires an active bind transaction.
+        - transaction("bind") opens and closes the binding window.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If post-conjure bind gating is incorrect.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
+    try:
+        with pytest.raises(RuntimeError, match="requires an active binding transaction"):
+            spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+
+        with spellbook.transaction("bind"):
+            spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+
+        with pytest.raises(RuntimeError, match="requires an active binding transaction"):
+            spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_end_transaction_wrong_type_keeps_binding_active() -> None:
+    """
+    Purpose:
+        Validate end_transaction type mismatches do not close binding windows.
+    Contract:
+        - end_transaction raises for mismatched transaction types.
+        - Binding remains active after the mismatch until the correct end.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If binding window closes on a mismatched end.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
+    try:
+        spellbook.begin_transaction("bind")
+        with pytest.raises(RuntimeError, match="does not match"):
+            spellbook.end_transaction("link")
+
+        spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+
+        spellbook.end_transaction("bind")
+        with pytest.raises(RuntimeError, match="requires an active binding transaction"):
+            spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_transaction_context_closes_on_exception() -> None:
+    """
+    Purpose:
+        Validate transaction context closes the binding window on errors.
+    Contract:
+        - Exceptions inside transaction("bind") still close binding access.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If binding remains active after an exception.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
+    try:
+        with pytest.raises(RuntimeError, match="boom"):
+            with spellbook.transaction("bind"):
+                raise RuntimeError("boom")
+
+        with pytest.raises(RuntimeError, match="requires an active binding transaction"):
+            spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_begin_transaction_invalid_type_raises() -> None:
+    """
+    Purpose:
+        Validate invalid transaction types are rejected.
+    Contract:
+        - begin_transaction raises ValueError for unknown types.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If invalid transaction types are accepted.
+    """
+    spellbook = _make_spellbook()
+    try:
+        with pytest.raises(ValueError, match="Invalid transaction_type"):
+            spellbook.begin_transaction("unknown")
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_begin_transaction_disabled_change_control_tracks_request() -> None:
+    """
+    Purpose:
+        Validate change-control disabled mode still tracks in-flight requests.
+    Contract:
+        - begin_transaction admits the request when change-control is disabled.
+        - In-flight registry contains the admitted request.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If in-flight tracking is missing.
+    """
+    spellbook = _make_spellbook()
+    change_control = Aether()._get_change_control_manager("default")
+    try:
+        change_control.disable_change_control()
+        spellbook.begin_transaction("bind", scope_keys=["scope:custom"])
+        in_flight = change_control.transaction_manager().list_in_flight()
+        assert len(in_flight) == 1
+        assert spellbook._active_change_request is in_flight
+    finally:
+        if spellbook._active_change_request is not None:
+            spellbook.end_transaction("bind")
+        spellbook.cleanup()
+
+
+def test_component_spellbook_begin_transaction_with_conduit_id_tracks_scope() -> None:
+    """
+    Purpose:
+        Validate conduit ids are recorded in change-control requests.
+    Contract:
+        - begin_transaction stores the initiator conduit id in conduit_ids.
+        - Base spellbook scope key is always included.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conduit ids or scopes are missing.
+    """
+    spellbook = _make_spellbook()
+    change_control = Aether()._get_change_control_manager("default")
+    try:
+        spellbook.begin_transaction("bind", conduit_id="conduit-1")
+        request = change_control.transaction_manager().list_in_flight()[0]
+        assert "conduit-1" in request.conduit_ids
+        assert f"scope:spellbook:{spellbook._id}" in request.scope_keys
+    finally:
+        spellbook.end_transaction("bind")
+        spellbook.cleanup()
+
+
 def test_component_spellbook_bind_updates_spell_versions_cache() -> None:
     """
     Purpose:

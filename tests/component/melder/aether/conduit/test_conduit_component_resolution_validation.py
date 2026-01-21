@@ -200,6 +200,53 @@ def test_component_conduit_validate_resolution_returns_valid_state() -> None:
         owner.cleanup()
 
 
+def test_component_conduit_add_spell_to_contract_requires_link_transaction() -> None:
+    """
+    Purpose:
+        Validate contract mutations require an active link transaction.
+    Contract:
+        - add_spell_to_contract raises without a link transaction.
+        - add_spell_to_contract succeeds inside a link transaction.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If contract gating behavior is incorrect.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    borrower_book = Spellbook(configuration=configuration)
+
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        assert owner.link(borrower) is True
+        with pytest.raises(RuntimeError, match="link transaction"):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
+
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            ) is True
+            contracted = borrower.get_spells_in_contract_by_conduit(owner._id)
+            assert contracted is not None
+            assert spell_id in contracted
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
 def test_component_conduit_upgrade_seeds_resolution_state_from_root() -> None:
     """
     Purpose:
