@@ -116,11 +116,18 @@ def test_defaults_for_optional_fields():
     assert profile.slots is None
     assert profile.origin_file is None
     assert profile.origin_line is None
+    assert profile.origin_end_line is None
     assert profile.source_preview is None
+    assert profile.source_text is None
     assert profile.members == {}
     assert profile.methods == {}
     assert profile.is_dataclass is False
     assert profile.decorated is False
+    assert profile.docstring_raw is None
+    assert profile.docstring_summary == ""
+    assert profile.behavior_summary == ""
+    assert profile.tags == []
+    assert profile.dynamic_access == {}
 
 
 def test_cleanup_cleans_nested_methods_and_collections():
@@ -139,8 +146,15 @@ def test_cleanup_cleans_nested_methods_and_collections():
     assert profile.slots is None
     assert profile.origin_file is None
     assert profile.origin_line is None
+    assert profile.origin_end_line is None
     assert profile.source_preview is None
+    assert profile.source_text is None
     assert profile.name is None
+    assert profile.docstring_raw is None
+    assert profile.docstring_summary is None
+    assert profile.behavior_summary is None
+    assert profile.tags is None
+    assert profile.dynamic_access is None
     assert profile.cleaned is True
 
     # idempotent

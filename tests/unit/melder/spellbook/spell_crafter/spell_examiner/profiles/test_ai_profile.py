@@ -69,6 +69,8 @@ def test_metadata_copied_and_fields_assigned():
     assert profile.resolution_profile is resolution
     assert profile.metadata is not meta
     assert profile.metadata == {"x": 1}
+    assert profile.instance_members == {}
+    assert profile.dynamic_access == {}
 
     meta["x"] = 2
     assert profile.metadata["x"] == 1
@@ -99,6 +101,8 @@ def test_cleanup_cascades_and_nulls_references():
     assert profile.class_profile is None
     assert profile.callable_profile is None
     assert profile.metadata is None
+    assert profile.instance_members is None
+    assert profile.dynamic_access is None
     assert profile.cleaned is True
 
 

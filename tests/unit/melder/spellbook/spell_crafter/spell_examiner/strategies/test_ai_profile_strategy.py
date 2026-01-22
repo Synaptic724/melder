@@ -335,3 +335,30 @@ def test_ai_profile_strategy_fallback_callable_path(monkeypatch) -> None:
     assert profile.resolution_profile is resolution_profile
     assert profile.class_profile is None
     assert profile.callable_profile is callable_profile
+
+
+def test_ai_profile_strategy_collects_instance_members() -> None:
+    class CallableObject:
+        def __init__(self):
+            self.value = 42
+
+        def __call__(self, arg: int) -> int:
+            return arg + self.value
+
+    instance = CallableObject()
+    spell = SimpleNamespace(
+        spell=instance,
+        is_class_spell=False,
+        is_method_spell=False,
+        is_lambda_spell=False,
+    )
+
+    strategy = ai_module.AIProfileStrategy()
+    profile = strategy.build_profile(
+        spell,
+        binding_profile=object(),
+        resolution_profile=object(),
+    )
+
+    assert "value" in profile.instance_members
+    assert profile.instance_members["value"]["kind"] == "instance_attribute"

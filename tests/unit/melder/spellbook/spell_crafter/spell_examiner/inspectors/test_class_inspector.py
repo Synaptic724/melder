@@ -62,6 +62,8 @@ def test_source_fields_present_for_python_class():
     assert data["file"] and data["file"].endswith(".py")
     assert data["source_line_offset"] is not None
     assert "class _Child" in (data["source_preview"] or "")
+    assert data["source_end_line"] is None or data["source_end_line"] >= data["source_line_offset"]
+    assert "class _Child" in (data["source_text"] or "")
 
 
 def test_builtin_source_is_none():
@@ -90,6 +92,8 @@ def test_members_include_methods_properties_and_data():
 
     assert "child_attr" in members and members["child_attr"]["callable"] is False
     assert "base_attr" in members
+    assert members["smethod"]["file_path"] is None or members["smethod"]["file_path"].endswith(".py")
+    assert "source_text" in members["smethod"]
 
 
 def test_dunders_filtered_when_disabled():
