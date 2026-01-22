@@ -362,6 +362,7 @@ def test_validate_disposal_method_names_type():
     cfg.set_property("disposal_method_names", "not-a-list")
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
     cfg.set_property("ai_native_enabled", False)
+    cfg.set_property("ai_profiles_enabled", False)
     cfg.set_property("phase_scheduler_barrier_timeout_milliseconds", 1)
     with pytest.raises(ValueError):
         cfg.validate()

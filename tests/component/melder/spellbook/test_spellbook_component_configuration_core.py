@@ -277,6 +277,7 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     config.with_phase_scheduler_workers(2)
     config.with_phase_scheduler_barrier_timeout(1000)
     config.with_ai_native(True)
+    config.with_ai_profiles(False)
     config.with_logger_factory(factory)
     config.finalize()
 
@@ -287,4 +288,5 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     assert config.get_property("phase_scheduler_workers_per_spellbook") == 2
     assert config.get_property("phase_scheduler_barrier_timeout_milliseconds") == 1000
     assert config.get_property("ai_native_enabled") is True
+    assert config.get_property("ai_profiles_enabled") is False
     assert config.get_logger_for("root") == "logger:root"
