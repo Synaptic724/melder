@@ -29,8 +29,6 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-#TODO: @GPT5, please inform Mark that he needs to implement Conduits hooks, for pre- during, and post activations so we can add Aspect Oriented Programming here
-
 #region Conduit
 class Conduit(Cleanable, IConduit):
     """
