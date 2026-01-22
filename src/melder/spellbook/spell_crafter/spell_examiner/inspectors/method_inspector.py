@@ -8,8 +8,23 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 #region MethodInspector
 class MethodInspector:
     """
-    Inspects a Python callable object (function, method, lambda, etc.)
-    and gathers detailed information about it.
+    Inspect a callable object and emit a structured, tool-ready record.
+
+    Purpose:
+        Provide a deterministic, best-effort profile of functions, methods,
+        lambdas, and callable objects for AI inventory use.
+
+    Contract:
+        - Never invokes the callable.
+        - Uses best-effort provenance; missing source data is represented as None.
+        - Captures signature/parameters when available.
+
+    Args:
+        fn: Callable object to inspect.
+        max_repr: Maximum length for repr strings.
+
+    Raises:
+        TypeError: If fn is not callable.
     """
     __melder_internal__ = _mrg.sentinel
     utility = InspectorUtility
@@ -87,6 +102,10 @@ class MethodInspector:
                 "repr": self.utility.safe_repr(f_eff, self.max_repr),
                 "builtin_mod": bool(module and inspect.isbuiltin(module)),
                 "extension_mod": self.utility.is_extension_module(module),
+                "docstring_raw": getattr(f_eff, "__doc__", None),
+                "docstring_summary": "",
+                "behavior_summary": "",
+                "tags": [],
             }
         )
     def _fill_source(self, f_eff: Callable) -> None:
@@ -102,9 +121,15 @@ class MethodInspector:
             lines, off = inspect.getsourcelines(f_eff)
             self.data["preview"] = "".join(lines[:5]).strip()
             self.data["src_offset"] = off
+            self.data["start_line"] = off
+            self.data["end_line"] = off + len(lines) - 1 if lines else None
+            self.data["source_text"] = "".join(lines).rstrip() if lines else None
         except Exception:
             self.data["preview"] = None
             self.data["src_offset"] = None
+            self.data["start_line"] = None
+            self.data["end_line"] = None
+            self.data["source_text"] = None
     def _fill_signature(self, f_eff: Callable) -> None:
         """
         Extract the signature and normalized parameter list.

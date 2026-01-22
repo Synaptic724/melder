@@ -136,6 +136,10 @@ class SpellExaminer:
         * Binding profile  → lightweight structural view.
         * Resolution       → how the spell participates in the DAG.
         * Deep reflection  → ClassProfile / MethodProfile via the inspector layer.
+
+        Contract:
+            - AI profiles remain gated by configuration.
+            - Dunders are always included in AI profiles (ACL filtering happens downstream).
         """
         if not isinstance(spell, Spell):
             raise TypeError(
@@ -154,7 +158,7 @@ class SpellExaminer:
             resolution_profile = self.resolution_profile_for_spell(spell)
 
         strategy = AIProfileStrategy(
-            show_dunders=self.show_dunders,
+            show_dunders=True,
             max_repr=self.max_repr,
         )
         return strategy.build_profile(

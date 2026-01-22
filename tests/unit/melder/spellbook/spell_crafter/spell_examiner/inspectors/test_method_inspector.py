@@ -41,6 +41,9 @@ def test_header_and_source_metadata():
     assert data["file"] and data["file"].endswith("test_method_inspector.py")
     assert "def sample" in data["preview"]
     assert isinstance(data["src_offset"], int)
+    assert data["start_line"] == data["src_offset"]
+    assert data["end_line"] is None or data["end_line"] >= data["start_line"]
+    assert "def sample" in (data["source_text"] or "")
 
 
 def test_signature_and_parameters_capture_defaults_annotations():

@@ -261,6 +261,27 @@ def test_ai_profile_strategy_receives_config(monkeypatch):
     assert captured["payload"] == (spell, bp, rp)
 
 
+def test_ai_profile_forces_dunder_visibility(monkeypatch):
+    captured = {}
+
+    class FakeAI(AIProfileStrategy):
+        def __init__(self, show_dunders=False, max_repr=0):
+            captured["ctor"] = (show_dunders, max_repr)
+
+        def build_profile(self, spell, binding_profile=None, resolution_profile=None):
+            return "ai"
+
+    monkeypatch.setattr(
+        "melder.spellbook.spell_crafter.spell_examiner.spell_examiner.AIProfileStrategy",
+        FakeAI,
+        raising=True,
+    )
+    examiner = SpellExaminer(show_dunders=False, max_repr=9, configuration=_ai_config(True))
+    spell = _spell()
+    assert examiner.ai_profile_for_spell(spell) == "ai"
+    assert captured["ctor"] == (True, 9)
+
+
 def test_examine_ai_with_provided_profiles_bypasses_build(monkeypatch):
     bp = object()
     rp = object()

@@ -8,10 +8,26 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 #region ClassInspector
 class ClassInspector:
     """
-    Inspects a Python class object and gathers detailed information about it.
+    Inspect a class object and emit a structured, tool-ready inventory.
 
-    Collects metadata, source information, member details (attributes, methods),
-    and protocol implementation checks. (GC info removed).
+    Purpose:
+        Produce a deterministic, object-surface inventory for AI profile
+        construction without invoking user code. This includes class metadata,
+        provenance, member inventory, and protocol/dynamic-access signals.
+
+    Contract:
+        - Never calls user-defined attribute accessors.
+        - Uses best-effort inspection; missing provenance is represented as None.
+        - Member records share a consistent schema, even for non-callables.
+        - Dunder members are included only when show_dunders=True.
+
+    Args:
+        cls: Class object to inspect.
+        show_dunders: Whether to include __dunder__ members.
+        max_repr: Maximum length for repr strings in output.
+
+    Raises:
+        TypeError: If cls is not a class object.
     """
     __melder_internal__ = _mrg.sentinel
     utility = InspectorUtility
@@ -46,13 +62,15 @@ class ClassInspector:
     # public
     def inspect(self) -> Dict[str, Any]:
         """
-        Performs the inspection of the class.
+        Perform the full class inspection.
 
-        Calls private methods to gather different categories of information
-        and returns the consolidated data.
+        Contract:
+            - Populates header, provenance, members, protocol, and decoration
+              fields in a deterministic order.
+            - Returns a dictionary that is safe to serialize.
 
         Returns:
-            A dictionary containing the inspection results.
+            Dict[str, Any]: Structured inspection output for the class.
         """
         self._header()      # Basic class metadata
         self._source()      # Source file and line information
@@ -64,10 +82,17 @@ class ClassInspector:
 
     # private blocks
     def _header(self) -> None:
-        """Gathers basic header information about the class."""
+        """
+        Populate core class metadata and dynamic-access flags.
+
+        Contract:
+            - Populates only metadata; does not read member values.
+            - Dynamic-access flags are inferred from the class MRO.
+        """
         c = self.cls
         module = inspect.getmodule(c) # Get the module the class belongs to
 
+        dynamic_flags = self._dynamic_access_flags(c)
         self.data.update(
             {
                 "name": getattr(c, "__name__", "<unnamed>"), # Class name
@@ -85,31 +110,38 @@ class ClassInspector:
                 "is_builtin_module": bool(module and inspect.isbuiltin(module)),
                 "is_extension_module": self.utility.is_extension_module(module),
                 "is_dataclass": hasattr(c, "__dataclass_fields__"),
+                "docstring_raw": getattr(c, "__doc__", None),
+                "docstring_summary": "",
+                "behavior_summary": "",
+                "tags": [],
+                "dynamic_access": dynamic_flags,
             }
         )
 
     def _source(self) -> None:
-        """Retrieves source file and a preview of the class definition, if possible."""
-        c = self.cls
-        try:
-            # Get the file where the class is defined
-            self.data["file"] = inspect.getfile(c)
-        except Exception:
-            # Fails for built-in types or dynamically created classes
-            self.data["file"] = None
-        try:
-            # Get source lines and starting line number
-            lines, off = inspect.getsourcelines(c)
-            self.data["source_line_offset"] = off # Starting line number in the file
-            # Provide a short preview (first 5 lines)
-            self.data["source_preview"] = "".join(lines[:5]).strip()
-        except Exception:
-            # Fails if source code is not available (e.g., interactive, built-in)
-            self.data["source_line_offset"] = None
-            self.data["source_preview"] = None
+        """
+        Populate class provenance fields (file path, line span, source text).
+
+        Contract:
+            - All provenance fields are best-effort and may be None.
+            - source_preview is derived from the first 5 lines of source_text.
+        """
+        source_info = self._extract_source_info(self.cls)
+        self.data["file"] = source_info["file_path"]
+        self.data["source_line_offset"] = source_info["start_line"]
+        self.data["source_end_line"] = source_info["end_line"]
+        self.data["source_text"] = source_info["source_text"]
+        self.data["source_preview"] = source_info["preview"]
 
     def _members(self) -> None:
-        """Inspects the members (attributes, methods, properties, etc.) of the class."""
+        """
+        Inspect class members and emit normalized member records.
+
+        Contract:
+            - All members include a consistent schema (name, kind, provenance,
+              docstrings, and callable metadata when applicable).
+            - Dunder filtering honors show_dunders, except for dataclass __init__.
+        """
         members: Dict[str, Dict[str, Any]] = {}
         mro = inspect.getmro(self.cls) # Cache MRO
         cls_dict = self.cls.__dict__ # Cache class dict
@@ -140,25 +172,47 @@ class ClassInspector:
                         owner = base.__name__
                         break
 
+            member_kind = self._resolve_member_kind(name, obj)
+            is_callable = self._is_callable_member(obj)
+            target = self._resolve_callable_target(obj)
+            module = getattr(target, "__module__", None)
+            qualname = getattr(target, "__qualname__", None)
+            docstring_raw = getattr(target, "__doc__", None)
+            provenance = self._extract_source_info(target)
             info: Dict[str, Any] = {
+                "name": name,
                 "defined_here": owner is None,
                 "owner_class": owner or self.cls.__name__,
-                "kind": kind,
+                "defined_on": owner or self.cls.__name__,
+                "inherited": owner is not None,
+                "kind": member_kind,
+                "raw_kind": kind,
                 "type": type(obj).__name__,
-                "callable": callable(obj),
+                "callable": is_callable,
                 "property": isinstance(obj, property),
-                "abstract": bool(getattr(obj, "__isabstractmethod__", False)) if callable(obj) else False,
+                "is_dunder": name.startswith("__") and name.endswith("__"),
+                "module": module,
+                "qualname": qualname,
+                "docstring_raw": docstring_raw,
+                "docstring_summary": "",
+                "behavior_summary": "",
+                "tags": [],
                 "repr": self.utility.safe_repr(obj, self.max_repr),
                 "signature": None,
+                "parameters": [],
+                "return_annotation": None,
                 "src_line": None,
+                "file_path": provenance["file_path"],
+                "start_line": provenance["start_line"],
+                "end_line": provenance["end_line"],
+                "source_text": provenance["source_text"],
             }
 
-            if callable(obj):
+            if is_callable:
                 try:
                     # Use the member as-is for signature (primary view == wrapper if any)
-                    target = obj
                     # Keep wrapper; do not unwrap here for primary signature
-                    sig = inspect.signature(target if not isinstance(target, (staticmethod, classmethod)) else target.__func__)
+                    sig = inspect.signature(self._resolve_signature_target(obj))
                     info["signature"] = str(sig)
                     info["parameters"] = [
                         {
@@ -170,11 +224,16 @@ class ClassInspector:
                         }
                         for p in sig.parameters.values()
                     ]
+                    if sig.return_annotation is not Parameter.empty:
+                        info["return_annotation"] = self.utility.safe_repr(
+                            sig.return_annotation, self.max_repr
+                        )
 
                     # Also record original/unwrapped signature when it differs
-                    u_target = target.__func__ if isinstance(target, (staticmethod, classmethod)) else target
+                    u_target = self._resolve_callable_target(obj)
                     u_target = self.utility.unwrap_callable(u_target)
-                    if u_target is not (target.__func__ if isinstance(target, (staticmethod, classmethod)) else target):
+                    signature_target = self._resolve_signature_target(obj)
+                    if u_target is not signature_target:
                         try:
                             u_sig = inspect.signature(u_target)
                             info["original_signature"] = str(u_sig)
@@ -195,7 +254,7 @@ class ClassInspector:
                 except (ValueError, TypeError):
                     pass
                 try:
-                    _, ln = inspect.getsourcelines(obj)
+                    _, ln = inspect.getsourcelines(self._resolve_callable_target(obj))
                     info["src_line"] = ln
                 except Exception:
                     pass
@@ -206,12 +265,33 @@ class ClassInspector:
                     "fset": bool(obj.fset),
                     "fdel": bool(obj.fdel),
                 }
+                info["accessor_docstrings"] = {
+                    "fget": getattr(obj.fget, "__doc__", None),
+                    "fset": getattr(obj.fset, "__doc__", None),
+                    "fdel": getattr(obj.fdel, "__doc__", None),
+                }
+                info["accessor_provenance"] = {
+                    "fget": self._extract_source_info(obj.fget) if obj.fget else None,
+                    "fset": self._extract_source_info(obj.fset) if obj.fset else None,
+                    "fdel": self._extract_source_info(obj.fdel) if obj.fdel else None,
+                }
+            elif self._is_descriptor(obj):
+                info["descriptor_details"] = {
+                    "has_get": bool(getattr(obj, "__get__", None)),
+                    "has_set": bool(getattr(obj, "__set__", None)),
+                    "has_delete": bool(getattr(obj, "__delete__", None)),
+                }
 
             members[name] = info
         self.data["members"] = members
 
     def _protocols(self) -> None:
-        """Checks for the presence of common dunder methods indicating protocol support."""
+        """
+        Record protocol presence flags based on dunder methods.
+
+        Contract:
+            - Uses attribute presence only; no member invocation.
+        """
         c = self.cls
         has = lambda attr: hasattr(c, attr)
         self.data["protocols"] = {
@@ -228,6 +308,13 @@ class ClassInspector:
         }
 
     def _detect_decorator_wrapping(self) -> None:
+        """
+        Detect decorator wrapping and record wrapper metadata.
+
+        Contract:
+            - Updates data["decorated"] and data["wrapped_repr"] when applicable.
+            - Never raises on unwrap failures.
+        """
         try:
             orig_cls = inspect.unwrap(self.cls)
             if orig_cls is not self.cls:
@@ -254,7 +341,7 @@ class ClassInspector:
         modifies and returns it, or replaces it with an instance.
 
         Returns:
-            True if the object appears to be a decorated class.
+            bool: True if the object appears to be a decorated class.
         """
         obj = self.cls
 
@@ -276,5 +363,170 @@ class ClassInspector:
         if qualname and '.' in qualname and not name in qualname:
             return True
 
+        return False
+
+    def _extract_source_info(self, obj: Any) -> Dict[str, Any]:
+        """
+        Extract best-effort provenance fields for an object.
+
+        Args:
+            obj: Object to inspect for source metadata.
+
+        Returns:
+            Dict[str, Any]: Keys: file_path, start_line, end_line, source_text, preview.
+        """
+        file_path = None
+        start_line = None
+        end_line = None
+        source_text = None
+        preview = None
+        if obj is None:
+            return {
+                "file_path": None,
+                "start_line": None,
+                "end_line": None,
+                "source_text": None,
+                "preview": None,
+            }
+        try:
+            file_path = inspect.getfile(obj)
+        except Exception:
+            file_path = None
+        try:
+            lines, off = inspect.getsourcelines(obj)
+            start_line = off
+            end_line = off + len(lines) - 1 if lines else None
+            source_text = "".join(lines).rstrip() if lines else None
+            preview = "".join(lines[:5]).strip() if lines else None
+        except Exception:
+            start_line = None
+            end_line = None
+            source_text = None
+            preview = None
+        return {
+            "file_path": file_path,
+            "start_line": start_line,
+            "end_line": end_line,
+            "source_text": source_text,
+            "preview": preview,
+        }
+
+    def _resolve_signature_target(self, obj: Any) -> Any:
+        """
+        Resolve the callable target used for signature extraction.
+
+        Args:
+            obj: Candidate member object from classify_members.
+
+        Returns:
+            Any: Callable object passed to inspect.signature.
+        """
+        if isinstance(obj, staticmethod):
+            return obj.__func__
+        if isinstance(obj, classmethod):
+            return obj.__func__
+        return obj
+
+    def _resolve_callable_target(self, obj: Any) -> Any:
+        """
+        Resolve the underlying callable for provenance and docstrings.
+
+        Args:
+            obj: Candidate member object.
+
+        Returns:
+            Any: Underlying function when available, otherwise obj.
+        """
+        if isinstance(obj, staticmethod):
+            return obj.__func__
+        if isinstance(obj, classmethod):
+            return obj.__func__
+        if isinstance(obj, property):
+            return obj.fget if obj.fget is not None else obj
+        return obj
+
+    def _is_callable_member(self, obj: Any) -> bool:
+        """
+        Decide whether a member should be treated as callable.
+
+        Args:
+            obj: Candidate member object.
+
+        Returns:
+            bool: True if the member is callable or a method descriptor.
+        """
+        if isinstance(obj, (staticmethod, classmethod)):
+            return True
+        return callable(obj)
+
+    def _is_descriptor(self, obj: Any) -> bool:
+        """
+        Determine whether an object behaves like a data descriptor.
+
+        Args:
+            obj: Candidate member object.
+
+        Returns:
+            bool: True if the object has descriptor methods and is not a property.
+        """
+        if isinstance(obj, property):
+            return False
+        return bool(getattr(obj, "__get__", None) or getattr(obj, "__set__", None) or getattr(obj, "__delete__", None))
+
+    def _resolve_member_kind(self, name: str, obj: Any) -> str:
+        """
+        Normalize member kind for the tool-shaped schema.
+
+        Args:
+            name: Member name.
+            obj: Member object.
+
+        Returns:
+            str: Normalized member kind label.
+        """
+        if isinstance(obj, property):
+            return "property"
+        if isinstance(obj, classmethod):
+            return "classmethod"
+        if isinstance(obj, staticmethod):
+            return "staticmethod"
+        if self._is_descriptor(obj) and not callable(obj):
+            return "descriptor"
+        if callable(obj):
+            return "method"
+        if name.startswith("__") and name.endswith("__"):
+            return "dunder"
+        return "data"
+
+    def _dynamic_access_flags(self, cls: Type) -> Dict[str, bool]:
+        """
+        Compute dynamic attribute access flags for a class.
+
+        Args:
+            cls: Class to inspect.
+
+        Returns:
+            Dict[str, bool]: Flags for __getattr__, __getattribute__, __setattr__.
+        """
+        return {
+            "has_getattr": self._has_attribute_in_mro(cls, "__getattr__"),
+            "has_getattribute": self._has_attribute_in_mro(cls, "__getattribute__"),
+            "has_setattr": self._has_attribute_in_mro(cls, "__setattr__"),
+        }
+
+    def _has_attribute_in_mro(self, cls: Type, attr: str) -> bool:
+        """
+        Check whether a class or its bases define a given attribute.
+
+        Args:
+            cls: Class to inspect.
+            attr: Attribute name to check.
+
+        Returns:
+            bool: True if attr appears in any __dict__ in the MRO.
+        """
+        for base in inspect.getmro(cls):
+            if attr in base.__dict__:
+                return True
         return False
 #endregion

@@ -62,6 +62,13 @@ def test_cleanup_clears_all_fields_and_marks_cleaned():
     assert profile.wrapped_repr is None
     assert profile.name is None
     assert profile.signature is None
+    assert profile.start_line is None
+    assert profile.end_line is None
+    assert profile.source_text is None
+    assert profile.docstring_raw is None
+    assert profile.docstring_summary is None
+    assert profile.behavior_summary is None
+    assert profile.tags is None
     # idempotent
     profile.cleanup()
     assert profile.cleaned is True
