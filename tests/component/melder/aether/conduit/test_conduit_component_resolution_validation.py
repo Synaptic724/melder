@@ -241,7 +241,8 @@ def test_component_conduit_add_spell_to_contract_requires_link_transaction() -> 
             ) is True
             contracted = borrower.get_spells_in_contract_by_conduit(owner._id)
             assert contracted is not None
-            assert spell_id in contracted
+            inbound = contracted.get("inbound", [])
+            assert any(entry[0] == spell_id for entry in inbound)
     finally:
         borrower.cleanup()
         owner.cleanup()

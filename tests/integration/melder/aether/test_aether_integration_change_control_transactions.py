@@ -81,6 +81,7 @@ def test_change_control_bind_transaction_opens_and_closes_embargoes() -> None:
     frame_name = "frame-cc-bind"
     configuration = _make_configuration(aether_frame=frame_name, dynamic=False)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit = spellbook.conjure(name="root")
     change_control = Aether()._get_change_control_manager(frame_name)
     embargo_manager = change_control.embargo_manager()
     transaction_manager = change_control.transaction_manager()
@@ -104,6 +105,7 @@ def test_change_control_bind_transaction_opens_and_closes_embargoes() -> None:
 
     assert transaction_manager.list_in_flight() == []
     assert embargo_manager.describe()["embargo_count"] == 0
+    conduit.cleanup()
     spellbook.cleanup()
 
 
@@ -122,6 +124,7 @@ def test_change_control_update_staged_request_extends_embargo_scopes() -> None:
     frame_name = "frame-cc-staged"
     configuration = _make_configuration(aether_frame=frame_name, dynamic=False)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit = spellbook.conjure(name="root")
     change_control = Aether()._get_change_control_manager(frame_name)
     embargo_manager = change_control.embargo_manager()
     transaction_manager = change_control.transaction_manager()
@@ -142,6 +145,7 @@ def test_change_control_update_staged_request_extends_embargo_scopes() -> None:
     finally:
         spellbook.end_transaction("bind")
 
+    conduit.cleanup()
     spellbook.cleanup()
 
 
@@ -161,6 +165,8 @@ def test_change_control_disable_allows_overlapping_requests() -> None:
     configuration = _make_configuration(aether_frame=frame_name, dynamic=False)
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit_a = spellbook_a.conjure(name="root-a")
+    conduit_b = spellbook_b.conjure(name="root-b")
     change_control = Aether()._get_change_control_manager(frame_name)
     change_control.disable_change_control()
 
@@ -172,6 +178,8 @@ def test_change_control_disable_allows_overlapping_requests() -> None:
     spellbook_b.end_transaction("bind")
     assert transaction_manager.list_in_flight() == []
 
+    conduit_a.cleanup()
+    conduit_b.cleanup()
     spellbook_a.cleanup()
     spellbook_b.cleanup()
 
@@ -191,6 +199,8 @@ def test_change_control_scope_hash_conflict_rejects_overlap() -> None:
     configuration = _make_configuration(aether_frame=frame_name, dynamic=False)
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit_a = spellbook_a.conjure(name="root-a")
+    conduit_b = spellbook_b.conjure(name="root-b")
     scope_hash = hashlib.sha256("shared-scope".encode("utf-8")).hexdigest()
 
     spellbook_a.begin_transaction("bind", scope_hashes=[scope_hash])
@@ -200,6 +210,8 @@ def test_change_control_scope_hash_conflict_rejects_overlap() -> None:
     finally:
         spellbook_a.end_transaction("bind")
 
+    conduit_a.cleanup()
+    conduit_b.cleanup()
     spellbook_a.cleanup()
     spellbook_b.cleanup()
 
@@ -272,6 +284,7 @@ def test_change_control_link_contract_registers_link_mirror() -> None:
                 spell_id=spell_id,
                 conduit=owner,
                 permissions="create",
+                aetheric_frame=frame_name,
             )
         assert borrower.id in transaction_manager.list_borrowers_for_provider(owner.id)
     finally:

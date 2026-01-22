@@ -459,6 +459,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         Threading:
             Uses the internal lock to snapshot hook references.
         """
+        self.check_cleaned()
         validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         structural: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         with self._lock:
@@ -492,6 +493,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         Threading:
             Uses the internal lock to snapshot hook references.
         """
+        self.check_cleaned()
         marker: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         with self._lock:
@@ -524,6 +526,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         Threading:
             Uses the internal lock to snapshot hook references.
         """
+        self.check_cleaned()
         hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         with self._lock:
             hook = self._abort_hook
@@ -545,17 +548,15 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             Optional[Any]:
                 The owning frame instance when available.
         """
-        states = self._spell_system_states
-        if states is None:
-            return None
-        frame = getattr(states, "_frame", None)
-        if frame is None:
+        self.check_cleaned()
+        if self._spell_system_states is None:
             return None
         try:
-            frame.check_cleaned()
+            if self._spell_system_states._frame is None:
+                return None
+            return self._spell_system_states._frame
         except Exception:
             return None
-        return frame
 
     def _resolve_conduit_by_id(self, conduit_id: str) -> Optional[Any]:
         """
@@ -575,6 +576,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             Optional[Any]:
                 The resolved conduit instance, if found.
         """
+        self.check_cleaned()
         if not conduit_id:
             return None
         frame = self._resolve_frame()
@@ -610,6 +612,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             Optional[Any]:
                 The resolved Spellbook instance, if available.
         """
+        self.check_cleaned()
         if staged is None:
             return None
         candidate_ids: list[str] = []
@@ -624,7 +627,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             conduit = self._resolve_conduit_by_id(conduit_id)
             if conduit is None:
                 continue
-            spellbook = getattr(conduit, "_spellbook", None)
+            spellbook = conduit._spellbook
             if spellbook is None:
                 continue
             if staged.spellbook_id and getattr(spellbook, "_id", None) != staged.spellbook_id:
@@ -659,6 +662,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             list:
                 List of resolved spell instances.
         """
+        self.check_cleaned()
         if spellbook is None or not binding_keys:
             return []
         resolved: list = []
@@ -703,6 +707,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         Raises:
             Exception: Propagates structural phase errors from Spellbook.
         """
+        self.check_cleaned()
         if staged.request_type is not ChangeTransactionType.BIND:
             return
         if not staged.binding_keys:
@@ -744,6 +749,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         Threading:
             Uses SpellSystemStates internal locking; does not hold the manager lock.
         """
+        self.check_cleaned()
         if staged.spellbook_id is None:
             return
         if not staged.binding_keys and not staged.contract_keys:

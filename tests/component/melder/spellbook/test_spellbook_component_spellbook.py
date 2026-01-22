@@ -405,16 +405,18 @@ def test_component_spellbook_begin_transaction_disabled_change_control_tracks_re
         AssertionError: If in-flight tracking is missing.
     """
     spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
     change_control = Aether()._get_change_control_manager("default")
     try:
         change_control.disable_change_control()
         spellbook.begin_transaction("bind", scope_keys=["scope:custom"])
         in_flight = change_control.transaction_manager().list_in_flight()
         assert len(in_flight) == 1
-        assert spellbook._active_change_request is in_flight
+        assert spellbook._active_change_request in in_flight
     finally:
         if spellbook._active_change_request is not None:
             spellbook.end_transaction("bind")
+        conduit.cleanup()
         spellbook.cleanup()
 
 
@@ -431,6 +433,7 @@ def test_component_spellbook_begin_transaction_with_conduit_id_tracks_scope() ->
         AssertionError: If conduit ids or scopes are missing.
     """
     spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
     change_control = Aether()._get_change_control_manager("default")
     try:
         spellbook.begin_transaction("bind", conduit_id="conduit-1")
@@ -439,6 +442,7 @@ def test_component_spellbook_begin_transaction_with_conduit_id_tracks_scope() ->
         assert f"scope:spellbook:{spellbook._id}" in request.scope_keys
     finally:
         spellbook.end_transaction("bind")
+        conduit.cleanup()
         spellbook.cleanup()
 
 
