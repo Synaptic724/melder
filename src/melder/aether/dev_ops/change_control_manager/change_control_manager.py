@@ -30,18 +30,6 @@ from melder.utilities.interfaces.interfaces import IChangeControlManager, ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-__all__ = [
-    "ChangeTransactionType",
-    "ChangeControlTransactionRequest",
-    "ChangeControlAdmissionResult",
-    "ChangeControlEmbargoRecord",
-    "ChangeControlTransactionManager",
-    "ChangeControlConflictManager",
-    "ChangeControlEmbargoManager",
-    "ChangeControlOrchestrator",
-    "ChangeControlManager",
-]
-
 class ChangeControlManager(Cleanable, IChangeControlManager):
     """
     Change-control registry for an Aetheric Frame.
@@ -582,8 +570,8 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         frame = self._resolve_frame()
         if frame is None:
             return None
-        lock = getattr(frame, "_lock", None)
-        conduits = getattr(frame, "_conduits", None)
+        lock = frame._lock
+        conduits = frame._conduits
         if lock is None or conduits is None:
             return None
         with lock:
@@ -630,7 +618,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             spellbook = conduit._spellbook
             if spellbook is None:
                 continue
-            if staged.spellbook_id and getattr(spellbook, "_id", None) != staged.spellbook_id:
+            if staged.spellbook_id and spellbook._id != staged.spellbook_id:
                 continue
             try:
                 spellbook.check_cleaned()
@@ -715,7 +703,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         spellbook = self._resolve_spellbook_for_staged(staged)
         if spellbook is None:
             return
-        if not getattr(spellbook, "_conjured", False):
+        if not spellbook._conjured:
             return
         spells = self._resolve_spells_for_binding_keys(spellbook, staged.binding_keys)
         if not spells:
