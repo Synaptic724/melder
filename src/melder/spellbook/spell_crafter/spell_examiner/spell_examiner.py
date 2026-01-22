@@ -20,6 +20,7 @@ from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile
 from melder.spellbook.spell_crafter.spell_examiner.strategies.ai_profile_strategy import (
     AIProfileStrategy,
 )
+from melder.utilities.interfaces.interfaces import IConfiguration
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellExaminationKind(Enum):
@@ -49,11 +50,30 @@ class SpellExaminer:
     * AIProfileStrategy             → SpellAIProfile
     """
     __melder_internal__ = _mrg.sentinel
-    __slots__ = ("show_dunders", "max_repr")
+    __slots__ = ("show_dunders", "max_repr", "_configuration")
 
-    def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:
+    def __init__(
+            self,
+            *,
+            show_dunders: bool = False,
+            max_repr: int = 120,
+            configuration: Optional[IConfiguration] = None,
+    ) -> None:
         self.show_dunders = show_dunders
         self.max_repr = max_repr
+        self._configuration = configuration
+
+    def _ai_profiles_enabled(self) -> bool:
+        config = self._configuration
+        if config is None:
+            return False
+        try:
+            if not config.has_property("ai_profiles_enabled"):
+                return False
+            enabled = config.get_property("ai_profiles_enabled")
+        except Exception:
+            return False
+        return isinstance(enabled, bool) and enabled
 
     # ----------------------------------------------------------------------
     # Binding layer
@@ -121,6 +141,10 @@ class SpellExaminer:
             raise TypeError(
                 "ai_profile_for_spell expects a Spell instance. "
                 f"Got: {type(spell)!r}"
+            )
+        if not self._ai_profiles_enabled():
+            raise RuntimeError(
+                "AI profiles are disabled. Enable with Configuration.with_ai_profiles(True)."
             )
 
         if binding_profile is None:

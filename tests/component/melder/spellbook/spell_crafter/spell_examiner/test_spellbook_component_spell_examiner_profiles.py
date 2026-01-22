@@ -42,6 +42,7 @@ def _make_spellbook() -> Spellbook:
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    config.set_property("ai_profiles_enabled", True)
     return spellbook
 
 
@@ -106,7 +107,7 @@ def test_component_spell_examiner_class_profile_records_method_signatures() -> N
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        examiner = SpellExaminer()
+        examiner = SpellExaminer(configuration=spellbook.get_configuration())
         ai_profile = examiner.ai_profile_for_spell(spell)
 
         class_profile = ai_profile.class_profile
@@ -160,7 +161,7 @@ def test_component_spell_examiner_callable_profile_records_parameters() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        examiner = SpellExaminer()
+        examiner = SpellExaminer(configuration=spellbook.get_configuration())
         ai_profile = examiner.ai_profile_for_spell(spell)
 
         callable_profile = ai_profile.callable_profile

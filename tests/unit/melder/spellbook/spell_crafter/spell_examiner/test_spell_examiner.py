@@ -3,6 +3,7 @@ import types
 import pytest
 
 from melder.spellbook.spell import Spell
+from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
     SpellExaminer,
     SpellExaminationKind,
@@ -41,6 +42,12 @@ def _spell():
         aetheric_frame="frame",
         spellbook=_StubSpellbook(),
     )
+
+def _ai_config(enabled: bool) -> Configuration:
+    config = Configuration()
+    config.with_defaults()
+    config.with_ai_profiles(enabled)
+    return config
 
 
 def test_binding_profile_for_object_delegates_to_strategy(monkeypatch):
@@ -95,7 +102,7 @@ def test_ai_profile_uses_or_builds_profiles(monkeypatch):
 
     monkeypatch.setattr(AIProfileStrategy, "build_profile", fake_ai, raising=True)
 
-    examiner = SpellExaminer(show_dunders=True, max_repr=7)
+    examiner = SpellExaminer(show_dunders=True, max_repr=7, configuration=_ai_config(True))
     spell = _spell()
 
     # Provided profiles bypass builders
@@ -120,6 +127,25 @@ def test_ai_profile_requires_spell(monkeypatch):
     with pytest.raises(TypeError):
         examiner.ai_profile_for_spell("not-spell")  # type: ignore[arg-type]
 
+def test_ai_profile_requires_opt_in(monkeypatch):
+    spell = _spell()
+    examiner = SpellExaminer()
+    with pytest.raises(RuntimeError, match="AI profiles are disabled"):
+        examiner.ai_profile_for_spell(spell)
+
+    sentinel = object()
+    bp = object()
+    rp = object()
+
+    monkeypatch.setattr(
+        AIProfileStrategy,
+        "build_profile",
+        lambda self, spell, binding_profile=None, resolution_profile=None: sentinel,
+        raising=True,
+    )
+    examiner = SpellExaminer(configuration=_ai_config(True))
+    assert examiner.ai_profile_for_spell(spell, binding_profile=bp, resolution_profile=rp) is sentinel
+
 
 def test_examine_binding_accepts_spell_and_raw(monkeypatch):
     monkeypatch.setattr(
@@ -137,7 +163,7 @@ def test_examine_binding_accepts_spell_and_raw(monkeypatch):
 
 
 def test_examine_resolution_and_ai_validate_types(monkeypatch):
-    examiner = SpellExaminer()
+    examiner = SpellExaminer(configuration=_ai_config(True))
     with pytest.raises(TypeError):
         examiner.examine(object(), SpellExaminationKind.RESOLUTION)
     with pytest.raises(TypeError):
@@ -226,7 +252,7 @@ def test_ai_profile_strategy_receives_config(monkeypatch):
         FakeAI,
         raising=True,
     )
-    examiner = SpellExaminer(show_dunders=True, max_repr=5)
+    examiner = SpellExaminer(show_dunders=True, max_repr=5, configuration=_ai_config(True))
     spell = _spell()
     bp = object()
     rp = object()
@@ -251,7 +277,7 @@ def test_examine_ai_with_provided_profiles_bypasses_build(monkeypatch):
         ResolutionProfileStrategy, "build_profile", lambda self, s: (_ for _ in ()).throw(RuntimeError("should not call")), raising=True
     )
 
-    examiner = SpellExaminer()
+    examiner = SpellExaminer(configuration=_ai_config(True))
     spell = _spell()
     result = examiner.examine(
         spell,
@@ -291,7 +317,7 @@ def test_ai_strategy_exception_bubbles(monkeypatch):
         raise RuntimeError("ai-fail")
 
     monkeypatch.setattr(AIProfileStrategy, "build_profile", boom, raising=True)
-    examiner = SpellExaminer()
+    examiner = SpellExaminer(configuration=_ai_config(True))
     with pytest.raises(RuntimeError, match="ai-fail"):
         examiner.ai_profile_for_spell(_spell())
 
@@ -312,7 +338,7 @@ def test_ai_strategy_instance_is_fresh_per_call(monkeypatch):
         raising=True,
     )
 
-    examiner = SpellExaminer()
+    examiner = SpellExaminer(configuration=_ai_config(True))
     spell = _spell()
     first = examiner.ai_profile_for_spell(spell)
     second = examiner.ai_profile_for_spell(spell)

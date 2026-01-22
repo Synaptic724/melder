@@ -69,6 +69,7 @@ class Configuration(Cleanable, IConfiguration):
             "disposal_method_names": list,
             "phase_scheduler_workers_per_spellbook": int,
             "ai_native_enabled": bool,
+            "ai_profiles_enabled": bool,
             "phase_scheduler_barrier_timeout_milliseconds": int,
         }
 
@@ -247,6 +248,7 @@ class Configuration(Cleanable, IConfiguration):
         self._validate_enum_properties()
         self._validate_phase_scheduler_workers()
         self._validate_ai_native_enabled()
+        self._validate_ai_profiles_enabled()
 
         return True
 
@@ -304,6 +306,15 @@ class Configuration(Cleanable, IConfiguration):
 
         if not isinstance(enabled, bool):
             raise ValueError("ai_native_enabled must be a boolean.")
+
+    def _validate_ai_profiles_enabled(self) -> None:
+        """
+        Ensures ai_profiles_enabled is a boolean.
+        """
+        enabled = self._properties.get("ai_profiles_enabled")
+
+        if not isinstance(enabled, bool):
+            raise ValueError("ai_profiles_enabled must be a boolean.")
 
     def validate_enums(self) -> bool:
         """
@@ -418,6 +429,7 @@ class Configuration(Cleanable, IConfiguration):
             "disposal_method_names": [],
             "phase_scheduler_workers_per_spellbook": 5,
             "ai_native_enabled": False,
+            "ai_profiles_enabled": False,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
         }
         if "system_state" not in self._properties:
@@ -659,6 +671,23 @@ class Configuration(Cleanable, IConfiguration):
         if not isinstance(enabled, bool):
             raise TypeError("ai_native_enabled must be a bool.")
         self.set_property("ai_native_enabled", enabled)
+        return self
+
+    def with_ai_profiles(self, enabled: bool = True) -> IConfiguration:
+        """
+        Fluent
+
+        Enable or disable AI profile generation.
+
+        Args:
+            enabled (bool): True to enable AI profiles.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        if not isinstance(enabled, bool):
+            raise TypeError("ai_profiles_enabled must be a bool.")
+        self.set_property("ai_profiles_enabled", enabled)
         return self
 
 
