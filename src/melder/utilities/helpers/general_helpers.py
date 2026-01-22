@@ -7,6 +7,7 @@ from typing import Any, Optional, Tuple, Union, TypeVar, Type
 T = TypeVar("T", bound=Enum)
 
 class EnumHelpers:
+    """Utilities for Enum normalization and validation."""
     @staticmethod
     @lru_cache(maxsize=8)
     def convert_enum_and_check(value: str | Enum, enum: Type[T]) -> T:
