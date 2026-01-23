@@ -175,6 +175,10 @@ class ClassInspector:
             member_kind = self._resolve_member_kind(name, obj)
             is_callable = self._is_callable_member(obj)
             target = self._resolve_callable_target(obj)
+            abstract = bool(
+                getattr(obj, "__isabstractmethod__", False)
+                or getattr(target, "__isabstractmethod__", False)
+            )
             module = getattr(target, "__module__", None)
             qualname = getattr(target, "__qualname__", None)
             docstring_raw = getattr(target, "__doc__", None)
@@ -197,6 +201,7 @@ class ClassInspector:
                 "docstring_summary": "",
                 "behavior_summary": "",
                 "tags": [],
+                "abstract": abstract,
                 "repr": self.utility.safe_repr(obj, self.max_repr),
                 "signature": None,
                 "parameters": [],

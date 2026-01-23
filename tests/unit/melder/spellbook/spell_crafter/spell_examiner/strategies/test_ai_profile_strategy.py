@@ -19,7 +19,7 @@ def test_ai_profile_strategy_builds_class_profile(monkeypatch) -> None:
     """
     binding_profile = object()
     resolution_profile = object()
-    class_profile = object()
+    class_profile = SimpleNamespace(dynamic_access={})
     captured = {}
 
     class DummyBindingStrategy:
@@ -362,3 +362,27 @@ def test_ai_profile_strategy_collects_instance_members() -> None:
 
     assert "value" in profile.instance_members
     assert profile.instance_members["value"]["kind"] == "instance_attribute"
+
+
+def test_ai_profile_strategy_method_profile_includes_provenance() -> None:
+    class Sample:
+        def method(self) -> int:
+            """Method docstring."""
+            return 1
+
+    spell = SimpleNamespace(
+        spell=Sample,
+        is_class_spell=True,
+        is_method_spell=False,
+        is_lambda_spell=False,
+    )
+
+    strategy = ai_module.AIProfileStrategy(show_dunders=True)
+    class_profile = strategy._inspect_class(spell)
+    method_profile = class_profile.methods.get("method")
+
+    assert method_profile is not None
+    assert method_profile.docstring_raw == "Method docstring."
+    assert method_profile.start_line is not None
+    assert method_profile.end_line is not None
+    assert method_profile.source_text is not None

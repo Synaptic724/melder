@@ -89,9 +89,9 @@ pip install melder
 Register services and resolve them easily:
 
 ~~~
-from melder import spellbook
+from melder.spellbook.spellbook import Spellbook
 
-spellbook = spellbook()
+spellbook = Spellbook()
 
 # Register a singleton service
 class DatabaseConnection:

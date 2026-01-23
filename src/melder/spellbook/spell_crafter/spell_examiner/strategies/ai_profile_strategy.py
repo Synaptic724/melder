@@ -146,6 +146,9 @@ class AIProfileStrategy:
                         file=method_data["file"],
                         preview=method_data["preview"],
                         src_offset=method_data["src_offset"],
+                        start_line=method_data.get("start_line"),
+                        end_line=method_data.get("end_line"),
+                        source_text=method_data.get("source_text"),
                         signature=method_data.get("signature"),
                         parameters=method_data.get("parameters", []),
                         uninspectable=method_data.get("uninspectable", False),
@@ -162,6 +165,10 @@ class AIProfileStrategy:
                         closure=method_data.get("closure"),
                         decorated=method_data.get("decorated"),
                         wrapped_repr=method_data.get("wrapped_repr"),
+                        docstring_raw=method_data.get("docstring_raw"),
+                        docstring_summary=method_data.get("docstring_summary", ""),
+                        behavior_summary=method_data.get("behavior_summary", ""),
+                        tags=method_data.get("tags", []),
                     )
                 except Exception:
                     continue

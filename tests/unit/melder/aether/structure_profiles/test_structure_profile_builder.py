@@ -135,3 +135,39 @@ def test_tooling_dependency_path_and_related_spells() -> None:
     related = tooling.find_related_spells("a", k=5)
     related_ids = [spell_id for spell_id, _score in related]
     assert "c" in related_ids
+
+
+def test_tooling_describe_spell_structure_returns_copies() -> None:
+    record = SpellStructureRecord(
+        spell_id="a",
+        lineage_id="la",
+        owner_conduit_id=None,
+        binding_key=None,
+        existence=None,
+        spell_type=None,
+        permissions=None,
+        dependencies={"direct_dependencies": ["x"], "direct_dependents": []},
+        sockets=[{"spell_id": "a", "param_name": "dep", "target_spell_ids": ["x"]}],
+        spellmap_defaults=[],
+        derived_hints=[],
+    )
+    frame_profile = FrameStructureProfile(
+        frame_id="frame",
+        frame_name="frame",
+        conduit_profiles={},
+        spell_records={"a": record},
+        clusters=[],
+        derived_hints=[],
+    )
+
+    tooling = StructureProfileTooling(frame_profile)
+    snapshot = tooling.describe_spell_structure("a")
+
+    assert snapshot is not None
+    snapshot["dependencies"]["direct_dependencies"].append("y")
+    snapshot["sockets"][0]["target_spell_ids"].append("y")
+    snapshot["sockets"].append({"spell_id": "a", "param_name": "extra"})
+
+    assert "y" not in record.dependencies["direct_dependencies"]
+    assert "y" not in record.sockets[0]["target_spell_ids"]
+    assert len(record.sockets) == 1

@@ -58,25 +58,37 @@ class StructureProfileBuilder(Cleanable):
         Returns:
             FrameStructureProfile: Aggregated profile for the frame.
         """
+        self.check_cleaned()
         frame.check_cleaned()
         spell_system_states = frame.spell_system_states
 
         conduit_profiles: Dict[str, ConduitStructureProfile] = {}
         spell_records: Dict[str, SpellStructureRecord] = {}
 
-        for conduit in list(frame._conduits.values()):
+        with frame._lock:
+            conduits = list(frame._conduits.values()) if frame._conduits is not None else []
+            cluster_items = list(frame._conduit_clusters.items()) if frame._conduit_clusters is not None else []
+
+        for conduit in conduits:
             profile = self.build_conduit_profile(conduit, spell_system_states=spell_system_states)
             conduit_profiles[profile.conduit_id] = profile
             spell_records.update(profile.spell_records)
 
         clusters: List[Dict[str, Any]] = []
-        for name, cluster in frame._conduit_clusters.items():
-            cluster_summary = {
-                "name": name,
-                "auto_link_dependencies": cluster.auto_link_dependencies,
-                "members": list(cluster.get_members()),
-                "shared_spells": cluster.get_shared_spells(),
-            }
+        for name, cluster in cluster_items:
+            try:
+                cluster.check_cleaned()
+            except Exception:
+                continue
+            try:
+                cluster_summary = {
+                    "name": name,
+                    "auto_link_dependencies": cluster.auto_link_dependencies,
+                    "members": list(cluster.get_members()),
+                    "shared_spells": cluster.get_shared_spells(),
+                }
+            except Exception:
+                continue
             clusters.append(cluster_summary)
 
         return FrameStructureProfile(
@@ -105,6 +117,7 @@ class StructureProfileBuilder(Cleanable):
         Returns:
             ConduitStructureProfile: Profile for the conduit.
         """
+        self.check_cleaned()
         conduit.check_cleaned()
         snapshot = conduit.snapshot_state()
         spell_records: Dict[str, SpellStructureRecord] = {}
@@ -149,6 +162,7 @@ class StructureProfileBuilder(Cleanable):
         Returns:
             SpellStructureRecord: Structured record for the spell.
         """
+        self.check_cleaned()
         dependencies = self._extract_dependencies(spell_state)
         sockets = self._extract_sockets(topology)
         derived_hints = self._derive_spell_hints(spell_state, topology)
@@ -299,18 +313,36 @@ class StructureProfileTooling(Cleanable):
 
         Accepts a spell id or lineage id.
         """
+        self.check_cleaned()
         lineage_index = self._lineage_index()
         spell_index = self._spell_index()
         record = self._resolve_record(spell_id, lineage_index, spell_index)
         if record is None:
             return None
+        dependencies = (
+            {key: list(values) for key, values in record.dependencies.items()}
+            if record.dependencies is not None
+            else {}
+        )
+        sockets: List[Dict[str, Any]] = []
+        if record.sockets is not None:
+            for socket in record.sockets:
+                socket_copy = dict(socket)
+                target_ids = socket_copy.get("target_spell_ids")
+                if isinstance(target_ids, list):
+                    socket_copy["target_spell_ids"] = list(target_ids)
+                sockets.append(socket_copy)
+        derived_hints = [
+            self._hint_to_dict(hint)
+            for hint in (record.derived_hints or [])
+        ]
         return {
             "spell_id": record.spell_id,
             "lineage_id": record.lineage_id,
             "binding_key": record.binding_key,
-            "dependencies": record.dependencies,
-            "sockets": record.sockets,
-            "derived_hints": [self._hint_to_dict(hint) for hint in record.derived_hints],
+            "dependencies": dependencies,
+            "sockets": sockets,
+            "derived_hints": derived_hints,
         }
 
     def find_related_spells(self, spell_id: str, k: Optional[int] = None) -> List[Tuple[str, int]]:
@@ -319,6 +351,7 @@ class StructureProfileTooling(Cleanable):
 
         Accepts a spell id or lineage id.
         """
+        self.check_cleaned()
         lineage_index = self._lineage_index()
         spell_index = self._spell_index()
         target = self._resolve_record(spell_id, lineage_index, spell_index)
@@ -343,6 +376,7 @@ class StructureProfileTooling(Cleanable):
 
         Accepts spell ids or lineage ids.
         """
+        self.check_cleaned()
         lineage_index = self._lineage_index()
         spell_index = self._spell_index()
         root_record = self._resolve_record(root_id, lineage_index, spell_index)
@@ -361,7 +395,21 @@ class StructureProfileTooling(Cleanable):
         """
         List subsystem clusters captured in the frame profile.
         """
-        return list(self._frame_profile.clusters)
+        self.check_cleaned()
+        clusters: List[Dict[str, Any]] = []
+        for cluster in self._frame_profile.clusters:
+            cluster_copy = dict(cluster)
+            members = cluster_copy.get("members")
+            if isinstance(members, list):
+                cluster_copy["members"] = list(members)
+            shared_spells = cluster_copy.get("shared_spells")
+            if isinstance(shared_spells, dict):
+                cluster_copy["shared_spells"] = {
+                    key: set(value) if isinstance(value, set) else value
+                    for key, value in shared_spells.items()
+                }
+            clusters.append(cluster_copy)
+        return clusters
 
     def recommend_next_inspection(self, spell_id: str) -> List[str]:
         """
@@ -369,6 +417,7 @@ class StructureProfileTooling(Cleanable):
 
         Accepts a spell id or lineage id.
         """
+        self.check_cleaned()
         lineage_index = self._lineage_index()
         spell_index = self._spell_index()
         record = self._resolve_record(spell_id, lineage_index, spell_index)
@@ -428,11 +477,16 @@ class StructureProfileTooling(Cleanable):
         """
         Convert a StructureHint into a plain dictionary.
         """
+        provenance = (
+            dict(hint.provenance)
+            if isinstance(hint.provenance, dict)
+            else hint.provenance
+        )
         return {
             "kind": hint.kind,
             "description": hint.description,
             "confidence": hint.confidence,
-            "provenance": hint.provenance,
+            "provenance": provenance,
             "scope": hint.scope,
         }
 
@@ -481,5 +535,5 @@ class StructureProfileTooling(Cleanable):
         """
         Provide the default related-spell limit when k is omitted.
         """
-        max_related = getattr(self._frame_profile, "max_related", None)
+        max_related = self._frame_profile.max_related
         return max_related if max_related is not None else 5
