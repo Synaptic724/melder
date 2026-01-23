@@ -418,7 +418,7 @@ class ConduitCluster(Cleanable):
     # ------------------------------------------------------------------
     def _get_shareable_spells(self, conduit):
         """
-        Return shareable spells from a conduit (existence == unique_per_conduit_cluster or unique).
+        Return shareable spells from a conduit (existence == unique_per_conduit_cluster).
 
         Args:
             conduit: Conduit whose spellbook to inspect.

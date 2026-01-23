@@ -42,11 +42,11 @@ class Existence(Enum):
 
     unique_per_conduit_cluster = auto()
     """
-    One instance per **conduit cluster**.
+    Shared instance across a **conduit cluster** via contracts.
 
-    - Users can define clusters of conduits (e.g., by function or domain).
-    - All conduits in the same cluster share the instance.
-    - Enables controlled sharing across related conduits.
+    - The instance is stored in the owning conduit creations map.
+    - Cluster members access it through ConduitCluster sharing contracts.
+    - There is no per-cluster instance key; sharing is contract-scoped.
     """
 
     unique_per_conduit_lineage = auto()

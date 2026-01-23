@@ -9,6 +9,9 @@ class MutationContract(Cleanable):
     Declarative **mutation socket** used for AI-native experimentation in
     **Dynamic mode**, scoped to the **MutationResearch** / mutation hub flows.
 
+    NOTE: Mutation contracts are currently on hold; Phase 4 validation emits
+    `MUTATION_CONTRACT_DISABLED` for any use of this descriptor.
+
     A MutationContract marks a parameter or field as being controlled by the
     mutation system rather than normal DI wiring. Conceptually:
 

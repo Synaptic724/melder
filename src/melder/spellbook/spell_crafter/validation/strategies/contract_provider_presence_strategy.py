@@ -26,9 +26,9 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
     Contract:
         - Emits errors when contract descriptors are malformed.
         - Emits errors when more than one provider matches a contract key.
-        - Emits warnings for missing providers in dynamic mode or late-binding
-          mutation sockets.
-        - Emits warnings for contract sockets in automatic system state.
+        - Emits warnings for missing SpellContract providers in dynamic mode.
+        - Emits errors for contract sockets in automatic system state.
+        - Emits errors for mutation contracts while mutation systems are on hold.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -107,10 +107,28 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
             ):
                 continue
 
+            if param.di_shape is ParameterDIShape.MUTATION_CONTRACT:
+                context.issues.append(
+                    SpellValidationIssue(
+                        severity="error",
+                        code="MUTATION_CONTRACT_DISABLED",
+                        message=(
+                            f"Spell {spell.spell_name!r} parameter {param.name!r} "
+                            "declares a MutationContract, but mutation systems are "
+                            "on hold."
+                        ),
+                        details={
+                            "spell_id": spell.spell_index.current,
+                            "parameter_name": param.name,
+                        },
+                    )
+                )
+                continue
+
             if param.di_shape is ParameterDIShape.SPELL_CONTRACT and automatic_mode:
                 context.issues.append(
                     SpellValidationIssue(
-                        severity="warning",
+                        severity="error",
                         code="CONTRACT_IN_AUTOMATIC_MODE",
                         message=(
                             f"Spell {spell.spell_name!r} declares a contract socket for "

@@ -2068,16 +2068,24 @@ class IMeld(ICleanable, Protocol):
     and "casting" it into a live object instance.
     """
     _id: str
-    def meld(self, spell, *, spellframe=None, name=None, spell_override: Optional[Dict[str, Any]] = None):
+    def meld(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+            spell_override: Optional[dict | list | tuple] = None,
+    ) -> Optional[Any]:
         """
         Resolves and creates an instance of a spell.
 
         Args:
-            spell (Any): The spell to resolve (e.g., by class, name, or ID).
-            spellframe (Any, optional): The logical interface to resolve against.
-            name (str, optional): The unique binding name to resolve.
-            spell_override (Optional[Dict[str, Any]], optional): A dictionary
-                of dependencies to override for this cast only.
+            spell_name (str, optional): Logical spell name key (string).
+            spell (str | object, optional): Spell id (string) or spell object.
+            spellframe (str | object, optional): Spellframe / protocol / frame key.
+            binding_name (str, optional): Binding name used for lookup.
+            spell_override (dict | list | tuple, optional): Per-call override payload.
         """
         ...
 
