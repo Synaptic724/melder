@@ -132,7 +132,9 @@ celerybeat.pid
 .env
 .venv
 .venv_linux
+/.venv_linux
 /.venv_linux/
+/.venv_new/
 env/
 venv/
 ENV/
@@ -184,5 +186,3 @@ cython_debug/
 /src/melder/INFO/
 /TestIdeas/
 /INFO/
-/.venv_linux/
-/.venv_linux/
