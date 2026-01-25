@@ -593,8 +593,6 @@ class Conduit(Cleanable, IConduit):
         try:
             if self._meld is not None:
                 self._meld.set_meld_hooks(self._conduit_hooks)
-                if self._conduit_hooks:
-                    self._meld._hooks_enabled = True
         except Exception:
             pass
 
@@ -757,7 +755,6 @@ class Conduit(Cleanable, IConduit):
             if self._meld is not None:
                 self._meld.set_meld_hooks(self._conduit_hooks, create_local_hooks=True)
                 self._conduit_hooks = self._meld._meld_hooks
-                self._meld._hooks_enabled = True
             return
 
         self._register_conduit_hooks_on_upgrade(hooks)
@@ -960,7 +957,6 @@ class Conduit(Cleanable, IConduit):
         self._conduit_hooks = self._configuration.get_hooks(spellbook_id)
         if self._meld is not None:
             self._meld.set_meld_hooks(self._conduit_hooks)
-            self._meld._hooks_enabled = True
 
     def upgrade_to_normal(
             self,

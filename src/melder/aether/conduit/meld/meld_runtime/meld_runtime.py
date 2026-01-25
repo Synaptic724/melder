@@ -17,7 +17,7 @@ from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import 
 )
 
 
-class MeldRuntime(Cleanable):
+class MeldRuntime:
     """
     Orchestration façade for meld execution.
 
@@ -51,43 +51,6 @@ class MeldRuntime(Cleanable):
     focuses on "given this spell and this context, build me the object".
     """
     __melder_internal__ = _mrg.sentinel
-    __slots__ = Cleanable.__slots__ + [
-        "_lock",
-    ]
-
-    def __init__(self) -> None:
-        """
-        Initialize a new `MeldRuntime`.
-        """
-        super().__init__()
-        self._lock: RLock = RLock()
-
-    # ------------------------------------------------------------------ #
-    # Cleanup
-    # ------------------------------------------------------------------ #
-
-    def cleanup(self) -> None:
-        """
-        Deterministically clear references held by this runtime.
-
-        The runtime is typically owned by a Conduit or Spellbook. This
-        method drops the logger reference and marks the runtime as
-        cleaned; subsequent calls to `execute` will fail via
-        `check_cleaned()`.
-        """
-        if self._cleaned:
-            return
-
-        with self._lock:
-            if self._cleaned:
-                return
-
-            self._cleaned = True
-
-
-    # ------------------------------------------------------------------ #
-    # Properties
-    # ------------------------------------------------------------------ #
 
     # ------------------------------------------------------------------ #
     # Core API
@@ -126,8 +89,6 @@ class MeldRuntime(Cleanable):
             ValueError:
                 If the context is None or missing a root spell.
         """
-        self.check_cleaned()
-
         if context is None:
             raise ValueError("context cannot be None.")
 

@@ -109,11 +109,8 @@ class Meld(Cleanable, IMeld):
         # factory-style spells (class / method / lambda).
         self._runtime: MeldRuntime = MeldRuntime()
 
-        # Hook gate (flipped by the owning Conduit).
-        self._hooks_enabled: bool = False
-
         # Optional hook map pulled from Configuration (via Conduit).
-        self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = None
+        self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = {}
 
 
     def cleanup(self) -> None:
@@ -146,16 +143,7 @@ class Meld(Cleanable, IMeld):
             # Clear creations reference
             self._creations = None
             self._conduit_id = None
-
-            # Tear down the runtime if present
-            if self._runtime is not None:
-                try:
-                    self._runtime.cleanup()
-                except Exception:
-                    # Runtime cleanup should never blow up conduit teardown.
-                    pass
-                self._runtime = None
-
+            self._runtime = None
             self._meld_hooks = None
 
 
@@ -276,7 +264,7 @@ class Meld(Cleanable, IMeld):
             binding_name=binding_name,
         )
 
-        if self._hooks_enabled or target_spell._hooks_enabled:
+        if self._meld_hooks or target_spell._hooks_enabled:
             return self._comprehensive_meld_with_hooks(
                 target_spell=target_spell,
                 override_map=override_map,
@@ -591,8 +579,6 @@ class Meld(Cleanable, IMeld):
         When create_local_hooks is False, the supplied map is stored by
         reference (no copy). When True, a local copy is created so changes
         do not propagate to other conduits.
-        Hook execution is gated by `_hooks_enabled`, which is controlled by
-        the owning Conduit.
         """
         if not create_local_hooks:
             self._meld_hooks = hooks
