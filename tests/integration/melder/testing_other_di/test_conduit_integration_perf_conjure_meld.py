@@ -122,7 +122,7 @@ def test_conduit_perf_conjure_and_meld_timings() -> None:
     )
 
     t0 = time.perf_counter()
-    conduit = spellbook.conjure(name="perf-root", automatic=False)
+    conduit = spellbook.conjure(name="perf-root", automatic=True)
     conjure_s = time.perf_counter() - t0
     try:
         t0 = time.perf_counter()
