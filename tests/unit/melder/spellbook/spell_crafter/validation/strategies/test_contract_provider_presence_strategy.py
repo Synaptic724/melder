@@ -348,16 +348,16 @@ def test_contract_provider_presence_missing_spell_contract_warns() -> None:
     assert issues[0].code == "SPELL_CONTRACT_MISSING_PROVIDER"
 
 
-def test_contract_provider_presence_automatic_mode_warns() -> None:
+def test_contract_provider_presence_automatic_mode_errors() -> None:
     """
     Purpose:
-        Verify contract sockets emit warnings in automatic system state.
+        Verify contract sockets emit errors in automatic system state.
     Contract:
-        Emits CONTRACT_IN_AUTOMATIC_MODE warning.
+        Emits CONTRACT_IN_AUTOMATIC_MODE error.
     Returns:
         None.
     Raises:
-        AssertionError: If the warning is missing.
+        AssertionError: If the error is missing.
     """
     class IService:
         """
@@ -386,7 +386,7 @@ def test_contract_provider_presence_automatic_mode_warns() -> None:
     ContractProviderPresenceStrategy().validate(context)
 
     assert len(issues) == 1
-    assert issues[0].severity == "warning"
+    assert issues[0].severity == "error"
     assert issues[0].code == "CONTRACT_IN_AUTOMATIC_MODE"
 
 
@@ -439,16 +439,16 @@ def test_contract_provider_presence_ambiguous_spell_contract_errors() -> None:
     assert len(issues[0].details.get("provider_spell_ids", [])) == 2
 
 
-def test_contract_provider_presence_missing_mutation_early_errors() -> None:
+def test_contract_provider_presence_mutation_contract_disabled_early_errors() -> None:
     """
     Purpose:
-        Verify early-bound MutationContract missing providers emits errors.
+        Verify MutationContract sockets are rejected for early-binding.
     Contract:
-        Emits MUTATION_CONTRACT_MISSING_PROVIDER_EARLY.
+        Emits MUTATION_CONTRACT_DISABLED.
     Returns:
         None.
     Raises:
-        AssertionError: If the error is missing.
+        AssertionError: If the rejection is missing.
     """
     class IService:
         """
@@ -478,19 +478,19 @@ def test_contract_provider_presence_missing_mutation_early_errors() -> None:
 
     assert len(issues) == 1
     assert issues[0].severity == "error"
-    assert issues[0].code == "MUTATION_CONTRACT_MISSING_PROVIDER_EARLY"
+    assert issues[0].code == "MUTATION_CONTRACT_DISABLED"
 
 
-def test_contract_provider_presence_missing_mutation_late_warns() -> None:
+def test_contract_provider_presence_mutation_contract_disabled_late_errors() -> None:
     """
     Purpose:
-        Verify late-bound MutationContract missing providers emits warnings.
+        Verify MutationContract sockets are rejected for late-binding.
     Contract:
-        Emits MUTATION_CONTRACT_MISSING_PROVIDER with warning severity.
+        Emits MUTATION_CONTRACT_DISABLED.
     Returns:
         None.
     Raises:
-        AssertionError: If the warning is missing.
+        AssertionError: If the rejection is missing.
     """
     class IService:
         """
@@ -519,5 +519,5 @@ def test_contract_provider_presence_missing_mutation_late_warns() -> None:
     ContractProviderPresenceStrategy().validate(context)
 
     assert len(issues) == 1
-    assert issues[0].severity == "warning"
-    assert issues[0].code == "MUTATION_CONTRACT_MISSING_PROVIDER"
+    assert issues[0].severity == "error"
+    assert issues[0].code == "MUTATION_CONTRACT_DISABLED"

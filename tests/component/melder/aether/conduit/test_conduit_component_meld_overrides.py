@@ -8,6 +8,7 @@ from melder.aether.conduit.meld.contracts.mutation_contract import MutationContr
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 
 
 @pytest.fixture(autouse=True)
@@ -345,6 +346,10 @@ def _make_mutation_host_class() -> type:
     return MutationHost
 
 
+@pytest.mark.xfail(
+    reason="Mutation contracts are disabled; conjure fails before override handling.",
+    raises=SpellbookValidationError,
+)
 def test_component_meld_mutation_override_rewires_dependency() -> None:
     """
     Purpose:
@@ -384,6 +389,10 @@ def test_component_meld_mutation_override_rewires_dependency() -> None:
         conduit.cleanup()
 
 
+@pytest.mark.xfail(
+    reason="Mutation contracts are disabled; conjure fails before override handling.",
+    raises=SpellbookValidationError,
+)
 def test_component_meld_mutation_override_invalid_key_raises() -> None:
     """
     Purpose:

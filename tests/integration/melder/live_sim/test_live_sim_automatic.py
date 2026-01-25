@@ -1,3 +1,6 @@
+import pytest
+
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from tests.integration.melder.live_sim.bootstrap import bootstrap_live_sim_automatic
 from tests.integration.melder.live_sim.mini_application.application import (
     LiveSimApplication,
@@ -10,7 +13,10 @@ from tests.mocks.spellbook.core_classes import BasicLogger
 from tests.mocks.spellbook.core_classes import RepositoryWithLogger
 from tests.mocks.spellbook.core_classes import ServiceWithRepository
 
-
+@pytest.mark.xfail(
+    reason="This should fail as SpellContracts are not eligible in automatic.",
+    raises=SpellbookValidationError,
+)
 def test_live_sim_automatic_bootstrap_melds_application() -> None:
     """
     Purpose:

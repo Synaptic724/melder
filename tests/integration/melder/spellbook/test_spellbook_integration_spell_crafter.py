@@ -9,6 +9,7 @@ from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidi
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from tests.mocks.spellbook.core_classes import BasicConfig, BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -338,7 +339,10 @@ def test_spell_crafter_spellmap_default_resolves_dependency() -> None:
     finally:
         conduit.cleanup()
 
-
+@pytest.mark.xfail(
+    reason="Mutation contracts are disabled; conjure fails before override handling.",
+    raises=SpellbookValidationError,
+)
 def test_spell_crafter_contract_shapes_register_topology_without_dependencies() -> None:
     """
     Purpose:
