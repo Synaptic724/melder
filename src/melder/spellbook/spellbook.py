@@ -90,6 +90,38 @@ class Spellbook(Cleanable, ISpellbook):
     _aether = Aether()
     def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None,
                  logger: Any | None = None):
+        """
+        Public API
+
+        Initialize a Spellbook with configuration, logging, and spell registries.
+
+        Purpose:
+            Provide the primary binding and conjure surface for a single aetheric
+            frame and initialize all internal registries needed for spell binding
+            and contract management.
+
+        Contract:
+            - Initializes local and contracted spell registries and lookup maps.
+            - Initializes spell_id maps for O(1) resolution by current version id.
+            - Attaches to an Aether frame and configures logging.
+
+        Args:
+            aetheric_frame (str):
+                Frame name to bind this Spellbook to.
+            configuration (Optional[IConfiguration]):
+                Optional configuration to reuse for the frame.
+            logger (Optional[Any]):
+                Optional logger instance or factory output.
+
+        Raises:
+            TypeError: If aetheric_frame is not a string.
+
+        Threading:
+            - Creates an internal RLock for subsequent synchronized operations.
+
+        Lifecycle:
+            - Owned registries are cleared and nulled during cleanup.
+        """
         super().__init__()
 
         # Internal state
@@ -120,12 +152,14 @@ class Spellbook(Cleanable, ISpellbook):
         self._spells: Dict[SpellIndex, ISpell] = {}
         self._spell_versions: Set[str] = set()
         self._lookup_spells: Dict[tuple, SpellIndex]  = {}
+        self._spells_by_id: Dict[str, ISpell] = {}
 
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
         self._contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = {}
         self._contracted_versions: Dict[str, Set[str]] = {}
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
+        self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = {}
 
         # Spell validator
         self._spell_validator: SpellValidationSystem = SpellValidationSystem()
@@ -158,6 +192,17 @@ class Spellbook(Cleanable, ISpellbook):
     # -------------------------
 
     def _cleanup_components(self) -> None:
+        """
+        Internal
+
+        Cleanup owned registries and component references under the Spellbook lock.
+
+        Contract:
+            - Cleans local spells and SpellIndex instances.
+            - Clears and nulls owned and contracted registries, lookup maps,
+              version caches, and spell_id maps.
+            - Cleans configuration and validation subsystems.
+        """
         # 1) Clean ONLY local spells (not contracted)
         self._cleanup_spells()
 
@@ -167,6 +212,13 @@ class Spellbook(Cleanable, ISpellbook):
             except Exception as e:
                 self._logger.error(f"Error clearing _spells: {e}", "_cleanup_components", exc_info=True)
             self._spells = None
+
+        if self._spells_by_id is not None:
+            try:
+                self._spells_by_id.clear()
+            except Exception as e:
+                self._logger.error(f"Error clearing _spells_by_id: {e}", "_cleanup_components", exc_info=True)
+            self._spells_by_id = None
 
         # 2) Clean lookup/contracted maps and local maps
         if self._lookup_spells is not None:
@@ -182,6 +234,17 @@ class Spellbook(Cleanable, ISpellbook):
             except Exception as e:
                 self._logger.error(f"Error cleaning _contracted_spells: {e}", "_cleanup_components", exc_info=True)
             self._contracted_spells = None
+
+        if self._contracted_spells_by_id is not None:
+            try:
+                self._contracted_spells_by_id.clear()
+            except Exception as e:
+                self._logger.error(
+                    f"Error cleaning _contracted_spells_by_id: {e}",
+                    "_cleanup_components",
+                    exc_info=True,
+                )
+            self._contracted_spells_by_id = None
 
         if self._lookup_contracted_spells is not None:
             try:
@@ -363,6 +426,281 @@ class Spellbook(Cleanable, ISpellbook):
         """
         self._refresh_local_spell_versions()
         self._refresh_contracted_spell_versions()
+
+    def _register_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
+        """
+        Internal
+
+        Register the current spell_id mapping for an owned spell.
+
+        Purpose:
+            Provide O(1) lookup by current version id for owned spells.
+
+        Contract:
+            - Only the current version id is stored in the map.
+            - Raises if the id is mapped to a different spell.
+
+        Args:
+            spell_id (str): Current version id for the spell.
+            spell (ISpell): Owned spell instance.
+
+        Raises:
+            RuntimeError: If the Spellbook is cleaned or the map is missing.
+            RuntimeError: If the id already maps to a different spell.
+
+        Threading:
+            - Acquires the Spellbook lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._spells_by_id is None:
+                self._logger.error("Owned spell_id map is not available.", "_register_owned_spell_id")
+                raise RuntimeError("Owned spell_id map is not available.")
+            existing = self._spells_by_id.get(spell_id)
+            if existing is not None and existing is not spell:
+                self._logger.error(
+                    f"spell_id collision for owned spell_id={spell_id}",
+                    "_register_owned_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"spell_id collision for owned spell_id={spell_id}")
+            self._spells_by_id[spell_id] = spell
+
+    def _update_owned_spell_id(self, old_id: str, new_id: str, spell: ISpell) -> None:
+        """
+        Internal
+
+        Update the owned spell_id map entry after a SpellIndex version change.
+
+        Contract:
+            - Removes the old id mapping and registers the new id mapping.
+            - Adds the new id to the local version cache.
+
+        Args:
+            old_id (str): Previous version id for the lineage.
+            new_id (str): New version id for the lineage.
+            spell (ISpell): Owned spell instance.
+
+        Raises:
+            RuntimeError: If the map is missing or does not contain the old id.
+            RuntimeError: If the new id collides with another spell.
+
+        Threading:
+            - Acquires the Spellbook lock.
+        """
+        self.check_cleaned()
+        if old_id == new_id:
+            return
+        with self._lock:
+            if self._spells_by_id is None:
+                self._logger.error("Owned spell_id map is not available.", "_update_owned_spell_id")
+                raise RuntimeError("Owned spell_id map is not available.")
+            existing_old = self._spells_by_id.get(old_id)
+            if existing_old is None:
+                self._logger.error(
+                    f"Owned spell_id not found for update (old_id={old_id}).",
+                    "_update_owned_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Owned spell_id not found for update (old_id={old_id}).")
+            if existing_old is not spell:
+                self._logger.error(
+                    f"Owned spell_id mapped to a different spell (old_id={old_id}).",
+                    "_update_owned_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Owned spell_id mapped to a different spell (old_id={old_id}).")
+            existing_new = self._spells_by_id.get(new_id)
+            if existing_new is not None and existing_new is not spell:
+                self._logger.error(
+                    f"Owned spell_id collision for new_id={new_id}",
+                    "_update_owned_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Owned spell_id collision for new_id={new_id}")
+
+            self._spells_by_id.pop(old_id, None)
+            self._spells_by_id[new_id] = spell
+            if self._spell_versions is not None:
+                self._spell_versions.add(new_id)
+
+    def _register_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: ISpell) -> None:
+        """
+        Internal
+
+        Register the current spell_id mapping for a contracted spell.
+
+        Purpose:
+            Provide O(1) lookup by current version id for contracted spells.
+
+        Contract:
+            - Mapping is stored under the given conduit_id.
+            - Raises if the id is mapped to a different spell.
+
+        Args:
+            conduit_id (str): Peer conduit id that owns the contract.
+            spell_id (str): Current version id for the spell.
+            spell (ISpell): Contracted spell instance.
+
+        Raises:
+            RuntimeError: If the contracted map is missing.
+            RuntimeError: If the id already maps to a different spell.
+
+        Threading:
+            - Acquires the Spellbook lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._contracted_spells_by_id is None:
+                self._logger.error("Contracted spell_id map is not available.", "_register_contracted_spell_id")
+                raise RuntimeError("Contracted spell_id map is not available.")
+            spell_map = self._contracted_spells_by_id.get(conduit_id)
+            if spell_map is None:
+                self._logger.error(
+                    f"Contracted spell_id map missing for conduit_id={conduit_id}",
+                    "_register_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id map missing for conduit_id={conduit_id}")
+            existing = spell_map.get(spell_id)
+            if existing is not None and existing is not spell:
+                self._logger.error(
+                    f"Contracted spell_id collision for conduit_id={conduit_id}, spell_id={spell_id}",
+                    "_register_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"Contracted spell_id collision for conduit_id={conduit_id}, spell_id={spell_id}"
+                )
+            spell_map[spell_id] = spell
+
+    def _update_contracted_spell_id(
+            self,
+            conduit_id: str,
+            old_id: str,
+            new_id: str,
+            spell: ISpell,
+    ) -> None:
+        """
+        Internal
+
+        Update the contracted spell_id map entry after a SpellIndex version change.
+
+        Contract:
+            - Removes the old id mapping and registers the new id mapping.
+            - Adds the new id to the per-conduit version cache.
+
+        Args:
+            conduit_id (str): Peer conduit id that owns the contract.
+            old_id (str): Previous version id for the lineage.
+            new_id (str): New version id for the lineage.
+            spell (ISpell): Contracted spell instance.
+
+        Raises:
+            RuntimeError: If the map is missing or does not contain the old id.
+            RuntimeError: If the new id collides with another spell.
+
+        Threading:
+            - Acquires the Spellbook lock.
+        """
+        self.check_cleaned()
+        if old_id == new_id:
+            return
+        with self._lock:
+            if self._contracted_spells_by_id is None:
+                self._logger.error("Contracted spell_id map is not available.", "_update_contracted_spell_id")
+                raise RuntimeError("Contracted spell_id map is not available.")
+            spell_map = self._contracted_spells_by_id.get(conduit_id)
+            if spell_map is None:
+                self._logger.error(
+                    f"Contracted spell_id map missing for conduit_id={conduit_id}",
+                    "_update_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id map missing for conduit_id={conduit_id}")
+            existing_old = spell_map.get(old_id)
+            if existing_old is None:
+                self._logger.error(
+                    f"Contracted spell_id not found for update (old_id={old_id}).",
+                    "_update_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id not found for update (old_id={old_id}).")
+            if existing_old is not spell:
+                self._logger.error(
+                    f"Contracted spell_id mapped to a different spell (old_id={old_id}).",
+                    "_update_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id mapped to a different spell (old_id={old_id}).")
+            existing_new = spell_map.get(new_id)
+            if existing_new is not None and existing_new is not spell:
+                self._logger.error(
+                    f"Contracted spell_id collision for new_id={new_id}",
+                    "_update_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id collision for new_id={new_id}")
+
+            spell_map.pop(old_id, None)
+            spell_map[new_id] = spell
+            if self._contracted_versions is not None:
+                versions_set = self._contracted_versions.get(conduit_id)
+                if versions_set is None:
+                    self._logger.error(
+                        f"Contracted version cache missing for conduit_id={conduit_id}",
+                        "_update_contracted_spell_id",
+                        exc_info=True,
+                    )
+                    raise RuntimeError(f"Contracted version cache missing for conduit_id={conduit_id}")
+                versions_set.add(new_id)
+
+    def _unregister_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: ISpell) -> None:
+        """
+        Internal
+
+        Remove a contracted spell_id mapping for the given conduit.
+
+        Args:
+            conduit_id (str): Peer conduit id that owns the contract.
+            spell_id (str): Current version id for the spell.
+            spell (ISpell): Contracted spell instance.
+
+        Raises:
+            RuntimeError: If the map is missing or does not contain the id.
+
+        Threading:
+            - Acquires the Spellbook lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._contracted_spells_by_id is None:
+                self._logger.error("Contracted spell_id map is not available.", "_unregister_contracted_spell_id")
+                raise RuntimeError("Contracted spell_id map is not available.")
+            spell_map = self._contracted_spells_by_id.get(conduit_id)
+            if spell_map is None:
+                self._logger.error(
+                    f"Contracted spell_id map missing for conduit_id={conduit_id}",
+                    "_unregister_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id map missing for conduit_id={conduit_id}")
+            existing = spell_map.get(spell_id)
+            if existing is None:
+                self._logger.error(
+                    f"Contracted spell_id not found for removal (spell_id={spell_id}).",
+                    "_unregister_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id not found for removal (spell_id={spell_id}).")
+            if existing is not spell:
+                self._logger.error(
+                    f"Contracted spell_id mapped to a different spell (spell_id={spell_id}).",
+                    "_unregister_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id mapped to a different spell (spell_id={spell_id}).")
+            spell_map.pop(spell_id, None)
 
     #region Logging
 
@@ -836,7 +1174,8 @@ class Spellbook(Cleanable, ISpellbook):
         Initializes the internal storage maps for a new contract link with a peer conduit.
 
         This method ensures `_contracted_spells` (value map), `_lookup_contracted_spells`
-        (key map), and `_contracted_versions` (version cache) are initialized
+        (key map), `_contracted_versions` (version cache), and
+        `_contracted_spells_by_id` (id map) are initialized
         atomically to maintain consistent state.
 
         Args:
@@ -850,21 +1189,24 @@ class Spellbook(Cleanable, ISpellbook):
         a_exists = conduit_id in self._contracted_spells
         b_exists = conduit_id in self._lookup_contracted_spells
         c_exists = conduit_id in self._contracted_versions
+        d_exists = conduit_id in self._contracted_spells_by_id
 
-        if not (a_exists == b_exists == c_exists):
+        if not (a_exists == b_exists == c_exists == d_exists):
             self._logger.error("Inconsistent link contract state", "_create_link_contract", exc_info=True)
             raise RuntimeError(
                 f"Inconsistent link contract state for conduit ID {conduit_id}: "
                 f"_contracted_spells={a_exists}, "
                 f"_lookup_contracted_spells={b_exists}, "
-                f"_contracted_versions={c_exists}"
+                f"_contracted_versions={c_exists}, "
+                f"_contracted_spells_by_id={d_exists}"
             )
 
-        if not a_exists and not b_exists and not c_exists:
+        if not a_exists and not b_exists and not c_exists and not d_exists:
             with self._lock:
                 self._contracted_spells[conduit_id] = {}
                 self._lookup_contracted_spells[conduit_id] = {}
                 self._contracted_versions[conduit_id] = set()
+                self._contracted_spells_by_id[conduit_id] = {}
         self._register_link_mirror(conduit_id)
 
 
@@ -874,7 +1216,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Removes the internal storage maps for a dissolved contract link with a peer conduit.
 
-        This ensures all three maps are removed atomically and consistently.
+        This ensures all four maps are removed atomically and consistently.
 
         Args:
             conduit_id (str): The ID of the peer conduit whose contract structure should be removed.
@@ -887,14 +1229,16 @@ class Spellbook(Cleanable, ISpellbook):
         a_exists = conduit_id in self._contracted_spells
         b_exists = conduit_id in self._lookup_contracted_spells
         c_exists = conduit_id in self._contracted_versions
+        d_exists = conduit_id in self._contracted_spells_by_id
 
-        if not (a_exists == b_exists == c_exists):
+        if not (a_exists == b_exists == c_exists == d_exists):
             self._logger.error("Inconsistent link contract state", "_remove_link_contract", exc_info=True)
             raise RuntimeError(
                 f"Inconsistent link contract state for conduit ID {conduit_id}: "
                 f"_contracted_spells={a_exists}, "
                 f"_lookup_contracted_spells={b_exists}, "
-                f"_contracted_versions={c_exists}"
+                f"_contracted_versions={c_exists}, "
+                f"_contracted_spells_by_id={d_exists}"
             )
 
         if a_exists:
@@ -902,6 +1246,7 @@ class Spellbook(Cleanable, ISpellbook):
                 self._contracted_spells.pop(conduit_id, None)
                 self._lookup_contracted_spells.pop(conduit_id, None)
                 self._contracted_versions.pop(conduit_id, None)
+                self._contracted_spells_by_id.pop(conduit_id, None)
 
 
     def _add_contracted_spell(self, spell: ISpell, conduit_id: str) -> None:
@@ -910,6 +1255,9 @@ class Spellbook(Cleanable, ISpellbook):
 
         Adds a specific spell (borrowed from a peer) to the contracted spells
         and updates the key and version caches for the given conduit.
+
+        The SpellIndex is also attached to this Spellbook so future version
+        updates can refresh spell_id lookup maps.
 
         When a link transaction is active, this also refreshes staged contract
         keys for the peer conduit so change-control commit hooks can observe
@@ -940,6 +1288,8 @@ class Spellbook(Cleanable, ISpellbook):
             lookup_map = self._lookup_contracted_spells[conduit_id]
             versions_set = self._contracted_versions[conduit_id]
 
+            spell.spell_index._attach_contracted(self, conduit_id, spell)
+
             # Main maps: SpellIndex → ISpell and key → SpellIndex
             spell_map[spell.spell_index] = spell
             lookup_map[spell_key] = spell.spell_index
@@ -963,6 +1313,9 @@ class Spellbook(Cleanable, ISpellbook):
         Internal
 
         Removes a specific contracted spell from the internal registry.
+
+        The SpellIndex attachment is removed so this Spellbook no longer
+        receives spell_id updates for the contracted lineage.
 
         When a link transaction is active, this also refreshes staged contract
         keys for the peer conduit so change-control commit hooks can observe
@@ -1004,6 +1357,8 @@ class Spellbook(Cleanable, ISpellbook):
                 )
                 raise RuntimeError(f"Spell version {spell_id} not found for conduit ID {conduit_id}.")
 
+            spell_index._detach_contracted(self, conduit_id)
+
             # Remove from main map
             spell_map.pop(spell_index, None)
 
@@ -1026,6 +1381,9 @@ class Spellbook(Cleanable, ISpellbook):
         Clears all spells associated with a contracted conduit, retaining
         the contract structure and zeroing the version cache.
 
+        SpellIndex attachments are removed so this Spellbook no longer
+        receives spell_id updates for the contracted lineage.
+
         When a link transaction is active, this also refreshes staged contract
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
@@ -1039,6 +1397,7 @@ class Spellbook(Cleanable, ISpellbook):
                     conduit_id not in self._contracted_spells
                     or conduit_id not in self._lookup_contracted_spells
                     or conduit_id not in self._contracted_versions
+                    or conduit_id not in self._contracted_spells_by_id
             ):
                 self._logger.error(
                     f"No contracted spell maps for conduit {conduit_id}",
@@ -1047,9 +1406,14 @@ class Spellbook(Cleanable, ISpellbook):
                 )
                 raise RuntimeError(f"No contracted spell maps found for conduit ID {conduit_id}.")
 
+            spell_map = self._contracted_spells[conduit_id]
+            for spell in spell_map.values():
+                spell.spell_index._detach_contracted(self, conduit_id)
+
             self._contracted_spells[conduit_id].clear()
             self._lookup_contracted_spells[conduit_id].clear()
             self._contracted_versions[conduit_id].clear()
+            self._contracted_spells_by_id[conduit_id].clear()
         self._try_update_staged_contract_keys(conduit_id)
 
 
@@ -1975,6 +2339,7 @@ class Spellbook(Cleanable, ISpellbook):
             # Register into local spell maps
             self._lookup_spells[new_spell._key] = new_spell.spell_index
             self._spells[new_spell.spell_index] = new_spell
+            new_spell.spell_index._attach_owner(self, new_spell)
 
             # keep local version cache warm
             if self._spell_versions is not None:
@@ -1993,6 +2358,7 @@ class Spellbook(Cleanable, ISpellbook):
                     self._conduit._name,
                     self._conduit._creations,
                 )
+                new_spell.spell_index._set_owner_conduit_id(self._conduit._id)
                 if new_spell.user_created_object is not None:
                     try:
                         self._conduit._register_to_creations(
@@ -2517,6 +2883,7 @@ class Spellbook(Cleanable, ISpellbook):
                - spell._owner_conduit_id
                - spell._owner_conduit_name
                - spell._owner_creations  (points at conduit._creations)
+               - spell.spell_index owner conduit id
 
           2. If the spell represents an existing object
              (``spell.user_created_object is not None``):
@@ -2535,6 +2902,7 @@ class Spellbook(Cleanable, ISpellbook):
                 try:
                     # 1) Stamp conduit ownership metadata on every spell
                     spell._add_owned_conduit(conduit._id, conduit._name, conduit._creations)
+                    spell.spell_index._set_owner_conduit_id(conduit._id)
 
                     # 2) If this spell wraps an existing object, eagerly register it.
                     if spell.user_created_object is not None:

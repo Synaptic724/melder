@@ -60,7 +60,6 @@ class MeldContext(Cleanable):
         "_caller_creations_lock_held",
         "_overrides",
         "_cancel_event",
-        "_logger",
         "_conduit_id",
         "_conduit_name",
         "_aetheric_frame",
@@ -72,7 +71,6 @@ class MeldContext(Cleanable):
             root_spell: ISpell,
             overrides: Optional[Mapping[str, Any]] = None,
             cancel_event: Optional[CancellationEvent] = None,
-            logger: Optional[Any] = None,
             caller_creations: Optional[Any] = None,
             caller_creations_lock_held: bool = False,
     ) -> None:
@@ -119,7 +117,6 @@ class MeldContext(Cleanable):
         if root_spell is None:
             raise ValueError("root_spell cannot be None.")
 
-        self._lock: RLock = RLock()
         self._root_spell: ISpell = root_spell
         self._owner_creations: Any = self._root_spell._owner_creations
         self._caller_creations: Any = (
@@ -129,24 +126,12 @@ class MeldContext(Cleanable):
         )
         self._creations: Any = self._owner_creations
         self._caller_creations_lock_held: bool = bool(caller_creations_lock_held)
-
         # Normalized, per-call override map (never mutated in place by
         # the runtime; callers may mutate the dict they get back).
         self._overrides: MutableMapping[str, Any] = (
             dict(overrides) if overrides is not None else {}
         )
-
         self._cancel_event: Optional[CancellationEvent] = cancel_event
-
-        # Logger is optional; when provided we normalize to SafeLogger
-        # so the engine/runtime can safely call .debug/.error without
-        # worrying about the concrete logger type.
-        self._logger: Optional[SafeLogger] = (
-            InitHelpers.resolve_safe_logger(logger)
-            if logger is not None
-            else None
-        )
-
         self._conduit_id: Optional[str] = self._root_spell._owner_conduit_id
         self._conduit_name: Optional[str] = self._root_spell._owner_conduit_name
         self._aetheric_frame: Optional[str] = self._root_spell.aetheric_frame
@@ -168,24 +153,18 @@ class MeldContext(Cleanable):
         """
         if self._cleaned:
             return
+        self._cleaned = True
+        self._root_spell = None
+        self._creations = None
+        self._owner_creations = None
+        self._caller_creations = None
+        self._caller_creations_lock_held = False
+        self._overrides.clear()
+        self._cancel_event = None
+        self._conduit_id = None
+        self._conduit_name = None
+        self._aetheric_frame = None
 
-        with self._lock:
-            if self._cleaned:
-                return
-
-            self._root_spell = None
-            self._creations = None
-            self._owner_creations = None
-            self._caller_creations = None
-            self._caller_creations_lock_held = False
-            self._overrides.clear()
-            self._cancel_event = None
-            self._logger = None
-            self._conduit_id = None
-            self._conduit_name = None
-            self._aetheric_frame = None
-
-            self._cleaned = True
 
 
     # ------------------------------------------------------------------ #
@@ -267,16 +246,6 @@ class MeldContext(Cleanable):
         `cancel_event.throw_if_set()` to abort long-running operations.
         """
         return self._cancel_event
-
-    @property
-    def logger(self) -> Optional[SafeLogger]:
-        """
-        Optional SafeLogger associated with this context.
-
-        May be None. Runtime/engine users must always check for None
-        before emitting log messages.
-        """
-        return self._logger
 
     @property
     def conduit_id(self) -> Optional[str]:
