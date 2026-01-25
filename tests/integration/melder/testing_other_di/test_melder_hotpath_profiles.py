@@ -3,7 +3,6 @@ from __future__ import annotations
 import cProfile
 import gc
 import io
-import os
 import pstats
 import statistics
 import time
@@ -42,14 +41,17 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def _env_int(name: str, default: int | None) -> int | None:
-    raw = os.environ.get(name)
-    if raw is None:
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        return default
+# Tune profiling intensity here for local runs.
+PROFILE_RUN_HEAVY = True
+PROFILE_RUN_CPROFILE = True
+PROFILE_RUN_TRACEMALLOC = True
+PROFILE_RUN_GC_DELTA = True
+PROFILE_RECORD_PHASE_TIMINGS = True
+PROFILE_TOP = 30
+PROFILE_TRACE_TOP = 20
+PROFILE_TRACE_FRAMES = 1
+PROFILE_CYCLES = 1
+PROFILE_WORKERS: int | None = 1
 
 
 def _ms(seconds: float) -> float:
@@ -58,6 +60,10 @@ def _ms(seconds: float) -> float:
 
 def _us(seconds: float) -> float:
     return seconds * 1_000_000.0
+
+
+def _profile_enabled(flag: bool) -> bool:
+    return PROFILE_RUN_HEAVY or flag
 
 
 def _percentile(values: list[float], pct: float) -> float:
@@ -104,11 +110,10 @@ def _bind_classes(
 
 
 def _configure_scheduler(spellbook: Spellbook) -> None:
-    workers = _env_int("MELDER_PROFILE_WORKERS", None)
-    if workers is None:
+    if PROFILE_WORKERS is None:
         return
     cfg = spellbook.get_configuration()
-    cfg.set_property("phase_scheduler_workers_per_spellbook", workers)
+    cfg.set_property("phase_scheduler_workers_per_spellbook", PROFILE_WORKERS)
 
 
 def _build_depth9_spellbook(frame_name: str) -> tuple[Spellbook, str]:
@@ -162,7 +167,7 @@ def _profile_call(
 
 
 def _trace_alloc(label: str, fn: Callable[[], None], *, top: int = 20) -> None:
-    tracemalloc.start()
+    tracemalloc.start(PROFILE_TRACE_FRAMES)
     before = tracemalloc.take_snapshot()
     fn()
     after = tracemalloc.take_snapshot()
@@ -200,19 +205,25 @@ def test_profile_conjure_depth9_hotpaths() -> None:
         Profile conjure for depth-9 graph and capture phase timings.
     Notes:
         - Run with: pytest -s -k test_profile_conjure_depth9_hotpaths
-        - Optional env vars: MELDER_PROFILE_WORKERS, MELDER_PROFILE_TOP
+        - Edit PROFILE_* constants in this file to tune intensity.
     """
-    top = _env_int("MELDER_PROFILE_TOP", 40) or 40
+    top = PROFILE_TOP
 
     spellbook, _ = _build_depth9_spellbook("profile-conjure-depth9")
-    with _phase_timing_recorder() as timings:
+    if PROFILE_RECORD_PHASE_TIMINGS:
+        with _phase_timing_recorder() as timings:
+            t0 = time.perf_counter()
+            conduit = spellbook.conjure(name="profile-conjure-depth9", automatic=True)
+            conjure_s = time.perf_counter() - t0
+
+        print(f"Conjure total (ms): {_ms(conjure_s):.3f}")
+        for phase_name, elapsed in timings:
+            print(f"Phase {phase_name} (ms): {_ms(elapsed):.3f}")
+    else:
         t0 = time.perf_counter()
         conduit = spellbook.conjure(name="profile-conjure-depth9", automatic=True)
         conjure_s = time.perf_counter() - t0
-
-    print(f"Conjure total (ms): {_ms(conjure_s):.3f}")
-    for phase_name, elapsed in timings:
-        print(f"Phase {phase_name} (ms): {_ms(elapsed):.3f}")
+        print(f"Conjure total (ms): {_ms(conjure_s):.3f}")
 
     conduit.cleanup()
 
@@ -224,9 +235,20 @@ def test_profile_conjure_depth9_hotpaths() -> None:
         print(f"Conjure (cprofile target) (ms): {_ms(elapsed):.3f}")
         conduit_inner.cleanup()
 
-    _profile_call("conjure depth9", _conjure_only_profile, sort="cumtime", top=top)
-    _trace_alloc("conjure depth9", _conjure_only_profile, top=20)
-    _gc_delta("conjure depth9", _conjure_only_profile)
+    if not (
+        PROFILE_RUN_HEAVY
+        or PROFILE_RUN_CPROFILE
+        or PROFILE_RUN_TRACEMALLOC
+        or PROFILE_RUN_GC_DELTA
+    ):
+        return
+
+    if _profile_enabled(PROFILE_RUN_CPROFILE):
+        _profile_call("conjure depth9", _conjure_only_profile, sort="cumtime", top=top)
+    if _profile_enabled(PROFILE_RUN_TRACEMALLOC):
+        _trace_alloc("conjure depth9", _conjure_only_profile, top=PROFILE_TRACE_TOP)
+    if _profile_enabled(PROFILE_RUN_GC_DELTA):
+        _gc_delta("conjure depth9", _conjure_only_profile)
 
 
 def test_profile_meld_depth9_hotpaths() -> None:
@@ -235,9 +257,9 @@ def test_profile_meld_depth9_hotpaths() -> None:
         Profile cold and warm meld for depth-9 graph and capture hotpaths.
     Notes:
         - Run with: pytest -s -k test_profile_meld_depth9_hotpaths
-        - Optional env vars: MELDER_PROFILE_TOP
+        - Edit PROFILE_* constants in this file to tune intensity.
     """
-    top = _env_int("MELDER_PROFILE_TOP", 40) or 40
+    top = PROFILE_TOP
 
     spellbook, root_id = _build_depth9_spellbook("profile-meld-depth9")
     conduit = spellbook.conjure(name="profile-meld-depth9", automatic=True)
@@ -257,6 +279,14 @@ def test_profile_meld_depth9_hotpaths() -> None:
             f"cold={_ms(cold_s):.3f}, warm={_us(warm_s):.2f}us"
         )
 
+        if not (
+            PROFILE_RUN_HEAVY
+            or PROFILE_RUN_CPROFILE
+            or PROFILE_RUN_TRACEMALLOC
+            or PROFILE_RUN_GC_DELTA
+        ):
+            return
+
         def _meld_cold_profile() -> None:
             sb, root = _build_depth9_spellbook("profile-meld-depth9-cold")
             cd = sb.conjure(name="profile-meld-depth9-cold", automatic=True)
@@ -274,10 +304,13 @@ def test_profile_meld_depth9_hotpaths() -> None:
             finally:
                 cd.cleanup()
 
-        _profile_call("meld depth9 cold", _meld_cold_profile, sort="cumtime", top=top)
-        _profile_call("meld depth9 warm", _meld_warm_profile, sort="cumtime", top=top)
-        _trace_alloc("meld depth9 cold", _meld_cold_profile, top=20)
-        _gc_delta("meld depth9 cold", _meld_cold_profile)
+        if _profile_enabled(PROFILE_RUN_CPROFILE):
+            _profile_call("meld depth9 cold", _meld_cold_profile, sort="cumtime", top=top)
+            _profile_call("meld depth9 warm", _meld_warm_profile, sort="cumtime", top=top)
+        if _profile_enabled(PROFILE_RUN_TRACEMALLOC):
+            _trace_alloc("meld depth9 cold", _meld_cold_profile, top=PROFILE_TRACE_TOP)
+        if _profile_enabled(PROFILE_RUN_GC_DELTA):
+            _gc_delta("meld depth9 cold", _meld_cold_profile)
     finally:
         conduit.cleanup()
 
@@ -288,9 +321,12 @@ def test_profile_cycle_conjure_meld_cleanup_depth9() -> None:
         Cycle test: conjure -> meld -> cleanup repeated to capture avg/p95.
     Notes:
         - Run with: pytest -s -k test_profile_cycle_conjure_meld_cleanup_depth9
-        - Optional env vars: MELDER_PROFILE_CYCLES
+        - Edit PROFILE_* constants in this file to tune intensity.
     """
-    cycles = _env_int("MELDER_PROFILE_CYCLES", 5) or 5
+    cycles = PROFILE_CYCLES
+    if cycles <= 0:
+        return
+
     conjure_times: list[float] = []
     meld_times: list[float] = []
     cleanup_times: list[float] = []
