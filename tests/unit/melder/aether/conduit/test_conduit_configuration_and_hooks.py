@@ -271,21 +271,21 @@ def test_initialize_conduit_hooks_attaches_configured_hooks_and_fires_on_cleanup
             conduit.cleanup()
 
 
-def test_initialize_conduit_hooks_skips_for_lesser(
+def test_initialize_conduit_hooks_attaches_for_lesser(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify lesser conduits do not attach configuration hooks.
+    Verify lesser conduits attach shared configuration hooks.
 
     Contract:
-        - _initialize_conduit_hooks is a no-op for lesser conduits.
-        - Cleanup hooks are not fired for lesser conduits.
+        - Lesser conduits share the Spellbook hook map.
+        - Cleanup hooks fire for lesser conduits.
 
     Args:
         spellbook_stub (MagicMock): Spellbook stub with id.
 
     Raises:
-        AssertionError: If hooks attach to a lesser conduit.
+        AssertionError: If hooks fail to attach to a lesser conduit.
     """
     configuration = Configuration()
     configuration.set_property("system_state", "automatic")
@@ -317,9 +317,10 @@ def test_initialize_conduit_hooks_skips_for_lesser(
         policy=Policies.default,
     )
     try:
-        assert conduit._conduit_hooks is None
+        assert conduit._conduit_hooks is not None
+        assert conduit._conduit_hooks is configuration.get_hooks(spellbook_stub._id)
         conduit.cleanup()
-        assert events == []
+        assert events == [conduit]
     finally:
         if not conduit._cleaned:
             conduit.cleanup()
@@ -332,8 +333,8 @@ def test_register_conduit_hooks_on_upgrade_registers_in_config_and_local(
     Verify per-conduit hooks register into configuration and local map.
 
     Contract:
-        - Configuration registry stores hooks under conduit id.
-        - Conduit local hook map includes registered hooks.
+        - Configuration registry stores hooks under spellbook id.
+        - Conduit hook map includes registered hooks.
 
     Args:
         conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
@@ -357,9 +358,8 @@ def test_register_conduit_hooks_on_upgrade_registers_in_config_and_local(
         {"on_conduit_cleanup_start": hook}
     )
 
-    config_hooks = conduit_dynamic_normal._configuration.get_hooks(
-        conduit_dynamic_normal._id
-    )
+    spellbook_id = conduit_dynamic_normal._spellbook._id
+    config_hooks = conduit_dynamic_normal._configuration.get_hooks(spellbook_id)
     assert config_hooks["on_conduit_cleanup_start"][0] is hook
     assert conduit_dynamic_normal._conduit_hooks is not None
     assert conduit_dynamic_normal._conduit_hooks["on_conduit_cleanup_start"][0] is hook

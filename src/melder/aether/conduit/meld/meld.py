@@ -155,9 +155,7 @@ class Meld(Cleanable, IMeld):
                     pass
                 self._runtime = None
 
-            if self._meld_hooks is not None:
-                self._meld_hooks.clear()
-                self._meld_hooks = None
+            self._meld_hooks = None
 
 
     # region Context Manager
@@ -259,6 +257,8 @@ class Meld(Cleanable, IMeld):
                 ID resolution, unsupported Creations manager, or attempting to
                 meld a broken spell).
         """
+        if not self._hooks_enabled and self._meld_hooks:
+            self._hooks_enabled = True
         if self._hooks_enabled:
             return self._comprehensive_meld_with_hooks(
                 spell_name=spell_name,
@@ -616,8 +616,11 @@ class Meld(Cleanable, IMeld):
         Install a hook map used by Meld-level hook firing.
 
         Expected shape: { hook_name: [callables] }.
+        This stores the supplied map directly and toggles hook execution
+        when hooks are present.
         """
         self._meld_hooks = hooks if hooks is not None else {}
+        self._hooks_enabled = bool(self._meld_hooks)
 
     def _fire_meld_hooks(self, hook_name: str, *args: Any) -> None:
         """

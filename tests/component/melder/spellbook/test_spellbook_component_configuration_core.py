@@ -42,13 +42,13 @@ def test_component_configuration_idempotent_system_state_cannot_change() -> None
         config.set_property("system_state", SystemState.dynamic)
 
 
-def test_component_configuration_hooks_register_and_snapshot() -> None:
+def test_component_configuration_hooks_register_and_shared_map() -> None:
     """
     Purpose:
-        Validate hook registration and snapshot semantics.
+        Validate hook registration and shared hook map semantics.
     Contract:
-        - Registered hooks are returned in snapshots.
-        - Snapshots are independent of internal storage.
+        - Registered hooks are returned in the shared map.
+        - Mutations of the returned map reflect in configuration storage.
     Returns:
         None.
     """
@@ -71,7 +71,7 @@ def test_component_configuration_hooks_register_and_snapshot() -> None:
     assert hooks["on_conduit_post_created"] == [hook_b]
 
     hooks["on_meld_pre_resolve"].append(hook_b)
-    assert config.get_hooks("spellbook-1")["on_meld_pre_resolve"] == [hook_a]
+    assert config.get_hooks("spellbook-1")["on_meld_pre_resolve"] == [hook_a, hook_b]
 
 
 def test_component_configuration_freeze_blocks_hooks_and_properties() -> None:

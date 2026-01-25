@@ -125,15 +125,15 @@ class Conduit(Cleanable, IConduit):
         )
         self._spellspace_registry: set[SpellSpace] = set()
 
-        # Localized hook map for this conduit.
+        # Shared hook map for this spellbook lineage.
         # Populated from Configuration using the Spellbook's ID.
         # Shape: { hook_name: [callables...] }
         self._conduit_hooks: dict[str, list[Any]] | None = None
 
         self._configure_conduit_state()
 
-        # ID swap: pull any hooks registered under this Spellbook's ID in the
-        # Configuration into this Conduit instance as a local hook map.
+        # ID swap: pull hooks registered under this Spellbook's ID in the
+        # Configuration into this Conduit instance as a shared hook map.
         self._initialize_conduit_hooks()
 
         self._conduit_ward: ConduitWard = ConduitWard(
@@ -190,8 +190,6 @@ class Conduit(Cleanable, IConduit):
                             "_fire_conduit_hooks",
                             exc_info=True,
                         )
-            if self._conduit_hooks is not None:
-                self._conduit_hooks.clear()
             self._conduit_hooks = None
 
         # Logger last
@@ -571,14 +569,11 @@ class Conduit(Cleanable, IConduit):
                   self._conduit_hooks: { hook_name: [callables...] }
 
         Rules:
-            - Only NORMAL conduits participate; lesser conduits skip this.
+            - All conduits attach to the same shared hook map for the Spellbook.
             - If the Spellbook has no `id`, we log and bail.
             - If the Configuration does not expose `get_hooks(spellbook_id)`,
               we treat that as "no hooks registered" and bail quietly.
         """
-        # Lesser conduits do not own their own hook sets.
-        if self._conduit_state != ConduitState.normal:
-            return
 
         # Spellbook must expose an `id` (ISpellbook contract).
         try:
@@ -590,9 +585,6 @@ class Conduit(Cleanable, IConduit):
         try:
             hook_map = self._configuration.get_hooks(spellbook_id)
         except AttributeError:
-            return
-
-        if not hook_map:
             return
 
         # At this point we conceptually "swap IDs": hooks registered under the
@@ -836,26 +828,23 @@ class Conduit(Cleanable, IConduit):
         """
         Internal
 
-        Register per-conduit hooks for this upgraded Conduit into both:
+        Register hook additions for this upgraded Conduit into the shared
+        Spellbook hook registry.
 
-            1) The Configuration hook registry, and
-            2) This Conduit's local `_conduit_hooks` map,
-
-        so that all downstream subsystems (Meld, ConduitWard, links, contracts,
-        cleanup, etc.) see them immediately.
+        This updates the Configuration hook map for the Spellbook so all
+        conduits in the lineage (parent + lessers) see the same hook set.
 
         Shape is identical to the Configuration registry:
 
             _hooks[owner_id][hook_name] -> list[callables]
 
-        where `owner_id` here is this Conduit's `self._id`.
+        where `owner_id` here is the Spellbook id.
 
         Rules:
             - Only allowed when the system is in **dynamic** mode.
             - `hooks` values may be a single callable or an iterable of callables.
             - Hook names must be in Configuration._ALLOWED_HOOKS.
-            - We first update Configuration via `add_hooks(...)`; only on success
-              do we merge into the local `_conduit_hooks` map.
+            - Hooks are validated by Configuration.add_hooks(...).
         """
         # Enforce dynamic environment – this is a dynamic-only feature.
         if not self.__dynamic_environment__:
@@ -867,43 +856,19 @@ class Conduit(Cleanable, IConduit):
                 "Dynamic environment is not enabled. Cannot register per-conduit hooks."
             )
 
-        # 1) Push into Configuration using the existing hook API.
-        #
-        #    Note: While the config docs talk about "spellbook_id", the registry
-        #    is just:
-        #         ConcurrentDict[str, ConcurrentDict[str, list[Callable]]]
-        #    and happily accepts any string key. We treat `self._id` as the
-        #    owner ID for this conduit-specific hook set.
-        self._configuration.add_hooks(self._id, **hooks)
+        # 1) Push into Configuration using the Spellbook owner id.
+        try:
+            spellbook_id = self._spellbook._id
+        except AttributeError as exc:
+            raise RuntimeError("Spellbook id unavailable for hook registration.") from exc
+        if not spellbook_id:
+            raise RuntimeError("Spellbook id unavailable for hook registration.")
+        self._configuration.add_hooks(spellbook_id, **hooks)
 
-        # 2) Mirror into this Conduit's local hook map so all future
-        #    `_fire_conduit_hooks(...)` calls will see them immediately.
-        if self._conduit_hooks is None:
-            self._conduit_hooks = {}
-
-        for name, value in hooks.items():
-            if value is None:
-                continue
-
-            # Single callable
-            if callable(value):
-                self._conduit_hooks.setdefault(name, []).append(value)
-                continue
-
-            # Iterable of callables
-            try:
-                iterator = iter(value)
-            except TypeError:
-                raise TypeError(
-                    f"Hook value for '{name}' must be a callable or an iterable of callables."
-                )
-
-            for fn in iterator:
-                if not callable(fn):
-                    raise TypeError(
-                        f"All entries for hook '{name}' must be callable."
-                    )
-                self._conduit_hooks.setdefault(name, []).append(fn)
+        # 2) Ensure local references point at the shared hook map.
+        self._conduit_hooks = self._configuration.get_hooks(spellbook_id)
+        if self._meld is not None:
+            self._meld.set_meld_hooks(self._conduit_hooks)
 
     def upgrade_to_normal(
             self,

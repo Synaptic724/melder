@@ -175,12 +175,20 @@ def test_clear_logger_factory_resets_factory():
     assert cfg.has_logger_factory() is False
 
 
-def test_add_hook_and_snapshot_isolated():
+def test_add_hook_returns_shared_map():
     cfg = Configuration()
-    cfg.add_hook("sb1", "on_conduit_pre_created", lambda: None)
+
+    def hook_a():
+        return None
+
+    def hook_b():
+        return None
+
+    cfg.add_hook("sb1", "on_conduit_pre_created", hook_a)
     hooks = cfg.get_hooks("sb1")
-    hooks["on_conduit_pre_created"].append("mutate")
-    assert hooks != cfg.get_hooks("sb1")
+    assert hooks is cfg.get_hooks("sb1")
+    hooks["on_conduit_pre_created"].append(hook_b)
+    assert cfg.get_hooks("sb1")["on_conduit_pre_created"] == [hook_a, hook_b]
 
 
 def test_add_hook_rejects_unknown_or_noncallable():

@@ -572,11 +572,10 @@ class Configuration(Cleanable, IConfiguration):
 
     def get_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
         """
-        Retrieve a snapshot of all configured system hooks for a specific Spellbook.
+        Retrieve the live hook map for a specific Spellbook.
 
-        This returns a shallow copy of the inner registry for the given
-        ``spellbook_id`` so callers (e.g., Spellbook / Conduit / Meld wiring
-        code) can safely iterate without holding the configuration lock.
+        This returns the internal hook map for ``spellbook_id`` so callers
+        (e.g., Conduit / Meld wiring) can share a single hook registry.
 
         Shape:
 
@@ -589,7 +588,7 @@ class Configuration(Cleanable, IConfiguration):
         Returns:
             Dict[str, list[Callable[..., Any]]]:
                 Mapping of hook name -> list of callables currently registered
-                for that Spellbook. Returns an empty dict if no hooks exist.
+                for that Spellbook. Returns an empty dict if no hooks exist yet.
 
         Raises:
             RuntimeError: If the configuration is cleaned.
@@ -601,12 +600,9 @@ class Configuration(Cleanable, IConfiguration):
 
             per_spellbook = self._hooks.get(spellbook_id)
             if per_spellbook is None:
-                return {}
-
-            snapshot: Dict[str, list[Callable[..., Any]]] = {}
-            for name, hooks_list in per_spellbook.items():
-                snapshot[name] = list(hooks_list)
-            return snapshot
+                per_spellbook = {}
+                self._hooks[spellbook_id] = per_spellbook
+            return per_spellbook
 
 
     # ---------------------------
