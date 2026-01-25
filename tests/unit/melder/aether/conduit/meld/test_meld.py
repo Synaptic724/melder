@@ -247,6 +247,9 @@ class _SpellbookStub:
             lookup_contracted_spells: Contracted lookup maps per conduit.
             aetheric_frame: Aetheric frame name for change-control lookups.
             aether: Aether stub providing change-control managers.
+
+        Notes:
+            Builds spell_id lookup maps from the provided spell maps.
         """
         self._spells = spells or {}
         self._contracted_spells = contracted_spells or {}
@@ -254,8 +257,17 @@ class _SpellbookStub:
         self._lookup_contracted_spells = lookup_contracted_spells or {}
         self._aetheric_frame = aetheric_frame
         self._aether = aether
-        self._spells_by_id = {}
-        self._contracted_spells_by_id = {}
+        self._spells_by_id = {
+            spell.spell_id: spell
+            for spell in self._spells.values()
+        }
+        self._contracted_spells_by_id = {
+            conduit_id: {
+                spell.spell_id: spell
+                for spell in spell_map.values()
+            }
+            for conduit_id, spell_map in self._contracted_spells.items()
+        }
 
 
 class _ChangeControlManagerStub:
