@@ -462,8 +462,9 @@ class Spell(Cleanable, ISpell):
 
         This is populated by :meth:`run_phase_requirements` via :class:`SpellCrafter`.
         """
-        crafter = self._crafter
-        return crafter.requirements if crafter is not None else None
+        if self._crafter is None:
+            return None
+        return self._crafter.requirements
 
     @property
     def symbolic_graph(self) -> Optional["SpellSymbolicGraph"]:
@@ -472,8 +473,9 @@ class Spell(Cleanable, ISpell):
 
         This is populated by :meth:`run_phase_symbolic_graph` via :class:`SpellCrafter`.
         """
-        crafter = self._crafter
-        return crafter.symbolic_graph if crafter is not None else None
+        if self._crafter is None:
+            return None
+        return self._crafter.symbolic_graph
 
     @property
     def resolution_frame(self) -> Any:
@@ -484,8 +486,9 @@ class Spell(Cleanable, ISpell):
         Concrete type is intentionally opaque here; callers should treat it as
         an internal resolution artifact.
         """
-        crafter = self._crafter
-        return crafter.resolution_frame if crafter is not None else None
+        if self._crafter is None:
+            return None
+        return self._crafter.resolution_frame
 
     @property
     def validation_result_phase4(self) -> Any:
@@ -494,8 +497,9 @@ class Spell(Cleanable, ISpell):
 
         This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
         """
-        crafter = self._crafter
-        return crafter.validation_result_phase4 if crafter is not None else None
+        if self._crafter is None:
+            return None
+        return self._crafter.validation_result_phase4
 
     @property
     def validation_result_phase6(self) -> Any:
@@ -504,24 +508,27 @@ class Spell(Cleanable, ISpell):
 
         This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
         """
-        crafter = self._crafter
-        return crafter.validation_result_phase6 if crafter is not None else None
+        if self._crafter is None:
+            return None
+        return self._crafter.validation_result_phase6
 
     @property
     def validated(self) -> bool:
         """
         True if the validation phase has run and marked this spell as validated.
         """
-        crafter = self._crafter
-        return crafter.validated if crafter is not None else False
+        if self._crafter is None:
+            return False
+        return self._crafter.validated
 
     @property
     def is_broken(self) -> bool:
         """
         True if the validation phase classified this spell as broken / unsafe.
         """
-        crafter = self._crafter
-        return crafter.is_broken if crafter is not None else False
+        if self._crafter is None:
+            return False
+        return self._crafter.is_broken
     #endregion Introspection Helpers
 
     #region Configuration

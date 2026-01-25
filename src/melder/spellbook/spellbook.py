@@ -17,7 +17,14 @@ from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import ISpell, IConfiguration, ISpellIndex, ISpellSystemStates, ISpellbook
+from melder.utilities.interfaces.interfaces import (
+    ISpell,
+    IConfiguration,
+    ISpellIndex,
+    ISpellSystemStates,
+    ISpellbook,
+    IUnitOfWork,
+)
 from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
@@ -2652,7 +2659,7 @@ class Spellbook(Cleanable, ISpellbook):
 
 #endregion Hook Management
 #region Resolution Phases
-    def _run_resolution_phases(self, conduit_id: str) -> Dict[str, Sequence['UnitOfWork']]:
+    def _run_resolution_phases(self, conduit_id: str) -> Dict[str, Sequence[IUnitOfWork]]:
         """
         Internal
 
@@ -2677,12 +2684,12 @@ class Spellbook(Cleanable, ISpellbook):
         self.check_cleaned()
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
-        results: Dict[str, Sequence['UnitOfWork']] = {}
+        results: Dict[str, Sequence[IUnitOfWork]] = {}
         results.update(self._run_structural_phases())
         results.update(self._run_resolution_phases_for_conduit(conduit_id))
         return results
 
-    def _run_structural_phases(self) -> Dict[str, Sequence['UnitOfWork']]:
+    def _run_structural_phases(self) -> Dict[str, Sequence[IUnitOfWork]]:
         """
         Internal
 
@@ -2816,7 +2823,7 @@ class Spellbook(Cleanable, ISpellbook):
     def _run_resolution_phases_for_conduit(
             self,
             conduit_id: str,
-    ) -> Dict[str, Sequence['UnitOfWork']]:
+    ) -> Dict[str, Sequence[IUnitOfWork]]:
         """
         Internal
 
@@ -2889,7 +2896,7 @@ class Spellbook(Cleanable, ISpellbook):
                 # Cleanup should not disrupt conjure/resolve flows.
                 pass
 
-    def _phase_requirements_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+    def _phase_requirements_factory(self, scheduler: PhaseScheduler) -> Sequence[IUnitOfWork]:
         """
         Internal
 
@@ -2908,7 +2915,7 @@ class Spellbook(Cleanable, ISpellbook):
         attached via the scheduler.
         """
         self.check_cleaned()
-        units: List['UnitOfWork'] = []
+        units: List[IUnitOfWork] = []
 
         for spell in self._spells.values():
             units.append(
@@ -2925,7 +2932,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         return units
 
-    def _phase_symbolic_graph_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+    def _phase_symbolic_graph_factory(self, scheduler: PhaseScheduler) -> Sequence[IUnitOfWork]:
         """
         Internal
 
@@ -2940,7 +2947,7 @@ class Spellbook(Cleanable, ISpellbook):
             ``spell.run_phase_symbolic_graph(cancel_event: CancellationEvent) -> Any``
         """
         self.check_cleaned()
-        units: List['UnitOfWork'] = []
+        units: List[IUnitOfWork] = []
 
         for spell in self._spells.values():
             units.append(
@@ -2957,7 +2964,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         return units
 
-    def _phase_local_frame_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+    def _phase_local_frame_factory(self, scheduler: PhaseScheduler) -> Sequence[IUnitOfWork]:
         """
         Internal
 
@@ -2972,7 +2979,7 @@ class Spellbook(Cleanable, ISpellbook):
             ``spell.run_phase_local_frame(cancel_event: CancellationEvent) -> Any``
         """
         self.check_cleaned()
-        units: List['UnitOfWork'] = []
+        units: List[IUnitOfWork] = []
 
         for spell in self._spells.values():
             units.append(
@@ -2989,7 +2996,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         return units
 
-    def _phase_validation_factory(self, scheduler: PhaseScheduler) -> Sequence['UnitOfWork']:
+    def _phase_validation_factory(self, scheduler: PhaseScheduler) -> Sequence[IUnitOfWork]:
         """
         Internal
 
@@ -3008,7 +3015,7 @@ class Spellbook(Cleanable, ISpellbook):
             ``spell.run_phase_validation(cancel_event: CancellationEvent) -> Any``
         """
         self.check_cleaned()
-        units: List['UnitOfWork'] = []
+        units: List[IUnitOfWork] = []
 
         for spell in self._spells.values():
             units.append(
@@ -3029,7 +3036,7 @@ class Spellbook(Cleanable, ISpellbook):
             self,
             scheduler: PhaseScheduler,
             conduit_id: str,
-    ) -> Sequence['UnitOfWork']:
+    ) -> Sequence[IUnitOfWork]:
         """
         Internal
 
@@ -3047,7 +3054,7 @@ class Spellbook(Cleanable, ISpellbook):
         if not self._spells:
             return []
 
-        units: List['UnitOfWork'] = []
+        units: List[IUnitOfWork] = []
         for spell in self._spells.values():
             units.append(
                 scheduler.create_unit_of_work(
@@ -3066,7 +3073,7 @@ class Spellbook(Cleanable, ISpellbook):
             self,
             scheduler: PhaseScheduler,
             conduit_id: str,
-    ) -> Sequence['UnitOfWork']:
+    ) -> Sequence[IUnitOfWork]:
         """
         Internal
 
@@ -3084,7 +3091,7 @@ class Spellbook(Cleanable, ISpellbook):
         if not self._spells:
             return []
 
-        units: List['UnitOfWork'] = []
+        units: List[IUnitOfWork] = []
         for spell in self._spells.values():
             units.append(
                 scheduler.create_unit_of_work(
@@ -3103,7 +3110,7 @@ class Spellbook(Cleanable, ISpellbook):
             self,
             scheduler: PhaseScheduler,
             conduit_id: str,
-    ) -> Sequence['UnitOfWork']:
+    ) -> Sequence[IUnitOfWork]:
         """
         Internal
 
@@ -3121,7 +3128,7 @@ class Spellbook(Cleanable, ISpellbook):
         if not self._spells:
             return []
 
-        units: List['UnitOfWork'] = []
+        units: List[IUnitOfWork] = []
         for spell in self._spells.values():
             units.append(
                 scheduler.create_unit_of_work(

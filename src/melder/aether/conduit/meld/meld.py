@@ -1015,7 +1015,6 @@ class Meld(Cleanable, IMeld):
             The selected creations container, or None if neither is available.
         """
         existence: Existence = spell.existence
-        caller_creations = self._creations
         owner_creations = spell._owner_creations
 
         if existence in (
@@ -1023,13 +1022,13 @@ class Meld(Cleanable, IMeld):
                 Existence.many,
                 Existence.unique_per_spell_space,
         ):
-            if caller_creations is not None:
-                return caller_creations
+            if self._creations is not None:
+                return self._creations
             return owner_creations
 
         if owner_creations is not None:
             return owner_creations
-        return caller_creations
+        return self._creations
 
     def _raise_override_on_existing_instance(
             self,
