@@ -2073,6 +2073,9 @@ class Spellbook(Cleanable, ISpellbook):
         if not isinstance(spell, ISpell):
             self._logger.error("spell must be an instance of Spell.", "_add_hooks_to_spell", exc_info=True)
             raise TypeError("spell must be an instance of Spell.")
+        if len(kwargs) == 0:
+            return
+
         with self._lock:
             if "pre_hooks" in kwargs:
                 for hook in kwargs["pre_hooks"]:
@@ -2080,18 +2083,21 @@ class Spellbook(Cleanable, ISpellbook):
                         self._logger.error("pre_hooks must be a list of callables.", "_add_hooks_to_spell", exc_info=True)
                         raise TypeError("pre_hooks must be a list of callables.")
                 spell.pre_hooks = kwargs["pre_hooks"]
+                spell._hooks_enabled = True
             if "activation_hooks" in kwargs:
                 for hook in kwargs["activation_hooks"]:
                     if not callable(hook):
                         self._logger.error("activation_hooks must be a list of callables.", "_add_hooks_to_spell", exc_info=True)
                         raise TypeError("activation_hooks must be a list of callables.")
                 spell.activation_hooks = kwargs["activation_hooks"]
+                spell._hooks_enabled = True
             if "post_hooks" in kwargs:
                 for hook in kwargs["post_hooks"]:
                     if not callable(hook):
                         self._logger.error("post_hooks must be a list of callables.", "_add_hooks_to_spell", exc_info=True)
                         raise TypeError("post_hooks must be a list of callables.")
                 spell.post_hooks = kwargs["post_hooks"]
+                spell._hooks_enabled = True
 
     #endregion Binding API
     #region Configuration API

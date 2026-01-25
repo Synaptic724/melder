@@ -193,6 +193,7 @@ class Spell(Cleanable, ISpell):
         self._mutation_override: dict = {}
 
         # Hooks
+        self._hooks_enabled: bool = False
         self.pre_hooks: List[Callable[..., Any]] = []
         self.activation_hooks: List[Callable[..., Any]] = []
         self.post_hooks: List[Callable[..., Any]] = []
