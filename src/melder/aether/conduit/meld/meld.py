@@ -102,6 +102,8 @@ class Meld(Cleanable, IMeld):
             spellbook._lookup_contracted_spells
         )
 
+        self._hooks_enabled = False
+
         # Conduit-local instantiation manager (Creations or LesserCreations)
         self._creations = creations
 
@@ -257,6 +259,49 @@ class Meld(Cleanable, IMeld):
                 ID resolution, unsupported Creations manager, or attempting to
                 meld a broken spell).
         """
+        if self._hooks_enabled:
+            return self._comprehensive_meld_with_hooks(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                spell_override=spell_override,
+            )
+        else:
+            return self._meld_without_hooks(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                spell_override=spell_override,
+            )
+
+    def _meld_without_hooks(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+            spell_override: Optional[dict | list | tuple] = None,
+    ) -> Optional[Any]:
+        """
+        Internal
+        
+        Resolve a spell instance through the minimal meld pipeline (no hook execution).
+        
+        Notes:
+            - Accepts the same identity inputs as meld().
+            - Normalizes overrides and resolves the spell instance.
+        
+        Returns:
+            Optional[Any]: The resolved instance.
+        
+        Raises:
+            ValueError: If no identity inputs are provided.
+            KeyError: If the spell cannot be resolved.
+            RuntimeError: For unexpected internal state issues.
+        """
         # Basic contract: we need at least *one* identity source.
         if spell is None and spellframe is None and spell_name is None:
             raise ValueError(
@@ -275,19 +320,66 @@ class Meld(Cleanable, IMeld):
             binding_name=binding_name,
         )
 
-        # 1.5) SpellSystemState / SpellValidity gate + lazy revalidation.
+        # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         self._ensure_lineage_resolvable(target_spell)
 
-        # 3) Defensive guard: never attempt to meld a broken spell.
-        if target_spell.is_broken:
-            raise RuntimeError(
-                f"[MELD] Cannot meld broken spell: {target_spell}."
+        instance, created = self._resolve_instance_with_locks(
+            target_spell,
+            override_map,
+        )
+
+        # 7) Return the resolved instance.
+        return instance
+
+    def _comprehensive_meld_with_hooks(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+            spell_override: Optional[dict | list | tuple] = None,
+    ) -> Optional[Any]:
+        """
+        Internal
+        
+        Resolve a spell instance with full validation and hook execution.
+        
+        Notes:
+            - Accepts the same identity inputs as meld().
+            - Runs lineage validation and spell hooks.
+        
+        Returns:
+            Optional[Any]: The resolved instance.
+        
+        Raises:
+            ValueError: If no identity inputs are provided.
+            KeyError: If the spell cannot be resolved.
+            HookExecutionError: If a hook raises during execution.
+            RuntimeError: If the spell is broken or state is invalid.
+        """
+        # Basic contract: we need at least *one* identity source.
+        if spell is None and spellframe is None and spell_name is None:
+            raise ValueError(
+                "[MELD] meld(...) requires at least one of "
+                "`spell_name`, `spell`, or `spellframe`."
             )
 
-        # 4) Respect structural SpellSystemState gate (if DevOps is wired).
-        self._gated_validation_required(target_spell)
+        # 1) Normalize per-call overrides into a stable dict shape.
+        override_map = self._normalize_spell_override(spell_override)
 
-        # 5) Execute pre-cast hooks (no instance context yet).
+        # 2) Resolve the spell object from the Spellbook / SpellIndex.
+        target_spell = self._resolve_spell(
+            spell=spell,
+            spell_name=spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
+
+        # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
+        self._ensure_lineage_resolvable(target_spell)
+
+        # 4) Execute pre-cast hooks (no instance context yet).
         self._execute_hooks(target_spell.pre_hooks, "pre_cast")
         self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
@@ -300,11 +392,11 @@ class Meld(Cleanable, IMeld):
             self._execute_activation_hooks(target_spell.activation_hooks, instance)
             self._fire_meld_hooks("on_meld_activation", target_spell, instance)
 
-        # 8) Execute post-cast hooks (still no arguments for now).
+        # 5) Execute post-cast hooks (still no arguments for now).
         self._execute_hooks(target_spell.post_hooks, "post_cast")
         self._fire_meld_hooks("on_meld_post_resolve", target_spell)
 
-        # 9) Return the resolved instance.
+        # 6) Return the resolved instance.
         return instance
 
     def _ensure_lineage_resolvable(self, spell: ISpell) -> None:
@@ -350,19 +442,18 @@ class Meld(Cleanable, IMeld):
             return
 
         # Structural gating
-        if self._gated_validation_required(spell):
-            with spell._lock:
-                if self._gated_validation_required(spell):
-                    spell.run_structural_phases()
+        with spell._lock:
+            self._gated_validation_required(spell)
+            spell.run_structural_phases()
 
-                    # If the crafter thinks it's broken, we hard-pin to invalid and bail.
-                    if spell.is_broken:
-                        state.set_validity(SpellValidity.invalid)
-                        raise SpellbookValidationError([spell])
+            # If the crafter thinks it's broken, we hard-pin to invalid and bail.
+            if spell.is_broken:
+                state.set_validity(SpellValidity.invalid)
+                raise SpellbookValidationError([spell])
 
-                    refreshed_state = spell.system_state
-                    if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
-                        raise SpellbookValidationError([spell])
+            refreshed_state = spell.system_state
+            if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
+                raise SpellbookValidationError([spell])
 
         # Resolution gating (per-conduit)
         self._ensure_resolution_resolvable(spell)
