@@ -415,13 +415,13 @@ def _make_creations(
     return Creations(False, [], conduit), conduit
 
 
-def test_cleanup_clears_references_and_cleans_runtime() -> None:
+def test_cleanup_clears_references_and_drops_runtime() -> None:
     """
-    Verify Meld.cleanup releases references and cleans runtime resources.
+    Verify Meld.cleanup releases references and drops the runtime reference.
 
     Contract:
         - Spellbook maps and creations references are cleared.
-        - Runtime cleanup runs and the runtime reference is dropped.
+        - Runtime reference is dropped without invoking cleanup.
         - Meld hooks are cleared and removed.
     """
     class _RuntimeStub:
@@ -449,7 +449,7 @@ def test_cleanup_clears_references_and_cleans_runtime() -> None:
 
     meld.cleanup()
 
-    assert runtime.cleaned is True
+    assert runtime.cleaned is False
     assert hook_list == [hook_list[0]]
     assert meld._owned_spells is None
     assert meld._contracted_spells is None
@@ -1494,13 +1494,13 @@ def test_gated_validation_required_change_control_error_falls_back() -> None:
         meld._gated_validation_required(spell)
 
 
-def test_cleanup_runtime_cleanup_error_is_suppressed() -> None:
+def test_cleanup_drops_runtime_without_invoking_cleanup() -> None:
     """
-    Verify runtime cleanup errors do not block Meld.cleanup.
+    Verify Meld.cleanup drops the runtime reference without invoking cleanup.
 
     Contract:
-        - runtime.cleanup errors are suppressed.
-        - runtime reference is dropped regardless of cleanup failure.
+        - runtime.cleanup is not called.
+        - runtime reference is dropped.
     """
     class _RuntimeStub:
         """
@@ -1509,9 +1509,9 @@ def test_cleanup_runtime_cleanup_error_is_suppressed() -> None:
 
         def cleanup(self) -> None:
             """
-            Raise to simulate cleanup failure.
+            Raise if cleanup is invoked.
             """
-            raise RuntimeError("cleanup failure")
+            raise RuntimeError("cleanup should not be called")
 
     meld = _make_meld()
     meld._runtime = _RuntimeStub()

@@ -123,13 +123,13 @@ class Meld(Cleanable, IMeld):
         Contract:
             - Idempotent: repeated calls are safe.
             - Thread-safe: guarded by the internal lock.
-            - Best-effort runtime cleanup; runtime cleanup errors are swallowed.
+            - Runtime reference is dropped (no runtime cleanup is performed).
             - After cleanup, references are cleared and this instance must not be used.
 
         Behaviour:
             - Marks the instance as cleaned.
             - Clears references to spellbook maps and creations.
-            - Cleans up and drops the internal `MeldRuntime` instance.
+            - Drops the internal `MeldRuntime` reference.
 
         Returns:
             None.
@@ -152,11 +152,6 @@ class Meld(Cleanable, IMeld):
             # Clear creations reference
             self._creations = None
             self._conduit_id = None
-            if self._runtime is not None:
-                try:
-                    self._runtime.cleanup()
-                except Exception:
-                    pass
             self._runtime = None
             self._meld_hooks = None
 
@@ -411,18 +406,19 @@ class Meld(Cleanable, IMeld):
             return
 
         # Structural gating
-        with spell._lock:
-            self._gated_validation_required(spell)
-            spell.run_structural_phases()
+        if self._gated_validation_required(spell):
+            with spell._lock:
+                if self._gated_validation_required(spell):
+                    spell.run_structural_phases()
 
-            # If the crafter thinks it's broken, we hard-pin to invalid and bail.
-            if spell.is_broken:
-                state.set_validity(SpellValidity.invalid)
-                raise SpellbookValidationError([spell])
+                    # If the crafter thinks it's broken, we hard-pin to invalid and bail.
+                    if spell.is_broken:
+                        state.set_validity(SpellValidity.invalid)
+                        raise SpellbookValidationError([spell])
 
-            refreshed_state = spell.system_state
-            if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
-                raise SpellbookValidationError([spell])
+                    refreshed_state = spell.system_state
+                    if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
+                        raise SpellbookValidationError([spell])
 
         # Resolution gating (per-conduit)
         self._ensure_resolution_resolvable(spell)
