@@ -92,12 +92,24 @@ class MeldRuntime:
         if context is None:
             raise ValueError("context cannot be None.")
 
-        spell: ISpell = context.root_spell
-        if spell is None:
+        spell_obj = context.root_spell
+        if spell_obj is None:
             raise ValueError("context.root_spell cannot be None.")
 
-        if spell.system_state is not None:
-            validity = spell.system_state.validity
+        # Work with the concrete Spell facade type when available.
+        spell: ISpell = spell_obj
+
+        # ------------------------------------------------------------------ #
+        # System-level gating (Phase 6 / Change-control)                    #
+        # ------------------------------------------------------------------ #
+        system_state = None
+        try:
+            system_state = spell.system_state
+        except Exception:
+            system_state = None
+
+        if system_state is not None:
+            validity = system_state.validity
             if validity in (
                     SpellValidity.invalid,
                     SpellValidity.gated,
@@ -114,17 +126,19 @@ class MeldRuntime:
 
         # Change-control dirty-root gating
         try:
-            aether = spell._spellbook._aether
-            manager = aether._get_change_control_manager(spell.aetheric_frame)
-            if manager.is_root_dirty(spell.spell_index.current):
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message=(
-                        "Cannot execute meld runtime while the root is marked dirty. "
-                        "Revalidation is required."
-                    ),
-                )
+            spellbook = spell._spellbook
+            aether = spellbook._aether
+            if aether is not None:
+                manager = aether._get_change_control_manager(spell.aetheric_frame)
+                if manager is not None and manager.is_root_dirty(spell.spell_index.current):
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Cannot execute meld runtime while the root is marked dirty. "
+                            "Revalidation is required."
+                        ),
+                    )
         except MeldExecutionError:
             raise
         except Exception:
@@ -149,8 +163,17 @@ class MeldRuntime:
                 ),
             )
 
+        # Snapshot build-time artifacts. These may be None depending on
+        # how far the SpellCrafter pipeline has run; the engine can decide
+        # how much it needs for the current MVP.
+        dag = spell.dependency_graph
+        requirements = spell.requirements
+        resolution_frame = spell.resolution_frame
+
         # Phase 5 artifacts may be present for root spells.
-        root_blueprint: RootResolutionBlueprint = spell._crafter._root_blueprint_phase5
+        root_blueprint: RootResolutionBlueprint = getattr(
+            getattr(spell, "_crafter", None), "_root_blueprint_phase5", None
+        )
         mutation_override_payload = {}
         try:
             mutation_override_payload = spell.mutation_override
@@ -163,8 +186,11 @@ class MeldRuntime:
         override_map = {}
         if root_blueprint is not None:
             try:
-                execution_blueprint = GraphMutator(root_blueprint).apply(mutation_override_payload or {})
-                override_map = SpellOverrider(execution_blueprint).apply(context.overrides or {})
+                mutator = GraphMutator(root_blueprint)
+                execution_blueprint = mutator.apply(mutation_override_payload or {})
+
+                overrider = SpellOverrider(execution_blueprint)
+                override_map = overrider.apply(context.overrides or {})
             except Exception as exc:
                 raise MeldExecutionError(
                     spell_id=spell.spell_index.current,
@@ -190,17 +216,19 @@ class MeldRuntime:
                 for idx, inst in lineage_map.items():
                     spell_lookup[idx.current] = inst
 
+        system_states = spell._spell_system_states
+
         engine = MeldEngine(
             context=context,
             root_spell=spell,
-            dag=spell.dependency_graph,
-            resolution_frame=spell.resolution_frame,
-            requirements=spell.requirements,
-            frame=ResolutionFrame(overrides=frame_overrides),
+            dag=dag,
+            resolution_frame=resolution_frame,
+            requirements=requirements,
+            frame=frame,
             blueprint=execution_blueprint,
             override_map=override_map,
             spell_lookup=spell_lookup,
-            system_states=spell._spell_system_states,
+            system_states=system_states,
         )
 
         result = None
@@ -227,8 +255,8 @@ class MeldRuntime:
         # callable, so we surface it as a deterministic MeldExecutionError.
         # ------------------------------------------------------------------
         if (
-            result is None
-            and (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell)
+                result is None
+                and (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell)
         ):
             raise MeldExecutionError(
                 spell_id=spell.spell_index.current,

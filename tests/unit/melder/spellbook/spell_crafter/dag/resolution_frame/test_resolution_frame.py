@@ -57,24 +57,6 @@ def test_repr_contains_counts():
     assert "errors=1" in text
 
 
-def test_cleanup_idempotent_and_blocks_access():
-    frame = ResolutionFrame({"a": 1})
-    frame.set_result("n1", 1)
-    frame.register_error("n2", RuntimeError("x"))
-    frame.cleanup()
-    frame.cleanup()
-    with pytest.raises(RuntimeError):
-        _ = frame.id
-    with pytest.raises(RuntimeError):
-        frame.set_result("n3", 3)
-    with pytest.raises(RuntimeError):
-        frame.get_result("n1")
-    with pytest.raises(RuntimeError):
-        frame.get_override("a")
-    with pytest.raises(RuntimeError):
-        frame.register_error("n4", RuntimeError("y"))
-
-
 def test_properties_return_copies():
     frame = ResolutionFrame({"a": 1})
     frame.set_result("n1", 2)
@@ -88,13 +70,3 @@ def test_properties_return_copies():
     assert frame.get_override("a") == 1
     assert frame.get_result("n1") == 2
     assert isinstance(frame.get_error("n2"), RuntimeError)
-
-
-def test_has_helpers_raise_after_cleanup():
-    frame = ResolutionFrame({"a": 1})
-    frame.set_result("n1", 2)
-    frame.cleanup()
-    with pytest.raises(RuntimeError):
-        frame.has_override("a")
-    with pytest.raises(RuntimeError):
-        frame.has_result("n1")

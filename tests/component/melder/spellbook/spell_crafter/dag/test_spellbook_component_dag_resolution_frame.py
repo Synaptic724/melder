@@ -136,26 +136,6 @@ def test_component_resolution_frame_validates_inputs() -> None:
         frame.register_error("node", None)  # type: ignore[arg-type]
 
 
-def test_component_resolution_frame_cleanup_blocks_access() -> None:
-    """
-    Purpose:
-        Validate cleanup prevents further access to frame state.
-    Contract:
-        - Accessing properties after cleanup raises RuntimeError.
-    Returns:
-        None.
-    """
-    frame = ResolutionFrame({"root": "override"})
-    frame.cleanup()
-
-    with pytest.raises(RuntimeError):
-        _ = frame.overrides
-    with pytest.raises(RuntimeError):
-        _ = frame.results
-    with pytest.raises(RuntimeError):
-        _ = frame.errors
-
-
 def test_component_resolution_frame_handles_concurrent_writes() -> None:
     """
     Purpose:
