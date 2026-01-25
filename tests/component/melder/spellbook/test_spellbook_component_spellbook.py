@@ -3,6 +3,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from tests.mocks.spellbook.core_classes import BasicService
@@ -320,8 +321,9 @@ def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
     Raises:
         AssertionError: If disposal metadata is missing or incorrect.
     """
-    config = Spellbook._create_configuration("default")
+    config = Configuration("default")
     config.set_property("disposal_method_names", ["cleanup", "close", "dispose"])
+    config.load_default_dictionary()
     spellbook = Spellbook(configuration=config)
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)

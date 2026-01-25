@@ -363,7 +363,7 @@ class DummyConfig:
         Purpose:
             Provide access to configuration properties.
         Contract:
-            Returns system_state when name is "system_state", otherwise None.
+            Returns system_state or disposal_method_names when requested, otherwise None.
         Args:
             name: Property name to fetch.
         Returns:
@@ -371,6 +371,8 @@ class DummyConfig:
         """
         if name == "system_state":
             return self._system_state
+        if name == "disposal_method_names":
+            return []
         return None
 
     def validate(self):
