@@ -494,6 +494,20 @@ class ISpell(ICleanable, Protocol):
         ...
 
 
+    def _set_hooks(
+            self,
+            *,
+            pre_hooks: Optional[Sequence[Callable[..., Any]]] = None,
+            activation_hooks: Optional[Sequence[Callable[..., Any]]] = None,
+            post_hooks: Optional[Sequence[Callable[..., Any]]] = None,
+    ) -> None:
+        """
+        Internal
+
+        Attach lifecycle hooks and update the spell hook gate.
+        """
+        ...
+
     # ------------------------------------------------------------------
     # Mutation override (graph overlay) API
     # ------------------------------------------------------------------

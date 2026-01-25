@@ -824,9 +824,9 @@ def test_owned_conduit_marks_owned_spell_true():
 
 def test_cleanup_clears_hooks_and_metadata_collections():
     spell = _make_spell()
-    spell.pre_hooks = [lambda: None]
-    spell.activation_hooks = [lambda: None]
-    spell.post_hooks = [lambda: None]
+    spell._pre_hooks = [lambda: None]
+    spell._activation_hooks = [lambda: None]
+    spell._post_hooks = [lambda: None]
     spell.tags = ["tag"]
     spell.metadata = {"k": "v"}
     spell.dependencies = ["dep"]
