@@ -226,19 +226,6 @@ class Spell(Cleanable, ISpell):
             binding_name=self.binding_name,
         )
         self._key = (frame_key, bind_key)
-
-    @property
-    def pre_hooks(self) -> List[Callable[..., Any]]:
-        return self._pre_hooks
-
-    @property
-    def activation_hooks(self) -> List[Callable[..., Any]]:
-        return self._activation_hooks
-
-    @property
-    def post_hooks(self) -> List[Callable[..., Any]]:
-        return self._post_hooks
-
     def _set_hooks(
             self,
             *,
@@ -249,8 +236,32 @@ class Spell(Cleanable, ISpell):
         """
         Internal
 
-        Attach lifecycle hooks and update the spell hook gate.
+        Attach lifecycle hook lists and update the spell hook gate.
+
+        Contract:
+            - Replaces only the hook lists provided (None means "leave as-is").
+            - Updates `_hooks_enabled` based on current hook list contents.
+            - Hook callability is validated by Spellbook before this is called.
+            - Requires a live Spell instance.
+
+        Args:
+            pre_hooks:
+                Optional list/tuple of pre-cast hooks. Each hook must accept no
+                arguments and is invoked before resolution.
+            activation_hooks:
+                Optional list/tuple of activation hooks. Each hook receives the
+                newly created instance as its first argument.
+            post_hooks:
+                Optional list/tuple of post-cast hooks. Each hook must accept no
+                arguments and is invoked after resolution.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the Spell has already been cleaned.
         """
+        self.check_cleaned()
         with self._lock:
             if pre_hooks is not None:
                 self._pre_hooks = list(pre_hooks)

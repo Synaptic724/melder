@@ -120,10 +120,19 @@ class Meld(Cleanable, IMeld):
 
         This should be called when the owning `Conduit` is being shut down.
 
+        Contract:
+            - Idempotent: repeated calls are safe.
+            - Thread-safe: guarded by the internal lock.
+            - Best-effort runtime cleanup; runtime cleanup errors are swallowed.
+            - After cleanup, references are cleared and this instance must not be used.
+
         Behaviour:
             - Marks the instance as cleaned.
             - Clears references to spellbook maps and creations.
             - Cleans up and drops the internal `MeldRuntime` instance.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -143,6 +152,11 @@ class Meld(Cleanable, IMeld):
             # Clear creations reference
             self._creations = None
             self._conduit_id = None
+            if self._runtime is not None:
+                try:
+                    self._runtime.cleanup()
+                except Exception:
+                    pass
             self._runtime = None
             self._meld_hooks = None
 
@@ -335,7 +349,7 @@ class Meld(Cleanable, IMeld):
         self._ensure_lineage_resolvable(target_spell)
 
         # 2) Execute pre-cast hooks (no instance context yet).
-        self._execute_hooks(target_spell.pre_hooks, "pre_cast")
+        self._execute_hooks(target_spell._pre_hooks, "pre_cast")
         self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
         instance, created = self._resolve_instance_with_locks(
@@ -344,11 +358,11 @@ class Meld(Cleanable, IMeld):
         )
         if created:
             # Activation hooks fire only when the instance is newly created.
-            self._execute_activation_hooks(target_spell.activation_hooks, instance)
+            self._execute_activation_hooks(target_spell._activation_hooks, instance)
             self._fire_meld_hooks("on_meld_activation", target_spell, instance)
 
         # 3) Execute post-cast hooks (still no arguments for now).
-        self._execute_hooks(target_spell.post_hooks, "post_cast")
+        self._execute_hooks(target_spell._post_hooks, "post_cast")
         self._fire_meld_hooks("on_meld_post_resolve", target_spell)
 
         # 4) Return the resolved instance.

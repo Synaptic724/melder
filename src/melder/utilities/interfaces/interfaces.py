@@ -451,10 +451,10 @@ class ISpell(ICleanable, Protocol):
     owned_spell: Optional[bool]
     _owner_creations: Any
 
-    # Lifecycle hooks
-    pre_hooks: List[Callable[..., Any]]
-    activation_hooks: List[Callable[..., Any]]
-    post_hooks: List[Callable[..., Any]]
+    # Lifecycle hooks (private)
+    _pre_hooks: Optional[List[Callable[..., Any]]]
+    _activation_hooks: Optional[List[Callable[..., Any]]]
+    _post_hooks: Optional[List[Callable[..., Any]]]
 
     _spell_system_states: 'ISpellSystemStates'
     _key: Tuple[str, str]
@@ -504,7 +504,20 @@ class ISpell(ICleanable, Protocol):
         """
         Internal
 
-        Attach lifecycle hooks and update the spell hook gate.
+        Attach lifecycle hook lists and update the hook gate.
+
+        Contract:
+            - Replaces only the hook lists provided (None means "leave as-is").
+            - Updates `_hooks_enabled` based on current hook list contents.
+            - Requires a live Spell instance.
+
+        Args:
+            pre_hooks:
+                Optional list/tuple of pre-cast hooks.
+            activation_hooks:
+                Optional list/tuple of activation hooks.
+            post_hooks:
+                Optional list/tuple of post-cast hooks.
         """
         ...
 

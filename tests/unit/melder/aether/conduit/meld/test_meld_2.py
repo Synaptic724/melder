@@ -87,9 +87,10 @@ class _SpellStub:
         self.is_class_spell = is_class_spell
         self.is_method_spell = is_method_spell
         self.is_lambda_spell = is_lambda_spell
-        self.pre_hooks: list[Callable[..., Any]] = []
-        self.activation_hooks: list[Callable[..., Any]] = []
-        self.post_hooks: list[Callable[..., Any]] = []
+        self._pre_hooks: list[Callable[..., Any]] = []
+        self._activation_hooks: list[Callable[..., Any]] = []
+        self._post_hooks: list[Callable[..., Any]] = []
+        self._hooks_enabled: bool = False
         self.spell_type = "stub"
         self._lock = RLock()
 

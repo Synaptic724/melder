@@ -572,9 +572,9 @@ def test_component_spellbook_add_hooks_to_spell_attaches_lists() -> None:
             post_hooks=[post_hook],
         )
 
-        assert spell.pre_hooks == [pre_hook]
-        assert spell.activation_hooks == [activation_hook]
-        assert spell.post_hooks == [post_hook]
+        assert spell._pre_hooks == [pre_hook]
+        assert spell._activation_hooks == [activation_hook]
+        assert spell._post_hooks == [post_hook]
     finally:
         spellbook.cleanup()
 

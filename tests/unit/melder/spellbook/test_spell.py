@@ -225,7 +225,7 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     assert spell.spell is None
     assert spell.spell_index is None
     assert spell._key is None
-    assert spell.pre_hooks is None
+    assert spell._pre_hooks is None
     assert spell.metadata is None
     assert spell._spell_system_states is None
 import sys
@@ -624,7 +624,7 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     assert spell.spell is None
     assert spell.spell_index is None
     assert spell._key is None
-    assert spell.pre_hooks is None
+    assert spell._pre_hooks is None
     assert spell.metadata is None
     assert spell._spell_system_states is None
 
@@ -831,9 +831,9 @@ def test_cleanup_clears_hooks_and_metadata_collections():
     spell.metadata = {"k": "v"}
     spell.dependencies = ["dep"]
     spell.cleanup()
-    assert spell.pre_hooks is None
-    assert spell.activation_hooks is None
-    assert spell.post_hooks is None
+    assert spell._pre_hooks is None
+    assert spell._activation_hooks is None
+    assert spell._post_hooks is None
     assert spell.tags is None
     assert spell.metadata is None
     assert spell.dependencies is None

@@ -192,9 +192,10 @@ class _SpellStub:
         self.aetheric_frame = aetheric_frame
         self.spell_type = spell_type
         self._lock = RLock()
-        self.pre_hooks: list[Callable[..., Any]] = []
-        self.activation_hooks: list[Callable[..., Any]] = []
-        self.post_hooks: list[Callable[..., Any]] = []
+        self._pre_hooks: list[Callable[..., Any]] = []
+        self._activation_hooks: list[Callable[..., Any]] = []
+        self._post_hooks: list[Callable[..., Any]] = []
+        self._hooks_enabled: bool = False
         self.run_all_phases_calls = 0
         self.run_structural_phases_calls = 0
         self._validity_after_run = validity_after_run
@@ -1018,9 +1019,10 @@ def test_meld_reuses_existing_instance_without_activation_hooks() -> None:
         events.append("activation")
 
     spell = _SpellStub(spell_id="spell-1")
-    spell.pre_hooks = [pre_hook]
-    spell.post_hooks = [post_hook]
-    spell.activation_hooks = [activation_hook]
+    spell._pre_hooks = [pre_hook]
+    spell._post_hooks = [post_hook]
+    spell._activation_hooks = [activation_hook]
+    spell._hooks_enabled = True
 
     meld._resolve_spell = MagicMock(return_value=spell)
     meld._get_existing_creation = MagicMock(return_value="reuse")
@@ -1064,9 +1066,10 @@ def test_meld_creates_instance_and_runs_activation_hooks() -> None:
         events.append(f"activation:{instance}")
 
     spell = _SpellStub(spell_id="spell-1")
-    spell.pre_hooks = [pre_hook]
-    spell.post_hooks = [post_hook]
-    spell.activation_hooks = [activation_hook]
+    spell._pre_hooks = [pre_hook]
+    spell._post_hooks = [post_hook]
+    spell._activation_hooks = [activation_hook]
+    spell._hooks_enabled = True
 
     meld._resolve_spell = MagicMock(return_value=spell)
     meld._get_existing_creation = MagicMock(return_value=None)
