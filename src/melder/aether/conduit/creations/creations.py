@@ -308,7 +308,6 @@ class Creations(Cleanable, ICreations):
         Raises:
             RuntimeError: If the `Creations` manager already contains objects before transfer.
         """
-
         if not len(self._unique_per_scope) == 0 and not len(self._many) == 0:
             self._logger.error(
                 "_upgrade_from_lesser_conduit: target already has objects",
@@ -415,8 +414,6 @@ class Creations(Cleanable, ICreations):
         Raises:
             RuntimeError: If the Creations manager is cleaned.
         """
-        #if not self._disposal_enabled:
-        #    return
         self.check_cleaned()
         if key not in self._many:
             self._many[key] = []

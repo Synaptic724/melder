@@ -19,6 +19,8 @@ class Creation(Cleanable):
         "_id",
         "_value",
         "_cleaned",
+        "_has_disposal_methods",
+        "_disposal_methods",
         "_lock",
     )
 
@@ -32,6 +34,8 @@ class Creation(Cleanable):
         super().__init__()
         self._id: str = str(ulid.ULID())
         self._lock : threading.RLock = threading.RLock()
+        self._has_disposal_methods: bool = False
+        self._disposal_methods: list[str] = []
         self._value: Any = value
 
     def cleanup(self):
