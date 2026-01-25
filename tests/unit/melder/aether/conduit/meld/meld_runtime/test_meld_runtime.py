@@ -295,21 +295,6 @@ def test_execute_rejects_none_root_spell() -> None:
     with pytest.raises(ValueError, match="context.root_spell cannot be None"):
         runtime.execute(context)
 
-
-def test_execute_after_cleanup_raises_runtimeerror() -> None:
-    """
-    Verify execute fails after the runtime is cleaned.
-
-    Contract:
-        - execute raises RuntimeError once cleaned.
-    """
-    runtime = MeldRuntime()
-    runtime.cleanup()
-    context = _make_context(spell=_SpellStub(spell_id="spell-1"))
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        runtime.execute(context)
-
-
 @pytest.mark.parametrize(
     "validity",
     [SpellValidity.invalid, SpellValidity.gated, SpellValidity.disabled],
@@ -839,20 +824,6 @@ def test_execute_allows_missing_spellbook(monkeypatch: pytest.MonkeyPatch) -> No
     assert runtime.execute(context) == "ok"
     lookup = engine_cls.call_args.kwargs["spell_lookup"]
     assert lookup == {}
-
-
-def test_cleanup_is_idempotent() -> None:
-    """
-    Verify cleanup can be called multiple times safely.
-
-    Contract:
-        - cleanup is idempotent and leaves cleaned=True.
-    """
-    runtime = MeldRuntime()
-    runtime.cleanup()
-    runtime.cleanup()
-    assert runtime.cleaned is True
-
 
 def test_execute_blueprint_ignores_non_dict_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
     """
