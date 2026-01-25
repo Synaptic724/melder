@@ -273,6 +273,9 @@ class Meld(Cleanable, IMeld):
             binding_name=binding_name,
         )
 
+        # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
+        self._ensure_lineage_resolvable(target_spell)
+
         if self._meld_hooks or target_spell._hooks_enabled:
             return self._comprehensive_meld_with_hooks(
                 target_spell=target_spell,
@@ -306,9 +309,6 @@ class Meld(Cleanable, IMeld):
             KeyError: If the spell cannot be resolved.
             RuntimeError: For unexpected internal state issues.
         """
-        # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
-        self._ensure_lineage_resolvable(target_spell)
-
         instance, created = self._resolve_instance_with_locks(
             target_spell,
             override_map,
@@ -340,10 +340,7 @@ class Meld(Cleanable, IMeld):
             HookExecutionError: If a hook raises during execution.
             RuntimeError: If the spell is broken or state is invalid.
         """
-        # 1) SpellSystemState / SpellValidity gate + lazy revalidation.
-        self._ensure_lineage_resolvable(target_spell)
-
-        # 2) Execute pre-cast hooks (no instance context yet).
+        # 1) Execute pre-cast hooks (no instance context yet).
         self._execute_hooks(target_spell._pre_hooks, "pre_cast")
         self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
@@ -356,11 +353,11 @@ class Meld(Cleanable, IMeld):
             self._execute_activation_hooks(target_spell._activation_hooks, instance)
             self._fire_meld_hooks("on_meld_activation", target_spell, instance)
 
-        # 3) Execute post-cast hooks (still no arguments for now).
+        # 2) Execute post-cast hooks (still no arguments for now).
         self._execute_hooks(target_spell._post_hooks, "post_cast")
         self._fire_meld_hooks("on_meld_post_resolve", target_spell)
 
-        # 4) Return the resolved instance.
+        # 3) Return the resolved instance.
         return instance
 
     def _ensure_lineage_resolvable(self, spell: ISpell) -> None:
