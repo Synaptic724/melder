@@ -60,6 +60,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
         "_last_validated_at",
         "_last_change_reason",
         "_initial_validity",
+        "_risk_manager",
     ]
 
     def __init__(
@@ -97,6 +98,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
         self._last_validated_at: Optional[float] = None
         self._last_change_reason: Optional[SpellStateChangeReason] = None
         self._initial_validity: SpellValidity = initial_validity
+        self._risk_manager: Optional[object] = None
 
     # ------------------------------------------------------------------ #
     # Validity accessors                                                  #
@@ -170,14 +172,21 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
         if validity is None:
             raise ValueError("validity cannot be None.")
 
+        changed = False
         with self._lock:
             had_entry = spell_id in self._spell_validity
             previous = self._spell_validity.get(spell_id, self._initial_validity)
             self._spell_validity[spell_id] = validity
             if (not had_entry) or (previous is not validity):
                 self.mark_dirty(change_reason=change_reason)
+                changed = True
             elif change_reason is not None:
                 self._last_change_reason = change_reason
+        if changed and self._risk_manager is not None:
+            try:
+                self._risk_manager.on_resolution_validity_change(self._conduit_id, spell_id, validity)
+            except Exception:
+                pass
 
     def bulk_set_spell_validity(
             self,
@@ -203,6 +212,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             raise ValueError("validity_map cannot be None.")
 
         changed = False
+        changed_entries: List[Tuple[str, SpellValidity]] = []
         with self._lock:
             for spell_id, validity in validity_map.items():
                 if not spell_id or validity is None:
@@ -210,11 +220,22 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
                 previous = self._spell_validity.get(spell_id, self._initial_validity)
                 if spell_id not in self._spell_validity or previous is not validity:
                     changed = True
+                    changed_entries.append((spell_id, validity))
                 self._spell_validity[spell_id] = validity
             if changed:
                 self.mark_dirty(change_reason=change_reason)
             elif change_reason is not None:
                 self._last_change_reason = change_reason
+        if changed_entries and self._risk_manager is not None:
+            for spell_id, validity in changed_entries:
+                try:
+                    self._risk_manager.on_resolution_validity_change(
+                        self._conduit_id,
+                        spell_id,
+                        validity,
+                    )
+                except Exception:
+                    pass
 
     def get_root_validity(self, root_id: str) -> Optional[SpellValidity]:
         """
@@ -285,14 +306,21 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
         if validity is None:
             raise ValueError("validity cannot be None.")
 
+        changed = False
         with self._lock:
             had_entry = root_id in self._root_validity
             previous = self._root_validity.get(root_id, self._initial_validity)
             self._root_validity[root_id] = validity
             if (not had_entry) or (previous is not validity):
                 self.mark_dirty(change_reason=change_reason)
+                changed = True
             elif change_reason is not None:
                 self._last_change_reason = change_reason
+        if changed and self._risk_manager is not None:
+            try:
+                self._risk_manager.on_resolution_validity_change(self._conduit_id, root_id, validity)
+            except Exception:
+                pass
 
     def bulk_set_root_validity(
             self,
@@ -318,6 +346,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             raise ValueError("validity_map cannot be None.")
 
         changed = False
+        changed_entries: List[Tuple[str, SpellValidity]] = []
         with self._lock:
             for root_id, validity in validity_map.items():
                 if not root_id or validity is None:
@@ -325,11 +354,22 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
                 previous = self._root_validity.get(root_id, self._initial_validity)
                 if root_id not in self._root_validity or previous is not validity:
                     changed = True
+                    changed_entries.append((root_id, validity))
                 self._root_validity[root_id] = validity
             if changed:
                 self.mark_dirty(change_reason=change_reason)
             elif change_reason is not None:
                 self._last_change_reason = change_reason
+        if changed_entries and self._risk_manager is not None:
+            for root_id, validity in changed_entries:
+                try:
+                    self._risk_manager.on_resolution_validity_change(
+                        self._conduit_id,
+                        root_id,
+                        validity,
+                    )
+                except Exception:
+                    pass
 
     # ------------------------------------------------------------------ #
     # Diagnostics                                                        #
@@ -492,8 +532,17 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             self._last_change_reason = None
             self._conduit_id = None
             self._initial_validity = None
+            self._risk_manager = None
 
         self._lock = None
+
+    def _set_risk_manager(self, risk_manager: Optional[object]) -> None:
+        """
+        Internal
+
+        Attach a RiskManager for resolution validity tracking.
+        """
+        self._risk_manager = risk_manager
 
     # ------------------------------------------------------------------ #
     # Internal helpers                                                   #

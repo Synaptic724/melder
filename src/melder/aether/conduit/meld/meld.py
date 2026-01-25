@@ -70,7 +70,7 @@ class Meld(Cleanable, IMeld):
     ) -> None:
         """
         Initialize the Meld component with references to the component store,
-        spellbook lookup maps, and the DAG-based meld runtime.
+        spellbook lookup maps, spell_id maps, and the DAG-based meld runtime.
 
         Args:
             creations:
@@ -78,8 +78,8 @@ class Meld(Cleanable, IMeld):
                 full Conduit or `LesserCreations` for a LesserConduit).
             spellbook:
                 The registry of all known spell configurations. Meld keeps
-                direct references to the internal `ConcurrentDict` instances
-                to perform fast, thread-safe lookups.
+                direct references to internal spell, lookup, and spell_id
+                maps to perform fast, consistent lookups.
             conduit_id:
                 Optional identifier for the owning conduit. When supplied,
                 this is used as the default resolution scope for per-conduit
@@ -90,6 +90,7 @@ class Meld(Cleanable, IMeld):
         self._lock = RLock()
         self._cleaned: bool = False
         self._conduit_id: Optional[str] = conduit_id
+        self._spellbook: ISpellbook = spellbook
 
         # Spellbook references (used for resolution)
         self._owned_spells: Dict[ISpellIndex, ISpell] = spellbook._spells
@@ -131,7 +132,7 @@ class Meld(Cleanable, IMeld):
 
         Behaviour:
             - Marks the instance as cleaned.
-            - Clears references to spellbook maps and creations.
+            - Clears references to spellbook maps, spell_id maps, and creations.
             - Drops the internal `MeldRuntime` reference.
 
         Returns:
@@ -153,6 +154,7 @@ class Meld(Cleanable, IMeld):
             self._contracted_spells_by_id = None
             self._lookup_owned_spells = None
             self._lookup_contracted_spells = None
+            self._spellbook = None
 
             # Clear creations reference
             self._creations = None
@@ -279,7 +281,8 @@ class Meld(Cleanable, IMeld):
         )
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
-        self._ensure_lineage_resolvable(target_spell)
+        if self._spellbook._spellbook_validation_required:
+            self._ensure_lineage_resolvable(target_spell)
 
         if self._meld_hooks or target_spell._hooks_enabled:
             return self._comprehensive_meld_with_hooks(
@@ -424,7 +427,6 @@ class Meld(Cleanable, IMeld):
 
         # Resolution gating (per-conduit)
         self._ensure_resolution_resolvable(spell)
-
 
     def _gated_validation_required(self, spell: ISpell) -> bool:
         """
@@ -822,11 +824,11 @@ class Meld(Cleanable, IMeld):
         """
         Internal
 
-        Resolve an ``ISpell`` by its canonical ``spell_id`` (SHA256).
+        Resolve an ``ISpell`` by its canonical current ``spell_id`` (SHA256).
 
-        This performs a linear scan over the local and contracted spell
-        maps. It is intended for cases where the caller has an exact
-        fingerprint and does not care about logical identity keys.
+        This uses the owned spell_id map first, then checks each per-conduit
+        contracted spell_id map. It is intended for cases where the caller
+        has an exact fingerprint and does not care about logical identity keys.
 
         Args:
             spell_id:
@@ -1426,7 +1428,7 @@ class Meld(Cleanable, IMeld):
                     pass
 
         # 3) Anything else is currently unsupported.
-        raise RuntimeError(f"[MELD] Unsupported SpellType encountered: {stype}")
+        raise RuntimeError(f"[MELD] Unsupported SpellType encountered: {spell.spell_type}")
 
 
 # ----------------------------------------------------------------------

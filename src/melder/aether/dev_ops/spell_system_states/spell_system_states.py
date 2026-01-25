@@ -52,6 +52,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         "_lineage_owner_spellbook_id",
         "_collection_frames_by_lineage",
         "_collection_dependents_by_spellbook",
+        "_risk_manager",
     ]
 
     def __init__(self, frame: "AethericFrame") -> None:
@@ -81,6 +82,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         self._lineage_owner_spellbook_id: Optional[Dict[str, str]] = {}
         self._collection_frames_by_lineage: Optional[Dict[str, Set[str]]] = {}
         self._collection_dependents_by_spellbook: Optional[Dict[str, Dict[str, Set[str]]]] = {}
+        self._risk_manager: Optional[object] = None
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -165,6 +167,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 self._lineage_owner_spellbook_id = None
 
             self._frame = None
+            self._risk_manager = None
 
         # Drop lock last
         self._lock = None
@@ -207,6 +210,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             state = self._states_by_index_id.get(index_id)
             if state is None:
                 state = SpellSystemState(index_id, current_id)
+                if self._risk_manager is not None:
+                    state._set_risk_manager(self._risk_manager)
                 self._states_by_index_id[index_id] = state
             else:
                 # Keep current version id in sync
@@ -363,6 +368,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             if state is None:
                 # Defensive: create on first use if not present
                 state = SpellSystemState(index_id, spell_index.current)
+                if self._risk_manager is not None:
+                    state._set_risk_manager(self._risk_manager)
                 self._states_by_index_id[index_id] = state
 
             old_deps = set(state.direct_dependencies)
@@ -418,6 +425,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             state = self._states_by_index_id.get(index_id)
             if state is None:
                 state = SpellSystemState(index_id, spell_index.current)
+                if self._risk_manager is not None:
+                    state._set_risk_manager(self._risk_manager)
                 self._states_by_index_id[index_id] = state
 
             state.mark_structural_change(change_reason=reason)
@@ -571,8 +580,30 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             state = self._resolution_by_conduit_id.get(conduit_id)
             if state is None:
                 state = ConduitResolutionState(conduit_id)
+                if self._risk_manager is not None:
+                    state._set_risk_manager(self._risk_manager)
                 self._resolution_by_conduit_id[conduit_id] = state
             return state
+
+    def set_risk_manager(self, risk_manager: Optional[object]) -> None:
+        """
+        Attach a RiskManager to all registered state objects.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._risk_manager = risk_manager
+            if self._states_by_index_id is not None:
+                for state in self._states_by_index_id.values():
+                    try:
+                        state._set_risk_manager(risk_manager)
+                    except Exception:
+                        pass
+            if self._resolution_by_conduit_id is not None:
+                for state in self._resolution_by_conduit_id.values():
+                    try:
+                        state._set_risk_manager(risk_manager)
+                    except Exception:
+                        pass
 
     def drop_conduit_resolution_state(self, conduit_id: str) -> None:
         """

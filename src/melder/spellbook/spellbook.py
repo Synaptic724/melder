@@ -165,6 +165,8 @@ class Spellbook(Cleanable, ISpellbook):
         self._spell_validator: SpellValidationSystem = SpellValidationSystem()
         # Spell States System
         self._spell_system_states: ISpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
+        # Validation gate used by Meld to skip safety checks when risk is zero.
+        self._spellbook_validation_required: bool = True
 
         # Binding system
         self._bind: Bind = Bind(self)
@@ -203,6 +205,8 @@ class Spellbook(Cleanable, ISpellbook):
               version caches, and spell_id maps.
             - Cleans configuration and validation subsystems.
         """
+        if self._conduit is not None:
+            self._unregister_conduit_from_risk_manager(self._conduit._id)
         # 1) Clean ONLY local spells (not contracted)
         self._cleanup_spells()
 
@@ -324,6 +328,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._pending_structural_spells = None
         self._spell_system_states = None
         self._configuration_locked = None
+        self._spellbook_validation_required = None
 
         # Lock: just null it (no getattr/hasattr)
         self._lock = None
@@ -1303,6 +1308,8 @@ class Spellbook(Cleanable, ISpellbook):
         if should_mark and frame_key:
             self._mark_collection_dependents_dirty({frame_key})
         self._try_update_staged_contract_keys(conduit_id)
+        if self._conjured and self._conduit is not None:
+            self._register_spell_with_risk_manager(self._conduit._id, spell)
 
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
@@ -1323,6 +1330,7 @@ class Spellbook(Cleanable, ISpellbook):
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
         """
 
+        removed_spell = None
         with self._lock:
             spell_map = self._contracted_spells.get(conduit_id)
             lookup_map = self._lookup_contracted_spells.get(conduit_id)
@@ -1368,7 +1376,10 @@ class Spellbook(Cleanable, ISpellbook):
             if versions:
                 for version_id in versions:
                     versions_set.discard(version_id)
+            removed_spell = spell
         self._try_update_staged_contract_keys(conduit_id)
+        if removed_spell is not None and self._conjured and self._conduit is not None:
+            self._unregister_spell_with_risk_manager(self._conduit._id, removed_spell)
 
 
     def _clear_contracted_spells_for_conduit(self, conduit_id: str) -> None:
@@ -1389,6 +1400,7 @@ class Spellbook(Cleanable, ISpellbook):
             conduit_id (str): The ID of the peer conduit whose contracted spells are to be cleared
         """
 
+        removed_spells: List[ISpell] = []
         with self._lock:
             if (
                     conduit_id not in self._contracted_spells
@@ -1404,6 +1416,7 @@ class Spellbook(Cleanable, ISpellbook):
                 raise RuntimeError(f"No contracted spell maps found for conduit ID {conduit_id}.")
 
             spell_map = self._contracted_spells[conduit_id]
+            removed_spells = list(spell_map.values())
             for spell in spell_map.values():
                 spell.spell_index._detach_contracted(self, conduit_id)
 
@@ -1412,6 +1425,9 @@ class Spellbook(Cleanable, ISpellbook):
             self._contracted_versions[conduit_id].clear()
             self._contracted_spells_by_id[conduit_id].clear()
         self._try_update_staged_contract_keys(conduit_id)
+        if removed_spells and self._conjured and self._conduit is not None:
+            for spell in removed_spells:
+                self._unregister_spell_with_risk_manager(self._conduit._id, spell)
 
 
     def _sever_link_contract(self, conduit_id: str) -> None:
@@ -2374,6 +2390,8 @@ class Spellbook(Cleanable, ISpellbook):
                 spell_index=new_spell.spell_index,
                 spell=new_spell,
             )
+            if self._conjured and self._conduit is not None:
+                self._register_spell_with_risk_manager(self._conduit._id, new_spell)
             if self._pending_binding_frame_keys is not None:
                 self._pending_binding_frame_keys.add(new_spell.key[0])
             if self._pending_structural_spells is not None:
@@ -2546,6 +2564,106 @@ class Spellbook(Cleanable, ISpellbook):
             )
             raise
 
+
+    def _get_risk_manager(self) -> Any | None:
+        """
+        Internal
+
+        Resolve the per-frame RiskManager, if available.
+        """
+        try:
+            devops = Spellbook._aether._get_devops_manager(self._aetheric_frame)
+        except Exception:
+            return None
+        return getattr(devops, "risk_manager", None)
+
+    def _set_spellbook_validation_required(self, required: bool) -> None:
+        """
+        Internal
+
+        Update the meld validation gate for this Spellbook.
+        """
+        self._spellbook_validation_required = bool(required)
+
+    def _register_conduit_with_risk_manager(self, conduit: Conduit) -> None:
+        """
+        Internal
+
+        Register this Spellbook's conduit in the RiskManager.
+        """
+        if conduit is None:
+            return
+        risk_manager = self._get_risk_manager()
+        if risk_manager is None:
+            return
+        try:
+            risk_manager.register_conduit(conduit._id, self)
+        except Exception as e:
+            self._logger.error(
+                f"RiskManager registration failed: {e}",
+                "_register_conduit_with_risk_manager",
+                exc_info=True,
+            )
+
+    def _unregister_conduit_from_risk_manager(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Unregister this Spellbook's conduit from the RiskManager.
+        """
+        if not conduit_id:
+            return
+        risk_manager = self._get_risk_manager()
+        if risk_manager is None:
+            return
+        try:
+            risk_manager.unregister_conduit(conduit_id)
+        except Exception as e:
+            self._logger.error(
+                f"RiskManager unregister failed: {e}",
+                "_unregister_conduit_from_risk_manager",
+                exc_info=True,
+            )
+
+    def _register_spell_with_risk_manager(self, conduit_id: str, spell: ISpell) -> None:
+        """
+        Internal
+
+        Register a spell in the RiskManager for the owning conduit.
+        """
+        if not conduit_id or spell is None:
+            return
+        risk_manager = self._get_risk_manager()
+        if risk_manager is None:
+            return
+        try:
+            risk_manager.register_spell(conduit_id, spell)
+        except Exception as e:
+            self._logger.error(
+                f"RiskManager spell registration failed: {e}",
+                "_register_spell_with_risk_manager",
+                exc_info=True,
+            )
+
+    def _unregister_spell_with_risk_manager(self, conduit_id: str, spell: ISpell) -> None:
+        """
+        Internal
+
+        Unregister a spell from the RiskManager for the owning conduit.
+        """
+        if not conduit_id or spell is None:
+            return
+        risk_manager = self._get_risk_manager()
+        if risk_manager is None:
+            return
+        try:
+            risk_manager.unregister_spell(conduit_id, spell)
+        except Exception as e:
+            self._logger.error(
+                f"RiskManager spell unregister failed: {e}",
+                "_unregister_spell_with_risk_manager",
+                exc_info=True,
+            )
 
     def is_configuration_locked(self) -> bool:
         """
@@ -2797,6 +2915,7 @@ class Spellbook(Cleanable, ISpellbook):
 
             # Wire conduit ownership metadata into all local spells.
             self._define_conduit_into_spells(conduit)
+            self._register_conduit_with_risk_manager(conduit)
 
             # 4) POST: final notification after Spellbook-side init is complete.
             self._fire_conjure_hooks(

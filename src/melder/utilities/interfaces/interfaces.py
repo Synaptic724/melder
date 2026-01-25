@@ -7040,6 +7040,12 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
+    def set_risk_manager(self, risk_manager: Optional[object]) -> None:
+        """
+        Attach a RiskManager to this registry.
+        """
+        ...
+
 
 @runtime_checkable
 class IDevOpsManager(ICleanable, Protocol):
@@ -7058,6 +7064,7 @@ class IDevOpsManager(ICleanable, Protocol):
     _spell_system_states: ISpellSystemStates
     _incident_manager: 'IncidentManager'
     _change_control_manager: 'ChangeControlManager'
+    _risk_manager: object
     # ------------------------------------------------------------------
     # Public API Properties
     # ------------------------------------------------------------------
@@ -7075,6 +7082,12 @@ class IDevOpsManager(ICleanable, Protocol):
         """
         ...
 
+    @property
+    def risk_manager(self) -> Optional[object]:
+        """
+        Read-only exposure of the RiskManager (validation gating state).
+        """
+        ...
     @property
     def spell_system_states(self) -> Optional['ISpellSystemStates']:
         """

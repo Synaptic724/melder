@@ -53,6 +53,7 @@ class SpellSystemState(Cleanable):
         "_change_reason",
         "_transitively_dirty",
         "_last_validated_at",
+        "_risk_manager",
     ]
 
     def __init__(self, spell_index_id: str, current_spell_id: str) -> None:
@@ -79,6 +80,7 @@ class SpellSystemState(Cleanable):
         self._change_reason: Optional[SpellStateChangeReason] = SpellStateChangeReason.new_lineage
         self._transitively_dirty: bool = False
         self._last_validated_at: Optional[float] = None
+        self._risk_manager: Optional[object] = None
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -117,6 +119,7 @@ class SpellSystemState(Cleanable):
             self._change_reason = None
             self._transitively_dirty = False
             self._last_validated_at = None
+            self._risk_manager = None
 
             self._spell_index_id = None
             self._current_spell_id = None
@@ -265,11 +268,14 @@ class SpellSystemState(Cleanable):
             transitively_dirty: Optional bool to set the transitively_dirty flag.
         """
         self.check_cleaned()
+        risk_manager = self._risk_manager
+        lineage_id = self._spell_index_id
         with self._lock:
             if self._flags is None:
                 # Already cleaned; guard check should have prevented this.
                 return
 
+            previous_validity = self._validity
             self._validity = validity
 
             if change_reason is not None:
@@ -287,6 +293,16 @@ class SpellSystemState(Cleanable):
 
             if transitively_dirty is not None:
                 self._transitively_dirty = transitively_dirty
+
+        if (
+                risk_manager is not None
+                and lineage_id is not None
+                and previous_validity is not validity
+        ):
+            try:
+                risk_manager.on_structural_validity_change(lineage_id, validity)
+            except Exception:
+                pass
 
     # ------------------------------------------------------------------
     # Mutation helpers (used by manager / DevOps layer)
@@ -448,6 +464,8 @@ class SpellSystemState(Cleanable):
             last_validated_at: Timestamp (seconds) of successful validation.
         """
         self.check_cleaned()
+        risk_manager = self._risk_manager
+        lineage_id = self._spell_index_id
         with self._lock:
             if self._flags is not None:
                 self._flags.discard(SpellState.new_lineage)
@@ -455,7 +473,26 @@ class SpellSystemState(Cleanable):
                 self._flags.discard(SpellState.dependencies_changed)
                 self._flags.discard(SpellState.impacted_by_dependency)
 
+            previous_validity = self._validity
             self._validity = SpellValidity.valid
             self._change_reason = None
             self._transitively_dirty = False
             self._last_validated_at = last_validated_at
+
+        if (
+                risk_manager is not None
+                and lineage_id is not None
+                and previous_validity is not SpellValidity.valid
+        ):
+            try:
+                risk_manager.on_structural_validity_change(lineage_id, SpellValidity.valid)
+            except Exception:
+                pass
+
+    def _set_risk_manager(self, risk_manager: Optional[object]) -> None:
+        """
+        Internal
+
+        Attach a RiskManager for validity change tracking.
+        """
+        self._risk_manager = risk_manager
