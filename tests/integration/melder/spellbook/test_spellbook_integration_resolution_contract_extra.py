@@ -5,6 +5,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
@@ -711,3 +712,131 @@ def test_meld_by_missing_spell_id_raises_keyerror() -> None:
             conduit.meld(spell="missing-spell-id")
     finally:
         conduit.cleanup()
+
+
+def test_spellindex_update_propagates_owned_id_map_for_meld() -> None:
+    """
+    Purpose:
+        Validate SpellIndex.update updates owned spell_id resolution for meld.
+    Contract:
+        - Meld resolves by the new spell_id after update.
+        - The old spell_id no longer resolves (KeyError).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If resolution does not follow updated ids.
+    """
+    class _Service:
+        """
+        Purpose:
+            Provide a class spell for owned update integration.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the marker.
+            Contract:
+                Sets marker to "owned".
+            Returns:
+                None.
+            """
+            self.marker = "owned"
+
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook.bind(
+        spell=_Service,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        spell_index = next(iter(spellbook.spells.keys()))
+        old_id = spell_index.current
+        new_id = f"{old_id}-v2"
+
+        spell_index.update(new_id)
+
+        instance = conduit.meld(spell=new_id)
+        assert isinstance(instance, _Service)
+        assert instance.marker == "owned"
+
+        with pytest.raises(KeyError):
+            conduit.meld(spell=old_id)
+    finally:
+        conduit.cleanup()
+
+
+def test_spellindex_update_propagates_contracted_id_map_for_meld() -> None:
+    """
+    Purpose:
+        Validate SpellIndex.update updates contracted spell_id resolution for meld.
+    Contract:
+        - Borrower meld resolves by the new spell_id after update.
+        - The old spell_id no longer resolves on the borrower (KeyError).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If resolution does not follow updated ids.
+    """
+    class _Service:
+        """
+        Purpose:
+            Provide a class spell for contracted update integration.
+        Contract:
+            Stores a stable marker for assertions.
+        """
+        def __init__(self) -> None:
+            """
+            Purpose:
+                Initialize the marker.
+            Contract:
+                Sets marker to "contracted".
+            Returns:
+                None.
+            """
+            self.marker = "contracted"
+
+    configuration = Configuration()
+    configuration.dynamic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    owner_book = Spellbook(configuration=configuration)
+    borrower_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=_Service,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        assert owner.link(borrower) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
+
+        spell_index = next(iter(owner_book.spells.keys()))
+        old_id = spell_index.current
+        new_id = f"{old_id}-v2"
+
+        spell_index.update(new_id)
+
+        instance = borrower.meld(spell=new_id)
+        assert isinstance(instance, _Service)
+        assert instance.marker == "contracted"
+
+        with pytest.raises(KeyError):
+            borrower.meld(spell=old_id)
+    finally:
+        borrower.cleanup()
+        owner.cleanup()

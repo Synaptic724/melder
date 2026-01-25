@@ -371,12 +371,24 @@ class TransferOfOwnership:
             src_book: Source spellbook.
             tgt_book: Target spellbook.
         """
-        with tgt_book._lock:
+        spell_id = spell_obj.spell_index.current
+        with SafeGuard(tgt_book._lock, src_book._lock):
             tgt_book._spells.pop(spell_obj.spell_index, None)
             tgt_book._lookup_spells.pop(spell_obj._key, None)
-        with src_book._lock:
+            if tgt_book._spells_by_id is not None:
+                tgt_book._spells_by_id.pop(spell_id, None)
             src_book._spells[spell_obj.spell_index] = spell_obj
             src_book._lookup_spells[spell_obj._key] = spell_obj.spell_index
+            if src_book._spells_by_id is not None:
+                existing = src_book._spells_by_id.get(spell_id)
+                if existing is None or existing is spell_obj:
+                    src_book._spells_by_id[spell_id] = spell_obj
+        try:
+            with SafeGuard(spell_obj.spell_index._lock):
+                spell_obj.spell_index._owner_spellbook = src_book
+                spell_obj.spell_index._owner_spell = spell_obj
+        except Exception:
+            pass
         spell_obj._owner_conduit_id = self.source_conduit._id
 
     def _rollback_move_creation(self, spell_obj: Any, obj: Any) -> None:
@@ -675,18 +687,33 @@ class TransferOfOwnership:
         try:
             src_book = self.source_conduit._spellbook
             tgt_book = self.target_conduit._spellbook
-            with src_book._lock, tgt_book._lock:
+            spell_id = spell_obj.spell_index.current
+            with SafeGuard(src_book._lock, tgt_book._lock):
                 src_had = spell_obj.spell_index in src_book._spells
                 tgt_had = spell_obj.spell_index in tgt_book._spells
                 if src_had:
                     src_book._spells.pop(spell_obj.spell_index, None)
                     src_book._lookup_spells.pop(spell_obj._key, None)
+                    if src_book._spells_by_id is not None:
+                        existing = src_book._spells_by_id.get(spell_id)
+                        if existing is not None and existing is not spell_obj:
+                            raise RuntimeError(
+                                f"Owned spell_id mismatch for transfer (spell_id={spell_id})"
+                            )
+                        src_book._spells_by_id.pop(spell_id, None)
                     self._register_rollback(
                         lambda: self._rollback_spellbook_move(spell_obj, src_book, tgt_book)
                     )
                 if not tgt_had:
                     tgt_book._spells[spell_obj.spell_index] = spell_obj
                     tgt_book._lookup_spells[spell_obj._key] = spell_obj.spell_index
+                if tgt_book._spells_by_id is not None:
+                    existing = tgt_book._spells_by_id.get(spell_id)
+                    if existing is not None and existing is not spell_obj:
+                        raise RuntimeError(
+                            f"Owned spell_id collision on target (spell_id={spell_id})"
+                        )
+                    tgt_book._spells_by_id[spell_id] = spell_obj
                 if spell_obj._spellbook is not tgt_book:
                     spell_obj._spellbook = tgt_book
                     spell_obj._spell_system_states = tgt_book._spell_system_states
@@ -698,6 +725,18 @@ class TransferOfOwnership:
                         )
                     except Exception:
                         pass
+            try:
+                with SafeGuard(spell_obj.spell_index._lock):
+                    owner_book = spell_obj.spell_index._owner_spellbook
+                    owner_spell = spell_obj.spell_index._owner_spell
+                    if owner_book is not None and owner_book is not src_book:
+                        raise RuntimeError("SpellIndex owner mismatch during transfer.")
+                    if owner_spell is not None and owner_spell is not spell_obj:
+                        raise RuntimeError("SpellIndex owner spell mismatch during transfer.")
+                    spell_obj.spell_index._owner_spellbook = tgt_book
+                    spell_obj.spell_index._owner_spell = spell_obj
+            except Exception as e:
+                raise RuntimeError(f"Failed to update SpellIndex owner: {e}")
             spell_obj._add_owned_conduit(
                 self.target_conduit._id,
                 self.target_conduit._name,

@@ -477,7 +477,7 @@ class FakeAether:
 
 class FakeSpellbook:
     """
-    Minimal spellbook stub with spell storage and lock.
+    Minimal spellbook stub with spell storage, id map, and lock.
     """
 
     def __init__(self, states_system: FakeSpellStatesSystem) -> None:
@@ -490,6 +490,7 @@ class FakeSpellbook:
         self._lock = threading.RLock()
         self._spells: Dict[SpellIndex, Any] = {}
         self._lookup_spells: Dict[str, SpellIndex] = {}
+        self._spells_by_id: Dict[str, Any] = {}
         self._spell_system_states = states_system
 
 
@@ -864,6 +865,7 @@ def build_environment(
 
     source_book._spells[spell_index] = spell_obj
     source_book._lookup_spells[spell_obj._key] = spell_index
+    source_book._spells_by_id[spell_index.current] = spell_obj
 
     frame._spell_registry[SOURCE_ID] = {spell_index}
     frame._spell_registry[TARGET_ID] = set()
@@ -880,6 +882,7 @@ def build_environment(
             )
             source_book._spells[dep_index] = dep_spell
             source_book._lookup_spells[dep_spell._key] = dep_index
+            source_book._spells_by_id[dep_index.current] = dep_spell
             dependency_spells[dep_id] = dep_spell
 
     if dependencies and target_has_deps:
@@ -892,6 +895,7 @@ def build_environment(
             )
             target_book._spells[dep_index] = dep_spell
             target_book._lookup_spells[dep_spell._key] = dep_index
+            target_book._spells_by_id[dep_index.current] = dep_spell
 
     cluster = None
     if include_cluster:
@@ -2536,6 +2540,29 @@ def test_flip_registry_and_spellbooks_respects_existing_target_entry() -> None:
         assert env.spell_index not in env.source._spellbook._spells
         assert env.spell_index in env.target._spellbook._spells
     assert env.spell._owner_conduit_id == TARGET_ID
+
+
+def test_flip_registry_and_spellbooks_moves_spell_id_map() -> None:
+    """
+    Verify flipping updates spell_id maps for source and target spellbooks.
+
+    Contract:
+    - Source spell_id map loses the entry.
+    - Target spell_id map gains the entry.
+    - SpellIndex owner references point to the target book.
+    """
+    env = build_environment()
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+    transfer._flip_registry_and_spellbooks(env.spell)
+    spell_id = env.spell_index.current
+    assert spell_id not in env.source._spellbook._spells_by_id
+    assert env.target._spellbook._spells_by_id[spell_id] is env.spell
+    assert env.spell.spell_index._owner_spellbook is env.target._spellbook
+    assert env.spell.spell_index._owner_spell is env.spell
 
 
 def test_flip_registry_and_spellbooks_raises_on_registry_failure() -> None:

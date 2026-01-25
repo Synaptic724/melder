@@ -2054,9 +2054,9 @@ def test_cleanup_spells_is_safe_when_none():
 def test_cleanup_components_clears_contracts_and_versions():
     """
     Purpose:
-        Ensure cleanup clears contracted maps and version caches.
+        Ensure cleanup clears contracted maps, id maps, and version caches.
     Contract:
-        _cleanup_components nulls contracted spell maps and version caches.
+        _cleanup_components nulls contracted spell maps, id maps, and version caches.
     Returns:
         None.
     Raises:
@@ -2065,15 +2065,19 @@ def test_cleanup_components_clears_contracts_and_versions():
     sb = Spellbook()
     sb._spells = {DummySpellIndex(): DummySpell()}
     sb._lookup_spells = {"k": DummySpellIndex()}
+    sb._spells_by_id = {"owned": DummySpell(spell_id="owned")}
     sb._contracted_spells = {"c": {DummySpellIndex(): DummySpell()}}
     sb._lookup_contracted_spells = {"c": {"k": DummySpellIndex()}}
     sb._spell_versions = {"v"}
     sb._contracted_versions = {"c": {"v"}}
+    sb._contracted_spells_by_id = {"c": {"contracted": DummySpell(spell_id="contracted")}}
     sb._logger = DummySafeLogger()
     sb._cleanup_components()
     assert sb._spells is None
+    assert sb._spells_by_id is None
     assert sb._contracted_spells is None
     assert sb._contracted_versions is None
+    assert sb._contracted_spells_by_id is None
 
 
 def test_cleanup_core_nulls_bind_and_lock_last_logger_cleanup_safe():
@@ -3050,10 +3054,128 @@ def test_create_link_contract_initializes_maps():
     sb._contracted_spells = {}
     sb._lookup_contracted_spells = {}
     sb._contracted_versions = {}
+    sb._contracted_spells_by_id = {}
     sb._create_link_contract("cid")
     assert "cid" in sb._contracted_spells
     assert "cid" in sb._lookup_contracted_spells
     assert "cid" in sb._contracted_versions
+    assert "cid" in sb._contracted_spells_by_id
+
+
+def test_register_owned_spell_id_adds_mapping():
+    """
+    Purpose:
+        Verify owned spell_id registration populates the owned map.
+    Contract:
+        _register_owned_spell_id stores the spell by current id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the owned id map is missing the entry.
+    """
+    sb = Spellbook()
+    spell = DummySpell(spell_id="owned-id")
+    sb._register_owned_spell_id("owned-id", spell)
+    assert sb._spells_by_id["owned-id"] is spell
+
+
+def test_register_owned_spell_id_rejects_collision():
+    """
+    Purpose:
+        Ensure owned spell_id registration rejects collisions.
+    Contract:
+        _register_owned_spell_id raises when the id maps to a different spell.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a collision does not raise.
+    """
+    sb = Spellbook()
+    spell_a = DummySpell(spell_id="owned-id")
+    spell_b = DummySpell(spell_id="owned-id")
+    sb._register_owned_spell_id("owned-id", spell_a)
+    with pytest.raises(RuntimeError, match="spell_id collision"):
+        sb._register_owned_spell_id("owned-id", spell_b)
+
+
+def test_update_owned_spell_id_updates_map_and_versions():
+    """
+    Purpose:
+        Verify owned spell_id updates swap map entries and track versions.
+    Contract:
+        _update_owned_spell_id removes the old id and registers the new id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the map or version cache is not updated.
+    """
+    sb = Spellbook()
+    spell = DummySpell(spell_id="old-id")
+    sb._spell_versions = {"old-id"}
+    sb._register_owned_spell_id("old-id", spell)
+    sb._update_owned_spell_id("old-id", "new-id", spell)
+    assert "old-id" not in sb._spells_by_id
+    assert sb._spells_by_id["new-id"] is spell
+    assert "new-id" in sb._spell_versions
+
+
+def test_register_contracted_spell_id_adds_mapping():
+    """
+    Purpose:
+        Verify contracted spell_id registration populates the per-conduit map.
+    Contract:
+        _register_contracted_spell_id stores the spell under the conduit id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the contracted id map is missing the entry.
+    """
+    sb = Spellbook()
+    sb._create_link_contract("peer")
+    spell = DummySpell(spell_id="contracted-id")
+    sb._register_contracted_spell_id("peer", "contracted-id", spell)
+    assert sb._contracted_spells_by_id["peer"]["contracted-id"] is spell
+
+
+def test_update_contracted_spell_id_updates_map_and_versions():
+    """
+    Purpose:
+        Verify contracted spell_id updates swap map entries and track versions.
+    Contract:
+        _update_contracted_spell_id removes the old id and registers the new id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the map or version cache is not updated.
+    """
+    sb = Spellbook()
+    sb._create_link_contract("peer")
+    spell = DummySpell(spell_id="old-id")
+    sb._register_contracted_spell_id("peer", "old-id", spell)
+    sb._contracted_versions["peer"] = {"old-id"}
+    sb._update_contracted_spell_id("peer", "old-id", "new-id", spell)
+    assert "old-id" not in sb._contracted_spells_by_id["peer"]
+    assert sb._contracted_spells_by_id["peer"]["new-id"] is spell
+    assert "new-id" in sb._contracted_versions["peer"]
+
+
+def test_unregister_contracted_spell_id_removes_mapping():
+    """
+    Purpose:
+        Verify contracted spell_id removal clears the map entry.
+    Contract:
+        _unregister_contracted_spell_id removes the spell from the id map.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the id map entry remains after removal.
+    """
+    sb = Spellbook()
+    sb._create_link_contract("peer")
+    spell = DummySpell(spell_id="contracted-id")
+    sb._register_contracted_spell_id("peer", "contracted-id", spell)
+    sb._unregister_contracted_spell_id("peer", "contracted-id", spell)
+    assert "contracted-id" not in sb._contracted_spells_by_id["peer"]
 
 
 def test_inspect_spell_returns_none_on_missing(monkeypatch):
