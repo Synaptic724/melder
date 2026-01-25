@@ -102,14 +102,15 @@ class Meld(Cleanable, IMeld):
             spellbook._lookup_contracted_spells
         )
 
-        self._hooks_enabled = False
-
         # Conduit-local instantiation manager (Creations or LesserCreations)
         self._creations = creations
 
         # DAG-based runtime that will actually execute the DI graph for
         # factory-style spells (class / method / lambda).
         self._runtime: MeldRuntime = MeldRuntime()
+
+        # Hook gate (flipped by the owning Conduit).
+        self._hooks_enabled: bool = False
 
         # Optional hook map pulled from Configuration (via Conduit).
         self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = None
@@ -257,51 +258,6 @@ class Meld(Cleanable, IMeld):
                 ID resolution, unsupported Creations manager, or attempting to
                 meld a broken spell).
         """
-        if not self._hooks_enabled and self._meld_hooks:
-            self._hooks_enabled = True
-        if self._hooks_enabled:
-            return self._comprehensive_meld_with_hooks(
-                spell_name=spell_name,
-                spell=spell,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                spell_override=spell_override,
-            )
-        else:
-            return self._meld_without_hooks(
-                spell_name=spell_name,
-                spell=spell,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                spell_override=spell_override,
-            )
-
-    def _meld_without_hooks(
-            self,
-            spell_name: str | None = None,
-            *,
-            spell: str | object | None = None,
-            spellframe: str | object | None = None,
-            binding_name: str | None = None,
-            spell_override: Optional[dict | list | tuple] = None,
-    ) -> Optional[Any]:
-        """
-        Internal
-        
-        Resolve a spell instance through the minimal meld pipeline (no hook execution).
-        
-        Notes:
-            - Accepts the same identity inputs as meld().
-            - Normalizes overrides and resolves the spell instance.
-        
-        Returns:
-            Optional[Any]: The resolved instance.
-        
-        Raises:
-            ValueError: If no identity inputs are provided.
-            KeyError: If the spell cannot be resolved.
-            RuntimeError: For unexpected internal state issues.
-        """
         # Basic contract: we need at least *one* identity source.
         if spell is None and spellframe is None and spell_name is None:
             raise ValueError(
@@ -320,6 +276,39 @@ class Meld(Cleanable, IMeld):
             binding_name=binding_name,
         )
 
+        if self._hooks_enabled or target_spell._hooks_enabled:
+            return self._comprehensive_meld_with_hooks(
+                target_spell=target_spell,
+                override_map=override_map,
+            )
+        else:
+            return self._meld_without_hooks(
+                target_spell=target_spell,
+                override_map=override_map,
+            )
+
+    def _meld_without_hooks(
+            self,
+            target_spell: ISpell,
+            override_map: Optional[dict[str, Any]] = None,
+    ) -> Optional[Any]:
+        """
+        Internal
+        
+        Resolve a spell instance through the minimal meld pipeline (no hook execution).
+        
+        Notes:
+            - Accepts the same identity inputs as meld().
+            - Normalizes overrides and resolves the spell instance.
+        
+        Returns:
+            Optional[Any]: The resolved instance.
+        
+        Raises:
+            ValueError: If no identity inputs are provided.
+            KeyError: If the spell cannot be resolved.
+            RuntimeError: For unexpected internal state issues.
+        """
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         self._ensure_lineage_resolvable(target_spell)
 
@@ -333,12 +322,8 @@ class Meld(Cleanable, IMeld):
 
     def _comprehensive_meld_with_hooks(
             self,
-            spell_name: str | None = None,
-            *,
-            spell: str | object | None = None,
-            spellframe: str | object | None = None,
-            binding_name: str | None = None,
-            spell_override: Optional[dict | list | tuple] = None,
+            target_spell: ISpell,
+            override_map: Optional[dict[str, Any]] = None,
     ) -> Optional[Any]:
         """
         Internal
@@ -358,28 +343,10 @@ class Meld(Cleanable, IMeld):
             HookExecutionError: If a hook raises during execution.
             RuntimeError: If the spell is broken or state is invalid.
         """
-        # Basic contract: we need at least *one* identity source.
-        if spell is None and spellframe is None and spell_name is None:
-            raise ValueError(
-                "[MELD] meld(...) requires at least one of "
-                "`spell_name`, `spell`, or `spellframe`."
-            )
-
-        # 1) Normalize per-call overrides into a stable dict shape.
-        override_map = self._normalize_spell_override(spell_override)
-
-        # 2) Resolve the spell object from the Spellbook / SpellIndex.
-        target_spell = self._resolve_spell(
-            spell=spell,
-            spell_name=spell_name,
-            spellframe=spellframe,
-            binding_name=binding_name,
-        )
-
-        # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
+        # 1) SpellSystemState / SpellValidity gate + lazy revalidation.
         self._ensure_lineage_resolvable(target_spell)
 
-        # 4) Execute pre-cast hooks (no instance context yet).
+        # 2) Execute pre-cast hooks (no instance context yet).
         self._execute_hooks(target_spell.pre_hooks, "pre_cast")
         self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
@@ -392,11 +359,11 @@ class Meld(Cleanable, IMeld):
             self._execute_activation_hooks(target_spell.activation_hooks, instance)
             self._fire_meld_hooks("on_meld_activation", target_spell, instance)
 
-        # 5) Execute post-cast hooks (still no arguments for now).
+        # 3) Execute post-cast hooks (still no arguments for now).
         self._execute_hooks(target_spell.post_hooks, "post_cast")
         self._fire_meld_hooks("on_meld_post_resolve", target_spell)
 
-        # 6) Return the resolved instance.
+        # 4) Return the resolved instance.
         return instance
 
     def _ensure_lineage_resolvable(self, spell: ISpell) -> None:
@@ -611,16 +578,33 @@ class Meld(Cleanable, IMeld):
         return resolution_state.get_spell_validity(spell_id)
 
 
-    def set_meld_hooks(self, hooks: Dict[str, list[Callable[..., Any]]]) -> None:
+    def set_meld_hooks(
+            self,
+            hooks: Dict[str, list[Callable[..., Any]]] | None,
+            *,
+            create_local_hooks: bool = False,
+    ) -> None:
         """
         Install a hook map used by Meld-level hook firing.
 
         Expected shape: { hook_name: [callables] }.
-        This stores the supplied map directly and toggles hook execution
-        when hooks are present.
+        When create_local_hooks is False, the supplied map is stored by
+        reference (no copy). When True, a local copy is created so changes
+        do not propagate to other conduits.
+        Hook execution is gated by `_hooks_enabled`, which is controlled by
+        the owning Conduit.
         """
-        self._meld_hooks = hooks if hooks is not None else {}
-        self._hooks_enabled = bool(self._meld_hooks)
+        if not create_local_hooks:
+            self._meld_hooks = hooks
+            return
+
+        local_hooks: Dict[str, list[Callable[..., Any]]] = {}
+        if hooks:
+            for name, hook_list in hooks.items():
+                if hook_list is None:
+                    continue
+                local_hooks[name] = list(hook_list)
+        self._meld_hooks = local_hooks
 
     def _fire_meld_hooks(self, hook_name: str, *args: Any) -> None:
         """

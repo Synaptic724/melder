@@ -593,6 +593,8 @@ class Conduit(Cleanable, IConduit):
         try:
             if self._meld is not None:
                 self._meld.set_meld_hooks(self._conduit_hooks)
+                if self._conduit_hooks:
+                    self._meld._hooks_enabled = True
         except Exception:
             pass
 
@@ -721,6 +723,45 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError("Conduit name is not set. Please set a name before registering in the conduit cloud.")
         Conduit._aether._register_conduit_cloud(conduit, self._aetheric_frame)
 
+    def register_conduit_hooks(
+            self,
+            hooks: dict[str, Any],
+            *,
+            create_local_hooks: bool = False,
+    ) -> None:
+        """
+        Public API
+
+        Register hook callables for this Conduit.
+
+        When create_local_hooks is False, hooks are registered into the shared
+        Configuration hook registry (Spellbook-wide). When True, hooks are stored
+        locally on this Conduit only and do not propagate to other conduits.
+
+        Args:
+            hooks: Mapping of hook name -> callable or iterable of callables.
+            create_local_hooks: If True, keep hooks local to this Conduit.
+
+        Raises:
+            RuntimeError: If the conduit is cleaned.
+            RuntimeError: If shared registration is requested in non-dynamic mode.
+            ValueError / TypeError: If hook names or values are invalid.
+        """
+        self.check_cleaned()
+        if not hooks:
+            return
+
+        if create_local_hooks:
+            self._ensure_local_conduit_hooks()
+            self._merge_conduit_hooks(self._conduit_hooks, hooks)
+            if self._meld is not None:
+                self._meld.set_meld_hooks(self._conduit_hooks, create_local_hooks=True)
+                self._conduit_hooks = self._meld._meld_hooks
+                self._meld._hooks_enabled = True
+            return
+
+        self._register_conduit_hooks_on_upgrade(hooks)
+
     def unregister_conduit_cloud(self, conduit: IConduit):
         """
         Public API
@@ -821,6 +862,56 @@ class Conduit(Cleanable, IConduit):
 
     #endregion Conduit Configuration
     #region Conduit Management
+    def _ensure_local_conduit_hooks(self) -> None:
+        """
+        Internal
+
+        Ensure the conduit has a local hook map that is detached from any
+        shared Configuration hook registry.
+        """
+        if self._conduit_hooks is None:
+            self._conduit_hooks = {}
+            return
+
+        local_hooks: dict[str, list[Any]] = {}
+        for name, hook_list in self._conduit_hooks.items():
+            local_hooks[name] = list(hook_list)
+        self._conduit_hooks = local_hooks
+
+    def _merge_conduit_hooks(self, hook_map: dict[str, list[Any]] | None, hooks: dict[str, Any]) -> None:
+        """
+        Internal
+
+        Merge hook values into the provided hook map with Configuration-style validation.
+        """
+        if hook_map is None:
+            raise RuntimeError("Conduit hook map is not initialized.")
+
+        try:
+            allowed = self._configuration._ALLOWED_HOOKS
+        except AttributeError:
+            allowed = None
+        for name, value in hooks.items():
+            if allowed is not None and name not in allowed:
+                raise ValueError(f"Unknown hook name: {name!r}")
+            if value is None:
+                continue
+            if callable(value):
+                hook_map.setdefault(name, []).append(value)
+                continue
+            try:
+                iterator = iter(value)
+            except TypeError:
+                raise TypeError(
+                    f"Value for hook '{name}' must be a callable or an iterable of callables."
+                )
+            for fn in iterator:
+                if not callable(fn):
+                    raise TypeError(
+                        f"All entries for hook '{name}' must be callable."
+                    )
+                hook_map.setdefault(name, []).append(fn)
+
     def _register_conduit_hooks_on_upgrade(
             self,
             hooks: dict[str, Any],
@@ -869,6 +960,7 @@ class Conduit(Cleanable, IConduit):
         self._conduit_hooks = self._configuration.get_hooks(spellbook_id)
         if self._meld is not None:
             self._meld.set_meld_hooks(self._conduit_hooks)
+            self._meld._hooks_enabled = True
 
     def upgrade_to_normal(
             self,

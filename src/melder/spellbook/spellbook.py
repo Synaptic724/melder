@@ -1971,6 +1971,10 @@ class Spellbook(Cleanable, ISpellbook):
             )
 
             self._add_hooks_to_spell(new_spell, **kwargs)
+            if new_spell._hooks_enabled and self._conjured and self._conduit is not None:
+                meld = self._conduit._meld
+                if meld is not None:
+                    meld._hooks_enabled = True
 
             # Register into local spell maps
             self._lookup_spells[new_spell._key] = new_spell.spell_index

@@ -408,6 +408,7 @@ class ISpell(ICleanable, Protocol):
     # Spell metadata / structure
     # ------------------------------------------------------------------
     spell_index: 'SpellIndex'
+    _hooks_enabled: bool
     spell: Any
     spell_id: str
     spellframe: Optional[Any]
