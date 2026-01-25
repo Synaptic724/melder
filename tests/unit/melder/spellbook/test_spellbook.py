@@ -50,6 +50,7 @@ class DummySpell:
         self.permissions = Permissions.read
         self.spellframe = None
         self.binding_name = None
+        self.profile = None
 
     def cleanup(self):
         """

@@ -3011,8 +3011,10 @@ class Spellbook(Cleanable, ISpellbook):
             raise RuntimeError("No configuration available to derive disposal metadata.")
 
         target_methods = list(
-            self._configuration.get_property("disposal_method_names") or []
+            self._configuration.get_property("disposal_method_names") if self._configuration else []
         )
+        if len(target_methods) == 0:
+            return
 
         for spell in self._spells.values():
             matched: list[str] = []

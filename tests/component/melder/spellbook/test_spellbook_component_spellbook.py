@@ -320,9 +320,11 @@ def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
     Raises:
         AssertionError: If disposal metadata is missing or incorrect.
     """
-    spellbook = _make_spellbook()
-    config = spellbook.get_configuration()
+    config = Spellbook._create_configuration("default")
     config.set_property("disposal_method_names", ["cleanup", "close", "dispose"])
+    spellbook = Spellbook(configuration=config)
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     class DisposableService:
         """
