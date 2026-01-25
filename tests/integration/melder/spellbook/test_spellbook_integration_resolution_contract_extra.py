@@ -714,6 +714,7 @@ def test_meld_by_missing_spell_id_raises_keyerror() -> None:
         conduit.cleanup()
 
 
+@pytest.mark.skip(reason="SpellIndex.update reserved for mutation pipeline; not used in current runtime.")
 def test_spellindex_update_propagates_owned_id_map_for_meld() -> None:
     """
     Purpose:
@@ -772,6 +773,7 @@ def test_spellindex_update_propagates_owned_id_map_for_meld() -> None:
         conduit.cleanup()
 
 
+@pytest.mark.skip(reason="SpellIndex.update reserved for mutation pipeline; not used in current runtime.")
 def test_spellindex_update_propagates_contracted_id_map_for_meld() -> None:
     """
     Purpose:

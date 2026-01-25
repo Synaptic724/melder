@@ -305,6 +305,8 @@ class LesserCreations(Cleanable, ILesserCreations):
         Raises:
             RuntimeError: If the Creations manager is cleaned.
         """
+        if not self._disposal_enabled:
+            return
         self.check_cleaned()
         if key not in self._many:
             self._many[key] = []

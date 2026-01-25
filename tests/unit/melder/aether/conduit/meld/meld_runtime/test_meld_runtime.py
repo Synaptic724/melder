@@ -102,6 +102,7 @@ class _SpellbookStub:
         self._spells = spells
         self._contracted_spells = contracted_spells or {}
         self._aether = aether
+        self._spellbook_validation_required = False
 
 
 class _SpellStub:

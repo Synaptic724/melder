@@ -1244,9 +1244,26 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
         with self._lock:
             self._dirty_spells.add(spell_id)
-            affected_roots = self._component_of.get(spell_id, ())
+            affected_roots = set(self._component_of.get(spell_id, ()))
             self._dirty_roots.update(affected_roots)
             self._monitor_active = True
+
+        if not affected_roots:
+            return
+
+        # Mirror dirty roots into SpellSystemStates so DevOps risk gating
+        # can detect that revalidation is required.
+        for root_id in affected_roots:
+            try:
+                state = self._spell_system_states.get_by_spell_id(root_id)
+            except Exception:
+                state = None
+            if state is None:
+                continue
+            try:
+                state.mark_dependency_change()
+            except Exception:
+                pass
 
     def notify_provider_changed(self, spell_id: str) -> None:
         """
