@@ -268,7 +268,7 @@ class _SpellbookStub:
             }
             for conduit_id, spell_map in self._contracted_spells.items()
         }
-        self._spellbook_validation_required = False
+        self._spellbook_validation_required = True
 
 
 class _ChangeControlManagerStub:

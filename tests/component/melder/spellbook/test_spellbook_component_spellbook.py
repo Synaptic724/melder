@@ -307,6 +307,93 @@ def test_component_spellbook_transaction_context_allows_post_conjure_bind() -> N
         spellbook.cleanup()
 
 
+def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
+    """
+    Purpose:
+        Validate conjure computes per-spell disposal metadata from configuration.
+    Contract:
+        - Class spells record configured disposal methods present on the class.
+        - Non-class spells record an empty disposal method list.
+        - has_disposal_methods is True only when the list is non-empty.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If disposal metadata is missing or incorrect.
+    """
+    spellbook = _make_spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("disposal_method_names", ["cleanup", "close", "dispose"])
+
+    class DisposableService:
+        """
+        Purpose:
+            Provide a class with cleanup and close methods.
+        Contract:
+            - cleanup and close are present for disposal metadata matching.
+        """
+        def cleanup(self) -> None:
+            """
+            Purpose:
+                Provide a cleanup method for disposal matching.
+            Contract:
+                No side effects.
+            Returns:
+                None.
+            """
+            return None
+
+        def close(self) -> None:
+            """
+            Purpose:
+                Provide a close method for disposal matching.
+            Contract:
+                No side effects.
+            Returns:
+                None.
+            """
+            return None
+
+    def factory() -> object:
+        """
+        Purpose:
+            Provide a callable spell for disposal metadata checks.
+        Contract:
+            - Returns a new object instance.
+        Returns:
+            object: A fresh object.
+        """
+        return object()
+
+    try:
+        disposable_id = spellbook.bind(
+            spell=DisposableService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        callable_id = spellbook.bind(
+            spell=factory,
+            existence=Existence.unique,
+            permissions="create",
+            binding_name="callable",
+        )
+
+        conduit = spellbook.conjure(name="root")
+        try:
+            disposable_spell = _get_spell_by_version_id(spellbook, disposable_id)
+            assert disposable_spell is not None
+            assert disposable_spell.disposal_method_names == ["cleanup", "close"]
+            assert disposable_spell.has_disposal_methods is True
+
+            callable_spell = _get_spell_by_version_id(spellbook, callable_id)
+            assert callable_spell is not None
+            assert callable_spell.disposal_method_names == []
+            assert callable_spell.has_disposal_methods is False
+        finally:
+            conduit.cleanup()
+    finally:
+        spellbook.cleanup()
+
+
 def test_component_spellbook_end_transaction_wrong_type_keeps_binding_active() -> None:
     """
     Purpose:

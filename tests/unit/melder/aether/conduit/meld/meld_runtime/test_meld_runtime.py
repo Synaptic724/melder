@@ -13,6 +13,8 @@ from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
+_DEFAULT_SPELLBOOK = object()
+
 
 class _SystemStateStub:
     """
@@ -102,7 +104,7 @@ class _SpellbookStub:
         self._spells = spells
         self._contracted_spells = contracted_spells or {}
         self._aether = aether
-        self._spellbook_validation_required = False
+        self._spellbook_validation_required = True
 
 
 class _SpellStub:
@@ -126,7 +128,7 @@ class _SpellStub:
         requirements: Any = None,
         resolution_frame: Any = None,
         crafter: Any = None,
-        spellbook: Any = None,
+        spellbook: Any = _DEFAULT_SPELLBOOK,
         spell_system_states: Any = None,
         is_class_spell: bool = True,
         is_method_spell: bool = False,
@@ -168,6 +170,8 @@ class _SpellStub:
         self.requirements = requirements
         self.resolution_frame = resolution_frame
         self._crafter = crafter
+        if spellbook is _DEFAULT_SPELLBOOK:
+            spellbook = _SpellbookStub(spells={}, aether=None)
         self._spellbook = spellbook
         self._spell_system_states = spell_system_states
         self.is_class_spell = is_class_spell
@@ -315,12 +319,12 @@ def test_execute_blocks_invalid_system_state(validity: SpellValidity) -> None:
         runtime.execute(context)
 
 
-def test_execute_ignores_system_state_access_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_execute_propagates_system_state_access_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify system_state access errors do not block execution.
+    Verify system_state access errors propagate.
 
     Contract:
-        - exceptions reading system_state are ignored.
+        - exceptions reading system_state are not swallowed.
     """
     runtime = MeldRuntime()
     spell = _SpellStub(
@@ -329,9 +333,10 @@ def test_execute_ignores_system_state_access_errors(monkeypatch: pytest.MonkeyPa
     )
     context = _make_context(spell=spell)
     engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
-    assert runtime.execute(context) == "ok"
-    engine_cls.assert_called_once()
-    engine_instance.run.assert_called_once()
+    with pytest.raises(RuntimeError, match="system-state failure"):
+        runtime.execute(context)
+    assert engine_cls.call_count == 0
+    assert engine_instance.run.call_count == 0
 
 
 def test_execute_blocks_dirty_root() -> None:
@@ -810,15 +815,15 @@ def test_execute_wraps_graph_mutator_error(monkeypatch: pytest.MonkeyPatch) -> N
     assert isinstance(exc_info.value.inner, RuntimeError)
 
 
-def test_execute_allows_missing_spellbook(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_execute_uses_empty_lookup_for_empty_spellbook(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify execution proceeds when the spell has no spellbook.
+    Verify execution proceeds when the spellbook has no spells.
 
     Contract:
-        - Missing spell._spellbook yields an empty spell_lookup.
+        - Empty spellbook yields an empty spell_lookup.
     """
     runtime = MeldRuntime()
-    spell = _SpellStub(spell_id="spell-1", spellbook=None)
+    spell = _SpellStub(spell_id="spell-1")
     context = _make_context(spell=spell)
     engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
 

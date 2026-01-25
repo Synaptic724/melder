@@ -13,6 +13,7 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.bind.scan import Scan
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
+from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import ClassBindingProfile
 from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
@@ -2876,6 +2877,7 @@ class Spellbook(Cleanable, ISpellbook):
             self._check_system_state(policy, automatic)
             policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
             self._check_all_spells()
+            self._define_disposal_metadata_on_spells()
 
             # Pull the hook map once for this conjuration.
             hook_map = self._get_conjure_hook_map()
@@ -2982,6 +2984,46 @@ class Spellbook(Cleanable, ISpellbook):
                 f"(policy={policy_enum}, automatic={automatic}, system_state={system_state}). "
                 "Set system_state to 'dynamic' in the configuration or set automatic=True."
             )
+
+    def _define_disposal_metadata_on_spells(self) -> None:
+        """
+        Internal
+
+        Precompute disposal metadata for all local spells using the frozen configuration.
+
+        Purpose:
+            Record which configured disposal method names exist on each spell,
+            so later runtime paths can skip per-instance inspection.
+        Contract:
+            - Uses configuration "disposal_method_names" as the target list.
+            - For class-bound spells (ClassBindingProfile), records the subset of
+              target method names that exist on the class.
+            - For non-class spells or missing profiles, records an empty list.
+            - Updates Spell.disposal_method_names and Spell.has_disposal_methods.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If no configuration instance is available.
+        Threading:
+            - Caller owns the Spellbook lock; this method does not lock.
+        """
+        if self._configuration is None:
+            raise RuntimeError("No configuration available to derive disposal metadata.")
+
+        target_methods = list(
+            self._configuration.get_property("disposal_method_names") or []
+        )
+
+        for spell in self._spells.values():
+            matched: list[str] = []
+            profile = spell.profile
+            if isinstance(profile, ClassBindingProfile):
+                method_names = set(profile.method_names)
+                for method_name in target_methods:
+                    if method_name in method_names:
+                        matched.append(method_name)
+            spell.disposal_method_names = matched
+            spell.has_disposal_methods = bool(matched)
 
     def _define_conduit_into_spells(self, conduit: Conduit) -> None:
         """

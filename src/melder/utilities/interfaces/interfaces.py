@@ -388,6 +388,7 @@ class ISpell(ICleanable, Protocol):
       - Structural profile (`ClassProfile` / `MethodProfile` / `SpellBindingProfile`)
       - Access control (`permissions`)
       - Dependency information (`dependency_graph`, `dependencies`)
+      - Conjure-time disposal metadata (`disposal_method_names`, `has_disposal_methods`)
       - Conduit ownership metadata
       - Hook-based lifecycle behavior (pre / activation / post)
       - Per-spell **resolution phase artifacts** (requirements, symbolic graphs,
@@ -432,6 +433,8 @@ class ISpell(ICleanable, Protocol):
     tags: List
     metadata: Dict
     _mutation_override: dict
+    disposal_method_names: List[str]
+    has_disposal_methods: bool
 
     # Dependency graph + requirements
     dependency_graph: Any

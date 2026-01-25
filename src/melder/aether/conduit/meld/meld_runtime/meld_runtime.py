@@ -103,14 +103,8 @@ class MeldRuntime:
         # System-level gating (Phase 6 / Change-control)                    #
         # ------------------------------------------------------------------ #
         if spell._spellbook._spellbook_validation_required:
-            system_state = None
-            try:
-                system_state = spell.system_state
-            except Exception:
-                system_state = None
-
-            if system_state is not None:
-                validity = system_state.validity
+            if spell.system_state is not None:
+                validity = spell.system_state.validity
                 if validity in (
                         SpellValidity.invalid,
                         SpellValidity.gated,

@@ -38,6 +38,7 @@ class Spell(Cleanable, ISpell):
     - Manages permission control via the `Permissions` enum.
     - Enables hook-based lifecycle support (pre, activation, post).
     - Acts as a source of truth for spell identity and access.
+    - Stores conjure-time disposal metadata (matched method names + boolean flag).
 
     🔐 Permissions (Permissions Enum):
         - `read`: Allows other conduits to use the spell as-is, but not modify or recreate it.
@@ -191,6 +192,8 @@ class Spell(Cleanable, ISpell):
         self.tags = args if args else []
         self.metadata = kwargs if kwargs else {}
         self._mutation_override: dict = {}
+        self.disposal_method_names: List[str] = []
+        self.has_disposal_methods: bool = False
 
         # Hooks (private storage; Spellbook controls mutation)
         self._hooks_enabled: bool = False
@@ -354,6 +357,8 @@ class Spell(Cleanable, ISpell):
                 self.metadata.clear()
             if isinstance(self.dependencies, list):
                 self.dependencies.clear()
+            if isinstance(self.disposal_method_names, list):
+                self.disposal_method_names.clear()
             self._pre_hooks = None
             self._activation_hooks = None
             self._post_hooks = None
@@ -361,6 +366,8 @@ class Spell(Cleanable, ISpell):
             self.tags = None
             self.metadata = None
             self.dependencies = None
+            self.disposal_method_names = None
+            self.has_disposal_methods = None
             self.dependency_graph = None
             self.resolution_profile = None
             self.profile = None

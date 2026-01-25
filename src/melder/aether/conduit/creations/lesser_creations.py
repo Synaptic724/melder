@@ -239,33 +239,16 @@ class LesserCreations(Cleanable, ILesserCreations):
             dict: A dictionary containing copies of the internal state (`unique_per_scope` and `many`).
         """
         self.check_cleaned()
-        logger = self._logger
-        log_kwargs = {
-            "method_name": "transfer_data_and_clear",
-            "mask": True,
-            "owner_id": self._id,
-            "owner_display": self._display_name,
-            "groups": self._log_groups,
-            "system_groups": self._log_sysgroups,
-        }
-        if logger is not None:
-            pass
-
         try:
             data = {
                 "unique_per_scope": self._unique_per_scope.copy(),
                 "many": self._many.copy()
             }
         finally:
-            if logger is not None:
-                pass
             self._unique_per_scope.clear()
             self._many.clear()
             # Use cleanup() to finalize & null refs
             self.cleanup()
-
-        if logger is not None:
-            pass
         return data
 
 
@@ -305,8 +288,8 @@ class LesserCreations(Cleanable, ILesserCreations):
         Raises:
             RuntimeError: If the Creations manager is cleaned.
         """
-        if not self._disposal_enabled:
-            return
+        #if not self._disposal_enabled:
+        #    return
         self.check_cleaned()
         if key not in self._many:
             self._many[key] = []
