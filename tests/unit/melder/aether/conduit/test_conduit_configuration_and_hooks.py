@@ -398,6 +398,193 @@ def test_register_conduit_hooks_on_upgrade_raises_when_not_dynamic(
         )
 
 
+def test_register_conduit_hooks_local_creates_local_map_and_wires_meld(
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify local hook registration creates a detached map and wires Meld.
+
+    Contract:
+        - create_local_hooks stores hooks on the conduit only.
+        - Meld shares the same local hook map.
+        - Configuration hook registry is not modified.
+    """
+    def hook(conduit: Conduit) -> None:
+        """
+        No-op hook for local registration checks.
+        """
+        _ = conduit
+
+    conduit_normal.register_conduit_hooks(
+        {"on_conduit_cleanup_start": hook},
+        create_local_hooks=True,
+    )
+
+    assert conduit_normal._conduit_hooks is not None
+    assert conduit_normal._conduit_hooks["on_conduit_cleanup_start"][0] is hook
+    assert conduit_normal._meld._meld_hooks is conduit_normal._conduit_hooks
+
+    spellbook_id = conduit_normal._spellbook._id
+    config_hooks = conduit_normal._configuration.get_hooks(spellbook_id)
+    assert "on_conduit_cleanup_start" not in config_hooks
+
+
+def test_register_conduit_hooks_local_does_not_propagate_to_lesser(
+    configuration_automatic: Configuration,
+    spellbook_stub: MagicMock,
+    aether_stub: MagicMock,
+) -> None:
+    """
+    Verify local hook registration does not affect other conduits.
+
+    Contract:
+        - Lesser conduits keep the shared configuration map.
+        - Local-only hooks remain invisible to other conduits.
+    """
+    normal = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration_automatic,
+        conduit_state=ConduitState.normal,
+        aetheric_frame="default",
+        policy=Policies.default,
+    )
+    lesser = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration_automatic,
+        conduit_state=ConduitState.lesser,
+        aetheric_frame="default",
+        policy=Policies.default,
+    )
+    try:
+        def hook(conduit: Conduit) -> None:
+            """
+            No-op hook for propagation checks.
+            """
+            _ = conduit
+
+        normal.register_conduit_hooks(
+            {"on_conduit_cleanup_start": hook},
+            create_local_hooks=True,
+        )
+
+        assert lesser._conduit_hooks is not None
+        assert "on_conduit_cleanup_start" not in lesser._conduit_hooks
+    finally:
+        lesser.cleanup()
+        normal.cleanup()
+
+
+def test_register_conduit_hooks_shared_updates_existing_lesser(
+    configuration_automatic: Configuration,
+    spellbook_stub: MagicMock,
+    aether_stub: MagicMock,
+) -> None:
+    """
+    Verify shared hook registration updates existing lesser conduits.
+
+    Contract:
+        - Shared registration writes into configuration hooks.
+        - Lesser conduits see the new hook via the shared map.
+    """
+    normal = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration_automatic,
+        conduit_state=ConduitState.normal,
+        aetheric_frame="default",
+        policy=Policies.default,
+        automatic=False,
+    )
+    lesser = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration_automatic,
+        conduit_state=ConduitState.lesser,
+        aetheric_frame="default",
+        policy=Policies.default,
+        automatic=False,
+    )
+    try:
+        def hook(conduit: Conduit) -> None:
+            """
+            No-op hook for shared registration checks.
+            """
+            _ = conduit
+
+        normal.register_conduit_hooks({"on_conduit_cleanup_start": hook})
+
+        assert lesser._conduit_hooks is not None
+        assert lesser._conduit_hooks["on_conduit_cleanup_start"][0] is hook
+    finally:
+        lesser.cleanup()
+        normal.cleanup()
+
+
+def test_register_conduit_hooks_shared_wires_meld_map(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """
+    Verify shared hook registration wires Meld to the shared map.
+
+    Contract:
+        - Meld hook map references the Conduit hook map after registration.
+    """
+    def hook(conduit: Conduit) -> None:
+        """
+        No-op hook for wiring checks.
+        """
+        _ = conduit
+
+    conduit_dynamic_normal.register_conduit_hooks({"on_conduit_cleanup_start": hook})
+
+    assert conduit_dynamic_normal._conduit_hooks is not None
+    assert conduit_dynamic_normal._meld._meld_hooks is conduit_dynamic_normal._conduit_hooks
+
+
+def test_register_conduit_hooks_local_detaches_from_shared_map(
+    configuration_automatic: Configuration,
+    spellbook_stub: MagicMock,
+    aether_stub: MagicMock,
+) -> None:
+    """
+    Verify local hook registration detaches from shared configuration hooks.
+
+    Contract:
+        - Conduit switches to a local copy when create_local_hooks is True.
+        - Configuration hook map retains only the original hooks.
+    """
+    configuration_automatic.add_hook(
+        spellbook_stub._id,
+        "on_conduit_cleanup_start",
+        lambda conduit: None,
+    )
+
+    conduit = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration_automatic,
+        conduit_state=ConduitState.normal,
+        aetheric_frame="default",
+        policy=Policies.default,
+    )
+    try:
+        def local_hook(conduit: Conduit) -> None:
+            """
+            No-op hook for local detachment checks.
+            """
+            _ = conduit
+
+        shared_hooks = configuration_automatic.get_hooks(spellbook_stub._id)
+        conduit.register_conduit_hooks(
+            {"on_conduit_cleanup_start": local_hook},
+            create_local_hooks=True,
+        )
+
+        assert conduit._conduit_hooks is not shared_hooks
+        assert conduit._conduit_hooks["on_conduit_cleanup_start"][-1] is local_hook
+        assert shared_hooks["on_conduit_cleanup_start"][-1] is not local_hook
+        assert len(shared_hooks["on_conduit_cleanup_start"]) == 1
+    finally:
+        conduit.cleanup()
+
+
 def test_fire_conduit_hooks_swallows_exceptions_and_continues(
     conduit_normal: Conduit,
 ) -> None:

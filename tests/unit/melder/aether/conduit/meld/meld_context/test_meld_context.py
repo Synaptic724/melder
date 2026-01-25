@@ -429,78 +429,6 @@ def test_cancel_event_is_stored() -> None:
         context.cleanup()
         signal.cleanup()
 
-
-def test_logger_none_yields_none() -> None:
-    """
-    Verify logger is None when no logger is provided.
-
-    Contract:
-        - logger property returns None if no logger is supplied.
-
-    Raises:
-        AssertionError: If logger is initialized without input.
-    """
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell, logger=None)
-    try:
-        assert context.logger is None
-    finally:
-        context.cleanup()
-
-
-def test_logger_is_wrapped_safelogger() -> None:
-    """
-    Verify logger input is wrapped as SafeLogger.
-
-    Contract:
-        - logger property returns a SafeLogger when provided a standard logger.
-
-    Raises:
-        AssertionError: If the logger is not wrapped.
-    """
-    root_spell = _make_root_spell(creations=object())
-    logger = logging.Logger("test")
-    context = MeldContext(root_spell=root_spell, logger=logger)
-    try:
-        assert isinstance(context.logger, SafeLogger)
-    finally:
-        context.cleanup()
-
-
-def test_channel_logger_is_wrapped_safelogger() -> None:
-    """
-    Verify ChannelLogger input is wrapped as SafeLogger.
-
-    Contract:
-        - IChannelLogger instances are accepted and wrapped.
-
-    Raises:
-        AssertionError: If IChannelLogger inputs are rejected or unwrapped.
-    """
-    root_spell = _make_root_spell(creations=object())
-    channel_logger = _ChannelLoggerStub()
-    context = MeldContext(root_spell=root_spell, logger=channel_logger)
-    try:
-        assert isinstance(context.logger, SafeLogger)
-    finally:
-        context.cleanup()
-
-
-def test_invalid_logger_raises_typeerror() -> None:
-    """
-    Verify invalid logger inputs are rejected.
-
-    Contract:
-        - Non-logger inputs raise TypeError.
-
-    Raises:
-        AssertionError: If invalid logger inputs do not raise.
-    """
-    root_spell = _make_root_spell(creations=object())
-    with pytest.raises(TypeError, match="Expected logger"):
-        MeldContext(root_spell=root_spell, logger=object())
-
-
 def test_cleanup_clears_fields_and_marks_cleaned() -> None:
     """
     Verify cleanup clears fields and marks the context as cleaned.
@@ -514,7 +442,7 @@ def test_cleanup_clears_fields_and_marks_cleaned() -> None:
     """
     root_spell = _make_root_spell(creations=object())
     logger = logging.Logger("test")
-    context = MeldContext(root_spell=root_spell, overrides={"x": 1}, logger=logger)
+    context = MeldContext(root_spell=root_spell, overrides={"x": 1})
     context.cleanup()
     assert context.cleaned is True
     assert context.root_spell is None
@@ -524,7 +452,6 @@ def test_cleanup_clears_fields_and_marks_cleaned() -> None:
     assert context.caller_creations_lock_held is False
     assert context.overrides == {}
     assert context.cancel_event is None
-    assert context.logger is None
     assert context.conduit_id is None
     assert context.conduit_name is None
     assert context.aetheric_frame is None

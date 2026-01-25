@@ -1149,6 +1149,7 @@ class ISpellbook(ICleanable, Protocol):
     * Version SHAs are tracked via `SpellIndex._versions` plus:
         - `_spell_versions`  (local)
         - `_contracted_versions` (per-conduit)
+    * Current spell_id maps are maintained for owned and contracted spells.
 
     The Spellbook participates in:
       * Local binding + lifecycle (`bind`, `Existence`)
@@ -1164,8 +1165,10 @@ class ISpellbook(ICleanable, Protocol):
     _lookup_spells: Optional[Any]
     _contracted_spells: Optional[Any]
     _contracted_versions: Optional[Any]
+    _contracted_spells_by_id: Optional[Any]
     _spells: Optional[Any]
     _spell_versions: Optional[Any]
+    _spells_by_id: Optional[Any]
     _bind: Optional[Any]
     _id: str
     _aetheric_frame: Optional[str]
@@ -1752,6 +1755,125 @@ class ISpellbook(ICleanable, Protocol):
         ...
 
     # ------------------------------------------------------------------
+    # spell_id map helpers (internal)
+    # ------------------------------------------------------------------
+    def _register_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
+        """
+        Internal
+
+        Register the current spell_id mapping for an owned spell.
+
+        Args:
+            spell_id:
+                Current version id for the spell.
+            spell:
+                Owned spell instance.
+
+        Raises:
+            RuntimeError:
+                If the spell_id map is missing or the id collides.
+        """
+        ...
+
+    def _update_owned_spell_id(self, old_id: str, new_id: str, spell: ISpell) -> None:
+        """
+        Internal
+
+        Update the owned spell_id mapping after a SpellIndex version change.
+
+        Args:
+            old_id:
+                Previous version id for the lineage.
+            new_id:
+                New version id for the lineage.
+            spell:
+                Owned spell instance.
+
+        Raises:
+            RuntimeError:
+                If the old id is missing or the new id collides.
+        """
+        ...
+
+    def _register_contracted_spell_id(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            spell: ISpell,
+    ) -> None:
+        """
+        Internal
+
+        Register the current spell_id mapping for a contracted spell.
+
+        Args:
+            conduit_id:
+                Peer conduit id for the contract.
+            spell_id:
+                Current version id for the spell.
+            spell:
+                Contracted spell instance.
+
+        Raises:
+            RuntimeError:
+                If the contracted map is missing or the id collides.
+        """
+        ...
+
+    def _update_contracted_spell_id(
+            self,
+            conduit_id: str,
+            old_id: str,
+            new_id: str,
+            spell: ISpell,
+    ) -> None:
+        """
+        Internal
+
+        Update the contracted spell_id mapping after a SpellIndex version change.
+
+        Args:
+            conduit_id:
+                Peer conduit id for the contract.
+            old_id:
+                Previous version id for the lineage.
+            new_id:
+                New version id for the lineage.
+            spell:
+                Contracted spell instance.
+
+        Raises:
+            RuntimeError:
+                If the old id is missing or the new id collides.
+        """
+        ...
+
+    def _unregister_contracted_spell_id(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            spell: ISpell,
+    ) -> None:
+        """
+        Internal
+
+        Remove a contracted spell_id mapping for the given conduit.
+
+        Args:
+            conduit_id:
+                Peer conduit id for the contract.
+            spell_id:
+                Current version id for the spell.
+            spell:
+                Contracted spell instance.
+
+        Raises:
+            RuntimeError:
+                If the id is missing from the contracted map.
+        """
+        ...
+
+    # ------------------------------------------------------------------
     # Contract / link API (used by ConduitWard / Contract)
     # ------------------------------------------------------------------
     def _find_contracted_spell_by_id(
@@ -1791,6 +1913,7 @@ class ISpellbook(ICleanable, Protocol):
             * `_contracted_spells[conduit_id]`
             * `_lookup_contracted_spells[conduit_id]`
             * `_contracted_versions[conduit_id]`
+            * `_contracted_spells_by_id[conduit_id]`
 
         are created **atomically** and remain in a consistent state.
 
@@ -1818,6 +1941,7 @@ class ISpellbook(ICleanable, Protocol):
             * `_contracted_spells[conduit_id]`
             * `_lookup_contracted_spells[conduit_id]`
             * `_contracted_versions[conduit_id]`
+            * `_contracted_spells_by_id[conduit_id]`
 
         Args:
             conduit_id:
@@ -1837,7 +1961,7 @@ class ISpellbook(ICleanable, Protocol):
 
         Adds a specific spell (borrowed from a peer) into the
         **contracted spells** registry and updates the key + version
-        caches for the given conduit.
+        caches for the given conduit, plus the spell_id map.
 
         Args:
             spell:
@@ -1861,6 +1985,7 @@ class ISpellbook(ICleanable, Protocol):
             * Remove from `_lookup_contracted_spells[conduit_id]`.
             * Remove all versions for this SpellIndex from
               `_contracted_versions[conduit_id]`.
+            * Remove from `_contracted_spells_by_id[conduit_id]`.
 
         Args:
             spell_id:
@@ -1880,7 +2005,8 @@ class ISpellbook(ICleanable, Protocol):
         Internal
 
         Clears **all spells** associated with a contracted conduit, while
-        retaining the contract structure and zeroing its version cache.
+        retaining the contract structure, clearing its id map, and
+        zeroing its version cache.
 
         Args:
             conduit_id:

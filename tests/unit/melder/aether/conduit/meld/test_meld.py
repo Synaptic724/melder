@@ -460,6 +460,80 @@ def test_cleanup_clears_references_and_drops_runtime() -> None:
     assert meld._meld_hooks is None
 
 
+def test_meld_uses_comprehensive_path_when_spell_hooks_enabled() -> None:
+    """
+    Verify meld selects the comprehensive path when spell hooks are enabled.
+
+    Contract:
+        - _comprehensive_meld_with_hooks is called when spell._hooks_enabled is True.
+        - _meld_without_hooks is not used in that case.
+    """
+    meld = _make_meld()
+    spell = _SpellStub(spell_id="spell-1")
+    spell._hooks_enabled = True
+
+    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._comprehensive_meld_with_hooks = MagicMock(return_value="result")
+    meld._meld_without_hooks = MagicMock(return_value="without")
+
+    assert meld.meld(spell="spell-1") == "result"
+    meld._comprehensive_meld_with_hooks.assert_called_once_with(
+        target_spell=spell,
+        override_map=None,
+    )
+    meld._meld_without_hooks.assert_not_called()
+
+
+def test_meld_uses_comprehensive_path_when_meld_hooks_present() -> None:
+    """
+    Verify meld selects the comprehensive path when meld-level hooks exist.
+
+    Contract:
+        - _comprehensive_meld_with_hooks is called when _meld_hooks is non-empty.
+        - _meld_without_hooks is not used in that case.
+    """
+    meld = _make_meld()
+    meld._meld_hooks = {"on_meld_pre_resolve": [lambda: None]}
+    spell = _SpellStub(spell_id="spell-1")
+    spell._hooks_enabled = False
+
+    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._comprehensive_meld_with_hooks = MagicMock(return_value="result")
+    meld._meld_without_hooks = MagicMock(return_value="without")
+
+    assert meld.meld(spell="spell-1") == "result"
+    meld._comprehensive_meld_with_hooks.assert_called_once_with(
+        target_spell=spell,
+        override_map=None,
+    )
+    meld._meld_without_hooks.assert_not_called()
+
+
+def test_meld_uses_without_hooks_path_when_no_hooks() -> None:
+    """
+    Verify meld selects the minimal path when no hooks are configured.
+
+    Contract:
+        - _meld_without_hooks is called when there are no meld or spell hooks.
+        - _comprehensive_meld_with_hooks is not used in that case.
+    """
+    meld = _make_meld()
+    meld._meld_hooks = {}
+    spell = _SpellStub(spell_id="spell-1")
+    spell._hooks_enabled = False
+
+    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._comprehensive_meld_with_hooks = MagicMock(return_value="with")
+    meld._meld_without_hooks = MagicMock(return_value="result")
+
+    assert meld.meld(spell="spell-1") == "result"
+    meld._meld_without_hooks.assert_called_once_with(
+        target_spell=spell,
+        override_map=None,
+    )
+    meld._comprehensive_meld_with_hooks.assert_not_called()
+
+
 def test_meld_requires_identity_source() -> None:
     """
     Verify meld rejects calls with no spell identity.

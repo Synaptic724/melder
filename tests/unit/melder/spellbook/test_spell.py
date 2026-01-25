@@ -468,6 +468,124 @@ def _make_spell(
     )
 
 
+def test_spell_hooks_default_state() -> None:
+    """
+    Verify Spell initializes with hooks disabled and empty hook lists.
+    """
+    spell = _make_spell()
+    assert spell._hooks_enabled is False
+    assert spell._pre_hooks == []
+    assert spell._activation_hooks == []
+    assert spell._post_hooks == []
+
+
+def test_spell_set_hooks_updates_lists_and_enables() -> None:
+    """
+    Verify _set_hooks replaces hook lists and enables hook gating.
+    """
+    spell = _make_spell()
+    pre_hook = lambda: None
+    activation_hook = lambda _: None
+    post_hook = lambda: None
+
+    spell._set_hooks(
+        pre_hooks=[pre_hook],
+        activation_hooks=[activation_hook],
+        post_hooks=[post_hook],
+    )
+
+    assert spell._pre_hooks == [pre_hook]
+    assert spell._activation_hooks == [activation_hook]
+    assert spell._post_hooks == [post_hook]
+    assert spell._hooks_enabled is True
+
+
+def test_spell_set_hooks_partial_update_preserves_existing() -> None:
+    """
+    Verify _set_hooks updates only provided lists and keeps others intact.
+    """
+    spell = _make_spell()
+    pre_hook = lambda: None
+    activation_hook = lambda _: None
+
+    spell._set_hooks(pre_hooks=[pre_hook])
+    spell._set_hooks(activation_hooks=[activation_hook])
+
+    assert spell._pre_hooks == [pre_hook]
+    assert spell._activation_hooks == [activation_hook]
+    assert spell._hooks_enabled is True
+
+
+def test_spell_set_hooks_none_does_not_clear_existing() -> None:
+    """
+    Verify _set_hooks leaves existing hooks unchanged when all inputs are None.
+    """
+    spell = _make_spell()
+    pre_hook = lambda: None
+    spell._set_hooks(pre_hooks=[pre_hook])
+    original_pre = spell._pre_hooks
+
+    spell._set_hooks(pre_hooks=None, activation_hooks=None, post_hooks=None)
+
+    assert spell._pre_hooks is original_pre
+    assert spell._hooks_enabled is True
+
+
+def test_spell_set_hooks_empty_lists_disable_hooks() -> None:
+    """
+    Verify _set_hooks disables hook gating when all lists are empty.
+    """
+    spell = _make_spell()
+    spell._set_hooks(pre_hooks=[lambda: None])
+
+    spell._set_hooks(pre_hooks=[], activation_hooks=[], post_hooks=[])
+
+    assert spell._pre_hooks == []
+    assert spell._activation_hooks == []
+    assert spell._post_hooks == []
+    assert spell._hooks_enabled is False
+
+
+def test_spell_set_hooks_copies_input_sequences() -> None:
+    """
+    Verify _set_hooks copies input hook sequences to avoid external mutation.
+    """
+    spell = _make_spell()
+    hooks = [lambda: None]
+
+    spell._set_hooks(pre_hooks=hooks)
+    hooks.append(lambda: None)
+
+    assert len(hooks) == 2
+    assert spell._pre_hooks == [hooks[0]]
+
+
+def test_spell_set_hooks_keeps_enabled_when_other_hooks_remain() -> None:
+    """
+    Verify clearing one hook list does not disable gating when others remain.
+    """
+    spell = _make_spell()
+    activation_hook = lambda _: None
+    spell._set_hooks(pre_hooks=[lambda: None], activation_hooks=[activation_hook])
+
+    spell._set_hooks(pre_hooks=[])
+
+    assert spell._pre_hooks == []
+    assert spell._activation_hooks == [activation_hook]
+    assert spell._hooks_enabled is True
+
+
+def test_spell_set_hooks_raises_when_cleaned() -> None:
+    """
+    Verify _set_hooks rejects calls after cleanup.
+    """
+    spell = _make_spell()
+    spell.cleanup()
+
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        spell._set_hooks(pre_hooks=[])
+
+
 @pytest.mark.parametrize(
     "spellframe,binding,spell_name,expected",
     [

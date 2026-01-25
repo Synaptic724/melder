@@ -579,6 +579,193 @@ def test_component_spellbook_add_hooks_to_spell_attaches_lists() -> None:
         spellbook.cleanup()
 
 
+def test_component_spellbook_add_hooks_to_spell_sets_hooks_enabled() -> None:
+    """
+    Purpose:
+        Verify hook attachment enables the spell hook gate.
+    Contract:
+        - _hooks_enabled is True when any hook list is provided.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If hook gating does not enable.
+    """
+    spellbook = _make_spellbook()
+
+    def pre_hook() -> None:
+        """
+        Purpose:
+            Provide a pre-hook for hook gate checks.
+        Contract:
+            - No side effects; used for identity checks.
+        Returns:
+            None.
+        """
+        return None
+
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spellbook._add_hooks_to_spell(spell, pre_hooks=[pre_hook])
+
+        assert spell._hooks_enabled is True
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_add_hooks_to_spell_partial_update_preserves_existing() -> None:
+    """
+    Purpose:
+        Verify partial hook updates keep existing hook lists intact.
+    Contract:
+        - Previously set hooks remain when only new lists are supplied.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If existing hooks are overwritten.
+    """
+    spellbook = _make_spellbook()
+
+    def pre_hook() -> None:
+        """
+        Purpose:
+            Provide a pre-hook for partial update checks.
+        Contract:
+            - No side effects; used for identity checks.
+        Returns:
+            None.
+        """
+        return None
+
+    def activation_hook(_: object) -> None:
+        """
+        Purpose:
+            Provide an activation hook for partial update checks.
+        Contract:
+            - No side effects; used for identity checks.
+        Returns:
+            None.
+        """
+        return None
+
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spellbook._add_hooks_to_spell(spell, pre_hooks=[pre_hook])
+        spellbook._add_hooks_to_spell(spell, activation_hooks=[activation_hook])
+
+        assert spell._pre_hooks == [pre_hook]
+        assert spell._activation_hooks == [activation_hook]
+        assert spell._hooks_enabled is True
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_add_hooks_to_spell_no_kwargs_is_noop() -> None:
+    """
+    Purpose:
+        Verify _add_hooks_to_spell is a no-op when no hooks are provided.
+    Contract:
+        - Existing hook lists are preserved.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If existing hooks are modified.
+    """
+    spellbook = _make_spellbook()
+
+    def pre_hook() -> None:
+        """
+        Purpose:
+            Provide a pre-hook for noop checks.
+        Contract:
+            - No side effects; used for identity checks.
+        Returns:
+            None.
+        """
+        return None
+
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spellbook._add_hooks_to_spell(spell, pre_hooks=[pre_hook])
+        original_pre = spell._pre_hooks
+
+        spellbook._add_hooks_to_spell(spell)
+
+        assert spell._pre_hooks is original_pre
+        assert spell._hooks_enabled is True
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_add_hooks_to_spell_empty_lists_disable_gate() -> None:
+    """
+    Purpose:
+        Verify empty hook lists disable the hook gate.
+    Contract:
+        - _hooks_enabled is False when all hook lists are empty.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If hook gating remains enabled.
+    """
+    spellbook = _make_spellbook()
+
+    def pre_hook() -> None:
+        """
+        Purpose:
+            Provide a pre-hook for gate disable checks.
+        Contract:
+            - No side effects; used for identity checks.
+        Returns:
+            None.
+        """
+        return None
+
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spellbook._add_hooks_to_spell(spell, pre_hooks=[pre_hook])
+        spellbook._add_hooks_to_spell(
+            spell,
+            pre_hooks=[],
+            activation_hooks=[],
+            post_hooks=[],
+        )
+
+        assert spell._pre_hooks == []
+        assert spell._activation_hooks == []
+        assert spell._post_hooks == []
+        assert spell._hooks_enabled is False
+    finally:
+        spellbook.cleanup()
+
+
 def test_component_spellbook_add_hooks_to_spell_rejects_non_callable() -> None:
     """
     Purpose:
