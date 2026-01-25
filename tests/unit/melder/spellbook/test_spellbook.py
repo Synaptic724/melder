@@ -235,6 +235,19 @@ class DummySpellIndex:
         """
         return version_id in self._versions
 
+    def _set_owner_conduit_id(self, conduit_id):
+        """
+        Purpose:
+            Capture the owner conduit id for assertions.
+        Contract:
+            Stores the conduit id on the stub.
+        Args:
+            conduit_id: Owner conduit identifier.
+        Returns:
+            None.
+        """
+        self.owner_conduit_id = conduit_id
+
 
 class DummyConduit:
     """
@@ -1146,7 +1159,11 @@ def test_define_conduit_stamps_owner_and_primes_existing():
     conduit = DummyConduit()
     spell_existing = DummySpell(existing_object="obj")
     spell_normal = DummySpell()
-    sb._spells = {DummySpellIndex(): spell_existing, DummySpellIndex(): spell_normal}
+    idx_existing = DummySpellIndex()
+    idx_normal = DummySpellIndex()
+    spell_existing.spell_index = idx_existing
+    spell_normal.spell_index = idx_normal
+    sb._spells = {idx_existing: spell_existing, idx_normal: spell_normal}
     sb._logger = DummySafeLogger()
     sb._define_conduit_into_spells(conduit)
     assert spell_existing._owner[0] == conduit._id

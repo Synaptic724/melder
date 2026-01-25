@@ -1289,13 +1289,13 @@ def test_bind_rejects_module_as_spell() -> None:
 def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
     """
     Purpose:
-        Validate ambiguity errors for type-hint DI by concrete class.
+        Validate duplicate spell_id bindings are rejected at bind time.
     Contract:
-        - Multiple bindings of the same class trigger an ambiguity error.
+        - Duplicate spell_id bindings raise before conjure.
     Returns:
         None.
     Raises:
-        AssertionError: If ambiguity is not detected.
+        AssertionError: If duplicate binding does not raise.
     """
     class _Repo:
         """
@@ -1317,26 +1317,6 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
             """
             self.marker = marker
 
-    class _Service:
-        """
-        Purpose:
-            Provide a service that depends on _Repo.
-        Contract:
-            Triggers concrete-class DI resolution.
-        """
-        def __init__(self, repo: _Repo) -> None:
-            """
-            Purpose:
-                Capture the repository for validation.
-            Contract:
-                Stores the repository on the instance.
-            Args:
-                repo: Repository dependency.
-            Returns:
-                None.
-            """
-            self.repo = repo
-
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
@@ -1347,23 +1327,14 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         permissions="create",
         binding_name="primary",
     )
-    spellbook.bind(
-        spell=_Repo,
-        existence=Existence.unique,
-        permissions="create",
-        binding_name="secondary",
-    )
-    spellbook.bind(
-        spell=_Service,
-        existence=Existence.many,
-        permissions="create",
-    )
-
-    with pytest.raises(PhaseExecutionError) as excinfo:
-        spellbook.conjure(name="root")
-
-    errors = [str(err) for err in excinfo.value.errors]
-    assert any("multiple DI candidates" in message for message in errors)
+    with pytest.raises(RuntimeError) as excinfo:
+        spellbook.bind(
+            spell=_Repo,
+            existence=Existence.unique,
+            permissions="create",
+            binding_name="secondary",
+        )
+    assert "spell_id collision" in str(excinfo.value)
 
 
 def test_meld_by_spell_id_resolves_class_instance_unique() -> None:

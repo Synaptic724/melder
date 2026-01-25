@@ -96,11 +96,14 @@ class Meld(Cleanable, IMeld):
         self._contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]] = (
             spellbook._contracted_spells
         )
+        self._spells_by_id: Dict[str, ISpell] = spellbook._spells_by_id
+        self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = spellbook._contracted_spells_by_id
 
         self._lookup_owned_spells: Dict[tuple, ISpellIndex] = spellbook._lookup_spells
         self._lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]] = (
             spellbook._lookup_contracted_spells
         )
+
 
         # Conduit-local instantiation manager (Creations or LesserCreations)
         self._creations = creations
@@ -146,6 +149,8 @@ class Meld(Cleanable, IMeld):
             # Clear spellbook references
             self._owned_spells = None
             self._contracted_spells = None
+            self._spells_by_id = None
+            self._contracted_spells_by_id = None
             self._lookup_owned_spells = None
             self._lookup_contracted_spells = None
 
@@ -837,17 +842,15 @@ class Meld(Cleanable, IMeld):
                 the local or contracted spell maps.
         """
         # Local spells
-        if self._owned_spells is not None:
-            for candidate in self._owned_spells.values():
-                if candidate.spell_id == spell_id:
-                    return candidate
+        if self._spells_by_id is not None:
+            if spell_id in self._spells_by_id:
+                return self._spells_by_id[spell_id]
 
         # Contracted spells (per-conduit maps)
-        if self._contracted_spells is not None:
-            for spell_map in self._contracted_spells.values():
-                for candidate in spell_map.values():
-                    if candidate.spell_id == spell_id:
-                        return candidate
+        if self._contracted_spells_by_id is not None:
+            for spell_map in self._contracted_spells_by_id.values():
+                if spell_id in spell_map:
+                    return spell_map[spell_id]
 
         raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
 

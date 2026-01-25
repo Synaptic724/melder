@@ -254,6 +254,8 @@ class _SpellbookStub:
         self._lookup_contracted_spells = lookup_contracted_spells or {}
         self._aetheric_frame = aetheric_frame
         self._aether = aether
+        self._spells_by_id = {}
+        self._contracted_spells_by_id = {}
 
 
 class _ChangeControlManagerStub:

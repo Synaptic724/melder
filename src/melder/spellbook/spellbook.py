@@ -453,9 +453,6 @@ class Spellbook(Cleanable, ISpellbook):
         """
         self.check_cleaned()
         with self._lock:
-            if self._spells_by_id is None:
-                self._logger.error("Owned spell_id map is not available.", "_register_owned_spell_id")
-                raise RuntimeError("Owned spell_id map is not available.")
             existing = self._spells_by_id.get(spell_id)
             if existing is not None and existing is not spell:
                 self._logger.error(

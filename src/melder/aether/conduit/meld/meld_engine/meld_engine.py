@@ -77,7 +77,6 @@ class MeldEngine(Cleanable):
             override_map: Dict[SocketRef, Any],
             spell_lookup: Dict[str, ISpell],
             system_states: Any,
-            logger: Optional[Any] = None,
     ) -> None:
         """
         Initialize a new `MeldEngine` for a single meld call.

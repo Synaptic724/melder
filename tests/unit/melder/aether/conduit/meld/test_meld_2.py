@@ -121,6 +121,8 @@ class _SpellbookStub:
         self._contracted_spells = contracted_spells or {}
         self._lookup_spells = lookup_spells or {}
         self._lookup_contracted_spells = lookup_contracted_spells or {}
+        self._spells_by_id= {}
+        self._contracted_spells_by_id = {}
 
 
 class _ConduitStub:

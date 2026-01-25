@@ -480,7 +480,6 @@ def _make_engine(
         override_map=override_map or {},
         spell_lookup=spell_lookup or {},
         system_states=system_states,
-        logger=None,
     )
     return engine, root_spell, frame
 
