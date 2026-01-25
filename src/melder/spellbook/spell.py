@@ -1,4 +1,4 @@
-from typing import Optional, List, Any, Callable
+from typing import Optional, List, Any, Callable, Sequence
 import ulid
 from threading import RLock
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -192,11 +192,11 @@ class Spell(Cleanable, ISpell):
         self.metadata = kwargs if kwargs else {}
         self._mutation_override: dict = {}
 
-        # Hooks
+        # Hooks (private storage; Spellbook controls mutation)
         self._hooks_enabled: bool = False
-        self.pre_hooks: List[Callable[..., Any]] = []
-        self.activation_hooks: List[Callable[..., Any]] = []
-        self.post_hooks: List[Callable[..., Any]] = []
+        self._pre_hooks: List[Callable[..., Any]] = []
+        self._activation_hooks: List[Callable[..., Any]] = []
+        self._post_hooks: List[Callable[..., Any]] = []
 
         # Final build-time artifacts
         self.dependency_graph: Any = None
@@ -226,6 +226,41 @@ class Spell(Cleanable, ISpell):
             binding_name=self.binding_name,
         )
         self._key = (frame_key, bind_key)
+
+    @property
+    def pre_hooks(self) -> List[Callable[..., Any]]:
+        return self._pre_hooks
+
+    @property
+    def activation_hooks(self) -> List[Callable[..., Any]]:
+        return self._activation_hooks
+
+    @property
+    def post_hooks(self) -> List[Callable[..., Any]]:
+        return self._post_hooks
+
+    def _set_hooks(
+            self,
+            *,
+            pre_hooks: Optional[Sequence[Callable[..., Any]]] = None,
+            activation_hooks: Optional[Sequence[Callable[..., Any]]] = None,
+            post_hooks: Optional[Sequence[Callable[..., Any]]] = None,
+    ) -> None:
+        """
+        Internal
+
+        Attach lifecycle hooks and update the spell hook gate.
+        """
+        with self._lock:
+            if pre_hooks is not None:
+                self._pre_hooks = list(pre_hooks)
+            if activation_hooks is not None:
+                self._activation_hooks = list(activation_hooks)
+            if post_hooks is not None:
+                self._post_hooks = list(post_hooks)
+            self._hooks_enabled = bool(
+                self._pre_hooks or self._activation_hooks or self._post_hooks
+            )
 
     #region Disposal
     def cleanup(self) -> None:
@@ -293,12 +328,12 @@ class Spell(Cleanable, ISpell):
             self._owner_creations = None
             self.user_created_object = None
             self._spell_system_states = None
-            if self.pre_hooks is not None:
-                self.pre_hooks.clear()
-            if self.activation_hooks is not None:
-                self.activation_hooks.clear()
-            if self.post_hooks is not None:
-                self.post_hooks.clear()
+            if self._pre_hooks is not None:
+                self._pre_hooks.clear()
+            if self._activation_hooks is not None:
+                self._activation_hooks.clear()
+            if self._post_hooks is not None:
+                self._post_hooks.clear()
             if self.tags is not None and hasattr(self.tags, "clear"):
                 try:
                     self.tags.clear()
@@ -308,9 +343,10 @@ class Spell(Cleanable, ISpell):
                 self.metadata.clear()
             if isinstance(self.dependencies, list):
                 self.dependencies.clear()
-            self.pre_hooks = None
-            self.activation_hooks = None
-            self.post_hooks = None
+            self._pre_hooks = None
+            self._activation_hooks = None
+            self._post_hooks = None
+            self._hooks_enabled = False
             self.tags = None
             self.metadata = None
             self.dependencies = None

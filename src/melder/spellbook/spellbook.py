@@ -1971,10 +1971,6 @@ class Spellbook(Cleanable, ISpellbook):
             )
 
             self._add_hooks_to_spell(new_spell, **kwargs)
-            if new_spell._hooks_enabled and self._conjured and self._conduit is not None:
-                meld = self._conduit._meld
-                if meld is not None:
-                    meld._hooks_enabled = True
 
             # Register into local spell maps
             self._lookup_spells[new_spell._key] = new_spell.spell_index
@@ -2081,27 +2077,34 @@ class Spellbook(Cleanable, ISpellbook):
             return
 
         with self._lock:
+            pre_hooks = None
+            activation_hooks = None
+            post_hooks = None
             if "pre_hooks" in kwargs:
                 for hook in kwargs["pre_hooks"]:
                     if not callable(hook):
                         self._logger.error("pre_hooks must be a list of callables.", "_add_hooks_to_spell", exc_info=True)
                         raise TypeError("pre_hooks must be a list of callables.")
-                spell.pre_hooks = kwargs["pre_hooks"]
-                spell._hooks_enabled = True
+                pre_hooks = kwargs["pre_hooks"]
             if "activation_hooks" in kwargs:
                 for hook in kwargs["activation_hooks"]:
                     if not callable(hook):
                         self._logger.error("activation_hooks must be a list of callables.", "_add_hooks_to_spell", exc_info=True)
                         raise TypeError("activation_hooks must be a list of callables.")
-                spell.activation_hooks = kwargs["activation_hooks"]
-                spell._hooks_enabled = True
+                activation_hooks = kwargs["activation_hooks"]
             if "post_hooks" in kwargs:
                 for hook in kwargs["post_hooks"]:
                     if not callable(hook):
                         self._logger.error("post_hooks must be a list of callables.", "_add_hooks_to_spell", exc_info=True)
                         raise TypeError("post_hooks must be a list of callables.")
-                spell.post_hooks = kwargs["post_hooks"]
-                spell._hooks_enabled = True
+                post_hooks = kwargs["post_hooks"]
+
+            if pre_hooks is not None or activation_hooks is not None or post_hooks is not None:
+                spell._set_hooks(
+                    pre_hooks=pre_hooks,
+                    activation_hooks=activation_hooks,
+                    post_hooks=post_hooks,
+                )
 
     #endregion Binding API
     #region Configuration API
