@@ -195,29 +195,17 @@ class PhaseScheduler(Cleanable):
 
             # Clean up the queue itself if present.
             if self._queue is not None:
-                try:
-                    self._queue.clear()
-                except Exception:
-                    pass
+                self._queue.clear()
                 self._queue = None
 
             if self._threads is not None:
-                try:
-                    self._threads.clear()
-                except Exception:
-                    pass
+                self._threads.clear()
                 self._threads = None
             if self._phase_factories is not None:
-                try:
-                    self._phase_factories.clear()
-                except Exception:
-                    pass
+                self._phase_factories.clear()
                 self._phase_factories = None
             if self._phase_order is not None:
-                try:
-                    self._phase_order.clear()
-                except Exception:
-                    pass
+                self._phase_order.clear()
                 self._phase_order = None
 
             self._configuration = None

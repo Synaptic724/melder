@@ -267,11 +267,6 @@ class UnitOfWork(Cleanable, Future):
                 be recorded on the underlying Future and re-raised here.
         """
         self.check_cleaned()
-
-        # Acquire lock to safely read/verify mutable state.
-        if self._lock is None:
-            raise RuntimeError("UnitOfWork has been cleaned.")
-
         with self._lock:
             # If someone else already executed us, surface the stored outcome.
             if self.done():
