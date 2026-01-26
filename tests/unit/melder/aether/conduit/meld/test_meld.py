@@ -1,6 +1,6 @@
 """Contract tests for Meld resolution, gating, and activation flow."""
 from threading import RLock
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -278,6 +278,7 @@ class _SpellbookStub:
             for conduit_id, spell_map in self._contracted_spells.items()
         }
         self._spellbook_validation_required = True
+        self._spell_id_pool: Dict[str, 'SpellIndex'] = {}
 
 
 class _ChangeControlManagerStub:

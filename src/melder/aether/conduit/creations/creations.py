@@ -83,15 +83,10 @@ class Creations(Cleanable, ICreations):
             # Single try/except around the whole sequence (per request)
             try:
                 errors.extend(self._cleanup_unique())
-
                 errors.extend(self._cleanup_unique_per_scope())
-
                 errors.extend(self._cleanup_many())
-
                 errors.extend(self._cleanup_unique_per_lineage())
-
                 errors.extend(self._cleanup_unique_per_cluster())
-
                 errors.extend(self._cleanup_spellspace_instances())
             except Exception as e:
                 # Fatal exception in the sequence (unexpected); record and continue teardown

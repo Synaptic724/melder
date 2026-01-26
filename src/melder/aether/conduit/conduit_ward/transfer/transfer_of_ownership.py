@@ -377,12 +377,18 @@ class TransferOfOwnership:
             tgt_book._lookup_spells.pop(spell_obj._key, None)
             if tgt_book._spells_by_id is not None:
                 tgt_book._spells_by_id.pop(spell_id, None)
+            if tgt_book._spell_id_pool is not None:
+                tgt_book._spell_id_pool.pop(spell_id, None)
             src_book._spells[spell_obj.spell_index] = spell_obj
             src_book._lookup_spells[spell_obj._key] = spell_obj.spell_index
             if src_book._spells_by_id is not None:
                 existing = src_book._spells_by_id.get(spell_id)
                 if existing is None or existing is spell_obj:
                     src_book._spells_by_id[spell_id] = spell_obj
+            if src_book._spell_id_pool is not None:
+                existing_pool = src_book._spell_id_pool.get(spell_id)
+                if existing_pool is None or existing_pool is spell_obj:
+                    src_book._spell_id_pool[spell_id] = spell_obj
         try:
             with SafeGuard(spell_obj.spell_index._lock):
                 spell_obj.spell_index._owner_spellbook = src_book
@@ -701,6 +707,13 @@ class TransferOfOwnership:
                                 f"Owned spell_id mismatch for transfer (spell_id={spell_id})"
                             )
                         src_book._spells_by_id.pop(spell_id, None)
+                    if src_book._spell_id_pool is not None:
+                        existing_pool = src_book._spell_id_pool.get(spell_id)
+                        if existing_pool is not None and existing_pool is not spell_obj:
+                            raise RuntimeError(
+                                f"spell_id_pool mismatch for transfer (spell_id={spell_id})"
+                            )
+                        src_book._spell_id_pool.pop(spell_id, None)
                     self._register_rollback(
                         lambda: self._rollback_spellbook_move(spell_obj, src_book, tgt_book)
                     )
@@ -714,6 +727,13 @@ class TransferOfOwnership:
                             f"Owned spell_id collision on target (spell_id={spell_id})"
                         )
                     tgt_book._spells_by_id[spell_id] = spell_obj
+                if tgt_book._spell_id_pool is not None:
+                    existing_pool = tgt_book._spell_id_pool.get(spell_id)
+                    if existing_pool is not None and existing_pool is not spell_obj:
+                        raise RuntimeError(
+                            f"spell_id_pool collision on target (spell_id={spell_id})"
+                        )
+                    tgt_book._spell_id_pool[spell_id] = spell_obj
                 if spell_obj._spellbook is not tgt_book:
                     spell_obj._spellbook = tgt_book
                     spell_obj._spell_system_states = tgt_book._spell_system_states

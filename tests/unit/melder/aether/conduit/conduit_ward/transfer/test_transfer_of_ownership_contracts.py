@@ -447,6 +447,7 @@ class FakeSpellbook:
         self._spell_system_states = states_system
         self._spells_by_id: Dict[str, Any] = {}
         self._contracted_spells_by_id: Dict[str, Any] = {}
+        self._spell_id_pool: Dict[str, SpellIndex] = {}
 
 
 class FakeConduitWard:

@@ -154,6 +154,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._spell_versions: Set[str] = set()
         self._lookup_spells: Dict[tuple, SpellIndex]  = {}
         self._spells_by_id: Dict[str, ISpell] = {}
+        self._spell_id_pool: Dict[str, ISpell] = {}
 
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
@@ -224,6 +225,12 @@ class Spellbook(Cleanable, ISpellbook):
             except Exception as e:
                 self._logger.error(f"Error clearing _spells_by_id: {e}", "_cleanup_components", exc_info=True)
             self._spells_by_id = None
+        if self._spell_id_pool is not None:
+            try:
+                self._spell_id_pool.clear()
+            except Exception as e:
+                self._logger.error(f"Error clearing _spell_id_pool: {e}", "_cleanup_components", exc_info=True)
+            self._spell_id_pool = None
 
         # 2) Clean lookup/contracted maps and local maps
         if self._lookup_spells is not None:
@@ -468,6 +475,15 @@ class Spellbook(Cleanable, ISpellbook):
                 )
                 raise RuntimeError(f"spell_id collision for owned spell_id={spell_id}")
             self._spells_by_id[spell_id] = spell
+            existing_pool = self._spell_id_pool.get(spell_id)
+            if existing_pool is not None and existing_pool is not spell:
+                self._logger.error(
+                    f"spell_id collision for spell_id_pool spell_id={spell_id}",
+                    "_register_owned_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"spell_id collision for spell_id_pool spell_id={spell_id}")
+            self._spell_id_pool[spell_id] = spell
 
     def _update_owned_spell_id(self, old_id: str, new_id: str, spell: ISpell) -> None:
         """
@@ -524,6 +540,16 @@ class Spellbook(Cleanable, ISpellbook):
 
             self._spells_by_id.pop(old_id, None)
             self._spells_by_id[new_id] = spell
+            self._spell_id_pool.pop(old_id, None)
+            existing_pool = self._spell_id_pool.get(new_id)
+            if existing_pool is not None and existing_pool is not spell:
+                self._logger.error(
+                    f"spell_id collision for spell_id_pool new_id={new_id}",
+                    "_update_owned_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"spell_id collision for spell_id_pool new_id={new_id}")
+            self._spell_id_pool[new_id] = spell
             if self._spell_versions is not None:
                 self._spell_versions.add(new_id)
 
@@ -576,6 +602,15 @@ class Spellbook(Cleanable, ISpellbook):
                     f"Contracted spell_id collision for conduit_id={conduit_id}, spell_id={spell_id}"
                 )
             spell_map[spell_id] = spell
+            existing_pool = self._spell_id_pool.get(spell_id)
+            if existing_pool is not None and existing_pool is not spell:
+                self._logger.error(
+                    f"Contracted spell_id collision for spell_id_pool spell_id={spell_id}",
+                    "_register_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id collision for spell_id_pool spell_id={spell_id}")
+            self._spell_id_pool[spell_id] = spell
 
     def _update_contracted_spell_id(
             self,
@@ -647,6 +682,16 @@ class Spellbook(Cleanable, ISpellbook):
 
             spell_map.pop(old_id, None)
             spell_map[new_id] = spell
+            self._spell_id_pool.pop(old_id, None)
+            existing_pool = self._spell_id_pool.get(new_id)
+            if existing_pool is not None and existing_pool is not spell:
+                self._logger.error(
+                    f"Contracted spell_id collision for spell_id_pool new_id={new_id}",
+                    "_update_contracted_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Contracted spell_id collision for spell_id_pool new_id={new_id}")
+            self._spell_id_pool[new_id] = spell
             if self._contracted_versions is not None:
                 versions_set = self._contracted_versions.get(conduit_id)
                 if versions_set is None:
@@ -704,6 +749,7 @@ class Spellbook(Cleanable, ISpellbook):
                 )
                 raise RuntimeError(f"Contracted spell_id mapped to a different spell (spell_id={spell_id}).")
             spell_map.pop(spell_id, None)
+            self._spell_id_pool.pop(spell_id, None)
 
     #region Logging
 

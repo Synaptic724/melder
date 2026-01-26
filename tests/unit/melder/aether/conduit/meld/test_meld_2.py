@@ -133,6 +133,7 @@ class _SpellbookStub:
         self._spells_by_id = {}
         self._contracted_spells_by_id = {}
         self._spellbook_validation_required = True
+        self._spell_id_pool: 'Dict[str, SpellIndex]' = {}
 
 
 class _ConduitStub:

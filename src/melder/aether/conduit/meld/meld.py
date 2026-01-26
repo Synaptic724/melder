@@ -99,6 +99,7 @@ class Meld(Cleanable, IMeld):
         )
         self._spells_by_id: Dict[str, ISpell] = spellbook._spells_by_id
         self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = spellbook._contracted_spells_by_id
+        self._spell_id_pool: Dict[str, ISpell] = spellbook._spell_id_pool
 
         self._lookup_owned_spells: Dict[tuple, ISpellIndex] = spellbook._lookup_spells
         self._lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]] = (
@@ -152,6 +153,7 @@ class Meld(Cleanable, IMeld):
             self._contracted_spells = None
             self._spells_by_id = None
             self._contracted_spells_by_id = None
+            self._spell_id_pool = None
             self._lookup_owned_spells = None
             self._lookup_contracted_spells = None
             self._spellbook = None
@@ -819,9 +821,10 @@ class Meld(Cleanable, IMeld):
 
         Resolve an ``ISpell`` by its canonical current ``spell_id`` (SHA256).
 
-        This uses the owned spell_id map first, then checks each per-conduit
-        contracted spell_id map. It is intended for cases where the caller
-        has an exact fingerprint and does not care about logical identity keys.
+        This uses the Spellbook spell_id_pool first (owned + contracted),
+        then falls back to the owned map and per-conduit contracted maps.
+        It is intended for cases where the caller has an exact fingerprint
+        and does not care about logical identity keys.
 
         Args:
             spell_id:
@@ -836,6 +839,12 @@ class Meld(Cleanable, IMeld):
                 If no spell with the given ``spell_id`` exists in either
                 the local or contracted spell maps.
         """
+        # Local spells
+        if self._spell_id_pool is not None:
+            pooled_spell = self._spell_id_pool.get(spell_id)
+            if pooled_spell is not None:
+                return pooled_spell
+
         # Local spells
         if self._spells_by_id is not None:
             if spell_id in self._spells_by_id:
@@ -1194,9 +1203,7 @@ class Meld(Cleanable, IMeld):
             )
             if not spell.has_disposal_methods:
                 return instance, True
-            if spell.is_existing_creation and creations is not None:
-                with creations._lock:
-                    self._register_spell(spell, instance, creations)
+            self._register_spell(spell, instance, creations)
             return instance, True
 
         if existence in (
@@ -1264,14 +1271,15 @@ class Meld(Cleanable, IMeld):
             Optional[Any]: The existing component instance if found and reuse is
                            permitted by the Existence mode, otherwise **None**.
         """
-        if creations is None:
-            creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
-        spell_id: str = spell.spell_id
-
         # Existence.many means always fresh, never reuse
         if existence is Existence.many:
             return None
+
+        if creations is None:
+            creations = self._select_creations_for_spell(spell)
+
+        spell_id: str = spell.spell_id
 
         # --- Check Normal Conduit Creations (Creations) ---
         if isinstance(creations, Creations):
