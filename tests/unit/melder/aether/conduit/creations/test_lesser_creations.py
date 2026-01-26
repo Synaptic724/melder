@@ -152,8 +152,8 @@ def test_add_many_records_disposal_metadata(make_lesser_creations):
     )
 
     creation = creations._many["spell-1"][0]
-    assert creation._has_disposal_methods is True
-    assert creation._disposal_methods == ["dispose"]
+    assert creation.has_disposal_methods is True
+    assert creation.disposal_method_names == ["dispose"]
 
 
 # -----------------

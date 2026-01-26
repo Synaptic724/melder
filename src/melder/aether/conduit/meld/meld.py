@@ -262,13 +262,6 @@ class Meld(Cleanable, IMeld):
                 ID resolution, unsupported Creations manager, or attempting to
                 meld a broken spell).
         """
-        # Basic contract: we need at least *one* identity source.
-        if spell is None and spellframe is None and spell_name is None:
-            raise ValueError(
-                "[MELD] meld(...) requires at least one of "
-                "`spell_name`, `spell`, or `spellframe`."
-            )
-
         # 1) Normalize per-call overrides into a stable dict shape.
         override_map = self._normalize_spell_override(spell_override)
 
@@ -1090,21 +1083,13 @@ class Meld(Cleanable, IMeld):
         Returns:
             The selected creations container, or None if neither is available.
         """
-        existence: Existence = spell.existence
-        owner_creations = spell._owner_creations
-
-        if existence in (
+        if spell.existence in (
                 Existence.unique_per_conduit,
                 Existence.many,
                 Existence.unique_per_spell_space,
         ):
-            if self._creations is not None:
-                return self._creations
-            return owner_creations
-
-        if owner_creations is not None:
-            return owner_creations
-        return self._creations
+            return self._creations
+        return spell._owner_creations
 
     def _raise_override_on_existing_instance(
             self,
@@ -1135,6 +1120,9 @@ class Meld(Cleanable, IMeld):
             MeldExecutionError:
                 If overrides are supplied for an already-instantiated shared spell.
         """
+        if not overrides:
+            return
+
         raise MeldExecutionError(
             spell_id=spell.spell_index.current,
             spell_name=spell.spell_name,
@@ -1199,10 +1187,6 @@ class Meld(Cleanable, IMeld):
                 Existence.unique_per_conduit,
                 Existence.unique_per_spell_space,
         ):
-            if creations is None:
-                raise RuntimeError(
-                    "[MELD] Caller creations are required for per-conduit existences."
-                )
             with creations._lock:
                 instance = self._get_existing_creation(spell, creations)
                 if instance is None:
@@ -1215,19 +1199,15 @@ class Meld(Cleanable, IMeld):
                         self._register_spell(spell, instance, creations)
                     created = True
                 else:
-                    if overrides:
-                        self._raise_override_on_existing_instance (
-                            spell=spell,
-                            overrides=overrides,
-                        )
+                    self._raise_override_on_existing_instance(
+                        spell=spell,
+                        overrides=overrides,
+                    )
             return instance, created
 
         with spell._lock:
-            if creations is not None:
-                with creations._lock:
-                    instance = self._get_existing_creation(spell, creations)
-            else:
-                instance = self._get_existing_creation(spell, None)
+            with creations._lock:
+                instance = self._get_existing_creation(spell, creations)
 
             if instance is None:
                 instance = self._meld_by_spell_type(

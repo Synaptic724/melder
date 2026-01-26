@@ -177,8 +177,8 @@ def test_add_unique_records_disposal_metadata(normal_conduit: FakeConduit) -> No
     )
 
     creation = creations._unique[spell_id]
-    assert creation._has_disposal_methods is True
-    assert creation._disposal_methods == ["cleanup", "close"]
+    assert creation.has_disposal_methods is True
+    assert creation.disposal_method_names == ["cleanup", "close"]
 
 
 def test_add_many_records_disposal_metadata(normal_conduit: FakeConduit) -> None:
@@ -200,8 +200,8 @@ def test_add_many_records_disposal_metadata(normal_conduit: FakeConduit) -> None
     )
 
     creation = creations._many[spell_id][0]
-    assert creation._has_disposal_methods is True
-    assert creation._disposal_methods == ["dispose"]
+    assert creation.has_disposal_methods is True
+    assert creation.disposal_method_names == ["dispose"]
 
 
 # -----------------------------------------------------------------------------

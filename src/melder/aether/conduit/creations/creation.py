@@ -78,6 +78,28 @@ class Creation(Cleanable):
         """Return the underlying Python object wrapped by this Creation."""
         return self._value
 
+    @property
+    def has_disposal_methods(self) -> bool | None:
+        """
+        Return whether the originating spell declared disposal methods.
+
+        Contract:
+            - True/False while the Creation is active.
+            - None after cleanup.
+        """
+        return self._has_disposal_methods
+
+    @property
+    def disposal_method_names(self) -> list[str] | None:
+        """
+        Return the ordered disposal method names recorded for this Creation.
+
+        Contract:
+            - List of method names while the Creation is active.
+            - None after cleanup.
+        """
+        return self._disposal_methods
+
     def __repr__(self) -> str:
         return f"<Creation id={self._id} value={self._value!r}>"
 

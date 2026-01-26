@@ -2167,11 +2167,6 @@ class Conduit(Cleanable, IConduit):
                 Propagated from ``Meld.meld`` if hook execution fails.
         """
         self.check_cleaned()
-
-        if self._meld is None:
-            self._logger.error("Meld instance is not available on this Conduit", "meld")
-            raise RuntimeError("[CONDUIT] Meld instance is not available on this Conduit.")
-
         if spell_name is None and spell is None and spellframe is None:
             self._logger.error(
                 "Conduit.meld requires at least one of spell_name, spell, or spellframe",
@@ -2195,7 +2190,6 @@ class Conduit(Cleanable, IConduit):
                 "[CONDUIT] 'binding_name' must be a string identifier when "
                 "provided to Conduit.meld()."
             )
-
 
         self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
