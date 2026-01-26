@@ -86,6 +86,17 @@ class _ManyService:
         """
         self.marker = object()
 
+    def cleanup(self) -> None:
+        """
+        Purpose:
+            Provide a disposal hook for many-scope registration tests.
+        Contract:
+            - Does not raise.
+        Returns:
+            None.
+        """
+        return
+
 
 class _LineageService:
     """
@@ -221,7 +232,7 @@ def test_component_conduit_meld_many_registers_multiple_creations() -> None:
     Raises:
         AssertionError: If instances are reused or not recorded.
     """
-    spellbook = _make_spellbook()
+    spellbook = _make_spellbook(disposal=True)
     spell_id = spellbook.bind(
         spell=_ManyService,
         existence=Existence.many,
@@ -346,7 +357,7 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
     Raises:
         AssertionError: If creations are not transferred or reused correctly.
     """
-    spellbook = _make_spellbook(dynamic=True)
+    spellbook = _make_spellbook(dynamic=True, disposal=True)
     unique_id = spellbook.bind(
         spell=_UniqueService,
         existence=Existence.unique_per_conduit,

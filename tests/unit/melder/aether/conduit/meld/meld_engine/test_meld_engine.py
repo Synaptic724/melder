@@ -1112,7 +1112,7 @@ def test_register_instance_skips_many_without_disposal_methods() -> None:
         has_disposal_methods=False,
         disposal_method_names=[],
     )
-    engine._register_instance(spell, object(), creations)
+    engine._register_spell(spell, object(), creations)
 
     assert "spell-1" not in creations._many
 

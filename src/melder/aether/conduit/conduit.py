@@ -2191,6 +2191,10 @@ class Conduit(Cleanable, IConduit):
                 "provided to Conduit.meld()."
             )
 
+        if self._meld is None:
+            self._logger.error("Meld instance is not available", "meld")
+            raise RuntimeError("[CONDUIT] Meld instance is not available.")
+
         self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
         result = self._meld.meld(

@@ -110,6 +110,17 @@ class _ManyService:
         """
         self.marker = object()
 
+    def cleanup(self) -> None:
+        """
+        Purpose:
+            Provide a disposal hook for many-scope registration tests.
+        Contract:
+            - Does not raise.
+        Returns:
+            None.
+        """
+        return
+
 
 def test_conduit_integration_creations_extract_restore_reuses_instances() -> None:
     """
@@ -169,7 +180,13 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
     Raises:
         AssertionError: If upgrade drops or fails to preserve creations.
     """
-    spellbook = Spellbook(configuration=_make_dynamic_configuration())
+    configuration = Configuration()
+    configuration.set_property("system_state", "dynamic")
+    configuration.set_property("disposal", True)
+    configuration.set_property("disposal_method_names", ["cleanup"])
+    configuration.load_default_dictionary()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook = Spellbook(configuration=configuration)
     unique_id = spellbook.bind(
         spell=_UniqueService,
         existence=Existence.unique_per_conduit,

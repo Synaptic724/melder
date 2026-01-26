@@ -1083,13 +1083,21 @@ class Meld(Cleanable, IMeld):
         Returns:
             The selected creations container, or None if neither is available.
         """
-        if spell.existence in (
+        existence: Existence = spell.existence
+        owner_creations = spell._owner_creations
+
+        if existence in (
                 Existence.unique_per_conduit,
                 Existence.many,
                 Existence.unique_per_spell_space,
         ):
-            return self._creations
-        return spell._owner_creations
+            if self._creations is not None:
+                return self._creations
+            return owner_creations
+
+        if owner_creations is not None:
+            return owner_creations
+        return self._creations
 
     def _raise_override_on_existing_instance(
             self,
@@ -1167,6 +1175,14 @@ class Meld(Cleanable, IMeld):
         """
         creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
+        if creations is None and existence in (
+                Existence.unique_per_conduit,
+                Existence.unique_per_spell_space,
+                Existence.many,
+        ):
+            raise RuntimeError(
+                "[MELD] Caller creations are required for per-conduit existences."
+            )
         instance: Any = None
         created = False
 
@@ -1206,8 +1222,11 @@ class Meld(Cleanable, IMeld):
             return instance, created
 
         with spell._lock:
-            with creations._lock:
-                instance = self._get_existing_creation(spell, creations)
+            if creations is not None:
+                with creations._lock:
+                    instance = self._get_existing_creation(spell, creations)
+            else:
+                instance = self._get_existing_creation(spell, None)
 
             if instance is None:
                 instance = self._meld_by_spell_type(
