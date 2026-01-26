@@ -270,26 +270,25 @@ class Creations(Cleanable, ICreations):
         Returns:
             Optional[Exception]: RuntimeError if a chosen cleanup method raised; otherwise None.
         """
-        if item is None:
-            return None
         if not self._disposal_enabled:
+            return None
+        if item is None:
             return None
 
         for method_name in self._disposal_method_names:
-            if hasattr(item, method_name):
-                meth = getattr(item, method_name, None)
-                if callable(meth):
-                    try:
-                        meth()
-                        return None
-                    except Exception as ex:
-                        self._logger.error(
-                            f"_attempt_cleanup: '{method_name}' failed on {type(item).__name__}: {ex}",
-                            method_name="_attempt_cleanup", mask=True, exc_info=True,
-                            owner_id=self._id, owner_display=self._display_name,
-                            groups=self._log_groups, system_groups=self._log_sysgroups,
-                        )
-                        return RuntimeError(f"Failed to dispose object {item} using method '{method_name}': {ex}")
+            meth = getattr(item, method_name, None)
+            if callable(meth):
+                try:
+                    meth()
+                    return None
+                except Exception as ex:
+                    self._logger.error(
+                        f"_attempt_cleanup: '{method_name}' failed on {type(item).__name__}: {ex}",
+                        method_name="_attempt_cleanup", mask=True, exc_info=True,
+                        owner_id=self._id, owner_display=self._display_name,
+                        groups=self._log_groups, system_groups=self._log_sysgroups,
+                    )
+                    return RuntimeError(f"Failed to dispose object {item} using method '{method_name}': {ex}")
 
         return None
 
