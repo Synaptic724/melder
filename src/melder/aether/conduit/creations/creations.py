@@ -321,13 +321,22 @@ class Creations(Cleanable, ICreations):
         self._many = kwargs.get("many")
 
 
-    def add_unique(self, key: str, item: object) -> None:
+    def add_unique(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: list[str] | None = None,
+    ) -> None:
         """
         Adds a singleton object instance to the `unique` scope.
 
         Args:
             key (UUID): Unique identifier (Spell ID).
             item (object): Object instance to manage.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -339,15 +348,28 @@ class Creations(Cleanable, ICreations):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique objects.")
-        self._unique[key] = Creation(item)
+        self._unique[key] = Creation(
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
 
-    def add_unique_per_lineage(self, key: str, item: object) -> None:
+    def add_unique_per_lineage(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: list[str] | None = None,
+    ) -> None:
         """
         Adds a singleton object instance to the `unique_per_lineage` scope.
 
         Args:
             key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -359,15 +381,28 @@ class Creations(Cleanable, ICreations):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
-        self._unique_per_lineage[key] = Creation(item)
+        self._unique_per_lineage[key] = Creation(
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
 
-    def add_unique_per_cluster(self, key: str, item: object) -> None:
+    def add_unique_per_cluster(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: list[str] | None = None,
+    ) -> None:
         """
         Adds a singleton object instance to the `unique_per_cluster` scope.
 
         Args:
             key (UUID): Unique identifier (Spell ID).
             item (object): Object instance to manage.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -379,15 +414,28 @@ class Creations(Cleanable, ICreations):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
-        self._unique_per_cluster[key] = Creation(item)
+        self._unique_per_cluster[key] = Creation(
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
 
-    def add_unique_per_scope(self, key: str, item: object) -> None:
+    def add_unique_per_scope(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: list[str] | None = None,
+    ) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
         Args:
             key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -399,9 +447,20 @@ class Creations(Cleanable, ICreations):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
-        self._unique_per_scope[key] = Creation(item)
+        self._unique_per_scope[key] = Creation(
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
 
-    def add_many(self, key: str, item: object) -> None:
+    def add_many(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: list[str] | None = None,
+    ) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 
@@ -410,6 +469,8 @@ class Creations(Cleanable, ICreations):
         Args:
             key (UUID): Collection identifier (Spell ID).
             item (object): Object instance to add.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -417,7 +478,13 @@ class Creations(Cleanable, ICreations):
         self.check_cleaned()
         if key not in self._many:
             self._many[key] = []
-        self._many[key].append(Creation(item))
+        self._many[key].append(
+            Creation(
+                item,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
+        )
 
     # ------------------------------------------------------------------
     # Extraction / restoration helpers (for transfers)
@@ -510,9 +577,24 @@ class Creations(Cleanable, ICreations):
             return None
         return bucket.get(spell_id)
 
-    def register_spellspace_creation(self, spellspace_id: str, spell_id: str, item: object) -> None:
+    def register_spellspace_creation(
+            self,
+            spellspace_id: str,
+            spell_id: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: list[str] | None = None,
+    ) -> None:
         """
         Register a creation under a specific spellspace bucket.
+
+        Args:
+            spellspace_id: SpellSpace bucket identifier.
+            spell_id: Spell id used as the bucket key.
+            item: Object instance to register.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
         """
         self.check_cleaned()
         if spellspace_id not in self._spellspace_instances:
@@ -520,7 +602,11 @@ class Creations(Cleanable, ICreations):
         bucket = self._spellspace_instances[spellspace_id]
         if spell_id in bucket:
             raise ValueError(f"Key {spell_id} already exists in spellspace '{spellspace_id}'.")
-        bucket[spell_id] = Creation(item)
+        bucket[spell_id] = Creation(
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
 
     def clear_spellspace_instances(self, spellspace_id: str) -> None:
         """

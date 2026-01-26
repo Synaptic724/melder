@@ -1135,9 +1135,6 @@ class Meld(Cleanable, IMeld):
             MeldExecutionError:
                 If overrides are supplied for an already-instantiated shared spell.
         """
-        if not overrides:
-            return
-
         raise MeldExecutionError(
             spell_id=spell.spell_index.current,
             spell_name=spell.spell_name,
@@ -1218,10 +1215,11 @@ class Meld(Cleanable, IMeld):
                         self._register_spell(spell, instance, creations)
                     created = True
                 else:
-                    self._raise_override_on_existing_instance(
-                        spell=spell,
-                        overrides=overrides,
-                    )
+                    if overrides:
+                        self._raise_override_on_existing_instance (
+                            spell=spell,
+                            overrides=overrides,
+                        )
             return instance, created
 
         with spell._lock:
@@ -1511,25 +1509,54 @@ class Meld(Cleanable, IMeld):
         """
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
+        has_disposal_methods: bool = spell.has_disposal_methods
+        disposal_methods: list[str] = spell.disposal_method_names
 
         if existence is Existence.unique:
-            creations.add_unique(spell_id, instance)
+            creations.add_unique(
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
 
         if existence is Existence.unique_per_conduit:
-            creations.add_unique_per_scope(spell_id, instance)
+            creations.add_unique_per_scope(
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
 
         if existence is Existence.many:
-            creations.add_many(spell_id, instance)
+            if not has_disposal_methods:
+                return
+            creations.add_many(
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
 
         if existence is Existence.unique_per_conduit_cluster:
-            creations.add_unique_per_cluster(spell_id, instance)
+            creations.add_unique_per_cluster(
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
 
         if existence is Existence.unique_per_conduit_lineage:
-            creations.add_unique_per_lineage(spell_id, instance)
+            creations.add_unique_per_lineage(
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
 
         if existence is Existence.unique_per_spell_space:
@@ -1543,7 +1570,13 @@ class Meld(Cleanable, IMeld):
                 raise SpellSpaceScopeError(
                     "Active SpellSpace belongs to a different conduit."
                 )
-            creations.register_spellspace_creation(spellspace.id, spell_id, instance)
+            creations.register_spellspace_creation(
+                spellspace.id,
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
 
         # Fallback for any unsupported mode in Creations
@@ -1579,26 +1612,55 @@ class Meld(Cleanable, IMeld):
         """
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
+        has_disposal_methods: bool = spell.has_disposal_methods
+        disposal_methods: list[str] = spell.disposal_method_names
 
         if existence is Existence.unique_per_conduit:
-            creations.add_unique_per_scope(spell_id, instance)
+            creations.add_unique_per_scope(
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
 
         if existence is Existence.many:
-            creations.add_many(spell_id, instance)
+            if not has_disposal_methods:
+                return
+            creations.add_many(
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
 
         # Delegate frame-level lifetimes to the parent creations when available.
         parent_creations = creations._parent_creations
         if isinstance(parent_creations, Creations):
             if existence is Existence.unique:
-                parent_creations.add_unique(spell_id, instance)
+                parent_creations.add_unique(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             if existence is Existence.unique_per_conduit_cluster:
-                parent_creations.add_unique_per_cluster(spell_id, instance)
+                parent_creations.add_unique_per_cluster(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             if existence is Existence.unique_per_conduit_lineage:
-                parent_creations.add_unique_per_lineage(spell_id, instance)
+                parent_creations.add_unique_per_lineage(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             if existence is Existence.unique_per_spell_space:
                 spellspace = creations._conduit.get_active_spellspace()
@@ -1611,7 +1673,13 @@ class Meld(Cleanable, IMeld):
                     raise SpellSpaceScopeError(
                         "Active SpellSpace belongs to a different conduit."
                     )
-                creations.register_spellspace_creation(spellspace.id, spell_id, instance)
+                creations.register_spellspace_creation(
+                    spellspace.id,
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
 
         # LesserConduits only support a subset of existence modes locally

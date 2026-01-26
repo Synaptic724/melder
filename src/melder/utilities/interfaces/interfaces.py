@@ -190,13 +190,22 @@ class ICreations(ICleanable, Protocol):
         """
         ...
 
-    def add_unique(self, key: str, item: object) -> None:
+    def add_unique(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: Optional[List[str]] = None,
+    ) -> None:
         """
         Adds a singleton object instance to the `unique` scope.
 
         Args:
             key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -204,13 +213,22 @@ class ICreations(ICleanable, Protocol):
         """
         ...
 
-    def add_unique_per_lineage(self, key: str, item: object) -> None:
+    def add_unique_per_lineage(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: Optional[List[str]] = None,
+    ) -> None:
         """
         Adds a singleton object instance to the `unique_per_lineage` scope.
 
         Args:
             key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -218,13 +236,22 @@ class ICreations(ICleanable, Protocol):
         """
         ...
 
-    def add_unique_per_cluster(self, key: str, item: object) -> None:
+    def add_unique_per_cluster(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: Optional[List[str]] = None,
+    ) -> None:
         """
         Adds a singleton object instance to the `unique_per_cluster` scope.
 
         Args:
             key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -232,13 +259,22 @@ class ICreations(ICleanable, Protocol):
         """
         ...
 
-    def add_unique_per_scope(self, key: str, item: object) -> None:
+    def add_unique_per_scope(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: Optional[List[str]] = None,
+    ) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
         Args:
             key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -246,7 +282,14 @@ class ICreations(ICleanable, Protocol):
         """
         ...
 
-    def add_many(self, key: str, item: object) -> None:
+    def add_many(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: Optional[List[str]] = None,
+    ) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 
@@ -255,6 +298,8 @@ class ICreations(ICleanable, Protocol):
         Args:
             key (str): Collection identifier (Spell ID).
             item (object): Object instance to add.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -344,13 +389,22 @@ class ILesserCreations(ICleanable, Protocol):
         """
         ...
 
-    def add_unique_per_scope(self, key: str, item: object) -> None:
+    def add_unique_per_scope(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: Optional[List[str]] = None,
+    ) -> None:
         """
         Adds a singleton object instance to the `unique_per_scope` scope.
 
         Args:
             key (str): Unique identifier (Spell ID).
             item (object): Object instance to manage.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
@@ -358,7 +412,14 @@ class ILesserCreations(ICleanable, Protocol):
         """
         ...
 
-    def add_many(self, key: str, item: object) -> None:
+    def add_many(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: Optional[List[str]] = None,
+    ) -> None:
         """
         Adds an object instance to a multi-instance collection under the `many` scope.
 
@@ -367,6 +428,8 @@ class ILesserCreations(ICleanable, Protocol):
         Args:
             key (str): Collection identifier (Spell ID).
             item (object): Object instance to add.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.

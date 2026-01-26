@@ -769,12 +769,19 @@ def test_register_to_creations_adds_unique_spell(
     spell = MagicMock()
     spell.existence = Existence.unique
     spell.spell_id = "spell-1"
+    spell.has_disposal_methods = True
+    spell.disposal_method_names = ["cleanup"]
     conduit_normal._creations.add_unique = MagicMock()
     instance = object()
 
     conduit_normal._register_to_creations(spell, instance)
 
-    conduit_normal._creations.add_unique.assert_called_once_with("spell-1", instance)
+    conduit_normal._creations.add_unique.assert_called_once_with(
+        "spell-1",
+        instance,
+        has_disposal_methods=True,
+        disposal_methods=["cleanup"],
+    )
 
 
 def test_register_to_creations_rejects_non_unique_spells(

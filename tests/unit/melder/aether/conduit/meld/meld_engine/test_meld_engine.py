@@ -392,6 +392,8 @@ def _make_spell(
     is_existing_creation: bool = False,
     user_created_object: Any = None,
     owner_creations: Any | None = None,
+    has_disposal_methods: bool = True,
+    disposal_method_names: Optional[list[str]] = None,
 ) -> SimpleNamespace:
     """
     Build a minimal spell stub with attributes used by MeldEngine.
@@ -407,6 +409,8 @@ def _make_spell(
         is_existing_creation: True when spell wraps a pre-created object.
         user_created_object: Optional object for existing-creation spells.
         owner_creations: Optional owner creations container for shared lifetimes.
+        has_disposal_methods: Whether the spell declares disposal methods.
+        disposal_method_names: Optional list of disposal method names.
 
     Returns:
         SimpleNamespace: Spell-like object with the required attributes.
@@ -429,6 +433,11 @@ def _make_spell(
         is_existing_creation=is_existing_creation,
         user_created_object=user_created_object,
         _owner_creations=owner_creations,
+        has_disposal_methods=bool(has_disposal_methods),
+        disposal_method_names=(
+            ["cleanup"] if has_disposal_methods and disposal_method_names is None
+            else list(disposal_method_names) if disposal_method_names else []
+        ),
         _lock=RLock(),
     )
 
@@ -1086,6 +1095,26 @@ def test_get_existing_creation_returns_none_for_many() -> None:
     engine, _, _ = _make_engine(creations=creations)
     spell = _make_spell(spell_id="spell-1", existence=Existence.many)
     assert engine._get_existing_creation(spell) is None
+
+
+def test_register_instance_skips_many_without_disposal_methods() -> None:
+    """
+    Verify Existence.many registration is skipped when disposal is not required.
+
+    Contract:
+        - Many existence does not register into Creations when disposal is not required.
+    """
+    creations, _ = _make_creations()
+    engine, _, _ = _make_engine(creations=creations)
+    spell = _make_spell(
+        spell_id="spell-1",
+        existence=Existence.many,
+        has_disposal_methods=False,
+        disposal_method_names=[],
+    )
+    engine._register_instance(spell, object(), creations)
+
+    assert "spell-1" not in creations._many
 
 
 def test_get_existing_creation_returns_unique_from_creations() -> None:

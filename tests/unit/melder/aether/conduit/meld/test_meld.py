@@ -137,6 +137,8 @@ class _SpellStub:
         is_class_spell: bool = False,
         is_method_spell: bool = False,
         is_lambda_spell: bool = False,
+        has_disposal_methods: bool = True,
+        disposal_method_names: list[str] | None = None,
         owner_creations: Any | None = None,
         owner_conduit_id: str = "conduit-1",
         owner_conduit_name: str = "Conduit",
@@ -163,6 +165,8 @@ class _SpellStub:
             is_class_spell: Whether the spell is class-based.
             is_method_spell: Whether the spell is method-based.
             is_lambda_spell: Whether the spell is lambda-based.
+            has_disposal_methods: Whether the spell declares disposal methods.
+            disposal_method_names: Optional list of disposal method names.
             owner_creations: Owner creations container.
             owner_conduit_id: Owning conduit id.
             owner_conduit_name: Owning conduit name.
@@ -186,6 +190,11 @@ class _SpellStub:
         self.is_class_spell = is_class_spell
         self.is_method_spell = is_method_spell
         self.is_lambda_spell = is_lambda_spell
+        self.has_disposal_methods = bool(has_disposal_methods)
+        if disposal_method_names is None:
+            self.disposal_method_names = ["cleanup"] if self.has_disposal_methods else []
+        else:
+            self.disposal_method_names = list(disposal_method_names)
         self._owner_creations = owner_creations
         self._owner_conduit_id = owner_conduit_id
         self._owner_conduit_name = owner_conduit_name

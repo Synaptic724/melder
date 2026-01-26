@@ -158,6 +158,52 @@ def test_get_spellspace_creation_on_missing_bucket_returns_none(normal_conduit: 
     assert creations.get_spellspace_creation("ss-1", "spell-1") is None
 
 
+def test_add_unique_records_disposal_metadata(normal_conduit: FakeConduit) -> None:
+    """
+    Verify Creation stores disposal metadata supplied at registration.
+
+    Contract:
+        - Creation carries has_disposal_methods and disposal method names.
+    """
+    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    spell_id = "spell-1"
+    obj = object()
+
+    creations.add_unique(
+        spell_id,
+        obj,
+        has_disposal_methods=True,
+        disposal_methods=["cleanup", "close"],
+    )
+
+    creation = creations._unique[spell_id]
+    assert creation._has_disposal_methods is True
+    assert creation._disposal_methods == ["cleanup", "close"]
+
+
+def test_add_many_records_disposal_metadata(normal_conduit: FakeConduit) -> None:
+    """
+    Verify many Creation entries store disposal metadata.
+
+    Contract:
+        - Each many Creation carries the provided disposal metadata.
+    """
+    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    spell_id = "spell-1"
+    obj = object()
+
+    creations.add_many(
+        spell_id,
+        obj,
+        has_disposal_methods=True,
+        disposal_methods=["dispose"],
+    )
+
+    creation = creations._many[spell_id][0]
+    assert creation._has_disposal_methods is True
+    assert creation._disposal_methods == ["dispose"]
+
+
 # -----------------------------------------------------------------------------
 # add_* and extraction behavior (prefer public observation via extract)
 # -----------------------------------------------------------------------------

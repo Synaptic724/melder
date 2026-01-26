@@ -54,6 +54,8 @@ class _SpellStub:
         is_class_spell: bool = False,
         is_method_spell: bool = False,
         is_lambda_spell: bool = False,
+        has_disposal_methods: bool = True,
+        disposal_method_names: list[str] | None = None,
     ) -> None:
         """
         Initialize the stub with the attributes Meld expects.
@@ -72,6 +74,8 @@ class _SpellStub:
             is_class_spell: True for class-based spells.
             is_method_spell: True for method-based spells.
             is_lambda_spell: True for lambda-based spells.
+            has_disposal_methods: Whether the spell declares disposal methods.
+            disposal_method_names: Optional list of disposal method names.
         """
         self.spell_id = spell_id
         self.spell_name = spell_name
@@ -87,6 +91,11 @@ class _SpellStub:
         self.is_class_spell = is_class_spell
         self.is_method_spell = is_method_spell
         self.is_lambda_spell = is_lambda_spell
+        self.has_disposal_methods = bool(has_disposal_methods)
+        if disposal_method_names is None:
+            self.disposal_method_names = ["cleanup"] if self.has_disposal_methods else []
+        else:
+            self.disposal_method_names = list(disposal_method_names)
         self._pre_hooks: list[Callable[..., Any]] = []
         self._activation_hooks: list[Callable[..., Any]] = []
         self._post_hooks: list[Callable[..., Any]] = []
@@ -600,6 +609,46 @@ def test_register_to_creations_spellspace_registers_instance() -> None:
     stored = creations.get_spellspace_creation("space-1", spell.spell_id)
     assert stored is not None
     assert stored.value is instance
+
+
+def test_register_to_creations_many_skips_without_disposal_methods() -> None:
+    """
+    Verify Existence.many registration is skipped when no disposal methods exist.
+
+    Contract:
+        - Many existence does not register into Creations when disposal is not required.
+    """
+    creations = _make_creations()
+    meld = _make_meld(creations=creations)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.many,
+        has_disposal_methods=False,
+        disposal_method_names=[],
+    )
+    meld._register_to_creations(spell, object(), creations)
+
+    assert "spell-1" not in creations._many
+
+
+def test_register_to_lesser_creations_many_skips_without_disposal_methods() -> None:
+    """
+    Verify LesserCreations skip many registration when disposal is not required.
+
+    Contract:
+        - Many existence does not register into LesserCreations when disposal is not required.
+    """
+    lesser = _make_lesser_creations()
+    meld = _make_meld(creations=lesser)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.many,
+        has_disposal_methods=False,
+        disposal_method_names=[],
+    )
+    meld._register_to_lesser_creations(spell, object(), lesser)
+
+    assert "spell-1" not in lesser._many
 
 
 def test_register_to_creations_spellspace_requires_active_space() -> None:

@@ -13,6 +13,7 @@ class Creation(Cleanable):
     - Provide a unique ULID identity.
     - Encapsulate the underlying Python object.
     - Allow Creations/LesserCreations to manage disposal.
+    - Store disposal metadata derived from the originating spell.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = (
@@ -24,18 +25,26 @@ class Creation(Cleanable):
         "_lock",
     )
 
-    def __init__(self, value: Any):
+    def __init__(
+            self,
+            value: Any,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: list[str] | None = None,
+    ):
         """
         Wrap an object into a Creation container.
 
         Args:
             value: Any Python object produced by a Spell.
+            has_disposal_methods: True when the spell declares disposal methods.
+            disposal_methods: Ordered list of disposal method names for this creation.
         """
         super().__init__()
         self._id: str = str(ulid.ULID())
         self._lock : threading.RLock = threading.RLock()
-        self._has_disposal_methods: bool = False
-        self._disposal_methods: list[str] = []
+        self._has_disposal_methods: bool = bool(has_disposal_methods)
+        self._disposal_methods: list[str] = list(disposal_methods) if disposal_methods else []
         self._value: Any = value
 
     def cleanup(self):
@@ -55,6 +64,8 @@ class Creation(Cleanable):
                 return
             self._cleaned = True
             self._value = None   # Underlying object is not disposed here.
+            self._has_disposal_methods = None
+            self._disposal_methods = None
         self._lock = None
 
     @property

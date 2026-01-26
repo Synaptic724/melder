@@ -2170,6 +2170,8 @@ class MeldEngine(Cleanable):
             - Per-conduit lifetimes register against the caller creations container.
             - Shared lifetimes register against the owner creations container.
             - Unknown creations containers are treated as no-ops.
+            - Existence.many registration is skipped when the spell declares
+              no disposal methods.
 
         Args:
             spell: The spell that produced the instance.
@@ -2184,25 +2186,54 @@ class MeldEngine(Cleanable):
             creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
         spell_id: str = spell.spell_id
+        has_disposal_methods: bool = spell.has_disposal_methods
+        disposal_methods: list[str] = spell.disposal_method_names
 
         if creations is None:
             return None
 
         if isinstance(creations, Creations):
             if existence is Existence.unique:
-                creations.add_unique(spell_id, instance)
+                creations.add_unique(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             if existence is Existence.unique_per_conduit:
-                creations.add_unique_per_scope(spell_id, instance)
+                creations.add_unique_per_scope(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             if existence is Existence.many:
-                creations.add_many(spell_id, instance)
+                if not has_disposal_methods:
+                    return
+                creations.add_many(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             if existence is Existence.unique_per_conduit_cluster:
-                creations.add_unique_per_cluster(spell_id, instance)
+                creations.add_unique_per_cluster(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             if existence is Existence.unique_per_conduit_lineage:
-                creations.add_unique_per_lineage(spell_id, instance)
+                creations.add_unique_per_lineage(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             if existence is Existence.unique_per_spell_space:
                 spellspace = creations._conduit.get_active_spellspace()
@@ -2215,27 +2246,60 @@ class MeldEngine(Cleanable):
                     raise SpellSpaceScopeError(
                         "Active SpellSpace belongs to a different conduit."
                     )
-                creations.register_spellspace_creation(spellspace.id, spell_id, instance)
+                creations.register_spellspace_creation(
+                    spellspace.id,
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             return
 
         if isinstance(creations, LesserCreations):
             if existence is Existence.unique_per_conduit:
-                creations.add_unique_per_scope(spell_id, instance)
+                creations.add_unique_per_scope(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             if existence is Existence.many:
-                creations.add_many(spell_id, instance)
+                if not has_disposal_methods:
+                    return
+                creations.add_many(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
+                )
                 return
             parent_creations = creations._parent_creations
             if isinstance(parent_creations, Creations):
                 if existence is Existence.unique:
-                    parent_creations.add_unique(spell_id, instance)
+                    parent_creations.add_unique(
+                        spell_id,
+                        instance,
+                        has_disposal_methods=has_disposal_methods,
+                        disposal_methods=disposal_methods,
+                    )
                     return
                 if existence is Existence.unique_per_conduit_cluster:
-                    parent_creations.add_unique_per_cluster(spell_id, instance)
+                    parent_creations.add_unique_per_cluster(
+                        spell_id,
+                        instance,
+                        has_disposal_methods=has_disposal_methods,
+                        disposal_methods=disposal_methods,
+                    )
                     return
                 if existence is Existence.unique_per_conduit_lineage:
-                    parent_creations.add_unique_per_lineage(spell_id, instance)
+                    parent_creations.add_unique_per_lineage(
+                        spell_id,
+                        instance,
+                        has_disposal_methods=has_disposal_methods,
+                        disposal_methods=disposal_methods,
+                    )
                     return
                 if existence is Existence.unique_per_spell_space:
                     spellspace = creations._conduit.get_active_spellspace()
@@ -2248,6 +2312,12 @@ class MeldEngine(Cleanable):
                         raise SpellSpaceScopeError(
                             "Active SpellSpace belongs to a different conduit."
                         )
-                    creations.register_spellspace_creation(spellspace.id, spell_id, instance)
+                    creations.register_spellspace_creation(
+                        spellspace.id,
+                        spell_id,
+                        instance,
+                        has_disposal_methods=has_disposal_methods,
+                        disposal_methods=disposal_methods,
+                    )
                     return
             return

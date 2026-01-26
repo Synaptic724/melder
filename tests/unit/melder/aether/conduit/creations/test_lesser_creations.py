@@ -136,6 +136,26 @@ def test_init_defaults_disposal_methods_to_empty_list_when_none(make_lesser_crea
     assert calls == []
 
 
+def test_add_many_records_disposal_metadata(make_lesser_creations):
+    """
+    Verify many Creation entries store disposal metadata.
+
+    Contract:
+        - Each many Creation carries the provided disposal metadata.
+    """
+    creations, _ = make_lesser_creations(disposal_enabled=False, disposal_method_names=[])
+    creations.add_many(
+        "spell-1",
+        object(),
+        has_disposal_methods=True,
+        disposal_methods=["dispose"],
+    )
+
+    creation = creations._many["spell-1"][0]
+    assert creation._has_disposal_methods is True
+    assert creation._disposal_methods == ["dispose"]
+
+
 # -----------------
 # Disposal helper (_attempt_cleanup)
 # -----------------
