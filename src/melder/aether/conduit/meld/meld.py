@@ -1203,7 +1203,9 @@ class Meld(Cleanable, IMeld):
             )
             if not spell.has_disposal_methods:
                 return instance, True
-            self._register_spell(spell, instance, creations)
+            if spell.is_existing_creation and creations is not None:
+                with creations._lock:
+                    self._register_spell(spell, instance, creations)
             return instance, True
 
         if existence in (
