@@ -423,6 +423,36 @@ class _DummyCrafter:
         self.calls.append("change_control")
         self.seen_cancel_events.append((conduit_id, cancel_event))
 
+    def run_phase_injection_plan(self, conduit_id, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 9 invocation.
+        Contract:
+            Appends the phase name, stores conduit id, and stores the cancel event.
+        Args:
+            conduit_id: Conduit identifier passed by the caller.
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
+        self.calls.append("injection_plan")
+        self.seen_cancel_events.append((conduit_id, cancel_event))
+
+    def run_phase_patch_maps(self, conduit_id, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 10 invocation.
+        Contract:
+            Appends the phase name, stores conduit id, and stores the cancel event.
+        Args:
+            conduit_id: Conduit identifier passed by the caller.
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
+        self.calls.append("patch_maps")
+        self.seen_cancel_events.append((conduit_id, cancel_event))
+
     def cleanup_phase_artifacts(self):
         """
         Purpose:
@@ -840,6 +870,8 @@ def test_run_all_phases_invokes_crafter_in_order():
         "validation",
         "root_blueprints",
         "occurrence_plan",
+        "injection_plan",
+        "patch_maps",
         "system_validation",
         "change_control",
         "cleanup_phase_artifacts",

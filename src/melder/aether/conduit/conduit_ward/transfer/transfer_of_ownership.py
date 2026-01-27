@@ -120,6 +120,9 @@ class TransferOfOwnership:
 
         Steps:
             - Disable lineage during transfer.
+            - If force_unshare is enabled, remove the target conduit contract entry
+              before the ownership flip so contracted cleanup does not clear the
+              newly owned lookup entry.
             - Flip registry/spellbooks under lock.
             - Move or teardown creations.
             - Adjust contracts/clusters (unshare or re-point).
@@ -135,6 +138,11 @@ class TransferOfOwnership:
         try:
             # Hard block resolution during transfer
             self._mark_lineage_disabled(spell_obj.spell_index)
+
+            # If the target is currently contracted, remove that entry before the flip.
+            if self.force_unshare:
+                with SafeGuard(self.source_conduit._lock, self.target_conduit._lock):
+                    self._unshare_target_conduit_contract(spell_obj)
 
             # Minimal critical section: flip registry + spellbooks
             with SafeGuard(self.source_conduit._lock, self.target_conduit._lock):
@@ -395,7 +403,62 @@ class TransferOfOwnership:
                 spell_obj.spell_index._owner_spell = spell_obj
         except Exception:
             pass
-        spell_obj._owner_conduit_id = self.source_conduit._id
+        try:
+            spell_obj._owner_conduit_id = self.source_conduit._id
+        except Exception:
+            pass
+
+    def _unshare_target_conduit_contract(self, spell_obj: Any) -> None:
+        """
+        Internal
+
+        Remove the target conduit contract entry for this spell before the ownership flip.
+
+        Purpose:
+            Ensure that contract cleanup for the target conduit does not remove the
+            owned spell_id entry after the transfer completes.
+        Contract:
+            - If a contract exists between the target and source conduits, remove the
+              spell_id from the target's contract map.
+            - Registers a rollback action to restore the contract entry if needed.
+            - Best-effort: errors are suppressed to avoid blocking transfer.
+        Args:
+            spell_obj: Spell being transferred.
+        Returns:
+            None.
+        Raises:
+            None; errors are suppressed.
+        Threading:
+            Caller should hold conduit locks to serialize against concurrent link changes.
+        """
+        try:
+            target_ward = self.target_conduit._conduit_ward
+            contract = target_ward._find_contract_by_id(self.source_conduit._id)
+            if contract is None:
+                return
+            with contract._lock:
+                existed_before = (
+                    contract._check_if_exists(target_ward, spell_obj.spell_id)
+                    or contract._check_if_exists(self.source_conduit._conduit_ward, spell_obj.spell_id)
+                )
+            if not existed_before:
+                return
+            target_ward._remove_spell_from_contract(
+                spell_id=spell_obj.spell_id,
+                conduit=self.source_conduit,
+                conduit_id=self.source_conduit._id,
+                aetheric_frame=self._frame_name,
+            )
+            self._register_rollback(
+                lambda: self._restore_contract_entry(
+                    target_ward,
+                    spell_obj,
+                    self.source_conduit,
+                    existed_before,
+                )
+            )
+        except Exception:
+            pass
 
     def _rollback_move_creation(self, spell_obj: Any, obj: Any) -> None:
         """
