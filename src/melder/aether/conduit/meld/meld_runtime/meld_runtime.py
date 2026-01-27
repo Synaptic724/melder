@@ -72,6 +72,7 @@ class MeldRuntime:
                  - dependency graph
                  - requirements
                  - resolution frame (if any)
+                 - Phase 8 occurrence plan (if available)
             4. Create a `ResolutionFrame` initialized with the normalized
                overrides from the context.
             5. Instantiate `MeldEngine` and delegate to `engine.run()`.
@@ -175,6 +176,15 @@ class MeldRuntime:
         except Exception:
             mutation_override_payload = {}
 
+        occurrence_plan = None
+        injection_plan = None
+        override_patch_map = None
+        crafter = spell._crafter
+        if crafter is not None and not mutation_override_payload:
+            occurrence_plan = getattr(crafter, "occurrence_plan_phase8", None)
+            injection_plan = getattr(crafter, "injection_plan_phase9", None)
+            override_patch_map = getattr(crafter, "override_patch_map_phase10", None)
+
         # Apply mutation overrides (graph-level) and spell overrides (value-level)
         # if we have a deep blueprint. Fallback to simple overrides otherwise.
         execution_blueprint = root_blueprint
@@ -184,8 +194,11 @@ class MeldRuntime:
                 mutator = GraphMutator(root_blueprint)
                 execution_blueprint = mutator.apply(mutation_override_payload or {})
 
-                overrider = SpellOverrider(execution_blueprint)
-                override_map = overrider.apply(context.overrides or {})
+                if override_patch_map is not None:
+                    override_map = override_patch_map.apply(context.overrides or {})
+                else:
+                    overrider = SpellOverrider(execution_blueprint)
+                    override_map = overrider.apply(context.overrides or {})
             except Exception as exc:
                 raise MeldExecutionError(
                     spell_id=spell.spell_index.current,
@@ -212,6 +225,8 @@ class MeldRuntime:
             override_map=override_map,
             spell_lookup=spell._spellbook._spell_id_pool,
             system_states=spell._spell_system_states,
+            occurrence_plan=occurrence_plan,
+            injection_plan=injection_plan,
         )
 
         result = None

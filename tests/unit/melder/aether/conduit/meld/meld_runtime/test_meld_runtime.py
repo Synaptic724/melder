@@ -365,6 +365,52 @@ def test_execute_blocks_dirty_root() -> None:
         runtime.execute(context)
 
 
+def test_execute_passes_occurrence_plan_to_engine(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Verify execute forwards the Phase 8 occurrence plan to the engine.
+
+    Contract:
+        - OccurrencePlan from the spell crafter is passed into MeldEngine.
+    """
+    runtime = MeldRuntime()
+    occurrence_plan = MagicMock()
+    crafter = SimpleNamespace(occurrence_plan_phase8=occurrence_plan)
+    spell = _SpellStub(spell_id="spell-1", crafter=crafter)
+    context = _make_context(spell=spell)
+
+    engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
+    runtime.execute(context)
+
+    assert engine_instance.run.call_count == 1
+    assert engine_cls.call_args[1]["occurrence_plan"] is occurrence_plan
+
+
+def test_execute_skips_occurrence_plan_with_mutation_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify mutation overrides disable occurrence plan reuse.
+
+    Contract:
+        - When mutation overrides are present, occurrence_plan is not forwarded.
+    """
+    runtime = MeldRuntime()
+    occurrence_plan = MagicMock()
+    crafter = SimpleNamespace(occurrence_plan_phase8=occurrence_plan)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        crafter=crafter,
+        mutation_override={"**service": "spell-2"},
+    )
+    context = _make_context(spell=spell)
+
+    engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
+    runtime.execute(context)
+
+    assert engine_instance.run.call_count == 1
+    assert engine_cls.call_args[1]["occurrence_plan"] is None
+
+
 def test_execute_ignores_change_control_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify change-control lookup errors are ignored.
