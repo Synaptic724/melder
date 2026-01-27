@@ -813,6 +813,50 @@ class Spell(Cleanable, ISpell):
         crafter = self._ensure_crafter()
         crafter.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
 
+    def run_phase_injection_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 9 - Injection plan compilation (facade).
+
+        Delegates to the SpellCrafter to compile the injection plan for root
+        spells. Non-root spells are treated as a no-op.
+
+        Contract:
+            - Requires Phase 8 artifacts to be available.
+            - Does not return a value; artifacts are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
+
+    def run_phase_patch_maps(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 10 - Patch map compilation (facade).
+
+        Delegates to the SpellCrafter to compile override/mutation patch maps
+        for root spells. Non-root spells are treated as a no-op.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
+
     def run_phase_system_validation(
             self,
             conduit_id: str,
@@ -915,6 +959,8 @@ class Spell(Cleanable, ISpell):
             - Phase 4: Validation.
             - Phase 5: Root blueprint construction.
             - Phase 8: Occurrence plan compilation.
+            - Phase 9: Injection plan compilation.
+            - Phase 10: Patch map compilation.
             - Phase 6: System validation.
             - Phase 7: Change-control wiring.
 
@@ -940,6 +986,8 @@ class Spell(Cleanable, ISpell):
         crafter.run_phase_validation(cancel_event=cancel_event)
         crafter.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
+        crafter.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
+        crafter.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         crafter.cleanup_phase_artifacts()

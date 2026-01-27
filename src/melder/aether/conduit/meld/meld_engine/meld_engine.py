@@ -1,7 +1,7 @@
 from collections import defaultdict, deque
 import inspect
 from threading import RLock
-from typing import Any, Callable, Dict, Iterable, List, MutableMapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, List, MutableMapping, Optional, Sequence, Set, Tuple
 
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -15,6 +15,11 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
+from melder.spellbook.spell_crafter.blueprints.injection_plan import (
+    InjectionPlan,
+    InjectionSpec,
+)
+from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlan
 from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
@@ -62,6 +67,8 @@ class MeldEngine(Cleanable):
         "_any_overrides_present",
         "_contract_overrides_by_occurrence",
         "_contract_overrides_by_spell_id",
+        "_occurrence_plan",
+        "_injection_plan",
     ]
 
     def __init__(
@@ -77,6 +84,8 @@ class MeldEngine(Cleanable):
             override_map: Dict[SocketRef, Any],
             spell_lookup: Dict[str, ISpell],
             system_states: Any,
+            occurrence_plan: Optional[OccurrencePlan] = None,
+            injection_plan: Optional[InjectionPlan] = None,
     ) -> None:
         """
         Initialize a new `MeldEngine` for a single meld call.
@@ -99,6 +108,12 @@ class MeldEngine(Cleanable):
             override_map: SocketRef -> value overrides computed by SpellOverrider.
             spell_lookup: mapping of spell_id -> ISpell for all nodes in the DAG.
             system_states: SpellSystemStates handle (used to resolve topologies).
+            occurrence_plan:
+                Optional Phase 8 OccurrencePlan to reuse occurrence expansion and
+                execution ordering for this root spell.
+            injection_plan:
+                Optional Phase 9 InjectionPlan to reuse dependency wiring for
+                per-instance keyword arguments.
             logger: Optional logger; will be normalized to `SafeLogger`
                 if provided.
 
@@ -132,6 +147,8 @@ class MeldEngine(Cleanable):
         self._any_overrides_present: bool = False
         self._contract_overrides_by_occurrence: Dict[_OccurrenceKey, Any] = {}
         self._contract_overrides_by_spell_id: Dict[str, List[tuple[_OccurrenceKey, Any]]] = {}
+        self._occurrence_plan: Optional[OccurrencePlan] = occurrence_plan
+        self._injection_plan: Optional[InjectionPlan] = injection_plan
 
     # ------------------------------------------------------------------ #
     # Cleanup
@@ -173,6 +190,8 @@ class MeldEngine(Cleanable):
             self._any_overrides_present = None
             self._contract_overrides_by_occurrence = None
             self._contract_overrides_by_spell_id = None
+            self._occurrence_plan = None
+            self._injection_plan = None
             self._cleaned = True
 
     # ------------------------------------------------------------------ #
@@ -230,7 +249,8 @@ class MeldEngine(Cleanable):
             Executes the deep DAG in dependency-safe order when a blueprint
             is available. SpellContract sockets are resolved during occurrence
             expansion using contracted spells, with local fallback when no
-            contract is available.
+            contract is available. When a Phase 8 OccurrencePlan is present,
+            the engine reuses its occurrence graph and execution order.
         """
         self.check_cleaned()
 
@@ -257,29 +277,47 @@ class MeldEngine(Cleanable):
         dag = blueprint.dag
         root_id = self._root_spell.spell_index.current
 
-        occurrence_graph = self._build_occurrence_graph(
-            dag=dag,
+        plan_data = self._select_occurrence_plan(
             root_spell_id=root_id,
         )
-        self._extend_occurrence_graph_with_ordered_nodes(
-            occurrence_graph=occurrence_graph,
-            ordered_node_ids=ordered_ids,
-            dag=dag,
-        )
-        execution_order = self._build_execution_order(
-            occurrence_graph=occurrence_graph,
-            fallback_order=ordered_ids,
-        )
+        if plan_data is None:
+            occurrence_graph = self._build_occurrence_graph(
+                dag=dag,
+                root_spell_id=root_id,
+            )
+            self._extend_occurrence_graph_with_ordered_nodes(
+                occurrence_graph=occurrence_graph,
+                ordered_node_ids=ordered_ids,
+                dag=dag,
+            )
+            execution_order = self._build_execution_order(
+                occurrence_graph=occurrence_graph,
+                fallback_order=ordered_ids,
+            )
+            (
+                instance_keys_by_spell_id,
+                canonical_occurrences_by_spell_id,
+                root_instance_key,
+                shared_spell_ids,
+            ) = self._build_instance_plan(
+                occurrence_graph=occurrence_graph,
+                root_spell_id=root_id,
+            )
+        else:
+            (
+                occurrence_graph,
+                execution_order,
+                instance_keys_by_spell_id,
+                canonical_occurrences_by_spell_id,
+                root_instance_key,
+                shared_spell_ids,
+            ) = plan_data
+
+        injection_plan = None
+        if plan_data is not None:
+            injection_plan = self._select_injection_plan(root_spell_id=root_id)
+
         self._any_overrides_present = self._detect_any_overrides()
-        (
-            instance_keys_by_spell_id,
-            canonical_occurrences_by_spell_id,
-            root_instance_key,
-            shared_spell_ids,
-        ) = self._build_instance_plan(
-            occurrence_graph=occurrence_graph,
-            root_spell_id=root_id,
-        )
         self._validate_shared_override_targets(shared_spell_ids)
 
         for node_id in execution_order:
@@ -307,12 +345,23 @@ class MeldEngine(Cleanable):
                         instance_key=instance_key,
                         canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
                     )
-                    kwargs = self._build_kwargs_for_instance(
-                        instance_key=instance_key,
-                        occurrence_graph=occurrence_graph,
-                        canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
-                        contract_override=contract_override,
-                    )
+                    injection_spec = None
+                    if injection_plan is not None:
+                        injection_spec = injection_plan.get(instance_key)
+                    if injection_spec is not None:
+                        kwargs = self._build_kwargs_for_instance_from_plan(
+                            instance_key=instance_key,
+                            injection_spec=injection_spec,
+                            canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
+                            contract_override=contract_override,
+                        )
+                    else:
+                        kwargs = self._build_kwargs_for_instance(
+                            instance_key=instance_key,
+                            occurrence_graph=occurrence_graph,
+                            canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
+                            contract_override=contract_override,
+                        )
                     return self._construct_spell(spell, kwargs)
 
                 instance, _ = self._resolve_spell_instance(
@@ -492,6 +541,144 @@ class MeldEngine(Cleanable):
         if self._is_shared_existence(self._root_spell.existence):
             return root_id, None
         return root_id, ()
+
+    def _select_occurrence_plan(
+            self,
+            *,
+            root_spell_id: str,
+    ) -> Optional[Tuple[
+            Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
+            List[str],
+            Dict[str, List[_InstanceKey]],
+            Dict[str, _OccurrenceKey],
+            _InstanceKey,
+            Set[str],
+    ]]:
+        """
+        Purpose:
+            Determine whether a Phase 8 OccurrencePlan can drive this run.
+        Contract:
+            - Returns None if no usable plan is available.
+            - Raises MeldExecutionError when a required SpellContract cannot
+              be resolved (mirrors runtime planning behavior).
+            - Returns plan data only when the plan matches the current root
+              spell id and contract overrides align with plan dependencies.
+        Args:
+            root_spell_id: Current root spell id for this execution.
+        Returns:
+            Optional[Tuple[...]]: Tuple containing occurrence graph, execution
+                order, instance keys, canonical occurrences, root key, and
+                shared spell ids when the plan is usable; otherwise None.
+        """
+        plan = self._occurrence_plan
+        if plan is None:
+            return None
+
+        try:
+            if plan.root_spell_id != root_spell_id:
+                return None
+            occurrence_graph = plan.occurrence_graph
+            execution_order = plan.execution_order
+            instance_keys_by_spell_id = plan.instance_keys_by_spell_id
+            canonical_occurrences_by_spell_id = plan.canonical_occurrences_by_spell_id
+            root_instance_key = plan.root_instance_key
+            shared_spell_ids = plan.shared_spell_ids
+        except Exception:
+            return None
+
+        if not self._populate_contract_overrides_from_plan(occurrence_graph):
+            return None
+
+        return (
+            occurrence_graph,
+            execution_order,
+            instance_keys_by_spell_id,
+            canonical_occurrences_by_spell_id,
+            root_instance_key,
+            shared_spell_ids,
+        )
+
+    def _select_injection_plan(
+            self,
+            *,
+            root_spell_id: str,
+    ) -> Optional[Dict[_InstanceKey, InjectionSpec]]:
+        """
+        Purpose:
+            Determine whether a Phase 9 InjectionPlan can drive this run.
+        Contract:
+            - Returns None if no usable plan is available.
+            - Returns the instance injection mapping when the plan matches
+              the current root spell id.
+        Args:
+            root_spell_id: Current root spell id for this execution.
+        Returns:
+            Optional[Dict[_InstanceKey, InjectionSpec]]: Mapping of instance keys
+                to injection specs when the plan is usable; otherwise None.
+        """
+        plan = self._injection_plan
+        if plan is None:
+            return None
+        try:
+            if plan.root_spell_id != root_spell_id:
+                return None
+            instance_injections = plan.instance_injections
+        except Exception:
+            return None
+        return instance_injections
+
+    def _populate_contract_overrides_from_plan(
+            self,
+            occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
+    ) -> bool:
+        """
+        Purpose:
+            Populate SpellContract override payloads using a precompiled plan.
+        Contract:
+            - Clears existing contract override mappings before population.
+            - Returns False when the plan is missing resolved contract occurrences.
+            - Raises MeldExecutionError if contract resolution fails.
+        Args:
+            occurrence_graph: Occurrence graph supplied by the plan.
+        Returns:
+            bool: True when overrides were populated; False when the plan is
+                incomplete for resolved contract dependencies.
+        Raises:
+            MeldExecutionError: If a SpellContract is missing or ambiguous.
+        """
+        self._contract_overrides_by_occurrence = {}
+        self._contract_overrides_by_spell_id = {}
+
+        for occurrence, dependencies in occurrence_graph.items():
+            spell_id, path = occurrence
+            spell = self._spell_lookup.get(spell_id)
+            if spell is None and spell_id == self._root_spell.spell_index.current:
+                spell = self._root_spell
+            if spell is None:
+                continue
+
+            for param_name, contract in self._iter_spell_contract_defaults(spell):
+                if contract is None:
+                    continue
+
+                target_spell_id = self._resolve_spell_contract_spell_id(
+                    contract=contract,
+                    consumer_spell=spell,
+                    param_name=param_name,
+                )
+                child_occurrence = (target_spell_id, path + (param_name,))
+                existing = dependencies.get(param_name, [])
+                if child_occurrence not in existing:
+                    return False
+
+                self._record_contract_override(
+                    occurrence=child_occurrence,
+                    contract=contract,
+                    consumer_spell=spell,
+                    param_name=param_name,
+                )
+
+        return True
 
     def _build_occurrence_graph(
             self,
@@ -1610,6 +1797,91 @@ class MeldEngine(Cleanable):
                         param_name=param_name,
                         message=(
                             f"Dependency '{dependency_occurrence[0]}' missing while "
+                            f"building args for '{spell_id}'."
+                        ),
+                    )
+                values.append(self._instance_results[dependency_key])
+            if not values:
+                continue
+            if len(values) == 1:
+                kwargs[param_name] = values[0]
+            else:
+                kwargs[param_name] = values
+
+        if positional_override is not None:
+            kwargs["__args__"] = positional_override
+
+        for param_name, value in contract_payload.items():
+            if param_name in override_values:
+                continue
+            kwargs[param_name] = value
+
+        for param_name, value in override_values.items():
+            if param_name not in kwargs:
+                kwargs[param_name] = value
+
+        return kwargs
+
+    def _build_kwargs_for_instance_from_plan(
+            self,
+            *,
+            instance_key: _InstanceKey,
+            injection_spec: InjectionSpec,
+            canonical_occurrences_by_spell_id: Dict[str, _OccurrenceKey],
+            contract_override: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Purpose:
+            Build keyword args for a specific spell instance using a Phase 9
+            InjectionPlan.
+        Side Effects:
+            None. Returns a new kwargs mapping.
+        Args:
+            instance_key: Instance key being constructed.
+            injection_spec: InjectionSpec describing dependency wiring.
+            canonical_occurrences_by_spell_id: Canonical occurrences for shared spells.
+            contract_override: Optional SpellContract override payload for this instance.
+        Returns:
+            Dict[str, Any]: Keyword arguments for construction.
+        Raises:
+            MeldExecutionError: If a dependency instance is missing.
+        """
+        occurrence = self._occurrence_for_instance_key(
+            instance_key=instance_key,
+            canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
+        )
+        spell_id, path = occurrence
+        shared = instance_key[1] is None
+
+        override_values = self._build_instance_override_map(
+            spell_id=spell_id,
+            occurrence_path=path,
+            shared=shared,
+        )
+
+        contract_payload = dict(contract_override) if contract_override else {}
+        positional_override = None
+        if "__args__" in contract_payload:
+            positional_override = contract_payload.pop("__args__")
+
+        kwargs: Dict[str, Any] = {}
+        for param_name, param_source in injection_spec.param_sources.items():
+            if param_source.kind != "dependency":
+                continue
+            dependency_keys = param_source.dependency_keys or []
+            if param_name in override_values:
+                kwargs[param_name] = override_values[param_name]
+                continue
+            values: List[Any] = []
+            for dependency_key in dependency_keys:
+                if dependency_key not in self._instance_results:
+                    raise MeldExecutionError(
+                        spell_id=spell_id,
+                        spell_name=spell_id,
+                        node_id=spell_id,
+                        param_name=param_name,
+                        message=(
+                            f"Dependency '{dependency_key[0]}' missing while "
                             f"building args for '{spell_id}'."
                         ),
                     )

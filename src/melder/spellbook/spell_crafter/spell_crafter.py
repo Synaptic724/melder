@@ -45,7 +45,16 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellSocketDescriptor,
 )
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.spellbook.spell_crafter.blueprints.patch_maps import (
+    MutationPatchMap,
+    OverridePatchMap,
+    PatchMapBuilder,
+)
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
+from melder.spellbook.spell_crafter.blueprints.injection_plan import (
+    InjectionPlan,
+    InjectionPlanBuilder,
+)
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
     OccurrencePlanBuilder,
@@ -162,6 +171,9 @@ class SpellCrafter(Cleanable):
         "_validated",
         "_root_blueprint_phase5",
         "_occurrence_plan_phase8",
+        "_injection_plan_phase9",
+        "_override_patch_map_phase10",
+        "_mutation_patch_map_phase10",
         "_spell_system_index_phase5",
         "_is_broken",
         "_entire_dag_blueprint_phase5",
@@ -201,6 +213,9 @@ class SpellCrafter(Cleanable):
         self._validated_phase6: bool = False
         self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
         self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
+        self._injection_plan_phase9: Optional[InjectionPlan] = None
+        self._override_patch_map_phase10: Optional[OverridePatchMap] = None
+        self._mutation_patch_map_phase10: Optional[MutationPatchMap] = None
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._entire_dag_blueprint_phase5 : Optional[Dict[str, RootResolutionBlueprint]] = None
         self._is_broken: bool = False
@@ -243,6 +258,21 @@ class SpellCrafter(Cleanable):
                     self._occurrence_plan_phase8.cleanup()
                 except Exception:
                     pass
+            if self._injection_plan_phase9 is not None:
+                try:
+                    self._injection_plan_phase9.cleanup()
+                except Exception:
+                    pass
+            if self._override_patch_map_phase10 is not None:
+                try:
+                    self._override_patch_map_phase10.cleanup()
+                except Exception:
+                    pass
+            if self._mutation_patch_map_phase10 is not None:
+                try:
+                    self._mutation_patch_map_phase10.cleanup()
+                except Exception:
+                    pass
             if self._spell_system_index_phase5 is not None:
                 try:
                     self._spell_system_index_phase5.cleanup()
@@ -262,6 +292,9 @@ class SpellCrafter(Cleanable):
                     pass
             self._root_blueprint_phase5 = None
             self._occurrence_plan_phase8 = None
+            self._injection_plan_phase9 = None
+            self._override_patch_map_phase10 = None
+            self._mutation_patch_map_phase10 = None
             self._spell_system_index_phase5 = None
             self._entire_dag_blueprint_phase5 = None
             self._validated_phase4 = False
@@ -355,6 +388,35 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
         return self._occurrence_plan_phase8
+
+    @property
+    def injection_plan_phase9(self) -> Optional[InjectionPlan]:
+        """
+        Phase 9 injection plan artifact, if compiled for this root.
+
+        Returns:
+            Optional[InjectionPlan]:
+                The compiled InjectionPlan for this spell's root blueprint, or
+                None if this spell is not a root or Phase 9 has not run yet.
+        """
+        self.check_cleaned()
+        return self._injection_plan_phase9
+
+    @property
+    def override_patch_map_phase10(self) -> Optional[OverridePatchMap]:
+        """
+        Phase 10 override patch map artifact, if compiled for this root.
+        """
+        self.check_cleaned()
+        return self._override_patch_map_phase10
+
+    @property
+    def mutation_patch_map_phase10(self) -> Optional[MutationPatchMap]:
+        """
+        Phase 10 mutation patch map artifact, if compiled for this root.
+        """
+        self.check_cleaned()
+        return self._mutation_patch_map_phase10
 
     @property
     def spell_system_index_phase5(self) -> Optional[SpellSystemIndex]:
@@ -485,6 +547,7 @@ class SpellCrafter(Cleanable):
         Contract:
             - Drops the root blueprint reference.
             - Cleans and nulls any compiled OccurrencePlan.
+            - Cleans and nulls any compiled InjectionPlan.
             - Leaves Phase 1-4 artifacts intact.
         """
         self._root_blueprint_phase5 = None
@@ -494,6 +557,24 @@ class SpellCrafter(Cleanable):
             except Exception:
                 pass
         self._occurrence_plan_phase8 = None
+        if self._injection_plan_phase9 is not None:
+            try:
+                self._injection_plan_phase9.cleanup()
+            except Exception:
+                pass
+        self._injection_plan_phase9 = None
+        if self._override_patch_map_phase10 is not None:
+            try:
+                self._override_patch_map_phase10.cleanup()
+            except Exception:
+                pass
+        self._override_patch_map_phase10 = None
+        if self._mutation_patch_map_phase10 is not None:
+            try:
+                self._mutation_patch_map_phase10.cleanup()
+            except Exception:
+                pass
+        self._mutation_patch_map_phase10 = None
         self._spell_system_index_phase5 = None
 
 
@@ -1735,6 +1816,125 @@ class SpellCrafter(Cleanable):
                 pass
 
         self._occurrence_plan_phase8 = plan
+
+
+    # ------------------------------------------------------------------
+    # Phase 9 - Injection Plan
+    # ------------------------------------------------------------------
+
+    def run_phase_injection_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 9 - Injection plan compilation.
+
+        Compiles an InjectionPlan for root spells using Phase-8 occurrence plans.
+        Non-root spells are treated as a no-op.
+
+        Contract:
+            - Requires Phase 8 artifacts to be available.
+            - Builds plan only when a root occurrence plan is attached.
+            - Replaces any existing InjectionPlan for this root.
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._throw_if_cancelled(cancel_event)
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+
+        root_blueprint = self._root_blueprint_phase5
+        if root_blueprint is None:
+            current_id = self._spell.spell_index.current
+            if (
+                    self._entire_dag_blueprint_phase5 is not None
+                    and current_id in self._entire_dag_blueprint_phase5
+            ):
+                raise RuntimeError(
+                    "SpellCrafter Phase 9: root blueprint missing for root spell."
+                )
+            return
+
+        if self._occurrence_plan_phase8 is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 9: cannot compile injection plans before Phase 8 has completed."
+            )
+
+        builder = InjectionPlanBuilder(
+            occurrence_plan=self._occurrence_plan_phase8,
+        )
+        plan = builder.build()
+
+        if self._injection_plan_phase9 is not None:
+            try:
+                self._injection_plan_phase9.cleanup()
+            except Exception:
+                pass
+
+        self._injection_plan_phase9 = plan
+
+
+    # ------------------------------------------------------------------
+    # Phase 10 - Patch Maps
+    # ------------------------------------------------------------------
+
+    def run_phase_patch_maps(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 10 - Patch map compilation.
+
+        Compiles override and mutation patch maps for root spells using
+        Phase-5 blueprints. Non-root spells are treated as a no-op.
+        """
+        self.check_cleaned()
+        self._throw_if_cancelled(cancel_event)
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        if self._entire_dag_blueprint_phase5 is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 10: cannot compile patch maps before Phase 5 has completed."
+            )
+
+        root_blueprint = self._root_blueprint_phase5
+        if root_blueprint is None:
+            current_id = self._spell.spell_index.current
+            if current_id in self._entire_dag_blueprint_phase5:
+                raise RuntimeError(
+                    "SpellCrafter Phase 10: root blueprint missing for root spell."
+                )
+            return
+
+        builder = PatchMapBuilder(
+            blueprint=root_blueprint,
+        )
+        override_patch_map = builder.build_override_patch_map()
+        mutation_patch_map = builder.build_mutation_patch_map()
+
+        if self._override_patch_map_phase10 is not None:
+            try:
+                self._override_patch_map_phase10.cleanup()
+            except Exception:
+                pass
+        if self._mutation_patch_map_phase10 is not None:
+            try:
+                self._mutation_patch_map_phase10.cleanup()
+            except Exception:
+                pass
+
+        self._override_patch_map_phase10 = override_patch_map
+        self._mutation_patch_map_phase10 = mutation_patch_map
 
 
     # ------------------------------------------------------------------

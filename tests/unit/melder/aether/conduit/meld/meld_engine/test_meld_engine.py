@@ -15,6 +15,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
+from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlan
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
@@ -455,6 +456,7 @@ def _make_engine(
     spell_lookup: Optional[dict[str, Any]] = None,
     system_states: Any = None,
     cancel_event: Any | None = None,
+    occurrence_plan: Any = None,
 ) -> tuple[MeldEngine, SimpleNamespace, ResolutionFrame]:
     """
     Build a MeldEngine with default stubs for testing.
@@ -489,6 +491,7 @@ def _make_engine(
         override_map=override_map or {},
         spell_lookup=spell_lookup or {},
         system_states=system_states,
+        occurrence_plan=occurrence_plan,
     )
     return engine, root_spell, frame
 
@@ -2492,6 +2495,68 @@ def test_run_blueprint_executes_ordered_nodes_in_order() -> None:
 
     assert engine.run() == "root-value"
     assert order == ["first", "root", "second"]
+
+
+def test_run_uses_occurrence_plan_when_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Ensure MeldEngine consumes a provided OccurrencePlan instead of rebuilding.
+    Contract:
+        - The occurrence plan drives execution order and instance planning.
+        - Runtime planning helpers are not invoked when the plan is usable.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the engine rebuilds the occurrence graph.
+    """
+    root_id = "root"
+    dep_id = "dep"
+    occurrence_graph = {
+        (root_id, ()): {"dep": [(dep_id, ("dep",))]},
+        (dep_id, ("dep",)): {},
+    }
+    plan = OccurrencePlan(
+        root_spell_id=root_id,
+        occurrence_graph=occurrence_graph,
+        execution_order=[dep_id, root_id],
+        instance_keys_by_spell_id={
+            dep_id: [(dep_id, ("dep",))],
+            root_id: [(root_id, None)],
+        },
+        canonical_occurrences_by_spell_id={
+            root_id: (root_id, ()),
+        },
+        root_instance_key=(root_id, None),
+        shared_spell_ids={root_id},
+    )
+    dag = _make_dag_with_nodes([root_id, dep_id])
+    blueprint = _make_blueprint(
+        root_id=root_id,
+        dag=dag,
+        ordered_node_ids=[dep_id, root_id],
+    )
+    root_spell = _make_spell(spell_id=root_id, existence=Existence.unique)
+    dep_spell = _make_spell(spell_id=dep_id, existence=Existence.many)
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={
+            root_id: root_spell,
+            dep_id: dep_spell,
+        },
+        occurrence_plan=plan,
+    )
+    build_occurrence_graph = MagicMock(side_effect=RuntimeError("plan expected"))
+    monkeypatch.setattr(
+        MeldEngine,
+        "_build_occurrence_graph",
+        build_occurrence_graph,
+    )
+
+    assert engine.run() == "value:root"
+    assert build_occurrence_graph.call_count == 0
 
 
 def test_run_blueprint_cancellation_after_orphan_stores_results() -> None:
