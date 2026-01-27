@@ -4162,6 +4162,7 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(SpellCrafter, "run_phase_local_frame", _record("local_frame"))
     monkeypatch.setattr(SpellCrafter, "run_phase_validation", _record("validation"))
     monkeypatch.setattr(SpellCrafter, "run_phase_root_blueprints", _record("root_blueprints"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_occurrence_plan", _record("occurrence_plan"))
     monkeypatch.setattr(SpellCrafter, "run_phase_system_validation", _record("system_validation"))
     monkeypatch.setattr(SpellCrafter, "run_phase_change_control", _record("change_control"))
 
@@ -4173,6 +4174,7 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
         "local_frame",
         "validation",
         "root_blueprints",
+        "occurrence_plan",
         "system_validation",
         "change_control",
     ]
@@ -4218,9 +4220,10 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(SpellCrafter, "run_phase_local_frame", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_validation", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_root_blueprints", _record)
+    monkeypatch.setattr(SpellCrafter, "run_phase_occurrence_plan", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_system_validation", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_change_control", _record)
 
     crafter.run_all_phases("cid", cancel_event=cancel)
 
-    assert received == [cancel] * 7
+    assert received == [cancel] * 8

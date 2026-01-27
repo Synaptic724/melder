@@ -100,12 +100,20 @@ class _SpellbookStub:
             spells: Mapping of SpellIndex to spell instance.
             contracted_spells: Optional lineage -> SpellIndex -> spell mapping.
             aether: Optional aether stub.
+
+        Contract:
+            Populates the spell_id_pool from owned and contracted registries.
         """
         self._spells = spells
         self._contracted_spells = contracted_spells or {}
         self._aether = aether
         self._spellbook_validation_required = True
-        self._spell_id_pool={}
+        self._spell_id_pool = {}
+        for spell_index, spell in self._spells.items():
+            self._spell_id_pool[spell_index.current] = spell
+        for lineage_spells in self._contracted_spells.values():
+            for spell_index, spell in lineage_spells.items():
+                self._spell_id_pool[spell_index.current] = spell
 
 
 class _SpellStub:
