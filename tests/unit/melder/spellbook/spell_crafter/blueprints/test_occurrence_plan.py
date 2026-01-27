@@ -1,7 +1,9 @@
 import pytest
 from typing import Dict, Optional
 
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -71,6 +73,10 @@ class _StubSpellbook:
         self._spell_validator = object()
         self._spells = spells
         self._contracted_spells: Dict[str, Dict[_StubSpellIndex, "_StubSpell"]] = {}
+        self._lookup_spells: Dict[tuple, _StubSpellIndex] = {
+            spell.key: spell_index for spell_index, spell in spells.items()
+        }
+        self._lookup_contracted_spells: Dict[str, Dict[tuple, _StubSpellIndex]] = {}
 
     @property
     def spells(self) -> Dict[_StubSpellIndex, "_StubSpell"]:
@@ -113,6 +119,8 @@ class _StubSpell:
             spell_name: str,
             existence: Existence,
             spell_callable,
+            spellframe: Optional[object] = None,
+            binding_name: Optional[str] = None,
             spellbook: Optional[_StubSpellbook] = None,
     ) -> None:
         """
@@ -133,8 +141,14 @@ class _StubSpell:
         self.spell_name = spell_name
         self.spell = spell_callable
         self.existence = existence
+        self.spellframe = spellframe
+        self.binding_name = binding_name
         self.mutation_override: dict = {}
-        self.key = ("frame", "binding")
+        self.key = SpellInputUtils.make_spell_key_from_parts(
+            spellframe=spellframe,
+            spell_name=spell_name,
+            binding_name=binding_name,
+        )
         self._spellbook = spellbook
         self._spell_system_states = None
 
@@ -147,6 +161,24 @@ def _root_factory(dep: object) -> object:
         Returns a new object instance.
     Args:
         dep: Injected dependency (unused).
+    Returns:
+        object: A new object instance.
+    """
+    return object()
+
+
+def _root_factory_with_contract(
+        dep: object,
+        contract: object = SpellContract(spellframe="Service", binding_name="primary"),
+) -> object:
+    """
+    Purpose:
+        Provide a root callable with a SpellContract default.
+    Contract:
+        Returns a new object instance.
+    Args:
+        dep: Injected dependency (unused).
+        contract: Contract placeholder (unused).
     Returns:
         object: A new object instance.
     """
@@ -336,3 +368,112 @@ def test_run_phase_occurrence_plan_compiles_for_root() -> None:
     assert plan is not None
     assert plan.root_spell_id == root_id
     assert plan.execution_order == [dep_id, root_id]
+
+
+def test_occurrence_plan_builder_defers_spell_contracts() -> None:
+    """
+    Purpose:
+        Verify SpellContract defaults do not add dependencies in Phase 8.
+    Contract:
+        - Occurrence planning ignores SpellContract sockets.
+        - DAG dependencies remain intact.
+    """
+    root_id = "root"
+    dep_id = "dep"
+    root_spell = _StubSpell(
+        spell_id=root_id,
+        spell_name="Root",
+        existence=Existence.unique,
+        spell_callable=_root_factory_with_contract,
+    )
+    dep_spell = _StubSpell(
+        spell_id=dep_id,
+        spell_name="Dep",
+        existence=Existence.unique,
+        spell_callable=_dep_factory,
+    )
+    blueprint = _make_blueprint(root_id, dep_id)
+
+    builder = OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={
+            root_id: root_spell,
+            dep_id: dep_spell,
+        },
+        system_states=None,
+    )
+    plan = builder.build()
+
+    assert plan.occurrence_graph == {
+        (root_id, ()): {"dep": [(dep_id, ("dep",))]},
+        (dep_id, ("dep",)): {},
+    }
+
+
+def test_occurrence_plan_builder_resolves_spell_contract_when_available() -> None:
+    """
+    Purpose:
+        Verify SpellContract dependencies are added when providers exist.
+    Contract:
+        - Contract sockets resolve to local providers when available.
+        - The resolved provider occurrence is included in the graph.
+    """
+    root_id = "root"
+    dep_id = "dep"
+    provider_id = "provider"
+    root_spell = _StubSpell(
+        spell_id=root_id,
+        spell_name="Root",
+        existence=Existence.unique,
+        spell_callable=_root_factory_with_contract,
+        spellframe="Root",
+        binding_name="primary",
+    )
+    dep_spell = _StubSpell(
+        spell_id=dep_id,
+        spell_name="Dep",
+        existence=Existence.unique,
+        spell_callable=_dep_factory,
+        spellframe="Dep",
+        binding_name="primary",
+    )
+    provider_spell = _StubSpell(
+        spell_id=provider_id,
+        spell_name="ServiceProvider",
+        existence=Existence.unique,
+        spell_callable=_dep_factory,
+        spellframe="Service",
+        binding_name="primary",
+    )
+    spellbook = _StubSpellbook({
+        root_spell.spell_index: root_spell,
+        dep_spell.spell_index: dep_spell,
+        provider_spell.spell_index: provider_spell,
+    })
+    root_spell._spellbook = spellbook
+    dep_spell._spellbook = spellbook
+    provider_spell._spellbook = spellbook
+
+    blueprint = _make_blueprint(root_id, dep_id)
+
+    builder = OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={
+            root_id: root_spell,
+            dep_id: dep_spell,
+            provider_id: provider_spell,
+        },
+        system_states=None,
+    )
+    plan = builder.build()
+
+    assert plan.occurrence_graph == {
+        (root_id, ()): {
+            "dep": [(dep_id, ("dep",))],
+            "contract": [(provider_id, ("contract",))],
+        },
+        (dep_id, ("dep",)): {},
+        (provider_id, ("contract",)): {},
+    }

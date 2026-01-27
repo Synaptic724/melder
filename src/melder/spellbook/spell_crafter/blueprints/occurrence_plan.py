@@ -232,6 +232,8 @@ class OccurrencePlanBuilder(object):
     Contract:
         - This builder does not own any referenced objects.
         - Inputs must remain valid for the duration of build().
+        - SpellContract resolution is attempted when providers are available.
+        - Missing SpellContract providers are deferred to the meld runtime.
         - Not thread-safe.
     """
     __melder_internal__ = _mrg.sentinel
@@ -533,7 +535,9 @@ class OccurrencePlanBuilder(object):
         Contract:
             - Uses system state topology when available.
             - Falls back to DAG dependency metadata.
-            - Adds SpellContract and mutation override dependencies.
+            - Adds SpellContract dependencies when providers are available.
+            - Adds mutation override dependencies.
+            - Defers missing SpellContract providers to runtime.
 
         Args:
             occurrence: The (spell_id, path) occurrence being expanded.
@@ -542,8 +546,6 @@ class OccurrencePlanBuilder(object):
         Returns:
             Dict[str, List[OccurrenceKey]]: Parameter-to-occurrence mapping.
 
-        Raises:
-            MeldExecutionError: If SpellContract resolution is ambiguous or missing.
         """
         spell_id, path = occurrence
         dependencies: Dict[str, List[OccurrenceKey]] = {}
@@ -674,13 +676,14 @@ class OccurrencePlanBuilder(object):
             - Only parameters with SpellContract defaults are treated as
               contract sockets.
             - Contract sockets are resolved without touching Phase 1 artifacts.
+            - Missing contracts are deferred to runtime.
 
         Args:
             dependencies: Mapping to update with contract dependencies.
             occurrence: The (spell_id, path) occurrence being expanded.
 
         Raises:
-            MeldExecutionError: If a SpellContract is missing or ambiguous.
+            MeldExecutionError: If a SpellContract is ambiguous or inconsistent.
         """
         spell_id, path = occurrence
         spell = self._spell_lookup.get(spell_id)
@@ -697,7 +700,10 @@ class OccurrencePlanBuilder(object):
                 contract=contract,
                 consumer_spell=spell,
                 param_name=param_name,
+                allow_missing=True,
             )
+            if target_spell_id is None:
+                continue
             child_occurrence = (target_spell_id, path + (param_name,))
             existing = dependencies.get(param_name)
             if existing is None:
@@ -753,7 +759,8 @@ class OccurrencePlanBuilder(object):
             contract: SpellContract,
             consumer_spell: ISpell,
             param_name: str,
-    ) -> str:
+            allow_missing: bool = False,
+    ) -> Optional[str]:
         """
         Resolve a SpellContract to a concrete provider spell id.
 
@@ -761,12 +768,13 @@ class OccurrencePlanBuilder(object):
             contract: SpellContract describing the provider requirement.
             consumer_spell: The spell that declared the contract.
             param_name: Parameter name for diagnostics.
+            allow_missing: When True, missing providers return None instead of raising.
 
         Returns:
-            str: Provider spell id for the contract.
+            Optional[str]: Provider spell id for the contract.
 
         Raises:
-            MeldExecutionError: If the contract is missing, ambiguous, or inconsistent.
+            MeldExecutionError: If the contract is ambiguous or inconsistent.
         """
         consumer_spell_id = consumer_spell.spell_index.current
         consumer_spell_name = consumer_spell.spell_name
@@ -804,6 +812,8 @@ class OccurrencePlanBuilder(object):
             )
 
         if local_candidate is None:
+            if allow_missing:
+                return None
             raise MeldExecutionError(
                 spell_id=consumer_spell_id,
                 spell_name=consumer_spell_name,
