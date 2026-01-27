@@ -939,6 +939,33 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
+    def run_phase_occurrence_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> None:
+        """
+        Phase 8 - Occurrence plan compilation (facade).
+
+        Delegates to :class:`SpellCrafter` to compile an OccurrencePlan for
+        root spells. Non-root spells are treated as a no-op.
+
+        Contract:
+            - Requires Phase 5 artifacts to be available.
+            - Does not return a value; artifacts are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        ...
+
     def run_phase_system_validation(
             self,
             conduit_id: str,
@@ -1025,13 +1052,14 @@ class ISpell(ICleanable, Protocol):
 
         Phases executed via the :class:`SpellCrafter`:
 
-            1. Requirements extraction.
-            2. Symbolic graph construction.
-            3. Local resolution frame / DAG construction.
-            4. Validation.
-            5. Root blueprint construction.
-            6. System validation.
-            7. Change-control wiring.
+            - Phase 1: Requirements extraction.
+            - Phase 2: Symbolic graph construction.
+            - Phase 3: Local resolution frame / DAG construction.
+            - Phase 4: Validation.
+            - Phase 5: Root blueprint construction.
+            - Phase 8: Occurrence plan compilation.
+            - Phase 6: System validation.
+            - Phase 7: Change-control wiring.
 
         Each phase honours the optional :class:`CancellationEvent`. If the
         event is set, the underlying phase methods will raise via

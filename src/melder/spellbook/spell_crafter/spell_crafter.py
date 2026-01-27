@@ -46,6 +46,10 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 )
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
+from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
+    OccurrencePlan,
+    OccurrencePlanBuilder,
+)
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.spell_system_validation_state import SpellSystemValidationState
 from melder.spellbook.spell_crafter.system.spell_system_validation_system import SpellSystemValidationSystem
@@ -117,6 +121,10 @@ class SpellCrafter(Cleanable):
         3. Local frame / DAG (symbolic graph + Spellbook ? executable frame)
         4. Validation (frame + policies ? validated / broken flags)
 
+    It also retains selected **frame-level artifacts** produced in later phases
+    when they are available for this spell (e.g., Phase 5 root blueprints and
+    Phase 8 occurrence plans for root spells).
+
     The :class:`Spell` instance only persists:
 
         * Its immutable structural metadata (spell_index, spellframe, etc.).
@@ -153,6 +161,7 @@ class SpellCrafter(Cleanable):
         "_validated_phase6",
         "_validated",
         "_root_blueprint_phase5",
+        "_occurrence_plan_phase8",
         "_spell_system_index_phase5",
         "_is_broken",
         "_entire_dag_blueprint_phase5",
@@ -191,6 +200,7 @@ class SpellCrafter(Cleanable):
         self._validation_result_phase6: Any = None
         self._validated_phase6: bool = False
         self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
+        self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._entire_dag_blueprint_phase5 : Optional[Dict[str, RootResolutionBlueprint]] = None
         self._is_broken: bool = False
@@ -209,6 +219,7 @@ class SpellCrafter(Cleanable):
             * Resets the resolution frame (the owning :class:`Spell` keeps the
               concrete DAG and dependency ids).
             * Cleans Phase 5 artifacts (root blueprints and system index).
+            * Cleans Phase 8 occurrence plans if present.
             * Resets validation state.
             * Nulls the Spell reference (but does **not** mutate/dispose the Spell).
 
@@ -225,6 +236,11 @@ class SpellCrafter(Cleanable):
             if self._root_blueprint_phase5 is not None:
                 try:
                     self._root_blueprint_phase5.cleanup()
+                except Exception:
+                    pass
+            if self._occurrence_plan_phase8 is not None:
+                try:
+                    self._occurrence_plan_phase8.cleanup()
                 except Exception:
                     pass
             if self._spell_system_index_phase5 is not None:
@@ -245,6 +261,7 @@ class SpellCrafter(Cleanable):
                 except Exception:
                     pass
             self._root_blueprint_phase5 = None
+            self._occurrence_plan_phase8 = None
             self._spell_system_index_phase5 = None
             self._entire_dag_blueprint_phase5 = None
             self._validated_phase4 = False
@@ -325,6 +342,19 @@ class SpellCrafter(Cleanable):
         """Deep DAG blueprint for this spell if it is a root."""
         self.check_cleaned()
         return self._root_blueprint_phase5
+
+    @property
+    def occurrence_plan_phase8(self) -> Optional[OccurrencePlan]:
+        """
+        Phase 8 occurrence plan artifact, if compiled for this root.
+
+        Returns:
+            Optional[OccurrencePlan]:
+                The compiled OccurrencePlan for this spell's root blueprint, or
+                None if this spell is not a root or Phase 8 has not run yet.
+        """
+        self.check_cleaned()
+        return self._occurrence_plan_phase8
 
     @property
     def spell_system_index_phase5(self) -> Optional[SpellSystemIndex]:
@@ -449,8 +479,21 @@ class SpellCrafter(Cleanable):
         self._spell_system_index_phase5 = index
 
     def clear_phase5_artifacts(self) -> None:
-        """Deterministically clear Phase-5 state."""
+        """
+        Deterministically clear Phase-5 state and dependent Phase 8 artifacts.
+
+        Contract:
+            - Drops the root blueprint reference.
+            - Cleans and nulls any compiled OccurrencePlan.
+            - Leaves Phase 1-4 artifacts intact.
+        """
         self._root_blueprint_phase5 = None
+        if self._occurrence_plan_phase8 is not None:
+            try:
+                self._occurrence_plan_phase8.cleanup()
+            except Exception:
+                pass
+        self._occurrence_plan_phase8 = None
         self._spell_system_index_phase5 = None
 
 
@@ -1624,6 +1667,77 @@ class SpellCrafter(Cleanable):
 
 
     # ------------------------------------------------------------------
+    # Phase 8 - Occurrence Plan
+    # ------------------------------------------------------------------
+
+    def run_phase_occurrence_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 8 - Occurrence plan compilation.
+
+        Compiles an OccurrencePlan for root spells using Phase-5 blueprints.
+        Non-root spells are treated as a no-op.
+
+        Contract:
+            - Requires Phase 5 artifacts to be available.
+            - Builds plan only when a root blueprint is attached.
+            - Replaces any existing OccurrencePlan for this root.
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._throw_if_cancelled(cancel_event)
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        if self._entire_dag_blueprint_phase5 is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 8: cannot compile occurrence plans before Phase 5 has completed."
+            )
+
+        root_blueprint = self._root_blueprint_phase5
+        if root_blueprint is None:
+            current_id = self._spell.spell_index.current
+            if current_id in self._entire_dag_blueprint_phase5:
+                raise RuntimeError(
+                    "SpellCrafter Phase 8: root blueprint missing for root spell."
+                )
+            return
+
+        if self._spellbook_scanner is None:
+            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
+
+        spell_lookup: Dict[str, ISpell] = {}
+        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
+            spell_lookup[spell_index.current] = spell_instance
+
+        builder = OccurrencePlanBuilder(
+            root_spell=self._spell,
+            blueprint=root_blueprint,
+            spell_lookup=spell_lookup,
+            system_states=self._spell_system_states,
+        )
+        plan = builder.build()
+
+        if self._occurrence_plan_phase8 is not None:
+            try:
+                self._occurrence_plan_phase8.cleanup()
+            except Exception:
+                pass
+
+        self._occurrence_plan_phase8 = plan
+
+
+    # ------------------------------------------------------------------
     # Phase 6 - System-level Validation
     # ------------------------------------------------------------------
 
@@ -1828,13 +1942,14 @@ class SpellCrafter(Cleanable):
         and is intended for batch compilation / `meld()` cycles.
 
         Execution order:
-            1. Requirements (Phase 1)
-            2. Symbolic graph (Phase 2)
-            3. Local frame / DAG (Phase 3)
-            4. Validation (Phase 4)
-            5. Root blueprints (Phase 5)
-            6. System validation (Phase 6)
-            7. Change control (Phase 7)
+            - Phase 1: Requirements
+            - Phase 2: Symbolic graph
+            - Phase 3: Local frame / DAG
+            - Phase 4: Validation
+            - Phase 5: Root blueprints
+            - Phase 8: Occurrence plan
+            - Phase 6: System validation
+            - Phase 7: Change control
 
         Args:
             conduit_id:
@@ -1854,6 +1969,7 @@ class SpellCrafter(Cleanable):
         self.run_phase_local_frame(cancel_event=cancel_event)
         self.run_phase_validation(cancel_event=cancel_event)
         self.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
+        self.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         self.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         self.cleanup_phase_artifacts()

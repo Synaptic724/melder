@@ -105,6 +105,7 @@ class _SpellbookStub:
         self._contracted_spells = contracted_spells or {}
         self._aether = aether
         self._spellbook_validation_required = True
+        self._spell_id_pool={}
 
 
 class _SpellStub:

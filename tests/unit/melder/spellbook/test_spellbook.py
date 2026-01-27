@@ -131,6 +131,20 @@ class DummySpell:
         """
         return ("root_blueprints", self.spell_id, conduit_id, cancel_event)
 
+    def run_phase_occurrence_plan(self, conduit_id, cancel_event):
+        """
+        Purpose:
+            Provide a deterministic Phase 8 marker for tests.
+        Contract:
+            Returns a tuple containing phase name, spell id, conduit id, and cancel event.
+        Args:
+            conduit_id: Conduit identifier forwarded by the scheduler.
+            cancel_event: Cancellation event forwarded by the scheduler.
+        Returns:
+            tuple[str, str, str, object]: Phase marker tuple.
+        """
+        return ("occurrence_plan", self.spell_id, conduit_id, cancel_event)
+
     def run_phase_system_validation(self, conduit_id, cancel_event):
         """
         Purpose:
@@ -1230,6 +1244,7 @@ def test_phase_factories_build_units_and_label():
     loc_units = sb._phase_local_frame_factory(scheduler)
     val_units = sb._phase_validation_factory(scheduler)
     root_units = sb._phase_root_blueprints_factory(scheduler, "cid")
+    occ_units = sb._phase_occurrence_plan_factory(scheduler, "cid")
     sys_units = sb._phase_system_validation_factory(scheduler, "cid")
     change_units = sb._phase_change_control_factory(scheduler, "cid")
     assert req_units[0]["label"] == "requirements:x"
@@ -1237,6 +1252,7 @@ def test_phase_factories_build_units_and_label():
     assert loc_units[0]["label"] == "local_frame:x"
     assert val_units[0]["label"] == "validation:x"
     assert root_units[0]["label"] == "root_blueprints:x"
+    assert occ_units[0]["label"] == "occurrence_plan:x"
     assert sys_units[0]["label"] == "system_validation:x"
     assert change_units[0]["label"] == "change_control:x"
 
@@ -1283,6 +1299,7 @@ def test_run_resolution_phases_success(monkeypatch):
         "local_frame",
         "validation",
         "root_blueprints",
+        "occurrence_plan",
         "system_validation",
         "change_control",
     }
@@ -1987,6 +2004,7 @@ def test_phase_factories_return_empty_when_no_spells():
     assert sb._phase_local_frame_factory(scheduler) == []
     assert sb._phase_validation_factory(scheduler) == []
     assert sb._phase_root_blueprints_factory(scheduler, "cid") == []
+    assert sb._phase_occurrence_plan_factory(scheduler, "cid") == []
     assert sb._phase_system_validation_factory(scheduler, "cid") == []
     assert sb._phase_change_control_factory(scheduler, "cid") == []
 
@@ -2014,6 +2032,7 @@ def test_run_resolution_phases_with_multiple_spells():
         "local_frame",
         "validation",
         "root_blueprints",
+        "occurrence_plan",
         "system_validation",
         "change_control",
     }
@@ -2621,6 +2640,7 @@ def test_phase_factories_metadata_contains_spell_id():
         sb._phase_local_frame_factory(scheduler),
         sb._phase_validation_factory(scheduler),
         sb._phase_root_blueprints_factory(scheduler, "cid"),
+        sb._phase_occurrence_plan_factory(scheduler, "cid"),
         sb._phase_system_validation_factory(scheduler, "cid"),
         sb._phase_change_control_factory(scheduler, "cid"),
     ):

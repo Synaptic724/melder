@@ -3414,8 +3414,8 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Orchestrate conduit-scoped Phases 5-7 (root blueprints, system validation,
-        change control). This must run after structural phases complete.
+        Orchestrate conduit-scoped Phases 5-8 (root blueprints, occurrence plan,
+        system validation, change control). This must run after structural phases complete.
 
         Args:
             conduit_id:
@@ -3442,6 +3442,10 @@ class Spellbook(Cleanable, ISpellbook):
             scheduler.register_phase(
                 "root_blueprints",
                 lambda: self._phase_root_blueprints_factory(scheduler, conduit_id),
+            )
+            scheduler.register_phase(
+                "occurrence_plan",
+                lambda: self._phase_occurrence_plan_factory(scheduler, conduit_id),
             )
             scheduler.register_phase(
                 "system_validation",
@@ -3650,6 +3654,43 @@ class Spellbook(Cleanable, ISpellbook):
                     label=f"root_blueprints:{spell.spell_id}",
                     metadata={
                         "phase": "root_blueprints",
+                        "spell_id": spell.spell_id,
+                    },
+                )
+            )
+        return units
+
+    def _phase_occurrence_plan_factory(
+            self,
+            scheduler: PhaseScheduler,
+            conduit_id: str,
+    ) -> Sequence[IUnitOfWork]:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **occurrence_plan** phase.
+
+        This phase compiles OccurrencePlan artifacts for root spells based on
+        Phase 5 blueprints. Non-root spells are treated as a no-op by the
+        underlying SpellCrafter.
+
+        Expected spell surface:
+
+            ``spell.run_phase_occurrence_plan(conduit_id, cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        if not self._spells:
+            return []
+
+        units: List[IUnitOfWork] = []
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_occurrence_plan,
+                    args=(conduit_id, scheduler.cancel_event,),
+                    label=f"occurrence_plan:{spell.spell_id}",
+                    metadata={
+                        "phase": "occurrence_plan",
                         "spell_id": spell.spell_id,
                     },
                 )
