@@ -1239,6 +1239,7 @@ class ISpellbook(ICleanable, Protocol):
     _id: str
     _aetheric_frame: Optional[str]
     _configuration: Optional['IConfiguration']
+    _spell_id_pool: Optional[Any]
 
     # Spell Validator
     _spell_validator: 'SpellValidationSystem'

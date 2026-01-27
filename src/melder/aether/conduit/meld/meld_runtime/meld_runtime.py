@@ -201,18 +201,6 @@ class MeldRuntime:
             root_spell_id=spell.spell_index.current,
         )
         frame = ResolutionFrame(overrides=frame_overrides)
-
-        #Build a lookup of spell_id -> ISpell for all known spells in this spellbook.
-        spell_lookup: Dict[str, ISpell] = {}
-        if spell._spellbook is not None:
-            for idx, inst in spell._spellbook._spells.items():
-                spell_lookup[idx.current] = inst
-            for lineage_map in spell._spellbook._contracted_spells.values():
-                for idx, inst in lineage_map.items():
-                    spell_lookup[idx.current] = inst
-
-        system_states = spell._spell_system_states
-
         engine = MeldEngine(
             context=context,
             root_spell=spell,
@@ -222,8 +210,8 @@ class MeldRuntime:
             frame=frame,
             blueprint=execution_blueprint,
             override_map=override_map,
-            spell_lookup=spell_lookup,
-            system_states=system_states,
+            spell_lookup=spell._spellbook._spell_id_pool,
+            system_states=spell._spell_system_states,
         )
 
         result = None
