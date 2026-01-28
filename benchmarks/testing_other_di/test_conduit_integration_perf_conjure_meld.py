@@ -7,6 +7,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
@@ -58,7 +59,7 @@ class PerfLogger:
         - Precomputes some deterministic formatting data.
     """
 
-    def __init__(self, config: IConfig = SpellContract(spellframe=IConfig)) -> None:
+    def __init__(self, config: IConfig = SpellMap(spellframe=IConfig)) -> None:
         self.config = config
         self.levels = {"DEBUG": 10, "INFO": 20, "WARN": 30, "ERROR": 40}
         self.prefix_cache = [f"[{i:04d}]" for i in range(2000)]
@@ -75,8 +76,8 @@ class PerfService:
 
     def __init__(
         self,
-        logger: ILogger = SpellContract(spellframe=ILogger),
-        config: IConfig = SpellContract(spellframe=IConfig),
+        logger: ILogger = SpellMap(spellframe=ILogger),
+        config: IConfig = SpellMap(spellframe=IConfig),
     ) -> None:
         self.logger = logger
         self.config = config
