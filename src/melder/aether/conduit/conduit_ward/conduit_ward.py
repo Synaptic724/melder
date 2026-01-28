@@ -1670,7 +1670,7 @@ class ConduitWard(Cleanable, IConduitWard):
             None.
 
         Threading:
-            - Snapshots Spellbook spell registry under the Spellbook lock.
+            - Uses SpellSystemStates internal lock to resolve contract dependents.
             - Uses Creations' internal lock via `extract_spell_creations`.
 
         Raises:
@@ -1684,22 +1684,28 @@ class ConduitWard(Cleanable, IConduitWard):
         creations = conduit._creations
         if spellbook is None or creations is None:
             return
+        states = spellbook._spell_system_states
+        if states is None:
+            return
 
-        with spellbook._lock:
-            if spellbook._spells is None:
-                return
-            spells = list(spellbook._spells.values())
+        contract_keys: Optional[Iterable[tuple[str, str]]] = None
+        if contract_key is not None:
+            contract_keys = (contract_key,)
+        try:
+            impacted = states.mark_contract_dependents_dirty(
+                spellbook_id=spellbook._id,
+                contract_keys=contract_keys,
+            )
+        except Exception:
+            impacted = set()
 
-        for spell in spells:
-            if spell is None:
+        for lineage_id in impacted:
+            state = states.get_by_index_id(lineage_id)
+            if state is None:
                 continue
-            keys = self._get_spell_contract_keys(spell)
-            if not keys:
-                continue
-            if contract_key is not None and contract_key not in keys:
-                continue
+            spell_id = state.current_spell_id
             try:
-                creations.extract_spell_creations(spell.spell_id)
+                creations.extract_spell_creations(spell_id)
             except AttributeError:
                 return
             except Exception:

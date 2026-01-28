@@ -882,33 +882,18 @@ class OccurrencePlanBuilder(object):
         if len(contracted_candidates) == 1:
             return contracted_candidates[0].spell_index.current
 
-        local_candidate = self._resolve_local_contract_candidate(
-            contract_key=contract_key,
-            consumer_spell=consumer_spell,
+        if allow_missing:
+            return None
+        raise MeldExecutionError(
+            spell_id=consumer_spell_id,
+            spell_name=consumer_spell_name,
+            node_id=consumer_spell_id,
             param_name=param_name,
+            message=(
+                "SpellContract could not be resolved. "
+                "No contracted spell matched the contract."
+            ),
         )
-        if local_candidate is None:
-            local_candidate = self._resolve_fallback_contract_candidate(
-                contract_key=contract_key,
-                consumer_spell=consumer_spell,
-                param_name=param_name,
-            )
-
-        if local_candidate is None:
-            if allow_missing:
-                return None
-            raise MeldExecutionError(
-                spell_id=consumer_spell_id,
-                spell_name=consumer_spell_name,
-                node_id=consumer_spell_id,
-                param_name=param_name,
-                message=(
-                    "SpellContract could not be resolved. "
-                    "No contracted or local spell matched the contract."
-                ),
-            )
-
-        return local_candidate.spell_index.current
 
     def _collect_contracted_contract_candidates(
             self,
@@ -980,93 +965,6 @@ class OccurrencePlanBuilder(object):
             contracted_candidates.append(spell_obj)
 
         return contracted_candidates
-
-    def _resolve_local_contract_candidate(
-            self,
-            *,
-            contract_key: Tuple[str, str],
-            consumer_spell: ISpell,
-            param_name: str,
-    ) -> Optional[ISpell]:
-        """
-        Resolve a local spell candidate from the owning spellbook.
-
-        Args:
-            contract_key: Canonical (frame_key, binding_key) for the contract.
-            consumer_spell: Spell declaring the contract.
-            param_name: Parameter name for diagnostics.
-
-        Returns:
-            Optional[ISpell]: Local spell candidate or None.
-
-        Raises:
-            MeldExecutionError: If local spell maps are missing.
-        """
-        spellbook = consumer_spell._spellbook
-        if spellbook is None:
-            return None
-
-        local_lookup = spellbook._lookup_spells
-        if local_lookup is None:
-            return None
-
-        spell_index = local_lookup.get(contract_key)
-        if spell_index is None:
-            return None
-
-        local_map = spellbook._spells
-        if local_map is None:
-            raise MeldExecutionError(
-                spell_id=consumer_spell.spell_index.current,
-                spell_name=consumer_spell.spell_name,
-                node_id=consumer_spell.spell_index.current,
-                param_name=param_name,
-                message="Local spell map missing while resolving SpellContract.",
-            )
-
-        return local_map.get(spell_index)
-
-    def _resolve_fallback_contract_candidate(
-            self,
-            *,
-            contract_key: Tuple[str, str],
-            consumer_spell: ISpell,
-            param_name: str,
-    ) -> Optional[ISpell]:
-        """
-        Resolve a fallback candidate from the builder spell lookup mapping.
-
-        Args:
-            contract_key: Canonical (frame_key, binding_key) for the contract.
-            consumer_spell: Spell declaring the contract.
-            param_name: Parameter name for diagnostics.
-
-        Returns:
-            Optional[ISpell]: Fallback spell candidate or None.
-
-        Raises:
-            MeldExecutionError: If multiple local candidates match the key.
-        """
-        fallback_candidates: List[ISpell] = []
-        for spell_obj in self._spell_lookup.values():
-            if spell_obj.key == contract_key:
-                fallback_candidates.append(spell_obj)
-
-        if len(fallback_candidates) > 1:
-            raise MeldExecutionError(
-                spell_id=consumer_spell.spell_index.current,
-                spell_name=consumer_spell.spell_name,
-                node_id=consumer_spell.spell_index.current,
-                param_name=param_name,
-                message=(
-                    "SpellContract resolved to multiple local spells. "
-                    "Use a binding_name to disambiguate."
-                ),
-            )
-        if fallback_candidates:
-            return fallback_candidates[0]
-
-        return None
 
     def _resolve_mutation_override_targets(
             self,

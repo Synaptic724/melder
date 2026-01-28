@@ -89,27 +89,41 @@ def test_component_spell_contract_path_override_targets_dependency() -> None:
     Raises:
         AssertionError: If path overrides do not apply.
     """
-    spellbook = _make_spellbook()
-    spellbook.bind(
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
         spell=ContractServicePrimary,
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-    consumer_id = spellbook.bind(
+    borrower_book = _make_spellbook()
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerPrimary,
         existence=Existence.unique,
         permissions="create",
     )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
 
-    with _conjured(spellbook) as conduit:
         override_instance = ContractServicePrimary(marker="path")
-        instance = conduit.meld(
+        instance = borrower.meld(
             spell=consumer_id,
             spell_override={"service": override_instance},
         )
         assert instance.service is override_instance
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
 def test_component_spell_contract_broadcast_override_targets_dependency() -> None:
@@ -123,27 +137,41 @@ def test_component_spell_contract_broadcast_override_targets_dependency() -> Non
     Raises:
         AssertionError: If broadcast overrides do not apply.
     """
-    spellbook = _make_spellbook()
-    spellbook.bind(
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
         spell=ContractServicePrimary,
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-    consumer_id = spellbook.bind(
+    borrower_book = _make_spellbook()
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerPrimary,
         existence=Existence.unique,
         permissions="create",
     )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
 
-    with _conjured(spellbook) as conduit:
         override_instance = ContractServicePrimary(marker="broadcast")
-        instance = conduit.meld(
+        instance = borrower.meld(
             spell=consumer_id,
             spell_override={"**service": override_instance},
         )
         assert instance.service is override_instance
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
 def test_component_spell_contract_unique_override_replaces_dependency() -> None:
@@ -157,27 +185,41 @@ def test_component_spell_contract_unique_override_replaces_dependency() -> None:
     Raises:
         AssertionError: If unique overrides do not replace the dependency.
     """
-    spellbook = _make_spellbook()
-    spellbook.bind(
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
         spell=ContractServicePrimary,
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-    consumer_id = spellbook.bind(
+    borrower_book = _make_spellbook()
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerPrimary,
         existence=Existence.unique,
         permissions="create",
     )
     override_instance = ContractServicePrimary(marker="override")
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
 
-    with _conjured(spellbook) as conduit:
-        instance = conduit.meld(
+        instance = borrower.meld(
             spell=consumer_id,
             spell_override={"*service": override_instance},
         )
         assert instance.service is override_instance
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
 def test_component_spell_contract_path_override_beats_contract_override() -> None:
@@ -191,27 +233,41 @@ def test_component_spell_contract_path_override_beats_contract_override() -> Non
     Raises:
         AssertionError: If PATH overrides do not win.
     """
-    spellbook = _make_spellbook()
-    spellbook.bind(
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
         spell=ContractServicePrimary,
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-    consumer_id = spellbook.bind(
+    borrower_book = _make_spellbook()
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerOverrideList,
         existence=Existence.unique,
         permissions="create",
     )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
 
-    with _conjured(spellbook) as conduit:
         override_instance = ContractServicePrimary(marker="meld")
-        instance = conduit.meld(
+        instance = borrower.meld(
             spell=consumer_id,
             spell_override={"service": override_instance},
         )
         assert instance.service is override_instance
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
 def test_component_spell_contract_multiple_contract_overrides_on_shared_raise() -> None:
@@ -225,23 +281,37 @@ def test_component_spell_contract_multiple_contract_overrides_on_shared_raise() 
     Raises:
         AssertionError: If duplicate contract overrides do not raise.
     """
-    spellbook = _make_spellbook()
-    spellbook.bind(
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
         spell=ContractServicePrimary,
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-    consumer_id = spellbook.bind(
+    borrower_book = _make_spellbook()
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerDualOverride,
         existence=Existence.unique,
         permissions="create",
     )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
 
-    with _conjured(spellbook) as conduit:
         with pytest.raises(MeldExecutionError, match="Multiple SpellContract overrides"):
-            conduit.meld(spell=consumer_id)
+            borrower.meld(spell=consumer_id)
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
 def test_component_spell_contract_multiple_contract_overrides_on_many_allowed() -> None:
@@ -255,114 +325,173 @@ def test_component_spell_contract_multiple_contract_overrides_on_many_allowed() 
     Raises:
         AssertionError: If overrides are not applied to per-path instances.
     """
-    spellbook = _make_spellbook()
-    spellbook.bind(
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
         spell=ContractServicePrimary,
         existence=Existence.many,
         permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-    consumer_id = spellbook.bind(
+    borrower_book = _make_spellbook()
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerDualOverride,
         existence=Existence.unique,
         permissions="create",
     )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
 
-    with _conjured(spellbook) as conduit:
-        instance = conduit.meld(spell=consumer_id)
+        instance = borrower.meld(spell=consumer_id)
         assert instance.left.marker == "override-left"
         assert instance.right.marker == "override-right"
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
-def test_component_spell_contract_override_list_local_fallback() -> None:
+def test_component_spell_contract_override_list_contracted() -> None:
     """
     Purpose:
-        Validate list overrides apply to local SpellContract providers.
+        Validate list overrides apply to contracted SpellContract providers.
     Contract:
-        - Local fallback providers receive list override payloads.
+        - Contracted providers receive list override payloads.
     Returns:
         None.
     Raises:
         AssertionError: If list overrides do not apply.
     """
-    spellbook = _make_spellbook()
-    spellbook.bind(
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
         spell=ContractServicePrimary,
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-    consumer_id = spellbook.bind(
+    borrower_book = _make_spellbook()
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerOverrideList,
         existence=Existence.unique,
         permissions="create",
     )
 
-    with _conjured(spellbook) as conduit:
-        instance = conduit.meld(spell=consumer_id)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
+
+        instance = borrower.meld(spell=consumer_id)
         assert instance.service.marker == "override-list"
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
-def test_component_spell_contract_override_tuple_local_fallback() -> None:
+def test_component_spell_contract_override_tuple_contracted() -> None:
     """
     Purpose:
-        Validate tuple overrides apply to local SpellContract providers.
+        Validate tuple overrides apply to contracted SpellContract providers.
     Contract:
-        - Local fallback providers receive tuple override payloads.
+        - Contracted providers receive tuple override payloads.
     Returns:
         None.
     Raises:
         AssertionError: If tuple overrides do not apply.
     """
-    spellbook = _make_spellbook()
-    spellbook.bind(
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
         spell=ContractServicePrimary,
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-    consumer_id = spellbook.bind(
+    borrower_book = _make_spellbook()
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerOverrideTuple,
         existence=Existence.unique,
         permissions="create",
     )
 
-    with _conjured(spellbook) as conduit:
-        instance = conduit.meld(spell=consumer_id)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
+
+        instance = borrower.meld(spell=consumer_id)
         assert instance.service.marker == "override-tuple"
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
-def test_component_spell_contract_override_dict_args_local_fallback() -> None:
+def test_component_spell_contract_override_dict_args_contracted() -> None:
     """
     Purpose:
-        Validate dict __args__ overrides apply to local providers.
+        Validate dict __args__ overrides apply to contracted providers.
     Contract:
-        - Local fallback providers receive __args__ override payloads.
+        - Contracted providers receive __args__ override payloads.
     Returns:
         None.
     Raises:
         AssertionError: If __args__ overrides do not apply.
     """
-    spellbook = _make_spellbook()
-    spellbook.bind(
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
         spell=ContractServicePrimary,
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-    consumer_id = spellbook.bind(
+    borrower_book = _make_spellbook()
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerOverrideArgsDict,
         existence=Existence.unique,
         permissions="create",
     )
 
-    with _conjured(spellbook) as conduit:
-        instance = conduit.meld(spell=consumer_id)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
+
+        instance = borrower.meld(spell=consumer_id)
         assert instance.service.marker == "override-dict-args"
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
 def test_component_spell_contract_broadcast_override_targets_dual_dependencies() -> None:
@@ -376,7 +505,15 @@ def test_component_spell_contract_broadcast_override_targets_dual_dependencies()
     Raises:
         AssertionError: If broadcast overrides do not apply to all sockets.
     """
-    spellbook = _make_spellbook()
+    owner_book = _make_spellbook()
+    service_id = owner_book.bind(
+        spell=ContractServicePrimary,
+        existence=Existence.many,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    borrower_book = _make_spellbook()
 
     class ContractConsumerNested:
         """
@@ -408,29 +545,35 @@ def test_component_spell_contract_broadcast_override_targets_dual_dependencies()
             self.service = service
             self.child = child
 
-    spellbook.bind(
-        spell=ContractServicePrimary,
-        existence=Existence.many,
-        permissions="create",
-        spellframe=IService,
-        binding_name="primary",
-    )
-    spellbook.bind(
+    borrower_book.bind(
         spell=ContractConsumerPrimary,
         existence=Existence.unique,
         permissions="create",
     )
-    consumer_id = spellbook.bind(
+    consumer_id = borrower_book.bind(
         spell=ContractConsumerNested,
         existence=Existence.unique,
         permissions="create",
     )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=service_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.validate_contracts_and_define()
 
-    with _conjured(spellbook) as conduit:
         override_instance = ContractServicePrimary(marker="broadcast")
-        instance = conduit.meld(
+        instance = borrower.meld(
             spell=consumer_id,
             spell_override={"**service": override_instance},
         )
         assert instance.service is override_instance
         assert instance.child.service is override_instance
+    finally:
+        borrower.cleanup()
+        owner.cleanup()

@@ -187,6 +187,18 @@ class _ScannerStub:
         for pair in self._spells:
             yield pair
 
+    def iter_contracted_spells(self) -> Iterable[tuple[_SpellIndexStub, _ProviderSpellStub]]:
+        """
+        Purpose:
+            Yield stored spell/index pairs as contracted providers.
+        Contract:
+            Each yielded tuple matches the stored list.
+        Returns:
+            Iterable[tuple[_SpellIndexStub, _ProviderSpellStub]]: Spell/index pairs.
+        """
+        for pair in self._spells:
+            yield pair
+
 
 class _ConfigStub:
     """

@@ -426,7 +426,7 @@ def test_occurrence_plan_builder_resolves_spell_contract_when_available() -> Non
     Purpose:
         Verify SpellContract dependencies are added when providers exist.
     Contract:
-        - Contract sockets resolve to local providers when available.
+        - Contract sockets resolve to contracted providers when available.
         - The resolved provider occurrence is included in the graph.
     """
     root_id = "root"
@@ -459,8 +459,13 @@ def test_occurrence_plan_builder_resolves_spell_contract_when_available() -> Non
     spellbook = _StubSpellbook({
         root_spell.spell_index: root_spell,
         dep_spell.spell_index: dep_spell,
-        provider_spell.spell_index: provider_spell,
     })
+    spellbook._contracted_spells = {
+        "conduit-a": {provider_spell.spell_index: provider_spell},
+    }
+    spellbook._lookup_contracted_spells = {
+        "conduit-a": {provider_spell.key: provider_spell.spell_index},
+    }
     root_spell._spellbook = spellbook
     dep_spell._spellbook = spellbook
     provider_spell._spellbook = spellbook

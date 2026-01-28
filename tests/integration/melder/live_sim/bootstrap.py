@@ -315,6 +315,7 @@ def link_live_sim_dynamic(
     Contract:
         - Links the owner and borrower conduits.
         - Contracts all owner dependencies into the borrower.
+        - Validates contracted spell visibility before returning.
         - Returns the linked conduits and application id.
     Args:
         owner: Owner bootstrap context.
@@ -342,6 +343,8 @@ def link_live_sim_dynamic(
             link_dependencies=True,
         )
     assert all(value is True for value in report.values())
+    validation = borrower.conduit.validate_contracts_and_define()
+    assert all(value is True for value in validation.values())
 
     return LiveSimDynamicContext(
         owner_conduit=owner.conduit,

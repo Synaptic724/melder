@@ -248,9 +248,9 @@ class MeldEngine(Cleanable):
         Notes:
             Executes the deep DAG in dependency-safe order when a blueprint
             is available. SpellContract sockets are resolved during occurrence
-            expansion using contracted spells, with local fallback when no
-            contract is available. When a Phase 8 OccurrencePlan is present,
-            the engine reuses its occurrence graph and execution order.
+            expansion using contracted spells. When a Phase 8 OccurrencePlan
+            is present, the engine reuses its occurrence graph and execution
+            order.
         """
         self.check_cleaned()
 
@@ -1086,66 +1086,16 @@ class MeldEngine(Cleanable):
         if len(contracted_candidates) == 1:
             return contracted_candidates[0].spell_index.current
 
-        local_candidate: Optional[ISpell] = None
-        if spellbook is not None:
-            try:
-                local_lookup = spellbook._lookup_spells
-            except AttributeError:
-                local_lookup = None
-            if local_lookup is not None:
-                spell_index = local_lookup.get(contract_key)
-                if spell_index is not None:
-                    try:
-                        local_map = spellbook._spells
-                    except AttributeError:
-                        local_map = None
-                    if local_map is None:
-                        raise MeldExecutionError(
-                            spell_id=consumer_spell_id,
-                            spell_name=consumer_spell_name,
-                            node_id=consumer_spell_id,
-                            param_name=param_name,
-                            message="Local spell map missing while resolving SpellContract.",
-                        )
-                    local_candidate = local_map.get(spell_index)
-
-        if local_candidate is None:
-            fallback_candidates: List[ISpell] = []
-            for spell_obj in self._spell_lookup.values():
-                try:
-                    spell_key = spell_obj.key
-                except AttributeError:
-                    continue
-                if spell_key == contract_key:
-                    fallback_candidates.append(spell_obj)
-
-            if len(fallback_candidates) > 1:
-                raise MeldExecutionError(
-                    spell_id=consumer_spell_id,
-                    spell_name=consumer_spell_name,
-                    node_id=consumer_spell_id,
-                    param_name=param_name,
-                    message=(
-                        "SpellContract resolved to multiple local spells. "
-                        "Use a binding_name to disambiguate."
-                    ),
-                )
-            if fallback_candidates:
-                local_candidate = fallback_candidates[0]
-
-        if local_candidate is None:
-            raise MeldExecutionError(
-                spell_id=consumer_spell_id,
-                spell_name=consumer_spell_name,
-                node_id=consumer_spell_id,
-                param_name=param_name,
-                message=(
-                    "SpellContract could not be resolved. "
-                    "No contracted or local spell matched the contract."
-                ),
-            )
-
-        return local_candidate.spell_index.current
+        raise MeldExecutionError(
+            spell_id=consumer_spell_id,
+            spell_name=consumer_spell_name,
+            node_id=consumer_spell_id,
+            param_name=param_name,
+            message=(
+                "SpellContract could not be resolved. "
+                "No contracted spell matched the contract."
+            ),
+        )
 
     def _normalize_contract_override_payload(
             self,

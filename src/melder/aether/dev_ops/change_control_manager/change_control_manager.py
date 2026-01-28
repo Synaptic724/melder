@@ -22,6 +22,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -720,9 +721,9 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         Default dirty-marker for commit events.
 
         Purpose:
-            Mark list[Frame] consumers dirty for the owning Spellbook when
-            bindings or contracted spell maps change as part of a transaction
-            commit.
+            Mark list[Frame] consumers and SpellContract consumers dirty for
+            the owning Spellbook when bindings or contracted spell maps change
+            as part of a transaction commit.
         Contract:
             - No-op if the staged mutation has no spellbook id.
             - No-op if no binding/contract keys are present or frame keys are empty.
@@ -751,6 +752,18 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self._spell_system_states.mark_collection_dependents_dirty(
             spellbook_id=staged.spellbook_id,
             frame_keys=frame_keys,
+        )
+        contract_key_set = {
+            (frame_key, binding_key)
+            for frame_key, binding_key, _ in staged.contract_keys
+            if frame_key and binding_key
+        }
+        if not contract_key_set:
+            return
+        self._spell_system_states.mark_contract_dependents_dirty(
+            spellbook_id=staged.spellbook_id,
+            contract_keys=contract_key_set,
+            change_reason=SpellStateChangeReason.contract_unvalidated,
         )
 
     def transaction_manager(self) -> ChangeControlTransactionManager:

@@ -128,16 +128,16 @@ def test_spell_contract_resolves_by_explicit_spell_class_binding_normalized() ->
         owner.cleanup()
 
 
-def test_spell_contract_string_frame_local_fallback() -> None:
+def test_spell_contract_string_frame_missing_provider_raises() -> None:
     """
     Purpose:
-        Validate SpellContract resolves local providers using string spellframes.
+        Validate SpellContract raises when no contracted provider exists.
     Contract:
-        - String spellframes are matched for local fallback resolution.
+        - Missing contracted providers raise during meld.
     Returns:
         None.
     Raises:
-        AssertionError: If the local provider is not selected.
+        AssertionError: If missing contracts do not raise.
     """
     configuration = _make_dynamic_configuration()
     spellbook = Spellbook(configuration=configuration)
@@ -157,9 +157,8 @@ def test_spell_contract_string_frame_local_fallback() -> None:
     conduit = spellbook.conjure(automatic=False, name="local")
     try:
         assert conduit.validate_contracts_and_define() == {}
-        instance = conduit.meld(spell=consumer_id)
-
-        assert isinstance(instance.service, ContractServicePrimary)
+        with pytest.raises(MeldExecutionError, match="SpellContract could not be resolved"):
+            conduit.meld(spell=consumer_id)
     finally:
         conduit.cleanup()
 
@@ -601,17 +600,17 @@ def test_spell_contract_runtime_error_does_not_gate_provider_state() -> None:
         owner.cleanup()
 
 
-def test_spell_contract_contract_removed_falls_back_to_local() -> None:
+def test_spell_contract_contract_removed_raises_without_provider() -> None:
     """
     Purpose:
-        Validate SpellContract falls back to local providers after contract removal.
+        Validate SpellContract raises after contract removal with no provider.
     Contract:
         - Contracted providers are used when present.
-        - Local providers are used after the contract is removed.
+        - Missing contracted providers raise after removal.
     Returns:
         None.
     Raises:
-        AssertionError: If fallback does not select the local provider.
+        AssertionError: If missing contracts do not raise.
     """
     configuration = _make_dynamic_configuration()
     owner_book = Spellbook(configuration=configuration)
@@ -655,8 +654,8 @@ def test_spell_contract_contract_removed_falls_back_to_local() -> None:
             assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
         assert borrower.validate_contracts_and_define() == {}
 
-        fallback_instance = borrower.meld(spell=consumer_id)
-        assert isinstance(fallback_instance.service, ContractServiceLocal)
+        with pytest.raises(MeldExecutionError, match="SpellContract could not be resolved"):
+            borrower.meld(spell=consumer_id)
     finally:
         borrower.cleanup()
         owner.cleanup()

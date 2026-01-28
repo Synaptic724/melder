@@ -5,11 +5,17 @@ from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.interfaces.interfaces import IConduit, ISpell
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
+)
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -1863,11 +1869,65 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
 
     spellbook = MagicMock()
     spellbook._lock = threading.RLock()
+    spellbook._id = "book-1"
     spellbook._spells = {
         "a": spell_a,
         "b": spell_b,
         "c": spell_none,
     }
+    spell_a._spellbook = spellbook
+    spell_b._spellbook = spellbook
+    spell_none._spellbook = spellbook
+
+    states = SpellSystemStates(MagicMock())
+    spellbook._spell_system_states = states
+    index_a = SpellIndex("spell-a")
+    index_b = SpellIndex("spell-b")
+    index_none = SpellIndex("spell-c")
+    states.register_lineage(index_a, spell_a)
+    states.register_lineage(index_b, spell_b)
+    states.register_lineage(index_none, spell_none)
+
+    keys_a = ward._get_spell_contract_keys(spell_a)
+    keys_b = ward._get_spell_contract_keys(spell_b)
+    topology_a = SpellLocalTopology(
+        index_a.current,
+        [
+            SpellSocketDescriptor(
+                spell_id=index_a.current,
+                param_name="dep",
+                position=0,
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                is_collection=False,
+                is_optional=True,
+                target_spell_ids=(),
+                dependency_key=None,
+                contract_key=contract_key,
+                contract_late_binding=None,
+            )
+            for contract_key in keys_a
+        ],
+    )
+    topology_b = SpellLocalTopology(
+        index_b.current,
+        [
+            SpellSocketDescriptor(
+                spell_id=index_b.current,
+                param_name="dep",
+                position=0,
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                is_collection=False,
+                is_optional=True,
+                target_spell_ids=(),
+                dependency_key=None,
+                contract_key=contract_key,
+                contract_late_binding=None,
+            )
+            for contract_key in keys_b
+        ],
+    )
+    states.register_local_topology(index_a, topology_a)
+    states.register_local_topology(index_b, topology_b)
 
     creations = MagicMock()
 
@@ -1917,10 +1977,61 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
 
     spellbook = MagicMock()
     spellbook._lock = threading.RLock()
+    spellbook._id = "book-1"
     spellbook._spells = {
         "a": spell_a,
         "b": spell_b,
     }
+    spell_a._spellbook = spellbook
+    spell_b._spellbook = spellbook
+
+    states = SpellSystemStates(MagicMock())
+    spellbook._spell_system_states = states
+    index_a = SpellIndex("spell-a")
+    index_b = SpellIndex("spell-b")
+    states.register_lineage(index_a, spell_a)
+    states.register_lineage(index_b, spell_b)
+
+    keys_a = ward._get_spell_contract_keys(spell_a)
+    keys_b = ward._get_spell_contract_keys(spell_b)
+    topology_a = SpellLocalTopology(
+        index_a.current,
+        [
+            SpellSocketDescriptor(
+                spell_id=index_a.current,
+                param_name="dep",
+                position=0,
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                is_collection=False,
+                is_optional=True,
+                target_spell_ids=(),
+                dependency_key=None,
+                contract_key=contract_key,
+                contract_late_binding=None,
+            )
+            for contract_key in keys_a
+        ],
+    )
+    topology_b = SpellLocalTopology(
+        index_b.current,
+        [
+            SpellSocketDescriptor(
+                spell_id=index_b.current,
+                param_name="dep",
+                position=0,
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                is_collection=False,
+                is_optional=True,
+                target_spell_ids=(),
+                dependency_key=None,
+                contract_key=contract_key,
+                contract_late_binding=None,
+            )
+            for contract_key in keys_b
+        ],
+    )
+    states.register_local_topology(index_a, topology_a)
+    states.register_local_topology(index_b, topology_b)
 
     creations = MagicMock()
     creations.extract_spell_creations = MagicMock(side_effect=[RuntimeError("boom"), None])

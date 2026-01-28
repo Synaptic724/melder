@@ -85,7 +85,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
 
         provider_map: Dict[Tuple[str, str], List[str]] = {}
         if scanner is not None:
-            for index, provider_spell in scanner.iter_spells():
+            for index, provider_spell in scanner.iter_contracted_spells():
                 if cancel_event is not None and cancel_event.is_set:
                     cancel_event.throw_if_set()
                 key = SpellInputUtils.make_spell_key_from_parts(

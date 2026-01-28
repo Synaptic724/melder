@@ -383,16 +383,16 @@ def test_resolve_spell_contract_prefers_contracted_over_local() -> None:
     assert resolved == contracted.spell_index.current
 
 
-def test_resolve_spell_contract_local_map_missing_raises() -> None:
+def test_resolve_spell_contract_local_map_ignored_without_contracts() -> None:
     """
     Purpose:
-        Validate missing local spell maps raise MeldExecutionError.
+        Validate local spell maps are ignored when no contracts exist.
     Contract:
-        - Local lookup without spell maps raises an error.
+        - Missing contracted providers raise regardless of local lookup.
     Returns:
         None.
     Raises:
-        AssertionError: If missing local maps do not raise.
+        AssertionError: If missing contracts do not raise.
     """
     contract = SpellContract(spellframe=IService, binding_name="primary")
     contract_key = contract.canonical_key
@@ -409,7 +409,7 @@ def test_resolve_spell_contract_local_map_missing_raises() -> None:
         _spellbook=spellbook,
     )
     engine = object.__new__(MeldEngine)
-    with pytest.raises(MeldExecutionError, match="Local spell map missing"):
+    with pytest.raises(MeldExecutionError, match="could not be resolved"):
         engine._resolve_spell_contract_spell_id(
             contract=contract,
             consumer_spell=consumer_spell,
@@ -417,16 +417,16 @@ def test_resolve_spell_contract_local_map_missing_raises() -> None:
         )
 
 
-def test_resolve_spell_contract_fallback_multiple_candidates_raises() -> None:
+def test_resolve_spell_contract_fallback_candidates_ignored() -> None:
     """
     Purpose:
-        Validate fallback resolution rejects multiple local candidates.
+        Validate fallback candidates do not resolve SpellContracts.
     Contract:
-        - Multiple fallback candidates raise a disambiguation error.
+        - Local fallback candidates are ignored without contracted providers.
     Returns:
         None.
     Raises:
-        AssertionError: If multiple fallback candidates do not raise.
+        AssertionError: If missing contracts do not raise.
     """
     contract = SpellContract(spellframe=IService, binding_name="primary")
     contract_key = contract.canonical_key
@@ -448,7 +448,7 @@ def test_resolve_spell_contract_fallback_multiple_candidates_raises() -> None:
         provider_a.spell_index.current: provider_a,
         provider_b.spell_index.current: provider_b,
     }
-    with pytest.raises(MeldExecutionError, match="multiple local spells"):
+    with pytest.raises(MeldExecutionError, match="could not be resolved"):
         engine._resolve_spell_contract_spell_id(
             contract=contract,
             consumer_spell=consumer_spell,
@@ -456,16 +456,16 @@ def test_resolve_spell_contract_fallback_multiple_candidates_raises() -> None:
         )
 
 
-def test_resolve_spell_contract_fallback_single_candidate_returns() -> None:
+def test_resolve_spell_contract_single_fallback_candidate_ignored() -> None:
     """
     Purpose:
-        Validate fallback resolution returns a single local candidate.
+        Validate single fallback candidates do not resolve SpellContracts.
     Contract:
-        - Single fallback candidate resolves to its spell id.
+        - Missing contracted providers raise even with fallback candidates.
     Returns:
         None.
     Raises:
-        AssertionError: If fallback candidate does not resolve.
+        AssertionError: If missing contracts do not raise.
     """
     contract = SpellContract(spellframe=IService, binding_name="primary")
     contract_key = contract.canonical_key
@@ -483,12 +483,12 @@ def test_resolve_spell_contract_fallback_single_candidate_returns() -> None:
     )
     engine = object.__new__(MeldEngine)
     engine._spell_lookup = {provider.spell_index.current: provider}
-    resolved = engine._resolve_spell_contract_spell_id(
-        contract=contract,
-        consumer_spell=consumer_spell,
-        param_name="service",
-    )
-    assert resolved == provider.spell_index.current
+    with pytest.raises(MeldExecutionError, match="could not be resolved"):
+        engine._resolve_spell_contract_spell_id(
+            contract=contract,
+            consumer_spell=consumer_spell,
+            param_name="service",
+        )
 
 
 def test_resolve_spell_contract_missing_all_candidates_raises() -> None:
@@ -496,7 +496,7 @@ def test_resolve_spell_contract_missing_all_candidates_raises() -> None:
     Purpose:
         Validate missing providers raise MeldExecutionError.
     Contract:
-        - No contracted or local spell matches raise a resolution error.
+        - No contracted spell matches raise a resolution error.
     Returns:
         None.
     Raises:

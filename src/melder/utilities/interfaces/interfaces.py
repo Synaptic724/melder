@@ -6812,6 +6812,8 @@ class ISpellSystemStates(ICleanable, Protocol):
       DevOps/validation flows can decide what to re-run.
     - Tracks collection dependency indices per Spellbook for targeted
       list[Frame] revalidation.
+    - Tracks SpellContract consumer indices per Spellbook for targeted
+      contract invalidation.
 
     Intended lifecycle:
 
@@ -6834,6 +6836,8 @@ class ISpellSystemStates(ICleanable, Protocol):
     _lineage_owner_spellbook_id: Optional[Dict[str, str]]
     _collection_frames_by_lineage: Optional[Dict[str, 'Set[str]']]
     _collection_dependents_by_spellbook: Optional[Dict[str, Dict[str, 'Set[str]']]]
+    _contract_keys_by_lineage: Optional[Dict[str, 'Set[Tuple[str, str]]']]
+    _contract_dependents_by_spellbook: Optional[Dict[str, Dict[Tuple[str, str], 'Set[str]']]]
 
     # ------------------------------------------------------------------
     # Registration / lookup
@@ -6897,6 +6901,29 @@ class ISpellSystemStates(ICleanable, Protocol):
         - Add reverse edges for new dependencies.
         - Mark this lineage as gated due to dependency change and add to
           `_dirty_lineages`.
+        """
+        ...
+
+    def mark_contract_dependents_dirty(
+            self,
+            *,
+            spellbook_id: str,
+            contract_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            change_reason: Optional["SpellStateChangeReason"] = None,
+    ) -> Set[str]:
+        """
+        Mark SpellContract consumers dirty for a specific Spellbook scope.
+
+        Args:
+            spellbook_id:
+                Owning Spellbook id used to scope the contract index.
+            contract_keys:
+                Canonical contract keys to invalidate. When None, all
+                SpellContract dependents for the spellbook are marked dirty.
+            change_reason:
+                Optional change reason override.
+        Returns:
+            Set[str]: Lineage ids marked dirty by this call.
         """
         ...
 

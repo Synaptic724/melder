@@ -10,6 +10,7 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -399,16 +400,16 @@ def test_conduit_spell_contract_resolves_after_dynamic_link() -> None:
         owner.cleanup()
 
 
-def test_conduit_spell_contract_falls_back_to_local_spell() -> None:
+def test_conduit_spell_contract_missing_provider_raises() -> None:
     """
     Purpose:
-        Validate SpellContract falls back to local spells when no contract exists.
+        Validate SpellContract raises when no contracted provider exists.
     Contract:
-        - Local spells can satisfy SpellContract sockets when no contracted spell matches.
+        - Missing contracted providers raise during meld.
     Returns:
         None.
     Raises:
-        AssertionError: If local fallback does not resolve.
+        AssertionError: If missing contracts do not raise.
     """
     class LocalService:
         """
@@ -477,10 +478,8 @@ def test_conduit_spell_contract_falls_back_to_local_spell() -> None:
     conduit = spellbook.conjure(automatic=False, name="local")
     try:
         assert conduit.validate_contracts_and_define() == {}
-        instance = conduit.meld(spell=consumer_id)
-
-        assert isinstance(instance, ContractConsumer)
-        assert isinstance(instance.service, LocalService)
+        with pytest.raises(MeldExecutionError, match="SpellContract could not be resolved"):
+            conduit.meld(spell=consumer_id)
     finally:
         conduit.cleanup()
 
@@ -488,10 +487,10 @@ def test_conduit_spell_contract_falls_back_to_local_spell() -> None:
 def test_conduit_spell_contract_prefers_contracted_spell() -> None:
     """
     Purpose:
-        Validate SpellContract prefers contracted spells over local fallback.
+        Validate SpellContract prefers contracted spells when available.
     Contract:
         - Contracted spells are used when available.
-        - Local fallback is ignored when a contracted spell matches.
+        - Local providers do not override contracted resolution.
     Returns:
         None.
     Raises:
