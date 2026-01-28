@@ -1833,10 +1833,15 @@ class SpellCrafter(Cleanable):
         Compiles an InjectionPlan for root spells using Phase-8 occurrence plans.
         Non-root spells are treated as a no-op.
 
+        Purpose:
+            Precompute dependency-to-parameter wiring so meld can inject without
+            recomputing occurrence-driven dependency paths at runtime.
+
         Contract:
             - Requires Phase 8 artifacts to be available.
             - Builds plan only when a root occurrence plan is attached.
             - Replaces any existing InjectionPlan for this root.
+            - Does not mutate the occurrence plan.
 
         Args:
             conduit_id:
@@ -1846,6 +1851,21 @@ class SpellCrafter(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            ValueError:
+                If conduit_id is empty.
+            RuntimeError:
+                If Phase 8 artifacts are missing for a root spell or if the
+                root blueprint is missing for a root spell.
+            OperationCancelledError:
+                If cancel_event signals cancellation.
+
+        Threading:
+            - Not thread-safe; expected to run under spellbook phase scheduling.
+
+        Lifecycle:
+            - Cleans and replaces any prior InjectionPlan for this spell.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
@@ -1897,6 +1917,40 @@ class SpellCrafter(Cleanable):
 
         Compiles override and mutation patch maps for root spells using
         Phase-5 blueprints. Non-root spells are treated as a no-op.
+
+        Purpose:
+            Precompute override and mutation targeting so meld can apply
+            TargetSpec overrides without scanning the blueprint every call.
+
+        Contract:
+            - Requires Phase 5 artifacts to be available.
+            - Builds maps only when a root blueprint is attached.
+            - Replaces any existing patch maps for this root.
+            - Does not mutate the root blueprint.
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If conduit_id is empty.
+            RuntimeError:
+                If Phase 5 artifacts are missing or the root blueprint is missing
+                for a root spell.
+            OperationCancelledError:
+                If cancel_event signals cancellation.
+
+        Threading:
+            - Not thread-safe; expected to run under spellbook phase scheduling.
+
+        Lifecycle:
+            - Cleans and replaces any prior patch maps for this spell.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
@@ -2148,6 +2202,8 @@ class SpellCrafter(Cleanable):
             - Phase 4: Validation
             - Phase 5: Root blueprints
             - Phase 8: Occurrence plan
+            - Phase 9: Injection plan
+            - Phase 10: Patch maps
             - Phase 6: System validation
             - Phase 7: Change control
 
@@ -2170,6 +2226,8 @@ class SpellCrafter(Cleanable):
         self.run_phase_validation(cancel_event=cancel_event)
         self.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
         self.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
+        self.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
+        self.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
         self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         self.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         self.cleanup_phase_artifacts()

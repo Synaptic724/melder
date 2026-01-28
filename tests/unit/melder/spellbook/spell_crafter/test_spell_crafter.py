@@ -4148,7 +4148,7 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
             Contract:
                 Appends the phase name to the outer call list.
             Args:
-                args: Optional positional args (conduit_id for phases 5-7).
+                args: Optional positional args (conduit_id for phases 5-10).
                 cancel_event: Optional cancel event forwarded by run_all_phases.
             Returns:
                 None.
@@ -4163,6 +4163,8 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(SpellCrafter, "run_phase_validation", _record("validation"))
     monkeypatch.setattr(SpellCrafter, "run_phase_root_blueprints", _record("root_blueprints"))
     monkeypatch.setattr(SpellCrafter, "run_phase_occurrence_plan", _record("occurrence_plan"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_injection_plan", _record("injection_plan"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_patch_maps", _record("patch_maps"))
     monkeypatch.setattr(SpellCrafter, "run_phase_system_validation", _record("system_validation"))
     monkeypatch.setattr(SpellCrafter, "run_phase_change_control", _record("change_control"))
 
@@ -4175,6 +4177,8 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
         "validation",
         "root_blueprints",
         "occurrence_plan",
+        "injection_plan",
+        "patch_maps",
         "system_validation",
         "change_control",
     ]
@@ -4208,7 +4212,7 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
         Contract:
             Appends the cancel_event to the received list.
         Args:
-            args: Optional positional args (conduit_id for phases 5-7).
+            args: Optional positional args (conduit_id for phases 5-10).
             cancel_event: Cancel event provided by run_all_phases.
         Returns:
             None.
@@ -4221,9 +4225,11 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(SpellCrafter, "run_phase_validation", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_root_blueprints", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_occurrence_plan", _record)
+    monkeypatch.setattr(SpellCrafter, "run_phase_injection_plan", _record)
+    monkeypatch.setattr(SpellCrafter, "run_phase_patch_maps", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_system_validation", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_change_control", _record)
 
     crafter.run_all_phases("cid", cancel_event=cancel)
 
-    assert received == [cancel] * 8
+    assert received == [cancel] * 10

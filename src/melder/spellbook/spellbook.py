@@ -3251,7 +3251,7 @@ class Spellbook(Cleanable, ISpellbook):
         Internal
 
         Convenience wrapper that runs structural phases (1-4) followed by
-        conduit-scoped resolution phases (5-7).
+        conduit-scoped resolution phases (5-10).
 
         This is primarily a compatibility shim for callers that still expect
         a single orchestration method.
@@ -3414,8 +3414,9 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Orchestrate conduit-scoped Phases 5-8 (root blueprints, occurrence plan,
-        system validation, change control). This must run after structural phases complete.
+        Orchestrate conduit-scoped Phases 5-10 (root blueprints, occurrence plan,
+        injection plan, patch maps, system validation, change control). This must run
+        after structural phases complete.
 
         Args:
             conduit_id:
@@ -3446,6 +3447,14 @@ class Spellbook(Cleanable, ISpellbook):
             scheduler.register_phase(
                 "occurrence_plan",
                 lambda: self._phase_occurrence_plan_factory(scheduler, conduit_id),
+            )
+            scheduler.register_phase(
+                "injection_plan",
+                lambda: self._phase_injection_plan_factory(scheduler, conduit_id),
+            )
+            scheduler.register_phase(
+                "patch_maps",
+                lambda: self._phase_patch_maps_factory(scheduler, conduit_id),
             )
             scheduler.register_phase(
                 "system_validation",
@@ -3691,6 +3700,80 @@ class Spellbook(Cleanable, ISpellbook):
                     label=f"occurrence_plan:{spell.spell_id}",
                     metadata={
                         "phase": "occurrence_plan",
+                        "spell_id": spell.spell_id,
+                    },
+                )
+            )
+        return units
+
+    def _phase_injection_plan_factory(
+            self,
+            scheduler: PhaseScheduler,
+            conduit_id: str,
+    ) -> Sequence[IUnitOfWork]:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **injection_plan** phase.
+
+        This phase compiles InjectionPlan artifacts from Phase 8 occurrence
+        plans. Non-root spells are treated as a no-op by the underlying
+        SpellCrafter.
+
+        Expected spell surface:
+
+            ``spell.run_phase_injection_plan(conduit_id, cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        if not self._spells:
+            return []
+
+        units: List[IUnitOfWork] = []
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_injection_plan,
+                    args=(conduit_id, scheduler.cancel_event,),
+                    label=f"injection_plan:{spell.spell_id}",
+                    metadata={
+                        "phase": "injection_plan",
+                        "spell_id": spell.spell_id,
+                    },
+                )
+            )
+        return units
+
+    def _phase_patch_maps_factory(
+            self,
+            scheduler: PhaseScheduler,
+            conduit_id: str,
+    ) -> Sequence[IUnitOfWork]:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **patch_maps** phase.
+
+        This phase compiles patch maps for overrides based on Phase 9
+        injection plans. Non-root spells are treated as a no-op by the
+        underlying SpellCrafter.
+
+        Expected spell surface:
+
+            ``spell.run_phase_patch_maps(conduit_id, cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        if not self._spells:
+            return []
+
+        units: List[IUnitOfWork] = []
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_patch_maps,
+                    args=(conduit_id, scheduler.cancel_event,),
+                    label=f"patch_maps:{spell.spell_id}",
+                    metadata={
+                        "phase": "patch_maps",
                         "spell_id": spell.spell_id,
                     },
                 )

@@ -145,6 +145,34 @@ class DummySpell:
         """
         return ("occurrence_plan", self.spell_id, conduit_id, cancel_event)
 
+    def run_phase_injection_plan(self, conduit_id, cancel_event):
+        """
+        Purpose:
+            Provide a deterministic Phase 9 marker for tests.
+        Contract:
+            Returns a tuple containing phase name, spell id, conduit id, and cancel event.
+        Args:
+            conduit_id: Conduit identifier forwarded by the scheduler.
+            cancel_event: Cancellation event forwarded by the scheduler.
+        Returns:
+            tuple[str, str, str, object]: Phase marker tuple.
+        """
+        return ("injection_plan", self.spell_id, conduit_id, cancel_event)
+
+    def run_phase_patch_maps(self, conduit_id, cancel_event):
+        """
+        Purpose:
+            Provide a deterministic Phase 10 marker for tests.
+        Contract:
+            Returns a tuple containing phase name, spell id, conduit id, and cancel event.
+        Args:
+            conduit_id: Conduit identifier forwarded by the scheduler.
+            cancel_event: Cancellation event forwarded by the scheduler.
+        Returns:
+            tuple[str, str, str, object]: Phase marker tuple.
+        """
+        return ("patch_maps", self.spell_id, conduit_id, cancel_event)
+
     def run_phase_system_validation(self, conduit_id, cancel_event):
         """
         Purpose:
@@ -1245,6 +1273,8 @@ def test_phase_factories_build_units_and_label():
     val_units = sb._phase_validation_factory(scheduler)
     root_units = sb._phase_root_blueprints_factory(scheduler, "cid")
     occ_units = sb._phase_occurrence_plan_factory(scheduler, "cid")
+    inj_units = sb._phase_injection_plan_factory(scheduler, "cid")
+    patch_units = sb._phase_patch_maps_factory(scheduler, "cid")
     sys_units = sb._phase_system_validation_factory(scheduler, "cid")
     change_units = sb._phase_change_control_factory(scheduler, "cid")
     assert req_units[0]["label"] == "requirements:x"
@@ -1253,6 +1283,8 @@ def test_phase_factories_build_units_and_label():
     assert val_units[0]["label"] == "validation:x"
     assert root_units[0]["label"] == "root_blueprints:x"
     assert occ_units[0]["label"] == "occurrence_plan:x"
+    assert inj_units[0]["label"] == "injection_plan:x"
+    assert patch_units[0]["label"] == "patch_maps:x"
     assert sys_units[0]["label"] == "system_validation:x"
     assert change_units[0]["label"] == "change_control:x"
 
@@ -1300,6 +1332,8 @@ def test_run_resolution_phases_success(monkeypatch):
         "validation",
         "root_blueprints",
         "occurrence_plan",
+        "injection_plan",
+        "patch_maps",
         "system_validation",
         "change_control",
     }
@@ -2005,6 +2039,8 @@ def test_phase_factories_return_empty_when_no_spells():
     assert sb._phase_validation_factory(scheduler) == []
     assert sb._phase_root_blueprints_factory(scheduler, "cid") == []
     assert sb._phase_occurrence_plan_factory(scheduler, "cid") == []
+    assert sb._phase_injection_plan_factory(scheduler, "cid") == []
+    assert sb._phase_patch_maps_factory(scheduler, "cid") == []
     assert sb._phase_system_validation_factory(scheduler, "cid") == []
     assert sb._phase_change_control_factory(scheduler, "cid") == []
 
@@ -2033,6 +2069,8 @@ def test_run_resolution_phases_with_multiple_spells():
         "validation",
         "root_blueprints",
         "occurrence_plan",
+        "injection_plan",
+        "patch_maps",
         "system_validation",
         "change_control",
     }
@@ -2641,6 +2679,8 @@ def test_phase_factories_metadata_contains_spell_id():
         sb._phase_validation_factory(scheduler),
         sb._phase_root_blueprints_factory(scheduler, "cid"),
         sb._phase_occurrence_plan_factory(scheduler, "cid"),
+        sb._phase_injection_plan_factory(scheduler, "cid"),
+        sb._phase_patch_maps_factory(scheduler, "cid"),
         sb._phase_system_validation_factory(scheduler, "cid"),
         sb._phase_change_control_factory(scheduler, "cid"),
     ):
