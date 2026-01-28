@@ -917,7 +917,7 @@ class OccurrencePlanBuilder(object):
             MeldExecutionError:
                 If contracted lookup maps are inconsistent or missing.
         """
-        spellbook = consumer_spell._spellbook
+        spellbook = self._root_spell._spellbook
         if spellbook is None:
             return []
 

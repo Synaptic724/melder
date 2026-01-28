@@ -1008,29 +1008,12 @@ class MeldEngine(Cleanable):
         Raises:
             MeldExecutionError: If the contract is missing, ambiguous, or inconsistent.
         """
-        try:
-            consumer_spell_id = consumer_spell.spell_index.current
-        except AttributeError:
-            consumer_spell_id = "<unknown>"
-        try:
-            consumer_spell_name = consumer_spell.spell_name
-        except AttributeError:
-            consumer_spell_name = str(consumer_spell_id)
-
+        consumer_spell_id = consumer_spell.spell_index.current
+        consumer_spell_name = consumer_spell.spell_name
         contract_key = contract.canonical_key
         contracted_candidates: List[ISpell] = []
-
-        try:
-            spellbook = consumer_spell._spellbook
-        except AttributeError:
-            spellbook = None
-
-        contracted_lookup = None
-        if spellbook is not None:
-            try:
-                contracted_lookup = spellbook._lookup_contracted_spells
-            except AttributeError:
-                contracted_lookup = None
+        spellbook = self._root_spell._spellbook
+        contracted_lookup = spellbook._lookup_contracted_spells
 
         if contracted_lookup:
             for conduit_id, lookup_map in contracted_lookup.items():
@@ -1970,78 +1953,6 @@ class MeldEngine(Cleanable):
 
         return instance
 
-    # ------------------------------------------------------------------ #
-    # DAG helpers                                                        #
-    # ------------------------------------------------------------------ #
-    def _build_kwargs_for_node(
-            self,
-            *,
-            node_id: str,
-            dag,
-            override_map: Dict[SocketRef, Any],
-    ) -> Dict[str, Any]:
-        """
-        Build keyword args for a node by combining overrides and dependency instances.
-        """
-        kwargs: Dict[str, Any] = {}
-        node = dag.get_node(node_id)
-        if node is None:
-            return kwargs
-
-        # Map overrides targeting this node_id
-        for socket_ref, value in (override_map or {}).items():
-            if socket_ref.node_id == node_id:
-                kwargs[socket_ref.param_name] = value
-
-        # Resolve dependencies from DAG edges + topology
-        if not node.dependencies:
-            return kwargs
-
-        topo = None
-        if self._system_states is not None:
-            try:
-                topo = self._system_states.get_local_topology_by_id(node_id)
-            except Exception:
-                topo = None
-
-        incoming_map: Dict[str, list[str]] = {}
-        if topo is not None:
-            for socket in topo.sockets:
-                for target_id in socket.target_spell_ids:
-                    incoming_map.setdefault(socket.param_name, []).append(target_id)
-
-        # Merge incoming_params if topology is missing.
-        for parent_node in node.dependencies:
-            parent_id = parent_node.id
-            param_name = node.incoming_params.get(parent_node)
-            if param_name:
-                incoming_map.setdefault(param_name, []).append(parent_id)
-
-        for param_name, parent_ids in incoming_map.items():
-            if param_name in kwargs:
-                # Already overridden; skip DI value.
-                continue
-            values = []
-            for parent_id in sorted(set(parent_ids)):
-                if not self._frame.has_result(parent_id):
-                    raise MeldExecutionError(
-                        spell_id=node_id,
-                        spell_name=node_id,
-                        message=(
-                            f"Dependency '{parent_id}' missing while building args for '{node_id}'."
-                        ),
-                    )
-                values.append(self._frame.get_result(parent_id))
-            if not values:
-                continue
-            if len(values) == 1:
-                kwargs[param_name] = values[0]
-            else:
-                # Multiple providers -> inject list. Downstream type checks can enforce collections.
-                kwargs[param_name] = values
-
-        return kwargs
-
     def _construct_spell(self, spell: ISpell, kwargs: Dict[str, Any]) -> Any:
         """
         Purpose:
@@ -2087,9 +1998,6 @@ class MeldEngine(Cleanable):
                 message=f"Error invoking spell '{spell.spell_name}'.",
                 inner=exc,
             ) from exc
-
-    def _store_result(self, node_id: str, value: Any) -> None:
-        self._frame.set_result(node_id, value)
 
     def _should_use_spell_lock(self, spell: ISpell, creations: Any) -> bool:
         """

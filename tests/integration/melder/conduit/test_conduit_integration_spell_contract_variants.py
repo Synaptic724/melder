@@ -753,13 +753,13 @@ def test_spell_contract_config_frame_resolves() -> None:
         owner.cleanup()
 
 
-def test_spell_contract_transfer_ownership_force_unshare_allows_local() -> None:
+def test_spell_contract_transfer_ownership_force_unshare_blocks_contract() -> None:
     """
     Purpose:
-        Validate SpellContract resolves locally after ownership transfer.
+        Validate SpellContract fails after ownership transfer with force_unshare.
     Contract:
         - Ownership transfer strips contracts when force_unshare is True.
-        - The consumer still resolves the provider as a local spell.
+        - The consumer does not resolve a local fallback for SpellContract.
     Returns:
         None.
     Raises:
@@ -806,8 +806,11 @@ def test_spell_contract_transfer_ownership_force_unshare_allows_local() -> None:
         spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner.id)
         assert _inbound_spell_ids(spells_by_conduit) == []
 
-        transferred = borrower.meld(spell=consumer_id)
-        assert isinstance(transferred.service, ContractServicePrimary)
+        with pytest.raises(
+                MeldExecutionError,
+                match="SpellContract could not be resolved",
+        ):
+            borrower.meld(spell=consumer_id)
     finally:
         borrower.cleanup()
         owner.cleanup()

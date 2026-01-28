@@ -10,6 +10,22 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from tests.mocks.spellbook.protocols import IService
 
 
+def _make_engine_with_spellbook(spellbook: object) -> MeldEngine:
+    """
+    Purpose:
+        Build a MeldEngine stub with a root spellbook for contract resolution.
+    Contract:
+        - Sets the root spellbook reference for contract lookups.
+    Args:
+        spellbook: Spellbook-like object with contracted lookup maps.
+    Returns:
+        MeldEngine: Engine instance with root spell configured.
+    """
+    engine = object.__new__(MeldEngine)
+    engine._root_spell = SimpleNamespace(_spellbook=spellbook)
+    return engine
+
+
 def test_normalize_contract_override_payload_from_list() -> None:
     """
     Purpose:
@@ -236,7 +252,7 @@ def test_resolve_spell_contract_missing_contracted_map_raises() -> None:
         spell_name="Consumer",
         _spellbook=spellbook,
     )
-    engine = object.__new__(MeldEngine)
+    engine = _make_engine_with_spellbook(spellbook)
     with pytest.raises(MeldExecutionError, match="Contracted spell map missing"):
         engine._resolve_spell_contract_spell_id(
             contract=contract,
@@ -268,7 +284,7 @@ def test_resolve_spell_contract_missing_conduit_map_raises() -> None:
         spell_name="Consumer",
         _spellbook=spellbook,
     )
-    engine = object.__new__(MeldEngine)
+    engine = _make_engine_with_spellbook(spellbook)
     with pytest.raises(MeldExecutionError, match="Contracted spell map missing for conduit"):
         engine._resolve_spell_contract_spell_id(
             contract=contract,
@@ -300,7 +316,7 @@ def test_resolve_spell_contract_missing_index_raises() -> None:
         spell_name="Consumer",
         _spellbook=spellbook,
     )
-    engine = object.__new__(MeldEngine)
+    engine = _make_engine_with_spellbook(spellbook)
     with pytest.raises(MeldExecutionError, match="Contracted spell index missing"):
         engine._resolve_spell_contract_spell_id(
             contract=contract,
@@ -339,7 +355,7 @@ def test_resolve_spell_contract_multiple_contracted_candidates_raises() -> None:
         spell_name="Consumer",
         _spellbook=spellbook,
     )
-    engine = object.__new__(MeldEngine)
+    engine = _make_engine_with_spellbook(spellbook)
     with pytest.raises(MeldExecutionError, match="multiple contracted spells"):
         engine._resolve_spell_contract_spell_id(
             contract=contract,
@@ -374,7 +390,7 @@ def test_resolve_spell_contract_prefers_contracted_over_local() -> None:
         spell_name="Consumer",
         _spellbook=spellbook,
     )
-    engine = object.__new__(MeldEngine)
+    engine = _make_engine_with_spellbook(spellbook)
     resolved = engine._resolve_spell_contract_spell_id(
         contract=contract,
         consumer_spell=consumer_spell,
@@ -408,7 +424,7 @@ def test_resolve_spell_contract_local_map_ignored_without_contracts() -> None:
         spell_name="Consumer",
         _spellbook=spellbook,
     )
-    engine = object.__new__(MeldEngine)
+    engine = _make_engine_with_spellbook(spellbook)
     with pytest.raises(MeldExecutionError, match="could not be resolved"):
         engine._resolve_spell_contract_spell_id(
             contract=contract,
@@ -443,7 +459,7 @@ def test_resolve_spell_contract_fallback_candidates_ignored() -> None:
         spell_name="Consumer",
         _spellbook=spellbook,
     )
-    engine = object.__new__(MeldEngine)
+    engine = _make_engine_with_spellbook(spellbook)
     engine._spell_lookup = {
         provider_a.spell_index.current: provider_a,
         provider_b.spell_index.current: provider_b,
@@ -481,7 +497,7 @@ def test_resolve_spell_contract_single_fallback_candidate_ignored() -> None:
         spell_name="Consumer",
         _spellbook=spellbook,
     )
-    engine = object.__new__(MeldEngine)
+    engine = _make_engine_with_spellbook(spellbook)
     engine._spell_lookup = {provider.spell_index.current: provider}
     with pytest.raises(MeldExecutionError, match="could not be resolved"):
         engine._resolve_spell_contract_spell_id(
@@ -514,7 +530,7 @@ def test_resolve_spell_contract_missing_all_candidates_raises() -> None:
         spell_name="Consumer",
         _spellbook=spellbook,
     )
-    engine = object.__new__(MeldEngine)
+    engine = _make_engine_with_spellbook(spellbook)
     engine._spell_lookup = {}
     with pytest.raises(MeldExecutionError, match="could not be resolved"):
         engine._resolve_spell_contract_spell_id(
