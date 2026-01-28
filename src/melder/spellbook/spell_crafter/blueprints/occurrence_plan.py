@@ -25,12 +25,15 @@ class OccurrencePlan(Cleanable):
 
     Purpose:
         Precompute the path-aware occurrence graph and instance planning that
-        the meld runtime currently builds per call.
+        the meld runtime currently builds per call, including resolved
+        SpellContract override payloads when available.
 
     Contract:
         - Instances are treated as immutable once built.
         - This object owns the provided collections and clears them on cleanup.
         - root_spell_id must be the version id used to build the plan.
+        - Contract override payloads are recorded only when dependencies were
+          resolved at plan time; missing providers mark the plan incomplete.
 
     Threading:
         - Not thread-safe. Treat as single-threaded, read-only data.
@@ -44,6 +47,9 @@ class OccurrencePlan(Cleanable):
         "_canonical_occurrences_by_spell_id",
         "_root_instance_key",
         "_shared_spell_ids",
+        "_contract_overrides_by_occurrence",
+        "_contract_overrides_by_spell_id",
+        "_contract_dependencies_complete",
     ]
 
     def __init__(
@@ -56,6 +62,9 @@ class OccurrencePlan(Cleanable):
             canonical_occurrences_by_spell_id: Dict[str, OccurrenceKey],
             root_instance_key: InstanceKey,
             shared_spell_ids: Set[str],
+            contract_overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]],
+            contract_overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]],
+            contract_dependencies_complete: bool,
     ) -> None:
         """
         Initialize a Phase 8 occurrence plan.
@@ -80,6 +89,14 @@ class OccurrencePlan(Cleanable):
                 Instance key representing the root instance.
             shared_spell_ids:
                 Spell ids that resolve to shared instances.
+            contract_overrides_by_occurrence:
+                Mapping of provider occurrences to normalized SpellContract override payloads.
+            contract_overrides_by_spell_id:
+                Mapping of provider spell ids to (occurrence, override) payloads.
+            contract_dependencies_complete:
+                True when all SpellContract dependencies were fully resolved for
+                this plan; False when providers were missing or graph alignment
+                was incomplete.
 
         Raises:
             ValueError:
@@ -100,6 +117,12 @@ class OccurrencePlan(Cleanable):
             raise ValueError("root_instance_key must not be None.")
         if shared_spell_ids is None:
             raise ValueError("shared_spell_ids must not be None.")
+        if contract_overrides_by_occurrence is None:
+            raise ValueError("contract_overrides_by_occurrence must not be None.")
+        if contract_overrides_by_spell_id is None:
+            raise ValueError("contract_overrides_by_spell_id must not be None.")
+        if contract_dependencies_complete is None:
+            raise ValueError("contract_dependencies_complete must not be None.")
 
         self._root_spell_id = root_spell_id
         self._occurrence_graph = occurrence_graph
@@ -108,6 +131,9 @@ class OccurrencePlan(Cleanable):
         self._canonical_occurrences_by_spell_id = canonical_occurrences_by_spell_id
         self._root_instance_key = root_instance_key
         self._shared_spell_ids = shared_spell_ids
+        self._contract_overrides_by_occurrence = contract_overrides_by_occurrence
+        self._contract_overrides_by_spell_id = contract_overrides_by_spell_id
+        self._contract_dependencies_complete = contract_dependencies_complete
 
     def cleanup(self) -> None:
         """
@@ -126,6 +152,8 @@ class OccurrencePlan(Cleanable):
         self._instance_keys_by_spell_id.clear()
         self._canonical_occurrences_by_spell_id.clear()
         self._shared_spell_ids.clear()
+        self._contract_overrides_by_occurrence.clear()
+        self._contract_overrides_by_spell_id.clear()
 
         self._root_spell_id = None
         self._occurrence_graph = None
@@ -134,6 +162,9 @@ class OccurrencePlan(Cleanable):
         self._canonical_occurrences_by_spell_id = None
         self._root_instance_key = None
         self._shared_spell_ids = None
+        self._contract_overrides_by_occurrence = None
+        self._contract_overrides_by_spell_id = None
+        self._contract_dependencies_complete = None
 
     @property
     def root_spell_id(self) -> str:
@@ -217,6 +248,46 @@ class OccurrencePlan(Cleanable):
         self.check_cleaned()
         return self._shared_spell_ids
 
+    @property
+    def contract_overrides_by_occurrence(self) -> Dict[OccurrenceKey, Dict[str, Any]]:
+        """
+        Return SpellContract override payloads keyed by provider occurrence.
+
+        Contract:
+            - The returned mapping is owned by the plan and should be treated
+              as read-only by callers.
+        """
+        self.check_cleaned()
+        return self._contract_overrides_by_occurrence
+
+    @property
+    def contract_overrides_by_spell_id(
+            self,
+    ) -> Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]]:
+        """
+        Return SpellContract override payloads grouped by provider spell id.
+
+        Contract:
+            - The returned mapping is owned by the plan and should be treated
+              as read-only by callers.
+        """
+        self.check_cleaned()
+        return self._contract_overrides_by_spell_id
+
+    @property
+    def contract_dependencies_complete(self) -> bool:
+        """
+        Indicate whether SpellContract dependencies were fully resolved.
+
+        Contract:
+            - True only when every SpellContract dependency resolved to an
+              occurrence in the plan graph.
+            - False when providers were missing or dependencies were not
+              represented in the occurrence graph.
+        """
+        self.check_cleaned()
+        return self._contract_dependencies_complete
+
 
 class OccurrencePlanBuilder(object):
     """
@@ -227,7 +298,8 @@ class OccurrencePlanBuilder(object):
 
     Purpose:
         Convert a RootResolutionBlueprint and spell metadata into a reusable
-        occurrence plan for fast meld execution.
+        occurrence plan for fast meld execution, including contract override
+        payload maps when providers are available.
 
     Contract:
         - This builder does not own any referenced objects.
@@ -286,6 +358,7 @@ class OccurrencePlanBuilder(object):
 
         Contract:
             - Mirrors MeldEngine occurrence planning behavior.
+            - Compiles SpellContract override payloads for resolved dependencies.
             - Raises MeldExecutionError when dependency spells cannot be resolved.
 
         Returns:
@@ -317,6 +390,13 @@ class OccurrencePlanBuilder(object):
             occurrence_graph=occurrence_graph,
             root_spell_id=root_spell_id,
         )
+        (
+            contract_overrides_by_occurrence,
+            contract_overrides_by_spell_id,
+            contract_dependencies_complete,
+        ) = self._compile_contract_overrides(
+            occurrence_graph=occurrence_graph,
+        )
 
         return OccurrencePlan(
             root_spell_id=root_spell_id,
@@ -326,6 +406,9 @@ class OccurrencePlanBuilder(object):
             canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
             root_instance_key=root_instance_key,
             shared_spell_ids=shared_spell_ids,
+            contract_overrides_by_occurrence=contract_overrides_by_occurrence,
+            contract_overrides_by_spell_id=contract_overrides_by_spell_id,
+            contract_dependencies_complete=contract_dependencies_complete,
         )
 
     @staticmethod
@@ -1417,6 +1500,236 @@ class OccurrencePlanBuilder(object):
             canonical_occurrences_by_spell_id,
             root_instance_key,
             shared_spell_ids,
+        )
+
+    def _compile_contract_overrides(
+            self,
+            *,
+            occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]],
+    ) -> Tuple[
+        Dict[OccurrenceKey, Dict[str, Any]],
+        Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]],
+        bool,
+    ]:
+        """
+        Compile SpellContract override payload maps for the plan.
+
+        Contract:
+            - Does not raise on missing providers; marks completeness False instead.
+            - Does not raise on invalid override payloads; marks completeness False.
+            - Records overrides only when payloads are non-empty and occurrences exist.
+
+        Args:
+            occurrence_graph: Occurrence graph to validate against.
+
+        Returns:
+            Tuple:
+                - overrides_by_occurrence: Provider occurrence -> override payload.
+                - overrides_by_spell_id: Provider spell id -> list of overrides.
+                - complete: True if all contract dependencies were resolved and aligned.
+        """
+        overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]] = {}
+        overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]] = {}
+        complete = True
+
+        for occurrence, dependencies in occurrence_graph.items():
+            is_complete = self._compile_contract_overrides_for_occurrence(
+                occurrence=occurrence,
+                dependencies=dependencies,
+                overrides_by_occurrence=overrides_by_occurrence,
+                overrides_by_spell_id=overrides_by_spell_id,
+            )
+            if not is_complete:
+                complete = False
+
+        return overrides_by_occurrence, overrides_by_spell_id, complete
+
+    def _compile_contract_overrides_for_occurrence(
+            self,
+            *,
+            occurrence: OccurrenceKey,
+            dependencies: Dict[str, List[OccurrenceKey]],
+            overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]],
+            overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]],
+    ) -> bool:
+        """
+        Compile SpellContract override payloads for a single occurrence.
+
+        Contract:
+            - Returns False when any contract provider is missing or misaligned.
+            - Returns False when an override payload is invalid.
+            - Records overrides only when payloads are non-empty.
+
+        Args:
+            occurrence: Current (spell_id, path) occurrence.
+            dependencies: Dependency map for the occurrence.
+            overrides_by_occurrence: Map to update with occurrence overrides.
+            overrides_by_spell_id: Map to update with spell-id overrides.
+
+        Returns:
+            bool: True if all contract dependencies for this occurrence resolved
+            and aligned; False otherwise.
+        """
+        spell = self._resolve_occurrence_spell(occurrence)
+        if spell is None:
+            return True
+
+        _, path = occurrence
+        complete = True
+
+        for param_name, contract in self._iter_spell_contract_defaults(spell):
+            if contract is None:
+                continue
+
+            target_spell_id = self._resolve_spell_contract_spell_id(
+                contract=contract,
+                consumer_spell=spell,
+                param_name=param_name,
+                allow_missing=True,
+            )
+            if target_spell_id is None:
+                complete = False
+                continue
+
+            child_occurrence = (target_spell_id, path + (param_name,))
+            existing = dependencies.get(param_name, [])
+            if child_occurrence not in existing:
+                complete = False
+                continue
+
+            try:
+                normalized = self._normalize_contract_override_payload(
+                    payload=contract.spell_override,
+                    consumer_spell_id=spell.spell_index.current,
+                    consumer_spell_name=spell.spell_name,
+                    param_name=param_name,
+                )
+            except MeldExecutionError:
+                complete = False
+                continue
+
+            if not normalized:
+                continue
+
+            self._record_contract_override(
+                occurrence=child_occurrence,
+                spell_id=target_spell_id,
+                overrides_by_occurrence=overrides_by_occurrence,
+                overrides_by_spell_id=overrides_by_spell_id,
+                normalized_payload=normalized,
+            )
+
+        return complete
+
+    def _resolve_occurrence_spell(
+            self,
+            occurrence: OccurrenceKey,
+    ) -> Optional[ISpell]:
+        """
+        Resolve the spell object for a plan occurrence.
+
+        Contract:
+            - Returns the root spell when the occurrence matches the root id.
+            - Returns None when no spell is available for the occurrence.
+
+        Args:
+            occurrence: (spell_id, path) tuple from the occurrence graph.
+
+        Returns:
+            Optional[ISpell]: The spell object, or None if missing.
+        """
+        spell_id, _ = occurrence
+        spell = self._spell_lookup.get(spell_id)
+        if spell is not None:
+            return spell
+        root_id = self._root_spell.spell_index.current
+        if spell_id == root_id:
+            return self._root_spell
+        return None
+
+    @staticmethod
+    def _normalize_contract_override_payload(
+            *,
+            payload: Any,
+            consumer_spell_id: str,
+            consumer_spell_name: str,
+            param_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Normalize a SpellContract override payload for plan storage.
+
+        Contract:
+            - None yields an empty override payload.
+            - dict payloads are copied verbatim.
+            - list/tuple payloads become {"__args__": [...]}.
+
+        Args:
+            payload: Raw spell_override payload from the SpellContract.
+            consumer_spell_id: Spell id for diagnostics.
+            consumer_spell_name: Spell name for diagnostics.
+            param_name: Parameter name for diagnostics.
+
+        Returns:
+            Dict[str, Any]: Normalized override payload.
+
+        Raises:
+            MeldExecutionError: If the payload is not a dict, list, or tuple, or
+                if __args__ is not a list/tuple when provided.
+        """
+        if payload is None:
+            return {}
+        if isinstance(payload, dict):
+            normalized = dict(payload)
+            if "__args__" in normalized:
+                raw_args = normalized["__args__"]
+                if not isinstance(raw_args, (list, tuple)):
+                    raise MeldExecutionError(
+                        spell_id=consumer_spell_id,
+                        spell_name=consumer_spell_name,
+                        node_id=consumer_spell_id,
+                        param_name=param_name,
+                        message="SpellContract __args__ override must be a list or tuple.",
+                    )
+            return normalized
+        if isinstance(payload, (list, tuple)):
+            return {"__args__": list(payload)}
+        raise MeldExecutionError(
+            spell_id=consumer_spell_id,
+            spell_name=consumer_spell_name,
+            node_id=consumer_spell_id,
+            param_name=param_name,
+            message="SpellContract spell_override must be a dict, list, or tuple.",
+        )
+
+    @staticmethod
+    def _record_contract_override(
+            *,
+            occurrence: OccurrenceKey,
+            spell_id: str,
+            overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]],
+            overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]],
+            normalized_payload: Dict[str, Any],
+    ) -> None:
+        """
+        Record a normalized SpellContract override payload.
+
+        Contract:
+            - Stores payloads for both occurrence and spell id lookup.
+            - Payloads are copied on insert to prevent external mutation.
+
+        Args:
+            occurrence: Provider occurrence receiving the override.
+            spell_id: Provider spell id.
+            overrides_by_occurrence: Map to update with occurrence overrides.
+            overrides_by_spell_id: Map to update with spell-id overrides.
+            normalized_payload: Normalized override payload to store.
+
+        Returns:
+            None.
+        """
+        overrides_by_occurrence[occurrence] = dict(normalized_payload)
+        overrides_by_spell_id.setdefault(spell_id, []).append(
+            (occurrence, dict(normalized_payload))
         )
 
     @staticmethod

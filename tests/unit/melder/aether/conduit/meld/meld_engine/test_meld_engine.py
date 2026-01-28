@@ -2530,6 +2530,9 @@ def test_run_uses_occurrence_plan_when_available(
         },
         root_instance_key=(root_id, None),
         shared_spell_ids={root_id},
+        contract_overrides_by_occurrence={},
+        contract_overrides_by_spell_id={},
+        contract_dependencies_complete=True,
     )
     dag = _make_dag_with_nodes([root_id, dep_id])
     blueprint = _make_blueprint(

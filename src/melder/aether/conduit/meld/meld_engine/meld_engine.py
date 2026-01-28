@@ -563,6 +563,7 @@ class MeldEngine(Cleanable):
               be resolved (mirrors runtime planning behavior).
             - Returns plan data only when the plan matches the current root
               spell id and contract overrides align with plan dependencies.
+            - Uses plan-provided contract override mappings when complete.
         Args:
             root_spell_id: Current root spell id for this execution.
         Returns:
@@ -583,11 +584,17 @@ class MeldEngine(Cleanable):
             canonical_occurrences_by_spell_id = plan.canonical_occurrences_by_spell_id
             root_instance_key = plan.root_instance_key
             shared_spell_ids = plan.shared_spell_ids
+            contract_overrides_by_occurrence = plan.contract_overrides_by_occurrence
+            contract_overrides_by_spell_id = plan.contract_overrides_by_spell_id
+            contract_dependencies_complete = plan.contract_dependencies_complete
         except Exception:
             return None
 
-        if not self._populate_contract_overrides_from_plan(occurrence_graph):
+        if not contract_dependencies_complete:
             return None
+
+        self._contract_overrides_by_occurrence = contract_overrides_by_occurrence
+        self._contract_overrides_by_spell_id = contract_overrides_by_spell_id
 
         return (
             occurrence_graph,
@@ -626,59 +633,6 @@ class MeldEngine(Cleanable):
         except Exception:
             return None
         return instance_injections
-
-    def _populate_contract_overrides_from_plan(
-            self,
-            occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
-    ) -> bool:
-        """
-        Purpose:
-            Populate SpellContract override payloads using a precompiled plan.
-        Contract:
-            - Clears existing contract override mappings before population.
-            - Returns False when the plan is missing resolved contract occurrences.
-            - Raises MeldExecutionError if contract resolution fails.
-        Args:
-            occurrence_graph: Occurrence graph supplied by the plan.
-        Returns:
-            bool: True when overrides were populated; False when the plan is
-                incomplete for resolved contract dependencies.
-        Raises:
-            MeldExecutionError: If a SpellContract is missing or ambiguous.
-        """
-        self._contract_overrides_by_occurrence = {}
-        self._contract_overrides_by_spell_id = {}
-
-        for occurrence, dependencies in occurrence_graph.items():
-            spell_id, path = occurrence
-            spell = self._spell_lookup.get(spell_id)
-            if spell is None and spell_id == self._root_spell.spell_index.current:
-                spell = self._root_spell
-            if spell is None:
-                continue
-
-            for param_name, contract in self._iter_spell_contract_defaults(spell):
-                if contract is None:
-                    continue
-
-                target_spell_id = self._resolve_spell_contract_spell_id(
-                    contract=contract,
-                    consumer_spell=spell,
-                    param_name=param_name,
-                )
-                child_occurrence = (target_spell_id, path + (param_name,))
-                existing = dependencies.get(param_name, [])
-                if child_occurrence not in existing:
-                    return False
-
-                self._record_contract_override(
-                    occurrence=child_occurrence,
-                    contract=contract,
-                    consumer_spell=spell,
-                    param_name=param_name,
-                )
-
-        return True
 
     def _build_occurrence_graph(
             self,
