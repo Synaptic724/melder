@@ -934,157 +934,190 @@ def test_construct_spell_wraps_callable_error() -> None:
     assert isinstance(exc_info.value.inner, RuntimeError)
 
 
-def test_build_kwargs_returns_empty_when_node_missing() -> None:
+def test_build_kwargs_for_instance_returns_empty_when_occurrence_missing() -> None:
     """
-    Verify build_kwargs returns empty when the node is absent.
+    Verify instance kwargs are empty when the Phase 8 occurrence is missing.
 
     Contract:
-        - missing nodes produce empty kwargs.
+        - Missing occurrences yield empty kwargs without overrides or contracts.
     """
     engine, _, _ = _make_engine()
-    dag = DirectedAcyclicWorkGraph()
-    assert engine._build_kwargs_for_node(
-        node_id="missing",
-        dag=dag,
-        override_map={},
-    ) == {}
+    kwargs = engine._build_kwargs_for_instance(
+        instance_key=("child", ("child",)),
+        occurrence_graph={},
+        canonical_occurrences_by_spell_id={},
+    )
+    assert kwargs == {}
 
 
-def test_build_kwargs_applies_override_map_for_node() -> None:
+def test_build_kwargs_for_instance_applies_shared_overrides() -> None:
     """
-    Verify build_kwargs applies override_map values for a node.
+    Verify shared-instance overrides apply without a path match.
 
     Contract:
-        - override_map entries become kwargs for matching node_id.
+        - Shared instances accept path-agnostic overrides.
     """
-    engine, _, _ = _make_engine()
-    dag = _make_dag_with_nodes(["node-1"])
-    override_map = {_make_socket_ref("node-1", "dep"): "override"}
-    kwargs = engine._build_kwargs_for_node(
-        node_id="node-1",
-        dag=dag,
-        override_map=override_map,
+    override_map = {_make_socket_ref("child", "dep"): "override"}
+    engine, _, _ = _make_engine(override_map=override_map)
+    occurrence = ("child", ())
+    kwargs = engine._build_kwargs_for_instance(
+        instance_key=("child", None),
+        occurrence_graph={occurrence: {}},
+        canonical_occurrences_by_spell_id={"child": occurrence},
     )
     assert kwargs == {"dep": "override"}
 
 
-def test_build_kwargs_uses_topology_sockets() -> None:
+def test_build_kwargs_for_instance_injects_dependencies_from_occurrence_graph() -> None:
     """
-    Verify topology sockets drive dependency injection.
+    Verify Phase 8 occurrence graph dependencies are injected.
 
     Contract:
-        - target_spell_ids are resolved into kwargs values.
+        - Dependency occurrences map to instance results.
     """
-    engine, _, frame = _make_engine()
-    dag = DirectedAcyclicWorkGraph()
-    dag.add_dependency("parent", "child", param_name=None)
-    frame.set_result("parent", "parent-value")
-    topology = _make_topology([_make_socket("dep", ["parent"])])
-    system_states = _SystemStatesStub({"child": topology})
-    engine._system_states = system_states
-    kwargs = engine._build_kwargs_for_node(
-        node_id="child",
-        dag=dag,
-        override_map={},
+    engine, _, _ = _make_engine()
+    engine._spell_lookup = {"parent": SimpleNamespace(existence=Existence.many)}
+    parent_occurrence = ("parent", ("dep",))
+    engine._instance_results[(parent_occurrence[0], parent_occurrence[1])] = "parent-value"
+    occurrence_graph = {
+        ("child", ("child",)): {"dep": [parent_occurrence]},
+    }
+    kwargs = engine._build_kwargs_for_instance(
+        instance_key=("child", ("child",)),
+        occurrence_graph=occurrence_graph,
+        canonical_occurrences_by_spell_id={},
     )
     assert kwargs == {"dep": "parent-value"}
 
 
-def test_build_kwargs_uses_incoming_params_when_topology_missing() -> None:
+def test_build_kwargs_for_instance_injects_list_for_multiple_dependencies() -> None:
     """
-    Verify incoming_params resolve dependencies when no topology exists.
+    Verify multiple dependency occurrences inject a list.
 
     Contract:
-        - incoming_params mappings are used in absence of topology.
+        - Multiple parents map to a list of resolved values.
     """
-    engine, _, frame = _make_engine()
-    dag = DirectedAcyclicWorkGraph()
-    dag.add_dependency("parent", "child", param_name="dep")
-    frame.set_result("parent", "parent-value")
-    kwargs = engine._build_kwargs_for_node(
-        node_id="child",
-        dag=dag,
-        override_map={},
-    )
-    assert kwargs == {"dep": "parent-value"}
-
-
-def test_build_kwargs_uses_incoming_params_when_topology_errors() -> None:
-    """
-    Verify incoming_params are used if topology lookup fails.
-
-    Contract:
-        - topology lookup failures do not prevent dependency injection.
-    """
-    engine, _, frame = _make_engine()
-    dag = DirectedAcyclicWorkGraph()
-    dag.add_dependency("parent", "child", param_name="dep")
-    frame.set_result("parent", "parent-value")
-    engine._system_states = _SystemStatesStub({}, raise_on={"child"})
-    kwargs = engine._build_kwargs_for_node(
-        node_id="child",
-        dag=dag,
-        override_map={},
-    )
-    assert kwargs == {"dep": "parent-value"}
-
-
-def test_build_kwargs_injects_list_for_multiple_dependencies() -> None:
-    """
-    Verify multiple dependencies inject as a list.
-
-    Contract:
-        - multiple parents map to a list of resolved values.
-    """
-    engine, _, frame = _make_engine()
-    dag = DirectedAcyclicWorkGraph()
-    dag.add_dependency("a", "child", param_name="deps")
-    dag.add_dependency("b", "child", param_name="deps")
-    frame.set_result("a", "value-a")
-    frame.set_result("b", "value-b")
-    kwargs = engine._build_kwargs_for_node(
-        node_id="child",
-        dag=dag,
-        override_map={},
+    engine, _, _ = _make_engine()
+    engine._spell_lookup = {
+        "a": SimpleNamespace(existence=Existence.many),
+        "b": SimpleNamespace(existence=Existence.many),
+    }
+    occurrence_graph = {
+        ("child", ("child",)): {
+            "deps": [("a", ("deps", "a")), ("b", ("deps", "b"))],
+        },
+    }
+    engine._instance_results[("a", ("deps", "a"))] = "value-a"
+    engine._instance_results[("b", ("deps", "b"))] = "value-b"
+    kwargs = engine._build_kwargs_for_instance(
+        instance_key=("child", ("child",)),
+        occurrence_graph=occurrence_graph,
+        canonical_occurrences_by_spell_id={},
     )
     assert kwargs == {"deps": ["value-a", "value-b"]}
 
 
-def test_build_kwargs_skips_injection_when_override_present() -> None:
+def test_build_kwargs_for_instance_skips_dependency_when_override_present() -> None:
     """
-    Verify overrides prevent dependency injection for the same param.
+    Verify overrides suppress dependency injection for the same param.
 
     Contract:
-        - overridden parameters do not require dependency results.
+        - Overrides win even when a dependency is listed.
     """
-    engine, _, _ = _make_engine()
-    dag = DirectedAcyclicWorkGraph()
-    dag.add_dependency("parent", "child", param_name="dep")
-    override_map = {_make_socket_ref("child", "dep"): "override"}
-    kwargs = engine._build_kwargs_for_node(
-        node_id="child",
-        dag=dag,
-        override_map=override_map,
+    override_map = {
+        _make_socket_ref_with_path(
+            node_id="child",
+            param_name="dep",
+            param_path=("child", "dep"),
+            socket_kind=SocketKind.NORMAL,
+        ): "override",
+    }
+    engine, _, _ = _make_engine(override_map=override_map)
+    occurrence_graph = {
+        ("child", ("child",)): {"dep": [("parent", ("dep",))]},
+    }
+    kwargs = engine._build_kwargs_for_instance(
+        instance_key=("child", ("child",)),
+        occurrence_graph=occurrence_graph,
+        canonical_occurrences_by_spell_id={},
     )
     assert kwargs == {"dep": "override"}
 
 
-def test_build_kwargs_raises_when_dependency_missing() -> None:
+def test_build_kwargs_for_instance_raises_when_dependency_missing() -> None:
     """
-    Verify build_kwargs raises when a dependency result is missing.
+    Verify missing dependency instances raise MeldExecutionError.
 
     Contract:
-        - missing parent results raise MeldExecutionError.
+        - Absent dependency instances raise during kwargs build.
     """
     engine, _, _ = _make_engine()
-    dag = DirectedAcyclicWorkGraph()
-    dag.add_dependency("parent", "child", param_name="dep")
+    occurrence_graph = {
+        ("child", ("child",)): {"dep": [("parent", ("dep",))]},
+    }
     with pytest.raises(MeldExecutionError, match="Dependency"):
-        engine._build_kwargs_for_node(
-            node_id="child",
-            dag=dag,
-            override_map={},
+        engine._build_kwargs_for_instance(
+            instance_key=("child", ("child",)),
+            occurrence_graph=occurrence_graph,
+            canonical_occurrences_by_spell_id={},
         )
+
+
+def test_build_kwargs_for_instance_merges_override_and_dependency_params() -> None:
+    """
+    Verify overrides and dependencies merge across params.
+
+    Contract:
+        - Overridden params stay fixed.
+        - Other params still receive dependency values.
+    """
+    override_map = {
+        _make_socket_ref_with_path(
+            node_id="child",
+            param_name="override_param",
+            param_path=("child", "override_param"),
+            socket_kind=SocketKind.NORMAL,
+        ): "override",
+    }
+    engine, _, _ = _make_engine(override_map=override_map)
+    engine._spell_lookup = {"parent": SimpleNamespace(existence=Existence.many)}
+    engine._instance_results[("parent", ("dep",))] = "parent-value"
+    occurrence_graph = {
+        ("child", ("child",)): {"dep": [("parent", ("dep",))]},
+    }
+    kwargs = engine._build_kwargs_for_instance(
+        instance_key=("child", ("child",)),
+        occurrence_graph=occurrence_graph,
+        canonical_occurrences_by_spell_id={},
+    )
+    assert kwargs == {"dep": "parent-value", "override_param": "override"}
+
+
+def test_build_kwargs_for_instance_merges_contract_payload_and_overrides() -> None:
+    """
+    Verify contract payloads merge without overriding explicit overrides.
+
+    Contract:
+        - Contract payloads apply when not overridden.
+        - Positional overrides are preserved.
+    """
+    override_map = {
+        _make_socket_ref_with_path(
+            node_id="child",
+            param_name="dep",
+            param_path=("child", "dep"),
+            socket_kind=SocketKind.NORMAL,
+        ): "override",
+    }
+    engine, _, _ = _make_engine(override_map=override_map)
+    occurrence_graph = {("child", ("child",)): {}}
+    kwargs = engine._build_kwargs_for_instance(
+        instance_key=("child", ("child",)),
+        occurrence_graph=occurrence_graph,
+        canonical_occurrences_by_spell_id={},
+        contract_override={"dep": "contract", "__args__": ["positional"]},
+    )
+    assert kwargs == {"dep": "override", "__args__": ["positional"]}
 
 
 def test_get_existing_creation_returns_none_for_many() -> None:
@@ -1873,28 +1906,26 @@ def test_run_blueprint_executes_orphan_ordered_node() -> None:
     assert frame.get_result("first") == "first-value"
 
 
-def test_build_kwargs_merges_topology_and_incoming_params() -> None:
+def test_build_kwargs_for_instance_uses_canonical_occurrence_for_shared() -> None:
     """
-    Verify build_kwargs merges partial topology with incoming_params.
+    Verify shared instances use canonical occurrences for Phase 8 wiring.
 
     Contract:
-        - topology sockets contribute known parents.
-        - incoming_params adds missing parents to the same parameter list.
+        - Canonical occurrences drive dependency lookup for shared instances.
     """
-    engine, _, frame = _make_engine()
-    dag = DirectedAcyclicWorkGraph()
-    dag.add_dependency("a", "child", param_name="dep")
-    dag.add_dependency("b", "child", param_name="dep")
-    frame.set_result("a", "value-a")
-    frame.set_result("b", "value-b")
-    topology = _make_topology([_make_socket("dep", ["a"])])
-    engine._system_states = _SystemStatesStub({"child": topology})
-    kwargs = engine._build_kwargs_for_node(
-        node_id="child",
-        dag=dag,
-        override_map={},
+    engine, _, _ = _make_engine()
+    engine._spell_lookup = {"parent": SimpleNamespace(existence=Existence.many)}
+    canonical_occurrence = ("child", ())
+    occurrence_graph = {
+        canonical_occurrence: {"dep": [("parent", ("dep",))]},
+    }
+    engine._instance_results[("parent", ("dep",))] = "parent-value"
+    kwargs = engine._build_kwargs_for_instance(
+        instance_key=("child", None),
+        occurrence_graph=occurrence_graph,
+        canonical_occurrences_by_spell_id={"child": canonical_occurrence},
     )
-    assert kwargs == {"dep": ["value-a", "value-b"]}
+    assert kwargs == {"dep": "parent-value"}
 
 
 def test_register_spell_unknown_creations_is_noop() -> None:
@@ -1907,27 +1938,6 @@ def test_register_spell_unknown_creations_is_noop() -> None:
     engine, _, _ = _make_engine(creations=SimpleNamespace())
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique)
     assert engine._register_spell(spell, object()) is None
-
-
-def test_build_kwargs_merges_override_and_dependency_params() -> None:
-    """
-    Verify build_kwargs merges overrides with dependency injection across params.
-
-    Contract:
-        - overridden params stay fixed.
-        - other params still receive dependency values.
-    """
-    engine, _, frame = _make_engine()
-    dag = DirectedAcyclicWorkGraph()
-    dag.add_dependency("parent", "child", param_name="dep")
-    frame.set_result("parent", "parent-value")
-    override_map = {_make_socket_ref("child", "override_param"): "override"}
-    kwargs = engine._build_kwargs_for_node(
-        node_id="child",
-        dag=dag,
-        override_map=override_map,
-    )
-    assert kwargs == {"override_param": "override", "dep": "parent-value"}
 
 
 def test_run_blueprint_reuse_stores_existing_result() -> None:
