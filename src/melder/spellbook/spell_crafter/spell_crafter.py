@@ -59,6 +59,10 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
     OccurrencePlanBuilder,
 )
+from melder.spellbook.spell_crafter.blueprints.execution_plan import (
+    ExecutionPlan,
+    ExecutionPlanBuilder,
+)
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.spell_system_validation_state import SpellSystemValidationState
 from melder.spellbook.spell_crafter.system.spell_system_validation_system import SpellSystemValidationSystem
@@ -174,6 +178,7 @@ class SpellCrafter(Cleanable):
         "_injection_plan_phase9",
         "_override_patch_map_phase10",
         "_mutation_patch_map_phase10",
+        "_execution_plan_phase11",
         "_spell_system_index_phase5",
         "_is_broken",
         "_entire_dag_blueprint_phase5",
@@ -216,6 +221,7 @@ class SpellCrafter(Cleanable):
         self._injection_plan_phase9: Optional[InjectionPlan] = None
         self._override_patch_map_phase10: Optional[OverridePatchMap] = None
         self._mutation_patch_map_phase10: Optional[MutationPatchMap] = None
+        self._execution_plan_phase11: Optional[ExecutionPlan] = None
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._entire_dag_blueprint_phase5 : Optional[Dict[str, RootResolutionBlueprint]] = None
         self._is_broken: bool = False
@@ -273,6 +279,11 @@ class SpellCrafter(Cleanable):
                     self._mutation_patch_map_phase10.cleanup()
                 except Exception:
                     pass
+            if self._execution_plan_phase11 is not None:
+                try:
+                    self._execution_plan_phase11.cleanup()
+                except Exception:
+                    pass
             if self._spell_system_index_phase5 is not None:
                 try:
                     self._spell_system_index_phase5.cleanup()
@@ -295,6 +306,7 @@ class SpellCrafter(Cleanable):
             self._injection_plan_phase9 = None
             self._override_patch_map_phase10 = None
             self._mutation_patch_map_phase10 = None
+            self._execution_plan_phase11 = None
             self._spell_system_index_phase5 = None
             self._entire_dag_blueprint_phase5 = None
             self._validated_phase4 = False
@@ -417,6 +429,14 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
         return self._mutation_patch_map_phase10
+
+    @property
+    def execution_plan_phase11(self) -> Optional[ExecutionPlan]:
+        """
+        Phase 11 execution plan artifact, if compiled for this root.
+        """
+        self.check_cleaned()
+        return self._execution_plan_phase11
 
     @property
     def spell_system_index_phase5(self) -> Optional[SpellSystemIndex]:
@@ -575,6 +595,12 @@ class SpellCrafter(Cleanable):
             except Exception:
                 pass
         self._mutation_patch_map_phase10 = None
+        if self._execution_plan_phase11 is not None:
+            try:
+                self._execution_plan_phase11.cleanup()
+            except Exception:
+                pass
+        self._execution_plan_phase11 = None
         self._spell_system_index_phase5 = None
 
 
@@ -1992,6 +2018,71 @@ class SpellCrafter(Cleanable):
 
 
     # ------------------------------------------------------------------
+    # Phase 11 - Execution Plan
+    # ------------------------------------------------------------------
+
+    def run_phase_execution_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 11 - Execution plan compilation.
+
+        Compiles a Phase 11 ExecutionPlan for root spells using Phase 8–10
+        artifacts. Non-root spells are treated as a no-op.
+
+        Contract:
+            - Requires Phase 8 artifacts to be available.
+            - Uses Phase 9 injection plan when available.
+            - Replaces any existing ExecutionPlan for this root.
+        """
+        self.check_cleaned()
+        self._throw_if_cancelled(cancel_event)
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+
+        root_blueprint = self._root_blueprint_phase5
+        if root_blueprint is None:
+            current_id = self._spell.spell_index.current
+            if (
+                    self._entire_dag_blueprint_phase5 is not None
+                    and current_id in self._entire_dag_blueprint_phase5
+            ):
+                raise RuntimeError(
+                    "SpellCrafter Phase 11: root blueprint missing for root spell."
+                )
+            return
+
+        if self._occurrence_plan_phase8 is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 11: cannot compile execution plans before Phase 8 has completed."
+            )
+
+        if self._spellbook_scanner is None:
+            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
+
+        spell_lookup: Dict[str, ISpell] = {}
+        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
+            spell_lookup[spell_index.current] = spell_instance
+
+        builder = ExecutionPlanBuilder(
+            occurrence_plan=self._occurrence_plan_phase8,
+            injection_plan=self._injection_plan_phase9,
+            spell_lookup=spell_lookup,
+        )
+        plan = builder.build()
+
+        if self._execution_plan_phase11 is not None:
+            try:
+                self._execution_plan_phase11.cleanup()
+            except Exception:
+                pass
+
+        self._execution_plan_phase11 = plan
+
+
+    # ------------------------------------------------------------------
     # Phase 6 - System-level Validation
     # ------------------------------------------------------------------
 
@@ -2204,6 +2295,7 @@ class SpellCrafter(Cleanable):
             - Phase 8: Occurrence plan
             - Phase 9: Injection plan
             - Phase 10: Patch maps
+            - Phase 11: Execution plan
             - Phase 6: System validation
             - Phase 7: Change control
 
@@ -2228,6 +2320,7 @@ class SpellCrafter(Cleanable):
         self.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
+        self.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         self.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         self.cleanup_phase_artifacts()

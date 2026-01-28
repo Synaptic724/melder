@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+from dataclasses import dataclass
 import inspect
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
@@ -14,6 +15,70 @@ from melder.utilities.interfaces.interfaces import ISpell
 
 OccurrenceKey = Tuple[str, Tuple[str, ...]]
 InstanceKey = Tuple[str, Optional[Tuple[str, ...]]]
+
+
+@dataclass(frozen=True)
+class OccurrencePlanSelection:
+    """
+    Internal
+
+    Runtime-ready selection derived from a Phase 8 OccurrencePlan.
+
+    Purpose:
+        Bundle the occurrence plan data needed by meld runtime execution while
+        keeping selection logic in the Phase 8 module.
+    """
+    __melder_internal__ = _mrg.sentinel
+    occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]]
+    execution_order: List[str]
+    instance_keys_by_spell_id: Dict[str, List[InstanceKey]]
+    canonical_occurrences_by_spell_id: Dict[str, OccurrenceKey]
+    root_instance_key: InstanceKey
+    shared_spell_ids: Set[str]
+    contract_overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]]
+    contract_overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]]
+
+
+def select_occurrence_plan(
+        plan: Optional["OccurrencePlan"],
+        *,
+        root_spell_id: str,
+) -> Optional[OccurrencePlanSelection]:
+    """
+    Determine whether a Phase 8 OccurrencePlan can drive a meld execution.
+
+    Contract:
+        - Returns None if no usable plan is available.
+        - Returns None when the plan root does not match or contract dependencies
+          are incomplete.
+        - Uses plan-provided contract override mappings when complete.
+
+    Args:
+        plan: Phase 8 OccurrencePlan or None.
+        root_spell_id: Current root spell id for this execution.
+
+    Returns:
+        Optional[OccurrencePlanSelection]: Selected plan data for runtime use.
+    """
+    if plan is None:
+        return None
+    try:
+        if plan.root_spell_id != root_spell_id:
+            return None
+        if not plan.contract_dependencies_complete:
+            return None
+        return OccurrencePlanSelection(
+            occurrence_graph=plan.occurrence_graph,
+            execution_order=plan.execution_order,
+            instance_keys_by_spell_id=plan.instance_keys_by_spell_id,
+            canonical_occurrences_by_spell_id=plan.canonical_occurrences_by_spell_id,
+            root_instance_key=plan.root_instance_key,
+            shared_spell_ids=plan.shared_spell_ids,
+            contract_overrides_by_occurrence=plan.contract_overrides_by_occurrence,
+            contract_overrides_by_spell_id=plan.contract_overrides_by_spell_id,
+        )
+    except Exception:
+        return None
 
 
 class OccurrencePlan(Cleanable):
@@ -1309,7 +1374,10 @@ class OccurrencePlanBuilder(object):
         if spell is None:
             return
 
-        mutation_override = spell.mutation_override
+        try:
+            mutation_override = spell.mutation_override
+        except AttributeError:
+            mutation_override = {}
         if not mutation_override:
             return
 

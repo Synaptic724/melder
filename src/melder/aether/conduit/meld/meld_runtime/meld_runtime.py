@@ -1,5 +1,4 @@
-from threading import RLock
-from typing import Any, Optional, Dict
+from typing import Any, Dict
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
@@ -10,11 +9,17 @@ from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.aether.conduit.meld.overrides.graph_mutator import GraphMutator
-from melder.aether.conduit.meld.overrides.spell_overrider import SpellOverrider
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
+from melder.spellbook.spell_crafter.blueprints.patch_maps import (
+    apply_phase10_mutation_overrides,
+    apply_phase10_override_payload,
+)
+from melder.spellbook.spell_crafter.blueprints.execution_plan import (
+    ExecutionPlanBuilder,
+)
+from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 
 
 class MeldRuntime:
@@ -166,38 +171,58 @@ class MeldRuntime:
         resolution_frame = spell.resolution_frame
 
         # Phase 5 artifacts may be present for root spells.
-        root_blueprint: RootResolutionBlueprint = getattr(
-            getattr(spell, "_crafter", None), "_root_blueprint_phase5", None
-        )
+        root_blueprint: RootResolutionBlueprint = None
+        occurrence_plan = None
+        injection_plan = None
+        override_patch_map = None
+        mutation_patch_map = None
+        execution_plan = None
+        crafter = spell._crafter
+        if crafter is not None:
+            root_blueprint = crafter.root_blueprint_phase5
+            occurrence_plan = crafter.occurrence_plan_phase8
+            injection_plan = crafter.injection_plan_phase9
+            override_patch_map = crafter.override_patch_map_phase10
+            mutation_patch_map = crafter.mutation_patch_map_phase10
+            execution_plan = crafter.execution_plan_phase11
+
         mutation_override_payload = {}
         try:
             mutation_override_payload = spell.mutation_override
         except Exception:
             mutation_override_payload = {}
 
-        occurrence_plan = None
-        injection_plan = None
-        override_patch_map = None
-        crafter = spell._crafter
-        if crafter is not None and not mutation_override_payload:
-            occurrence_plan = getattr(crafter, "occurrence_plan_phase8", None)
-            injection_plan = getattr(crafter, "injection_plan_phase9", None)
-            override_patch_map = getattr(crafter, "override_patch_map_phase10", None)
+        if mutation_override_payload and root_blueprint is None:
+            occurrence_plan = None
+            injection_plan = None
 
         # Apply mutation overrides (graph-level) and spell overrides (value-level)
         # if we have a deep blueprint. Fallback to simple overrides otherwise.
         execution_blueprint = root_blueprint
         override_map = {}
+        use_phase11 = False
+        execution_plan_to_run = execution_plan
         if root_blueprint is not None:
             try:
-                mutator = GraphMutator(root_blueprint)
-                execution_blueprint = mutator.apply(mutation_override_payload or {})
-
-                if override_patch_map is not None:
-                    override_map = override_patch_map.apply(context.overrides or {})
+                if mutation_override_payload:
+                    execution_blueprint = apply_phase10_mutation_overrides(
+                        blueprint=root_blueprint,
+                        mutation_patch_map=mutation_patch_map,
+                        mutation_override=mutation_override_payload,
+                    )
+                    occurrence_plan = None
+                    injection_plan = None
+                    execution_plan = None
                 else:
-                    overrider = SpellOverrider(execution_blueprint)
-                    override_map = overrider.apply(context.overrides or {})
+                    if occurrence_plan is None or injection_plan is None:
+                        raise RuntimeError(
+                            "Phase 8/9 artifacts are required for meld execution."
+                        )
+
+                override_map = apply_phase10_override_payload(
+                    override_patch_map=override_patch_map,
+                    override_payload=context.overrides,
+                )
             except Exception as exc:
                 raise MeldExecutionError(
                     spell_id=spell.spell_index.current,
@@ -205,6 +230,28 @@ class MeldRuntime:
                     message=f"Failed to apply overrides for root '{spell.spell_name}': {exc}",
                     inner=exc,
                 ) from exc
+
+            use_phase11 = self._phase11_allowed(
+                spell=spell,
+                context=context,
+                execution_plan=execution_plan,
+                occurrence_plan=occurrence_plan,
+                injection_plan=injection_plan,
+                mutation_override_payload=mutation_override_payload,
+                override_map=override_map,
+            )
+
+            if use_phase11 and execution_plan is None:
+                try:
+                    builder = ExecutionPlanBuilder(
+                        occurrence_plan=occurrence_plan,
+                        injection_plan=injection_plan,
+                        spell_lookup=spell._spellbook._spell_id_pool,
+                    )
+                    execution_plan_to_run = builder.build()
+                except Exception:
+                    use_phase11 = False
+                    execution_plan_to_run = None
 
         # Per-execution ResolutionFrame seeded with per-call overrides.
         frame_overrides = self._build_frame_overrides(
@@ -230,7 +277,10 @@ class MeldRuntime:
 
         result = None
         try:
-            result = engine.run()
+            if use_phase11 and execution_plan_to_run is not None:
+                result = engine.run_execution_plan(execution_plan_to_run)
+            else:
+                result = engine.run()
         finally:
             # Always tear down engine + frame to avoid leaks.
             try:
@@ -300,3 +350,38 @@ class MeldRuntime:
                 if socket_ref.node_id == root_spell_id and len(socket_ref.param_path) == 1:
                     merged[socket_ref.param_name] = value
         return merged
+
+    def _phase11_allowed(
+            self,
+            *,
+            spell: ISpell,
+            context: "MeldContext",
+            execution_plan,
+            occurrence_plan,
+            injection_plan,
+            mutation_override_payload,
+            override_map: Dict[SocketRef, Any],
+    ) -> bool:
+        """
+        Determine whether Phase 11 execution is eligible for this call.
+        """
+        if occurrence_plan is None or injection_plan is None:
+            return False
+        if execution_plan is not None:
+            if execution_plan.root_spell_id != spell.spell_index.current:
+                return False
+        elif occurrence_plan.root_spell_id != spell.spell_index.current:
+            return False
+        if mutation_override_payload:
+            return False
+        if context.overrides:
+            return False
+        if override_map:
+            return False
+        if getattr(spell, "_hooks_enabled", False):
+            return False
+        if occurrence_plan.contract_overrides_by_occurrence:
+            return False
+        if occurrence_plan.contract_overrides_by_spell_id:
+            return False
+        return True

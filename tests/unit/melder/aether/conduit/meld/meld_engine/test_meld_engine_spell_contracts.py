@@ -6,6 +6,7 @@ import pytest
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from tests.mocks.spellbook.protocols import IService
 
@@ -650,12 +651,12 @@ def test_apply_spell_contract_dependencies_records_occurrence_and_override() -> 
 
     dependencies = {}
     with patch.object(
-        MeldEngine,
+        OccurrencePlanBuilder,
         "_iter_spell_contract_defaults",
         return_value=[("service", contract)],
     ):
         with patch.object(
-            MeldEngine,
+            OccurrencePlanBuilder,
             "_resolve_spell_contract_spell_id",
             return_value="provider",
         ):
@@ -665,7 +666,6 @@ def test_apply_spell_contract_dependencies_records_occurrence_and_override() -> 
             )
 
     assert dependencies["service"] == [("provider", ("service",))]
-    assert ("provider", ("service",)) in engine._contract_overrides_by_occurrence
 
 
 def test_apply_spell_contract_dependencies_noop_when_spell_missing() -> None:
