@@ -457,13 +457,13 @@ def test_execute_blocks_unvalidated_spell() -> None:
         runtime.execute(context)
 
 
-def test_execute_applies_graph_mutator_and_spell_overrider(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_execute_applies_patch_maps_for_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify blueprint overrides apply graph mutator and spell overrider.
+    Verify blueprint overrides apply mutation and override patch maps.
 
     Contract:
-        - GraphMutator.apply returns the execution blueprint.
-        - SpellOverrider.apply returns the override_map.
+        - Mutation patch map flow returns the execution blueprint.
+        - OverridePatchMap.apply returns the override_map.
         - Engine receives the execution blueprint and override_map.
     """
     runtime = MeldRuntime()
@@ -476,27 +476,38 @@ def test_execute_applies_graph_mutator_and_spell_overrider(monkeypatch: pytest.M
             param_path=("param",),
         ): "value"
     }
-    crafter = SimpleNamespace(_root_blueprint_phase5=root_blueprint)
+    override_patch_map = MagicMock()
+    override_patch_map.apply.return_value = override_map
+    mutation_patch_map = MagicMock()
+    occurrence_plan = MagicMock()
+    injection_plan = MagicMock()
+    crafter = SimpleNamespace(
+        _root_blueprint_phase5=root_blueprint,
+        occurrence_plan_phase8=occurrence_plan,
+        injection_plan_phase9=injection_plan,
+        override_patch_map_phase10=override_patch_map,
+        mutation_patch_map_phase10=mutation_patch_map,
+    )
     spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override={"x": "y"})
     context = _make_context(spell=spell, overrides={"param": "value"})
 
-    mutator_instance = MagicMock()
-    mutator_instance.apply.return_value = mutated_blueprint
-    mutator_cls = MagicMock(return_value=mutator_instance)
-    monkeypatch.setattr(runtime_module, "GraphMutator", mutator_cls)
-
-    overrider_instance = MagicMock()
-    overrider_instance.apply.return_value = override_map
-    overrider_cls = MagicMock(return_value=overrider_instance)
-    monkeypatch.setattr(runtime_module, "SpellOverrider", overrider_cls)
+    apply_mutation = MagicMock(return_value=mutated_blueprint)
+    apply_override = MagicMock(return_value=override_map)
+    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
 
     engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
     runtime.execute(context)
 
-    mutator_cls.assert_called_once_with(root_blueprint)
-    mutator_instance.apply.assert_called_once_with({"x": "y"})
-    overrider_cls.assert_called_once_with(mutated_blueprint)
-    overrider_instance.apply.assert_called_once_with(context.overrides)
+    apply_mutation.assert_called_once_with(
+        blueprint=root_blueprint,
+        mutation_patch_map=mutation_patch_map,
+        mutation_override={"x": "y"},
+    )
+    apply_override.assert_called_once_with(
+        override_patch_map=override_patch_map,
+        override_payload=context.overrides,
+    )
     assert engine_cls.call_args.kwargs["blueprint"] is mutated_blueprint
     assert engine_cls.call_args.kwargs["override_map"] == override_map
 
@@ -510,19 +521,25 @@ def test_execute_wraps_override_application_error(monkeypatch: pytest.MonkeyPatc
     """
     runtime = MeldRuntime()
     root_blueprint = object()
-    crafter = SimpleNamespace(_root_blueprint_phase5=root_blueprint)
+    override_patch_map = MagicMock()
+    override_patch_map.apply.side_effect = RuntimeError("override failure")
+    mutation_patch_map = MagicMock()
+    occurrence_plan = MagicMock()
+    injection_plan = MagicMock()
+    crafter = SimpleNamespace(
+        _root_blueprint_phase5=root_blueprint,
+        occurrence_plan_phase8=occurrence_plan,
+        injection_plan_phase9=injection_plan,
+        override_patch_map_phase10=override_patch_map,
+        mutation_patch_map_phase10=mutation_patch_map,
+    )
     spell = _SpellStub(spell_id="spell-1", crafter=crafter)
     context = _make_context(spell=spell, overrides={"param": "value"})
 
-    mutator_instance = MagicMock()
-    mutator_instance.apply.return_value = root_blueprint
-    mutator_cls = MagicMock(return_value=mutator_instance)
-    monkeypatch.setattr(runtime_module, "GraphMutator", mutator_cls)
-
-    overrider_instance = MagicMock()
-    overrider_instance.apply.side_effect = RuntimeError("override failure")
-    overrider_cls = MagicMock(return_value=overrider_instance)
-    monkeypatch.setattr(runtime_module, "SpellOverrider", overrider_cls)
+    apply_mutation = MagicMock(return_value=root_blueprint)
+    apply_override = MagicMock(side_effect=RuntimeError("override failure"))
+    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
 
     with pytest.raises(MeldExecutionError) as exc_info:
         runtime.execute(context)
@@ -752,31 +769,44 @@ def test_execute_non_factory_none_result_allowed(monkeypatch: pytest.MonkeyPatch
 
 def test_execute_uses_mutation_override_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify mutation_override payload is passed to GraphMutator.apply.
+    Verify mutation_override payload is forwarded to patch map application.
 
     Contract:
-        - mutation_override dict is forwarded to GraphMutator.apply.
+        - mutation_override dict is forwarded to apply_phase10_mutation_overrides.
     """
     runtime = MeldRuntime()
     root_blueprint = object()
-    crafter = SimpleNamespace(_root_blueprint_phase5=root_blueprint)
+    mutation_patch_map = MagicMock()
+    override_patch_map = MagicMock()
+    occurrence_plan = MagicMock()
+    injection_plan = MagicMock()
+    crafter = SimpleNamespace(
+        _root_blueprint_phase5=root_blueprint,
+        occurrence_plan_phase8=occurrence_plan,
+        injection_plan_phase9=injection_plan,
+        mutation_patch_map_phase10=mutation_patch_map,
+        override_patch_map_phase10=override_patch_map,
+    )
     payload = {"key": "value"}
     spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override=payload)
     context = _make_context(spell=spell)
 
-    mutator_instance = MagicMock()
-    mutator_instance.apply.return_value = root_blueprint
-    mutator_cls = MagicMock(return_value=mutator_instance)
-    monkeypatch.setattr(runtime_module, "GraphMutator", mutator_cls)
-
-    overrider_instance = MagicMock()
-    overrider_instance.apply.return_value = {}
-    overrider_cls = MagicMock(return_value=overrider_instance)
-    monkeypatch.setattr(runtime_module, "SpellOverrider", overrider_cls)
+    apply_mutation = MagicMock(return_value=root_blueprint)
+    apply_override = MagicMock(return_value={})
+    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
 
     _install_engine_mock(monkeypatch, run_result="ok")
     runtime.execute(context)
-    mutator_instance.apply.assert_called_once_with(payload)
+    apply_mutation.assert_called_once_with(
+        blueprint=root_blueprint,
+        mutation_patch_map=mutation_patch_map,
+        mutation_override=payload,
+    )
+    apply_override.assert_called_once_with(
+        override_patch_map=override_patch_map,
+        override_payload=context.overrides,
+    )
 
 
 def test_execute_defaults_mutation_override_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -788,7 +818,17 @@ def test_execute_defaults_mutation_override_on_error(monkeypatch: pytest.MonkeyP
     """
     runtime = MeldRuntime()
     root_blueprint = object()
-    crafter = SimpleNamespace(_root_blueprint_phase5=root_blueprint)
+    mutation_patch_map = MagicMock()
+    override_patch_map = MagicMock()
+    occurrence_plan = MagicMock()
+    injection_plan = MagicMock()
+    crafter = SimpleNamespace(
+        _root_blueprint_phase5=root_blueprint,
+        occurrence_plan_phase8=occurrence_plan,
+        injection_plan_phase9=injection_plan,
+        mutation_patch_map_phase10=mutation_patch_map,
+        override_patch_map_phase10=override_patch_map,
+    )
     spell = _SpellStub(
         spell_id="spell-1",
         crafter=crafter,
@@ -796,19 +836,18 @@ def test_execute_defaults_mutation_override_on_error(monkeypatch: pytest.MonkeyP
     )
     context = _make_context(spell=spell)
 
-    mutator_instance = MagicMock()
-    mutator_instance.apply.return_value = root_blueprint
-    mutator_cls = MagicMock(return_value=mutator_instance)
-    monkeypatch.setattr(runtime_module, "GraphMutator", mutator_cls)
-
-    overrider_instance = MagicMock()
-    overrider_instance.apply.return_value = {}
-    overrider_cls = MagicMock(return_value=overrider_instance)
-    monkeypatch.setattr(runtime_module, "SpellOverrider", overrider_cls)
+    apply_mutation = MagicMock(return_value=root_blueprint)
+    apply_override = MagicMock(return_value={})
+    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
 
     _install_engine_mock(monkeypatch, run_result="ok")
     runtime.execute(context)
-    mutator_instance.apply.assert_called_once_with({})
+    apply_mutation.assert_not_called()
+    apply_override.assert_called_once_with(
+        override_patch_map=override_patch_map,
+        override_payload=context.overrides,
+    )
 
 
 def test_build_frame_overrides_ignores_non_root_override_map_entries() -> None:
@@ -847,23 +886,29 @@ def test_build_frame_overrides_empty_inputs_return_empty() -> None:
     assert merged == {}
 
 
-def test_execute_wraps_graph_mutator_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_execute_wraps_mutation_patch_map_error(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify GraphMutator failures are wrapped in MeldExecutionError.
+    Verify mutation patch map failures are wrapped in MeldExecutionError.
 
     Contract:
-        - GraphMutator.apply errors raise MeldExecutionError with inner exception.
+        - apply_phase10_mutation_overrides errors raise MeldExecutionError with inner.
     """
     runtime = MeldRuntime()
     root_blueprint = object()
-    crafter = SimpleNamespace(_root_blueprint_phase5=root_blueprint)
+    mutation_patch_map = MagicMock()
+    override_patch_map = MagicMock()
+    crafter = SimpleNamespace(
+        _root_blueprint_phase5=root_blueprint,
+        mutation_patch_map_phase10=mutation_patch_map,
+        override_patch_map_phase10=override_patch_map,
+    )
     spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override={"x": "y"})
     context = _make_context(spell=spell, overrides={})
 
-    mutator_instance = MagicMock()
-    mutator_instance.apply.side_effect = RuntimeError("mutator failure")
-    mutator_cls = MagicMock(return_value=mutator_instance)
-    monkeypatch.setattr(runtime_module, "GraphMutator", mutator_cls)
+    apply_mutation = MagicMock(side_effect=RuntimeError("mutator failure"))
+    apply_override = MagicMock(return_value={})
+    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
 
     with pytest.raises(MeldExecutionError) as exc_info:
         runtime.execute(context)
@@ -891,30 +936,36 @@ def test_execute_blueprint_ignores_non_dict_overrides(monkeypatch: pytest.Monkey
     Verify non-dict overrides are ignored when a blueprint is present.
 
     Contract:
-        - Non-dict overrides fall back to {} before SpellOverrider.apply.
-        - Execution proceeds using the override_map produced by SpellOverrider.
+        - Non-dict overrides fall back to {} before OverridePatchMap.apply.
+        - Execution proceeds using the override_map produced by OverridePatchMap.
     """
     runtime = MeldRuntime()
     root_blueprint = object()
     mutated_blueprint = object()
-    crafter = SimpleNamespace(_root_blueprint_phase5=root_blueprint)
+    override_patch_map = MagicMock()
+    mutation_patch_map = MagicMock()
+    occurrence_plan = MagicMock()
+    injection_plan = MagicMock()
+    crafter = SimpleNamespace(
+        _root_blueprint_phase5=root_blueprint,
+        occurrence_plan_phase8=occurrence_plan,
+        injection_plan_phase9=injection_plan,
+        override_patch_map_phase10=override_patch_map,
+        mutation_patch_map_phase10=mutation_patch_map,
+    )
     spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override={})
     context = _make_context(spell=spell, overrides=[])
 
-    mutator_instance = MagicMock()
-    mutator_instance.apply.return_value = mutated_blueprint
-    mutator_cls = MagicMock(return_value=mutator_instance)
-    monkeypatch.setattr(runtime_module, "GraphMutator", mutator_cls)
-
-    overrider_instance = MagicMock()
-    overrider_instance.apply.return_value = {}
-    overrider_cls = MagicMock(return_value=overrider_instance)
-    monkeypatch.setattr(runtime_module, "SpellOverrider", overrider_cls)
+    apply_override = MagicMock(return_value={})
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
 
     engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
     assert runtime.execute(context) == "ok"
-    overrider_instance.apply.assert_called_once_with({})
-    assert engine_cls.call_args.kwargs["blueprint"] is mutated_blueprint
+    apply_override.assert_called_once_with(
+        override_patch_map=override_patch_map,
+        override_payload=context.overrides,
+    )
+    assert engine_cls.call_args.kwargs["blueprint"] is root_blueprint
 
 
 def test_build_frame_overrides_rejects_non_iterable_args() -> None:

@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+    DirectedAcyclicWorkGraph,
+)
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
 from melder.utilities.general_base.cleanable import Cleanable
@@ -45,6 +48,7 @@ class MutationEdgePatch:
     Contract:
         - child_spell_id identifies the dependent spell node.
         - param_name identifies the parameter the mutation targets.
+        - param_path matches the socket reference path from the root.
         - old_parent_id is set when a single existing parent matches; otherwise None.
         - new_parent_id is populated at apply time by the mutation logic.
 
@@ -53,6 +57,8 @@ class MutationEdgePatch:
             Spell id of the dependent node.
         param_name (str):
             Parameter name associated with the mutation contract.
+        param_path (Sequence[str]):
+            Parameter path from the root occurrence to the socket.
         old_parent_id (Optional[str]):
             Prior parent id when resolvable to a single node; otherwise None.
         new_parent_id (Optional[str]):
@@ -61,6 +67,7 @@ class MutationEdgePatch:
     __melder_internal__ = _mrg.sentinel
     child_spell_id: str
     param_name: str
+    param_path: Sequence[str]
     old_parent_id: Optional[str]
     new_parent_id: Optional[str]
 
@@ -340,6 +347,246 @@ class MutationPatchMap(Cleanable):
         self.check_cleaned()
         return self._root_spell_id
 
+    def apply(self, mutation_override: Dict[str, object]) -> List[MutationEdgePatch]:
+        """
+        Compute mutation patches for the supplied override payload.
+
+        Contract:
+            - Does not mutate internal maps.
+            - Enforces PATH/UNIQUE/BROADCAST cardinality semantics.
+            - Returns a list of patches with new_parent_id populated.
+
+        Args:
+            mutation_override:
+                Mapping of override_key -> target spell id.
+
+        Returns:
+            List[MutationEdgePatch]:
+                Patches to apply for the mutation override payload.
+
+        Raises:
+            ValueError:
+                If a TargetSpec key is invalid (from TargetSpec.parse).
+            RuntimeError:
+                If no sockets match a key, if a unique key matches multiple
+                sockets, or if targets are invalid.
+        """
+        self.check_cleaned()
+        if not mutation_override:
+            return []
+        if not isinstance(mutation_override, dict):
+            raise RuntimeError("mutation_override must be a dict of override_key -> spell_id.")
+
+        patches: List[MutationEdgePatch] = []
+        for raw_key, target_id in mutation_override.items():
+            if not isinstance(raw_key, str) or not raw_key.strip():
+                raise RuntimeError(f"Invalid mutation_override key: {raw_key!r}.")
+            if not isinstance(target_id, str) or not target_id.strip():
+                raise RuntimeError(
+                    f"Invalid mutation_override target for key {raw_key!r}: "
+                    "expected non-empty spell_id string."
+                )
+
+            spec = TargetSpec.parse(raw_key)
+            spec_key = _spec_key(spec)
+            matches = self._targets_by_spec.get(spec_key)
+
+            if spec.kind is TargetSpecKind.PATH:
+                if not matches:
+                    path_str = ">".join(spec.path or ())
+                    raise RuntimeError(
+                        f"No mutation sockets found for override path '{path_str}'."
+                    )
+            elif spec.kind is TargetSpecKind.UNIQUE:
+                count = 0 if not matches else len(matches)
+                if count == 0:
+                    raise RuntimeError(
+                        f"No mutation sockets found for unique override '*{spec.param_name}'."
+                    )
+                if count > 1:
+                    raise RuntimeError(
+                        f"Unique override matched multiple mutation sockets for "
+                        f"'*{spec.param_name}'."
+                    )
+            elif spec.kind is TargetSpecKind.BROADCAST:
+                if not matches:
+                    raise RuntimeError(
+                        f"No mutation sockets found for broadcast override '**{spec.param_name}'."
+                    )
+            else:
+                raise RuntimeError(f"Unsupported TargetSpecKind: {spec.kind!r}")
+
+            for patch in matches:
+                patches.append(
+                    MutationEdgePatch(
+                        child_spell_id=patch.child_spell_id,
+                        param_name=patch.param_name,
+                        param_path=tuple(patch.param_path),
+                        old_parent_id=patch.old_parent_id,
+                        new_parent_id=target_id,
+                    )
+                )
+
+        return patches
+
+
+def apply_override_patch_map(
+        *,
+        override_patch_map: OverridePatchMap,
+        override_payload: object,
+) -> Dict[SocketRef, object]:
+    """
+    Apply a Phase 10 OverridePatchMap with runtime normalization.
+
+    Contract:
+        - Non-dict overrides normalize to {} before apply().
+    """
+    raw_overrides = override_payload if isinstance(override_payload, dict) else {}
+    return override_patch_map.apply(raw_overrides)
+
+
+def apply_mutation_patch_map(
+        *,
+        blueprint: RootResolutionBlueprint,
+        mutation_patch_map: MutationPatchMap,
+        mutation_override: Dict[str, object],
+) -> RootResolutionBlueprint:
+    """
+    Apply mutation overrides using a Phase 10 MutationPatchMap.
+
+    Contract:
+        - Returns the original blueprint when no overrides are supplied.
+        - Clones the DAG and rewires mutation edges per patch map output.
+        - Preserves root identity metadata from the source blueprint.
+    """
+    if not mutation_override:
+        return blueprint
+
+    patches = mutation_patch_map.apply(mutation_override)
+
+    source = blueprint
+    new_dag = DirectedAcyclicWorkGraph()
+    for node_id in source.dag.nodes.keys():
+        new_dag.add_node(node_id)
+    for parent_key, parent_node in source.dag.nodes.items():
+        for child_node in parent_node.dependents:
+            child_key = child_node.id
+            param_name = child_node.incoming_params.get(parent_node)
+            socket_kind = source.dag._socket_kinds.get((parent_node, child_node))
+            new_dag.add_dependency(
+                parent_key=parent_key,
+                child_key=child_key,
+                param_name=param_name,
+                socket_kind=socket_kind,
+            )
+
+    for patch in patches:
+        child_id = patch.child_spell_id
+        param_name = patch.param_name
+        target_id = patch.new_parent_id
+        child_node = new_dag.get_node(child_id)
+        if child_node is None:
+            continue
+
+        to_remove = []
+        for parent in list(child_node.dependencies):
+            incoming_param = child_node.incoming_params.get(parent)
+            if incoming_param == param_name:
+                to_remove.append((parent.id, child_id, incoming_param))
+        for parent_id, c_id, pname in to_remove:
+            try:
+                parent_node = new_dag.get_node(parent_id)
+                if parent_node is not None:
+                    child_node.dependencies.discard(parent_node)
+                    parent_node.dependents.discard(child_node)
+                    new_dag._socket_kinds.pop((parent_node, child_node), None)
+            except Exception:
+                pass
+
+        if target_id is None:
+            continue
+        new_dag.add_node(target_id)
+        new_dag.add_dependency(
+            parent_key=target_id,
+            child_key=child_id,
+            param_name=param_name,
+            socket_kind=SocketKind.MUTATION_CONTRACT,
+        )
+
+    ordered_ids = new_dag.collect_dependency_ids()
+
+    new_socket_refs = list(source.socket_refs)
+    new_index = DagIndex()
+    for ref in new_socket_refs:
+        new_index.add_socket(ref)
+    for patch in patches:
+        if patch.new_parent_id is None:
+            continue
+        new_ref = SocketRef(
+            node_id=patch.new_parent_id,
+            param_name=patch.param_name,
+            param_path=tuple(patch.param_path),
+            socket_kind=SocketKind.MUTATION_CONTRACT,
+        )
+        new_socket_refs.append(new_ref)
+        new_index.add_socket(new_ref)
+
+    return RootResolutionBlueprint(
+        root_spell_id=source.root_spell_id,
+        root_lineage_id=source.root_lineage_id,
+        dag=new_dag,
+        ordered_node_ids=ordered_ids,
+        socket_refs=new_socket_refs,
+        dag_index=new_index,
+    )
+
+
+def apply_phase10_mutation_overrides(
+        *,
+        blueprint: RootResolutionBlueprint,
+        mutation_patch_map: Optional[MutationPatchMap],
+        mutation_override: Dict[str, object],
+) -> RootResolutionBlueprint:
+    """
+    Apply Phase 10 mutation overrides with required patch-map validation.
+
+    Contract:
+        - Requires a mutation patch map when mutation_override is non-empty.
+        - Returns the original blueprint when mutation_override is empty.
+    """
+    if not mutation_override:
+        return blueprint
+    if mutation_patch_map is None:
+        raise RuntimeError(
+            "Phase 10 mutation patch map is required for mutation overrides."
+        )
+    return apply_mutation_patch_map(
+        blueprint=blueprint,
+        mutation_patch_map=mutation_patch_map,
+        mutation_override=mutation_override,
+    )
+
+
+def apply_phase10_override_payload(
+        *,
+        override_patch_map: Optional[OverridePatchMap],
+        override_payload: object,
+) -> Dict[SocketRef, object]:
+    """
+    Apply Phase 10 override payloads with required patch-map validation.
+
+    Contract:
+        - Requires an override patch map to normalize and apply overrides.
+    """
+    if override_patch_map is None:
+        raise RuntimeError(
+            "Phase 10 override patch map is required for meld execution."
+        )
+    return apply_override_patch_map(
+        override_patch_map=override_patch_map,
+        override_payload=override_payload,
+    )
+
 
 class PatchMapBuilder(object):
     """
@@ -462,12 +709,11 @@ class PatchMapBuilder(object):
                 blueprint=self._blueprint,
                 socket_refs=matches,
             )
-            if len(matches) == 1:
-                unique_key = f"*{name}"
-                targets_by_spec[unique_key] = _build_mutation_patches(
-                    blueprint=self._blueprint,
-                    socket_ref=matches[0],
-                )
+            unique_key = f"*{name}"
+            targets_by_spec[unique_key] = _build_mutation_patches_for_group(
+                blueprint=self._blueprint,
+                socket_refs=matches,
+            )
 
         return MutationPatchMap(
             root_spell_id=root_spell_id,
@@ -545,6 +791,7 @@ def _build_mutation_patches(
         MutationEdgePatch(
             child_spell_id=child_id,
             param_name=socket_ref.param_name,
+            param_path=socket_ref.param_path,
             old_parent_id=old_parent_id,
             new_parent_id=None,
         )

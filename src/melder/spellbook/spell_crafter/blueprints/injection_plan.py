@@ -1,10 +1,12 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     InstanceKey,
     OccurrencePlan,
+    OccurrenceKey,
 )
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -60,9 +62,9 @@ class ParamSource:
             dependency_keys:
                 Instance keys for dependency-based injection, when applicable.
             override_key:
-                Raw override key for value-based injection, when applicable.
+                Override identifier for value-based injection, when applicable.
             contract_key:
-                Contract lookup key for spell-contract injection, when applicable.
+                Contract identifier for spell-contract injection, when applicable.
 
         Raises:
             ValueError:
@@ -140,6 +142,8 @@ class InjectionSpec:
           dependency keys.
         - uses_positional_override is a flag the runtime may consult for
           override semantics; no validation is performed here.
+        - contract_payload is stored by reference and treated as immutable
+          by the runtime.
 
     Threading:
         - Not thread-safe; treat as immutable after build.
@@ -152,6 +156,7 @@ class InjectionSpec:
         "_param_sources",
         "_allow_list_aggregation",
         "_uses_positional_override",
+        "_contract_payload",
     ]
 
     def __init__(
@@ -160,6 +165,7 @@ class InjectionSpec:
             param_sources: Dict[str, ParamSource],
             allow_list_aggregation: bool,
             uses_positional_override: bool,
+            contract_payload: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize a per-instance injection specification.
@@ -167,6 +173,7 @@ class InjectionSpec:
         Contract:
             - param_sources must be non-None.
             - The mapping is stored by reference; callers must not mutate it.
+            - contract_payload is stored by reference; callers must not mutate it.
 
         Args:
             param_sources:
@@ -175,6 +182,8 @@ class InjectionSpec:
                 True when at least one parameter requires list aggregation.
             uses_positional_override:
                 True if the override payload should be interpreted positionally.
+            contract_payload:
+                Optional SpellContract override payload for this instance.
 
         Raises:
             ValueError:
@@ -185,6 +194,7 @@ class InjectionSpec:
         self._param_sources = param_sources
         self._allow_list_aggregation = allow_list_aggregation
         self._uses_positional_override = uses_positional_override
+        self._contract_payload = contract_payload
 
     @property
     def param_sources(self) -> Dict[str, ParamSource]:
@@ -218,6 +228,98 @@ class InjectionSpec:
             bool: True if positional override semantics are enabled.
         """
         return self._uses_positional_override
+
+    @property
+    def contract_payload(self) -> Optional[Dict[str, Any]]:
+        """
+        Return the SpellContract override payload for this instance.
+
+        Contract:
+            - The returned mapping is the stored reference; treat as read-only.
+
+        Returns:
+            Optional[Dict[str, Any]]: Contract override payload or None.
+        """
+        return self._contract_payload
+
+
+def build_kwargs_from_injection_spec(
+        *,
+        instance_key: InstanceKey,
+        occurrence: OccurrenceKey,
+        injection_spec: "InjectionSpec",
+        instance_results: Dict[InstanceKey, Any],
+        override_values: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Build keyword arguments for a spell instance using a Phase 9 InjectionSpec.
+
+    Contract:
+        - Returns a new kwargs mapping.
+        - Raises MeldExecutionError when dependency instances are missing.
+
+    Args:
+        instance_key: Instance key being constructed.
+        occurrence: (spell_id, path) occurrence for the instance.
+        injection_spec: Phase 9 injection specification.
+        instance_results: Mapping of instance keys to resolved instances.
+        override_values: Precomputed override values for the instance.
+
+    Returns:
+        Dict[str, Any]: Keyword arguments for construction.
+    """
+    spell_id, _ = occurrence
+    contract_payload = (
+        dict(injection_spec.contract_payload)
+        if injection_spec.contract_payload
+        else {}
+    )
+    positional_override = None
+    if injection_spec.uses_positional_override and "__args__" in contract_payload:
+        positional_override = contract_payload.pop("__args__")
+
+    kwargs: Dict[str, Any] = {}
+    for param_name, param_source in injection_spec.param_sources.items():
+        if param_source.kind != "dependency":
+            continue
+        dependency_keys = param_source.dependency_keys or []
+        if param_name in override_values:
+            kwargs[param_name] = override_values[param_name]
+            continue
+        values: List[Any] = []
+        for dependency_key in dependency_keys:
+            if dependency_key not in instance_results:
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell_id,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        f"Dependency '{dependency_key[0]}' missing while "
+                        f"building args for '{spell_id}'."
+                    ),
+                )
+            values.append(instance_results[dependency_key])
+        if not values:
+            continue
+        if len(values) == 1:
+            kwargs[param_name] = values[0]
+        else:
+            kwargs[param_name] = values
+
+    if positional_override is not None:
+        kwargs["__args__"] = positional_override
+
+    for param_name, value in contract_payload.items():
+        if param_name in override_values:
+            continue
+        kwargs[param_name] = value
+
+    for param_name, value in override_values.items():
+        if param_name not in kwargs:
+            kwargs[param_name] = value
+
+    return kwargs
 
 
 class InjectionPlan(Cleanable):
@@ -332,6 +434,31 @@ class InjectionPlan(Cleanable):
         self.check_cleaned()
         return self._instance_injections
 
+    def select_for_runtime(
+            self,
+            *,
+            root_spell_id: str,
+    ) -> Optional[Dict[InstanceKey, InjectionSpec]]:
+        """
+        Determine whether this Phase 9 plan can drive a meld execution.
+
+        Contract:
+            - Returns None if the plan root does not match.
+            - Returns None if the plan has been cleaned.
+
+        Args:
+            root_spell_id: Current root spell id for this execution.
+
+        Returns:
+            Optional[Dict[InstanceKey, InjectionSpec]]: Injection specs when usable.
+        """
+        try:
+            if self.root_spell_id != root_spell_id:
+                return None
+            return self.instance_injections
+        except Exception:
+            return None
+
 
 class InjectionPlanBuilder(object):
     """
@@ -391,7 +518,8 @@ class InjectionPlanBuilder(object):
             - For non-shared spell ids, dependency instance keys include the path.
             - allow_list_aggregation is True when any parameter has multiple
               dependency occurrences.
-            - uses_positional_override is False for all specs produced here.
+            - uses_positional_override is True when a contract payload includes
+              __args__ for the instance.
 
         Returns:
             InjectionPlan: Compiled plan for the root spell.
@@ -414,8 +542,11 @@ class InjectionPlanBuilder(object):
                 else:
                     occurrence = (spell_id, instance_key[1])
                 dependencies = plan.occurrence_graph.get(occurrence, {})
+                contract_payload = plan.contract_overrides_by_occurrence.get(occurrence)
+                normalized_contract_payload = dict(contract_payload) if contract_payload else None
                 param_sources: Dict[str, ParamSource] = {}
                 allow_list_aggregation = False
+                uses_positional_override = False
 
                 for param_name, dependency_occurrences in dependencies.items():
                     dependency_keys: List[InstanceKey] = []
@@ -430,12 +561,36 @@ class InjectionPlanBuilder(object):
                     param_sources[param_name] = ParamSource(
                         kind="dependency",
                         dependency_keys=dependency_keys,
+                        override_key=param_name,
                     )
+
+                if normalized_contract_payload is not None:
+                    if "__args__" in normalized_contract_payload:
+                        uses_positional_override = True
+                    for param_name in normalized_contract_payload.keys():
+                        if param_name == "__args__":
+                            continue
+                        existing = param_sources.get(param_name)
+                        if existing is None:
+                            param_sources[param_name] = ParamSource(
+                                kind="contract",
+                                dependency_keys=[],
+                                override_key=param_name,
+                                contract_key=param_name,
+                            )
+                        else:
+                            param_sources[param_name] = ParamSource(
+                                kind=existing.kind,
+                                dependency_keys=existing.dependency_keys,
+                                override_key=existing.override_key or param_name,
+                                contract_key=param_name,
+                            )
 
                 instance_injections[instance_key] = InjectionSpec(
                     param_sources=param_sources,
                     allow_list_aggregation=allow_list_aggregation,
-                    uses_positional_override=False,
+                    uses_positional_override=uses_positional_override,
+                    contract_payload=normalized_contract_payload,
                 )
 
         return InjectionPlan(

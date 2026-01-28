@@ -857,6 +857,21 @@ class Spell(Cleanable, ISpell):
         crafter = self._ensure_crafter()
         crafter.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
 
+    def run_phase_execution_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 11 - Execution plan compilation (facade).
+
+        Delegates to the SpellCrafter to compile the execution plan for root
+        spells. Non-root spells are treated as a no-op.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
+
     def run_phase_system_validation(
             self,
             conduit_id: str,
@@ -961,6 +976,7 @@ class Spell(Cleanable, ISpell):
             - Phase 8: Occurrence plan compilation.
             - Phase 9: Injection plan compilation.
             - Phase 10: Patch map compilation.
+            - Phase 11: Execution plan compilation.
             - Phase 6: System validation.
             - Phase 7: Change-control wiring.
 
@@ -988,6 +1004,7 @@ class Spell(Cleanable, ISpell):
         crafter.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
+        crafter.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         crafter.cleanup_phase_artifacts()
