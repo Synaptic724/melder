@@ -174,6 +174,7 @@ class OverridePatchMap(Cleanable):
         Contract:
             - Does not mutate internal maps.
             - Applies specificity rules to resolve competing overrides.
+            - Mirrors DagTargetingEngine error semantics for unique/broadcast/path.
 
         Args:
             spell_override:
@@ -200,10 +201,30 @@ class OverridePatchMap(Cleanable):
             spec = TargetSpec.parse(raw_key)
             spec_key = _spec_key(spec)
             matches = self._targets_by_spec.get(spec_key)
-            if not matches:
-                raise RuntimeError(
-                    f"No sockets found for override key '{raw_key}'."
-                )
+            if spec.kind is TargetSpecKind.PATH:
+                if not matches:
+                    path_str = ">".join(spec.path or ())
+                    raise RuntimeError(
+                        f"No sockets found for override path '{path_str}'."
+                    )
+            elif spec.kind is TargetSpecKind.UNIQUE:
+                count = 0 if not matches else len(matches)
+                if count == 0:
+                    raise RuntimeError(
+                        f"No sockets found for unique override '*{spec.param_name}'."
+                    )
+                if count > 1:
+                    raise RuntimeError(
+                        f"Unique override '*{spec.param_name}' matched {count} sockets; "
+                        f"expected exactly one."
+                    )
+            elif spec.kind is TargetSpecKind.BROADCAST:
+                if not matches:
+                    raise RuntimeError(
+                        f"No sockets found for broadcast override '**{spec.param_name}'."
+                    )
+            else:
+                raise RuntimeError(f"Unsupported TargetSpecKind: {spec.kind!r}")
             level = self._specificity_by_spec.get(spec_key)
             if level is None:
                 raise RuntimeError(
@@ -397,10 +418,9 @@ class PatchMapBuilder(object):
             broadcast_key = f"**{name}"
             targets_by_spec[broadcast_key] = list(matches)
             specificity_by_spec[broadcast_key] = _Specificity.BROADCAST
-            if len(matches) == 1:
-                unique_key = f"*{name}"
-                targets_by_spec[unique_key] = list(matches)
-                specificity_by_spec[unique_key] = _Specificity.UNIQUE
+            unique_key = f"*{name}"
+            targets_by_spec[unique_key] = list(matches)
+            specificity_by_spec[unique_key] = _Specificity.UNIQUE
 
         return OverridePatchMap(
             root_spell_id=root_spell_id,

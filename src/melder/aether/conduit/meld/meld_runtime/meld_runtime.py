@@ -125,15 +125,15 @@ class MeldRuntime:
                 spellbook = spell._spellbook
                 aether = spellbook._aether
                 manager = aether._get_change_control_manager(spell.aetheric_frame)
-                if manager.is_root_dirty(spell.spell_index.current):
+                if manager is not None and manager.is_root_dirty(spell.spell_index.current):
                     raise MeldExecutionError(
                         spell_id=spell.spell_index.current,
                         spell_name=spell.spell_name,
                         message=(
                             "Cannot execute meld runtime while the root is marked dirty. "
                             "Revalidation is required."
-                        ),
-                    )
+                            ),
+                        )
             except MeldExecutionError:
                 raise
             except Exception:
@@ -164,12 +164,25 @@ class MeldRuntime:
         dag = spell.dependency_graph
         requirements = spell.requirements
         resolution_frame = spell.resolution_frame
-        crafter = spell._crafter
+
         # Phase 5 artifacts may be present for root spells.
-        root_blueprint: RootResolutionBlueprint = getattr(crafter, "_root_blueprint_phase5", None)
-        occurrence_plan = getattr(crafter, "occurrence_plan_phase8", None)
-        injection_plan = getattr(crafter, "injection_plan_phase9", None)
-        override_patch_map = getattr(crafter, "override_patch_map_phase10", None)
+        root_blueprint: RootResolutionBlueprint = getattr(
+            getattr(spell, "_crafter", None), "_root_blueprint_phase5", None
+        )
+        mutation_override_payload = {}
+        try:
+            mutation_override_payload = spell.mutation_override
+        except Exception:
+            mutation_override_payload = {}
+
+        occurrence_plan = None
+        injection_plan = None
+        override_patch_map = None
+        crafter = spell._crafter
+        if crafter is not None and not mutation_override_payload:
+            occurrence_plan = getattr(crafter, "occurrence_plan_phase8", None)
+            injection_plan = getattr(crafter, "injection_plan_phase9", None)
+            override_patch_map = getattr(crafter, "override_patch_map_phase10", None)
 
         # Apply mutation overrides (graph-level) and spell overrides (value-level)
         # if we have a deep blueprint. Fallback to simple overrides otherwise.
@@ -178,7 +191,7 @@ class MeldRuntime:
         if root_blueprint is not None:
             try:
                 mutator = GraphMutator(root_blueprint)
-                execution_blueprint = mutator.apply(spell.mutation_override or {})
+                execution_blueprint = mutator.apply(mutation_override_payload or {})
 
                 if override_patch_map is not None:
                     override_map = override_patch_map.apply(context.overrides or {})
