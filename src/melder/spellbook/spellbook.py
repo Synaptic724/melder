@@ -3416,6 +3416,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Orchestrate conduit-scoped Phases 5-11 (root blueprints, occurrence plan,
         injection plan, patch maps, execution plan, system validation, change control).
+        Existing-creation spells bypass Phase 8-11 compilation.
         This must run after structural phases complete.
 
         Args:
@@ -3680,9 +3681,9 @@ class Spellbook(Cleanable, ISpellbook):
 
         Build :class:`UnitOfWork` instances for the **occurrence_plan** phase.
 
-        This phase compiles OccurrencePlan artifacts for root spells based on
-        Phase 5 blueprints. Non-root spells are treated as a no-op by the
-        underlying SpellCrafter.
+        This phase compiles OccurrencePlan artifacts for spells with attached
+        Phase 5 blueprints. Existing-creation spells are treated as a no-op by
+        the underlying SpellCrafter.
 
         Expected spell surface:
 
@@ -3718,8 +3719,8 @@ class Spellbook(Cleanable, ISpellbook):
         Build :class:`UnitOfWork` instances for the **injection_plan** phase.
 
         This phase compiles InjectionPlan artifacts from Phase 8 occurrence
-        plans. Non-root spells are treated as a no-op by the underlying
-        SpellCrafter.
+        plans for spells with attached blueprints. Existing-creation spells are
+        treated as a no-op by the underlying SpellCrafter.
 
         Expected spell surface:
 
@@ -3754,8 +3755,8 @@ class Spellbook(Cleanable, ISpellbook):
 
         Build :class:`UnitOfWork` instances for the **patch_maps** phase.
 
-        This phase compiles patch maps for overrides based on Phase 9
-        injection plans. Non-root spells are treated as a no-op by the
+        This phase compiles patch maps for overrides based on Phase 5
+        blueprints. Existing-creation spells are treated as a no-op by the
         underlying SpellCrafter.
 
         Expected spell surface:
@@ -3791,9 +3792,9 @@ class Spellbook(Cleanable, ISpellbook):
 
         Build :class:`UnitOfWork` instances for the **execution_plan** phase.
 
-        This phase compiles execution plans for root spells based on Phase 8
-        occurrence plans and Phase 9 injection plans. Non-root spells are
-        treated as a no-op by the underlying SpellCrafter.
+        This phase compiles execution plans for spells based on Phase 8
+        occurrence plans and Phase 9 injection plans. Existing-creation spells
+        are treated as a no-op by the underlying SpellCrafter.
 
         Expected spell surface:
 

@@ -16,9 +16,6 @@ from melder.spellbook.spell_crafter.blueprints.patch_maps import (
     apply_phase10_mutation_overrides,
     apply_phase10_override_payload,
 )
-from melder.spellbook.spell_crafter.blueprints.execution_plan import (
-    ExecutionPlanBuilder,
-)
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 
 
@@ -172,25 +169,15 @@ class MeldRuntime:
 
         # Phase 5 artifacts may be present for root spells.
         root_blueprint: RootResolutionBlueprint = None
-        occurrence_plan = None
-        injection_plan = None
-        override_patch_map = None
-        mutation_patch_map = None
-        execution_plan = None
         crafter = spell._crafter
-        if crafter is not None:
-            root_blueprint = crafter.root_blueprint_phase5
-            occurrence_plan = crafter.occurrence_plan_phase8
-            injection_plan = crafter.injection_plan_phase9
-            override_patch_map = crafter.override_patch_map_phase10
-            mutation_patch_map = crafter.mutation_patch_map_phase10
-            execution_plan = crafter.execution_plan_phase11
+        root_blueprint = crafter.root_blueprint_phase5
+        occurrence_plan = crafter.occurrence_plan_phase8
+        injection_plan = crafter.injection_plan_phase9
+        override_patch_map = crafter.override_patch_map_phase10
+        mutation_patch_map = crafter.mutation_patch_map_phase10
+        execution_plan = crafter.execution_plan_phase11
+        mutation_override_payload = spell.mutation_override
 
-        mutation_override_payload = {}
-        try:
-            mutation_override_payload = spell.mutation_override
-        except Exception:
-            mutation_override_payload = {}
 
         if mutation_override_payload and root_blueprint is None:
             occurrence_plan = None
@@ -200,7 +187,6 @@ class MeldRuntime:
         # if we have a deep blueprint. Fallback to simple overrides otherwise.
         execution_blueprint = root_blueprint
         override_map = {}
-        use_phase11 = False
         execution_plan_to_run = execution_plan
         if root_blueprint is not None:
             try:
@@ -212,12 +198,6 @@ class MeldRuntime:
                     )
                     occurrence_plan = None
                     injection_plan = None
-                    execution_plan = None
-                else:
-                    if occurrence_plan is None or injection_plan is None:
-                        raise RuntimeError(
-                            "Phase 8/9 artifacts are required for meld execution."
-                        )
 
                 override_map = apply_phase10_override_payload(
                     override_patch_map=override_patch_map,
@@ -231,34 +211,15 @@ class MeldRuntime:
                     inner=exc,
                 ) from exc
 
-            use_phase11 = self._phase11_allowed(
-                spell=spell,
-                context=context,
-                execution_plan=execution_plan,
-                occurrence_plan=occurrence_plan,
-                injection_plan=injection_plan,
-                mutation_override_payload=mutation_override_payload,
+        # Per-execution ResolutionFrame seeded with per-call overrides.
+        frame_overrides = {}
+        if context.overrides or override_map:
+            frame_overrides = self._build_frame_overrides(
+                context_overrides=context.overrides,
                 override_map=override_map,
+                root_spell_id=spell.spell_index.current,
             )
 
-            if use_phase11 and execution_plan is None:
-                try:
-                    builder = ExecutionPlanBuilder(
-                        occurrence_plan=occurrence_plan,
-                        injection_plan=injection_plan,
-                        spell_lookup=spell._spellbook._spell_id_pool,
-                    )
-                    execution_plan_to_run = builder.build()
-                except Exception:
-                    use_phase11 = False
-                    execution_plan_to_run = None
-
-        # Per-execution ResolutionFrame seeded with per-call overrides.
-        frame_overrides = self._build_frame_overrides(
-            context_overrides=context.overrides,
-            override_map=override_map,
-            root_spell_id=spell.spell_index.current,
-        )
         frame = ResolutionFrame(overrides=frame_overrides)
         engine = MeldEngine(
             context=context,
@@ -277,10 +238,7 @@ class MeldRuntime:
 
         result = None
         try:
-            if use_phase11 and execution_plan_to_run is not None:
-                result = engine.run_execution_plan(execution_plan_to_run)
-            else:
-                result = engine.run()
+            result = engine.run_execution_plan(execution_plan_to_run)
         finally:
             # Always tear down engine + frame to avoid leaks.
             try:
@@ -350,38 +308,3 @@ class MeldRuntime:
                 if socket_ref.node_id == root_spell_id and len(socket_ref.param_path) == 1:
                     merged[socket_ref.param_name] = value
         return merged
-
-    def _phase11_allowed(
-            self,
-            *,
-            spell: ISpell,
-            context: "MeldContext",
-            execution_plan,
-            occurrence_plan,
-            injection_plan,
-            mutation_override_payload,
-            override_map: Dict[SocketRef, Any],
-    ) -> bool:
-        """
-        Determine whether Phase 11 execution is eligible for this call.
-        """
-        if occurrence_plan is None or injection_plan is None:
-            return False
-        if execution_plan is not None:
-            if execution_plan.root_spell_id != spell.spell_index.current:
-                return False
-        elif occurrence_plan.root_spell_id != spell.spell_index.current:
-            return False
-        if mutation_override_payload:
-            return False
-        if context.overrides:
-            return False
-        if override_map:
-            return False
-        if getattr(spell, "_hooks_enabled", False):
-            return False
-        if occurrence_plan.contract_overrides_by_occurrence:
-            return False
-        if occurrence_plan.contract_overrides_by_spell_id:
-            return False
-        return True

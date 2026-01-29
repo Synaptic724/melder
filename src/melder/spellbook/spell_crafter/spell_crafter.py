@@ -135,8 +135,9 @@ class SpellCrafter(Cleanable):
         4. Validation (frame + policies ? validated / broken flags)
 
     It also retains selected **frame-level artifacts** produced in later phases
-    when they are available for this spell (e.g., Phase 5 root blueprints and
-    Phase 8 occurrence plans for root spells).
+    when they are available for this spell (e.g., Phase 5 blueprints and
+    Phase 8-11 plans for constructed spells). Existing-creation spells may
+    bypass Phase 8-11 artifacts because they already have instances.
 
     The :class:`Spell` instance only persists:
 
@@ -384,19 +385,21 @@ class SpellCrafter(Cleanable):
 
     @property
     def root_blueprint_phase5(self) -> Optional[RootResolutionBlueprint]:
-        """Deep DAG blueprint for this spell if it is a root."""
+        """
+        Deep DAG blueprint for this spell when Phase 5 attaches one.
+        """
         self.check_cleaned()
         return self._root_blueprint_phase5
 
     @property
     def occurrence_plan_phase8(self) -> Optional[OccurrencePlan]:
         """
-        Phase 8 occurrence plan artifact, if compiled for this root.
+        Phase 8 occurrence plan artifact, if compiled for this spell.
 
         Returns:
             Optional[OccurrencePlan]:
-                The compiled OccurrencePlan for this spell's root blueprint, or
-                None if this spell is not a root or Phase 8 has not run yet.
+                The compiled OccurrencePlan for this spell, or None if Phase 8
+                has not run yet (or the spell bypasses Phase 8).
         """
         self.check_cleaned()
         return self._occurrence_plan_phase8
@@ -404,12 +407,12 @@ class SpellCrafter(Cleanable):
     @property
     def injection_plan_phase9(self) -> Optional[InjectionPlan]:
         """
-        Phase 9 injection plan artifact, if compiled for this root.
+        Phase 9 injection plan artifact, if compiled for this spell.
 
         Returns:
             Optional[InjectionPlan]:
-                The compiled InjectionPlan for this spell's root blueprint, or
-                None if this spell is not a root or Phase 9 has not run yet.
+                The compiled InjectionPlan for this spell, or None if Phase 9
+                has not run yet (or the spell bypasses Phase 9).
         """
         self.check_cleaned()
         return self._injection_plan_phase9
@@ -417,7 +420,7 @@ class SpellCrafter(Cleanable):
     @property
     def override_patch_map_phase10(self) -> Optional[OverridePatchMap]:
         """
-        Phase 10 override patch map artifact, if compiled for this root.
+        Phase 10 override patch map artifact, if compiled for this spell.
         """
         self.check_cleaned()
         return self._override_patch_map_phase10
@@ -425,7 +428,7 @@ class SpellCrafter(Cleanable):
     @property
     def mutation_patch_map_phase10(self) -> Optional[MutationPatchMap]:
         """
-        Phase 10 mutation patch map artifact, if compiled for this root.
+        Phase 10 mutation patch map artifact, if compiled for this spell.
         """
         self.check_cleaned()
         return self._mutation_patch_map_phase10
@@ -433,7 +436,7 @@ class SpellCrafter(Cleanable):
     @property
     def execution_plan_phase11(self) -> Optional[ExecutionPlan]:
         """
-        Phase 11 execution plan artifact, if compiled for this root.
+        Phase 11 execution plan artifact, if compiled for this spell.
         """
         self.check_cleaned()
         return self._execution_plan_phase11
@@ -547,7 +550,9 @@ class SpellCrafter(Cleanable):
         self._validation_result_phase6 = None
 
     def set_root_blueprint_phase5(self, blueprint: RootResolutionBlueprint) -> None:
-        """Set the Phase-5 root blueprint for this spell."""
+        """
+        Set the Phase-5 blueprint for this spell.
+        """
         self.check_cleaned()
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
@@ -565,7 +570,7 @@ class SpellCrafter(Cleanable):
         Deterministically clear Phase-5 state and dependent Phase 8 artifacts.
 
         Contract:
-            - Drops the root blueprint reference.
+            - Drops the Phase 5 blueprint reference.
             - Cleans and nulls any compiled OccurrencePlan.
             - Cleans and nulls any compiled InjectionPlan.
             - Leaves Phase 1-4 artifacts intact.
@@ -1547,6 +1552,11 @@ class SpellCrafter(Cleanable):
         no new discovery occurs. The resulting DAGs and index are scoped to
         spells visible to the current Spellbook (local + contracted).
 
+        Phase 5 produces two related outputs:
+            - A root-only blueprint map for system validation (Phase 6).
+            - Per-spell blueprints attached to constructed spells so Phase 8-11
+              compilation can proceed for any meldable spell.
+
         Args:
             conduit_id:
                 Conduit identifier used to scope resolution artifacts.
@@ -1554,7 +1564,7 @@ class SpellCrafter(Cleanable):
                 Optional cancellation handle.
 
         Returns:
-            Dict[root_spell_id, RootResolutionBlueprint]
+            None.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
@@ -1628,25 +1638,32 @@ class SpellCrafter(Cleanable):
 
             system_index.upsert_node(node)
 
-        # --- 5. Attach artifacts to root SpellCrafters ---------------------
-        for root_id, blueprint in root_blueprints.items():
+        # --- 5. Attach artifacts to SpellCrafters -------------------------
+        for spell_id, spell_instance in version_to_spell.items():
             self._throw_if_cancelled(cancel_event)
 
-            # Resolve the actual Spell / SpellCrafter for this root version id.
-            spell_for_root: ISpell = version_to_spell.get(root_id)
-            if spell_for_root is None or spell_for_root._crafter is None:
-                # Can happen if the frame has system-level roots the current
-                # Spellbook does not expose; we just skip attaching in that case.
+            crafter_for_spell = spell_instance._crafter
+            if crafter_for_spell is None:
                 continue
 
-            crafter_for_root = spell_for_root._crafter
-            crafter_for_root.set_root_blueprint_phase5(blueprint)
-            crafter_for_root.set_spell_system_index_phase5(system_index)
+            crafter_for_spell.set_spell_system_index_phase5(system_index)
+
+            if spell_instance.is_existing_creation:
+                # Existing-creation spells do not require execution plans.
+                continue
+
+            blueprint = root_blueprints.get(spell_id)
+            if blueprint is None:
+                blueprint = root_builder.build_blueprint_for_spell_id(
+                    root_spell_id=spell_id,
+                    snapshot=filtered_snapshot,
+                )
+
+            crafter_for_spell.set_root_blueprint_phase5(blueprint)
 
         # --- 6. Store artifacts on self for completeness -------------------
-        # This crafter may or may not be a root; roots already had their
-        # _root_blueprint_phase5 set above. We still keep the system index
-        # for inspection from any SpellCrafter instance.
+        # The root-only blueprint map is retained for system validation; per-spell
+        # blueprints are attached directly to each SpellCrafter above.
         self._spell_system_index_phase5 = system_index
         self._entire_dag_blueprint_phase5 = root_blueprints
 
@@ -1785,13 +1802,13 @@ class SpellCrafter(Cleanable):
         """
         Phase 8 - Occurrence plan compilation.
 
-        Compiles an OccurrencePlan for root spells using Phase-5 blueprints.
-        Non-root spells are treated as a no-op.
+        Compiles an OccurrencePlan for spells with attached Phase-5 blueprints.
+        Existing-creation spells are treated as a no-op.
 
         Contract:
             - Requires Phase 5 artifacts to be available.
-            - Builds plan only when a root blueprint is attached.
-            - Replaces any existing OccurrencePlan for this root.
+            - Builds plan only when a blueprint is attached for this spell.
+            - Replaces any existing OccurrencePlan for this spell.
 
         Args:
             conduit_id:
@@ -1806,6 +1823,8 @@ class SpellCrafter(Cleanable):
         self._throw_if_cancelled(cancel_event)
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
+        if self._spell.is_existing_creation:
+            return
         if self._entire_dag_blueprint_phase5 is None:
             raise RuntimeError(
                 "SpellCrafter Phase 8: cannot compile occurrence plans before Phase 5 has completed."
@@ -1813,12 +1832,9 @@ class SpellCrafter(Cleanable):
 
         root_blueprint = self._root_blueprint_phase5
         if root_blueprint is None:
-            current_id = self._spell.spell_index.current
-            if current_id in self._entire_dag_blueprint_phase5:
-                raise RuntimeError(
-                    "SpellCrafter Phase 8: root blueprint missing for root spell."
-                )
-            return
+            raise RuntimeError(
+                "SpellCrafter Phase 8: root blueprint missing for spell."
+            )
 
         if self._spellbook_scanner is None:
             self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
@@ -1856,8 +1872,8 @@ class SpellCrafter(Cleanable):
         """
         Phase 9 - Injection plan compilation.
 
-        Compiles an InjectionPlan for root spells using Phase-8 occurrence plans.
-        Non-root spells are treated as a no-op.
+        Compiles an InjectionPlan for spells using Phase-8 occurrence plans.
+        Existing-creation spells are treated as a no-op.
 
         Purpose:
             Precompute dependency-to-parameter wiring so meld can inject without
@@ -1865,8 +1881,8 @@ class SpellCrafter(Cleanable):
 
         Contract:
             - Requires Phase 8 artifacts to be available.
-            - Builds plan only when a root occurrence plan is attached.
-            - Replaces any existing InjectionPlan for this root.
+            - Builds plan only when an occurrence plan is attached for this spell.
+            - Replaces any existing InjectionPlan for this spell.
             - Does not mutate the occurrence plan.
 
         Args:
@@ -1882,8 +1898,8 @@ class SpellCrafter(Cleanable):
             ValueError:
                 If conduit_id is empty.
             RuntimeError:
-                If Phase 8 artifacts are missing for a root spell or if the
-                root blueprint is missing for a root spell.
+                If Phase 8 artifacts are missing for this spell or if the
+                root blueprint is missing for this spell.
             OperationCancelledError:
                 If cancel_event signals cancellation.
 
@@ -1897,18 +1913,14 @@ class SpellCrafter(Cleanable):
         self._throw_if_cancelled(cancel_event)
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
+        if self._spell.is_existing_creation:
+            return
 
         root_blueprint = self._root_blueprint_phase5
         if root_blueprint is None:
-            current_id = self._spell.spell_index.current
-            if (
-                    self._entire_dag_blueprint_phase5 is not None
-                    and current_id in self._entire_dag_blueprint_phase5
-            ):
-                raise RuntimeError(
-                    "SpellCrafter Phase 9: root blueprint missing for root spell."
-                )
-            return
+            raise RuntimeError(
+                "SpellCrafter Phase 9: root blueprint missing for spell."
+            )
 
         if self._occurrence_plan_phase8 is None:
             raise RuntimeError(
@@ -1941,8 +1953,8 @@ class SpellCrafter(Cleanable):
         """
         Phase 10 - Patch map compilation.
 
-        Compiles override and mutation patch maps for root spells using
-        Phase-5 blueprints. Non-root spells are treated as a no-op.
+        Compiles override and mutation patch maps for spells using
+        Phase-5 blueprints. Existing-creation spells are treated as a no-op.
 
         Purpose:
             Precompute override and mutation targeting so meld can apply
@@ -1950,8 +1962,8 @@ class SpellCrafter(Cleanable):
 
         Contract:
             - Requires Phase 5 artifacts to be available.
-            - Builds maps only when a root blueprint is attached.
-            - Replaces any existing patch maps for this root.
+            - Builds maps only when a blueprint is attached for this spell.
+            - Replaces any existing patch maps for this spell.
             - Does not mutate the root blueprint.
 
         Args:
@@ -1968,7 +1980,7 @@ class SpellCrafter(Cleanable):
                 If conduit_id is empty.
             RuntimeError:
                 If Phase 5 artifacts are missing or the root blueprint is missing
-                for a root spell.
+                for this spell.
             OperationCancelledError:
                 If cancel_event signals cancellation.
 
@@ -1982,6 +1994,8 @@ class SpellCrafter(Cleanable):
         self._throw_if_cancelled(cancel_event)
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
+        if self._spell.is_existing_creation:
+            return
         if self._entire_dag_blueprint_phase5 is None:
             raise RuntimeError(
                 "SpellCrafter Phase 10: cannot compile patch maps before Phase 5 has completed."
@@ -1989,12 +2003,9 @@ class SpellCrafter(Cleanable):
 
         root_blueprint = self._root_blueprint_phase5
         if root_blueprint is None:
-            current_id = self._spell.spell_index.current
-            if current_id in self._entire_dag_blueprint_phase5:
-                raise RuntimeError(
-                    "SpellCrafter Phase 10: root blueprint missing for root spell."
-                )
-            return
+            raise RuntimeError(
+                "SpellCrafter Phase 10: root blueprint missing for spell."
+            )
 
         builder = PatchMapBuilder(
             blueprint=root_blueprint,
@@ -2029,30 +2040,26 @@ class SpellCrafter(Cleanable):
         """
         Phase 11 - Execution plan compilation.
 
-        Compiles a Phase 11 ExecutionPlan for root spells using Phase 8–10
-        artifacts. Non-root spells are treated as a no-op.
+        Compiles a Phase 11 ExecutionPlan for spells using Phase 8–10
+        artifacts. Existing-creation spells are treated as a no-op.
 
         Contract:
             - Requires Phase 8 artifacts to be available.
             - Uses Phase 9 injection plan when available.
-            - Replaces any existing ExecutionPlan for this root.
+            - Replaces any existing ExecutionPlan for this spell.
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
+        if self._spell.is_existing_creation:
+            return
 
         root_blueprint = self._root_blueprint_phase5
         if root_blueprint is None:
-            current_id = self._spell.spell_index.current
-            if (
-                    self._entire_dag_blueprint_phase5 is not None
-                    and current_id in self._entire_dag_blueprint_phase5
-            ):
-                raise RuntimeError(
-                    "SpellCrafter Phase 11: root blueprint missing for root spell."
-                )
-            return
+            raise RuntimeError(
+                "SpellCrafter Phase 11: root blueprint missing for spell."
+            )
 
         if self._occurrence_plan_phase8 is None:
             raise RuntimeError(

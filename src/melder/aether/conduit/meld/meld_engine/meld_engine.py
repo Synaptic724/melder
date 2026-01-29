@@ -1,13 +1,12 @@
 from collections import defaultdict
-from types import SimpleNamespace
 from threading import RLock
-from typing import Any, Callable, Dict, Iterable, List, MutableMapping, Optional, Sequence, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
 
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-from melder.utilities.interfaces.interfaces import ISpell, ICreations
+from melder.utilities.interfaces.interfaces import ISpell
 from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
     ResolutionFrame,
 )
@@ -21,19 +20,14 @@ from melder.spellbook.spell_crafter.blueprints.injection_plan import (
 )
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
-    OccurrencePlanBuilder,
     select_occurrence_plan,
 )
 from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlan
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
+from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.bind.spell_index import SpellIndex
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
-from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 
 _OccurrenceKey = tuple[str, tuple[str, ...]]
 _InstanceKey = tuple[str, Optional[tuple[str, ...]]]
@@ -254,9 +248,9 @@ class MeldEngine(Cleanable):
         Notes:
             Executes the deep DAG in dependency-safe order when a blueprint
             is available. SpellContract sockets are resolved during occurrence
-            expansion using contracted spells. When a Phase 8 OccurrencePlan
-            is present, the engine reuses its occurrence graph and execution
-            order.
+            expansion using contracted spells. A Phase 8 OccurrencePlan is
+            required for DAG execution; missing plans must be rebuilt by the
+            phase pipeline before meld execution.
         """
         self.check_cleaned()
 
@@ -288,48 +282,27 @@ class MeldEngine(Cleanable):
             root_spell_id=root_id,
         )
         if plan_selection is None:
-            occurrence_plan = OccurrencePlanBuilder(
-                root_spell=self._root_spell,
-                blueprint=blueprint,
-                spell_lookup=self._spell_lookup,
-                system_states=self._system_states,
-            ).build()
-            if not occurrence_plan.contract_dependencies_complete:
-                raise MeldExecutionError(
-                    spell_id=root_id,
-                    spell_name=self._root_spell.spell_name,
-                    message=(
-                        "SpellContract could not be resolved. "
-                        "No contracted spell matched the contract."
-                    ),
-                )
-            occurrence_graph = occurrence_plan.occurrence_graph
-            execution_order = occurrence_plan.execution_order
-            instance_keys_by_spell_id = occurrence_plan.instance_keys_by_spell_id
-            canonical_occurrences_by_spell_id = (
-                occurrence_plan.canonical_occurrences_by_spell_id
+            raise MeldExecutionError(
+                spell_id=root_id,
+                spell_name=self._root_spell.spell_name,
+                message=(
+                    "Phase 8 occurrence plan is required for meld execution. "
+                    "Revalidate the spellbook to rebuild resolution phases."
+                ),
             )
-            root_instance_key = occurrence_plan.root_instance_key
-            shared_spell_ids = occurrence_plan.shared_spell_ids
-            self._contract_overrides_by_occurrence = (
-                occurrence_plan.contract_overrides_by_occurrence
-            )
-            self._contract_overrides_by_spell_id = (
-                occurrence_plan.contract_overrides_by_spell_id
-            )
-        else:
-            occurrence_graph = plan_selection.occurrence_graph
-            execution_order = plan_selection.execution_order
-            instance_keys_by_spell_id = plan_selection.instance_keys_by_spell_id
-            canonical_occurrences_by_spell_id = plan_selection.canonical_occurrences_by_spell_id
-            root_instance_key = plan_selection.root_instance_key
-            shared_spell_ids = plan_selection.shared_spell_ids
-            self._contract_overrides_by_occurrence = (
-                plan_selection.contract_overrides_by_occurrence
-            )
-            self._contract_overrides_by_spell_id = (
-                plan_selection.contract_overrides_by_spell_id
-            )
+
+        occurrence_graph = plan_selection.occurrence_graph
+        execution_order = plan_selection.execution_order
+        instance_keys_by_spell_id = plan_selection.instance_keys_by_spell_id
+        canonical_occurrences_by_spell_id = plan_selection.canonical_occurrences_by_spell_id
+        root_instance_key = plan_selection.root_instance_key
+        shared_spell_ids = plan_selection.shared_spell_ids
+        self._contract_overrides_by_occurrence = (
+            plan_selection.contract_overrides_by_occurrence
+        )
+        self._contract_overrides_by_spell_id = (
+            plan_selection.contract_overrides_by_spell_id
+        )
 
         injection_plan = None
         if plan_selection is not None and self._injection_plan is not None:
@@ -571,226 +544,6 @@ class MeldEngine(Cleanable):
             return root_id, None
         return root_id, ()
 
-    def _occurrence_builder(self) -> OccurrencePlanBuilder:
-        """
-        Build a Phase 8 OccurrencePlanBuilder seeded with engine state.
-
-        Contract:
-            - Mirrors the builder configuration used for runtime planning.
-            - Returns a builder without validating blueprint presence.
-        """
-        builder = object.__new__(OccurrencePlanBuilder)
-        root_spell = getattr(self, "_root_spell", None)
-        if root_spell is None:
-            root_spell = SimpleNamespace(
-                spell_index=SpellIndex("root"),
-                spell_name="root",
-                existence=Existence.many,
-                _spellbook=None,
-            )
-        builder._root_spell = root_spell
-        builder._blueprint = getattr(self, "_blueprint", None)
-        builder._spell_lookup = getattr(self, "_spell_lookup", {})
-        builder._system_states = getattr(self, "_system_states", None)
-        return builder
-
-    def _build_occurrence_graph(
-            self,
-            *,
-            dag: Any,
-            root_spell_id: str,
-    ) -> Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]]:
-        """
-        Delegate occurrence graph building to the Phase 8 planner.
-        """
-        return self._occurrence_builder()._build_occurrence_graph(
-            dag=dag,
-            root_spell_id=root_spell_id,
-        )
-
-    def _extend_occurrence_graph_with_ordered_nodes(
-            self,
-            *,
-            occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
-            ordered_node_ids: Sequence[str],
-            dag: Any,
-    ) -> None:
-        """
-        Delegate ordered-node expansion to the Phase 8 planner.
-        """
-        self._occurrence_builder()._extend_occurrence_graph_with_ordered_nodes(
-            occurrence_graph=occurrence_graph,
-            ordered_node_ids=ordered_node_ids,
-            dag=dag,
-        )
-
-    def _build_execution_order(
-            self,
-            *,
-            occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
-            fallback_order: Sequence[str],
-    ) -> List[str]:
-        """
-        Delegate execution ordering to the Phase 8 planner.
-        """
-        return self._occurrence_builder()._build_execution_order(
-            occurrence_graph=occurrence_graph,
-            fallback_order=fallback_order,
-        )
-
-    def _collect_occurrence_dependencies(
-            self,
-            *,
-            occurrence: _OccurrenceKey,
-            dag: Any,
-    ) -> Dict[str, List[_OccurrenceKey]]:
-        """
-        Delegate dependency collection to the Phase 8 planner.
-        """
-        return self._occurrence_builder()._collect_occurrence_dependencies(
-            occurrence=occurrence,
-            dag=dag,
-        )
-
-    def _apply_spell_contract_dependencies(
-            self,
-            *,
-            dependencies: Dict[str, List[_OccurrenceKey]],
-            occurrence: _OccurrenceKey,
-    ) -> None:
-        """
-        Delegate SpellContract dependency expansion to the Phase 8 planner.
-        """
-        self._occurrence_builder()._apply_spell_contract_dependencies(
-            dependencies=dependencies,
-            occurrence=occurrence,
-        )
-
-    def _iter_spell_contract_defaults(
-            self,
-            spell: ISpell,
-    ) -> Iterable[Tuple[str, SpellContract]]:
-        """
-        Delegate SpellContract signature inspection to the Phase 8 planner.
-        """
-        return self._occurrence_builder()._iter_spell_contract_defaults(spell)
-
-    def _resolve_spell_contract_spell_id(
-            self,
-            *,
-            contract: SpellContract,
-            consumer_spell: ISpell,
-            param_name: str,
-            allow_missing: bool = False,
-    ) -> Optional[str]:
-        """
-        Delegate SpellContract resolution to the Phase 8 planner.
-        """
-        return self._occurrence_builder()._resolve_spell_contract_spell_id(
-            contract=contract,
-            consumer_spell=consumer_spell,
-            param_name=param_name,
-            allow_missing=allow_missing,
-        )
-
-    @staticmethod
-    def _normalize_contract_override_payload(
-            *,
-            payload: Any,
-            consumer_spell_id: str,
-            consumer_spell_name: str,
-            param_name: str,
-    ) -> Dict[str, Any]:
-        """
-        Delegate SpellContract override normalization to the Phase 8 planner.
-        """
-        return OccurrencePlanBuilder._normalize_contract_override_payload(
-            payload=payload,
-            consumer_spell_id=consumer_spell_id,
-            consumer_spell_name=consumer_spell_name,
-            param_name=param_name,
-        )
-
-    def _record_contract_override(
-            self,
-            *,
-            occurrence: _OccurrenceKey,
-            contract: SpellContract,
-            consumer_spell: ISpell,
-            param_name: str,
-    ) -> None:
-        """
-        Record SpellContract overrides using the Phase 8 normalization rules.
-        """
-        try:
-            consumer_spell_id = consumer_spell.spell_index.current
-        except AttributeError:
-            consumer_spell_id = "<unknown>"
-        try:
-            consumer_spell_name = consumer_spell.spell_name
-        except AttributeError:
-            consumer_spell_name = str(consumer_spell_id)
-
-        normalized = OccurrencePlanBuilder._normalize_contract_override_payload(
-            payload=contract.spell_override,
-            consumer_spell_id=consumer_spell_id,
-            consumer_spell_name=consumer_spell_name,
-            param_name=param_name,
-        )
-        if not normalized:
-            return
-
-        builder = self._occurrence_builder()
-        builder._record_contract_override(
-            occurrence=occurrence,
-            spell_id=occurrence[0],
-            overrides_by_occurrence=self._contract_overrides_by_occurrence,
-            overrides_by_spell_id=self._contract_overrides_by_spell_id,
-            normalized_payload=normalized,
-        )
-
-    def _apply_mutation_overrides_to_dependencies(
-            self,
-            *,
-            dependencies: Dict[str, List[_OccurrenceKey]],
-            occurrence: _OccurrenceKey,
-    ) -> None:
-        """
-        Delegate mutation override rewiring to the Phase 8 planner.
-        """
-        self._occurrence_builder()._apply_mutation_overrides_to_dependencies(
-            dependencies=dependencies,
-            occurrence=occurrence,
-        )
-
-    def _build_instance_plan(
-            self,
-            *,
-            occurrence_graph: Dict[_OccurrenceKey, Dict[str, List[_OccurrenceKey]]],
-            root_spell_id: str,
-    ) -> tuple[
-        Dict[str, List[_InstanceKey]],
-        Dict[str, _OccurrenceKey],
-        _InstanceKey,
-        set[str],
-    ]:
-        """
-        Delegate instance planning to the Phase 8 planner.
-        """
-        return self._occurrence_builder()._build_instance_plan(
-            occurrence_graph=occurrence_graph,
-            root_spell_id=root_spell_id,
-        )
-
-    @staticmethod
-    def _select_canonical_occurrence(
-            occurrences: Sequence[_OccurrenceKey],
-    ) -> _OccurrenceKey:
-        """
-        Delegate canonical occurrence selection to the Phase 8 planner.
-        """
-        return OccurrencePlanBuilder._select_canonical_occurrence(occurrences)
-
     def _get_contract_override_payload_for_instance(
             self,
             *,
@@ -828,169 +581,6 @@ class MeldEngine(Cleanable):
         if not contract_overrides:
             return None
         return dict(contract_overrides[0][1])
-
-    def _resolve_mutation_override_targets(
-            self,
-            *,
-            mutation_override: Dict[str, Any],
-            dag_index: DagIndex,
-    ) -> List[tuple[SocketRef, str]]:
-        """
-        Purpose:
-            Resolve mutation override keys into targeted mutation sockets.
-        Contract:
-            - Only MutationContract sockets are eligible targets.
-            - PATH / UNIQUE / BROADCAST cardinality rules are enforced.
-            - Invalid keys or targets raise MeldExecutionError.
-        Args:
-            mutation_override:
-                Mapping of override_key -> target spell id.
-            dag_index:
-                DagIndex from the active root blueprint.
-        Returns:
-            List[tuple[SocketRef, str]]:
-                List of (socket_ref, target_spell_id) pairs to apply.
-        Raises:
-            MeldExecutionError:
-                If override keys are invalid, ambiguous, or have no matches.
-        """
-        if not mutation_override:
-            return []
-
-        if not isinstance(mutation_override, dict):
-            raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
-                spell_name=self._root_spell.spell_name,
-                message="mutation_override must be a dict of override_key -> spell_id.",
-            )
-
-        if dag_index is None:
-            raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
-                spell_name=self._root_spell.spell_name,
-                message="mutation_override requires an active DagIndex.",
-            )
-
-        resolved: List[tuple[SocketRef, str]] = []
-
-        for raw_key, target_id in mutation_override.items():
-            if not isinstance(raw_key, str) or not raw_key.strip():
-                raise MeldExecutionError(
-                    spell_id=self._root_spell.spell_index.current,
-                    spell_name=self._root_spell.spell_name,
-                    message=f"Invalid mutation_override key: {raw_key!r}.",
-                )
-            if not isinstance(target_id, str) or not target_id.strip():
-                raise MeldExecutionError(
-                    spell_id=self._root_spell.spell_index.current,
-                    spell_name=self._root_spell.spell_name,
-                    message=(
-                        f"Invalid mutation_override target for key {raw_key!r}: "
-                        "expected non-empty spell_id string."
-                    ),
-                )
-
-            try:
-                spec = TargetSpec.parse(raw_key)
-            except Exception as exc:
-                raise MeldExecutionError(
-                    spell_id=self._root_spell.spell_index.current,
-                    spell_name=self._root_spell.spell_name,
-                    message=f"Invalid mutation_override key: {raw_key!r}.",
-                    inner=exc,
-                ) from exc
-
-            matches: List[SocketRef] = []
-            if spec.kind is TargetSpecKind.PATH:
-                if not spec.path:
-                    raise MeldExecutionError(
-                        spell_id=self._root_spell.spell_index.current,
-                        spell_name=self._root_spell.spell_name,
-                        message=f"Path override key {raw_key!r} did not contain any segments.",
-                    )
-                candidates = dag_index.get_by_exact_path(spec.path)
-                matches = [
-                    socket
-                    for socket in candidates
-                    if socket.socket_kind is SocketKind.MUTATION_CONTRACT
-                ]
-                if not matches:
-                    path_str = ">".join(spec.path)
-                    raise MeldExecutionError(
-                        spell_id=self._root_spell.spell_index.current,
-                        spell_name=self._root_spell.spell_name,
-                        message=(
-                            "No mutation sockets found for override path "
-                            f"'{path_str}'."
-                        ),
-                    )
-
-            elif spec.kind is TargetSpecKind.UNIQUE:
-                if not spec.param_name:
-                    raise MeldExecutionError(
-                        spell_id=self._root_spell.spell_index.current,
-                        spell_name=self._root_spell.spell_name,
-                        message=f"Unique override key {raw_key!r} is missing a parameter name.",
-                    )
-                candidates = dag_index.get_by_name(spec.param_name)
-                matches = [
-                    socket
-                    for socket in candidates
-                    if socket.socket_kind is SocketKind.MUTATION_CONTRACT
-                ]
-                count = len(matches)
-                if count == 0:
-                    raise MeldExecutionError(
-                        spell_id=self._root_spell.spell_index.current,
-                        spell_name=self._root_spell.spell_name,
-                        message=(
-                            "No mutation sockets found for unique override "
-                            f"'*{spec.param_name}'."
-                        ),
-                    )
-                if count > 1:
-                    raise MeldExecutionError(
-                        spell_id=self._root_spell.spell_index.current,
-                        spell_name=self._root_spell.spell_name,
-                        message=(
-                            "Unique override matched multiple mutation sockets "
-                            f"for '*{spec.param_name}'."
-                        ),
-                    )
-
-            elif spec.kind is TargetSpecKind.BROADCAST:
-                if not spec.param_name:
-                    raise MeldExecutionError(
-                        spell_id=self._root_spell.spell_index.current,
-                        spell_name=self._root_spell.spell_name,
-                        message=f"Broadcast override key {raw_key!r} is missing a parameter name.",
-                    )
-                candidates = dag_index.get_by_name(spec.param_name)
-                matches = [
-                    socket
-                    for socket in candidates
-                    if socket.socket_kind is SocketKind.MUTATION_CONTRACT
-                ]
-                if not matches:
-                    raise MeldExecutionError(
-                        spell_id=self._root_spell.spell_index.current,
-                        spell_name=self._root_spell.spell_name,
-                        message=(
-                            "No mutation sockets found for broadcast override "
-                            f"'**{spec.param_name}'."
-                        ),
-                    )
-            else:
-                raise MeldExecutionError(
-                    spell_id=self._root_spell.spell_index.current,
-                    spell_name=self._root_spell.spell_name,
-                    message=f"Unsupported TargetSpecKind for override {raw_key!r}.",
-                )
-
-            for socket_ref in matches:
-                resolved.append((socket_ref, target_id))
-
-        return resolved
 
     def _instance_key_for_occurrence(
             self,

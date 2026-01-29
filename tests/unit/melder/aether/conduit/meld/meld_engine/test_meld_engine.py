@@ -2572,6 +2572,37 @@ def test_run_uses_occurrence_plan_when_available(
     assert build_occurrence_graph.call_count == 0
 
 
+def test_run_requires_occurrence_plan_for_blueprint() -> None:
+    """
+    Purpose:
+        Validate blueprint execution requires a Phase 8 occurrence plan.
+    Contract:
+        - Missing occurrence plan raises MeldExecutionError.
+    """
+    root_id = "root"
+    dep_id = "dep"
+    dag = _make_dag_with_nodes([root_id, dep_id])
+    blueprint = _make_blueprint(
+        root_id=root_id,
+        dag=dag,
+        ordered_node_ids=[dep_id, root_id],
+    )
+    root_spell = _make_spell(spell_id=root_id, existence=Existence.unique)
+    dep_spell = _make_spell(spell_id=dep_id, existence=Existence.many)
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={
+            root_id: root_spell,
+            dep_id: dep_spell,
+        },
+        occurrence_plan=None,
+    )
+
+    with pytest.raises(MeldExecutionError, match="Phase 8 occurrence plan is required"):
+        engine.run()
+
+
 def test_run_blueprint_cancellation_after_orphan_stores_results() -> None:
     """
     Verify cancellation after an orphan node preserves completed results.

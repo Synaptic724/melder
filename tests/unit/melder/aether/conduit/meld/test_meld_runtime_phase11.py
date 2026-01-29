@@ -225,19 +225,12 @@ def _make_artifacts(
 def test_phase11_gate_rejects_missing_execution_plan(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Purpose:
-        Validate missing Phase 11 plan is built and runs fast path.
+        Validate missing Phase 11 plan uses the slow path.
     Contract:
-        - Missing execution_plan triggers plan build and uses fast path.
+        - Missing execution_plan forces the slow path.
     """
     _install_engine_stub(monkeypatch)
     _set_override_helpers(monkeypatch)
-    monkeypatch.setattr(
-        runtime_module,
-        "ExecutionPlanBuilder",
-        lambda **_: SimpleNamespace(
-            build=lambda: SimpleNamespace(root_spell_id="root"),
-        ),
-    )
     artifacts = _make_artifacts(root_id="root")
     crafter = _CrafterStub(
         root_blueprint=object(),
@@ -253,7 +246,7 @@ def test_phase11_gate_rejects_missing_execution_plan(monkeypatch: pytest.MonkeyP
     runtime = MeldRuntime()
     result = runtime.execute(context)
 
-    assert result == "fast"
+    assert result == "slow"
 
 
 @pytest.mark.parametrize("artifact_key", ["occurrence_plan", "injection_plan"])
@@ -263,9 +256,9 @@ def test_phase11_requires_phase8_and_phase9(
 ) -> None:
     """
     Purpose:
-        Validate Phase 8/9 artifacts are required for meld execution.
+        Validate missing Phase 8/9 artifacts disable the fast path.
     Contract:
-        - Missing Phase 8 or Phase 9 artifacts raises MeldExecutionError.
+        - Missing Phase 8 or Phase 9 artifacts force the slow path.
     """
     _install_engine_stub(monkeypatch)
     _set_override_helpers(monkeypatch)
@@ -283,8 +276,9 @@ def test_phase11_requires_phase8_and_phase9(
     context = _ContextStub(root_spell=spell)
 
     runtime = MeldRuntime()
-    with pytest.raises(MeldExecutionError):
-        runtime.execute(context)
+    result = runtime.execute(context)
+
+    assert result == "slow"
 
 
 def test_phase11_gate_rejects_root_mismatch(monkeypatch: pytest.MonkeyPatch) -> None:

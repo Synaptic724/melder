@@ -94,6 +94,74 @@ class SpellSystemRootBlueprintBuilder:
 
         return result
 
+    def build_blueprint_for_spell_id(
+            self,
+            *,
+            root_spell_id: str,
+            snapshot: SpellSystemAdjacencySnapshot,
+    ) -> RootResolutionBlueprint:
+        """
+        Build a RootResolutionBlueprint for a specific spell id.
+
+        Purpose:
+            Compile a deep DAG blueprint for an arbitrary spell id so downstream
+            phases can generate occurrence/injection/patch/execution artifacts
+            even when the spell is not a structural root.
+
+        Contract:
+            - Uses the same structural semantics as build_root_blueprints.
+            - The resulting DAG includes all nodes reachable from root_spell_id.
+            - SocketRefs and DagIndex are overlaid from snapshot topologies.
+            - Does not mutate the snapshot.
+
+        Args:
+            root_spell_id:
+                Version-id of the spell to treat as the blueprint root.
+            snapshot:
+                SpellSystemAdjacencySnapshot for the *entire* spell frame.
+
+        Returns:
+            RootResolutionBlueprint:
+                The compiled blueprint for the requested spell id.
+
+        Raises:
+            ValueError:
+                If root_spell_id or snapshot is None.
+            ValueError:
+                If root_spell_id is not present in snapshot.all_spell_ids.
+        """
+        if root_spell_id is None:
+            raise ValueError("root_spell_id must not be None.")
+        if snapshot is None:
+            raise ValueError("snapshot must not be None.")
+
+        all_spell_ids: Set[str] = snapshot.all_spell_ids
+        if root_spell_id not in all_spell_ids:
+            raise ValueError(
+                f"root_spell_id '{root_spell_id}' is not present in the snapshot."
+            )
+
+        dag, ordered_ids = self._build_single_root_dag(
+            root_spell_id=root_spell_id,
+            dependencies=snapshot.dependencies,
+        )
+
+        blueprint = RootResolutionBlueprint(
+            root_spell_id=root_spell_id,
+            root_lineage_id=None,          # lineages can be threaded later if needed
+            dag=dag,
+            ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
+            socket_refs=None,              # Phase-5 socket overlay will populate
+            dag_index=None,                # Phase-5 DagIndex builder will populate
+        )
+
+        self._overlay_sockets_and_index(
+            blueprint=blueprint,
+            topologies=snapshot.topologies,
+        )
+
+        return blueprint
+
     # ------------------------------------------------------------------ #
     # Internal helpers                                                   #
     # ------------------------------------------------------------------ #
