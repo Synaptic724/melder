@@ -2916,7 +2916,7 @@ class Spellbook(Cleanable, ISpellbook):
             # Create a unique ID for this Conduit for per-conduit resolution phases.
             conduit_id = IDBuilder.create_id()
 
-            # Run conduit-scoped resolution phases (5-7) after structural validation.
+            # Run conduit-scoped resolution phases (5-11) after structural validation.
             self._run_resolution_phases_for_conduit(conduit_id)
 
             # Validate policy vs system_state and local spell registry
@@ -3414,9 +3414,9 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Orchestrate conduit-scoped Phases 5-10 (root blueprints, occurrence plan,
-        injection plan, patch maps, system validation, change control). This must run
-        after structural phases complete.
+        Orchestrate conduit-scoped Phases 5-11 (root blueprints, occurrence plan,
+        injection plan, patch maps, execution plan, system validation, change control).
+        This must run after structural phases complete.
 
         Args:
             conduit_id:
@@ -3428,7 +3428,7 @@ class Spellbook(Cleanable, ISpellbook):
             ValueError:
                 If conduit_id is empty.
         Notes:
-            After Phase 7 completes, per-spell phase artifacts are cleaned.
+            After Phase 11 completes, per-spell phase artifacts are cleaned.
         """
         self.check_cleaned()
         if not conduit_id:
@@ -3455,6 +3455,10 @@ class Spellbook(Cleanable, ISpellbook):
             scheduler.register_phase(
                 "patch_maps",
                 lambda: self._phase_patch_maps_factory(scheduler, conduit_id),
+            )
+            scheduler.register_phase(
+                "execution_plan",
+                lambda: self._phase_execution_plan_factory(scheduler, conduit_id),
             )
             scheduler.register_phase(
                 "system_validation",
@@ -3487,11 +3491,8 @@ class Spellbook(Cleanable, ISpellbook):
         """
         self.check_cleaned()
         for spell in self._spells.values():
-            crafter = getattr(spell, "_crafter", None)
-            if crafter is None:
-                continue
             try:
-                crafter.cleanup_phase_artifacts()
+                spell.crafter.cleanup_phase_artifacts()
             except Exception:
                 # Cleanup should not disrupt conjure/resolve flows.
                 pass
@@ -3774,6 +3775,43 @@ class Spellbook(Cleanable, ISpellbook):
                     label=f"patch_maps:{spell.spell_id}",
                     metadata={
                         "phase": "patch_maps",
+                        "spell_id": spell.spell_id,
+                    },
+                )
+            )
+        return units
+
+    def _phase_execution_plan_factory(
+            self,
+            scheduler: PhaseScheduler,
+            conduit_id: str,
+    ) -> Sequence[IUnitOfWork]:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **execution_plan** phase.
+
+        This phase compiles execution plans for root spells based on Phase 8
+        occurrence plans and Phase 9 injection plans. Non-root spells are
+        treated as a no-op by the underlying SpellCrafter.
+
+        Expected spell surface:
+
+            ``spell.run_phase_execution_plan(conduit_id, cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        if not self._spells:
+            return []
+
+        units: List[IUnitOfWork] = []
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_execution_plan,
+                    args=(conduit_id, scheduler.cancel_event,),
+                    label=f"execution_plan:{spell.spell_id}",
+                    metadata={
+                        "phase": "execution_plan",
                         "spell_id": spell.spell_id,
                     },
                 )

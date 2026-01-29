@@ -304,6 +304,7 @@ class _DummyCrafter:
         self.resolution_frame = "frame"
         self.validation_result_phase4 = "p4"
         self.validation_result_phase6 = "p6"
+
         self.validated = True
         self.is_broken = False
 
@@ -451,6 +452,21 @@ class _DummyCrafter:
             None.
         """
         self.calls.append("patch_maps")
+        self.seen_cancel_events.append((conduit_id, cancel_event))
+
+    def run_phase_execution_plan(self, conduit_id, cancel_event=None):
+        """
+        Purpose:
+            Record Phase 11 invocation.
+        Contract:
+            Appends the phase name, stores conduit id, and stores the cancel event.
+        Args:
+            conduit_id: Conduit identifier passed by the caller.
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
+        self.calls.append("execution_plan")
         self.seen_cancel_events.append((conduit_id, cancel_event))
 
     def cleanup_phase_artifacts(self):
@@ -872,6 +888,7 @@ def test_run_all_phases_invokes_crafter_in_order():
         "occurrence_plan",
         "injection_plan",
         "patch_maps",
+        "execution_plan",
         "system_validation",
         "change_control",
         "cleanup_phase_artifacts",

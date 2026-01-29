@@ -1,5 +1,6 @@
+import inspect
 from threading import RLock
-from typing import Optional, Dict, Any, Callable, List
+from typing import Optional, Dict, Any, Callable, List, Tuple
 
 from melder.aether.conduit.meld.meld_context.meld_context import MeldContext
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
@@ -25,6 +26,10 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 
 
 class Meld(Cleanable, IMeld):
@@ -420,6 +425,8 @@ class Meld(Cleanable, IMeld):
                     if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
                         raise SpellbookValidationError([spell])
 
+        self._check_contracts_and_force_revalidation(spell)
+
         # Resolution gating (per-conduit)
         self._ensure_resolution_resolvable(spell)
 
@@ -530,6 +537,167 @@ class Meld(Cleanable, IMeld):
             raise SpellbookValidationError([spell])
 
         raise SpellbookValidationError([spell])
+
+    def _check_contracts_and_force_revalidation(self, spell: ISpell) -> None:
+        """
+        Validate SpellContract sockets and force resolution revalidation.
+
+        Purpose:
+            Ensure that any SpellContract defaults declared on the spell can
+            be resolved via the current Spellbook's contracted spell maps.
+            When contracts are present and resolvable, force the resolution
+            validity to gated so phases 5/8/9/10/6/7 re-run on this conduit.
+
+        Contract:
+            - If the spell declares no SpellContract defaults, this is a no-op.
+            - If any SpellContract cannot be resolved to a contracted provider,
+              raise MeldExecutionError with a contract-specific diagnostic.
+            - If all contracts resolve, mark resolution validity as gated to
+              force revalidation on this conduit.
+
+        Args:
+            spell: Spell under resolution.
+
+        Raises:
+            MeldExecutionError:
+                When a SpellContract has no contracted provider or contracted
+                maps are inconsistent.
+        """
+        if spell is None:
+            return
+
+        contracts = self._iter_spell_contract_defaults(spell)
+        if not contracts:
+            return
+
+        spell_id = spell.spell_index.current
+        for param_name, contract in contracts:
+            if contract is None:
+                continue
+            lookup_key = contract.canonical_key
+            try:
+                provider = self._resolve_contracted_by_lookup_key(lookup_key)
+            except Exception as exc:
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell.spell_name,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        "SpellContract could not be resolved. "
+                        f"Contract lookup failed for key {lookup_key} "
+                        f"on param '{param_name}' for spell '{spell.spell_name}'. "
+                        f"Contract={contract!r}."
+                    ),
+                    inner=exc,
+                ) from exc
+            if provider is None:
+                frame_key, binding_key = lookup_key
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell.spell_name,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        "SpellContract could not be resolved. "
+                        "Missing contracted provider for key "
+                        f"(frame_key='{frame_key}', binding_key='{binding_key}') "
+                        f"on param '{param_name}' for spell '{spell.spell_name}'. "
+                        f"Contract={contract!r}."
+                    ),
+                )
+
+        self._force_resolution_revalidation(spell)
+
+    @staticmethod
+    def _iter_spell_contract_defaults(
+            spell: ISpell,
+    ) -> List[Tuple[str, SpellContract]]:
+        """
+        Return SpellContract defaults discovered in the spell's call signature.
+
+        Contract:
+            - Returns an empty list when the signature cannot be inspected.
+            - Skips self/cls and var-arg parameters.
+            - Only parameters with SpellContract defaults are returned.
+
+        Args:
+            spell: Spell whose callable signature is inspected.
+
+        Returns:
+            List[Tuple[str, SpellContract]]: Parameter names paired with defaults.
+        """
+        try:
+            call_target = spell.spell
+        except AttributeError:
+            return []
+
+        try:
+            signature = inspect.signature(call_target)
+        except (TypeError, ValueError):
+            return []
+
+        contracts: List[Tuple[str, SpellContract]] = []
+        for param_name, parameter in signature.parameters.items():
+            if param_name in ("self", "cls"):
+                continue
+            if parameter.kind in (
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+            if parameter.default is inspect.Parameter.empty:
+                continue
+            default_value = parameter.default
+            if isinstance(default_value, SpellContract):
+                contracts.append((param_name, default_value))
+
+        return contracts
+
+    def _force_resolution_revalidation(self, spell: ISpell) -> None:
+        """
+        Force resolution validity to gated so revalidation runs in this conduit.
+
+        Contract:
+            - No-op if resolution state is unavailable.
+            - Uses root validity when the spell is the root blueprint.
+            - Uses spell validity for non-root spells.
+
+        Args:
+            spell: Spell to mark for resolution revalidation.
+        """
+        spell_system_states = spell._spell_system_states
+        if spell_system_states is None:
+            return
+
+        conduit_id = self._get_resolution_conduit_id()
+        if not conduit_id:
+            return
+
+        resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+        if resolution_state is None:
+            return
+
+        spell_id = spell.spell_index.current
+        use_root = False
+        crafter = spell._crafter
+        if crafter is not None:
+            blueprint = crafter.root_blueprint_phase5
+            if blueprint is not None and blueprint.root_spell_id == spell_id:
+                use_root = True
+
+        if use_root:
+            resolution_state.set_root_validity(
+                spell_id,
+                SpellValidity.gated,
+                change_reason=SpellStateChangeReason.contract_unvalidated,
+            )
+        else:
+            resolution_state.set_spell_validity(
+                spell_id,
+                SpellValidity.gated,
+                change_reason=SpellStateChangeReason.contract_unvalidated,
+            )
 
     def _get_resolution_conduit_id(self) -> Optional[str]:
         """

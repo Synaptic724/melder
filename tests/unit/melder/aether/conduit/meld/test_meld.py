@@ -8,6 +8,7 @@ import pytest
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.meld.meld import Meld
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.spellbook.existence.existence import Existence
@@ -71,6 +72,65 @@ class _SystemStateStub:
         """
         self.validity = value
         self.set_validity_calls.append(value)
+
+
+class _ResolutionStateStub:
+    """
+    Minimal conduit resolution state stub for gating tests.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize resolution validity containers and call tracking.
+        """
+        self._root_validity: Dict[str, SpellValidity] = {}
+        self._spell_validity: Dict[str, SpellValidity] = {}
+        self.root_set_calls: list[tuple[str, SpellValidity, Any]] = []
+        self.spell_set_calls: list[tuple[str, SpellValidity, Any]] = []
+
+    def get_root_validity(self, root_id: str) -> SpellValidity:
+        """
+        Return the stored root validity, defaulting to valid.
+        """
+        return self._root_validity.get(root_id, SpellValidity.valid)
+
+    def get_spell_validity(self, spell_id: str) -> SpellValidity:
+        """
+        Return the stored spell validity, defaulting to valid.
+        """
+        return self._spell_validity.get(spell_id, SpellValidity.valid)
+
+    def set_root_validity(self, root_id: str, validity: SpellValidity, *, change_reason: Any = None) -> None:
+        """
+        Record a root validity update.
+        """
+        self._root_validity[root_id] = validity
+        self.root_set_calls.append((root_id, validity, change_reason))
+
+    def set_spell_validity(self, spell_id: str, validity: SpellValidity, *, change_reason: Any = None) -> None:
+        """
+        Record a spell validity update.
+        """
+        self._spell_validity[spell_id] = validity
+        self.spell_set_calls.append((spell_id, validity, change_reason))
+
+
+class _SpellSystemStatesStub:
+    """
+    Minimal SpellSystemStates stub exposing resolution state.
+    """
+
+    def __init__(self, resolution_state: _ResolutionStateStub) -> None:
+        """
+        Initialize the stub with a resolution state.
+        """
+        self._resolution_state = resolution_state
+
+    def get_conduit_resolution_state(self, conduit_id: str) -> _ResolutionStateStub:
+        """
+        Return the stored resolution state.
+        """
+        return self._resolution_state
 
 
 class _TrackingLock:
@@ -898,6 +958,85 @@ def test_ensure_lineage_resolvable_raises_when_not_valid_after_phases() -> None:
         meld._ensure_lineage_resolvable(spell)
 
     assert spell.run_structural_phases_calls == 1
+
+
+def test_ensure_lineage_resolvable_missing_contract_raises() -> None:
+    """
+    Verify missing SpellContract providers raise MeldExecutionError.
+
+    Contract:
+        - SpellContract defaults without contracted providers raise.
+    """
+    spellbook = _SpellbookStub()
+    meld = _make_meld(spellbook=spellbook)
+    state = _SystemStateStub(validity=SpellValidity.valid)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        system_state=state,
+        spellbook=spellbook,
+    )
+
+    class ContractConsumer:
+        """
+        Minimal consumer with a SpellContract dependency.
+        """
+
+        def __init__(self, service: Any = SpellContract(spellframe="svc", binding_name="primary")) -> None:
+            self.service = service
+
+    spell.spell = ContractConsumer
+
+    with pytest.raises(MeldExecutionError, match="SpellContract could not be resolved"):
+        meld._ensure_lineage_resolvable(spell)
+
+
+def test_ensure_lineage_resolvable_contract_forces_revalidation() -> None:
+    """
+    Verify resolved SpellContracts force resolution revalidation.
+
+    Contract:
+        - Contract presence gates resolution and triggers conduit revalidation.
+    """
+    contract = SpellContract(spellframe="svc", binding_name="primary")
+    contract_key = contract.canonical_key
+    provider = _SpellStub(spell_id="provider-1")
+    spellbook = _SpellbookStub(
+        contracted_spells={"peer-1": {provider.spell_index: provider}},
+        lookup_contracted_spells={"peer-1": {contract_key: provider.spell_index}},
+    )
+
+    resolution_state = _ResolutionStateStub()
+    spell_system_states = _SpellSystemStatesStub(resolution_state)
+    state = _SystemStateStub(validity=SpellValidity.valid)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        system_state=state,
+        spell_system_states=spell_system_states,
+        spellbook=spellbook,
+    )
+
+    class ContractConsumer:
+        """
+        Consumer that requires a contracted provider.
+        """
+
+        def __init__(self, service: Any = contract) -> None:
+            self.service = service
+
+    spell.spell = ContractConsumer
+
+    creations, _ = _make_creations(conduit_id="conduit-1")
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    def _run_resolution(conduit_id: str) -> None:
+        resolution_state.set_spell_validity(spell.spell_index.current, SpellValidity.valid)
+
+    spellbook._run_resolution_phases_for_conduit = MagicMock(side_effect=_run_resolution)
+
+    meld._ensure_lineage_resolvable(spell)
+
+    spellbook._run_resolution_phases_for_conduit.assert_called_once()
+    assert any(call[1] is SpellValidity.gated for call in resolution_state.spell_set_calls)
 
 
 def test_gated_validation_required_returns_false_without_state() -> None:
