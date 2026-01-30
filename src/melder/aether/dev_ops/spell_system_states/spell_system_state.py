@@ -138,17 +138,26 @@ class SpellSystemState(Cleanable):
         Note:
             This assumes the state has not been cleaned; check_cleaned()
             will raise if cleanup() has been called.
+        Threading:
+            Acquires the internal lock to avoid torn reads while mutation
+            helpers are updating lineage state.
         """
         self.check_cleaned()
-        return self._spell_index_id
+        with self._lock:
+            return self._spell_index_id
 
     @property
     def current_spell_id(self) -> str:
         """
         Currently promoted version id for this lineage (e.g., SpellIndex.current).
+
+        Threading:
+            Acquires the internal lock to avoid torn reads while promotion
+            updates are in flight.
         """
         self.check_cleaned()
-        return self._current_spell_id
+        with self._lock:
+            return self._current_spell_id
 
     @property
     def direct_dependencies(self) -> Set[str]:
@@ -186,9 +195,12 @@ class SpellSystemState(Cleanable):
         Note:
             This is the *global* structural verdict for Phases 1-4 only. Per-conduit
             resolution validity for Phases 5-7 lives in ConduitResolutionState.
+        Threading:
+            Acquires the internal lock to avoid torn reads across validity transitions.
         """
         self.check_cleaned()
-        return self._validity
+        with self._lock:
+            return self._validity
 
     @property
     def flags(self) -> Set[SpellState]:
@@ -210,26 +222,35 @@ class SpellSystemState(Cleanable):
         Last event that changed this lineage's validity/flags.
 
         This is meant for DevOps / AI surfaces and TOON snapshots.
+        Threading:
+            Acquires the internal lock to avoid torn reads across validity transitions.
         """
         self.check_cleaned()
-        return self._change_reason
+        with self._lock:
+            return self._change_reason
 
     @property
     def transitively_dirty(self) -> bool:
         """
         True if this lineage is impacted indirectly by upstream changes
         (dependency_changed closure).
+        Threading:
+            Acquires the internal lock to avoid torn reads across transitions.
         """
         self.check_cleaned()
-        return self._transitively_dirty
+        with self._lock:
+            return self._transitively_dirty
 
     @property
     def last_validated_at(self) -> Optional[float]:
         """
         Timestamp (seconds) of last successful validation, or None if never.
+        Threading:
+            Acquires the internal lock to avoid torn reads across transitions.
         """
         self.check_cleaned()
-        return self._last_validated_at
+        with self._lock:
+            return self._last_validated_at
 
     @property
     def dirty(self) -> bool:
@@ -237,9 +258,12 @@ class SpellSystemState(Cleanable):
         Convenience view: lineage is considered "dirty" if it is not valid.
 
         This is derived from `validity` and is mainly for legacy / quick checks.
+        Threading:
+            Acquires the internal lock to avoid torn reads across validity transitions.
         """
         self.check_cleaned()
-        v = self._validity
+        with self._lock:
+            v = self._validity
         return v is not None and v is not SpellValidity.valid
 
     # ------------------------------------------------------------------

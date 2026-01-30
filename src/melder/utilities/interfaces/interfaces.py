@@ -6860,6 +6860,22 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
+    def unregister_lineage(self, spell_index: ISpellIndex) -> Optional['SpellSystemState']:
+        """
+        Remove a lineage from this registry and return the removed state if present.
+
+        Behaviour:
+        - Drop the lineage from the lineage index and current spell-id index.
+        - Remove dirty markers and local topology for the current spell id.
+        - Remove collection/contract indices for the owning spellbook.
+        - Detach this lineage from reverse-dependency edges.
+        - Cleanup the removed SpellSystemState instance.
+
+        Returns:
+            SpellSystemState | None: The removed state when present; otherwise None.
+        """
+        ...
+
     def get_by_index_id(self, index_id: str) -> Optional['SpellSystemState']:
         """
         Lookup a SpellSystemState by lineage id.

@@ -168,6 +168,7 @@ class Spellbook(Cleanable, ISpellbook):
         # Spell States System
         self._spell_system_states: ISpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
         # Validation gate used by Meld to skip safety checks when risk is zero.
+        self._spell_validation_lock: threading.Lock = threading.Lock()
         self._spellbook_validation_required: bool = True
 
         # Binding system
@@ -2601,15 +2602,7 @@ class Spellbook(Cleanable, ISpellbook):
         Returns:
             IConfiguration | None: The configuration instance for this Aether frame, or None if not registered.
         """
-        try:
-            return Spellbook._aether._get_configuration(self._aetheric_frame)
-        except Exception as e:
-            self._logger.error(
-                f"Error retrieving configuration from Aether: {e}",
-                "_get_configuration_from_aether",
-                exc_info=True,
-            )
-            raise
+        return Spellbook._aether._get_configuration(self._aetheric_frame)
 
 
     def _get_risk_manager(self) -> Any | None:
@@ -2618,11 +2611,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Resolve the per-frame RiskManager, if available.
         """
-        try:
-            devops = Spellbook._aether._get_devops_manager(self._aetheric_frame)
-        except Exception:
-            return None
-        return getattr(devops, "risk_manager", None)
+        return Spellbook._aether._get_devops_manager(self._aetheric_frame)
 
     def _set_spellbook_validation_required(self, required: bool) -> None:
         """
@@ -2630,7 +2619,17 @@ class Spellbook(Cleanable, ISpellbook):
 
         Update the meld validation gate for this Spellbook.
         """
-        self._spellbook_validation_required = bool(required)
+        with self._spell_validation_lock:
+            self._spellbook_validation_required = bool(required)
+
+    def check_spellbook_validation_required(self) -> bool:
+        """
+        Internal
+
+        Check whether meld validation is required for this Spellbook.
+        """
+        with self._spell_validation_lock:
+            return self._spellbook_validation_required
 
     def _register_conduit_with_risk_manager(self, conduit: Conduit) -> None:
         """
@@ -2641,8 +2640,6 @@ class Spellbook(Cleanable, ISpellbook):
         if conduit is None:
             return
         risk_manager = self._get_risk_manager()
-        if risk_manager is None:
-            return
         try:
             risk_manager.register_conduit(conduit._id, self)
         except Exception as e:
@@ -2661,8 +2658,6 @@ class Spellbook(Cleanable, ISpellbook):
         if not conduit_id:
             return
         risk_manager = self._get_risk_manager()
-        if risk_manager is None:
-            return
         try:
             risk_manager.unregister_conduit(conduit_id)
         except Exception as e:
@@ -2681,8 +2676,6 @@ class Spellbook(Cleanable, ISpellbook):
         if not conduit_id or spell is None:
             return
         risk_manager = self._get_risk_manager()
-        if risk_manager is None:
-            return
         try:
             risk_manager.register_spell(conduit_id, spell)
         except Exception as e:
@@ -2701,8 +2694,6 @@ class Spellbook(Cleanable, ISpellbook):
         if not conduit_id or spell is None:
             return
         risk_manager = self._get_risk_manager()
-        if risk_manager is None:
-            return
         try:
             risk_manager.unregister_spell(conduit_id, spell)
         except Exception as e:

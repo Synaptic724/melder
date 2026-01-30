@@ -1,5 +1,5 @@
 import ulid
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -127,7 +127,7 @@ class TransferOfOwnership:
             - Move or teardown creations.
             - Adjust contracts/clusters (unshare or re-point).
             - Optionally move/dirty dependencies.
-            - Mark lineage dirty/gated on success; rollback and incident on failure.
+            - Mark lineage and impacted conduits dirty/gated on success; rollback and incident on failure.
 
         Raises:
             Exception: Re-raises any transfer failure after rollback attempts.
@@ -168,7 +168,7 @@ class TransferOfOwnership:
 
             # After successful transfer, move lineage back to gated/dirty so validation can clear it.
             if self.invalidate_after_transfer:
-                self._mark_lineage_dirty(spell_obj.spell_index)
+                self._gate_transfer_impacts(spell_obj=spell_obj, summary=summary)
             else:
                 self._lift_disable(spell_obj.spell_index, gated=True)
         except Exception as exc:
@@ -298,15 +298,127 @@ class TransferOfOwnership:
         Args:
             spell_index: Lineage to mark as structurally changed.
         """
-        spell_states = self.source_conduit._spellbook._spell_system_states
-        try:
-            spell_states.mark_structural_change(
-                spell_index=spell_index,
-                reason=SpellStateChangeReason.structure_changed,
+        spellbook = spell_index._owner_spellbook
+        if spellbook is None:
+            raise RuntimeError("Cannot mark lineage dirty without an owner Spellbook.")
+        spell_states = spellbook._spell_system_states
+        if spell_states is None:
+            raise RuntimeError("Owner Spellbook has no SpellSystemStates.")
+        spell_states.mark_structural_change(
+            spell_index=spell_index,
+            reason=SpellStateChangeReason.structure_changed,
+        )
+
+    def _gate_transfer_impacts(
+            self,
+            *,
+            spell_obj: Any,
+            summary: Dict[str, Any],
+    ) -> None:
+        """
+        Gate the moved lineage and its dependents, and dirty resolution state for
+        all conduits that may resolve the spell.
+
+        This ensures phases 5-11 rerun for impacted conduits after ownership transfer.
+        """
+        spell_index = spell_obj.spell_index
+        spell_states = spell_obj._spell_system_states
+        if spell_states is None:
+            raise RuntimeError("Transferred spell is missing SpellSystemStates.")
+
+        spell_states.mark_structural_change(
+            spell_index=spell_index,
+            reason=SpellStateChangeReason.structure_changed,
+        )
+
+        impacted_lineages = spell_states.compute_impact_closure([spell_index.id])
+
+        conduit_ids = self._collect_impacted_conduit_ids(
+            impacted_lineages=impacted_lineages,
+            summary=summary,
+        )
+        for conduit_id in conduit_ids:
+            spell_states.mark_conduit_dirty(
+                conduit_id=conduit_id,
+                change_reason=SpellStateChangeReason.structure_changed,
             )
-        except Exception:
-            # Best-effort: dirtying is advisory and should not block transfer.
-            pass
+
+    def _collect_impacted_conduit_ids(
+            self,
+            *,
+            impacted_lineages: Set[str],
+            summary: Dict[str, Any],
+    ) -> Set[str]:
+        """
+        Collect conduits that should rerun resolution after a transfer.
+
+        This includes the source/target conduits, linked peers, cluster members,
+        and any conduit that currently holds the impacted lineage.
+        """
+        conduit_ids: Set[str] = set()
+        if self.source_conduit._id:
+            conduit_ids.add(self.source_conduit._id)
+        if self.target_conduit._id:
+            conduit_ids.add(self.target_conduit._id)
+
+        for conduit in (self.source_conduit, self.target_conduit):
+            peers = conduit._conduit_ward._get_contracted_conduits()
+            if peers:
+                for _peer_id, peer in peers:
+                    if peer is not None and peer._id:
+                        conduit_ids.add(peer._id)
+
+        borrowers = summary.get("borrowers", []) if summary else []
+        for borrower in borrowers:
+            if borrower.get("type") != "cluster":
+                continue
+            cluster_name = borrower.get("cluster")
+            if not cluster_name:
+                continue
+            cluster_members = self._aether._get_conduits_in_cluster(
+                cluster_name,
+                self._frame_name,
+            )
+            if cluster_members:
+                conduit_ids.update([cid for cid in cluster_members if cid])
+
+        frame = self._aether._aetheric_frames.get(
+            self._frame_name,
+            self._aether._default_frame,
+        )
+        conduits = frame._conduits if frame is not None else None
+        if conduits:
+            for conduit in list(conduits.values()):
+                if conduit is None or not conduit._id:
+                    continue
+                if self._conduit_has_impacted_lineage(conduit, impacted_lineages):
+                    conduit_ids.add(conduit._id)
+
+        return conduit_ids
+
+    def _conduit_has_impacted_lineage(
+            self,
+            conduit: Any,
+            impacted_lineages: Set[str],
+    ) -> bool:
+        """
+        Return True if a conduit's spellbook holds any impacted lineage.
+        """
+        if conduit is None or not impacted_lineages:
+            return False
+        spellbook = conduit._spellbook
+        if spellbook is None:
+            return False
+        owned = spellbook._spells or {}
+        for spell_index in owned.keys():
+            if spell_index is not None and spell_index.id in impacted_lineages:
+                return True
+        contracted = spellbook._contracted_spells or {}
+        for spell_map in contracted.values():
+            for spell_index in spell_map.keys():
+                if spell_index is not None and spell_index.id in impacted_lineages:
+                    return True
+        return False
 
     def _mark_lineage_disabled(self, spell_index: SpellIndex) -> None:
         """
@@ -316,28 +428,27 @@ class TransferOfOwnership:
             spell_index: Lineage to disable.
         """
         spell_states = self.source_conduit._spellbook._spell_system_states
-        try:
+        state = spell_states.get_by_index_id(spell_index.id)
+        if state is None:
+            spell_states.register_lineage(spell_index, self.spell)
             state = spell_states.get_by_index_id(spell_index.id)
-            if state is None:
-                spell_states.register_lineage(spell_index, self.spell)
-                state = spell_states.get_by_index_id(spell_index.id)
-            if state is not None:
-                # Record rollback to previous validity
-                prev_validity = state.validity
-                prev_reason = state.change_reason
-                self._register_rollback(
-                    lambda s=state, v=prev_validity, r=prev_reason: s.set_validity(
-                        v,
-                        change_reason=r,
-                    )
-                )
-                state.set_validity(
-                    SpellValidity.disabled,
-                    change_reason=SpellStateChangeReason.transfer_in_progress,
-                    flags_to_add=[SpellState.transfer_in_progress],
-                )
-        except Exception:
-            pass
+        if state is None:
+            raise RuntimeError("Failed to register lineage for transfer disable.")
+
+        # Record rollback to previous validity
+        prev_validity = state.validity
+        prev_reason = state.change_reason
+        self._register_rollback(
+            lambda s=state, v=prev_validity, r=prev_reason: s.set_validity(
+                v,
+                change_reason=r,
+            )
+        )
+        state.set_validity(
+            SpellValidity.disabled,
+            change_reason=SpellStateChangeReason.transfer_in_progress,
+            flags_to_add=[SpellState.transfer_in_progress],
+        )
 
     def _register_rollback(self, fn: Optional[Callable[[], None]]) -> None:
         """
@@ -374,6 +485,12 @@ class TransferOfOwnership:
         """
         Restore spell ownership in spellbooks to the source.
 
+        Behaviour:
+            - Moves spell maps back to the source Spellbook.
+            - Restores SpellSystemStates registration for the source lineage.
+            - Clears the target lineage registration when present.
+            - Restores RiskManager registrations to the source conduit.
+
         Args:
             spell_obj: Spell being moved.
             src_book: Source spellbook.
@@ -397,6 +514,11 @@ class TransferOfOwnership:
                 existing_pool = src_book._spell_id_pool.get(spell_id)
                 if existing_pool is None or existing_pool is spell_obj:
                     src_book._spell_id_pool[spell_id] = spell_obj
+            spell_obj._spellbook = src_book
+            spell_obj._spell_system_states = src_book._spell_system_states
+            spell_obj._crafter = None
+            tgt_book._unregister_spell_with_risk_manager(self.target_conduit._id, spell_obj)
+            src_book._register_spell_with_risk_manager(self.source_conduit._id, spell_obj)
         try:
             with SafeGuard(spell_obj.spell_index._lock):
                 spell_obj.spell_index._owner_spellbook = src_book
@@ -407,6 +529,13 @@ class TransferOfOwnership:
             spell_obj._owner_conduit_id = self.source_conduit._id
         except Exception:
             pass
+        src_states = src_book._spell_system_states
+        tgt_states = tgt_book._spell_system_states
+        if src_states is None:
+            raise RuntimeError("Source Spellbook has no SpellSystemStates.")
+        if tgt_states is not None and tgt_states is not src_states:
+            tgt_states.unregister_lineage(spell_obj.spell_index)
+        src_states.register_lineage(spell_obj.spell_index, spell_obj)
 
     def _unshare_target_conduit_contract(self, spell_obj: Any) -> None:
         """
@@ -716,6 +845,12 @@ class TransferOfOwnership:
         """
         Move ownership in Aether and spellbooks, recording rollbacks.
 
+        Behaviour:
+            - Unregister lineage from the source SpellSystemStates.
+            - Register lineage with the target SpellSystemStates.
+            - Update spell ownership pointers and spellbook maps.
+            - Refresh RiskManager spell registrations for source and target conduits.
+
         Args:
             spell_obj: Spell being transferred.
         Raises:
@@ -757,6 +892,10 @@ class TransferOfOwnership:
             src_book = self.source_conduit._spellbook
             tgt_book = self.target_conduit._spellbook
             spell_id = spell_obj.spell_index.current
+            src_states = src_book._spell_system_states
+            tgt_states = tgt_book._spell_system_states
+            if src_states is None or tgt_states is None:
+                raise RuntimeError("Spellbook missing SpellSystemStates during transfer.")
             with SafeGuard(src_book._lock, tgt_book._lock):
                 src_had = spell_obj.spell_index in src_book._spells
                 tgt_had = spell_obj.spell_index in tgt_book._spells
@@ -777,6 +916,7 @@ class TransferOfOwnership:
                                 f"spell_id_pool mismatch for transfer (spell_id={spell_id})"
                             )
                         src_book._spell_id_pool.pop(spell_id, None)
+                    src_states.unregister_lineage(spell_obj.spell_index)
                     self._register_rollback(
                         lambda: self._rollback_spellbook_move(spell_obj, src_book, tgt_book)
                     )
@@ -801,13 +941,12 @@ class TransferOfOwnership:
                     spell_obj._spellbook = tgt_book
                     spell_obj._spell_system_states = tgt_book._spell_system_states
                     spell_obj._crafter = None
-                    try:
-                        tgt_book._spell_system_states.register_lineage(
-                            spell_index=spell_obj.spell_index,
-                            spell=spell_obj,
-                        )
-                    except Exception:
-                        pass
+                tgt_states.register_lineage(
+                    spell_index=spell_obj.spell_index,
+                    spell=spell_obj,
+                )
+                src_book._unregister_spell_with_risk_manager(self.source_conduit._id, spell_obj)
+                tgt_book._register_spell_with_risk_manager(self.target_conduit._id, spell_obj)
             try:
                 with SafeGuard(spell_obj.spell_index._lock):
                     owner_book = spell_obj.spell_index._owner_spellbook
@@ -1152,7 +1291,7 @@ class TransferOfOwnership:
 
         # If no revalidator is wired, emit a reminder incident.
         try:
-            if getattr(self._change_control_manager, "_revalidate_fn", None) is None:
+            if self._change_control_manager._revalidate_fn is None:
                 self._incident_manager.create_incident(
                     kind="ownership_transfer_needs_revalidation",
                     severity=IncidentSeverity.warning,

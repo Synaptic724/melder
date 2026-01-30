@@ -281,7 +281,7 @@ class Meld(Cleanable, IMeld):
         )
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
-        if self._spellbook._spellbook_validation_required:
+        if self._spellbook.check_spellbook_validation_required():
             self._ensure_lineage_resolvable(target_spell)
 
         if self._meld_hooks or target_spell._hooks_enabled:
@@ -406,10 +406,6 @@ class Meld(Cleanable, IMeld):
               when validity is UNKNOWN or GATED, preventing concurrent phase runs.
         """
         state = spell.system_state
-        if state is None:
-            # No DevOps gate wired; let existing `is_broken` guard handle it.
-            return
-
         # Structural gating
         if self._gated_validation_required(spell):
             with spell._lock:
@@ -452,10 +448,6 @@ class Meld(Cleanable, IMeld):
         "Should we try to revalidate this lineage now?"
         """
         state = spell.system_state
-        if state is None:
-            # No DevOps wiring; nothing for us to do at this layer.
-            return False
-
         # Defensive: block dirty roots under change-control regardless of validity.
         try:
             spellbook = spell._spellbook

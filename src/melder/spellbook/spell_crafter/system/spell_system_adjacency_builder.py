@@ -62,10 +62,11 @@ class SpellSystemAdjacencyBuilder:
             local_topologies = spell_system_states._local_topologies
 
             for state in states_by_index_id.values():
-                spell_id = state._current_spell_id
-                all_spell_ids.add(spell_id)
+                with state._lock:
+                    spell_id = state._current_spell_id
+                    direct_dep_set: Set[str] = state._direct_dependencies
 
-                direct_dep_set: Set[str] = state._direct_dependencies
+                all_spell_ids.add(spell_id)
                 dependencies[spell_id] = direct_dep_set
 
                 for dep_id in direct_dep_set:
