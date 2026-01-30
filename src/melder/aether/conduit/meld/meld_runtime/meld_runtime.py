@@ -16,8 +16,8 @@ from melder.spellbook.spell_crafter.blueprints.patch_maps import (
     apply_phase10_mutation_overrides,
     apply_phase10_override_payload,
 )
-from melder.spellbook.spell_crafter.blueprints.execution_assembly_plan import (
-    ExecutionAssemblyPlan,
+from melder.spellbook.spell_crafter.blueprints.execution_plan import (
+    ExecutionPlan,
     ExecutionPlanVariant,
 )
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
@@ -81,7 +81,7 @@ class MeldRuntime:
                  - Phase 8 occurrence plan (if available)
             4. Create a `ResolutionFrame` initialized with the normalized
                overrides from the context.
-            5. Instantiate `MeldEngine` and execute the Phase 12 assembly plan.
+            5. Instantiate `MeldEngine` and execute the Phase 11 execution plan.
             6. Clean up engine and frame.
             7. Sanity-check the result for factory-style spells.
 
@@ -179,9 +179,9 @@ class MeldRuntime:
         injection_plan = crafter.injection_plan_phase9
         override_patch_map = crafter.override_patch_map_phase10
         mutation_patch_map = crafter.mutation_patch_map_phase10
-        assembly_plan_no_overrides = crafter.execution_assembly_plan_phase12_no_overrides
-        assembly_plan_overrides = crafter.execution_assembly_plan_phase12_overrides
-        assembly_plan_overrides_with_mutations = crafter.execution_assembly_plan_phase12_overrides_with_mutations
+        execution_plan_no_overrides = crafter.execution_plan_phase11_no_overrides
+        execution_plan_overrides = crafter.execution_plan_phase11_overrides
+        execution_plan_overrides_with_mutations = crafter.execution_plan_phase11_overrides_with_mutations
         mutation_override_payload = spell.mutation_override
 
 
@@ -210,10 +210,10 @@ class MeldRuntime:
                     inner=exc,
                 ) from exc
 
-        assembly_plan_to_run, _ = self._select_execution_plan_phase12(
-            execution_plan_no_overrides=assembly_plan_no_overrides,
-            execution_plan_overrides=assembly_plan_overrides,
-            execution_plan_overrides_with_mutations=assembly_plan_overrides_with_mutations,
+        execution_plan_to_run, _ = self._select_execution_plan_phase11(
+            execution_plan_no_overrides=execution_plan_no_overrides,
+            execution_plan_overrides=execution_plan_overrides,
+            execution_plan_overrides_with_mutations=execution_plan_overrides_with_mutations,
             override_payload=context.overrides,
             override_map=override_map,
             mutation_override_payload=mutation_override_payload,
@@ -252,8 +252,8 @@ class MeldRuntime:
                 override_map=override_map,
                 contract_overrides_by_spell_id={},
             )
-            result = engine.run_execution_assembly_plan(
-                assembly_plan_to_run,
+            result = engine.run_execution_plan(
+                execution_plan_to_run,
                 override_targets_by_spell_id=override_targets_by_spell_id,
                 any_overrides_present=any_overrides_present,
             )
@@ -296,18 +296,18 @@ class MeldRuntime:
     # ------------------------------------------------------------------ #
     # Internal helpers                                                   #
     # ------------------------------------------------------------------ #
-    def _select_execution_plan_phase12(
+    def _select_execution_plan_phase11(
             self,
             *,
-            execution_plan_no_overrides: Optional[ExecutionAssemblyPlan],
-            execution_plan_overrides: Optional[ExecutionAssemblyPlan],
-            execution_plan_overrides_with_mutations: Optional[ExecutionAssemblyPlan],
+            execution_plan_no_overrides: Optional[ExecutionPlan],
+            execution_plan_overrides: Optional[ExecutionPlan],
+            execution_plan_overrides_with_mutations: Optional[ExecutionPlan],
             override_payload: Optional[Dict[str, Any]],
             override_map: Dict[SocketRef, Any],
             mutation_override_payload: Optional[Dict[str, Any]],
-    ) -> tuple[Optional[ExecutionAssemblyPlan], Optional[str]]:
+    ) -> tuple[Optional[ExecutionPlan], Optional[str]]:
         """
-        Select the Phase 12 execution assembly plan variant for the current meld call.
+        Select the Phase 11 execution plan variant for the current meld call.
         """
         has_override_payload = bool(override_payload) or bool(override_map)
         has_mutation_overrides = bool(mutation_override_payload)
@@ -393,3 +393,6 @@ class MeldRuntime:
                 if socket_ref.node_id == root_spell_id and len(socket_ref.param_path) == 1:
                     merged[socket_ref.param_name] = value
         return merged
+
+
+

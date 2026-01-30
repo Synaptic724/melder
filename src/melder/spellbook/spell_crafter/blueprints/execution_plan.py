@@ -19,11 +19,11 @@ class ExecutionPlanVariant:
     """
     Internal
 
-    Execution assembly plan variant labels.
+    Phase 11 execution plan variant labels.
 
     Purpose:
-        Identify which precompiled execution assembly plan should be selected
-        based on override and mutation payloads at meld time.
+        Identify which precompiled execution plan should be selected based on
+        override and mutation payloads at meld time.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = ()
@@ -32,15 +32,15 @@ class ExecutionPlanVariant:
     OVERRIDES_WITH_MUTATIONS = "overrides_with_mutations"
 
 
-class ExecutionAssemblyStep:
+class ExecutionPlanStep:
     """
     Internal
 
-    Phase 12 execution assembly step metadata.
+    Phase 11 execution step metadata.
 
     Purpose:
         Capture precomputed routing and creations delegation metadata needed
-        to execute meld assembly with minimal runtime planning.
+        to execute meld with minimal runtime planning.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = [
@@ -211,11 +211,11 @@ class ExecutionAssemblyStep:
         return list(self._disposal_method_names)
 
 
-class ExecutionAssemblyPlan(Cleanable):
+class ExecutionPlan(Cleanable):
     """
     Internal
 
-    Phase 12 artifact that captures execution assembly metadata.
+    Phase 11 artifact that captures execution plan metadata.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -233,7 +233,7 @@ class ExecutionAssemblyPlan(Cleanable):
             *,
             root_spell_id: str,
             root_instance_key: InstanceKey,
-            steps: List[ExecutionAssemblyStep],
+            steps: List[ExecutionPlanStep],
             spell_id_step_index: Dict[str, int],
             optimistic_object_refs_by_spell_id: Dict[str, Any],
             available_param_by_spell_id: Dict[str, str],
@@ -288,7 +288,7 @@ class ExecutionAssemblyPlan(Cleanable):
         return self._root_instance_key
 
     @property
-    def steps(self) -> List[ExecutionAssemblyStep]:
+    def steps(self) -> List[ExecutionPlanStep]:
         return list(self._steps)
 
     @property
@@ -308,11 +308,11 @@ class ExecutionAssemblyPlan(Cleanable):
         return self._plan_variant
 
 
-class ExecutionAssemblyPlanBuilder:
+class ExecutionPlanBuilder:
     """
     Internal
 
-    Build a Phase 12 ExecutionAssemblyPlan from Phase 8/9 artifacts.
+    Build a Phase 11 ExecutionPlan from Phase 8/9 artifacts.
     """
     __melder_internal__ = _mrg.sentinel
 
@@ -336,7 +336,7 @@ class ExecutionAssemblyPlanBuilder:
         self._spell_lookup = spell_lookup
         self._plan_variant = plan_variant
 
-    def build(self) -> ExecutionAssemblyPlan:
+    def build(self) -> ExecutionPlan:
         root_spell_id = self._occurrence_plan.root_spell_id
         injection_lookup: Optional[Dict[InstanceKey, InjectionSpec]] = None
         if self._injection_plan is not None:
@@ -345,10 +345,10 @@ class ExecutionAssemblyPlanBuilder:
             )
             if injection_lookup is None:
                 raise ValueError(
-                    "Phase 12 ExecutionAssemblyPlan: injection plan root mismatch or cleaned plan."
+                    "Phase 11 ExecutionPlan: injection plan root mismatch or cleaned plan."
                 )
 
-        steps: List[ExecutionAssemblyStep] = []
+        steps: List[ExecutionPlanStep] = []
         spell_id_step_index: Dict[str, int] = {}
         optimistic_refs: Dict[str, Any] = {}
         available_param_by_spell_id: Dict[str, str] = {}
@@ -357,7 +357,7 @@ class ExecutionAssemblyPlanBuilder:
             spell = self._spell_lookup.get(spell_id)
             if spell is None:
                 raise ValueError(
-                    f"Phase 12 ExecutionAssemblyPlan: spell id '{spell_id}' missing from lookup."
+                    f"Phase 11 ExecutionPlan: spell id '{spell_id}' missing from lookup."
                 )
 
             if spell.user_created_object is not None:
@@ -381,7 +381,7 @@ class ExecutionAssemblyPlanBuilder:
                 uses_positional_override = inject_spec.uses_positional_override if inject_spec else False
                 contract_payload = inject_spec.contract_payload if inject_spec else None
 
-                step = ExecutionAssemblyStep(
+                step = ExecutionPlanStep(
                     spell_id=spell_id,
                     instance_key=instance_key,
                     occurrence=occurrence,
@@ -405,7 +405,7 @@ class ExecutionAssemblyPlanBuilder:
                 if spell_id not in spell_id_step_index:
                     spell_id_step_index[spell_id] = len(steps) - 1
 
-        return ExecutionAssemblyPlan(
+        return ExecutionPlan(
             root_spell_id=root_spell_id,
             root_instance_key=self._occurrence_plan.root_instance_key,
             steps=steps,
@@ -448,7 +448,7 @@ class ExecutionAssemblyPlanBuilder:
         canonical = self._occurrence_plan.canonical_occurrences_by_spell_id.get(spell_id)
         if canonical is None:
             raise ValueError(
-                f"Phase 12 ExecutionAssemblyPlan: canonical occurrence missing for '{spell_id}'."
+                f"Phase 11 ExecutionPlan: canonical occurrence missing for '{spell_id}'."
             )
         return canonical
 

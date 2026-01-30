@@ -22,9 +22,9 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
     select_occurrence_plan,
 )
-from melder.spellbook.spell_crafter.blueprints.execution_assembly_plan import (
-    ExecutionAssemblyPlan,
-    ExecutionAssemblyStep,
+from melder.spellbook.spell_crafter.blueprints.execution_plan import (
+    ExecutionPlan,
+    ExecutionPlanStep,
 )
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.spellbook.existence.existence import Existence
@@ -927,19 +927,19 @@ class MeldEngine(Cleanable):
 
         return instance
 
-    def run_execution_assembly_plan(
+    def run_execution_plan(
             self,
-            execution_plan: ExecutionAssemblyPlan,
+            execution_plan: ExecutionPlan,
             *,
             override_targets_by_spell_id: Optional[Dict[str, List[SocketRef]]] = None,
             any_overrides_present: Optional[bool] = None,
     ) -> Any:
         """
-        Execute a Phase 12 ExecutionAssemblyPlan using precompiled step metadata.
+        Execute a Phase 11 ExecutionPlan using precompiled step metadata.
 
         Args:
             execution_plan:
-                Phase 12 execution assembly plan to execute.
+                Phase 11 execution plan to execute.
             override_targets_by_spell_id:
                 Optional precomputed override targets grouped by spell id.
             any_overrides_present:
@@ -973,7 +973,7 @@ class MeldEngine(Cleanable):
 
             def _construct_node(
                     *,
-                    plan_step: ExecutionAssemblyStep = step,
+                    plan_step: ExecutionPlanStep = step,
                     plan_spell: ISpell = spell,
             ) -> Any:
                 kwargs: Dict[str, Any] = {}
@@ -1185,14 +1185,14 @@ class MeldEngine(Cleanable):
     def _resolve_spell_instance_with_plan(
             self,
             spell: ISpell,
-            plan_step: ExecutionAssemblyStep,
+            plan_step: ExecutionPlanStep,
             *,
             construct_fn: Callable[[], Any],
     ) -> tuple[Any, bool]:
         """
         Internal
 
-        Resolve a spell instance using Phase 12 plan metadata for creations targets
+        Resolve a spell instance using Phase 11 plan metadata for creations targets
         and lock hints to avoid recomputing routing decisions.
         """
         creations = self._select_creations_by_target_kind(
@@ -1570,3 +1570,4 @@ class MeldEngine(Cleanable):
                     )
                     return
             return
+
