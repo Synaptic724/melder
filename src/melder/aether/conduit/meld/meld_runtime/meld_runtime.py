@@ -78,7 +78,6 @@ class MeldRuntime:
                  - dependency graph
                  - requirements
                  - resolution frame (if any)
-                 - Phase 8 occurrence plan (if available)
             4. Create a `ResolutionFrame` initialized with the normalized
                overrides from the context.
             5. Instantiate `MeldEngine` and execute the Phase 11 execution plan.
@@ -175,8 +174,6 @@ class MeldRuntime:
         root_blueprint: RootResolutionBlueprint = None
         crafter = spell._crafter
         root_blueprint = crafter.root_blueprint_phase5
-        occurrence_plan = crafter.occurrence_plan_phase8
-        injection_plan = crafter.injection_plan_phase9
         override_patch_map = crafter.override_patch_map_phase10
         mutation_patch_map = crafter.mutation_patch_map_phase10
         execution_plan_no_overrides = crafter.execution_plan_phase11_no_overrides
@@ -240,8 +237,6 @@ class MeldRuntime:
             override_map=override_map,
             spell_lookup=spell._spellbook._spell_id_pool,
             system_states=spell._spell_system_states,
-            occurrence_plan=occurrence_plan,
-            injection_plan=injection_plan,
         )
 
         result = None
