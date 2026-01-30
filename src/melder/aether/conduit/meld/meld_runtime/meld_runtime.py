@@ -79,7 +79,7 @@ class MeldRuntime:
                  - requirements
                  - resolution frame (if any)
             4. Create a `ResolutionFrame` initialized with the normalized
-               overrides from the context.
+               overrides from the context when overrides or mutations apply.
             5. Instantiate `MeldEngine` and execute the Phase 11 execution plan.
                When no overrides or mutations are present, uses the no-overrides
                execution path and skips override preprocessing.
@@ -235,7 +235,15 @@ class MeldRuntime:
                 root_spell_id=spell.spell_index.current,
             )
 
-        frame = ResolutionFrame(overrides=frame_overrides)
+        frame: Optional[ResolutionFrame] = None
+        if has_overrides_or_mutations:
+            frame = ResolutionFrame(overrides=frame_overrides)
+        else:
+            if (
+                    execution_plan_to_run is None
+                    or execution_plan_to_run.fast_plan is None
+            ):
+                frame = ResolutionFrame(overrides=frame_overrides)
         engine = MeldEngine(
             context=context,
             root_spell=spell,
@@ -274,10 +282,11 @@ class MeldRuntime:
             except Exception:
                 pass
 
-            try:
-                frame.cleanup()
-            except Exception:
-                pass
+            if frame is not None:
+                try:
+                    frame.cleanup()
+                except Exception:
+                    pass
 
         # ------------------------------------------------------------------
         # Sanity check: factory-style spells must produce an instance.

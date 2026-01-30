@@ -49,6 +49,23 @@ class ExecutionPlanTargetKind:
     SPELLSPACE = 3
 
 
+class ExecutionPlanCallMode:
+    """
+    Internal
+
+    Fast-path call modes for NO_OVERRIDES_FAST execution.
+
+    Purpose:
+        Capture trivial call shapes (0 or 1 dependency) to avoid per-step
+        list allocation and inner loop overhead.
+    """
+    __melder_internal__ = _mrg.sentinel
+    __slots__ = ()
+    CALL0 = 0
+    CALL1 = 1
+    CALLN = 2
+
+
 class ExecutionPlanStep:
     """
     Internal
@@ -341,6 +358,19 @@ class ExecutionPlan(Cleanable):
         "_fast_use_positional",
         "_fast_contract_payload_items",
         "_fast_contract_positional_args",
+        "_fast_instance_keys",
+        "_fast_creations_target_kinds",
+        "_fast_existence",
+        "_fast_must_register",
+        "_fast_set_result_flags",
+        "_fast_spells",
+        "_fast_call_targets",
+        "_fast_existing_objects",
+        "_fast_is_existing_creation",
+        "_fast_is_callable",
+        "_fast_root_step_index",
+        "_fast_call_modes",
+        "_fast_single_dep_indices",
     ]
 
     def __init__(
@@ -362,6 +392,19 @@ class ExecutionPlan(Cleanable):
             fast_use_positional: Optional[List[bool]] = None,
             fast_contract_payload_items: Optional[List[Optional[List[Tuple[str, Any]]]]] = None,
             fast_contract_positional_args: Optional[List[Optional[Any]]] = None,
+            fast_instance_keys: Optional[List[InstanceKey]] = None,
+            fast_creations_target_kinds: Optional[List[int]] = None,
+            fast_existence: Optional[List[Existence]] = None,
+            fast_must_register: Optional[List[bool]] = None,
+            fast_set_result_flags: Optional[List[bool]] = None,
+            fast_spells: Optional[List[ISpell]] = None,
+            fast_call_targets: Optional[List[Any]] = None,
+            fast_existing_objects: Optional[List[Any]] = None,
+            fast_is_existing_creation: Optional[List[bool]] = None,
+            fast_is_callable: Optional[List[bool]] = None,
+            fast_root_step_index: Optional[int] = None,
+            fast_call_modes: Optional[List[int]] = None,
+            fast_single_dep_indices: Optional[List[int]] = None,
     ) -> None:
         """
         Initialize a Phase 11 execution plan.
@@ -388,6 +431,19 @@ class ExecutionPlan(Cleanable):
             fast_use_positional: Positional-arg eligibility per step (fast path).
             fast_contract_payload_items: Pre-split contract payload items per step (fast path).
             fast_contract_positional_args: Pre-split contract positional args per step (fast path).
+            fast_instance_keys: Instance keys aligned to steps (fast path).
+            fast_creations_target_kinds: Creations routing kind per step (fast path).
+            fast_existence: Existence policy per step (fast path).
+            fast_must_register: Registration flag per step (fast path).
+            fast_set_result_flags: First-result flags per spell id (fast path).
+            fast_spells: Spell objects aligned to steps (fast path).
+            fast_call_targets: Spell call targets aligned to steps (fast path).
+            fast_existing_objects: Existing objects aligned to steps (fast path).
+            fast_is_existing_creation: Existing-creation flags per step (fast path).
+            fast_is_callable: Callable-spell flags per step (fast path).
+            fast_root_step_index: Root instance index within the fast arrays (fast path).
+            fast_call_modes: Call-mode selector per step (fast path).
+            fast_single_dep_indices: Single dependency index per step (fast path).
         """
         super().__init__()
         if root_spell_id is None:
@@ -421,6 +477,19 @@ class ExecutionPlan(Cleanable):
         self._fast_use_positional = fast_use_positional
         self._fast_contract_payload_items = fast_contract_payload_items
         self._fast_contract_positional_args = fast_contract_positional_args
+        self._fast_instance_keys = fast_instance_keys
+        self._fast_creations_target_kinds = fast_creations_target_kinds
+        self._fast_existence = fast_existence
+        self._fast_must_register = fast_must_register
+        self._fast_set_result_flags = fast_set_result_flags
+        self._fast_spells = fast_spells
+        self._fast_call_targets = fast_call_targets
+        self._fast_existing_objects = fast_existing_objects
+        self._fast_is_existing_creation = fast_is_existing_creation
+        self._fast_is_callable = fast_is_callable
+        self._fast_root_step_index = fast_root_step_index
+        self._fast_call_modes = fast_call_modes
+        self._fast_single_dep_indices = fast_single_dep_indices
 
     def cleanup(self) -> None:
         """
@@ -455,6 +524,30 @@ class ExecutionPlan(Cleanable):
             self._fast_contract_payload_items.clear()
         if self._fast_contract_positional_args is not None:
             self._fast_contract_positional_args.clear()
+        if self._fast_instance_keys is not None:
+            self._fast_instance_keys.clear()
+        if self._fast_creations_target_kinds is not None:
+            self._fast_creations_target_kinds.clear()
+        if self._fast_existence is not None:
+            self._fast_existence.clear()
+        if self._fast_must_register is not None:
+            self._fast_must_register.clear()
+        if self._fast_set_result_flags is not None:
+            self._fast_set_result_flags.clear()
+        if self._fast_spells is not None:
+            self._fast_spells.clear()
+        if self._fast_call_targets is not None:
+            self._fast_call_targets.clear()
+        if self._fast_existing_objects is not None:
+            self._fast_existing_objects.clear()
+        if self._fast_is_existing_creation is not None:
+            self._fast_is_existing_creation.clear()
+        if self._fast_is_callable is not None:
+            self._fast_is_callable.clear()
+        if self._fast_call_modes is not None:
+            self._fast_call_modes.clear()
+        if self._fast_single_dep_indices is not None:
+            self._fast_single_dep_indices.clear()
         self._root_spell_id = None
         self._root_instance_key = None
         self._steps = None
@@ -471,6 +564,19 @@ class ExecutionPlan(Cleanable):
         self._fast_use_positional = None
         self._fast_contract_payload_items = None
         self._fast_contract_positional_args = None
+        self._fast_instance_keys = None
+        self._fast_creations_target_kinds = None
+        self._fast_existence = None
+        self._fast_must_register = None
+        self._fast_set_result_flags = None
+        self._fast_spells = None
+        self._fast_call_targets = None
+        self._fast_existing_objects = None
+        self._fast_is_existing_creation = None
+        self._fast_is_callable = None
+        self._fast_root_step_index = None
+        self._fast_call_modes = None
+        self._fast_single_dep_indices = None
 
     @property
     def root_spell_id(self) -> str:
@@ -514,6 +620,19 @@ class ExecutionPlan(Cleanable):
             List[bool],
             List[Optional[List[Tuple[str, Any]]]],
             List[Optional[Any]],
+            List[InstanceKey],
+            List[int],
+            List[Existence],
+            List[bool],
+            List[bool],
+            List[ISpell],
+            List[Any],
+            List[Any],
+            List[bool],
+            List[bool],
+            int,
+            List[int],
+            List[int],
         ]
     ]:
         """
@@ -522,6 +641,11 @@ class ExecutionPlan(Cleanable):
         Contract:
             - Returns None when no fast-path data is available.
             - Arrays are aligned to `steps` order.
+            - Includes instance keys, routing metadata, and construct metadata
+              for direct execution.
+            - Includes the root step index for fast-path result lookup.
+            - Includes call-mode metadata and single-dependency indices for
+              trivial call shapes.
         """
         if self._fast_dep_indices is None:
             return None
@@ -535,6 +659,19 @@ class ExecutionPlan(Cleanable):
             self._fast_use_positional,
             self._fast_contract_payload_items,
             self._fast_contract_positional_args,
+            self._fast_instance_keys,
+            self._fast_creations_target_kinds,
+            self._fast_existence,
+            self._fast_must_register,
+            self._fast_set_result_flags,
+            self._fast_spells,
+            self._fast_call_targets,
+            self._fast_existing_objects,
+            self._fast_is_existing_creation,
+            self._fast_is_callable,
+            self._fast_root_step_index,
+            self._fast_call_modes,
+            self._fast_single_dep_indices,
         )
 
 
@@ -682,6 +819,7 @@ class ExecutionPlanBuilder:
             fast_plan_data = self._build_fast_plan_data(
                 steps=steps,
                 instance_key_to_step_index=instance_key_to_step_index,
+                root_instance_key=self._occurrence_plan.root_instance_key,
             )
 
         return ExecutionPlan(
@@ -701,6 +839,19 @@ class ExecutionPlanBuilder:
             fast_use_positional=fast_plan_data[6] if fast_plan_data else None,
             fast_contract_payload_items=fast_plan_data[7] if fast_plan_data else None,
             fast_contract_positional_args=fast_plan_data[8] if fast_plan_data else None,
+            fast_instance_keys=fast_plan_data[9] if fast_plan_data else None,
+            fast_creations_target_kinds=fast_plan_data[10] if fast_plan_data else None,
+            fast_existence=fast_plan_data[11] if fast_plan_data else None,
+            fast_must_register=fast_plan_data[12] if fast_plan_data else None,
+            fast_set_result_flags=fast_plan_data[13] if fast_plan_data else None,
+            fast_spells=fast_plan_data[14] if fast_plan_data else None,
+            fast_call_targets=fast_plan_data[15] if fast_plan_data else None,
+            fast_existing_objects=fast_plan_data[16] if fast_plan_data else None,
+            fast_is_existing_creation=fast_plan_data[17] if fast_plan_data else None,
+            fast_is_callable=fast_plan_data[18] if fast_plan_data else None,
+            fast_root_step_index=fast_plan_data[19] if fast_plan_data else None,
+            fast_call_modes=fast_plan_data[20] if fast_plan_data else None,
+            fast_single_dep_indices=fast_plan_data[21] if fast_plan_data else None,
         )
 
     def _build_fast_plan_data(
@@ -708,6 +859,7 @@ class ExecutionPlanBuilder:
             *,
             steps: List[ExecutionPlanStep],
             instance_key_to_step_index: Dict[InstanceKey, int],
+            root_instance_key: InstanceKey,
     ) -> Tuple[
         List[int],
         List[str],
@@ -718,6 +870,19 @@ class ExecutionPlanBuilder:
         List[bool],
         List[Optional[List[Tuple[str, Any]]]],
         List[Optional[Any]],
+        List[InstanceKey],
+            List[int],
+            List[Existence],
+            List[bool],
+            List[bool],
+            List[ISpell],
+            List[Any],
+            List[Any],
+            List[bool],
+            List[bool],
+            int,
+            List[int],
+            List[int],
     ]:
         """
         Build compact arrays for the no-override fast path.
@@ -727,6 +892,11 @@ class ExecutionPlanBuilder:
             - Parameter group order follows Phase 1 parameter positions.
             - Uses positional args only when all DI parameters are positional-safe.
             - Contract payloads are applied via precomputed payload items.
+            - Instance keys and creations routing metadata are precompiled per step.
+            - First-result flags are precomputed to avoid runtime guard checks.
+            - Construct metadata is precompiled to avoid runtime spell-type checks.
+            - Root step index is precomputed for fast-path result retrieval.
+            - Call modes precompute trivial 0/1-dependency call shapes.
         """
         step_count = len(steps)
         fast_dep_indices: List[int] = []
@@ -738,9 +908,46 @@ class ExecutionPlanBuilder:
         fast_use_positional: List[bool] = [False] * step_count
         fast_contract_payload_items: List[Optional[List[Tuple[str, Any]]]] = [None] * step_count
         fast_contract_positional_args: List[Optional[Any]] = [None] * step_count
+        fast_instance_keys: List[InstanceKey] = [None] * step_count
+        fast_creations_target_kinds: List[int] = [0] * step_count
+        fast_existence: List[Existence] = [None] * step_count
+        fast_must_register: List[bool] = [False] * step_count
+        fast_set_result_flags: List[bool] = [False] * step_count
+        fast_spells: List[ISpell] = [None] * step_count
+        fast_call_targets: List[Any] = [None] * step_count
+        fast_existing_objects: List[Any] = [None] * step_count
+        fast_is_existing_creation: List[bool] = [False] * step_count
+        fast_is_callable: List[bool] = [False] * step_count
+        root_step_index = instance_key_to_step_index.get(root_instance_key)
+        if root_step_index is None:
+            raise ValueError(
+                "Phase 11 fast plan: root instance key missing from step index."
+            )
+        fast_call_modes: List[int] = [ExecutionPlanCallMode.CALLN] * step_count
+        fast_single_dep_indices: List[int] = [-1] * step_count
+
+        seen_spell_ids: set[str] = set()
 
         for step_index, step in enumerate(steps):
             dep_keys_by_param = step.dependency_keys_by_param
+            instance_key = step.instance_key
+            spell_id = instance_key[0]
+            if spell_id not in seen_spell_ids:
+                seen_spell_ids.add(spell_id)
+                fast_set_result_flags[step_index] = True
+            fast_instance_keys[step_index] = instance_key
+            fast_creations_target_kinds[step_index] = step.creations_target_kind
+            fast_existence[step_index] = step.existence
+            fast_must_register[step_index] = step.must_register
+            fast_spells[step_index] = step.spell
+            fast_call_targets[step_index] = step.spell.spell
+            fast_existing_objects[step_index] = step.spell.user_created_object
+            fast_is_existing_creation[step_index] = step.spell.is_existing_creation
+            fast_is_callable[step_index] = (
+                step.spell.is_class_spell
+                or step.spell.is_method_spell
+                or step.spell.is_lambda_spell
+            )
             requirements = step.spell.requirements
             if requirements is not None:
                 params = requirements.parameters
@@ -811,6 +1018,16 @@ class ExecutionPlanBuilder:
             fast_use_positional[step_index] = (
                 positional_ok and contract_items is None and contract_positional is None
             )
+            if fast_use_positional[step_index]:
+                if group_count == 0:
+                    fast_call_modes[step_index] = ExecutionPlanCallMode.CALL0
+                elif group_count == 1:
+                    group_base = fast_param_group_offsets[step_index]
+                    dep_offset = fast_param_group_dep_offsets[group_base]
+                    dep_count = fast_param_group_dep_counts[group_base]
+                    if dep_count == 1:
+                        fast_call_modes[step_index] = ExecutionPlanCallMode.CALL1
+                        fast_single_dep_indices[step_index] = fast_dep_indices[dep_offset]
 
         return (
             fast_dep_indices,
@@ -822,6 +1039,19 @@ class ExecutionPlanBuilder:
             fast_use_positional,
             fast_contract_payload_items,
             fast_contract_positional_args,
+            fast_instance_keys,
+            fast_creations_target_kinds,
+            fast_existence,
+            fast_must_register,
+            fast_set_result_flags,
+            fast_spells,
+            fast_call_targets,
+            fast_existing_objects,
+            fast_is_existing_creation,
+            fast_is_callable,
+            root_step_index,
+            fast_call_modes,
+            fast_single_dep_indices,
         )
 
     @staticmethod

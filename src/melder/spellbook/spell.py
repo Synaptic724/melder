@@ -169,6 +169,28 @@ class Spell(Cleanable, ISpell):
         self.spell_id: str = spell_id  # SHA256 unique identifier
         self.spellframe: Optional[Any] = spellframe
         self.spell_type: SpellType = spell_type
+        self._is_existing_creation: bool = spell_type in (
+            SpellType.EXISTING_CREATION,
+            SpellType.EXISTING_CREATION_WITH_SPELLFRAME,
+            SpellType.EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        )
+        self._is_class_spell: bool = spell_type in (
+            SpellType.SPELL,
+            SpellType.SPELL_WITH_SPELLFRAME,
+            SpellType.SPELL_WITH_BINDING_NAME,
+            SpellType.SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        )
+        self._is_method_spell: bool = spell_type in (
+            SpellType.METHOD,
+            SpellType.METHOD_WITH_BINDING_NAME,
+            SpellType.METHOD_WITH_SPELLFRAME,
+            SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        )
+        self._is_lambda_spell: bool = spell_type in (
+            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
+            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        )
         self.user_created_object: Optional[object] = existing_object
         self.binding_name: Optional[str] = binding_name
         self.spell_name: str = spell_name
@@ -373,6 +395,10 @@ class Spell(Cleanable, ISpell):
             self.profile = None
             self.spell = None
             self._key = None
+            self._is_existing_creation = None
+            self._is_class_spell = None
+            self._is_method_spell = None
+            self._is_lambda_spell = None
             self._owner_conduit_id = None
             self._owner_conduit_name = None
             self.owned_spell = None
@@ -451,46 +477,28 @@ class Spell(Cleanable, ISpell):
         Returns True if this spell represents an existing, pre-created object
         (EXISTING_CREATION* SpellTypes), rather than a factory.
         """
-        return self.spell_type in {
-            SpellType.EXISTING_CREATION,
-            SpellType.EXISTING_CREATION_WITH_SPELLFRAME,
-            SpellType.EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME,
-        }
+        return self._is_existing_creation
 
     @property
     def is_class_spell(self) -> bool:
         """
         Returns True if this spell represents a class-based factory (SPELL* SpellTypes).
         """
-        return self.spell_type in {
-            SpellType.SPELL,
-            SpellType.SPELL_WITH_SPELLFRAME,
-            SpellType.SPELL_WITH_BINDING_NAME,
-            SpellType.SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME,
-        }
+        return self._is_class_spell
 
     @property
     def is_method_spell(self) -> bool:
         """
         Returns True if this spell represents a non-lambda method/function spell.
         """
-        return self.spell_type in {
-            SpellType.METHOD,
-            SpellType.METHOD_WITH_BINDING_NAME,
-            SpellType.METHOD_WITH_SPELLFRAME,
-            SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
-        }
+        return self._is_method_spell
 
     @property
     def is_lambda_spell(self) -> bool:
         """
         Returns True if this spell represents a lambda-based method spell.
         """
-        return self.spell_type in {
-            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
-            SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
-            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
-        }
+        return self._is_lambda_spell
 
     @property
     def has_existing_object(self) -> bool:
