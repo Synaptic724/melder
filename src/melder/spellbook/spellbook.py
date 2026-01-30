@@ -3459,10 +3459,6 @@ class Spellbook(Cleanable, ISpellbook):
                 lambda: self._phase_patch_maps_factory(scheduler, conduit_id),
             )
             scheduler.register_phase(
-                "execution_plan",
-                lambda: self._phase_execution_plan_factory(scheduler, conduit_id),
-            )
-            scheduler.register_phase(
                 "execution_assembly_plan",
                 lambda: self._phase_execution_assembly_plan_factory(scheduler, conduit_id),
             )
@@ -3781,43 +3777,6 @@ class Spellbook(Cleanable, ISpellbook):
                     label=f"patch_maps:{spell.spell_id}",
                     metadata={
                         "phase": "patch_maps",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
-
-    def _phase_execution_plan_factory(
-            self,
-            scheduler: PhaseScheduler,
-            conduit_id: str,
-    ) -> Sequence[IUnitOfWork]:
-        """
-        Internal
-
-        Build :class:`UnitOfWork` instances for the **execution_plan** phase.
-
-        This phase compiles execution plans for spells based on Phase 8
-        occurrence plans and Phase 9 injection plans. Existing-creation spells
-        are treated as a no-op by the underlying SpellCrafter.
-
-        Expected spell surface:
-
-            ``spell.run_phase_execution_plan(conduit_id, cancel_event: CancellationEvent) -> Any``
-        """
-        self.check_cleaned()
-        if not self._spells:
-            return []
-
-        units: List[IUnitOfWork] = []
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_execution_plan,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"execution_plan:{spell.spell_id}",
-                    metadata={
-                        "phase": "execution_plan",
                         "spell_id": spell.spell_id,
                     },
                 )

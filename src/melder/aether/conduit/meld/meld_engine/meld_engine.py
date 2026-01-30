@@ -22,7 +22,6 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
     select_occurrence_plan,
 )
-from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlan
 from melder.spellbook.spell_crafter.blueprints.execution_assembly_plan import (
     ExecutionAssemblyPlan,
     ExecutionAssemblyStep,
@@ -928,115 +927,6 @@ class MeldEngine(Cleanable):
 
         return instance
 
-    def run_execution_plan(
-            self,
-            execution_plan: ExecutionPlan,
-            *,
-            override_targets_by_spell_id: Optional[Dict[str, List[SocketRef]]] = None,
-            any_overrides_present: Optional[bool] = None,
-    ) -> Any:
-        """
-        Execute a Phase 11 ExecutionPlan using precompiled step metadata.
-
-        Args:
-            execution_plan:
-                Phase 11 execution plan to execute.
-            override_targets_by_spell_id:
-                Optional precomputed override targets grouped by spell id.
-            any_overrides_present:
-                Optional override presence flag for reuse/override gating.
-        """
-        self.check_cleaned()
-        if execution_plan is None:
-            raise ValueError("execution_plan must not be None.")
-
-        cancel_event: Optional[CancellationEvent] = self._context.cancel_event
-        if cancel_event is not None and cancel_event.is_set:
-            cancel_event.throw_if_set()
-
-        root_id = self._root_spell.spell_index.current
-        if execution_plan.root_spell_id != root_id:
-            raise MeldExecutionError(
-                spell_id=root_id,
-                spell_name=self._root_spell.spell_name,
-                message=(
-                    "Phase 11 execution plan root mismatch. "
-                    "Recompile the execution plan before retrying."
-                ),
-            )
-
-        if override_targets_by_spell_id is None:
-            override_targets_by_spell_id = self._collect_override_targets(
-                self._override_map
-            )
-        self._override_targets_by_spell_id = override_targets_by_spell_id
-        self._contract_overrides_by_occurrence = (
-            execution_plan.contract_overrides_by_occurrence
-        )
-        self._contract_overrides_by_spell_id = (
-            execution_plan.contract_overrides_by_spell_id
-        )
-        if any_overrides_present is None:
-            any_overrides_present = self._detect_any_overrides()
-        self._any_overrides_present = any_overrides_present
-        self._validate_shared_override_targets(execution_plan.shared_spell_ids)
-
-        for step in execution_plan.steps:
-            if cancel_event is not None and cancel_event.is_set:
-                cancel_event.throw_if_set()
-
-            spell = self._spell_lookup.get(step.spell_id)
-            if spell is None and step.spell_id == root_id:
-                spell = self._root_spell
-            if spell is None:
-                raise MeldExecutionError(
-                    spell_id=step.spell_id,
-                    spell_name=step.spell_id,
-                    message=f"Spell with id '{step.spell_id}' not found in spellbook for meld.",
-                )
-
-            def _construct_node(
-                    *,
-                    step=step,
-                    spell: ISpell = spell,
-            ) -> Any:
-                kwargs: Dict[str, Any] = {}
-                occurrence = step.occurrence
-                shared = step.instance_key[1] is None
-                override_values = self._build_instance_override_map(
-                    spell_id=step.spell_id,
-                    occurrence_path=occurrence[1],
-                    shared=shared,
-                )
-                if step.inject_spec is not None:
-                    kwargs = build_kwargs_from_injection_spec(
-                        instance_key=step.instance_key,
-                        occurrence=occurrence,
-                        injection_spec=step.inject_spec,
-                        instance_results=self._instance_results,
-                        override_values=override_values,
-                    )
-                elif override_values:
-                    kwargs.update(override_values)
-                return self._construct_spell(spell, kwargs)
-
-            instance, _ = self._resolve_spell_instance(
-                spell,
-                construct_fn=_construct_node,
-            )
-            self._store_instance_result(step.instance_key, instance)
-
-        try:
-            return self._get_instance_result(execution_plan.root_instance_key)
-        except MeldExecutionError:
-            fallback_key = self._instance_key_for_root()
-            instance, _ = self._resolve_spell_instance(
-                self._root_spell,
-                construct_fn=self._construct_root_only,
-            )
-            self._store_instance_result(fallback_key, instance)
-            return instance
-
     def run_execution_assembly_plan(
             self,
             execution_plan: ExecutionAssemblyPlan,
@@ -1056,23 +946,10 @@ class MeldEngine(Cleanable):
                 Optional override presence flag for reuse/override gating.
         """
         self.check_cleaned()
-        if execution_plan is None:
-            raise ValueError("execution_plan must not be None.")
 
         cancel_event: Optional[CancellationEvent] = self._context.cancel_event
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
-
-        root_id = self._root_spell.spell_index.current
-        if execution_plan.root_spell_id != root_id:
-            raise MeldExecutionError(
-                spell_id=root_id,
-                spell_name=self._root_spell.spell_name,
-                message=(
-                    "Phase 12 execution plan root mismatch. "
-                    "Recompile the execution plan before retrying."
-                ),
-            )
 
         if override_targets_by_spell_id is None:
             override_targets_by_spell_id = self._collect_override_targets(

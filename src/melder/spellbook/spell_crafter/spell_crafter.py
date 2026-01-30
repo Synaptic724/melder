@@ -59,14 +59,10 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
     OccurrencePlanBuilder,
 )
-from melder.spellbook.spell_crafter.blueprints.execution_plan import (
-    ExecutionPlan,
-    ExecutionPlanBuilder,
-    ExecutionPlanVariant,
-)
 from melder.spellbook.spell_crafter.blueprints.execution_assembly_plan import (
     ExecutionAssemblyPlan,
     ExecutionAssemblyPlanBuilder,
+    ExecutionPlanVariant,
 )
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.spell_system_validation_state import SpellSystemValidationState
@@ -141,8 +137,9 @@ class SpellCrafter(Cleanable):
 
     It also retains selected **frame-level artifacts** produced in later phases
     when they are available for this spell (e.g., Phase 5 blueprints and
-    Phase 8-11 plans for constructed spells). Existing-creation spells may
-    bypass Phase 8-11 artifacts because they already have instances.
+    Phase 8-10 artifacts plus Phase 12 execution assembly plans for constructed
+    spells). Existing-creation spells may bypass Phase 8-10 and Phase 12
+    artifacts because they already have instances.
 
     The :class:`Spell` instance only persists:
 
@@ -184,9 +181,6 @@ class SpellCrafter(Cleanable):
         "_injection_plan_phase9",
         "_override_patch_map_phase10",
         "_mutation_patch_map_phase10",
-        "_execution_plan_phase11",
-        "_execution_plan_phase11_no_overrides",
-        "_execution_plan_phase11_overrides",
         "_execution_assembly_plan_phase12",
         "_execution_assembly_plan_phase12_no_overrides",
         "_execution_assembly_plan_phase12_overrides",
@@ -232,9 +226,6 @@ class SpellCrafter(Cleanable):
         self._injection_plan_phase9: Optional[InjectionPlan] = None
         self._override_patch_map_phase10: Optional[OverridePatchMap] = None
         self._mutation_patch_map_phase10: Optional[MutationPatchMap] = None
-        self._execution_plan_phase11: Optional[ExecutionPlan] = None
-        self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
-        self._execution_plan_phase11_overrides: Optional[ExecutionPlan] = None
         self._execution_assembly_plan_phase12: Optional[ExecutionAssemblyPlan] = None
         self._execution_assembly_plan_phase12_no_overrides: Optional[ExecutionAssemblyPlan] = None
         self._execution_assembly_plan_phase12_overrides: Optional[ExecutionAssemblyPlan] = None
@@ -295,21 +286,6 @@ class SpellCrafter(Cleanable):
                     self._mutation_patch_map_phase10.cleanup()
                 except Exception:
                     pass
-            if self._execution_plan_phase11 is not None:
-                try:
-                    self._execution_plan_phase11.cleanup()
-                except Exception:
-                    pass
-            if self._execution_plan_phase11_no_overrides is not None:
-                try:
-                    self._execution_plan_phase11_no_overrides.cleanup()
-                except Exception:
-                    pass
-            if self._execution_plan_phase11_overrides is not None:
-                try:
-                    self._execution_plan_phase11_overrides.cleanup()
-                except Exception:
-                    pass
             if self._execution_assembly_plan_phase12 is not None:
                 try:
                     self._execution_assembly_plan_phase12.cleanup()
@@ -347,9 +323,6 @@ class SpellCrafter(Cleanable):
             self._injection_plan_phase9 = None
             self._override_patch_map_phase10 = None
             self._mutation_patch_map_phase10 = None
-            self._execution_plan_phase11 = None
-            self._execution_plan_phase11_no_overrides = None
-            self._execution_plan_phase11_overrides = None
             self._execution_assembly_plan_phase12 = None
             self._execution_assembly_plan_phase12_no_overrides = None
             self._execution_assembly_plan_phase12_overrides = None
@@ -477,42 +450,6 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
         return self._mutation_patch_map_phase10
-
-    @property
-    def execution_plan_phase11(self) -> Optional[ExecutionPlan]:
-        """
-        Phase 11 execution plan artifact, if compiled for this spell.
-
-        This is the override-aware plan that includes mutation snapshots for
-        runtime gating. Use the explicit variant properties for more granular
-        selection.
-        """
-        self.check_cleaned()
-        return self._execution_plan_phase11
-
-    @property
-    def execution_plan_phase11_no_overrides(self) -> Optional[ExecutionPlan]:
-        """
-        Phase 11 execution plan variant for override-free fast paths.
-        """
-        self.check_cleaned()
-        return self._execution_plan_phase11_no_overrides
-
-    @property
-    def execution_plan_phase11_overrides(self) -> Optional[ExecutionPlan]:
-        """
-        Phase 11 execution plan variant for override payloads without mutations.
-        """
-        self.check_cleaned()
-        return self._execution_plan_phase11_overrides
-
-    @property
-    def execution_plan_phase11_overrides_with_mutations(self) -> Optional[ExecutionPlan]:
-        """
-        Phase 11 execution plan variant for override payloads with mutations.
-        """
-        self.check_cleaned()
-        return self._execution_plan_phase11
 
     @property
     def execution_assembly_plan_phase12(self) -> Optional[ExecutionAssemblyPlan]:
@@ -707,24 +644,6 @@ class SpellCrafter(Cleanable):
             except Exception:
                 pass
         self._mutation_patch_map_phase10 = None
-        if self._execution_plan_phase11 is not None:
-            try:
-                self._execution_plan_phase11.cleanup()
-            except Exception:
-                pass
-        self._execution_plan_phase11 = None
-        if self._execution_plan_phase11_no_overrides is not None:
-            try:
-                self._execution_plan_phase11_no_overrides.cleanup()
-            except Exception:
-                pass
-        self._execution_plan_phase11_no_overrides = None
-        if self._execution_plan_phase11_overrides is not None:
-            try:
-                self._execution_plan_phase11_overrides.cleanup()
-            except Exception:
-                pass
-        self._execution_plan_phase11_overrides = None
         if self._execution_assembly_plan_phase12 is not None:
             try:
                 self._execution_assembly_plan_phase12.cleanup()
@@ -1691,8 +1610,8 @@ class SpellCrafter(Cleanable):
 
         Phase 5 produces two related outputs:
             - A root-only blueprint map for system validation (Phase 6).
-            - Per-spell blueprints attached to constructed spells so Phase 8-11
-              compilation can proceed for any meldable spell.
+            - Per-spell blueprints attached to constructed spells so Phase 8-10
+              and Phase 12 compilation can proceed for any meldable spell.
 
         Args:
             conduit_id:
@@ -2166,129 +2085,6 @@ class SpellCrafter(Cleanable):
 
 
     # ------------------------------------------------------------------
-    # Phase 11 - Execution Plan
-    # ------------------------------------------------------------------
-
-    def run_phase_execution_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 11 - Execution plan compilation.
-
-        Compiles a Phase 11 ExecutionPlan for spells using Phase 8–10
-        artifacts. Existing-creation spells are treated as a no-op.
-        Also emits plan variants for override-free, override-aware, and
-        override+mutation-aware execution.
-
-        Contract:
-            - Requires Phase 8 artifacts to be available.
-            - Uses Phase 9 injection plan when available.
-            - Replaces any existing ExecutionPlan for this spell.
-        """
-        self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
-        if self._spell.is_existing_creation:
-            return
-
-        root_blueprint = self._root_blueprint_phase5
-        if root_blueprint is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 11: root blueprint missing for spell."
-            )
-
-        if self._occurrence_plan_phase8 is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 11: cannot compile execution plans before Phase 8 has completed."
-            )
-
-        if self._spellbook_scanner is None:
-            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
-
-        spell_lookup: Dict[str, ISpell] = {}
-        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
-            spell_lookup[spell_index.current] = spell_instance
-
-        plan_no_overrides = self._build_execution_plan_variant(
-            occurrence_plan=self._occurrence_plan_phase8,
-            injection_plan=self._injection_plan_phase9,
-            spell_lookup=spell_lookup,
-            mutation_override_payload={},
-            plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
-        )
-        plan_overrides = self._build_execution_plan_variant(
-            occurrence_plan=self._occurrence_plan_phase8,
-            injection_plan=self._injection_plan_phase9,
-            spell_lookup=spell_lookup,
-            mutation_override_payload={},
-            plan_variant=ExecutionPlanVariant.OVERRIDES,
-        )
-        plan_overrides_with_mutations = self._build_execution_plan_variant(
-            occurrence_plan=self._occurrence_plan_phase8,
-            injection_plan=self._injection_plan_phase9,
-            spell_lookup=spell_lookup,
-            mutation_override_payload=self._spell.mutation_override,
-            plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
-        )
-
-        self._cleanup_execution_plans_phase11()
-        self._execution_plan_phase11_no_overrides = plan_no_overrides
-        self._execution_plan_phase11_overrides = plan_overrides
-        self._execution_plan_phase11 = plan_overrides_with_mutations
-
-    def _build_execution_plan_variant(
-            self,
-            *,
-            occurrence_plan: OccurrencePlan,
-            injection_plan: Optional[InjectionPlan],
-            spell_lookup: Dict[str, ISpell],
-            mutation_override_payload: Dict[str, object],
-            plan_variant: str,
-    ) -> ExecutionPlan:
-        """
-        Build a Phase 11 ExecutionPlan variant for this spell.
-
-        Contract:
-            - Uses the provided mutation payload snapshot.
-            - Tags the plan with the supplied variant label.
-        """
-        builder = ExecutionPlanBuilder(
-            occurrence_plan=occurrence_plan,
-            injection_plan=injection_plan,
-            spell_lookup=spell_lookup,
-            mutation_override_payload=mutation_override_payload,
-            plan_variant=plan_variant,
-        )
-        return builder.build()
-
-    def _cleanup_execution_plans_phase11(self) -> None:
-        """
-        Deterministically clean all Phase 11 execution plan variants.
-        """
-        if self._execution_plan_phase11 is not None:
-            try:
-                self._execution_plan_phase11.cleanup()
-            except Exception:
-                pass
-        if self._execution_plan_phase11_no_overrides is not None:
-            try:
-                self._execution_plan_phase11_no_overrides.cleanup()
-            except Exception:
-                pass
-        if self._execution_plan_phase11_overrides is not None:
-            try:
-                self._execution_plan_phase11_overrides.cleanup()
-            except Exception:
-                pass
-        self._execution_plan_phase11 = None
-        self._execution_plan_phase11_no_overrides = None
-        self._execution_plan_phase11_overrides = None
-
-
-    # ------------------------------------------------------------------
     # Phase 12 - Execution Assembly Plan
     # ------------------------------------------------------------------
 
@@ -2300,7 +2096,7 @@ class SpellCrafter(Cleanable):
         """
         Phase 12 - Execution assembly plan compilation.
 
-        Compiles a Phase 12 ExecutionAssemblyPlan for spells using Phase 8–11
+        Compiles a Phase 12 ExecutionAssemblyPlan for spells using Phase 8–9
         artifacts. Existing-creation spells are treated as a no-op.
         Emits plan variants for override-free, override-aware, and
         override+mutation-aware execution assembly.
@@ -2606,7 +2402,6 @@ class SpellCrafter(Cleanable):
             - Phase 8: Occurrence plan
             - Phase 9: Injection plan
             - Phase 10: Patch maps
-            - Phase 11: Execution plan
             - Phase 12: Execution assembly plan
             - Phase 6: System validation
             - Phase 7: Change control
@@ -2632,7 +2427,6 @@ class SpellCrafter(Cleanable):
         self.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
-        self.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_execution_assembly_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         self.run_phase_change_control(conduit_id, cancel_event=cancel_event)

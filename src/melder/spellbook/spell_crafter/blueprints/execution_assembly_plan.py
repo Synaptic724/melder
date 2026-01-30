@@ -11,9 +11,25 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrenceKey,
     OccurrencePlan,
 )
-from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanVariant
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell
+
+
+class ExecutionPlanVariant:
+    """
+    Internal
+
+    Execution assembly plan variant labels.
+
+    Purpose:
+        Identify which precompiled execution assembly plan should be selected
+        based on override and mutation payloads at meld time.
+    """
+    __melder_internal__ = _mrg.sentinel
+    __slots__ = ()
+    NO_OVERRIDES_FAST = "no_overrides_fast"
+    OVERRIDES = "overrides"
+    OVERRIDES_WITH_MUTATIONS = "overrides_with_mutations"
 
 
 class ExecutionAssemblyStep:
