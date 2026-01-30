@@ -7,6 +7,7 @@ import pytest
 import melder.aether.conduit.meld.meld_runtime.meld_runtime as runtime_module
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanVariant
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -39,7 +40,9 @@ class _CrafterStub:
         injection_plan: Any,
         override_patch_map: Any,
         mutation_patch_map: Any,
-        execution_plan: Any,
+        execution_plan_no_overrides: Any,
+        execution_plan_overrides: Any,
+        execution_plan_overrides_with_mutations: Any,
     ) -> None:
         """
         Store the provided artifacts.
@@ -49,7 +52,9 @@ class _CrafterStub:
         self._injection_plan_phase9 = injection_plan
         self._override_patch_map_phase10 = override_patch_map
         self._mutation_patch_map_phase10 = mutation_patch_map
-        self._execution_plan_phase11 = execution_plan
+        self._execution_plan_phase11_no_overrides = execution_plan_no_overrides
+        self._execution_plan_phase11_overrides = execution_plan_overrides
+        self._execution_plan_phase11 = execution_plan_overrides_with_mutations
 
     @property
     def root_blueprint_phase5(self) -> Any:
@@ -73,6 +78,18 @@ class _CrafterStub:
 
     @property
     def execution_plan_phase11(self) -> Any:
+        return self._execution_plan_phase11
+
+    @property
+    def execution_plan_phase11_no_overrides(self) -> Any:
+        return self._execution_plan_phase11_no_overrides
+
+    @property
+    def execution_plan_phase11_overrides(self) -> Any:
+        return self._execution_plan_phase11_overrides
+
+    @property
+    def execution_plan_phase11_overrides_with_mutations(self) -> Any:
         return self._execution_plan_phase11
 
 
@@ -155,7 +172,7 @@ class _EngineStub:
         self.run_called = True
         return "slow"
 
-    def run_execution_plan(self, execution_plan: Any) -> str:
+    def run_execution_plan(self, execution_plan: Any, **_: Any) -> str:
         """
         Return a sentinel for the Phase 11 fast path.
         """
@@ -204,19 +221,50 @@ def _make_artifacts(
     root_id: str,
     contract_overrides_occurrence: Optional[Dict[Any, Any]] = None,
     contract_overrides_spell_id: Optional[Dict[Any, Any]] = None,
+    contract_dependencies_complete: bool = True,
+    mutation_override_payload: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Build stub artifacts for gating tests.
     """
-    execution_plan = SimpleNamespace(root_spell_id=root_id)
+    execution_plan_no_overrides = SimpleNamespace(
+        root_spell_id=root_id,
+        contract_overrides_by_occurrence=contract_overrides_occurrence or {},
+        contract_overrides_by_spell_id=contract_overrides_spell_id or {},
+        contract_dependencies_complete=contract_dependencies_complete,
+        shared_spell_ids=[],
+        mutation_override_payload={},
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
+    )
+    execution_plan_overrides = SimpleNamespace(
+        root_spell_id=root_id,
+        contract_overrides_by_occurrence=contract_overrides_occurrence or {},
+        contract_overrides_by_spell_id=contract_overrides_spell_id or {},
+        contract_dependencies_complete=contract_dependencies_complete,
+        shared_spell_ids=[],
+        mutation_override_payload={},
+        plan_variant=ExecutionPlanVariant.OVERRIDES,
+    )
+    execution_plan_overrides_with_mutations = SimpleNamespace(
+        root_spell_id=root_id,
+        contract_overrides_by_occurrence=contract_overrides_occurrence or {},
+        contract_overrides_by_spell_id=contract_overrides_spell_id or {},
+        contract_dependencies_complete=contract_dependencies_complete,
+        shared_spell_ids=[],
+        mutation_override_payload=mutation_override_payload or {},
+        plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
+    )
     occurrence_plan = SimpleNamespace(
         root_spell_id=root_id,
         contract_overrides_by_occurrence=contract_overrides_occurrence or {},
         contract_overrides_by_spell_id=contract_overrides_spell_id or {},
+        contract_dependencies_complete=contract_dependencies_complete,
     )
     injection_plan = object()
     return {
-        "execution_plan": execution_plan,
+        "execution_plan_no_overrides": execution_plan_no_overrides,
+        "execution_plan_overrides": execution_plan_overrides,
+        "execution_plan_overrides_with_mutations": execution_plan_overrides_with_mutations,
         "occurrence_plan": occurrence_plan,
         "injection_plan": injection_plan,
     }
@@ -238,7 +286,9 @@ def test_phase11_gate_rejects_missing_execution_plan(monkeypatch: pytest.MonkeyP
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=None,
+        execution_plan_no_overrides=None,
+        execution_plan_overrides=None,
+        execution_plan_overrides_with_mutations=None,
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -270,7 +320,9 @@ def test_phase11_requires_phase8_and_phase9(
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -297,7 +349,9 @@ def test_phase11_gate_rejects_root_mismatch(monkeypatch: pytest.MonkeyPatch) -> 
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -308,23 +362,27 @@ def test_phase11_gate_rejects_root_mismatch(monkeypatch: pytest.MonkeyPatch) -> 
     assert result == "slow"
 
 
-def test_phase11_gate_rejects_mutation_override(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_phase11_gate_rejects_mutation_override_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Purpose:
-        Validate Phase 11 rejects mutation overrides.
+        Validate Phase 11 rejects mismatched mutation overrides.
     Contract:
-        - Mutation override payloads force the slow path.
+        - Mismatched mutation overrides force the slow path.
     """
     _install_engine_stub(monkeypatch)
     _set_override_helpers(monkeypatch, mutation_blueprint=object())
-    artifacts = _make_artifacts(root_id="root")
+    artifacts = _make_artifacts(root_id="root", mutation_override_payload={})
     crafter = _CrafterStub(
         root_blueprint=object(),
         occurrence_plan=artifacts["occurrence_plan"],
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter, mutation_override={"x": "y"})
     context = _ContextStub(root_spell=spell)
@@ -335,12 +393,46 @@ def test_phase11_gate_rejects_mutation_override(monkeypatch: pytest.MonkeyPatch)
     assert result == "slow"
 
 
-def test_phase11_gate_rejects_context_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_phase11_gate_allows_matching_mutation_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Purpose:
-        Validate Phase 11 rejects user overrides.
+        Validate Phase 11 allows matching mutation overrides.
     Contract:
-        - Any context overrides force the slow path.
+        - Matching mutation overrides allow the fast path.
+    """
+    _install_engine_stub(monkeypatch)
+    _set_override_helpers(monkeypatch, mutation_blueprint=object())
+    artifacts = _make_artifacts(
+        root_id="root",
+        mutation_override_payload={"x": "y"},
+    )
+    crafter = _CrafterStub(
+        root_blueprint=object(),
+        occurrence_plan=artifacts["occurrence_plan"],
+        injection_plan=artifacts["injection_plan"],
+        override_patch_map=object(),
+        mutation_patch_map=object(),
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
+    )
+    spell = _SpellStub(spell_id="root", crafter=crafter, mutation_override={"x": "y"})
+    context = _ContextStub(root_spell=spell)
+
+    runtime = MeldRuntime()
+    result = runtime.execute(context)
+
+    assert result == "fast"
+
+
+def test_phase11_gate_allows_context_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        Validate Phase 11 allows user overrides.
+    Contract:
+        - Context overrides still allow the fast path.
     """
     _install_engine_stub(monkeypatch)
     _set_override_helpers(monkeypatch)
@@ -351,7 +443,9 @@ def test_phase11_gate_rejects_context_overrides(monkeypatch: pytest.MonkeyPatch)
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell, overrides={"x": "y"})
@@ -359,15 +453,15 @@ def test_phase11_gate_rejects_context_overrides(monkeypatch: pytest.MonkeyPatch)
     runtime = MeldRuntime()
     result = runtime.execute(context)
 
-    assert result == "slow"
+    assert result == "fast"
 
 
-def test_phase11_gate_rejects_override_map(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_phase11_gate_allows_override_map(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Purpose:
-        Validate Phase 11 rejects socket override maps.
+        Validate Phase 11 allows socket override maps.
     Contract:
-        - Any override_map entries force the slow path.
+        - Socket override maps still allow the fast path.
     """
     _install_engine_stub(monkeypatch)
     socket_ref = SocketRef(
@@ -384,7 +478,9 @@ def test_phase11_gate_rejects_override_map(monkeypatch: pytest.MonkeyPatch) -> N
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -392,7 +488,7 @@ def test_phase11_gate_rejects_override_map(monkeypatch: pytest.MonkeyPatch) -> N
     runtime = MeldRuntime()
     result = runtime.execute(context)
 
-    assert result == "slow"
+    assert result == "fast"
 
 
 def test_phase11_gate_rejects_hooks(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -411,7 +507,9 @@ def test_phase11_gate_rejects_hooks(monkeypatch: pytest.MonkeyPatch) -> None:
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter, hooks_enabled=True)
     context = _ContextStub(root_spell=spell)
@@ -427,9 +525,9 @@ def test_phase11_gate_rejects_contract_overrides_by_occurrence(
 ) -> None:
     """
     Purpose:
-        Validate Phase 11 rejects contract overrides by occurrence.
+        Validate Phase 11 allows contract overrides by occurrence.
     Contract:
-        - Any contract override payload disables Phase 11.
+        - Contract override payloads still allow Phase 11.
     """
     _install_engine_stub(monkeypatch)
     _set_override_helpers(monkeypatch)
@@ -443,7 +541,9 @@ def test_phase11_gate_rejects_contract_overrides_by_occurrence(
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -451,7 +551,7 @@ def test_phase11_gate_rejects_contract_overrides_by_occurrence(
     runtime = MeldRuntime()
     result = runtime.execute(context)
 
-    assert result == "slow"
+    assert result == "fast"
 
 
 def test_phase11_gate_rejects_contract_overrides_by_spell_id(
@@ -459,9 +559,9 @@ def test_phase11_gate_rejects_contract_overrides_by_spell_id(
 ) -> None:
     """
     Purpose:
-        Validate Phase 11 rejects contract overrides by spell id.
+        Validate Phase 11 allows contract overrides by spell id.
     Contract:
-        - Any contract override payload disables Phase 11.
+        - Contract override payloads still allow Phase 11.
     """
     _install_engine_stub(monkeypatch)
     _set_override_helpers(monkeypatch)
@@ -475,7 +575,9 @@ def test_phase11_gate_rejects_contract_overrides_by_spell_id(
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -483,7 +585,7 @@ def test_phase11_gate_rejects_contract_overrides_by_spell_id(
     runtime = MeldRuntime()
     result = runtime.execute(context)
 
-    assert result == "slow"
+    assert result == "fast"
 
 
 def test_phase11_gate_allows_fast_path(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -502,7 +604,9 @@ def test_phase11_gate_allows_fast_path(monkeypatch: pytest.MonkeyPatch) -> None:
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -532,7 +636,9 @@ def test_phase11_gate_rejects_without_root_blueprint(monkeypatch: pytest.MonkeyP
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -570,7 +676,9 @@ def test_phase11_override_helper_failure_is_wrapped(monkeypatch: pytest.MonkeyPa
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -580,46 +688,14 @@ def test_phase11_override_helper_failure_is_wrapped(monkeypatch: pytest.MonkeyPa
         runtime.execute(context)
 
 
-def test_phase11_gate_rejects_mutation_override_uses_slow_path(
+def test_phase11_gate_allows_context_overrides_uses_fast_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Purpose:
-        Ensure mutation overrides route to the slow path even with Phase 11 artifacts.
+        Ensure context overrides still allow the fast path when Phase 11 artifacts exist.
     Contract:
-        - Fast path is skipped when mutation_override is non-empty.
-    """
-    _install_engine_stub(monkeypatch)
-    _set_override_helpers(monkeypatch, mutation_blueprint=object())
-    artifacts = _make_artifacts(root_id="root")
-    crafter = _CrafterStub(
-        root_blueprint=object(),
-        occurrence_plan=artifacts["occurrence_plan"],
-        injection_plan=artifacts["injection_plan"],
-        override_patch_map=object(),
-        mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
-    )
-    spell = _SpellStub(spell_id="root", crafter=crafter, mutation_override={"x": "y"})
-    context = _ContextStub(root_spell=spell)
-
-    runtime = MeldRuntime()
-    result = runtime.execute(context)
-
-    assert result == "slow"
-    assert _EngineStub.last_instance is not None
-    assert _EngineStub.last_instance.run_called
-    assert not _EngineStub.last_instance.run_execution_called
-
-
-def test_phase11_gate_rejects_context_overrides_uses_slow_path(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Purpose:
-        Ensure context overrides force the slow path when Phase 11 artifacts exist.
-    Contract:
-        - Fast path is skipped when context overrides are supplied.
+        - Fast path is used when context overrides are supplied.
     """
     _install_engine_stub(monkeypatch)
     _set_override_helpers(monkeypatch)
@@ -630,7 +706,9 @@ def test_phase11_gate_rejects_context_overrides_uses_slow_path(
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell, overrides={"x": "y"})
@@ -638,19 +716,19 @@ def test_phase11_gate_rejects_context_overrides_uses_slow_path(
     runtime = MeldRuntime()
     result = runtime.execute(context)
 
-    assert result == "slow"
+    assert result == "fast"
     assert _EngineStub.last_instance is not None
-    assert _EngineStub.last_instance.run_called
+    assert _EngineStub.last_instance.run_execution_called
 
 
-def test_phase11_gate_rejects_override_map_uses_slow_path(
+def test_phase11_gate_allows_override_map_uses_fast_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Purpose:
-        Ensure non-empty override maps force the slow path.
+        Ensure non-empty override maps still allow the fast path.
     Contract:
-        - Fast path is skipped when override_map is non-empty.
+        - Fast path is used when override_map is non-empty.
     """
     _install_engine_stub(monkeypatch)
     socket_ref = SocketRef(
@@ -667,7 +745,9 @@ def test_phase11_gate_rejects_override_map_uses_slow_path(
         injection_plan=artifacts["injection_plan"],
         override_patch_map=object(),
         mutation_patch_map=object(),
-        execution_plan=artifacts["execution_plan"],
+        execution_plan_no_overrides=artifacts["execution_plan_no_overrides"],
+        execution_plan_overrides=artifacts["execution_plan_overrides"],
+        execution_plan_overrides_with_mutations=artifacts["execution_plan_overrides_with_mutations"],
     )
     spell = _SpellStub(spell_id="root", crafter=crafter)
     context = _ContextStub(root_spell=spell)
@@ -675,6 +755,6 @@ def test_phase11_gate_rejects_override_map_uses_slow_path(
     runtime = MeldRuntime()
     result = runtime.execute(context)
 
-    assert result == "slow"
+    assert result == "fast"
     assert _EngineStub.last_instance is not None
-    assert _EngineStub.last_instance.run_called
+    assert _EngineStub.last_instance.run_execution_called

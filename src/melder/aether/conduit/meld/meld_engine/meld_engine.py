@@ -23,6 +23,10 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     select_occurrence_plan,
 )
 from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlan
+from melder.spellbook.spell_crafter.blueprints.execution_assembly_plan import (
+    ExecutionAssemblyPlan,
+    ExecutionAssemblyStep,
+)
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.creations.creations import Creations
@@ -924,9 +928,23 @@ class MeldEngine(Cleanable):
 
         return instance
 
-    def run_execution_plan(self, execution_plan: ExecutionPlan) -> Any:
+    def run_execution_plan(
+            self,
+            execution_plan: ExecutionPlan,
+            *,
+            override_targets_by_spell_id: Optional[Dict[str, List[SocketRef]]] = None,
+            any_overrides_present: Optional[bool] = None,
+    ) -> Any:
         """
         Execute a Phase 11 ExecutionPlan using precompiled step metadata.
+
+        Args:
+            execution_plan:
+                Phase 11 execution plan to execute.
+            override_targets_by_spell_id:
+                Optional precomputed override targets grouped by spell id.
+            any_overrides_present:
+                Optional override presence flag for reuse/override gating.
         """
         self.check_cleaned()
         if execution_plan is None:
@@ -946,6 +964,22 @@ class MeldEngine(Cleanable):
                     "Recompile the execution plan before retrying."
                 ),
             )
+
+        if override_targets_by_spell_id is None:
+            override_targets_by_spell_id = self._collect_override_targets(
+                self._override_map
+            )
+        self._override_targets_by_spell_id = override_targets_by_spell_id
+        self._contract_overrides_by_occurrence = (
+            execution_plan.contract_overrides_by_occurrence
+        )
+        self._contract_overrides_by_spell_id = (
+            execution_plan.contract_overrides_by_spell_id
+        )
+        if any_overrides_present is None:
+            any_overrides_present = self._detect_any_overrides()
+        self._any_overrides_present = any_overrides_present
+        self._validate_shared_override_targets(execution_plan.shared_spell_ids)
 
         for step in execution_plan.steps:
             if cancel_event is not None and cancel_event.is_set:
@@ -967,18 +1001,127 @@ class MeldEngine(Cleanable):
                     spell: ISpell = spell,
             ) -> Any:
                 kwargs: Dict[str, Any] = {}
+                occurrence = step.occurrence
+                shared = step.instance_key[1] is None
+                override_values = self._build_instance_override_map(
+                    spell_id=step.spell_id,
+                    occurrence_path=occurrence[1],
+                    shared=shared,
+                )
                 if step.inject_spec is not None:
                     kwargs = build_kwargs_from_injection_spec(
                         instance_key=step.instance_key,
-                        occurrence=step.occurrence,
+                        occurrence=occurrence,
                         injection_spec=step.inject_spec,
                         instance_results=self._instance_results,
-                        override_values={},
+                        override_values=override_values,
                     )
+                elif override_values:
+                    kwargs.update(override_values)
                 return self._construct_spell(spell, kwargs)
 
             instance, _ = self._resolve_spell_instance(
                 spell,
+                construct_fn=_construct_node,
+            )
+            self._store_instance_result(step.instance_key, instance)
+
+        try:
+            return self._get_instance_result(execution_plan.root_instance_key)
+        except MeldExecutionError:
+            fallback_key = self._instance_key_for_root()
+            instance, _ = self._resolve_spell_instance(
+                self._root_spell,
+                construct_fn=self._construct_root_only,
+            )
+            self._store_instance_result(fallback_key, instance)
+            return instance
+
+    def run_execution_assembly_plan(
+            self,
+            execution_plan: ExecutionAssemblyPlan,
+            *,
+            override_targets_by_spell_id: Optional[Dict[str, List[SocketRef]]] = None,
+            any_overrides_present: Optional[bool] = None,
+    ) -> Any:
+        """
+        Execute a Phase 12 ExecutionAssemblyPlan using precompiled step metadata.
+
+        Args:
+            execution_plan:
+                Phase 12 execution assembly plan to execute.
+            override_targets_by_spell_id:
+                Optional precomputed override targets grouped by spell id.
+            any_overrides_present:
+                Optional override presence flag for reuse/override gating.
+        """
+        self.check_cleaned()
+        if execution_plan is None:
+            raise ValueError("execution_plan must not be None.")
+
+        cancel_event: Optional[CancellationEvent] = self._context.cancel_event
+        if cancel_event is not None and cancel_event.is_set:
+            cancel_event.throw_if_set()
+
+        root_id = self._root_spell.spell_index.current
+        if execution_plan.root_spell_id != root_id:
+            raise MeldExecutionError(
+                spell_id=root_id,
+                spell_name=self._root_spell.spell_name,
+                message=(
+                    "Phase 12 execution plan root mismatch. "
+                    "Recompile the execution plan before retrying."
+                ),
+            )
+
+        if override_targets_by_spell_id is None:
+            override_targets_by_spell_id = self._collect_override_targets(
+                self._override_map
+            )
+        self._override_targets_by_spell_id = override_targets_by_spell_id
+        if any_overrides_present is None:
+            any_overrides_present = self._detect_any_overrides()
+        self._any_overrides_present = any_overrides_present
+
+        for step in execution_plan.steps:
+            if step.instance_key in self._instance_results:
+                continue
+            spell = self._spell_lookup.get(step.spell_id)
+            if spell is None:
+                raise MeldExecutionError(
+                    spell_id=step.spell_id,
+                    spell_name=step.spell_id,
+                    message=f"Spell with id '{step.spell_id}' not found in spellbook for meld.",
+                )
+
+            def _construct_node(
+                    *,
+                    plan_step: ExecutionAssemblyStep = step,
+                    plan_spell: ISpell = spell,
+            ) -> Any:
+                kwargs: Dict[str, Any] = {}
+                occurrence = plan_step.occurrence
+                shared = plan_step.instance_key[1] is None
+                override_values = self._build_instance_override_map(
+                    spell_id=plan_step.spell_id,
+                    occurrence_path=occurrence[1],
+                    shared=shared,
+                )
+                if plan_step.inject_spec is not None:
+                    kwargs = build_kwargs_from_injection_spec(
+                        instance_key=plan_step.instance_key,
+                        occurrence=occurrence,
+                        injection_spec=plan_step.inject_spec,
+                        instance_results=self._instance_results,
+                        override_values=override_values,
+                    )
+                elif override_values:
+                    kwargs.update(override_values)
+                return self._construct_spell(plan_spell, kwargs)
+
+            instance, _ = self._resolve_spell_instance_with_plan(
+                spell,
+                step,
                 construct_fn=_construct_node,
             )
             self._store_instance_result(step.instance_key, instance)
@@ -1161,6 +1304,110 @@ class MeldEngine(Cleanable):
                 self._raise_override_on_existing(spell)
 
         return instance, created
+
+    def _resolve_spell_instance_with_plan(
+            self,
+            spell: ISpell,
+            plan_step: ExecutionAssemblyStep,
+            *,
+            construct_fn: Callable[[], Any],
+    ) -> tuple[Any, bool]:
+        """
+        Internal
+
+        Resolve a spell instance using Phase 12 plan metadata for creations targets
+        and lock hints to avoid recomputing routing decisions.
+        """
+        creations = self._select_creations_by_target_kind(
+            spell=spell,
+            target_kind=plan_step.creations_target_kind,
+        )
+        existence: Existence = spell.existence
+        instance: Any = None
+        created = False
+
+        if existence is Existence.many:
+            instance = construct_fn()
+            if creations is not None and plan_step.must_register:
+                with creations._lock:
+                    self._register_spell(spell, instance, creations)
+            return instance, True
+
+        if existence in (
+                Existence.unique_per_conduit,
+                Existence.unique_per_spell_space,
+        ):
+            if creations is None:
+                instance = construct_fn()
+                return instance, True
+            with creations._lock:
+                instance = self._get_existing_creation(spell, creations)
+                if instance is None:
+                    instance = construct_fn()
+                    self._register_spell(spell, instance, creations)
+                    created = True
+                else:
+                    self._raise_override_on_existing(spell)
+            return instance, created
+
+        use_spell_lock = plan_step.lock_hint == "spell_lock"
+        if (
+                use_spell_lock
+                and self._context.caller_creations_lock_held
+                and creations is self._context.caller_creations
+        ):
+            use_spell_lock = False
+
+        if use_spell_lock:
+            with spell._lock:
+                if creations is not None:
+                    with creations._lock:
+                        instance = self._get_existing_creation(spell, creations)
+                else:
+                    instance = self._get_existing_creation(spell, None)
+
+                if instance is None:
+                    instance = construct_fn()
+                    if creations is not None:
+                        with creations._lock:
+                            self._register_spell(spell, instance, creations)
+                    created = True
+                else:
+                    self._raise_override_on_existing(spell)
+            return instance, created
+
+        if creations is None:
+            instance = construct_fn()
+            return instance, True
+
+        with creations._lock:
+            instance = self._get_existing_creation(spell, creations)
+            if instance is None:
+                instance = construct_fn()
+                self._register_spell(spell, instance, creations)
+                created = True
+            else:
+                self._raise_override_on_existing(spell)
+
+        return instance, created
+
+    def _select_creations_by_target_kind(
+            self,
+            *,
+            spell: ISpell,
+            target_kind: str,
+    ) -> Any:
+        """
+        Select the appropriate creations container based on a precomputed target kind.
+        """
+        if target_kind == "caller":
+            return self._context.caller_creations
+        if target_kind in ("owner", "spellspace"):
+            owner_creations = spell._owner_creations
+            if owner_creations is None:
+                owner_creations = self._context.owner_creations
+            return owner_creations
+        return self._select_creations_for_spell(spell)
 
     def _select_creations_for_spell(self, spell: ISpell) -> Any:
         """

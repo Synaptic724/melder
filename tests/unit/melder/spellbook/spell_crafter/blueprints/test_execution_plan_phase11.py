@@ -8,6 +8,7 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlan,
     ExecutionPlanBuilder,
     ExecutionPlanStep,
+    ExecutionPlanVariant,
 )
 from melder.spellbook.spell_crafter.blueprints.injection_plan import InjectionPlan
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlan
@@ -107,6 +108,12 @@ def test_execution_plan_cleanup_clears_steps() -> None:
                 register=True,
             )
         ],
+        contract_overrides_by_occurrence={},
+        contract_overrides_by_spell_id={},
+        shared_spell_ids=[],
+        contract_dependencies_complete=True,
+        mutation_override_payload={},
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
     )
 
     plan.cleanup()
@@ -141,6 +148,8 @@ def test_execution_plan_builder_action_for_existence(
         occurrence_plan=plan,
         injection_plan=None,
         spell_lookup={"root": _SpellStub(spell_id="root", existence=existence)},
+        mutation_override_payload={},
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
     )
     execution_plan = builder.build()
 
@@ -176,6 +185,8 @@ def test_execution_plan_builder_creation_target_for_existence(
         occurrence_plan=plan,
         injection_plan=None,
         spell_lookup={"root": _SpellStub(spell_id="root", existence=existence)},
+        mutation_override_payload={},
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
     )
     execution_plan = builder.build()
 
@@ -198,6 +209,8 @@ def test_execution_plan_builder_requires_canonical_occurrence() -> None:
         occurrence_plan=plan,
         injection_plan=None,
         spell_lookup={"root": _SpellStub(spell_id="root", existence=Existence.unique)},
+        mutation_override_payload={},
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
     )
 
     with pytest.raises(ValueError):
@@ -220,6 +233,8 @@ def test_execution_plan_builder_records_occurrence_path() -> None:
         occurrence_plan=plan,
         injection_plan=None,
         spell_lookup={"root": _SpellStub(spell_id="root", existence=Existence.unique)},
+        mutation_override_payload={},
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
     )
     execution_plan = builder.build()
 
@@ -243,6 +258,8 @@ def test_execution_plan_builder_rejects_mismatched_injection_plan() -> None:
         occurrence_plan=plan,
         injection_plan=injection_plan,
         spell_lookup={"root": _SpellStub(spell_id="root", existence=Existence.unique)},
+        mutation_override_payload={},
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
     )
 
     with pytest.raises(ValueError):
