@@ -98,64 +98,64 @@ class MeldRuntime:
                 If the context is None or missing a root spell.
         """
         spell: ISpell = context.root_spell
-        #
-        # # ------------------------------------------------------------------ #
-        # # System-level gating (Phase 6 / Change-control)                    #
-        # # ------------------------------------------------------------------ #
-        # if spell._spellbook._spellbook_validation_required:
-        #     if spell.system_state is not None:
-        #         validity = spell.system_state.validity
-        #         if validity in (
-        #                 SpellValidity.invalid,
-        #                 SpellValidity.gated,
-        #                 SpellValidity.disabled,
-        #         ):
-        #             raise MeldExecutionError(
-        #                 spell_id=spell.spell_index.current,
-        #                 spell_name=spell.spell_name,
-        #                 message=(
-        #                     "Cannot execute meld runtime for a spell whose lineage is "
-        #                     f"{validity.name}."
-        #                 ),
-        #             )
-        #
-        #     # Change-control dirty-root gating
-        #     try:
-        #         spellbook = spell._spellbook
-        #         aether = spellbook._aether
-        #         manager = aether._get_change_control_manager(spell.aetheric_frame)
-        #         if manager is not None and manager.is_root_dirty(spell.spell_index.current):
-        #             raise MeldExecutionError(
-        #                 spell_id=spell.spell_index.current,
-        #                 spell_name=spell.spell_name,
-        #                 message=(
-        #                     "Cannot execute meld runtime while the root is marked dirty. "
-        #                     "Revalidation is required."
-        #                     ),
-        #                 )
-        #     except MeldExecutionError:
-        #         raise
-        #     except Exception:
-        #         # Change-control is optional; if unavailable we proceed.
-        #         pass
-        #
-        #     # --- Invariants from the SpellCrafter / validation pipeline ----
-        #     if spell.is_broken:
-        #         raise MeldExecutionError(
-        #             spell_id=spell.spell_index.current,
-        #             spell_name=spell.spell_name,
-        #             message="Cannot execute meld runtime for a broken spell.",
-        #         )
-        #
-        #     if not spell.validated:
-        #         raise MeldExecutionError(
-        #             spell_id=spell.spell_index.current,
-        #             spell_name=spell.spell_name,
-        #             message=(
-        #                 "Spell has not been validated. Run the SpellCrafter "
-        #                 "phases before attempting to meld this spell."
-        #             ),
-        #         )
+
+        # ------------------------------------------------------------------ #
+        # System-level gating (Phase 6 / Change-control)                    #
+        # ------------------------------------------------------------------ #
+        if spell._spellbook._spellbook_validation_required:
+            if spell.system_state is not None:
+                validity = spell.system_state.validity
+                if validity in (
+                        SpellValidity.invalid,
+                        SpellValidity.gated,
+                        SpellValidity.disabled,
+                ):
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Cannot execute meld runtime for a spell whose lineage is "
+                            f"{validity.name}."
+                        ),
+                    )
+
+            # Change-control dirty-root gating
+            try:
+                spellbook = spell._spellbook
+                aether = spellbook._aether
+                manager = aether._get_change_control_manager(spell.aetheric_frame)
+                if manager is not None and manager.is_root_dirty(spell.spell_index.current):
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Cannot execute meld runtime while the root is marked dirty. "
+                            "Revalidation is required."
+                            ),
+                        )
+            except MeldExecutionError:
+                raise
+            except Exception:
+                # Change-control is optional; if unavailable we proceed.
+                pass
+
+            # --- Invariants from the SpellCrafter / validation pipeline ----
+            if spell.is_broken:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message="Cannot execute meld runtime for a broken spell.",
+                )
+
+            if not spell.validated:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Spell has not been validated. Run the SpellCrafter "
+                        "phases before attempting to meld this spell."
+                    ),
+                )
 
         # Snapshot build-time artifacts. These may be None depending on
         # how far the SpellCrafter pipeline has run; the engine can decide
