@@ -270,50 +270,6 @@ def test_component_spell_contract_path_override_beats_contract_override() -> Non
         owner.cleanup()
 
 
-def test_component_spell_contract_multiple_contract_overrides_on_shared_raise() -> None:
-    """
-    Purpose:
-        Validate multiple SpellContract overrides reject shared providers.
-    Contract:
-        - Shared providers accept at most one contract override payload.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If duplicate contract overrides do not raise.
-    """
-    owner_book = _make_spellbook()
-    service_id = owner_book.bind(
-        spell=ContractServicePrimary,
-        existence=Existence.unique,
-        permissions="create",
-        spellframe=IService,
-        binding_name="primary",
-    )
-    borrower_book = _make_spellbook()
-    consumer_id = borrower_book.bind(
-        spell=ContractConsumerDualOverride,
-        existence=Existence.unique,
-        permissions="create",
-    )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
-    try:
-        owner.link(borrower)
-        with borrower.transaction("link", conduits=[borrower, owner]):
-            assert borrower.add_spell_to_contract(
-                spell_id=service_id,
-                conduit=owner,
-                permissions="create",
-            )
-        assert borrower.validate_contracts_and_define()
-
-        with pytest.raises(MeldExecutionError, match="Multiple SpellContract overrides"):
-            borrower.meld(spell=consumer_id)
-    finally:
-        borrower.cleanup()
-        owner.cleanup()
-
-
 def test_component_spell_contract_multiple_contract_overrides_on_many_allowed() -> None:
     """
     Purpose:

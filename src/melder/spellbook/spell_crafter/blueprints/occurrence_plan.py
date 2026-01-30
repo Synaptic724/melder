@@ -1384,7 +1384,7 @@ class OccurrencePlanBuilder(object):
         complete = True
 
         for occurrence, dependencies in occurrence_graph.items():
-            overrides_by_occurrence[occurrence] = {}
+            overrides_by_occurrence.setdefault(occurrence, {})
             is_complete = self._compile_contract_overrides_for_occurrence(
                 occurrence=occurrence,
                 dependencies=dependencies,

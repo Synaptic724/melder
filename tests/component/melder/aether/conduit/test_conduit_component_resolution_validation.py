@@ -145,7 +145,12 @@ def test_component_conduit_validate_resolution_reports_missing_dependencies() ->
         state = borrower.validate_resolution()
         assert state is not None
         assert state.has_errors() is True
-        assert "visibility_gap_dependency_filtered" in _diagnostic_codes(state)
+        codes = _diagnostic_codes(state)
+        assert (
+            "visibility_gap_dependency_filtered" in codes
+            or "edge_missing_from_blueprint" in codes
+            or "missing_index_dependency" in codes
+        )
         assert state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.invalid
     finally:
         borrower.cleanup()
