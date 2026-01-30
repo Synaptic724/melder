@@ -1060,15 +1060,18 @@ class MeldEngine(Cleanable):
         """
         Select the appropriate creations container based on a precomputed target kind.
 
+        Contract:
+            - SPELLSPACE routes to caller creations because SpellSpace is owned
+              by the calling conduit.
+
         Raises:
             ValueError: If the target kind is not recognized.
         """
         if target_kind == ExecutionPlanTargetKind.CALLER:
             return self._context.caller_creations
-        if target_kind in (
-                ExecutionPlanTargetKind.OWNER,
-                ExecutionPlanTargetKind.SPELLSPACE,
-        ):
+        if target_kind == ExecutionPlanTargetKind.SPELLSPACE:
+            return self._context.caller_creations
+        if target_kind == ExecutionPlanTargetKind.OWNER:
             owner_creations = spell._owner_creations
             if owner_creations is None:
                 owner_creations = self._context.owner_creations
