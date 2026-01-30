@@ -281,7 +281,7 @@ class Meld(Cleanable, IMeld):
         )
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
-        if self._spellbook.check_spellbook_validation_required():
+        if self._spellbook._spellbook_validation_required:
             self._ensure_lineage_resolvable(target_spell)
 
         if self._meld_hooks or target_spell._hooks_enabled:
@@ -555,9 +555,6 @@ class Meld(Cleanable, IMeld):
                 When a SpellContract has no contracted provider or contracted
                 maps are inconsistent.
         """
-        if spell is None:
-            return
-
         contracts = self._iter_spell_contract_defaults(spell)
         if not contracts:
             return
@@ -659,9 +656,6 @@ class Meld(Cleanable, IMeld):
             spell: Spell to mark for resolution revalidation.
         """
         spell_system_states = spell._spell_system_states
-        if spell_system_states is None:
-            return
-
         conduit_id = self._get_resolution_conduit_id()
         if not conduit_id:
             return
@@ -1336,14 +1330,6 @@ class Meld(Cleanable, IMeld):
         """
         creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
-        if creations is None and existence in (
-                Existence.unique_per_conduit,
-                Existence.unique_per_spell_space,
-                Existence.many,
-        ):
-            raise RuntimeError(
-                "[MELD] Caller creations are required for per-conduit existences."
-            )
         instance: Any = None
         created = False
 
@@ -1355,9 +1341,8 @@ class Meld(Cleanable, IMeld):
             )
             if not spell.has_disposal_methods:
                 return instance, True
-            if spell.is_existing_creation and creations is not None:
-                with creations._lock:
-                    self._register_spell(spell, instance, creations)
+            with creations._lock:
+                self._register_spell(spell, instance, creations)
             return instance, True
 
         if existence in (
@@ -1372,8 +1357,7 @@ class Meld(Cleanable, IMeld):
                         overrides,
                         caller_creations_lock_held=True,
                     )
-                    if spell.is_existing_creation:
-                        self._register_spell(spell, instance, creations)
+                    self._register_spell(spell, instance, creations)
                     created = True
                 else:
                     self._raise_override_on_existing_instance(
@@ -1395,9 +1379,8 @@ class Meld(Cleanable, IMeld):
                     overrides,
                     caller_creations_lock_held=False,
                 )
-                if spell.is_existing_creation and creations is not None:
-                    with creations._lock:
-                        self._register_spell(spell, instance, creations)
+                with creations._lock:
+                    self._register_spell(spell, instance, creations)
                 created = True
             else:
                 self._raise_override_on_existing_instance(
@@ -1555,8 +1538,6 @@ class Meld(Cleanable, IMeld):
             MeldExecutionError:
                 Propagated from `MeldRuntime.execute` if DI or construction fails.
         """
-        stype = spell.spell_type
-
         # 1) Existing Creation: the instance already exists on the spell and
         #    must never be constructed via the runtime.
         if spell.is_existing_creation:
@@ -1567,10 +1548,6 @@ class Meld(Cleanable, IMeld):
                     f"(spell_id={spell.spell_id})."
                 )
             return instance
-
-        # 2) Factory-style spells must go through the runtime.
-        if self._runtime is None:
-            raise RuntimeError("[MELD] MeldRuntime is not configured on this Meld instance.")
 
         if spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell:
             context = self._create_meld_context(
@@ -1588,7 +1565,7 @@ class Meld(Cleanable, IMeld):
                 except Exception:
                     pass
 
-        # 3) Anything else is currently unsupported.
+        # 2) Anything else is currently unsupported.
         raise RuntimeError(f"[MELD] Unsupported SpellType encountered: {spell.spell_type}")
 
 
