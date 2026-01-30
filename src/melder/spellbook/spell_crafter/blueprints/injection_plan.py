@@ -70,8 +70,6 @@ class ParamSource:
             ValueError:
                 If kind is None.
         """
-        if kind is None:
-            raise ValueError("kind must not be None.")
         self._kind = kind
         self._dependency_keys = dependency_keys
         self._override_key = override_key
@@ -189,8 +187,6 @@ class InjectionSpec:
             ValueError:
                 If param_sources is None.
         """
-        if param_sources is None:
-            raise ValueError("param_sources must not be None.")
         self._param_sources = param_sources
         self._allow_list_aggregation = allow_list_aggregation
         self._uses_positional_override = uses_positional_override
@@ -269,11 +265,7 @@ def build_kwargs_from_injection_spec(
         Dict[str, Any]: Keyword arguments for construction.
     """
     spell_id, _ = occurrence
-    contract_payload = (
-        dict(injection_spec.contract_payload)
-        if injection_spec.contract_payload
-        else {}
-    )
+    contract_payload = injection_spec.contract_payload
     positional_override = None
     if injection_spec.uses_positional_override and "__args__" in contract_payload:
         positional_override = contract_payload.pop("__args__")
@@ -282,23 +274,12 @@ def build_kwargs_from_injection_spec(
     for param_name, param_source in injection_spec.param_sources.items():
         if param_source.kind != "dependency":
             continue
-        dependency_keys = param_source.dependency_keys or []
+        dependency_keys = param_source.dependency_keys
         if param_name in override_values:
             kwargs[param_name] = override_values[param_name]
             continue
         values: List[Any] = []
         for dependency_key in dependency_keys:
-            if dependency_key not in instance_results:
-                raise MeldExecutionError(
-                    spell_id=spell_id,
-                    spell_name=spell_id,
-                    node_id=spell_id,
-                    param_name=param_name,
-                    message=(
-                        f"Dependency '{dependency_key[0]}' missing while "
-                        f"building args for '{spell_id}'."
-                    ),
-                )
             values.append(instance_results[dependency_key])
         if not values:
             continue
@@ -375,10 +356,6 @@ class InjectionPlan(Cleanable):
                 If any required input is None.
         """
         super().__init__()
-        if root_spell_id is None:
-            raise ValueError("root_spell_id must not be None.")
-        if instance_injections is None:
-            raise ValueError("instance_injections must not be None.")
         self._root_spell_id = root_spell_id
         self._instance_injections = instance_injections
 
@@ -452,12 +429,7 @@ class InjectionPlan(Cleanable):
         Returns:
             Optional[Dict[InstanceKey, InjectionSpec]]: Injection specs when usable.
         """
-        try:
-            if self.root_spell_id != root_spell_id:
-                return None
-            return self.instance_injections
-        except Exception:
-            return None
+        return self.instance_injections
 
 
 class InjectionPlanBuilder(object):
@@ -505,8 +477,6 @@ class InjectionPlanBuilder(object):
             ValueError:
                 If occurrence_plan is None.
         """
-        if occurrence_plan is None:
-            raise ValueError("occurrence_plan must not be None.")
         self._occurrence_plan = occurrence_plan
 
     def build(self) -> InjectionPlan:
@@ -533,38 +503,33 @@ class InjectionPlanBuilder(object):
         shared_spell_ids = plan.shared_spell_ids
 
         for spell_id, instance_keys in plan.instance_keys_by_spell_id.items():
-            canonical_occurrence = plan.canonical_occurrences_by_spell_id.get(spell_id)
-            for instance_key in instance_keys:
-                if instance_key[1] is None:
-                    if canonical_occurrence is None:
-                        continue
+            if spell_id in shared_spell_ids:
+                canonical_occurrence = plan.canonical_occurrences_by_spell_id[spell_id]
+                for instance_key in instance_keys:
                     occurrence = canonical_occurrence
-                else:
-                    occurrence = (spell_id, instance_key[1])
-                dependencies = plan.occurrence_graph.get(occurrence, {})
-                contract_payload = plan.contract_overrides_by_occurrence.get(occurrence)
-                normalized_contract_payload = dict(contract_payload) if contract_payload else None
-                param_sources: Dict[str, ParamSource] = {}
-                allow_list_aggregation = False
-                uses_positional_override = False
+                    dependencies = plan.occurrence_graph[occurrence]
+                    contract_payload = plan.contract_overrides_by_occurrence[occurrence]
+                    normalized_contract_payload = contract_payload
+                    param_sources: Dict[str, ParamSource] = {}
+                    allow_list_aggregation = False
+                    uses_positional_override = False
 
-                for param_name, dependency_occurrences in dependencies.items():
-                    dependency_keys: List[InstanceKey] = []
-                    for dependency_occurrence in dependency_occurrences:
-                        dependency_spell_id, dependency_path = dependency_occurrence
-                        if dependency_spell_id in shared_spell_ids:
-                            dependency_keys.append((dependency_spell_id, None))
-                        else:
-                            dependency_keys.append((dependency_spell_id, dependency_path))
-                    if len(dependency_keys) > 1:
-                        allow_list_aggregation = True
-                    param_sources[param_name] = ParamSource(
-                        kind="dependency",
-                        dependency_keys=dependency_keys,
-                        override_key=param_name,
-                    )
+                    for param_name, dependency_occurrences in dependencies.items():
+                        dependency_keys: List[InstanceKey] = []
+                        for dependency_occurrence in dependency_occurrences:
+                            dependency_spell_id, dependency_path = dependency_occurrence
+                            if dependency_spell_id in shared_spell_ids:
+                                dependency_keys.append((dependency_spell_id, None))
+                            else:
+                                dependency_keys.append((dependency_spell_id, dependency_path))
+                        if len(dependency_keys) > 1:
+                            allow_list_aggregation = True
+                        param_sources[param_name] = ParamSource(
+                            kind="dependency",
+                            dependency_keys=dependency_keys,
+                            override_key=param_name,
+                        )
 
-                if normalized_contract_payload is not None:
                     if "__args__" in normalized_contract_payload:
                         uses_positional_override = True
                     for param_name in normalized_contract_payload.keys():
@@ -585,6 +550,60 @@ class InjectionPlanBuilder(object):
                                 override_key=existing.override_key or param_name,
                                 contract_key=param_name,
                             )
+
+                    instance_injections[instance_key] = InjectionSpec(
+                        param_sources=param_sources,
+                        allow_list_aggregation=allow_list_aggregation,
+                        uses_positional_override=uses_positional_override,
+                        contract_payload=normalized_contract_payload,
+                    )
+                continue
+
+            for instance_key in instance_keys:
+                occurrence = (spell_id, instance_key[1])
+                dependencies = plan.occurrence_graph[occurrence]
+                contract_payload = plan.contract_overrides_by_occurrence[occurrence]
+                normalized_contract_payload = contract_payload
+                param_sources: Dict[str, ParamSource] = {}
+                allow_list_aggregation = False
+                uses_positional_override = False
+
+                for param_name, dependency_occurrences in dependencies.items():
+                    dependency_keys: List[InstanceKey] = []
+                    for dependency_occurrence in dependency_occurrences:
+                        dependency_spell_id, dependency_path = dependency_occurrence
+                        if dependency_spell_id in shared_spell_ids:
+                            dependency_keys.append((dependency_spell_id, None))
+                        else:
+                            dependency_keys.append((dependency_spell_id, dependency_path))
+                    if len(dependency_keys) > 1:
+                        allow_list_aggregation = True
+                    param_sources[param_name] = ParamSource(
+                        kind="dependency",
+                        dependency_keys=dependency_keys,
+                        override_key=param_name,
+                    )
+
+                if "__args__" in normalized_contract_payload:
+                    uses_positional_override = True
+                for param_name in normalized_contract_payload.keys():
+                    if param_name == "__args__":
+                        continue
+                    existing = param_sources.get(param_name)
+                    if existing is None:
+                        param_sources[param_name] = ParamSource(
+                            kind="contract",
+                            dependency_keys=[],
+                            override_key=param_name,
+                            contract_key=param_name,
+                        )
+                    else:
+                        param_sources[param_name] = ParamSource(
+                            kind=existing.kind,
+                            dependency_keys=existing.dependency_keys,
+                            override_key=existing.override_key or param_name,
+                            contract_key=param_name,
+                        )
 
                 instance_injections[instance_key] = InjectionSpec(
                     param_sources=param_sources,

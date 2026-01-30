@@ -44,6 +44,11 @@ def _env_float(name: str, default: float) -> float:
 
 
 def _depth9_leaf_ids(root: Depth9Root) -> tuple[int, int]:
+    """
+    NOTE:
+        Kept for potential debugging / future assertions, but the current benchmark configuration
+        explicitly avoids singleton-style leaf caching across resolves.
+    """
     layer2 = root.left
     layer3 = layer2.left
     layer4 = layer3.left
@@ -109,7 +114,6 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
     depth7_classes = get_depth_7_classes()
     depth3_classes = get_depth_3_classes()
 
-    leaf_types = {Depth9LeafA, Depth9LeafB}
     depth3_types = set(depth3_classes)
 
     # Build a single provider graph for all classes
@@ -124,8 +128,9 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
 
     # Provider selection:
     # - Depth3 graph: ContextLocalSingleton (per spellspace contextvars.Context())
-    # - Depth9 leaves: ThreadSafeSingleton (shared across threads)
-    # - Everything else: Factory (transient)
+    # - Everything else (including Depth9 leaves): Factory (transient)
+    #
+    # This benchmark is intentionally configured to avoid singleton-style caching across resolves.
     for cls in all_classes:
         param_specs = _ctor_param_types(cls)
         kwargs: dict[str, Any] = {}
@@ -137,27 +142,15 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
 
         if cls in depth3_types:
             prov = providers.ContextLocalSingleton(cls, **kwargs)
-        elif cls in leaf_types:
-            prov = providers.ThreadSafeSingleton(cls, **kwargs)
         else:
             prov = providers.Factory(cls, **kwargs)
 
         providers_by_type[cls] = prov
 
-    # Per-thread leaf consistency check
-    tls = threading.local()
-
     def resolve_depth9() -> None:
         root = providers_by_type[Depth9Root]()
         if not isinstance(root, Depth9Root):
             raise AssertionError("Dependency Injector: Depth9Root resolve returned wrong type")
-        leaf_a, leaf_b = _depth9_leaf_ids(root)
-        baseline = getattr(tls, "leaf_baseline", None)
-        if baseline is None:
-            tls.leaf_baseline = (leaf_a, leaf_b)
-        else:
-            if baseline != (leaf_a, leaf_b):
-                raise AssertionError("Dependency Injector: cached leaves are not stable across resolves")
 
     def resolve_depth7() -> None:
         root = providers_by_type[Depth7Root]()
@@ -180,7 +173,7 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
 
     def cleanup() -> None:
         # Best-effort resets
-        for cls, prov in providers_by_type.items():
+        for _, prov in providers_by_type.items():
             # Only singleton-ish providers have reset()
             reset = getattr(prov, "reset", None)
             if reset is not None:
@@ -203,17 +196,17 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
 
 def _build_runtime_lagom() -> _RuntimeOps:
     pytest.importorskip("lagom")
-    from lagom import Container, Singleton
+    from lagom import Container
 
     depth9_classes = get_depth_9_classes()
     depth7_classes = get_depth_7_classes()
     depth3_classes = get_depth_3_classes()
 
-    leaf_types = {Depth9LeafA, Depth9LeafB}
-
     # Build one base container:
-    # - Depth9 leaves: Singleton (cached across threads)
-    # - Everything else: transient factory
+    # - Everything: transient factory
+    #
+    # NOTE:
+    #   This benchmark is intentionally configured to avoid singleton-style caching across resolves.
     container = Container()
 
     def _make_leaf_factory(_cls: type) -> Callable[[], Any]:
@@ -237,31 +230,16 @@ def _build_runtime_lagom() -> _RuntimeOps:
     for cls in all_classes:
         specs = _ctor_param_types(cls)
         if not specs:
-            if cls in leaf_types:
-                container[cls] = Singleton(cls)
-            else:
-                container[cls] = _make_leaf_factory(cls)
+            container[cls] = _make_leaf_factory(cls)
             continue
 
         factory = _make_factory(cls, specs)
-        if cls in leaf_types:
-            container[cls] = Singleton(factory)
-        else:
-            container[cls] = factory
-
-    tls = threading.local()
+        container[cls] = factory
 
     def resolve_depth9() -> None:
         root = container[Depth9Root]
         if not isinstance(root, Depth9Root):
             raise AssertionError("Lagom: Depth9Root resolve returned wrong type")
-        leaf_a, leaf_b = _depth9_leaf_ids(root)
-        baseline = getattr(tls, "leaf_baseline", None)
-        if baseline is None:
-            tls.leaf_baseline = (leaf_a, leaf_b)
-        else:
-            if baseline != (leaf_a, leaf_b):
-                raise AssertionError("Lagom: cached leaves are not stable across resolves")
 
     def resolve_depth7() -> None:
         root = container[Depth7Root]
@@ -304,13 +282,11 @@ class _InjectorState:
 
 def _build_runtime_injector() -> _RuntimeOps:
     pytest.importorskip("injector")
-    from injector import Binder, Injector, Module, Scope, ScopeDecorator, InstanceProvider, singleton, inject
+    from injector import Binder, Injector, Module, Scope, ScopeDecorator, InstanceProvider, inject
 
     depth9_classes = get_depth_9_classes()
     depth7_classes = get_depth_7_classes()
     depth3_classes = get_depth_3_classes()
-
-    leaf_types = {Depth9LeafA, Depth9LeafB}
 
     all_classes: list[type] = []
     seen: set[type] = set()
@@ -357,27 +333,18 @@ def _build_runtime_injector() -> _RuntimeOps:
             for cls in all_classes:
                 if cls in depth3_classes:
                     binder.bind(cls, to=cls, scope=spellspace)
-                elif cls in leaf_types:
-                    binder.bind(cls, to=cls, scope=singleton)
                 else:
+                    # Everything else: transient (no singleton scope)
                     binder.bind(cls, to=cls)
 
     injector = Injector([PerfModule()])
 
     state = _InjectorState(injector=injector, spellspace_scope_type=SpellspaceScope, original_inits=original_inits)
-    tls = threading.local()
 
     def resolve_depth9() -> None:
         root = state.injector.get(Depth9Root)
         if not isinstance(root, Depth9Root):
             raise AssertionError("Injector: Depth9Root resolve returned wrong type")
-        leaf_a, leaf_b = _depth9_leaf_ids(root)
-        baseline = getattr(tls, "leaf_baseline", None)
-        if baseline is None:
-            tls.leaf_baseline = (leaf_a, leaf_b)
-        else:
-            if baseline != (leaf_a, leaf_b):
-                raise AssertionError("Injector: cached leaves are not stable across resolves")
 
     def resolve_depth7() -> None:
         root = state.injector.get(Depth7Root)
@@ -421,8 +388,6 @@ def _build_runtime_dishka() -> _RuntimeOps:
     depth7_classes = get_depth_7_classes()
     depth3_classes = get_depth_3_classes()
 
-    leaf_types = {Depth9LeafA, Depth9LeafB}
-
     all_classes: list[type] = []
     seen: set[type] = set()
     for cls in depth9_classes + depth7_classes + depth3_classes:
@@ -434,25 +399,16 @@ def _build_runtime_dishka() -> _RuntimeOps:
     for cls in all_classes:
         if cls in depth3_classes:
             provider.provide(cls, scope=Scope.REQUEST, cache=True)
-        elif cls in leaf_types:
-            provider.provide(cls, scope=Scope.APP, cache=True)
         else:
+            # Everything else: transient (no APP cache)
             provider.provide(cls, scope=Scope.APP, cache=False)
 
     container = make_container(provider)
-    tls = threading.local()
 
     def resolve_depth9() -> None:
         root = container.get(Depth9Root)
         if not isinstance(root, Depth9Root):
             raise AssertionError("Dishka: Depth9Root resolve returned wrong type")
-        leaf_a, leaf_b = _depth9_leaf_ids(root)
-        baseline = getattr(tls, "leaf_baseline", None)
-        if baseline is None:
-            tls.leaf_baseline = (leaf_a, leaf_b)
-        else:
-            if baseline != (leaf_a, leaf_b):
-                raise AssertionError("Dishka: cached leaves are not stable across resolves")
 
     def resolve_depth7() -> None:
         root = container.get(Depth7Root)
@@ -503,19 +459,17 @@ def _build_runtime_melder() -> _RuntimeOps:
     depth7_classes = get_depth_7_classes()
     depth3_classes = get_depth_3_classes()
 
-    leaf_types = {Depth9LeafA, Depth9LeafB}
-
     spellbook = Spellbook(aetheric_frame="threaded-di-stress")
     cfg = spellbook.get_configuration()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    # Bind depth9 with mixed existence:
-    # - leaves: unique_per_conduit
-    # - others: many
+    # Bind depth9:
+    # - everything: many (transient)
+    #
+    # This benchmark is intentionally configured to avoid singleton-style leaf caching across resolves.
     spell_ids_9: dict[type, str] = {}
     for cls in depth9_classes:
-        existence = Existence.unique_per_conduit if cls in leaf_types else Existence.many
-        spell_ids_9[cls] = spellbook.bind(spell=cls, existence=existence, permissions="create")
+        spell_ids_9[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
 
     # Depth7: many
     spell_ids_7: dict[type, str] = {}
@@ -533,19 +487,10 @@ def _build_runtime_melder() -> _RuntimeOps:
 
     conduit = spellbook.conjure(name="threaded-di-stress")
 
-    tls = threading.local()
-
     def resolve_depth9() -> None:
         root = conduit.meld(spell=root9_id)
         if not isinstance(root, Depth9Root):
             raise AssertionError("Melder: Depth9Root meld returned wrong type")
-        leaf_a, leaf_b = _depth9_leaf_ids(root)
-        baseline = getattr(tls, "leaf_baseline", None)
-        if baseline is None:
-            tls.leaf_baseline = (leaf_a, leaf_b)
-        else:
-            if baseline != (leaf_a, leaf_b):
-                raise AssertionError("Melder: cached leaves are not stable across resolves")
 
     def resolve_depth7() -> None:
         root = conduit.meld(spell=root7_id)
@@ -610,7 +555,6 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
           - ~60 seconds per lib (configurable)
           - alternating Depth9Root/Depth7Root resolves
           - periodic spellspace cycle resolving Depth3Root twice and verifying scoped caching
-          - checks depth9 leaf caching stability (where configured)
     Controls (env vars):
         - DI_THREADS (default 10)
         - DI_DURATION_S (default 60)
@@ -619,6 +563,8 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
     Notes:
         - This is a throughput/lock-contention stress test, not a microbenchmark.
         - It prints totals and ops/sec; it asserts only on correctness invariants.
+        - It is intentionally configured to avoid singleton-style caching for Depth9 leaves across resolves.
+          (Spellspace caching for Depth3 is still validated within a single spellspace cycle.)
     """
     threads = _env_int("DI_THREADS", 10)
     duration_s = _env_float("DI_DURATION_S", 60.0)

@@ -773,8 +773,6 @@ class Meld(Cleanable, IMeld):
         """
         Invoke meld-level hooks by name. Exceptions are wrapped in HookExecutionError.
         """
-        if not self._meld_hooks:
-            return
         hook_list = self._meld_hooks.get(hook_name)
         if not hook_list:
             return
@@ -1008,21 +1006,18 @@ class Meld(Cleanable, IMeld):
                 the local or contracted spell maps.
         """
         # Local spells
-        if self._spell_id_pool is not None:
-            pooled_spell = self._spell_id_pool.get(spell_id)
-            if pooled_spell is not None:
-                return pooled_spell
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
 
         # Local spells
-        if self._spells_by_id is not None:
-            if spell_id in self._spells_by_id:
-                return self._spells_by_id[spell_id]
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
 
         # Contracted spells (per-conduit maps)
-        if self._contracted_spells_by_id is not None:
-            for spell_map in self._contracted_spells_by_id.values():
-                if spell_id in spell_map:
-                    return spell_map[spell_id]
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
 
         raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
 
@@ -1105,9 +1100,6 @@ class Meld(Cleanable, IMeld):
                 the owned spell map is unavailable or does not contain
                 the corresponding spell object.
         """
-        if self._lookup_owned_spells is None:
-            return None
-
         spell_index = self._lookup_owned_spells.get(lookup_key)
         if spell_index is None:
             return None

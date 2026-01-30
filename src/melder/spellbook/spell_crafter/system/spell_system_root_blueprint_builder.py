@@ -57,15 +57,7 @@ class SpellSystemRootBlueprintBuilder:
             Dict[str, RootResolutionBlueprint]:
                 Mapping from root version_id -> RootResolutionBlueprint.
         """
-        if snapshot is None:
-            raise ValueError("snapshot must not be None.")
-
         root_ids: Set[str] = snapshot.root_spell_ids
-        if not root_ids:
-            # Weird but legal: empty frame or misconfigured snapshot.
-            # Nothing to compile; just return an empty mapping.
-            return {}
-
         dependencies: Dict[str, Set[str]] = snapshot.dependencies
 
         result: Dict[str, RootResolutionBlueprint] = {}
@@ -74,6 +66,7 @@ class SpellSystemRootBlueprintBuilder:
             dag, ordered_ids = self._build_single_root_dag(
                 root_spell_id=root_spell_id,
                 dependencies=dependencies,
+                allowed_spell_ids=snapshot.all_spell_ids,
             )
 
             blueprint = RootResolutionBlueprint(
@@ -124,26 +117,12 @@ class SpellSystemRootBlueprintBuilder:
             RootResolutionBlueprint:
                 The compiled blueprint for the requested spell id.
 
-        Raises:
-            ValueError:
-                If root_spell_id or snapshot is None.
-            ValueError:
-                If root_spell_id is not present in snapshot.all_spell_ids.
         """
-        if root_spell_id is None:
-            raise ValueError("root_spell_id must not be None.")
-        if snapshot is None:
-            raise ValueError("snapshot must not be None.")
-
-        all_spell_ids: Set[str] = snapshot.all_spell_ids
-        if root_spell_id not in all_spell_ids:
-            raise ValueError(
-                f"root_spell_id '{root_spell_id}' is not present in the snapshot."
-            )
 
         dag, ordered_ids = self._build_single_root_dag(
             root_spell_id=root_spell_id,
             dependencies=snapshot.dependencies,
+            allowed_spell_ids=snapshot.all_spell_ids,
         )
 
         blueprint = RootResolutionBlueprint(
@@ -170,6 +149,7 @@ class SpellSystemRootBlueprintBuilder:
             self,
             root_spell_id: str,
             dependencies: Dict[str, Set[str]],
+            allowed_spell_ids: Optional[Set[str]] = None,
     ) -> Tuple[DirectedAcyclicWorkGraph, Sequence[str]]:
         """
         Internal helper.
@@ -186,6 +166,8 @@ class SpellSystemRootBlueprintBuilder:
             dependencies:
                 Mapping of ``spell_id -> { dependency_spell_id, ... }`` where
                 edges are **consumer → providers** at the adjacency level.
+            allowed_spell_ids:
+                Optional membership filter that limits traversal to visible spell ids.
 
         Returns:
             A tuple of:
@@ -194,16 +176,7 @@ class SpellSystemRootBlueprintBuilder:
             - A Sequence[str] of node ids in topological order
               (dependencies first, root last).
 
-        Raises:
-            ValueError:
-                If root_spell_id or dependencies is None.
-            RuntimeError:
-                If a cycle is detected while topologically sorting the DAG.
         """
-        if root_spell_id is None:
-            raise ValueError("root_spell_id must not be None.")
-        if dependencies is None:
-            raise ValueError("dependencies must not be None.")
 
         # ------------------------------------------------------------------
         # 1. Discover all nodes reachable from this root.
@@ -218,13 +191,10 @@ class SpellSystemRootBlueprintBuilder:
 
             reachable_ids.add(current_id)
 
-            direct_deps: Optional[Set[str]] = dependencies.get(current_id)
-            if not direct_deps:
-                continue
-
-            # Use a deterministic order so that traversal (and therefore
-            # eventual DAG layout) is stable across runs.
-            for dep_id in sorted(direct_deps):
+            direct_deps: Set[str] = dependencies[current_id]
+            for dep_id in direct_deps:
+                if allowed_spell_ids is not None and dep_id not in allowed_spell_ids:
+                    continue
                 if dep_id not in reachable_ids:
                     stack.append(dep_id)
 
@@ -242,36 +212,20 @@ class SpellSystemRootBlueprintBuilder:
         # 3. Add provider → dependent edges within the reachable subgraph.
         # ------------------------------------------------------------------
         for consumer_id in reachable_ids:
-            direct_deps = dependencies.get(consumer_id)
-            if not direct_deps:
-                continue
-
+            direct_deps = dependencies[consumer_id]
             for provider_id in direct_deps:
-                if provider_id not in reachable_ids:
-                    # Dependency exists in the global graph but is not
-                    # reachable from this root's DFS (should not happen,
-                    # but guard defensively).
-                    continue
-
-                dag.add_dependency(
-                    parent_key=provider_id,
-                    child_key=consumer_id,
-                    param_name=None,
-                    socket_kind=None,
-                )
+                if provider_id in reachable_ids:
+                    dag.add_dependency(
+                        parent_key=provider_id,
+                        child_key=consumer_id,
+                        param_name=None,
+                        socket_kind=None,
+                    )
 
         # ------------------------------------------------------------------
         # 4. Compute a stable topological ordering of node ids.
         # ------------------------------------------------------------------
-        try:
-            ordered_node_ids: List[str] = dag.collect_dependency_ids()
-        except RuntimeError as exc:
-            # Clean up the DAG to avoid leaking partially-constructed graphs
-            # in the face of structural bugs (cycles).
-            dag.cleanup()
-            raise RuntimeError(
-                f"Cycle detected while building deep DAG for root '{root_spell_id}'."
-            ) from exc
+        ordered_node_ids: List[str] = dag.collect_dependency_ids()
 
         return dag, ordered_node_ids
 
@@ -283,11 +237,6 @@ class SpellSystemRootBlueprintBuilder:
         """
         Overlay SocketRefs and build a deep DagIndex for the blueprint.
         """
-        if blueprint is None:
-            raise ValueError("blueprint must not be None.")
-        if topologies is None:
-            raise ValueError("topologies must not be None.")
-
         queue: Deque[Tuple[str, Tuple[str, ...]]] = deque()
         queue.append((blueprint.root_spell_id, ()))
 
@@ -303,9 +252,7 @@ class SpellSystemRootBlueprintBuilder:
                 continue
             visited.add(key)
 
-            topology = topologies.get(node_id)
-            if topology is None:
-                continue
+            topology = topologies[node_id]
 
             for socket_desc in topology.sockets:
                 socket_path = path + (socket_desc.param_name,)
@@ -317,6 +264,5 @@ class SpellSystemRootBlueprintBuilder:
                 )
                 blueprint.add_socket_ref(socket_ref)
 
-                targets: Tuple[str, ...] = tuple(socket_desc.target_spell_ids or ())
-                for target_id in targets:
+                for target_id in socket_desc.target_spell_ids:
                     queue.append((target_id, socket_path))

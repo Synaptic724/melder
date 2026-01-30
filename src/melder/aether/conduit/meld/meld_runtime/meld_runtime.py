@@ -81,6 +81,8 @@ class MeldRuntime:
             4. Create a `ResolutionFrame` initialized with the normalized
                overrides from the context.
             5. Instantiate `MeldEngine` and execute the Phase 11 execution plan.
+               When no overrides or mutations are present, uses the no-overrides
+               execution path and skips override preprocessing.
             6. Clean up engine and frame.
             7. Sanity-check the result for factory-style spells.
 
@@ -180,25 +182,30 @@ class MeldRuntime:
         execution_plan_overrides = crafter.execution_plan_phase11_overrides
         execution_plan_overrides_with_mutations = crafter.execution_plan_phase11_overrides_with_mutations
         mutation_override_payload = spell.mutation_override
+        override_payload = context.overrides
+        has_override_payload = bool(override_payload)
+        has_mutation_overrides = bool(mutation_override_payload)
+        has_overrides_or_mutations = has_override_payload or has_mutation_overrides
 
 
         # Apply mutation overrides (graph-level) and spell overrides (value-level)
         # if we have a deep blueprint. Fallback to simple overrides otherwise.
         execution_blueprint = root_blueprint
         override_map = {}
-        if root_blueprint is not None:
+        if root_blueprint is not None and has_overrides_or_mutations:
             try:
-                if mutation_override_payload:
+                if has_mutation_overrides:
                     execution_blueprint = apply_phase10_mutation_overrides(
                         blueprint=root_blueprint,
                         mutation_patch_map=mutation_patch_map,
                         mutation_override=mutation_override_payload,
                     )
 
-                override_map = apply_phase10_override_payload(
-                    override_patch_map=override_patch_map,
-                    override_payload=context.overrides,
-                )
+                if has_override_payload:
+                    override_map = apply_phase10_override_payload(
+                        override_patch_map=override_patch_map,
+                        override_payload=override_payload,
+                    )
             except Exception as exc:
                 raise MeldExecutionError(
                     spell_id=spell.spell_index.current,
@@ -207,20 +214,23 @@ class MeldRuntime:
                     inner=exc,
                 ) from exc
 
-        execution_plan_to_run, _ = self._select_execution_plan_phase11(
-            execution_plan_no_overrides=execution_plan_no_overrides,
-            execution_plan_overrides=execution_plan_overrides,
-            execution_plan_overrides_with_mutations=execution_plan_overrides_with_mutations,
-            override_payload=context.overrides,
-            override_map=override_map,
-            mutation_override_payload=mutation_override_payload,
-        )
+        if has_overrides_or_mutations:
+            execution_plan_to_run, _ = self._select_execution_plan_phase11(
+                execution_plan_no_overrides=execution_plan_no_overrides,
+                execution_plan_overrides=execution_plan_overrides,
+                execution_plan_overrides_with_mutations=execution_plan_overrides_with_mutations,
+                override_payload=override_payload,
+                override_map=override_map,
+                mutation_override_payload=mutation_override_payload,
+            )
+        else:
+            execution_plan_to_run = execution_plan_no_overrides
 
         # Per-execution ResolutionFrame seeded with per-call overrides.
         frame_overrides = {}
-        if context.overrides or override_map:
+        if override_payload or override_map:
             frame_overrides = self._build_frame_overrides(
-                context_overrides=context.overrides,
+                context_overrides=override_payload,
                 override_map=override_map,
                 root_spell_id=spell.spell_index.current,
             )
@@ -241,17 +251,22 @@ class MeldRuntime:
 
         result = None
         try:
-            override_targets_by_spell_id = self._collect_override_targets(override_map)
-            any_overrides_present = self._detect_any_overrides(
-                override_payload=context.overrides,
-                override_map=override_map,
-                contract_overrides_by_spell_id={},
-            )
-            result = engine.run_execution_plan(
-                execution_plan_to_run,
-                override_targets_by_spell_id=override_targets_by_spell_id,
-                any_overrides_present=any_overrides_present,
-            )
+            if has_overrides_or_mutations:
+                override_targets_by_spell_id = self._collect_override_targets(override_map)
+                any_overrides_present = self._detect_any_overrides(
+                    override_payload=override_payload,
+                    override_map=override_map,
+                    contract_overrides_by_spell_id={},
+                )
+                result = engine.run_execution_plan(
+                    execution_plan_to_run,
+                    override_targets_by_spell_id=override_targets_by_spell_id,
+                    any_overrides_present=any_overrides_present,
+                )
+            else:
+                result = engine.run_execution_plan_no_overrides(
+                    execution_plan_to_run,
+                )
         finally:
             # Always tear down engine + frame to avoid leaks.
             try:

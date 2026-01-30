@@ -17,7 +17,7 @@ class SpellSystemAdjacencyBuilder:
         * It does **not** understand sockets or contracts.
 
     All higher-level semantics (RootResolutionBlueprints, Phase 6
-    validation, etc.) sit on top of this structural snapshot.
+    validation, etc.) sit on top of this structural view.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = []
@@ -26,7 +26,7 @@ class SpellSystemAdjacencyBuilder:
     def build(spell_system_states: ISpellSystemStates,
               ) -> SpellSystemAdjacencySnapshot:
         """
-        Build a frame-wide adjacency snapshot from SpellSystemStates.
+        Build a frame-wide adjacency view from SpellSystemStates.
 
         Args
         ----
@@ -42,9 +42,6 @@ class SpellSystemAdjacencyBuilder:
             A structural view over all known spell_ids and their
             direct dependencies.
         """
-        if spell_system_states is None:
-            raise ValueError("spell_system_states must not be None.")
-
         # Outgoing edges: spell_id -> { dependency_id, ... }
         dependencies: Dict[str, Set[str]] = {}
 
@@ -60,44 +57,22 @@ class SpellSystemAdjacencyBuilder:
         # Optional per-spell constructor topologies keyed by version-id.
         topologies: Dict[str, 'SpellLocalTopology'] = {}
 
-        # We rely on the concrete SpellSystemStates.iter_states() helper,
-        # which returns SpellSystemState instances with:
-        #
-        #   * current_spell_id: str
-        #   * direct_dependencies: Optional[Set[str]] (version_ids)
-        #
-        # The interface is already in your codebase.
-        states_snapshot = spell_system_states.iter_states()
-        for state in states_snapshot:
-            spell_id = state.current_spell_id
-            if spell_id is None:
-                # The DevOps layer should never allow this, but we
-                # defensively skip just in case.
-                continue
+        with spell_system_states._lock:
+            states_by_index_id = spell_system_states._states_by_index_id
+            local_topologies = spell_system_states._local_topologies
 
-            all_spell_ids.add(spell_id)
+            for state in states_by_index_id.values():
+                spell_id = state._current_spell_id
+                all_spell_ids.add(spell_id)
 
-            direct_deps: Optional[Iterable[str]] = state.direct_dependencies
-            if direct_deps is None:
-                direct_dep_set: Set[str] = set()
-            else:
-                # Normalize to a concrete set so callers can rely on set
-                # semantics regardless of how SpellSystemStates stored it.
-                direct_dep_set = set(direct_deps)
+                direct_dep_set: Set[str] = state._direct_dependencies
+                dependencies[spell_id] = direct_dep_set
 
-            dependencies[spell_id] = direct_dep_set
+                for dep_id in direct_dep_set:
+                    all_dependency_ids.add(dep_id)
+                    reverse_dependencies.setdefault(dep_id, set()).add(spell_id)
 
-            for dep_id in direct_dep_set:
-                all_dependency_ids.add(dep_id)
-                parents_for_dep = reverse_dependencies.get(dep_id)
-                if parents_for_dep is None:
-                    parents_for_dep = set()
-                    reverse_dependencies[dep_id] = parents_for_dep
-                parents_for_dep.add(spell_id)
-
-            topology = spell_system_states.get_local_topology_by_id(spell_id)
-            if topology is not None:
-                topologies[spell_id] = topology
+                topologies[spell_id] = local_topologies.get(spell_id)
 
         # Structural roots are spells that **never appear as a dependency**
         # of any other spell in the frame.

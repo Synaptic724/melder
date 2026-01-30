@@ -130,10 +130,10 @@ class SpellCrafter(Cleanable):
     This object owns all *ephemeral* artifacts across the four conceptual
     phases for a single :class:`Spell`:
 
-        1. Requirements (signature ? SpellRequirements)
-        2. Symbolic graph (requirements ? symbolic constructor sockets)
-        3. Local frame / DAG (symbolic graph + Spellbook ? executable frame)
-        4. Validation (frame + policies ? validated / broken flags)
+        1. Requirements (signature -> SpellRequirements)
+        2. Symbolic graph (requirements -> symbolic constructor sockets)
+        3. Local frame / DAG (symbolic graph + Spellbook -> executable frame)
+        4. Validation (frame + policies -> validated / broken flags)
 
     It also retains selected **frame-level artifacts** produced in later phases
     when they are available for this spell (e.g., Phase 5 blueprints and
@@ -211,7 +211,7 @@ class SpellCrafter(Cleanable):
         self._spell: ISpell = spell
         self._spell_validator: 'SpellValidationSystem' = self._spell._spellbook._spell_validator
         self._spell_system_states: Optional[ISpellSystemStates] = self._spell._spell_system_states
-        self._spellbook_scanner: Optional[SpellbookScanner] = None
+        self._spellbook_scanner: SpellbookScanner = SpellbookScanner(self._spell._spellbook)
         self._requirements: Optional[SpellRequirements] = None
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
         # Phase 3 artifact - currently a SpellResolutionFrame summarising the
@@ -670,7 +670,7 @@ class SpellCrafter(Cleanable):
         Notify the SpellSystemStates registry that this spell's direct
         dependencies (by spell_id) have been updated.
 
-        This is the Phase 3 ? system-state bridge:
+        This is the Phase 3 -> system-state bridge:
 
         - It does *not* recompute anything itself.
         - It simply forwards the concrete dependency_ids that were pushed back
@@ -1133,7 +1133,7 @@ class SpellCrafter(Cleanable):
                 # Shapes like IGNORE do not participate in sockets.
                 continue
 
-            # Map shape ? symbolic metadata.
+            # Map shape -> symbolic metadata.
             if di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
                 target_annotation = None
                 is_collection = False
@@ -1623,31 +1623,14 @@ class SpellCrafter(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
-
-        # Phase 4 must have run; otherwise system-level work is meaningless.
-        if not self._validated_phase4 and self._validation_result_phase4 is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 5: cannot build root blueprints before "
-                "Phase 4 validation has completed."
-            )
-
-        # Cache for future calls on this crafter.
-        self._throw_if_cancelled(cancel_event)
 
         # --- 1. Build adjacency snapshot from system states ----------------
         adjacency_builder = SpellSystemAdjacencyBuilder()
         snapshot = adjacency_builder.build(self._spell_system_states)
 
-        self._throw_if_cancelled(cancel_event)
-
         # --- 2. Filter to spellbook-visible spells -------------------------
         visible_spell_ids: Set[str] = set()
         version_to_spell: Dict[str, ISpell] = {}
-        if self._spellbook_scanner is None:
-            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
         for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
             spell_id = spell_index.current
             visible_spell_ids.add(spell_id)
@@ -1658,36 +1641,25 @@ class SpellCrafter(Cleanable):
             visible_spell_ids=visible_spell_ids,
         )
 
-        self._throw_if_cancelled(cancel_event)
-
         # --- 3. Build deep DAGs for visible roots --------------------------
         root_builder = SpellSystemRootBlueprintBuilder()
         root_blueprints = root_builder.build_root_blueprints(filtered_snapshot)
-
-        self._throw_if_cancelled(cancel_event)
 
         # --- 4. Construct system-level index -------------------------------
         system_index = SpellSystemIndex()
 
         for spell_id, deps in filtered_snapshot.dependencies.items():
-            self._throw_if_cancelled(cancel_event)
-
-            lineage_id: Optional[str] = None
             state = self._spell_system_states.get_by_spell_id(spell_id)
-            if state is not None:
-                lineage_id = state.spell_index_id
-
-            spell_instance = version_to_spell.get(spell_id)
-            if lineage_id is None and spell_instance is not None:
-                lineage_id = spell_instance.spell_index.id
+            lineage_id: str = state.spell_index_id
+            spell_instance = version_to_spell[spell_id]
 
             node = SpellSystemNode(
                 spell_id=spell_id,
                 lineage_id=lineage_id,
                 dependencies=deps,
-                existence=spell_instance.existence if spell_instance is not None else None,
-                spell_type=spell_instance.spell_type if spell_instance is not None else None,
-                conduit_id=spell_instance._owner_conduit_id if spell_instance is not None else None,
+                existence=spell_instance.existence,
+                spell_type=spell_instance.spell_type,
+                conduit_id=spell_instance._owner_conduit_id,
                 ward_id=None,
                 is_root=spell_id in filtered_snapshot.root_spell_ids,
             )
@@ -1696,11 +1668,7 @@ class SpellCrafter(Cleanable):
 
         # --- 5. Attach artifacts to SpellCrafters -------------------------
         for spell_id, spell_instance in version_to_spell.items():
-            self._throw_if_cancelled(cancel_event)
-
             crafter_for_spell = spell_instance._crafter
-            if crafter_for_spell is None:
-                continue
 
             crafter_for_spell.set_spell_system_index_phase5(system_index)
 
@@ -1723,55 +1691,39 @@ class SpellCrafter(Cleanable):
         self._spell_system_index_phase5 = system_index
         self._entire_dag_blueprint_phase5 = root_blueprints
 
-        # Rebuild component-of index in ChangeControlManager if available and
-        # register a revalidation hook for dirty roots.
-        try:
-            spellbook = self._spell._spellbook
-            frame_name = spellbook._aetheric_frame
-            change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
-            if change_control_manager is not None:
-                change_control_manager.rebuild_component_of(root_blueprints)
+        # Rebuild component-of index and register a revalidation hook for dirty roots.
+        spellbook = self._spell._spellbook
+        frame_name = spellbook._aetheric_frame
+        change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
+        change_control_manager.rebuild_component_of(root_blueprints)
 
-                def _revalidate_dirty_roots(
-                        dirty_roots: Set[str],
-                        cancel_event: Optional[CancellationEvent],
-                ) -> Set[str]:
-                    """
-                    Re-run Phases 1-7 for the supplied root spell_ids.
+        def _revalidate_dirty_roots(
+                dirty_roots: Set[str],
+                cancel_event: Optional[CancellationEvent],
+        ) -> Set[str]:
+            """
+            Re-run Phases 1-7 for the supplied root spell_ids.
 
-                    Returns:
-                        Set[str]:
-                            Root ids that successfully revalidated.
-                    """
-                    # Scanner scoped to this invocation to avoid stale spell refs.
-                    scanner = SpellbookScanner(spellbook)
-                    version_to_spell: Dict[str, ISpell] = {}
-                    for spell_index, spell_instance in scanner.iter_spells():
-                        version_to_spell[spell_index.current] = spell_instance
+            Returns:
+                Set[str]:
+                    Root ids that successfully revalidated.
+            """
+            # Scanner scoped to this invocation to avoid stale spell refs.
+            scanner = SpellbookScanner(spellbook)
+            version_to_spell: Dict[str, ISpell] = {}
+            for spell_index, spell_instance in scanner.iter_spells():
+                version_to_spell[spell_index.current] = spell_instance
 
-                    validated_roots: Set[str] = set()
-                    for root_id in dirty_roots:
-                        if cancel_event is not None and cancel_event.is_set:
-                            cancel_event.throw_if_set()
-                        spell_instance = version_to_spell.get(root_id)
-                        if spell_instance is None:
-                            continue
-                        crafter = getattr(spell_instance, "_crafter", None)
-                        if crafter is None:
-                            continue
-                        try:
-                            crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
-                        except Exception:
-                            # Leave dirty flags intact on failure.
-                            raise
-                        validated_roots.add(root_id)
+            validated_roots: Set[str] = set()
+            for root_id in dirty_roots:
+                spell_instance = version_to_spell[root_id]
+                crafter = spell_instance._crafter
+                crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
+                validated_roots.add(root_id)
 
-                    return validated_roots
+            return validated_roots
 
-                change_control_manager.set_revalidator(_revalidate_dirty_roots)
-        except Exception:
-            # Change control is optional; ignore if unavailable.
-            pass
+        change_control_manager.set_revalidator(_revalidate_dirty_roots)
 
     def _filter_snapshot_to_visible_spells(
             self,
@@ -1788,8 +1740,8 @@ class SpellCrafter(Cleanable):
             Ensure Phase-5/6 validation only considers spells that the current
             Spellbook can resolve (local + contracted).
         Contract:
-            - Dependencies outside the visible set are excluded.
-            - Root spell ids are recomputed for the filtered graph.
+            - Dependency sets are referenced directly from the adjacency view.
+            - Reverse edges and root spell ids are recomputed using visible spell ids.
             - Topologies are retained only for visible spell ids.
         Args:
             snapshot:
@@ -1799,43 +1751,23 @@ class SpellCrafter(Cleanable):
         Returns:
             SpellSystemAdjacencySnapshot:
                 A filtered snapshot scoped to the provided spell ids.
-        Raises:
-            ValueError:
-                If snapshot or visible_spell_ids is None.
         """
         self.check_cleaned()
-        if snapshot is None:
-            raise ValueError("snapshot must not be None.")
-        if visible_spell_ids is None:
-            raise ValueError("visible_spell_ids must not be None.")
-
-        all_spell_ids: Set[str] = set(visible_spell_ids)
+        all_spell_ids: Set[str] = visible_spell_ids
         dependencies: Dict[str, Set[str]] = {}
         reverse_dependencies: Dict[str, Set[str]] = {}
         topologies: Dict[str, "SpellLocalTopology"] = {}
 
         for spell_id in all_spell_ids:
-            deps = snapshot.dependencies.get(spell_id)
-            if deps is None:
-                dep_set = set()
-            else:
-                dep_set = {dep_id for dep_id in deps if dep_id in all_spell_ids}
-            dependencies[spell_id] = dep_set
-            for dep_id in dep_set:
-                parents_for_dep = reverse_dependencies.get(dep_id)
-                if parents_for_dep is None:
-                    parents_for_dep = set()
-                    reverse_dependencies[dep_id] = parents_for_dep
-                parents_for_dep.add(spell_id)
+            deps = snapshot.dependencies[spell_id]
+            dependencies[spell_id] = deps
+            for dep_id in deps:
+                if dep_id in all_spell_ids:
+                    reverse_dependencies.setdefault(dep_id, set()).add(spell_id)
 
-            topology = snapshot.topologies.get(spell_id)
-            if topology is not None:
-                topologies[spell_id] = topology
+            topologies[spell_id] = snapshot.topologies[spell_id]
 
-        all_dependency_ids: Set[str] = set()
-        for dep_set in dependencies.values():
-            all_dependency_ids.update(dep_set)
-        root_spell_ids = all_spell_ids.difference(all_dependency_ids)
+        root_spell_ids = all_spell_ids.difference(reverse_dependencies.keys())
 
         return SpellSystemAdjacencySnapshot(
             dependencies=dependencies,
@@ -1876,24 +1808,9 @@ class SpellCrafter(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
         if self._spell.is_existing_creation:
             return
-        if self._entire_dag_blueprint_phase5 is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 8: cannot compile occurrence plans before Phase 5 has completed."
-            )
-
         root_blueprint = self._root_blueprint_phase5
-        if root_blueprint is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 8: root blueprint missing for spell."
-            )
-
-        if self._spellbook_scanner is None:
-            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
 
         spell_lookup: Dict[str, ISpell] = {}
         for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
@@ -1966,22 +1883,8 @@ class SpellCrafter(Cleanable):
             - Cleans and replaces any prior InjectionPlan for this spell.
         """
         self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
         if self._spell.is_existing_creation:
             return
-
-        root_blueprint = self._root_blueprint_phase5
-        if root_blueprint is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 9: root blueprint missing for spell."
-            )
-
-        if self._occurrence_plan_phase8 is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 9: cannot compile injection plans before Phase 8 has completed."
-            )
 
         builder = InjectionPlanBuilder(
             occurrence_plan=self._occurrence_plan_phase8,
@@ -2047,21 +1950,10 @@ class SpellCrafter(Cleanable):
             - Cleans and replaces any prior patch maps for this spell.
         """
         self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
         if self._spell.is_existing_creation:
             return
-        if self._entire_dag_blueprint_phase5 is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 10: cannot compile patch maps before Phase 5 has completed."
-            )
 
         root_blueprint = self._root_blueprint_phase5
-        if root_blueprint is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 10: root blueprint missing for spell."
-            )
 
         builder = PatchMapBuilder(
             blueprint=root_blueprint,
@@ -2107,19 +1999,8 @@ class SpellCrafter(Cleanable):
             - Replaces any existing ExecutionPlan for this spell.
         """
         self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
         if self._spell.is_existing_creation:
             return
-
-        if self._occurrence_plan_phase8 is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 11: cannot compile execution plans before Phase 8 has completed."
-            )
-
-        if self._spellbook_scanner is None:
-            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
 
         spell_lookup: Dict[str, ISpell] = {}
         for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
@@ -2212,31 +2093,15 @@ class SpellCrafter(Cleanable):
             the spell as validated.
         """
         self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
-        if self._entire_dag_blueprint_phase5 is None or self._spell_system_index_phase5 is None:
-            raise RuntimeError(
-                "SpellCrafter Phase 6: cannot run system validation before Phase 5 has completed."
-            )
-
-        if self._spellbook_scanner is None:
-            self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
 
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
         spell_lookup: Dict[str, ISpell] = {}
-        phase4_placeholder = object()
 
         for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
             spell_lookup[spell_index.current] = spell_instance
             crafter = spell_instance._crafter
-            if crafter is None:
-                continue
-            if crafter._validation_result_phase4 is not None:
-                phase4_results[spell_index.current] = crafter._validation_result_phase4
-            elif crafter._validated_phase4:
-                phase4_results[spell_index.current] = phase4_placeholder
+            phase4_results[spell_index.current] = crafter._validation_result_phase4
             if crafter._is_broken:
                 broken_spell_ids.add(spell_index.current)
 
@@ -2299,54 +2164,36 @@ class SpellCrafter(Cleanable):
         - Ensure the revalidator hook is registered.
         """
         self.check_cleaned()
-        self._throw_if_cancelled(cancel_event)
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
         self._ensure_change_control_ready(conduit_id)
 
     def _ensure_change_control_ready(self, conduit_id: str) -> None:
         """
         Internal helper to (re)wire change-control after Phase 5 artifacts exist.
         """
-        try:
-            spellbook = self._spell._spellbook
-            frame_name = spellbook._aetheric_frame
-            change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
-            if change_control_manager is None:
-                return
-            # Rebuild component-of if we have root blueprints.
-            if self._entire_dag_blueprint_phase5:
-                change_control_manager.rebuild_component_of(self._entire_dag_blueprint_phase5)
-            # Register revalidator if missing.
-            if change_control_manager._revalidate_fn is None:
-                def _revalidate_dirty_roots(
-                        dirty_roots: Set[str],
-                        cancel_event: Optional[CancellationEvent],
-                ) -> Set[str]:
-                    scanner = SpellbookScanner(spellbook)
-                    version_to_spell: Dict[str, ISpell] = {}
-                    for spell_index, spell_instance in scanner.iter_spells():
-                        version_to_spell[spell_index.current] = spell_instance
+        spellbook = self._spell._spellbook
+        frame_name = spellbook._aetheric_frame
+        change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
+        change_control_manager.rebuild_component_of(self._entire_dag_blueprint_phase5)
+        if change_control_manager._revalidate_fn is None:
+            def _revalidate_dirty_roots(
+                    dirty_roots: Set[str],
+                    cancel_event: Optional[CancellationEvent],
+            ) -> Set[str]:
+                scanner = SpellbookScanner(spellbook)
+                version_to_spell: Dict[str, ISpell] = {}
+                for spell_index, spell_instance in scanner.iter_spells():
+                    version_to_spell[spell_index.current] = spell_instance
 
-                    validated_roots: Set[str] = set()
-                    for root_id in dirty_roots:
-                        if cancel_event is not None and cancel_event.is_set:
-                            cancel_event.throw_if_set()
-                        spell_instance = version_to_spell.get(root_id)
-                        if spell_instance is None:
-                            continue
-                        crafter = spell_instance._crafter
-                        if crafter is None:
-                            continue
-                        crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
-                        validated_roots.add(root_id)
+                validated_roots: Set[str] = set()
+                for root_id in dirty_roots:
+                    spell_instance = version_to_spell[root_id]
+                    crafter = spell_instance._crafter
+                    crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
+                    validated_roots.add(root_id)
 
-                    return validated_roots
+                return validated_roots
 
-                change_control_manager.set_revalidator(_revalidate_dirty_roots)
-        except Exception:
-            # Change-control is optional; ignore wiring failures.
-            pass
+            change_control_manager.set_revalidator(_revalidate_dirty_roots)
 
 
     # ------------------------------------------------------------------

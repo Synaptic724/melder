@@ -13,12 +13,10 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.blueprints.injection_plan import (
-    build_kwargs_from_injection_spec,
-)
 from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlan,
     ExecutionPlanStep,
+    ExecutionPlanTargetKind,
 )
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.spellbook.existence.existence import Existence
@@ -237,9 +235,10 @@ class MeldEngine(Cleanable):
     def _build_instance_override_map(
             self,
             *,
-            spell_id: str,
-            occurrence_path: tuple[str, ...],
+            override_targets: List[SocketRef],
             shared: bool,
+            match_prefix: Optional[tuple[str, ...]],
+            match_prefix_len: int,
     ) -> Dict[str, Any]:
         """
         Purpose:
@@ -249,24 +248,148 @@ class MeldEngine(Cleanable):
             - Per-path instances accept overrides whose param_path matches the
               occurrence path.
         Args:
-            spell_id: Spell id being constructed.
-            occurrence_path: Path to the occurrence from the root.
+            override_targets: Override socket refs scoped to the current spell id.
             shared: Whether the instance is shared.
+            match_prefix: Precomputed occurrence-path prefix for matching overrides.
+            match_prefix_len: Cached length of the match prefix.
         Returns:
             Dict[str, Any]: Parameter name to override value mapping.
         """
         overrides: Dict[str, Any] = {}
-        for socket_ref, value in (self._override_map or {}).items():
-            if socket_ref.node_id != spell_id:
+        for socket_ref in override_targets:
+            value = self._override_map.get(socket_ref)
+            if value is None and socket_ref not in self._override_map:
                 continue
             if shared:
                 overrides[socket_ref.param_name] = value
                 continue
             if not socket_ref.param_path:
                 continue
-            if tuple(socket_ref.param_path[:-1]) == occurrence_path:
+            if match_prefix is None:
+                continue
+            param_path = socket_ref.param_path
+            if len(param_path) - 1 != match_prefix_len:
+                continue
+            matched = True
+            for index in range(match_prefix_len):
+                if param_path[index] != match_prefix[index]:
+                    matched = False
+                    break
+            if matched:
                 overrides[socket_ref.param_name] = value
         return overrides
+
+    def _build_kwargs_from_call_recipe(
+            self,
+            *,
+            plan_step: ExecutionPlanStep,
+            override_values: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Build keyword arguments using precomputed Phase 11 call recipes.
+
+        Contract:
+            - Returns a new kwargs mapping.
+            - Raises MeldExecutionError when dependency instances are missing.
+        """
+        spell_id = plan_step.spell.spell_index.current
+        kwargs: Dict[str, Any] = {}
+
+        for param_name, dependency_keys in plan_step.dependency_resolution_order:
+            if param_name in override_values:
+                kwargs[param_name] = override_values[param_name]
+                continue
+            values: List[Any] = []
+            for dependency_key in dependency_keys:
+                if dependency_key not in self._instance_results:
+                    raise MeldExecutionError(
+                        spell_id=spell_id,
+                        spell_name=spell_id,
+                        node_id=spell_id,
+                        param_name=param_name,
+                        message=(
+                            f"Dependency '{dependency_key[0]}' missing while "
+                            f"building args for '{spell_id}'."
+                        ),
+                    )
+                values.append(self._instance_results[dependency_key])
+            if not values:
+                continue
+            if len(values) == 1:
+                kwargs[param_name] = values[0]
+            else:
+                kwargs[param_name] = values
+
+        if plan_step.contract_positional_override is not None:
+            kwargs["__args__"] = plan_step.contract_positional_override
+
+        if plan_step.has_contract_payload:
+            contract_payload = plan_step.contract_payload
+            if contract_payload:
+                for param_name, value in contract_payload.items():
+                    if param_name == "__args__" and plan_step.uses_positional_override:
+                        continue
+                    if param_name in override_values:
+                        continue
+                    kwargs[param_name] = value
+
+        for param_name, value in override_values.items():
+            if param_name not in kwargs:
+                kwargs[param_name] = value
+
+        return kwargs
+
+    def _build_kwargs_from_call_recipe_no_overrides(
+            self,
+            *,
+            plan_step: ExecutionPlanStep,
+    ) -> Dict[str, Any]:
+        """
+        Build keyword arguments using precomputed Phase 11 call recipes
+        without applying override payloads.
+
+        Contract:
+            - Returns a new kwargs mapping.
+            - Applies plan-time SpellContract payloads when present.
+            - Raises MeldExecutionError when dependency instances are missing.
+        """
+        spell_id = plan_step.spell.spell_index.current
+        kwargs: Dict[str, Any] = {}
+
+        for param_name, dependency_keys in plan_step.dependency_resolution_order:
+            values: List[Any] = []
+            for dependency_key in dependency_keys:
+                if dependency_key not in self._instance_results:
+                    raise MeldExecutionError(
+                        spell_id=spell_id,
+                        spell_name=spell_id,
+                        node_id=spell_id,
+                        param_name=param_name,
+                        message=(
+                            f"Dependency '{dependency_key[0]}' missing while "
+                            f"building args for '{spell_id}'."
+                        ),
+                    )
+                values.append(self._instance_results[dependency_key])
+            if not values:
+                continue
+            if len(values) == 1:
+                kwargs[param_name] = values[0]
+            else:
+                kwargs[param_name] = values
+
+        if plan_step.contract_positional_override is not None:
+            kwargs["__args__"] = plan_step.contract_positional_override
+
+        if plan_step.has_contract_payload:
+            contract_payload = plan_step.contract_payload
+            if contract_payload:
+                for param_name, value in contract_payload.items():
+                    if param_name == "__args__" and plan_step.uses_positional_override:
+                        continue
+                    kwargs[param_name] = value
+
+        return kwargs
 
     def _store_instance_result(
             self,
@@ -367,6 +490,10 @@ class MeldEngine(Cleanable):
         """
         Execute a Phase 11 ExecutionPlan using precompiled step metadata.
 
+        Contract:
+            - Uses precomputed spell references, call recipes, and target kinds
+              from the execution plan; no runtime planning or fallback paths.
+
         Args:
             execution_plan:
                 Phase 11 execution plan to execute.
@@ -387,7 +514,7 @@ class MeldEngine(Cleanable):
         for step in execution_plan.steps:
             if step.instance_key in self._instance_results:
                 continue
-            spell = self._spell_lookup.get(step.spell_id)
+            spell = step.spell
             if spell is None:
                 raise MeldExecutionError(
                     spell_id=step.spell_id,
@@ -400,24 +527,22 @@ class MeldEngine(Cleanable):
                     plan_step: ExecutionPlanStep = step,
                     plan_spell: ISpell = spell,
             ) -> Any:
-                kwargs: Dict[str, Any] = {}
-                occurrence = plan_step.occurrence
-                shared = plan_step.instance_key[1] is None
-                override_values = self._build_instance_override_map(
-                    spell_id=plan_step.spell_id,
-                    occurrence_path=occurrence[1],
-                    shared=shared,
+                shared = plan_step.shared_instance
+                override_targets = self._override_targets_by_spell_id.get(
+                    plan_step.spell.spell_index.current, []
                 )
-                if plan_step.inject_spec is not None:
-                    kwargs = build_kwargs_from_injection_spec(
-                        instance_key=plan_step.instance_key,
-                        occurrence=occurrence,
-                        injection_spec=plan_step.inject_spec,
-                        instance_results=self._instance_results,
-                        override_values=override_values,
+                override_values: Dict[str, Any] = {}
+                if plan_step.expects_overrides and override_targets:
+                    override_values = self._build_instance_override_map(
+                        override_targets=override_targets,
+                        shared=shared,
+                        match_prefix=plan_step.override_match_prefix,
+                        match_prefix_len=plan_step.override_match_prefix_len,
                     )
-                elif override_values:
-                    kwargs.update(override_values)
+                kwargs = self._build_kwargs_from_call_recipe(
+                    plan_step=plan_step,
+                    override_values=override_values,
+                )
                 return self._construct_spell(plan_spell, kwargs)
 
             instance, _ = self._resolve_spell_instance_with_plan(
@@ -426,6 +551,151 @@ class MeldEngine(Cleanable):
                 construct_fn=_construct_node,
             )
             self._store_instance_result(step.instance_key, instance)
+
+        return self._get_instance_result(execution_plan.root_instance_key)
+
+    def run_execution_plan_no_overrides(
+            self,
+            execution_plan: ExecutionPlan,
+    ) -> Any:
+        """
+        Execute a Phase 11 ExecutionPlan when no overrides or mutations apply.
+
+        Contract:
+            - Skips override target collection and override value merging.
+            - Applies plan-time SpellContract payloads.
+            - Uses fast-path arrays when available.
+        """
+        self.check_cleaned()
+
+        cancel_event: Optional[CancellationEvent] = self._context.cancel_event
+        if cancel_event is not None and cancel_event.is_set:
+            cancel_event.throw_if_set()
+
+        self._override_targets_by_spell_id = {}
+        self._any_overrides_present = False
+
+        fast_plan = execution_plan.fast_plan
+        steps = execution_plan.steps
+
+        if fast_plan is None:
+            for step in steps:
+                if step.instance_key in self._instance_results:
+                    continue
+                spell = step.spell
+                if spell is None:
+                    raise MeldExecutionError(
+                        spell_id=step.spell_id,
+                        spell_name=step.spell_id,
+                        message=f"Spell with id '{step.spell_id}' not found in spellbook for meld.",
+                    )
+
+                def _construct_node(
+                        *,
+                        plan_step: ExecutionPlanStep = step,
+                        plan_spell: ISpell = spell,
+                ) -> Any:
+                    kwargs = self._build_kwargs_from_call_recipe_no_overrides(
+                        plan_step=plan_step,
+                    )
+                    return self._construct_spell(plan_spell, kwargs)
+
+                instance, _ = self._resolve_spell_instance_with_plan(
+                    spell,
+                    step,
+                    construct_fn=_construct_node,
+                )
+                self._store_instance_result(step.instance_key, instance)
+
+            return self._get_instance_result(execution_plan.root_instance_key)
+
+        (
+            fast_dep_indices,
+            fast_param_group_names,
+            fast_param_group_dep_offsets,
+            fast_param_group_dep_counts,
+            fast_param_group_offsets,
+            fast_param_group_counts,
+            fast_use_positional,
+            fast_contract_payload_items,
+            fast_contract_positional_args,
+        ) = fast_plan
+
+        fast_values: List[Any] = [None] * len(steps)
+
+        for step_index, step in enumerate(steps):
+            if step.instance_key in self._instance_results:
+                fast_values[step_index] = self._instance_results[step.instance_key]
+                continue
+            spell = step.spell
+            if spell is None:
+                raise MeldExecutionError(
+                    spell_id=step.spell_id,
+                    spell_name=step.spell_id,
+                    message=f"Spell with id '{step.spell_id}' not found in spellbook for meld.",
+                )
+
+            group_offset = fast_param_group_offsets[step_index]
+            group_count = fast_param_group_counts[step_index]
+            use_positional = fast_use_positional[step_index]
+            contract_positional = fast_contract_positional_args[step_index]
+            contract_items = fast_contract_payload_items[step_index]
+
+            def _construct_node_fast(
+                    *,
+                    plan_step: ExecutionPlanStep = step,
+                    plan_spell: ISpell = spell,
+            ) -> Any:
+                if use_positional:
+                    if group_count == 0:
+                        return self._construct_spell_positional(plan_spell, ())
+                    args: List[Any] = []
+                    for group_index in range(group_offset, group_offset + group_count):
+                        dep_offset = fast_param_group_dep_offsets[group_index]
+                        dep_count = fast_param_group_dep_counts[group_index]
+                        if dep_count == 1:
+                            value = fast_values[fast_dep_indices[dep_offset]]
+                        else:
+                            values: List[Any] = []
+                            for dep_index in range(dep_count):
+                                values.append(
+                                    fast_values[fast_dep_indices[dep_offset + dep_index]]
+                                )
+                            value = values
+                        args.append(value)
+                    return self._construct_spell_positional(plan_spell, args)
+
+                kwargs: Dict[str, Any] = {}
+                if group_count:
+                    for group_index in range(group_offset, group_offset + group_count):
+                        param_name = fast_param_group_names[group_index]
+                        dep_offset = fast_param_group_dep_offsets[group_index]
+                        dep_count = fast_param_group_dep_counts[group_index]
+                        if dep_count == 1:
+                            kwargs[param_name] = fast_values[fast_dep_indices[dep_offset]]
+                        else:
+                            values = []
+                            for dep_index in range(dep_count):
+                                values.append(
+                                    fast_values[fast_dep_indices[dep_offset + dep_index]]
+                                )
+                            kwargs[param_name] = values
+
+                if contract_positional is not None:
+                    kwargs["__args__"] = contract_positional
+                if contract_items:
+                    for param_name, value in contract_items:
+                        kwargs[param_name] = value
+
+                return self._construct_spell(plan_spell, kwargs)
+
+            instance, _ = self._resolve_spell_instance_with_plan(
+                spell,
+                step,
+                construct_fn=_construct_node_fast,
+            )
+            self._store_instance_result(step.instance_key, instance)
+            fast_values[step_index] = instance
 
         return self._get_instance_result(execution_plan.root_instance_key)
 
@@ -475,6 +745,46 @@ class MeldEngine(Cleanable):
                 inner=exc,
             ) from exc
 
+    def _construct_spell_positional(
+            self,
+            spell: ISpell,
+            args: Sequence[Any],
+    ) -> Any:
+        """
+        Purpose:
+            Construct a spell instance using positional arguments only.
+        Side Effects:
+            - Invokes the spell callable to create an instance.
+        Args:
+            spell: Spell to construct.
+            args: Positional arguments for the call target.
+        Returns:
+            Any: Constructed spell instance.
+        Raises:
+            MeldExecutionError: If construction fails or required data is missing.
+        """
+        if spell.is_existing_creation:
+            if spell.user_created_object is None:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message="EXISTING_CREATION spell has no backing object.",
+                )
+            return spell.user_created_object
+
+        if not (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell):
+            return spell.spell
+
+        try:
+            return spell.spell(*args)
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=f"Error invoking spell '{spell.spell_name}'.",
+                inner=exc,
+            ) from exc
+
     def _resolve_spell_instance_with_plan(
             self,
             spell: ISpell,
@@ -492,7 +802,7 @@ class MeldEngine(Cleanable):
             spell=spell,
             target_kind=plan_step.creations_target_kind,
         )
-        existence: Existence = spell.existence
+        existence: Existence = plan_step.existence
         instance: Any = None
         created = False
 
@@ -500,7 +810,7 @@ class MeldEngine(Cleanable):
             instance = construct_fn()
             if creations is not None and plan_step.must_register:
                 with creations._lock:
-                    self._register_spell(spell, instance, creations)
+                    self._register_spell(spell, instance, creations, existence)
             return instance, True
 
         if existence in (
@@ -511,16 +821,16 @@ class MeldEngine(Cleanable):
                 instance = construct_fn()
                 return instance, True
             with creations._lock:
-                instance = self._get_existing_creation(spell, creations)
+                instance = self._get_existing_creation(spell, creations, existence)
                 if instance is None:
                     instance = construct_fn()
-                    self._register_spell(spell, instance, creations)
+                    self._register_spell(spell, instance, creations, existence)
                     created = True
                 else:
                     self._raise_override_on_existing(spell)
             return instance, created
 
-        use_spell_lock = plan_step.lock_hint == "spell_lock"
+        use_spell_lock = plan_step.use_spell_lock_hint
         if (
                 use_spell_lock
                 and self._context.caller_creations_lock_held
@@ -532,15 +842,15 @@ class MeldEngine(Cleanable):
             with spell._lock:
                 if creations is not None:
                     with creations._lock:
-                        instance = self._get_existing_creation(spell, creations)
+                        instance = self._get_existing_creation(spell, creations, existence)
                 else:
-                    instance = self._get_existing_creation(spell, None)
+                    instance = self._get_existing_creation(spell, None, existence)
 
                 if instance is None:
                     instance = construct_fn()
                     if creations is not None:
                         with creations._lock:
-                            self._register_spell(spell, instance, creations)
+                            self._register_spell(spell, instance, creations, existence)
                     created = True
                 else:
                     self._raise_override_on_existing(spell)
@@ -551,10 +861,10 @@ class MeldEngine(Cleanable):
             return instance, True
 
         with creations._lock:
-            instance = self._get_existing_creation(spell, creations)
+            instance = self._get_existing_creation(spell, creations, existence)
             if instance is None:
                 instance = construct_fn()
-                self._register_spell(spell, instance, creations)
+                self._register_spell(spell, instance, creations, existence)
                 created = True
             else:
                 self._raise_override_on_existing(spell)
@@ -573,9 +883,12 @@ class MeldEngine(Cleanable):
         Raises:
             ValueError: If the target kind is not recognized.
         """
-        if target_kind == "caller":
+        if target_kind == ExecutionPlanTargetKind.CALLER:
             return self._context.caller_creations
-        if target_kind in ("owner", "spellspace"):
+        if target_kind in (
+                ExecutionPlanTargetKind.OWNER,
+                ExecutionPlanTargetKind.SPELLSPACE,
+        ):
             owner_creations = spell._owner_creations
             if owner_creations is None:
                 owner_creations = self._context.owner_creations
@@ -588,11 +901,16 @@ class MeldEngine(Cleanable):
             self,
             spell: ISpell,
             creations: Any | None,
+            existence: Existence,
     ) -> Optional[Any]:
         """
         Attempt reuse from creations manager based on Existence.
+
+        Args:
+            spell: Spell being resolved.
+            creations: Creations container to query (may be None).
+            existence: Precomputed existence policy for the spell.
         """
-        existence: Existence = spell.existence
         spell_id: str = spell.spell_id
 
         # many never reuses
@@ -666,6 +984,7 @@ class MeldEngine(Cleanable):
             spell: ISpell,
             instance: Any,
             creations: Any | None,
+            existence: Existence,
     ) -> None:
         """
         Register a constructed instance into the appropriate creations container.
@@ -681,11 +1000,11 @@ class MeldEngine(Cleanable):
             spell: The spell that produced the instance.
             instance: The newly constructed instance to register.
             creations: Creations container used for registration (must be provided).
+            existence: Precomputed existence policy for the spell.
 
         Returns:
             None.
         """
-        existence: Existence = spell.existence
         spell_id: str = spell.spell_id
         has_disposal_methods: bool = spell.has_disposal_methods
         disposal_methods: list[str] = spell.disposal_method_names

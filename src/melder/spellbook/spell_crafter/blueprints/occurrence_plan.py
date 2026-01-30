@@ -60,25 +60,16 @@ def select_occurrence_plan(
     Returns:
         Optional[OccurrencePlanSelection]: Selected plan data for runtime use.
     """
-    if plan is None:
-        return None
-    try:
-        if plan.root_spell_id != root_spell_id:
-            return None
-        if not plan.contract_dependencies_complete:
-            return None
-        return OccurrencePlanSelection(
-            occurrence_graph=plan.occurrence_graph,
-            execution_order=plan.execution_order,
-            instance_keys_by_spell_id=plan.instance_keys_by_spell_id,
-            canonical_occurrences_by_spell_id=plan.canonical_occurrences_by_spell_id,
-            root_instance_key=plan.root_instance_key,
-            shared_spell_ids=plan.shared_spell_ids,
-            contract_overrides_by_occurrence=plan.contract_overrides_by_occurrence,
-            contract_overrides_by_spell_id=plan.contract_overrides_by_spell_id,
-        )
-    except Exception:
-        return None
+    return OccurrencePlanSelection(
+        occurrence_graph=plan.occurrence_graph,
+        execution_order=plan.execution_order,
+        instance_keys_by_spell_id=plan.instance_keys_by_spell_id,
+        canonical_occurrences_by_spell_id=plan.canonical_occurrences_by_spell_id,
+        root_instance_key=plan.root_instance_key,
+        shared_spell_ids=plan.shared_spell_ids,
+        contract_overrides_by_occurrence=plan.contract_overrides_by_occurrence,
+        contract_overrides_by_spell_id=plan.contract_overrides_by_spell_id,
+    )
 
 
 class OccurrencePlan(Cleanable):
@@ -97,8 +88,8 @@ class OccurrencePlan(Cleanable):
         - Instances are treated as immutable once built.
         - This object owns the provided collections and clears them on cleanup.
         - root_spell_id must be the version id used to build the plan.
-        - Contract override payloads are recorded only when dependencies were
-          resolved at plan time; missing providers mark the plan incomplete.
+        - Contract override payloads are recorded only for resolved providers.
+        - Contract dependencies are treated as required when building the plan.
 
     Threading:
         - Not thread-safe. Treat as single-threaded, read-only data.
@@ -159,35 +150,14 @@ class OccurrencePlan(Cleanable):
             contract_overrides_by_spell_id:
                 Mapping of provider spell ids to (occurrence, override) payloads.
             contract_dependencies_complete:
-                True when all SpellContract dependencies were fully resolved for
-                this plan; False when providers were missing or graph alignment
-                was incomplete.
+                True when all SpellContract dependencies were resolved for this
+                plan. In strict mode, missing providers raise during build.
 
         Raises:
             ValueError:
                 If any required input is None.
         """
         super().__init__()
-        if root_spell_id is None:
-            raise ValueError("root_spell_id must not be None.")
-        if occurrence_graph is None:
-            raise ValueError("occurrence_graph must not be None.")
-        if execution_order is None:
-            raise ValueError("execution_order must not be None.")
-        if instance_keys_by_spell_id is None:
-            raise ValueError("instance_keys_by_spell_id must not be None.")
-        if canonical_occurrences_by_spell_id is None:
-            raise ValueError("canonical_occurrences_by_spell_id must not be None.")
-        if root_instance_key is None:
-            raise ValueError("root_instance_key must not be None.")
-        if shared_spell_ids is None:
-            raise ValueError("shared_spell_ids must not be None.")
-        if contract_overrides_by_occurrence is None:
-            raise ValueError("contract_overrides_by_occurrence must not be None.")
-        if contract_overrides_by_spell_id is None:
-            raise ValueError("contract_overrides_by_spell_id must not be None.")
-        if contract_dependencies_complete is None:
-            raise ValueError("contract_dependencies_complete must not be None.")
 
         self._root_spell_id = root_spell_id
         self._occurrence_graph = occurrence_graph
@@ -347,8 +317,8 @@ class OccurrencePlan(Cleanable):
         Contract:
             - True only when every SpellContract dependency resolved to an
               occurrence in the plan graph.
-            - False when providers were missing or dependencies were not
-              represented in the occurrence graph.
+            - In strict mode, missing providers raise during build, so this is
+              expected to be True for valid plans.
         """
         self.check_cleaned()
         return self._contract_dependencies_complete
@@ -370,7 +340,7 @@ class OccurrencePlanBuilder(object):
         - This builder does not own any referenced objects.
         - Inputs must remain valid for the duration of build().
         - SpellContract resolution is attempted when providers are available.
-        - Missing SpellContract providers are deferred to the meld runtime.
+        - SpellContract providers are treated as required during plan build.
         - Not thread-safe.
     """
     __melder_internal__ = _mrg.sentinel
@@ -406,12 +376,6 @@ class OccurrencePlanBuilder(object):
             ValueError:
                 If root_spell or blueprint is None.
         """
-        if root_spell is None:
-            raise ValueError("root_spell must not be None.")
-        if blueprint is None:
-            raise ValueError("blueprint must not be None.")
-        if spell_lookup is None:
-            spell_lookup = {}
         self._root_spell = root_spell
         self._blueprint = blueprint
         self._spell_lookup = spell_lookup
@@ -566,9 +530,6 @@ class OccurrencePlanBuilder(object):
         Returns:
             None.
         """
-        if not ordered_node_ids or dag is None:
-            return
-
         existing_occurrences = set(occurrence_graph.keys())
         present_spell_ids = {spell_id for spell_id, _ in existing_occurrences}
 
@@ -606,8 +567,9 @@ class OccurrencePlanBuilder(object):
 
         Contract:
             - Uses the occurrence graph to build a topological order.
-            - Uses fallback_order as a stable tie-breaker.
-            - If cycles are detected, returns a stable fallback ordering.
+            - Preserves queue insertion order (no tie-break sorting).
+            - If cycles are detected, returns fallback_order first, then remaining
+              nodes in set-iteration order.
 
         Args:
             occurrence_graph: Path-aware occurrence graph.
@@ -616,9 +578,6 @@ class OccurrencePlanBuilder(object):
         Returns:
             List[str]: Spell ids in execution order.
         """
-        if not occurrence_graph:
-            return list(fallback_order) if fallback_order else []
-
         edges: Dict[str, Set[str]] = defaultdict(set)
         indegree: Dict[str, int] = defaultdict(int)
         nodes: Set[str] = set()
@@ -637,24 +596,16 @@ class OccurrencePlanBuilder(object):
         for node_id in nodes:
             indegree.setdefault(node_id, 0)
 
-        fallback_rank = {node_id: idx for idx, node_id in enumerate(fallback_order or [])}
-        last_rank = len(fallback_rank)
-
-        def _sort_key(node_id: str) -> Tuple[int, str]:
-            return (fallback_rank.get(node_id, last_rank), node_id)
-
         queue = [node_id for node_id, degree in indegree.items() if degree == 0]
-        queue.sort(key=_sort_key)
         order: List[str] = []
 
         while queue:
             node_id = queue.pop(0)
             order.append(node_id)
-            for child_id in sorted(edges.get(node_id, []), key=_sort_key):
+            for child_id in edges.get(node_id, []):
                 indegree[child_id] -= 1
                 if indegree[child_id] == 0:
                     queue.append(child_id)
-            queue.sort(key=_sort_key)
 
         if len(order) == len(nodes):
             return order
@@ -665,7 +616,7 @@ class OccurrencePlanBuilder(object):
             if node_id in nodes and node_id not in seen:
                 seen.add(node_id)
                 resolved.append(node_id)
-        for node_id in sorted(nodes):
+        for node_id in nodes:
             if node_id not in seen:
                 seen.add(node_id)
                 resolved.append(node_id)
@@ -685,7 +636,7 @@ class OccurrencePlanBuilder(object):
             - Falls back to DAG dependency metadata.
             - Adds SpellContract dependencies when providers are available.
             - Adds mutation override dependencies.
-            - Defers missing SpellContract providers to runtime.
+            - Treats missing SpellContract providers as build-time errors.
 
         Args:
             occurrence: The (spell_id, path) occurrence being expanded.
@@ -739,16 +690,7 @@ class OccurrencePlanBuilder(object):
             spell_id: Spell id for the occurrence.
             path: Occurrence path segments.
         """
-        if self._system_states is None:
-            return
-
-        try:
-            topology = self._system_states.get_local_topology_by_id(spell_id)
-        except Exception:
-            topology = None
-
-        if topology is None:
-            return
+        topology = self._system_states._local_topologies.get(spell_id)
 
         for socket in topology.sockets:
             if not socket.target_spell_ids:
@@ -771,6 +713,7 @@ class OccurrencePlanBuilder(object):
         Contract:
             - No-op if the DAG or node metadata are unavailable.
             - Mutation contract sockets override other dependencies for a param.
+            - Skips DAG edges that have no param metadata.
 
         Args:
             dependencies: Mapping to update in place.
@@ -778,18 +721,11 @@ class OccurrencePlanBuilder(object):
             path: Occurrence path segments.
             dag: DirectedAcyclicWorkGraph used for dependency discovery.
         """
-        if dag is None:
-            return
-
         node = dag.get_node(spell_id)
-        if node is None:
-            return
-
         mutated_params: Set[str] = set()
-        sorted_parents = sorted(node.dependencies, key=lambda parent: parent.id)
-        for parent_node in sorted_parents:
+        for parent_node in node.dependencies:
             param_name = node.incoming_params.get(parent_node)
-            if not param_name:
+            if param_name is None:
                 continue
             socket_kind = dag._socket_kinds.get((parent_node, node))
             child_occurrence = (parent_node.id, path + (param_name,))
@@ -805,11 +741,7 @@ class OccurrencePlanBuilder(object):
             if param_name in mutated_params:
                 continue
 
-            existing = dependencies.get(param_name)
-            if existing is None:
-                dependencies[param_name] = [child_occurrence]
-            elif child_occurrence not in existing:
-                existing.append(child_occurrence)
+            dependencies.setdefault(param_name, []).append(child_occurrence)
 
     def _apply_spell_contract_dependencies(
             self,
@@ -824,7 +756,7 @@ class OccurrencePlanBuilder(object):
             - Only parameters with SpellContract defaults are treated as
               contract sockets.
             - Contract sockets are resolved without touching Phase 1 artifacts.
-            - Missing contracts are deferred to runtime.
+            - Missing contracts raise during plan build.
 
         Args:
             dependencies: Mapping to update with contract dependencies.
@@ -834,30 +766,17 @@ class OccurrencePlanBuilder(object):
             MeldExecutionError: If a SpellContract is ambiguous or inconsistent.
         """
         spell_id, path = occurrence
-        spell = self._spell_lookup.get(spell_id)
-        if spell is None and spell_id == self._root_spell.spell_index.current:
-            spell = self._root_spell
-        if spell is None:
-            return
+        spell = self._spell_lookup[spell_id]
 
         for param_name, contract in self._iter_spell_contract_defaults(spell):
-            if contract is None:
-                continue
-
             target_spell_id = self._resolve_spell_contract_spell_id(
                 contract=contract,
                 consumer_spell=spell,
                 param_name=param_name,
-                allow_missing=True,
+                allow_missing=False,
             )
-            if target_spell_id is None:
-                continue
             child_occurrence = (target_spell_id, path + (param_name,))
-            existing = dependencies.get(param_name)
-            if existing is None:
-                dependencies[param_name] = [child_occurrence]
-            elif child_occurrence not in existing:
-                existing.append(child_occurrence)
+            dependencies.setdefault(param_name, []).append(child_occurrence)
 
     def _iter_spell_contract_defaults(
             self,
@@ -879,10 +798,7 @@ class OccurrencePlanBuilder(object):
                 SpellContract defaults.
         """
         call_target = spell.spell
-        try:
-            signature = inspect.signature(call_target)
-        except (TypeError, ValueError):
-            return []
+        signature = inspect.signature(call_target)
 
         contracts: List[Tuple[str, SpellContract]] = []
         for param_name, parameter in signature.parameters.items():
@@ -983,50 +899,14 @@ class OccurrencePlanBuilder(object):
                 If contracted lookup maps are inconsistent or missing.
         """
         spellbook = self._root_spell._spellbook
-        if spellbook is None:
-            return []
-
         contracted_lookup = spellbook._lookup_contracted_spells
-        if not contracted_lookup:
-            return []
-
         contracted_maps = spellbook._contracted_spells
-        if contracted_maps is None:
-            raise MeldExecutionError(
-                spell_id=consumer_spell.spell_index.current,
-                spell_name=consumer_spell.spell_name,
-                node_id=consumer_spell.spell_index.current,
-                param_name=param_name,
-                message="Contracted spell map missing while resolving SpellContract.",
-            )
 
         contracted_candidates: List[ISpell] = []
         for conduit_id, lookup_map in contracted_lookup.items():
-            spell_index = lookup_map.get(contract_key)
-            if spell_index is None:
-                continue
-
-            contracted_map = contracted_maps.get(conduit_id)
-            if contracted_map is None:
-                raise MeldExecutionError(
-                    spell_id=consumer_spell.spell_index.current,
-                    spell_name=consumer_spell.spell_name,
-                    node_id=consumer_spell.spell_index.current,
-                    param_name=param_name,
-                    message=(
-                        "Contracted spell map missing for conduit '{0}' while "
-                        "resolving SpellContract."
-                    ).format(conduit_id),
-                )
-            spell_obj = contracted_map.get(spell_index)
-            if spell_obj is None:
-                raise MeldExecutionError(
-                    spell_id=consumer_spell.spell_index.current,
-                    spell_name=consumer_spell.spell_name,
-                    node_id=consumer_spell.spell_index.current,
-                    param_name=param_name,
-                    message="Contracted spell index missing while resolving SpellContract.",
-                )
+            spell_index = lookup_map[contract_key]
+            contracted_map = contracted_maps[conduit_id]
+            spell_obj = contracted_map[spell_index]
             contracted_candidates.append(spell_obj)
 
         return contracted_candidates
@@ -1062,13 +942,6 @@ class OccurrencePlanBuilder(object):
                 spell_id=self._root_spell.spell_index.current,
                 spell_name=self._root_spell.spell_name,
                 message="mutation_override must be a dict of override_key -> spell_id.",
-            )
-
-        if dag_index is None:
-            raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
-                spell_name=self._root_spell.spell_name,
-                message="mutation_override requires an active DagIndex.",
             )
 
         resolved: List[Tuple[SocketRef, str]] = []
@@ -1364,20 +1237,9 @@ class OccurrencePlanBuilder(object):
             dependencies: Parameter-to-occurrence mapping to update in-place.
             occurrence: The (spell_id, path) occurrence being expanded.
         """
-        if self._blueprint is None:
-            return
-
         spell_id, path = occurrence
-        spell = self._spell_lookup.get(spell_id)
-        if spell is None and spell_id == self._root_spell.spell_index.current:
-            spell = self._root_spell
-        if spell is None:
-            return
-
-        try:
-            mutation_override = spell.mutation_override
-        except AttributeError:
-            mutation_override = {}
+        spell = self._spell_lookup[spell_id]
+        mutation_override = spell.mutation_override
         if not mutation_override:
             return
 
@@ -1434,18 +1296,7 @@ class OccurrencePlanBuilder(object):
         shared_spell_ids: Set[str] = set()
 
         for spell_id, occurrences in occurrences_by_spell_id.items():
-            spell = self._spell_lookup.get(spell_id)
-            if spell is None:
-                if spell_id == root_spell_id:
-                    spell = self._root_spell
-                else:
-                    raise MeldExecutionError(
-                        spell_id=spell_id,
-                        spell_name=spell_id,
-                        message=(
-                            "Dependency spell with id '{0}' not found in spellbook for plan."
-                        ).format(spell_id),
-                    )
+            spell = self._spell_lookup[spell_id]
 
             if self._is_shared_existence(spell.existence):
                 shared_spell_ids.add(spell_id)
@@ -1453,9 +1304,8 @@ class OccurrencePlanBuilder(object):
                 canonical_occurrences_by_spell_id[spell_id] = canonical
                 instance_keys_by_spell_id[spell_id] = [(spell_id, None)]
             else:
-                sorted_occurrences = sorted(occurrences, key=lambda entry: entry[1])
                 instance_keys_by_spell_id[spell_id] = [
-                    (spell_id, path) for _, path in sorted_occurrences
+                    (spell_id, path) for _, path in occurrences
                 ]
 
         root_occurrence = (root_spell_id, ())
@@ -1481,8 +1331,8 @@ class OccurrencePlanBuilder(object):
         Compile SpellContract override payload maps for the plan.
 
         Contract:
-            - Does not raise on missing providers; marks completeness False instead.
-            - Does not raise on invalid override payloads; marks completeness False.
+            - Missing providers raise MeldExecutionError.
+            - Invalid override payloads raise MeldExecutionError.
             - Records overrides only when payloads are non-empty and occurrences exist.
 
         Args:
@@ -1499,6 +1349,7 @@ class OccurrencePlanBuilder(object):
         complete = True
 
         for occurrence, dependencies in occurrence_graph.items():
+            overrides_by_occurrence[occurrence] = {}
             is_complete = self._compile_contract_overrides_for_occurrence(
                 occurrence=occurrence,
                 dependencies=dependencies,
@@ -1522,8 +1373,8 @@ class OccurrencePlanBuilder(object):
         Compile SpellContract override payloads for a single occurrence.
 
         Contract:
-            - Returns False when any contract provider is missing or misaligned.
-            - Returns False when an override payload is invalid.
+            - Raises when any contract provider is missing or misaligned.
+            - Raises when an override payload is invalid.
             - Records overrides only when payloads are non-empty.
 
         Args:
@@ -1533,47 +1384,29 @@ class OccurrencePlanBuilder(object):
             overrides_by_spell_id: Map to update with spell-id overrides.
 
         Returns:
-            bool: True if all contract dependencies for this occurrence resolved
-            and aligned; False otherwise.
+            bool: True when contract dependencies and overrides aligned for
+            this occurrence. In strict mode, missing providers raise.
         """
         spell = self._resolve_occurrence_spell(occurrence)
-        if spell is None:
-            return True
-
         _, path = occurrence
         complete = True
 
         for param_name, contract in self._iter_spell_contract_defaults(spell):
-            if contract is None:
-                continue
-
             target_spell_id = self._resolve_spell_contract_spell_id(
                 contract=contract,
                 consumer_spell=spell,
                 param_name=param_name,
-                allow_missing=True,
+                allow_missing=False,
             )
-            if target_spell_id is None:
-                complete = False
-                continue
 
             child_occurrence = (target_spell_id, path + (param_name,))
-            existing = dependencies.get(param_name, [])
-            if child_occurrence not in existing:
-                complete = False
-                continue
 
-            try:
-                normalized = self._normalize_contract_override_payload(
-                    payload=contract.spell_override,
-                    consumer_spell_id=spell.spell_index.current,
-                    consumer_spell_name=spell.spell_name,
-                    param_name=param_name,
-                )
-            except MeldExecutionError:
-                complete = False
-                continue
-
+            normalized = self._normalize_contract_override_payload(
+                payload=contract.spell_override,
+                consumer_spell_id=spell.spell_index.current,
+                consumer_spell_name=spell.spell_name,
+                param_name=param_name,
+            )
             if not normalized:
                 continue
 
@@ -1605,13 +1438,7 @@ class OccurrencePlanBuilder(object):
             Optional[ISpell]: The spell object, or None if missing.
         """
         spell_id, _ = occurrence
-        spell = self._spell_lookup.get(spell_id)
-        if spell is not None:
-            return spell
-        root_id = self._root_spell.spell_index.current
-        if spell_id == root_id:
-            return self._root_spell
-        return None
+        return self._spell_lookup[spell_id]
 
     @staticmethod
     def _normalize_contract_override_payload(
@@ -1625,9 +1452,8 @@ class OccurrencePlanBuilder(object):
         Normalize a SpellContract override payload for plan storage.
 
         Contract:
-            - None yields an empty override payload.
-            - dict payloads are copied verbatim.
-            - list/tuple payloads become {"__args__": [...]}.
+            - dict payloads are stored verbatim (no copy).
+            - list/tuple payloads become {"__args__": payload}.
 
         Args:
             payload: Raw spell_override payload from the SpellContract.
@@ -1642,23 +1468,10 @@ class OccurrencePlanBuilder(object):
             MeldExecutionError: If the payload is not a dict, list, or tuple, or
                 if __args__ is not a list/tuple when provided.
         """
-        if payload is None:
-            return {}
         if isinstance(payload, dict):
-            normalized = dict(payload)
-            if "__args__" in normalized:
-                raw_args = normalized["__args__"]
-                if not isinstance(raw_args, (list, tuple)):
-                    raise MeldExecutionError(
-                        spell_id=consumer_spell_id,
-                        spell_name=consumer_spell_name,
-                        node_id=consumer_spell_id,
-                        param_name=param_name,
-                        message="SpellContract __args__ override must be a list or tuple.",
-                    )
-            return normalized
+            return payload
         if isinstance(payload, (list, tuple)):
-            return {"__args__": list(payload)}
+            return {"__args__": payload}
         raise MeldExecutionError(
             spell_id=consumer_spell_id,
             spell_name=consumer_spell_name,
@@ -1693,9 +1506,9 @@ class OccurrencePlanBuilder(object):
         Returns:
             None.
         """
-        overrides_by_occurrence[occurrence] = dict(normalized_payload)
+        overrides_by_occurrence[occurrence] = normalized_payload
         overrides_by_spell_id.setdefault(spell_id, []).append(
-            (occurrence, dict(normalized_payload))
+            (occurrence, normalized_payload)
         )
 
     @staticmethod
@@ -1706,8 +1519,8 @@ class OccurrencePlanBuilder(object):
         Pick a stable occurrence for shared instance dependency paths.
 
         Contract:
-            - The canonical occurrence is the one with the lexicographically
-              smallest path.
+            - The canonical occurrence is the first entry in the provided
+              sequence (no lexicographic ordering).
 
         Args:
             occurrences: Occurrences for the same spell id.
@@ -1715,7 +1528,7 @@ class OccurrencePlanBuilder(object):
         Returns:
             OccurrenceKey: The canonical occurrence.
         """
-        return min(occurrences, key=lambda entry: entry[1])
+        return occurrences[0]
 
     def _instance_key_for_occurrence(
             self,
@@ -1738,19 +1551,7 @@ class OccurrencePlanBuilder(object):
             MeldExecutionError: If the spell id cannot be resolved.
         """
         spell_id, path = occurrence
-        spell = self._spell_lookup.get(spell_id)
-        if spell is None:
-            root_id = self._root_spell.spell_index.current
-            if spell_id == root_id:
-                spell = self._root_spell
-            else:
-                raise MeldExecutionError(
-                    spell_id=spell_id,
-                    spell_name=spell_id,
-                    message=(
-                        "Dependency spell with id '{0}' not found in spellbook for plan."
-                    ).format(spell_id),
-                )
+        spell = self._spell_lookup[spell_id]
         if self._is_shared_existence(spell.existence):
             return spell_id, None
         return spell_id, path

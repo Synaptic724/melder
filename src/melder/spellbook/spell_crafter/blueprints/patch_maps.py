@@ -129,12 +129,6 @@ class OverridePatchMap(Cleanable):
                 If any required input is None.
         """
         super().__init__()
-        if root_spell_id is None:
-            raise ValueError("root_spell_id must not be None.")
-        if targets_by_spec is None:
-            raise ValueError("targets_by_spec must not be None.")
-        if specificity_by_spec is None:
-            raise ValueError("specificity_by_spec must not be None.")
         self._root_spell_id = root_spell_id
         self._targets_by_spec = targets_by_spec
         self._specificity_by_spec = specificity_by_spec
