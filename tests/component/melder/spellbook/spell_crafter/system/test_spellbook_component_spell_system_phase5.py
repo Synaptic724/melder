@@ -147,17 +147,17 @@ def test_component_phase5_builds_system_index_and_root_blueprint() -> None:
         spellbook.cleanup()
 
 
-def test_component_phase5_does_not_attach_root_blueprint_to_non_root() -> None:
+def test_component_phase5_attaches_blueprints_to_dependencies() -> None:
     """
     Purpose:
-        Validate Phase 5 assigns root blueprints only to root spells.
+        Validate Phase 5 assigns blueprints to root spells and dependencies.
     Contract:
         - Root spell has a root blueprint.
-        - Dependency spell does not receive a root blueprint or index.
+        - Dependency spell receives a blueprint and system index for later phases.
     Returns:
         None.
     Raises:
-        AssertionError: If non-root spells receive Phase-5 root artifacts.
+        AssertionError: If Phase-5 artifacts are missing from dependency spells.
     """
     spellbook = _make_spellbook()
 
@@ -213,8 +213,8 @@ def test_component_phase5_does_not_attach_root_blueprint_to_non_root() -> None:
         assert consumer_crafter is not None
         assert service_crafter is not None
         assert consumer_crafter.root_blueprint_phase5 is not None
-        assert service_crafter.root_blueprint_phase5 is None
-        assert service_crafter.spell_system_index_phase5 is None
+        assert service_crafter.root_blueprint_phase5 is not None
+        assert service_crafter.spell_system_index_phase5 is not None
     finally:
         spellbook.cleanup()
 

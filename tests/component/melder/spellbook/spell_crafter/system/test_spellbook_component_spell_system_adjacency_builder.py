@@ -235,7 +235,7 @@ def test_component_adjacency_builder_collects_dependency_topologies() -> None:
         snapshot = SpellSystemAdjacencyBuilder.build(states)
         assert dep_id in snapshot.topologies
         assert snapshot.topologies[dep_id] is dep_topology
-        assert root_id not in snapshot.topologies
+        assert snapshot.topologies[root_id] is None
     finally:
         frame.cleanup()
 
@@ -263,6 +263,6 @@ def test_component_adjacency_builder_ignores_unregistered_topology_entry() -> No
 
     try:
         snapshot = SpellSystemAdjacencyBuilder.build(states)
-        assert snapshot.topologies == {}
+        assert snapshot.topologies == {root_id: None}
     finally:
         frame.cleanup()

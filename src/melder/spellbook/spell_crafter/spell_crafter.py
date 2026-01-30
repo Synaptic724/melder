@@ -1668,7 +1668,7 @@ class SpellCrafter(Cleanable):
 
         # --- 5. Attach artifacts to SpellCrafters -------------------------
         for spell_id, spell_instance in version_to_spell.items():
-            crafter_for_spell = spell_instance._crafter
+            crafter_for_spell = spell_instance._ensure_crafter()
 
             crafter_for_spell.set_spell_system_index_phase5(system_index)
 
@@ -1717,7 +1717,7 @@ class SpellCrafter(Cleanable):
             validated_roots: Set[str] = set()
             for root_id in dirty_roots:
                 spell_instance = version_to_spell[root_id]
-                crafter = spell_instance._crafter
+                crafter = spell_instance._ensure_crafter()
                 crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
                 validated_roots.add(root_id)
 
@@ -1759,13 +1759,16 @@ class SpellCrafter(Cleanable):
         topologies: Dict[str, "SpellLocalTopology"] = {}
 
         for spell_id in all_spell_ids:
-            deps = snapshot.dependencies[spell_id]
-            dependencies[spell_id] = deps
-            for dep_id in deps:
+            deps = snapshot.dependencies.get(spell_id, set())
+            filtered_deps = {dep_id for dep_id in deps if dep_id in all_spell_ids}
+            dependencies[spell_id] = filtered_deps
+            for dep_id in filtered_deps:
                 if dep_id in all_spell_ids:
                     reverse_dependencies.setdefault(dep_id, set()).add(spell_id)
 
-            topologies[spell_id] = snapshot.topologies[spell_id]
+            topology = snapshot.topologies.get(spell_id)
+            if topology is not None:
+                topologies[spell_id] = topology
 
         root_spell_ids = all_spell_ids.difference(reverse_dependencies.keys())
 
