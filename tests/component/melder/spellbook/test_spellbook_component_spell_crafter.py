@@ -211,19 +211,23 @@ class _ValidationResultStub:
         Provide a minimal validation result for SpellCrafter tests.
     Contract:
         - Exposes the has_errors flag.
+        - Provides an issues list for compatibility with contract gating.
     """
-    def __init__(self, has_errors: bool) -> None:
+    def __init__(self, has_errors: bool, issues: list[object] | None = None) -> None:
         """
         Purpose:
             Capture a validation outcome flag.
         Contract:
             - Stores has_errors verbatim.
+            - Preserves a provided issues list (defaults to empty).
         Args:
             has_errors: True if the validation result should signal errors.
+            issues: Optional issue list to mirror real validation results.
         Returns:
             None.
         """
         self.has_errors = has_errors
+        self.issues = list(issues) if issues is not None else []
 
 
 class _SpellValidationSystemStub:

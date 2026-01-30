@@ -37,6 +37,7 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates, ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
@@ -1523,7 +1524,8 @@ class SpellCrafter(Cleanable):
             * Cache the resulting :class:`SpellValidationResult` and expose it
               via :attr:`validation_result`, :attr:`validated`,
               and :attr:`is_broken`.
-            * Update global structural validity (SpellSystemState) when available.
+            * Update global structural validity (SpellSystemState) when available,
+              including gating spells with missing SpellContract providers.
 
         Contracts:
             * Does **not** call Phases 1-3. If any of the required artifacts
@@ -1574,6 +1576,11 @@ class SpellCrafter(Cleanable):
 
         # For now: any error -> broken. You can refine this later via severity.
         self._is_broken = result.has_errors
+        has_contract_missing_provider = False
+        for issue in result.issues:
+            if issue.code == "SPELL_CONTRACT_MISSING_PROVIDER":
+                has_contract_missing_provider = True
+                break
 
         # Update global structural validity for this lineage.
         if self._spell_system_states is not None and self._spell.spell_index is not None:
@@ -1586,10 +1593,18 @@ class SpellCrafter(Cleanable):
                     )
                 else:
                     state.clear_dirty(time.time())
-                    state.set_validity(
-                        SpellValidity.valid,
-                        change_reason=SpellStateChangeReason.validation_passed,
-                    )
+                    if has_contract_missing_provider:
+                        state.set_validity(
+                            SpellValidity.gated,
+                            change_reason=SpellStateChangeReason.contract_unvalidated,
+                            flags_to_add=[SpellState.contract_unvalidated],
+                        )
+                    else:
+                        state.set_validity(
+                            SpellValidity.valid,
+                            change_reason=SpellStateChangeReason.validation_passed,
+                            flags_to_remove=[SpellState.contract_unvalidated],
+                        )
 
     # ------------------------------------------------------------------
     # Phase 5 - Build Deep Dag Structures

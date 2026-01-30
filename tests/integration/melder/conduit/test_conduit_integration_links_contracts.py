@@ -10,7 +10,7 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -405,7 +405,7 @@ def test_conduit_spell_contract_missing_provider_raises() -> None:
     Purpose:
         Validate SpellContract raises when no contracted provider exists.
     Contract:
-        - Missing contracted providers raise during meld.
+        - Missing contracted providers gate validation during meld.
     Returns:
         None.
     Raises:
@@ -478,7 +478,7 @@ def test_conduit_spell_contract_missing_provider_raises() -> None:
     conduit = spellbook.conjure(automatic=False, name="local")
     try:
         assert conduit.validate_contracts_and_define() == {}
-        with pytest.raises(MeldExecutionError, match="SpellContract could not be resolved"):
+        with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
             conduit.meld(spell=consumer_id)
     finally:
         conduit.cleanup()

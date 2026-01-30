@@ -7,6 +7,7 @@ from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from tests.mocks.spellbook.contract_classes import ContractConfigPrimary
 from tests.mocks.spellbook.contract_classes import ContractConsumerConfigPrimary
 from tests.mocks.spellbook.contract_classes import ContractConsumerDual
@@ -133,7 +134,7 @@ def test_spell_contract_string_frame_missing_provider_raises() -> None:
     Purpose:
         Validate SpellContract raises when no contracted provider exists.
     Contract:
-        - Missing contracted providers raise during meld.
+        - Missing contracted providers gate validation during meld.
     Returns:
         None.
     Raises:
@@ -157,7 +158,7 @@ def test_spell_contract_string_frame_missing_provider_raises() -> None:
     conduit = spellbook.conjure(automatic=False, name="local")
     try:
         assert conduit.validate_contracts_and_define() == {}
-        with pytest.raises(MeldExecutionError, match="SpellContract could not be resolved"):
+        with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
             conduit.meld(spell=consumer_id)
     finally:
         conduit.cleanup()
@@ -406,7 +407,7 @@ def test_spell_contract_missing_provider_raises() -> None:
     Purpose:
         Validate SpellContract raises when no provider exists.
     Contract:
-        - Missing contracted and local providers raise MeldExecutionError.
+        - Missing contracted and local providers gate validation during meld.
     Returns:
         None.
     Raises:
@@ -422,7 +423,7 @@ def test_spell_contract_missing_provider_raises() -> None:
 
     conduit = spellbook.conjure(automatic=False, name="root")
     try:
-        with pytest.raises(MeldExecutionError, match="SpellContract could not be resolved"):
+        with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
             conduit.meld(spell=consumer_id)
     finally:
         conduit.cleanup()
@@ -518,7 +519,7 @@ def test_spell_contract_missing_dependency_does_not_gate_provider_state() -> Non
         assert provider_state is not None
         assert provider_state.validity is SpellValidity.valid
 
-        with pytest.raises(MeldExecutionError):
+        with pytest.raises(SpellbookValidationError):
             borrower.meld(spell=consumer_id)
 
         assert provider_state.validity is SpellValidity.valid
@@ -654,7 +655,7 @@ def test_spell_contract_contract_removed_raises_without_provider() -> None:
             assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
         assert borrower.validate_contracts_and_define() == {}
 
-        with pytest.raises(MeldExecutionError, match="SpellContract could not be resolved"):
+        with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
             borrower.meld(spell=consumer_id)
     finally:
         borrower.cleanup()
@@ -807,8 +808,8 @@ def test_spell_contract_transfer_ownership_force_unshare_blocks_contract() -> No
         assert _inbound_spell_ids(spells_by_conduit) == []
 
         with pytest.raises(
-                MeldExecutionError,
-                match="SpellContract could not be resolved",
+                SpellbookValidationError,
+                match="Spellbook validation failed",
         ):
             borrower.meld(spell=consumer_id)
     finally:

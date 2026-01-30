@@ -3417,9 +3417,16 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Orchestrate conduit-scoped Phases 5-11 (root blueprints, occurrence plan,
-        injection plan, patch maps, execution plan, system validation, change control).
-        Existing-creation spells bypass Phase 8-11 compilation.
+        Orchestrate conduit-scoped Phases 5-11.
+
+        Order:
+            - Phase 5 (root blueprints)
+            - Phase 6 (system validation)
+            - Phase 7 (change control)
+            - Phase 8-11 (occurrence/injection/patch/execution plans)
+
+        Phase 8-11 are skipped when Phase 6 reports validation errors for the
+        conduit. Existing-creation spells bypass Phase 8-11 compilation.
         This must run after structural phases complete.
 
         Args:
@@ -3438,16 +3445,49 @@ class Spellbook(Cleanable, ISpellbook):
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
 
+        results: Dict[str, Sequence[IUnitOfWork]] = {}
+
         scheduler = PhaseScheduler(
             spellbook=self,
             configuration=self._configuration,
         )
-
         try:
             scheduler.register_phase(
                 "root_blueprints",
                 lambda: self._phase_root_blueprints_factory(scheduler, conduit_id),
             )
+            scheduler.register_phase(
+                "system_validation",
+                lambda: self._phase_system_validation_factory(scheduler, conduit_id),
+            )
+            scheduler.register_phase(
+                "change_control",
+                lambda: self._phase_change_control_factory(scheduler, conduit_id),
+            )
+
+            results.update(scheduler.run_all_phases())
+        finally:
+            try:
+                scheduler.cleanup()
+            except Exception:
+                self._logger.error(
+                    "PhaseScheduler.cleanup() raised during _run_resolution_phases_for_conduit",
+                    "_run_resolution_phases_for_conduit",
+                    exc_info=True,
+                )
+
+        resolution_state = None
+        if self._spell_system_states is not None:
+            resolution_state = self._spell_system_states.get_conduit_resolution_state(conduit_id)
+        if resolution_state is not None and resolution_state.has_errors():
+            self._cleanup_phase_artifacts_after_resolution()
+            return results
+
+        scheduler = PhaseScheduler(
+            spellbook=self,
+            configuration=self._configuration,
+        )
+        try:
             scheduler.register_phase(
                 "occurrence_plan",
                 lambda: self._phase_occurrence_plan_factory(scheduler, conduit_id),
@@ -3464,16 +3504,8 @@ class Spellbook(Cleanable, ISpellbook):
                 "execution_plan",
                 lambda: self._phase_execution_plan_factory(scheduler, conduit_id),
             )
-            scheduler.register_phase(
-                "system_validation",
-                lambda: self._phase_system_validation_factory(scheduler, conduit_id),
-            )
-            scheduler.register_phase(
-                "change_control",
-                lambda: self._phase_change_control_factory(scheduler, conduit_id),
-            )
 
-            results = scheduler.run_all_phases()
+            results.update(scheduler.run_all_phases())
             self._cleanup_phase_artifacts_after_resolution()
             return results
         finally:

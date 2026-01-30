@@ -492,7 +492,7 @@ class Meld(Cleanable, IMeld):
         """
         Internal
 
-        Enforce per-conduit resolution validity for Phases 5-7.
+        Enforce per-conduit resolution validity for Phases 5-11.
 
         This method checks the ConduitResolutionState for the active conduit
         (or root conduit for lesser conduits) and runs conduit-scoped phases

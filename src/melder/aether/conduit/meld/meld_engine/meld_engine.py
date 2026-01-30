@@ -1094,13 +1094,12 @@ class MeldEngine(Cleanable):
             creations: Creations container to query (may be None).
             existence: Precomputed existence policy for the spell.
         """
-        spell_id: str = spell.spell_id
-
         # many never reuses
         if existence is Existence.many:
             return None
         if creations is None:
             return None
+        spell_id: str = spell.spell_id
 
         if isinstance(creations, Creations):
             if existence is Existence.unique:
