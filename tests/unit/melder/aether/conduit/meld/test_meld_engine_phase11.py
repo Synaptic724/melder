@@ -6,7 +6,11 @@ import pytest
 
 from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlan, ExecutionPlanStep
+from melder.spellbook.spell_crafter.blueprints.execution_plan import (
+    ExecutionPlan,
+    ExecutionPlanStep,
+    ExecutionPlanVariant,
+)
 from melder.spellbook.spell_crafter.blueprints.injection_plan import InjectionSpec, ParamSource
 from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import ResolutionFrame
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -95,6 +99,20 @@ def _make_engine(
     return engine
 
 
+def _plan_kwargs() -> Dict[str, Any]:
+    """
+    Provide required ExecutionPlan keyword arguments for tests.
+    """
+    return {
+        "contract_overrides_by_occurrence": {},
+        "contract_overrides_by_spell_id": {},
+        "shared_spell_ids": [],
+        "contract_dependencies_complete": True,
+        "mutation_override_payload": {},
+        "plan_variant": ExecutionPlanVariant.OVERRIDES,
+    }
+
+
 def test_run_execution_plan_rejects_root_mismatch() -> None:
     """
     Purpose:
@@ -108,6 +126,7 @@ def test_run_execution_plan_rejects_root_mismatch() -> None:
         root_spell_id="other",
         root_instance_key=("root", None),
         steps=[],
+        **_plan_kwargs(),
     )
 
     with pytest.raises(MeldExecutionError):
@@ -137,6 +156,7 @@ def test_run_execution_plan_raises_on_missing_spell() -> None:
         root_spell_id="root",
         root_instance_key=("root", None),
         steps=[step],
+        **_plan_kwargs(),
     )
 
     with pytest.raises(MeldExecutionError):
@@ -187,6 +207,7 @@ def test_run_execution_plan_builds_kwargs_from_injection_spec() -> None:
         root_spell_id="root",
         root_instance_key=("root", None),
         steps=[dep_step, root_step],
+        **_plan_kwargs(),
     )
 
     result = engine.run_execution_plan(plan)
@@ -218,6 +239,7 @@ def test_run_execution_plan_uses_empty_kwargs_without_spec() -> None:
         root_spell_id="root",
         root_instance_key=("root", None),
         steps=[step],
+        **_plan_kwargs(),
     )
 
     result = engine.run_execution_plan(plan)
@@ -258,6 +280,7 @@ def test_run_execution_plan_raises_on_missing_dependency() -> None:
         root_spell_id="root",
         root_instance_key=("root", None),
         steps=[step],
+        **_plan_kwargs(),
     )
 
     with pytest.raises(MeldExecutionError):
@@ -288,6 +311,7 @@ def test_run_execution_plan_falls_back_when_root_missing() -> None:
         root_spell_id="root",
         root_instance_key=("root", None),
         steps=[step],
+        **_plan_kwargs(),
     )
 
     result = engine.run_execution_plan(plan)
@@ -350,6 +374,7 @@ def test_run_execution_plan_handles_list_dependencies() -> None:
         root_spell_id="root",
         root_instance_key=("root", None),
         steps=[step_a, step_b, root_step],
+        **_plan_kwargs(),
     )
 
     result = engine.run_execution_plan(plan)
@@ -387,6 +412,7 @@ def test_run_execution_plan_applies_contract_payload() -> None:
         root_spell_id="root",
         root_instance_key=("root", None),
         steps=[step],
+        **_plan_kwargs(),
     )
 
     result = engine.run_execution_plan(plan)
@@ -424,6 +450,7 @@ def test_run_execution_plan_applies_positional_override() -> None:
         root_spell_id="root",
         root_instance_key=("root", None),
         steps=[step],
+        **_plan_kwargs(),
     )
 
     result = engine.run_execution_plan(plan)

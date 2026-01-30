@@ -16,6 +16,8 @@ from melder.spellbook.spell_crafter.blueprints.patch_maps import (
     apply_phase10_mutation_overrides,
     apply_phase10_override_payload,
 )
+from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanVariant
+from melder.spellbook.spell_crafter.blueprints.execution_assembly_plan import ExecutionAssemblyPlan
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 
 
@@ -77,7 +79,8 @@ class MeldRuntime:
                  - Phase 8 occurrence plan (if available)
             4. Create a `ResolutionFrame` initialized with the normalized
                overrides from the context.
-            5. Instantiate `MeldEngine` and delegate to `engine.run()`.
+            5. Instantiate `MeldEngine` and select Phase 11 execution
+               when eligible; otherwise fall back to `engine.run()`.
             6. Clean up engine and frame.
             7. Sanity-check the result for factory-style spells.
 
@@ -175,19 +178,25 @@ class MeldRuntime:
         injection_plan = crafter.injection_plan_phase9
         override_patch_map = crafter.override_patch_map_phase10
         mutation_patch_map = crafter.mutation_patch_map_phase10
-        execution_plan = crafter.execution_plan_phase11
+        execution_plan_no_overrides = crafter.execution_plan_phase11_no_overrides
+        execution_plan_overrides = crafter.execution_plan_phase11_overrides
+        execution_plan_overrides_with_mutations = (
+            crafter.execution_plan_phase11_overrides_with_mutations
+        )
+        assembly_plan_no_overrides = crafter.execution_assembly_plan_phase12_no_overrides
+        assembly_plan_overrides = crafter.execution_assembly_plan_phase12_overrides
+        assembly_plan_overrides_with_mutations = (
+            crafter.execution_assembly_plan_phase12_overrides_with_mutations
+        )
         mutation_override_payload = spell.mutation_override
 
-
-        if mutation_override_payload and root_blueprint is None:
-            occurrence_plan = None
-            injection_plan = None
 
         # Apply mutation overrides (graph-level) and spell overrides (value-level)
         # if we have a deep blueprint. Fallback to simple overrides otherwise.
         execution_blueprint = root_blueprint
         override_map = {}
-        execution_plan_to_run = execution_plan
+        execution_plan_to_run = execution_plan_overrides_with_mutations
+        expected_plan_variant = ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS
         if root_blueprint is not None:
             try:
                 if mutation_override_payload:
@@ -196,8 +205,6 @@ class MeldRuntime:
                         mutation_patch_map=mutation_patch_map,
                         mutation_override=mutation_override_payload,
                     )
-                    occurrence_plan = None
-                    injection_plan = None
 
                 override_map = apply_phase10_override_payload(
                     override_patch_map=override_patch_map,
@@ -210,6 +217,46 @@ class MeldRuntime:
                     message=f"Failed to apply overrides for root '{spell.spell_name}': {exc}",
                     inner=exc,
                 ) from exc
+
+        execution_plan_to_run, expected_plan_variant = self._select_execution_plan_phase11(
+            execution_plan_no_overrides=execution_plan_no_overrides,
+            execution_plan_overrides=execution_plan_overrides,
+            execution_plan_overrides_with_mutations=execution_plan_overrides_with_mutations,
+            override_payload=context.overrides,
+            override_map=override_map,
+            mutation_override_payload=mutation_override_payload,
+        )
+
+        assembly_plan_to_run, expected_assembly_variant = self._select_execution_plan_phase12(
+            execution_plan_no_overrides=assembly_plan_no_overrides,
+            execution_plan_overrides=assembly_plan_overrides,
+            execution_plan_overrides_with_mutations=assembly_plan_overrides_with_mutations,
+            override_payload=context.overrides,
+            override_map=override_map,
+            mutation_override_payload=mutation_override_payload,
+        )
+
+        is_phase12_eligible, _ = self._is_execution_assembly_plan_eligible(
+            spell=spell,
+            root_blueprint=root_blueprint,
+            occurrence_plan=occurrence_plan,
+            execution_plan=assembly_plan_to_run,
+            expected_plan_variant=expected_assembly_variant,
+        )
+        if not is_phase12_eligible:
+            assembly_plan_to_run = None
+
+        is_phase11_eligible, _ = self._is_execution_plan_eligible(
+            spell=spell,
+            root_blueprint=root_blueprint,
+            occurrence_plan=occurrence_plan,
+            injection_plan=injection_plan,
+            execution_plan=execution_plan_to_run,
+            mutation_override_payload=mutation_override_payload,
+            expected_plan_variant=expected_plan_variant,
+        )
+        if not is_phase11_eligible:
+            execution_plan_to_run = None
 
         # Per-execution ResolutionFrame seeded with per-call overrides.
         frame_overrides = {}
@@ -238,7 +285,32 @@ class MeldRuntime:
 
         result = None
         try:
-            result = engine.run_execution_plan(execution_plan_to_run)
+            if assembly_plan_to_run is not None:
+                override_targets_by_spell_id = self._collect_override_targets(override_map)
+                any_overrides_present = self._detect_any_overrides(
+                    override_payload=context.overrides,
+                    override_map=override_map,
+                    contract_overrides_by_spell_id={},
+                )
+                result = engine.run_execution_assembly_plan(
+                    assembly_plan_to_run,
+                    override_targets_by_spell_id=override_targets_by_spell_id,
+                    any_overrides_present=any_overrides_present,
+                )
+            elif execution_plan_to_run is not None:
+                override_targets_by_spell_id = self._collect_override_targets(override_map)
+                any_overrides_present = self._detect_any_overrides(
+                    override_payload=context.overrides,
+                    override_map=override_map,
+                    contract_overrides_by_spell_id=execution_plan_to_run.contract_overrides_by_spell_id,
+                )
+                result = engine.run_execution_plan(
+                    execution_plan_to_run,
+                    override_targets_by_spell_id=override_targets_by_spell_id,
+                    any_overrides_present=any_overrides_present,
+                )
+            else:
+                result = engine.run()
         finally:
             # Always tear down engine + frame to avoid leaks.
             try:
@@ -278,6 +350,200 @@ class MeldRuntime:
     # ------------------------------------------------------------------ #
     # Internal helpers                                                   #
     # ------------------------------------------------------------------ #
+    def _is_execution_plan_eligible(
+            self,
+            *,
+            spell: ISpell,
+            root_blueprint: Optional[RootResolutionBlueprint],
+            occurrence_plan: Optional[Any],
+            injection_plan: Optional[Any],
+            execution_plan: Optional[Any],
+            mutation_override_payload: Optional[Dict[str, Any]],
+            expected_plan_variant: Optional[str],
+    ) -> tuple[bool, str]:
+        """
+        Determine whether the Phase 11 execution plan is eligible to run.
+
+        Contract:
+            - Returns (False, reason) when any strict gate fails.
+            - Returns (True, "eligible") when all gates pass.
+
+        Args:
+            spell:
+                Root spell for this meld execution.
+            root_blueprint:
+                Phase 5 root blueprint (required for Phase 11).
+            occurrence_plan:
+                Phase 8 occurrence plan for the root spell.
+            injection_plan:
+                Phase 9 injection plan for the root spell.
+            execution_plan:
+                Phase 11 execution plan for the root spell.
+            mutation_override_payload:
+                Mutation override payload supplied to the root spell.
+            expected_plan_variant:
+                Expected execution plan variant label for this run.
+
+        Returns:
+            tuple[bool, str]:
+                Eligibility flag and a short reason when ineligible.
+        """
+        if execution_plan is None:
+            return False, "missing_execution_plan"
+        if root_blueprint is None:
+            return False, "missing_root_blueprint"
+        if occurrence_plan is None:
+            return False, "missing_occurrence_plan"
+        if injection_plan is None:
+            return False, "missing_injection_plan"
+        if execution_plan.root_spell_id != spell.spell_index.current:
+            return False, "execution_plan_root_mismatch"
+        if occurrence_plan.root_spell_id != spell.spell_index.current:
+            return False, "occurrence_plan_root_mismatch"
+        if expected_plan_variant and execution_plan.plan_variant != expected_plan_variant:
+            return False, "execution_plan_variant_mismatch"
+        if execution_plan.contract_dependencies_complete is False:
+            return False, "contract_dependencies_incomplete"
+        if spell._hooks_enabled:
+            return False, "hooks_enabled"
+        if mutation_override_payload != execution_plan.mutation_override_payload:
+            return False, "mutation_override_mismatch"
+
+        return True, "eligible"
+
+    def _is_execution_assembly_plan_eligible(
+            self,
+            *,
+            spell: ISpell,
+            root_blueprint: Optional[RootResolutionBlueprint],
+            occurrence_plan: Optional[Any],
+            execution_plan: Optional[ExecutionAssemblyPlan],
+            expected_plan_variant: Optional[str],
+    ) -> tuple[bool, str]:
+        """
+        Determine whether the Phase 12 execution assembly plan is eligible to run.
+
+        Contract:
+            - Returns (False, reason) when any strict gate fails.
+            - Returns (True, "eligible") when all gates pass.
+        """
+        if execution_plan is None:
+            return False, "missing_execution_plan"
+        if root_blueprint is None:
+            return False, "missing_root_blueprint"
+        if occurrence_plan is None:
+            return False, "missing_occurrence_plan"
+        if execution_plan.root_spell_id != spell.spell_index.current:
+            return False, "execution_plan_root_mismatch"
+        if expected_plan_variant and execution_plan.plan_variant != expected_plan_variant:
+            return False, "execution_plan_variant_mismatch"
+        if spell._hooks_enabled:
+            return False, "hooks_enabled"
+        return True, "eligible"
+
+    def _select_execution_plan_phase11(
+            self,
+            *,
+            execution_plan_no_overrides: Optional[Any],
+            execution_plan_overrides: Optional[Any],
+            execution_plan_overrides_with_mutations: Optional[Any],
+            override_payload: Optional[Dict[str, Any]],
+            override_map: Dict[SocketRef, Any],
+            mutation_override_payload: Optional[Dict[str, Any]],
+    ) -> tuple[Optional[Any], Optional[str]]:
+        """
+        Select the Phase 11 execution plan variant for the current meld call.
+
+        Contract:
+            - No overrides/mutations -> NO_OVERRIDES_FAST plan.
+            - Overrides without mutations -> OVERRIDES plan.
+            - Overrides with mutations -> OVERRIDES_WITH_MUTATIONS plan.
+        """
+        has_override_payload = bool(override_payload) or bool(override_map)
+        has_mutation_overrides = bool(mutation_override_payload)
+
+        if has_mutation_overrides:
+            return (
+                execution_plan_overrides_with_mutations,
+                ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
+            )
+        if has_override_payload:
+            return (
+                execution_plan_overrides,
+                ExecutionPlanVariant.OVERRIDES,
+            )
+        return (
+            execution_plan_no_overrides,
+            ExecutionPlanVariant.NO_OVERRIDES_FAST,
+        )
+
+    def _select_execution_plan_phase12(
+            self,
+            *,
+            execution_plan_no_overrides: Optional[ExecutionAssemblyPlan],
+            execution_plan_overrides: Optional[ExecutionAssemblyPlan],
+            execution_plan_overrides_with_mutations: Optional[ExecutionAssemblyPlan],
+            override_payload: Optional[Dict[str, Any]],
+            override_map: Dict[SocketRef, Any],
+            mutation_override_payload: Optional[Dict[str, Any]],
+    ) -> tuple[Optional[ExecutionAssemblyPlan], Optional[str]]:
+        """
+        Select the Phase 12 execution assembly plan variant for the current meld call.
+        """
+        has_override_payload = bool(override_payload) or bool(override_map)
+        has_mutation_overrides = bool(mutation_override_payload)
+
+        if has_mutation_overrides:
+            return (
+                execution_plan_overrides_with_mutations,
+                ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
+            )
+        if has_override_payload:
+            return (
+                execution_plan_overrides,
+                ExecutionPlanVariant.OVERRIDES,
+            )
+        return (
+            execution_plan_no_overrides,
+            ExecutionPlanVariant.NO_OVERRIDES_FAST,
+        )
+
+    @staticmethod
+    def _collect_override_targets(
+            override_map: Dict[SocketRef, Any],
+    ) -> Dict[str, list[SocketRef]]:
+        """
+        Group override targets by spell id for fast-path validation.
+
+        Contract:
+            - Keys are spell version ids.
+            - Values are the SocketRef entries targeted by overrides.
+        """
+        targets: Dict[str, list[SocketRef]] = {}
+        for socket_ref in (override_map or {}):
+            targets.setdefault(socket_ref.node_id, []).append(socket_ref)
+        return targets
+
+    @staticmethod
+    def _detect_any_overrides(
+            *,
+            override_payload: Optional[Dict[str, Any]],
+            override_map: Dict[SocketRef, Any],
+            contract_overrides_by_spell_id: Dict[str, Any],
+    ) -> bool:
+        """
+        Determine whether any overrides apply to the current meld call.
+
+        Contract:
+            - Returns True when socket overrides, root overrides, or contract overrides are present.
+            - Treats empty dictionaries as no overrides.
+        """
+        if override_map:
+            return True
+        if contract_overrides_by_spell_id:
+            return True
+        return bool(override_payload)
+
     def _build_frame_overrides(
             self,
             *,

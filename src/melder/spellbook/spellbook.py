@@ -3414,9 +3414,10 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Orchestrate conduit-scoped Phases 5-11 (root blueprints, occurrence plan,
-        injection plan, patch maps, execution plan, system validation, change control).
-        Existing-creation spells bypass Phase 8-11 compilation.
+        Orchestrate conduit-scoped Phases 5-12 (root blueprints, occurrence plan,
+        injection plan, patch maps, execution plan, execution assembly plan, system validation,
+        change control).
+        Existing-creation spells bypass Phase 8-12 compilation.
         This must run after structural phases complete.
 
         Args:
@@ -3429,7 +3430,7 @@ class Spellbook(Cleanable, ISpellbook):
             ValueError:
                 If conduit_id is empty.
         Notes:
-            After Phase 11 completes, per-spell phase artifacts are cleaned.
+            After Phase 12 completes, per-spell phase artifacts are cleaned.
         """
         self.check_cleaned()
         if not conduit_id:
@@ -3460,6 +3461,10 @@ class Spellbook(Cleanable, ISpellbook):
             scheduler.register_phase(
                 "execution_plan",
                 lambda: self._phase_execution_plan_factory(scheduler, conduit_id),
+            )
+            scheduler.register_phase(
+                "execution_assembly_plan",
+                lambda: self._phase_execution_assembly_plan_factory(scheduler, conduit_id),
             )
             scheduler.register_phase(
                 "system_validation",
@@ -3813,6 +3818,43 @@ class Spellbook(Cleanable, ISpellbook):
                     label=f"execution_plan:{spell.spell_id}",
                     metadata={
                         "phase": "execution_plan",
+                        "spell_id": spell.spell_id,
+                    },
+                )
+            )
+        return units
+
+    def _phase_execution_assembly_plan_factory(
+            self,
+            scheduler: PhaseScheduler,
+            conduit_id: str,
+    ) -> Sequence[IUnitOfWork]:
+        """
+        Internal
+
+        Build :class:`UnitOfWork` instances for the **execution_assembly_plan** phase.
+
+        This phase compiles execution assembly plans for spells based on Phase 8
+        occurrence plans and Phase 9 injection plans. Existing-creation spells
+        are treated as a no-op by the underlying SpellCrafter.
+
+        Expected spell surface:
+
+            ``spell.run_phase_execution_assembly_plan(conduit_id, cancel_event: CancellationEvent) -> Any``
+        """
+        self.check_cleaned()
+        if not self._spells:
+            return []
+
+        units: List[IUnitOfWork] = []
+        for spell in self._spells.values():
+            units.append(
+                scheduler.create_unit_of_work(
+                    func=spell.run_phase_execution_assembly_plan,
+                    args=(conduit_id, scheduler.cancel_event,),
+                    label=f"execution_assembly_plan:{spell.spell_id}",
+                    metadata={
+                        "phase": "execution_assembly_plan",
                         "spell_id": spell.spell_id,
                     },
                 )

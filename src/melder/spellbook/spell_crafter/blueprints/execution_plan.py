@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.existence.existence import Existence
@@ -144,6 +144,23 @@ class ExecutionPlanStep:
         return self._register
 
 
+class ExecutionPlanVariant:
+    """
+    Internal
+
+    Phase 11 execution plan variant labels.
+
+    Purpose:
+        Identify which precompiled execution plan should be selected based on
+        override and mutation payloads at meld time.
+    """
+    __melder_internal__ = _mrg.sentinel
+    __slots__ = ()
+    NO_OVERRIDES_FAST = "no_overrides_fast"
+    OVERRIDES = "overrides"
+    OVERRIDES_WITH_MUTATIONS = "overrides_with_mutations"
+
+
 class ExecutionPlan(Cleanable):
     """
     Internal
@@ -152,13 +169,23 @@ class ExecutionPlan(Cleanable):
 
     Purpose:
         Provide a precompiled, best-case execution plan that can be consumed by
-        a fast-path executor once gating rules allow it.
+        a fast-path executor once gating rules allow it. The plan carries
+        contract override payloads, shared-spell metadata, and mutation
+        override snapshots needed to execute without rebuilding routing data.
+        Each plan is tagged with a variant label to support override-aware
+        selection at meld time.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_root_spell_id",
         "_root_instance_key",
         "_steps",
+        "_contract_overrides_by_occurrence",
+        "_contract_overrides_by_spell_id",
+        "_shared_spell_ids",
+        "_contract_dependencies_complete",
+        "_mutation_override_payload",
+        "_plan_variant",
     ]
 
     def __init__(
@@ -167,6 +194,12 @@ class ExecutionPlan(Cleanable):
             root_spell_id: str,
             root_instance_key: InstanceKey,
             steps: List[ExecutionPlanStep],
+            contract_overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, object]],
+            contract_overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, object]]]],
+            shared_spell_ids: List[str],
+            contract_dependencies_complete: bool,
+            mutation_override_payload: Dict[str, object],
+            plan_variant: str,
     ) -> None:
         super().__init__()
         if root_spell_id is None:
@@ -175,10 +208,28 @@ class ExecutionPlan(Cleanable):
             raise ValueError("root_instance_key must not be None.")
         if steps is None:
             raise ValueError("steps must not be None.")
+        if contract_overrides_by_occurrence is None:
+            raise ValueError("contract_overrides_by_occurrence must not be None.")
+        if contract_overrides_by_spell_id is None:
+            raise ValueError("contract_overrides_by_spell_id must not be None.")
+        if shared_spell_ids is None:
+            raise ValueError("shared_spell_ids must not be None.")
+        if contract_dependencies_complete is None:
+            raise ValueError("contract_dependencies_complete must not be None.")
+        if mutation_override_payload is None:
+            raise ValueError("mutation_override_payload must not be None.")
+        if plan_variant is None:
+            raise ValueError("plan_variant must not be None.")
 
         self._root_spell_id = root_spell_id
         self._root_instance_key = root_instance_key
         self._steps = steps
+        self._contract_overrides_by_occurrence = contract_overrides_by_occurrence
+        self._contract_overrides_by_spell_id = contract_overrides_by_spell_id
+        self._shared_spell_ids = shared_spell_ids
+        self._contract_dependencies_complete = contract_dependencies_complete
+        self._mutation_override_payload = mutation_override_payload
+        self._plan_variant = plan_variant
 
     def cleanup(self) -> None:
         """
@@ -188,6 +239,16 @@ class ExecutionPlan(Cleanable):
             return
         self._cleaned = True
         self._steps.clear()
+        self._contract_overrides_by_occurrence.clear()
+        self._contract_overrides_by_spell_id.clear()
+        self._shared_spell_ids.clear()
+        self._mutation_override_payload.clear()
+        self._contract_overrides_by_occurrence = None
+        self._contract_overrides_by_spell_id = None
+        self._shared_spell_ids = None
+        self._contract_dependencies_complete = None
+        self._mutation_override_payload = None
+        self._plan_variant = None
 
     @property
     def root_spell_id(self) -> str:
@@ -200,6 +261,33 @@ class ExecutionPlan(Cleanable):
     @property
     def steps(self) -> Sequence[ExecutionPlanStep]:
         return self._steps
+
+    @property
+    def contract_overrides_by_occurrence(self) -> Dict[OccurrenceKey, Dict[str, object]]:
+        return self._contract_overrides_by_occurrence
+
+    @property
+    def contract_overrides_by_spell_id(self) -> Dict[str, List[Tuple[OccurrenceKey, Dict[str, object]]]]:
+        return self._contract_overrides_by_spell_id
+
+    @property
+    def shared_spell_ids(self) -> Sequence[str]:
+        return self._shared_spell_ids
+
+    @property
+    def contract_dependencies_complete(self) -> bool:
+        return self._contract_dependencies_complete
+
+    @property
+    def mutation_override_payload(self) -> Dict[str, object]:
+        return self._mutation_override_payload
+
+    @property
+    def plan_variant(self) -> str:
+        """
+        Execution plan variant label for selection gating.
+        """
+        return self._plan_variant
 
 
 class ExecutionPlanBuilder:
@@ -216,15 +304,23 @@ class ExecutionPlanBuilder:
             occurrence_plan: OccurrencePlan,
             injection_plan: Optional[InjectionPlan],
             spell_lookup: Dict[str, ISpell],
+            mutation_override_payload: Optional[Dict[str, object]],
+            plan_variant: str,
     ) -> None:
         if occurrence_plan is None:
             raise ValueError("occurrence_plan must not be None.")
         if spell_lookup is None:
             raise ValueError("spell_lookup must not be None.")
+        if mutation_override_payload is None:
+            mutation_override_payload = {}
+        if plan_variant is None:
+            raise ValueError("plan_variant must not be None.")
 
         self._occurrence_plan = occurrence_plan
         self._injection_plan = injection_plan
         self._spell_lookup = spell_lookup
+        self._mutation_override_payload = mutation_override_payload
+        self._plan_variant = plan_variant
 
     def build(self) -> ExecutionPlan:
         root_spell_id = self._occurrence_plan.root_spell_id
@@ -270,10 +366,29 @@ class ExecutionPlanBuilder:
                     )
                 )
 
+        contract_overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, object]] = {}
+        for occurrence, payload in self._occurrence_plan.contract_overrides_by_occurrence.items():
+            contract_overrides_by_occurrence[occurrence] = dict(payload) if payload else {}
+
+        contract_overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, object]]]] = {}
+        for spell_id, overrides in self._occurrence_plan.contract_overrides_by_spell_id.items():
+            contract_overrides_by_spell_id[spell_id] = [
+                (occurrence, dict(payload) if payload else {})
+                for occurrence, payload in overrides
+            ]
+
+        shared_spell_ids = list(self._occurrence_plan.shared_spell_ids)
+
         return ExecutionPlan(
             root_spell_id=root_spell_id,
             root_instance_key=self._occurrence_plan.root_instance_key,
             steps=steps,
+            contract_overrides_by_occurrence=contract_overrides_by_occurrence,
+            contract_overrides_by_spell_id=contract_overrides_by_spell_id,
+            shared_spell_ids=shared_spell_ids,
+            contract_dependencies_complete=self._occurrence_plan.contract_dependencies_complete,
+            mutation_override_payload=dict(self._mutation_override_payload),
+            plan_variant=self._plan_variant,
         )
 
     @staticmethod
