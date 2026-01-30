@@ -27,7 +27,7 @@ class SpellSystemRootBlueprintBuilder:
 
         * Each RootResolutionBlueprint is anchored at a **root version-id**,
           but its DAG contains **all reachable version-ids** for that root.
-        * Edges are provider → dependent (same orientation as Phase 3 DAGs).
+        * Edges are provider -> dependent (same orientation as Phase 3 DAGs).
         * This is *purely structural*:
               - node payloads are None,
               - param_name and socket_kind on edges are left unset (None).
@@ -49,7 +49,7 @@ class SpellSystemRootBlueprintBuilder:
 
                 - snapshot.dependencies:
                     Dict[version_id, Set[version_id]]
-                    (spell_id -> direct dependency version_ids; consumer → providers)
+                    (spell_id -> direct dependency version_ids; consumer -> providers)
                 - snapshot.root_spell_ids:
                     Set[version_id] of structural roots for this frame.
 
@@ -158,14 +158,14 @@ class SpellSystemRootBlueprintBuilder:
 
             * Nodes: all version_ids reachable from ``root_spell_id``
               by recursively following ``dependencies``.
-            * Edges: provider → dependent (same orientation as Phase 3 DAG).
+            * Edges: provider -> dependent (same orientation as Phase 3 DAG).
 
         Args:
             root_spell_id:
                 Version-id of the root spell for this blueprint.
             dependencies:
                 Mapping of ``spell_id -> { dependency_spell_id, ... }`` where
-                edges are **consumer → providers** at the adjacency level.
+                edges are **consumer -> providers** at the adjacency level.
             allowed_spell_ids:
                 Optional membership filter that limits traversal to visible spell ids.
 
@@ -191,7 +191,7 @@ class SpellSystemRootBlueprintBuilder:
 
             reachable_ids.add(current_id)
 
-            direct_deps: Set[str] = dependencies[current_id]
+            direct_deps: Set[str] = dependencies.get(current_id, set())
             for dep_id in direct_deps:
                 if allowed_spell_ids is not None and dep_id not in allowed_spell_ids:
                     continue
@@ -209,10 +209,10 @@ class SpellSystemRootBlueprintBuilder:
             dag.add_node(key=spell_id, payload=None)
 
         # ------------------------------------------------------------------
-        # 3. Add provider → dependent edges within the reachable subgraph.
+        # 3. Add provider -> dependent edges within the reachable subgraph.
         # ------------------------------------------------------------------
         for consumer_id in reachable_ids:
-            direct_deps = dependencies[consumer_id]
+            direct_deps = dependencies.get(consumer_id, set())
             for provider_id in direct_deps:
                 if provider_id in reachable_ids:
                     dag.add_dependency(
@@ -252,7 +252,9 @@ class SpellSystemRootBlueprintBuilder:
                 continue
             visited.add(key)
 
-            topology = topologies[node_id]
+            topology = topologies.get(node_id)
+            if topology is None:
+                continue
 
             for socket_desc in topology.sockets:
                 socket_path = path + (socket_desc.param_name,)

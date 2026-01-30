@@ -530,7 +530,7 @@ class MeldEngine(Cleanable):
                     plan_step.spell.spell_index.current, []
                 )
                 override_values: Dict[str, Any] = {}
-                if plan_step.expects_overrides and override_targets:
+                if override_targets:
                     override_values = self._build_instance_override_map(
                         override_targets=override_targets,
                         shared=shared,

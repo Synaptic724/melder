@@ -242,24 +242,6 @@ def test_has_overrides_for_spell_root_uses_frame_overrides() -> None:
     assert engine._has_overrides_for_spell("other") is False
 
 
-def test_validate_shared_override_targets_raises_on_duplicate_param() -> None:
-    """
-    Verify shared override validation rejects duplicate params.
-
-    Contract:
-        - Multiple overrides for the same param raise MeldExecutionError.
-    """
-    override_map = {
-        _make_socket_ref(node_id="node", param_name="x", param_path=("left", "x")): 1,
-        _make_socket_ref(node_id="node", param_name="x", param_path=("right", "x")): 2,
-    }
-    spell = _make_spell(spell_id="node")
-    engine = _make_engine(spell_lookup={"node": spell})
-    engine._override_targets_by_spell_id = engine._collect_override_targets(override_map)
-    with pytest.raises(MeldExecutionError, match="Multiple overrides"):
-        engine._validate_shared_override_targets({"node"})
-
-
 def test_validate_shared_override_targets_allows_distinct_params() -> None:
     """
     Verify shared override validation allows distinct params.

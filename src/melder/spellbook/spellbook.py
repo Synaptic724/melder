@@ -2913,6 +2913,10 @@ class Spellbook(Cleanable, ISpellbook):
             # Run structural phases (1-4) before resolution phases.
             self._run_structural_phases()
 
+            # Define disposal metadata before Phase 5-11 planning so execution
+            # plans can decide when registration is required.
+            self._define_disposal_metadata_on_spells()
+
             # Create a unique ID for this Conduit for per-conduit resolution phases.
             conduit_id = IDBuilder.create_id()
 
@@ -2923,7 +2927,6 @@ class Spellbook(Cleanable, ISpellbook):
             self._check_system_state(policy, automatic)
             policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
             self._check_all_spells()
-            self._define_disposal_metadata_on_spells()
 
             # Pull the hook map once for this conjuration.
             hook_map = self._get_conjure_hook_map()

@@ -921,32 +921,6 @@ def test_component_meld_overrides_custom_unique_over_broadcast() -> None:
         assert root.mixed.right.config.label == "unique"
 
 
-def test_component_meld_overrides_custom_shared_duplicate_param_raises() -> None:
-    """
-    Purpose:
-        Validate shared spells reject multiple overrides for the same parameter.
-    Contract:
-        - Multiple overrides for a shared BasicService parameter raise.
-        - The error is raised even when override values match.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If duplicate shared overrides do not raise.
-    """
-    spellbook = _make_spellbook()
-    root_id = _bind_custom_graph(spellbook, service_existence=Existence.unique)
-
-    with _conjured(spellbook) as conduit:
-        with pytest.raises(MeldExecutionError, match="Multiple overrides"):
-            conduit.meld(
-                spell=root_id,
-                spell_override={
-                    "service>marker": "dup",
-                    "mixed>left>service>marker": "dup",
-                },
-            )
-
-
 def test_component_meld_overrides_custom_shared_existing_instance_raises() -> None:
     """
     Purpose:

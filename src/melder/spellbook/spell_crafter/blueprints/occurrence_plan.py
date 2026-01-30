@@ -5,12 +5,14 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import ISpell
 
 OccurrenceKey = Tuple[str, Tuple[str, ...]]
@@ -48,10 +50,10 @@ def select_occurrence_plan(
     Determine whether a Phase 8 OccurrencePlan can drive a meld execution.
 
     Contract:
-        - Returns None if no usable plan is available.
-        - Returns None when the plan root does not match or contract dependencies
-          are incomplete.
-        - Uses plan-provided contract override mappings when complete.
+        - Assumes plan is not None; callers own any availability checks.
+        - Does not filter on contract completeness; callers decide how to handle
+          missing SpellContract providers.
+        - Uses plan-provided contract override mappings when available.
 
     Args:
         plan: Phase 8 OccurrencePlan or None.
@@ -89,7 +91,8 @@ class OccurrencePlan(Cleanable):
         - This object owns the provided collections and clears them on cleanup.
         - root_spell_id must be the version id used to build the plan.
         - Contract override payloads are recorded only for resolved providers.
-        - Contract dependencies are treated as required when building the plan.
+        - Contract dependencies are required in automatic mode; dynamic mode may
+          leave them incomplete until contracts are linked and phases re-run.
 
     Threading:
         - Not thread-safe. Treat as single-threaded, read-only data.
@@ -151,7 +154,7 @@ class OccurrencePlan(Cleanable):
                 Mapping of provider spell ids to (occurrence, override) payloads.
             contract_dependencies_complete:
                 True when all SpellContract dependencies were resolved for this
-                plan. In strict mode, missing providers raise during build.
+                plan. In automatic mode, missing providers raise during build.
 
         Raises:
             ValueError:
@@ -317,7 +320,7 @@ class OccurrencePlan(Cleanable):
         Contract:
             - True only when every SpellContract dependency resolved to an
               occurrence in the plan graph.
-            - In strict mode, missing providers raise during build, so this is
+            - In automatic mode, missing providers raise during build, so this is
               expected to be True for valid plans.
         """
         self.check_cleaned()
@@ -340,7 +343,8 @@ class OccurrencePlanBuilder(object):
         - This builder does not own any referenced objects.
         - Inputs must remain valid for the duration of build().
         - SpellContract resolution is attempted when providers are available.
-        - SpellContract providers are treated as required during plan build.
+        - SpellContract providers are required in automatic mode.
+        - Dynamic mode may allow missing providers during plan build.
         - Not thread-safe.
     """
     __melder_internal__ = _mrg.sentinel
@@ -388,7 +392,8 @@ class OccurrencePlanBuilder(object):
         Contract:
             - Mirrors MeldEngine occurrence planning behavior.
             - Compiles SpellContract override payloads for resolved dependencies.
-            - Raises MeldExecutionError when dependency spells cannot be resolved.
+            - Raises MeldExecutionError when dependency spells cannot be resolved
+              in automatic mode.
 
         Returns:
             OccurrencePlan: The compiled phase 8 artifact.
@@ -636,7 +641,8 @@ class OccurrencePlanBuilder(object):
             - Falls back to DAG dependency metadata.
             - Adds SpellContract dependencies when providers are available.
             - Adds mutation override dependencies.
-            - Treats missing SpellContract providers as build-time errors.
+            - Automatic mode treats missing SpellContract providers as build-time errors.
+            - Dynamic mode tolerates missing SpellContract providers.
 
         Args:
             occurrence: The (spell_id, path) occurrence being expanded.
@@ -691,6 +697,8 @@ class OccurrencePlanBuilder(object):
             path: Occurrence path segments.
         """
         topology = self._system_states._local_topologies.get(spell_id)
+        if topology is None:
+            return
 
         for socket in topology.sockets:
             if not socket.target_spell_ids:
@@ -721,7 +729,11 @@ class OccurrencePlanBuilder(object):
             path: Occurrence path segments.
             dag: DirectedAcyclicWorkGraph used for dependency discovery.
         """
+        if dag is None:
+            return
         node = dag.get_node(spell_id)
+        if node is None:
+            return
         mutated_params: Set[str] = set()
         for parent_node in node.dependencies:
             param_name = node.incoming_params.get(parent_node)
@@ -756,7 +768,8 @@ class OccurrencePlanBuilder(object):
             - Only parameters with SpellContract defaults are treated as
               contract sockets.
             - Contract sockets are resolved without touching Phase 1 artifacts.
-            - Missing contracts raise during plan build.
+            - Missing contracts raise during plan build in automatic mode.
+            - Missing contracts are ignored during plan build in dynamic mode.
 
         Args:
             dependencies: Mapping to update with contract dependencies.
@@ -767,14 +780,17 @@ class OccurrencePlanBuilder(object):
         """
         spell_id, path = occurrence
         spell = self._spell_lookup[spell_id]
+        allow_missing = self._allow_missing_contract_providers()
 
         for param_name, contract in self._iter_spell_contract_defaults(spell):
             target_spell_id = self._resolve_spell_contract_spell_id(
                 contract=contract,
                 consumer_spell=spell,
                 param_name=param_name,
-                allow_missing=False,
+                allow_missing=allow_missing,
             )
+            if target_spell_id is None:
+                continue
             child_occurrence = (target_spell_id, path + (param_name,))
             dependencies.setdefault(param_name, []).append(child_occurrence)
 
@@ -832,7 +848,9 @@ class OccurrencePlanBuilder(object):
             contract: SpellContract describing the provider requirement.
             consumer_spell: The spell that declared the contract.
             param_name: Parameter name for diagnostics.
-            allow_missing: When True, missing providers return None instead of raising.
+            allow_missing:
+                When True, missing providers return None instead of raising.
+                Use this for dynamic mode when providers may be linked later.
 
         Returns:
             Optional[str]: Provider spell id for the contract.
@@ -893,10 +911,7 @@ class OccurrencePlanBuilder(object):
 
         Returns:
             List[ISpell]: Contracted spell candidates.
-
-        Raises:
-            MeldExecutionError:
-                If contracted lookup maps are inconsistent or missing.
+            Missing contract keys yield an empty list.
         """
         spellbook = self._root_spell._spellbook
         contracted_lookup = spellbook._lookup_contracted_spells
@@ -904,12 +919,31 @@ class OccurrencePlanBuilder(object):
 
         contracted_candidates: List[ISpell] = []
         for conduit_id, lookup_map in contracted_lookup.items():
-            spell_index = lookup_map[contract_key]
-            contracted_map = contracted_maps[conduit_id]
-            spell_obj = contracted_map[spell_index]
+            spell_index = lookup_map.get(contract_key)
+            if spell_index is None:
+                continue
+            contracted_map = contracted_maps.get(conduit_id)
+            if contracted_map is None:
+                continue
+            spell_obj = contracted_map.get(spell_index)
+            if spell_obj is None:
+                continue
             contracted_candidates.append(spell_obj)
 
         return contracted_candidates
+
+    def _allow_missing_contract_providers(self) -> bool:
+        """
+        Determine whether plan build may tolerate missing SpellContract providers.
+
+        Contract:
+            - True only when system_state is dynamic.
+            - Automatic mode remains strict and requires providers to resolve.
+        """
+        spellbook = self._root_spell._spellbook
+        system_state = spellbook._configuration.get_property("system_state")
+        state_enum = EnumHelpers.convert_enum_and_check(system_state, SystemState)
+        return state_enum is SystemState.dynamic
 
     def _resolve_mutation_override_targets(
             self,
@@ -1331,7 +1365,8 @@ class OccurrencePlanBuilder(object):
         Compile SpellContract override payload maps for the plan.
 
         Contract:
-            - Missing providers raise MeldExecutionError.
+            - Missing providers raise MeldExecutionError in automatic mode.
+            - Missing providers mark the plan incomplete in dynamic mode.
             - Invalid override payloads raise MeldExecutionError.
             - Records overrides only when payloads are non-empty and occurrences exist.
 
@@ -1373,7 +1408,8 @@ class OccurrencePlanBuilder(object):
         Compile SpellContract override payloads for a single occurrence.
 
         Contract:
-            - Raises when any contract provider is missing or misaligned.
+            - Raises when a contract provider is missing in automatic mode.
+            - Missing providers mark this occurrence incomplete in dynamic mode.
             - Raises when an override payload is invalid.
             - Records overrides only when payloads are non-empty.
 
@@ -1385,19 +1421,23 @@ class OccurrencePlanBuilder(object):
 
         Returns:
             bool: True when contract dependencies and overrides aligned for
-            this occurrence. In strict mode, missing providers raise.
+            this occurrence. In automatic mode, missing providers raise.
         """
         spell = self._resolve_occurrence_spell(occurrence)
         _, path = occurrence
         complete = True
+        allow_missing = self._allow_missing_contract_providers()
 
         for param_name, contract in self._iter_spell_contract_defaults(spell):
             target_spell_id = self._resolve_spell_contract_spell_id(
                 contract=contract,
                 consumer_spell=spell,
                 param_name=param_name,
-                allow_missing=False,
+                allow_missing=allow_missing,
             )
+            if target_spell_id is None:
+                complete = False
+                continue
 
             child_occurrence = (target_spell_id, path + (param_name,))
 
