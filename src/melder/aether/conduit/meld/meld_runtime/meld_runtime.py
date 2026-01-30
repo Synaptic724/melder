@@ -99,81 +99,11 @@ class MeldRuntime:
         """
         if context is None:
             raise ValueError("context cannot be None.")
-
-        spell_obj = context.root_spell
-        if spell_obj is None:
-            raise ValueError("context.root_spell cannot be None.")
-
         # Work with the concrete Spell facade type when available.
-        spell: ISpell = spell_obj
-
-        # ------------------------------------------------------------------ #
-        # System-level gating (Phase 6 / Change-control)                    #
-        # ------------------------------------------------------------------ #
-        if spell._spellbook._spellbook_validation_required:
-            if spell.system_state is not None:
-                validity = spell.system_state.validity
-                if validity in (
-                        SpellValidity.invalid,
-                        SpellValidity.gated,
-                        SpellValidity.disabled,
-                ):
-                    raise MeldExecutionError(
-                        spell_id=spell.spell_index.current,
-                        spell_name=spell.spell_name,
-                        message=(
-                            "Cannot execute meld runtime for a spell whose lineage is "
-                            f"{validity.name}."
-                        ),
-                    )
-
-            # Change-control dirty-root gating
-            try:
-                spellbook = spell._spellbook
-                aether = spellbook._aether
-                manager = aether._get_change_control_manager(spell.aetheric_frame)
-                if manager is not None and manager.is_root_dirty(spell.spell_index.current):
-                    raise MeldExecutionError(
-                        spell_id=spell.spell_index.current,
-                        spell_name=spell.spell_name,
-                        message=(
-                            "Cannot execute meld runtime while the root is marked dirty. "
-                            "Revalidation is required."
-                            ),
-                        )
-            except MeldExecutionError:
-                raise
-            except Exception:
-                # Change-control is optional; if unavailable we proceed.
-                pass
-
-            # --- Invariants from the SpellCrafter / validation pipeline ----
-            if spell.is_broken:
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message="Cannot execute meld runtime for a broken spell.",
-                )
-
-            if not spell.validated:
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message=(
-                        "Spell has not been validated. Run the SpellCrafter "
-                        "phases before attempting to meld this spell."
-                    ),
-                )
-
-        # Snapshot build-time artifacts. These may be None depending on
-        # how far the SpellCrafter pipeline has run; the engine can decide
-        # how much it needs for the current MVP.
+        spell: ISpell = context.root_spell
         dag = spell.dependency_graph
         requirements = spell.requirements
         resolution_frame = spell.resolution_frame
-
-        # Phase 5 artifacts may be present for root spells.
-        root_blueprint: RootResolutionBlueprint = None
         crafter = spell._crafter
         root_blueprint = crafter.root_blueprint_phase5
         override_patch_map = crafter.override_patch_map_phase10
