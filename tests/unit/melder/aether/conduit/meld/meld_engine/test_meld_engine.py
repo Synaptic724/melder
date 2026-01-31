@@ -2529,15 +2529,18 @@ def test_extend_occurrence_graph_with_ordered_nodes_noop_on_empty_order() -> Non
         root_spell=root_spell,
         blueprint=blueprint,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     assert set(occurrence_graph.keys()) == {(root_id, ())}
@@ -2566,15 +2569,18 @@ def test_extend_occurrence_graph_with_ordered_nodes_noop_on_none_dag() -> None:
         blueprint=blueprint,
         spell_lookup=spell_lookup,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=None,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     assert set(occurrence_graph.keys()) == {(root_id, ()), ("orphan", ())}
@@ -2606,15 +2612,18 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_nodes(
         blueprint=blueprint,
         spell_lookup=spell_lookup,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, orphan_id),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     assert (orphan_id, ()) in occurrence_graph
@@ -2656,15 +2665,18 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_dependencies(
         blueprint=blueprint,
         spell_lookup=spell_lookup,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     deps = occurrence_graph[("orphan", ())][param_name]
@@ -2696,15 +2708,18 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_nested_orphan_dependenc
         blueprint=blueprint,
         spell_lookup=spell_lookup,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     assert ("mid", ("mid",)) in occurrence_graph
@@ -2738,15 +2753,18 @@ def test_extend_occurrence_graph_with_ordered_nodes_uses_topology_for_orphan_dep
         spell_lookup=spell_lookup,
         system_states=system_states,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     assert occurrence_graph[("orphan", ())]["dep"] == [("parent", ("dep",))]
@@ -2776,15 +2794,18 @@ def test_extend_occurrence_graph_with_ordered_nodes_skips_existing_occurrence() 
         blueprint=blueprint,
         spell_lookup=spell_lookup,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "child"),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     occurrences = {occurrence for occurrence in occurrence_graph if occurrence[0] == "child"}
@@ -2815,15 +2836,18 @@ def test_extend_occurrence_graph_with_ordered_nodes_preserves_existing_dependenc
         blueprint=blueprint,
         spell_lookup=spell_lookup,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "child", "orphan"),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     assert occurrence_graph[(root_id, ())] == {"dep": [("child", ("dep",))]}
@@ -3867,19 +3891,22 @@ def test_extend_occurrence_graph_with_ordered_nodes_merges_topology_and_dag_depe
         spell_lookup=spell_lookup,
         system_states=system_states,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     deps = occurrence_graph[("orphan", ())]["dep"]
-    assert deps == [("parent-a", ("dep",)), ("parent-b", ("dep",))]
+    assert deps == [("parent-a", ("dep",))]
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_dedupes_topology_and_dag_duplicates() -> None:
@@ -3908,19 +3935,22 @@ def test_extend_occurrence_graph_with_ordered_nodes_dedupes_topology_and_dag_dup
         spell_lookup=spell_lookup,
         system_states=system_states,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     deps = occurrence_graph[("orphan", ())]["dep"]
-    assert deps == [("parent-a", ("dep",)), ("parent-a", ("dep",))]
+    assert deps == [("parent-a", ("dep",))]
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_adds_multiple_orphans() -> None:
@@ -3945,15 +3975,18 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_multiple_orphans() -> N
         blueprint=blueprint,
         spell_lookup=spell_lookup,
     )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
     occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan-a", "orphan-b"),
         dag=dag,
+        collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
     assert ("orphan-a", ()) in occurrence_graph

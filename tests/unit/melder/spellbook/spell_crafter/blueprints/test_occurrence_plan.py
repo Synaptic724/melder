@@ -299,10 +299,7 @@ def test_occurrence_plan_builder_shared_instances() -> None:
     assert plan.canonical_occurrences_by_spell_id[dep_id] == (dep_id, ("dep",))
     assert plan.root_instance_key == (root_id, None)
     assert plan.shared_spell_ids == {root_id, dep_id}
-    assert plan.contract_overrides_by_occurrence == {
-        (root_id, ()): {},
-        (dep_id, ("dep",)): {},
-    }
+    assert plan.contract_overrides_by_occurrence == {}
     assert plan.contract_overrides_by_spell_id == {}
     assert plan.contract_dependencies_complete is True
 
@@ -347,10 +344,7 @@ def test_occurrence_plan_builder_many_instances_preserve_paths() -> None:
     assert plan.instance_keys_by_spell_id[dep_id] == [(dep_id, ("dep",))]
     assert dep_id not in plan.shared_spell_ids
     assert dep_id not in plan.canonical_occurrences_by_spell_id
-    assert plan.contract_overrides_by_occurrence == {
-        (root_id, ()): {},
-        (dep_id, ("dep",)): {},
-    }
+    assert plan.contract_overrides_by_occurrence == {}
     assert plan.contract_overrides_by_spell_id == {}
     assert plan.contract_dependencies_complete is True
 
@@ -462,10 +456,7 @@ def test_occurrence_plan_builder_defers_spell_contracts() -> None:
         (root_id, ()): {"dep": [(dep_id, ("dep",))]},
         (dep_id, ("dep",)): {},
     }
-    assert plan.contract_overrides_by_occurrence == {
-        (root_id, ()): {},
-        (dep_id, ("dep",)): {},
-    }
+    assert plan.contract_overrides_by_occurrence == {}
     assert plan.contract_overrides_by_spell_id == {}
     assert plan.contract_dependencies_complete is False
 
@@ -541,10 +532,6 @@ def test_occurrence_plan_builder_resolves_spell_contract_when_available() -> Non
         (dep_id, ("dep",)): {},
         (provider_id, ("contract",)): {},
     }
-    assert plan.contract_overrides_by_occurrence == {
-        (root_id, ()): {},
-        (dep_id, ("dep",)): {},
-        (provider_id, ("contract",)): {},
-    }
+    assert plan.contract_overrides_by_occurrence == {}
     assert plan.contract_overrides_by_spell_id == {}
     assert plan.contract_dependencies_complete is True

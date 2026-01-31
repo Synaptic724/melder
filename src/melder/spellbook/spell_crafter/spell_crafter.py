@@ -1815,6 +1815,8 @@ class SpellCrafter(Cleanable):
             - Requires Phase 5 artifacts to be available.
             - Builds plan only when a blueprint is attached for this spell.
             - Replaces any existing OccurrencePlan for this spell.
+            - Uses the Spellbook-managed spell_id_pool (spell_id -> ISpell) as the
+              spell lookup map without rebuilding it per phase.
 
         Args:
             conduit_id:
@@ -1830,14 +1832,10 @@ class SpellCrafter(Cleanable):
             return
         root_blueprint = self._root_blueprint_phase5
 
-        spell_lookup: Dict[str, ISpell] = {}
-        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
-            spell_lookup[spell_index.current] = spell_instance
-
         builder = OccurrencePlanBuilder(
             root_spell=self._spell,
             blueprint=root_blueprint,
-            spell_lookup=spell_lookup,
+            spell_lookup=self._spell._spellbook._spell_id_pool,
             system_states=self._spell_system_states,
         )
         plan = builder.build()
@@ -2015,31 +2013,29 @@ class SpellCrafter(Cleanable):
             - Requires Phase 8 artifacts to be available.
             - Uses Phase 9 injection plan when available.
             - Replaces any existing ExecutionPlan for this spell.
+            - Uses the Spellbook-managed spell_id_pool (spell_id -> ISpell) as the
+              spell lookup map without rebuilding it per phase.
         """
         self.check_cleaned()
         if self._spell.is_existing_creation:
             return
 
-        spell_lookup: Dict[str, ISpell] = {}
-        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
-            spell_lookup[spell_index.current] = spell_instance
-
         plan_no_overrides = self._build_execution_plan_variant(
             occurrence_plan=self._occurrence_plan_phase8,
             injection_plan=self._injection_plan_phase9,
-            spell_lookup=spell_lookup,
+            spell_lookup=self._spell._spellbook._spell_id_pool,
             plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
         )
         plan_overrides = self._build_execution_plan_variant(
             occurrence_plan=self._occurrence_plan_phase8,
             injection_plan=self._injection_plan_phase9,
-            spell_lookup=spell_lookup,
+            spell_lookup=self._spell._spellbook._spell_id_pool,
             plan_variant=ExecutionPlanVariant.OVERRIDES,
         )
         plan_overrides_with_mutations = self._build_execution_plan_variant(
             occurrence_plan=self._occurrence_plan_phase8,
             injection_plan=self._injection_plan_phase9,
-            spell_lookup=spell_lookup,
+            spell_lookup=self._spell._spellbook._spell_id_pool,
             plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
         )
 

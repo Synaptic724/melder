@@ -11,11 +11,11 @@ def _ref(node: str, name: str, path):
 @pytest.mark.parametrize(
     "segments,expected",
     [
-        (["a"], "a"),
-        (["a", "b"], "a>b"),
-        (["root", "child", "leaf"], "root>child>leaf"),
-        ([" spaced ", "trim "], " spaced >trim "),
-        ([], ""),
+        (["a"], ("a",)),
+        (["a", "b"], ("a", "b")),
+        (["root", "child", "leaf"], ("root", "child", "leaf")),
+        ([" spaced ", "trim "], (" spaced ", "trim ")),
+        ([], ()),
     ],
 )
 def test_path_key_variants(segments, expected):
