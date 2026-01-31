@@ -111,14 +111,12 @@ def lesser_conduit(logger: DummyLogger) -> FakeConduit:
     return FakeConduit(conduit_id="conduit-lesser", state=ConduitState.lesser, logger=logger)
 
 
-def _mk_creations(*, conduit: FakeConduit, disposal_enabled: bool, disposal_method_names: Optional[list[str]] = None) -> Creations:
-    return Creations(disposal_enabled=disposal_enabled, disposal_method_names=disposal_method_names, conduit=conduit)
+def _mk_creations(*, conduit: FakeConduit) -> Creations:
+    return Creations(conduit=conduit)
 
 
-def _mk_lesser_creations(*, conduit: FakeConduit, disposal_enabled: bool, disposal_method_names: Optional[list[str]] = None) -> LesserCreations:
+def _mk_lesser_creations(*, conduit: FakeConduit) -> LesserCreations:
     return LesserCreations(
-        disposal_enabled=disposal_enabled,
-        disposal_method_names=disposal_method_names,
         conduit=conduit,
         parent_creations=None,
     )
@@ -131,20 +129,21 @@ def _mk_lesser_creations(*, conduit: FakeConduit, disposal_enabled: bool, dispos
 def test_init_requires_conduit_state(logger: DummyLogger) -> None:
     conduit = FakeConduit(conduit_id="c", state=None, logger=logger)
     with pytest.raises(RuntimeError, match="Conduit state is not initialized"):
-        _mk_creations(conduit=conduit, disposal_enabled=False, disposal_method_names=[])
+        _mk_creations(conduit=conduit)
 
 
 def test_init_requires_normal_state(lesser_conduit: FakeConduit) -> None:
     with pytest.raises(RuntimeError, match="only be initialized for normal conduits"):
-        _mk_creations(conduit=lesser_conduit, disposal_enabled=False, disposal_method_names=[])
+        _mk_creations(conduit=lesser_conduit)
 
 
-def test_init_accepts_none_disposal_method_names_and_treats_as_empty(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=None)
+def test_init_accepts_empty_disposal_method_names_and_treats_as_empty(normal_conduit: FakeConduit) -> None:
+    creations = _mk_creations(conduit=normal_conduit)
     probe = Probe()
+    creation = Creation(probe, has_disposal_methods=False, disposal_methods=None)
 
     # With an empty method list, `_attempt_cleanup` should noop.
-    assert creations._attempt_cleanup(probe) is None
+    assert creations._attempt_cleanup(creation) is None
     assert probe.calls == []
 
 

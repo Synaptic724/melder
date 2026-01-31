@@ -1,3 +1,4 @@
+from collections import deque
 from threading import RLock
 from typing import List, Optional, Dict, Any
 
@@ -21,14 +22,11 @@ class Creations(Cleanable, ICreations):
       * Controlled resource disposal via `ICleanable` or configured cleanup methods.
     """
     __melder_internal__ = _mrg.sentinel
-    def __init__(self, disposal_enabled: bool, disposal_method_names: List[str], conduit: IConduit):
+    def __init__(self, conduit: IConduit):
         """
         Initialize a new Creations manager.
 
         Args:
-            disposal_enabled (bool): Whether disposal behavior is active.
-            disposal_method_names (List[str]): List of method names to attempt during cleanup.
-
         The internal dictionaries hold references to the objects created by the conduit,
         indexed by the spell's unique ID (`str`).
         """
@@ -47,6 +45,7 @@ class Creations(Cleanable, ICreations):
         self._log_groups = ["creation_management", "creations"]
         self._log_sysgroups = ["conduit"]
         self._logger = conduit._logger
+        self._disposal_stack: deque = deque()
 
         # Internal storage for created objects by lifecycle scope
         self._unique: Dict[str, Creation] = {}
@@ -56,10 +55,6 @@ class Creations(Cleanable, ICreations):
         self._unique_per_cluster: Dict[str, Creation] = {}
         self._spellspace_instances: Dict[str, Dict[str, Creation]] = {}
 
-        # Disposal configuration
-        self._disposal_enabled = disposal_enabled
-        self._disposal_method_names = disposal_method_names or []
-
 
     #region Destructor
     def cleanup(self) -> None:
@@ -68,6 +63,10 @@ class Creations(Cleanable, ICreations):
 
         Once cleaned, no further modifications are allowed. If any disposal method fails,
         an `ExceptionGroup` containing all errors is raised.
+
+        Disposal ordering:
+            - Uses a LIFO disposal stack populated at creation time.
+            - Per-scope buckets are cleared after the stack is drained.
 
         Raises:
             ExceptionGroup: Contains a list of all exceptions encountered during cleanup.
@@ -82,12 +81,7 @@ class Creations(Cleanable, ICreations):
 
             # Single try/except around the whole sequence (per request)
             try:
-                errors.extend(self._cleanup_unique())
-                errors.extend(self._cleanup_unique_per_scope())
-                errors.extend(self._cleanup_many())
-                errors.extend(self._cleanup_unique_per_lineage())
-                errors.extend(self._cleanup_unique_per_cluster())
-                errors.extend(self._cleanup_spellspace_instances())
+                errors.extend(self._drain_disposal_stack())
             except Exception as e:
                 # Fatal exception in the sequence (unexpected); record and continue teardown
                 self._logger.error(f"cleanup: fatal error during sequence: {e}", method_name="cleanup",
@@ -96,6 +90,13 @@ class Creations(Cleanable, ICreations):
                 errors.append(e)
 
             # Null internal refs last
+            self._unique.clear()
+            self._unique_per_scope.clear()
+            self._many.clear()
+            self._unique_per_lineage.clear()
+            self._unique_per_cluster.clear()
+            self._spellspace_instances.clear()
+            self._disposal_stack.clear()
             self._unique = None
             self._unique_per_scope = None
             self._many = None
@@ -103,7 +104,7 @@ class Creations(Cleanable, ICreations):
             self._unique_per_cluster = None
             self._spellspace_instances = None
             self._conduit = None
-            self._disposal_method_names = None
+            self._disposal_stack = None
 
             if errors:
                 self._logger.error(
@@ -123,103 +124,6 @@ class Creations(Cleanable, ICreations):
                 self._log_sysgroups = None
                 self._logger = None
 
-    def _cleanup_unique(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all objects registered under the `unique` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        errors: List[Exception] = []
-        for _, item in self._unique.items():
-            if item is not None:
-                maybe_error = self._attempt_cleanup(item.value)
-                if maybe_error:
-                    errors.append(maybe_error)
-                item.cleanup()
-        self._unique.clear()
-        return errors
-
-    def _cleanup_unique_per_lineage(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all objects registered under the `unique_per_lineage` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        errors: List[Exception] = []
-        for key, item in self._unique_per_lineage.items():
-            if item is not None:
-                maybe_error = self._attempt_cleanup(item.value)
-                if maybe_error:
-                    errors.append(maybe_error)
-                item.cleanup()
-        self._unique_per_lineage.clear()
-        return errors
-
-    def _cleanup_unique_per_cluster(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all objects registered under the `unique_per_cluster` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        errors: List[Exception] = []
-        for _, item in self._unique_per_cluster.items():
-            if item is not None:
-                maybe_error = self._attempt_cleanup(item.value)
-                if maybe_error:
-                    errors.append(maybe_error)
-                item.cleanup()
-        self._unique_per_cluster.clear()
-        return errors
-
-    def _cleanup_unique_per_scope(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all objects registered under the `unique_per_scope` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        errors: List[Exception] = []
-        for _, item in self._unique_per_scope.items():
-            if item is not None:
-                maybe_error = self._attempt_cleanup(item.value)
-                if maybe_error:
-                    errors.append(maybe_error)
-                item.cleanup()
-        self._unique_per_scope.clear()
-        return errors
-
-    def _cleanup_many(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all multi-instance objects registered under the `many` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        errors: List[Exception] = []
-        for _, items in self._many.items():
-            for item in items:
-                if item is not None:
-                    maybe_error = self._attempt_cleanup(item.value)
-                    if maybe_error:
-                        errors.append(maybe_error)
-                    item.cleanup()
-            items.clear()
-        self._many.clear()
-        return errors
-
     def _cleanup_spellspace_instances(self) -> List[Exception]:
         """
         Internal
@@ -233,15 +137,12 @@ class Creations(Cleanable, ICreations):
         for _, bucket in self._spellspace_instances.items():
             for item in bucket.values():
                 if item is not None:
-                    maybe_error = self._attempt_cleanup(item.value)
-                    if maybe_error:
-                        errors.append(maybe_error)
                     item.cleanup()
             bucket.clear()
         self._spellspace_instances.clear()
         return errors
 
-    def _attempt_cleanup(self, item: object) -> Optional[Exception]:
+    def _attempt_cleanup(self, creation: Creation) -> Optional[Exception]:
         """
         Internal
 
@@ -249,7 +150,8 @@ class Creations(Cleanable, ICreations):
 
         Behavior:
           - Returns None if `item` is None or disposal is disabled.
-          - Iterates `self._disposal_method_names` in order (e.g., ["cleanup", "cleanup", "close", "dispose"]).
+          - Iterates the Creation's `disposal_method_names` in order
+            (e.g., ["cleanup", "close", "dispose"]).
           - For the first attribute found on `item` that is callable, calls it.
           - If the call succeeds, returns None.
           - If the call raises, returns a RuntimeError wrapping the original exception.
@@ -265,27 +167,75 @@ class Creations(Cleanable, ICreations):
         Returns:
             Optional[Exception]: RuntimeError if a chosen cleanup method raised; otherwise None.
         """
-        if not self._disposal_enabled:
+        if creation is None:
             return None
+        item = creation.value
         if item is None:
             return None
+        method_names = creation.disposal_method_names or []
+        if not method_names:
+            return None
 
-        for method_name in self._disposal_method_names:
-            meth = getattr(item, method_name, None)
-            if callable(meth):
-                try:
-                    meth()
-                    return None
-                except Exception as ex:
-                    self._logger.error(
-                        f"_attempt_cleanup: '{method_name}' failed on {type(item).__name__}: {ex}",
-                        method_name="_attempt_cleanup", mask=True, exc_info=True,
-                        owner_id=self._id, owner_display=self._display_name,
-                        groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
-                    return RuntimeError(f"Failed to dispose object {item} using method '{method_name}': {ex}")
+        for method_name in method_names:
+            try:
+                method = item.__getattribute__(method_name)
+                method()
+                return None
+            except Exception as ex:
+                self._logger.error(
+                    f"_attempt_cleanup: '{method_name}' failed on {type(item).__name__}: {ex}",
+                    method_name="_attempt_cleanup", mask=True, exc_info=True,
+                    owner_id=self._id, owner_display=self._display_name,
+                    groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+                return RuntimeError(f"Failed to dispose object {item} using method '{method_name}': {ex}")
 
         return None
+
+    def _push_disposal_creation(self, creation: Creation) -> None:
+        """
+        Internal
+
+        Push a Creation onto the disposal stack when it declares disposal methods.
+        """
+        if creation is None:
+            return
+        if creation.has_disposal_methods:
+            self._disposal_stack.appendleft(creation)
+
+    def _remove_disposal_creation(self, creation: Creation) -> None:
+        """
+        Internal
+
+        Remove a Creation from the disposal stack if present.
+        """
+        if creation is None:
+            return
+        if not creation.has_disposal_methods:
+            return
+        if not self._disposal_stack:
+            return
+        self._disposal_stack = deque(
+            item for item in self._disposal_stack
+            if item is not creation
+        )
+
+    def _drain_disposal_stack(self) -> List[Exception]:
+        """
+        Internal
+
+        Drain the disposal stack in LIFO order and dispose each Creation.
+        """
+        errors: List[Exception] = []
+        while self._disposal_stack:
+            creation = self._disposal_stack.popleft()
+            if creation is None:
+                continue
+            maybe_error = self._attempt_cleanup(creation)
+            if maybe_error:
+                errors.append(maybe_error)
+            creation.cleanup()
+        return errors
 
 
     #endregion Destructor
@@ -297,7 +247,8 @@ class Creations(Cleanable, ICreations):
         Transfers creations data from a `LesserCreations` instance during a conduit upgrade.
 
         Args:
-            **kwargs: Dictionary containing creation scopes (e.g., `unique_per_scope`, `many`).
+            **kwargs: Dictionary containing creation scopes (e.g., `unique_per_scope`, `many`)
+                and an optional `disposal_stack` deque transferred from LesserCreations.
 
         Raises:
             RuntimeError: If the `Creations` manager already contains objects before transfer.
@@ -313,6 +264,9 @@ class Creations(Cleanable, ICreations):
 
         self._unique_per_scope = kwargs.get("unique_per_scope")
         self._many = kwargs.get("many")
+        disposal_stack = kwargs.get("disposal_stack")
+        if disposal_stack is not None:
+            self._disposal_stack = disposal_stack
 
 
     def add_unique(
@@ -342,11 +296,14 @@ class Creations(Cleanable, ICreations):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique objects.")
-        self._unique[key] = Creation(
+        creation = Creation(
             item,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
         )
+        self._unique[key] = creation
+        if has_disposal_methods:
+            self._push_disposal_creation(creation)
 
     def add_unique_per_lineage(
             self,
@@ -375,11 +332,14 @@ class Creations(Cleanable, ICreations):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
-        self._unique_per_lineage[key] = Creation(
+        creation = Creation(
             item,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
         )
+        self._unique_per_lineage[key] = creation
+        if has_disposal_methods:
+            self._push_disposal_creation(creation)
 
     def add_unique_per_cluster(
             self,
@@ -408,11 +368,14 @@ class Creations(Cleanable, ICreations):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
-        self._unique_per_cluster[key] = Creation(
+        creation = Creation(
             item,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
         )
+        self._unique_per_cluster[key] = creation
+        if has_disposal_methods:
+            self._push_disposal_creation(creation)
 
     def add_unique_per_scope(
             self,
@@ -441,11 +404,14 @@ class Creations(Cleanable, ICreations):
                                owner_id=self._id, owner_display=self._display_name,
                                groups=self._log_groups, system_groups=self._log_sysgroups)
             raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
-        self._unique_per_scope[key] = Creation(
+        creation = Creation(
             item,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
         )
+        self._unique_per_scope[key] = creation
+        if has_disposal_methods:
+            self._push_disposal_creation(creation)
 
     def add_many(
             self,
@@ -472,13 +438,14 @@ class Creations(Cleanable, ICreations):
         self.check_cleaned()
         if key not in self._many:
             self._many[key] = []
-        self._many[key].append(
-            Creation(
-                item,
-                has_disposal_methods=has_disposal_methods,
-                disposal_methods=disposal_methods,
-            )
+        creation = Creation(
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
         )
+        self._many[key].append(creation)
+        if has_disposal_methods:
+            self._push_disposal_creation(creation)
 
     # ------------------------------------------------------------------
     # Extraction / restoration helpers (for transfers)
@@ -503,18 +470,21 @@ class Creations(Cleanable, ICreations):
             ):
                 if spell_id in bucket:
                     creation = bucket.pop(spell_id)
+                    self._remove_disposal_creation(creation)
                     extracted.append({"scope": scope_name, "creation": creation})
 
             # Many (list)
             if spell_id in self._many:
                 creations = self._many.pop(spell_id)
                 for creation in creations:
+                    self._remove_disposal_creation(creation)
                     extracted.append({"scope": "many", "creation": creation})
 
             # Spellspace buckets
             for spellspace_id, bucket in list(self._spellspace_instances.items()):
                 if spell_id in bucket:
                     creation = bucket.pop(spell_id)
+                    self._remove_disposal_creation(creation)
                     extracted.append({
                         "scope": "spellspace",
                         "spellspace_id": spellspace_id,
@@ -540,22 +510,28 @@ class Creations(Cleanable, ICreations):
                     continue
                 if scope == "unique":
                     self._unique[spell_id] = creation
+                    self._push_disposal_creation(creation)
                 elif scope == "unique_per_scope":
                     self._unique_per_scope[spell_id] = creation
+                    self._push_disposal_creation(creation)
                 elif scope == "unique_per_lineage":
                     self._unique_per_lineage[spell_id] = creation
+                    self._push_disposal_creation(creation)
                 elif scope == "unique_per_cluster":
                     self._unique_per_cluster[spell_id] = creation
+                    self._push_disposal_creation(creation)
                 elif scope == "many":
                     if spell_id not in self._many:
                         self._many[spell_id] = []
                     self._many[spell_id].append(creation)
+                    self._push_disposal_creation(creation)
                 elif scope == "spellspace":
                     spellspace_id = entry.get("spellspace_id")
                     if spellspace_id is None:
                         continue
                     bucket = self._spellspace_instances.setdefault(spellspace_id, {})
                     bucket[spell_id] = creation
+                    self._push_disposal_creation(creation)
 
     # ------------------------------------------------------------------
     # SpellSpace helpers
@@ -596,11 +572,13 @@ class Creations(Cleanable, ICreations):
         bucket = self._spellspace_instances[spellspace_id]
         if spell_id in bucket:
             raise ValueError(f"Key {spell_id} already exists in spellspace '{spellspace_id}'.")
-        bucket[spell_id] = Creation(
+        creation = Creation(
             item,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
         )
+        bucket[spell_id] = creation
+        self._push_disposal_creation(creation)
 
     def clear_spellspace_instances(self, spellspace_id: str) -> None:
         """
@@ -611,9 +589,19 @@ class Creations(Cleanable, ICreations):
         if bucket is None:
             return
         errors: List[Exception] = []
+        removals = [
+            creation for creation in bucket.values()
+            if creation is not None and creation.has_disposal_methods
+        ]
+        if removals:
+            removal_ids = {id(item) for item in removals}
+            self._disposal_stack = deque(
+                item for item in self._disposal_stack
+                if id(item) not in removal_ids
+            )
         for item in bucket.values():
             if item is not None:
-                maybe_error = self._attempt_cleanup(item.value)
+                maybe_error = self._attempt_cleanup(item)
                 if maybe_error:
                     errors.append(maybe_error)
                 item.cleanup()

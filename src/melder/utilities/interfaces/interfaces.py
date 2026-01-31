@@ -88,8 +88,6 @@ class ICreations(ICleanable, Protocol):
     _many: 'Dict[str, List[object]]'
     _unique_per_lineage: 'Dict[str, object]'
     _unique_per_cluster: 'Dict[str, object]'
-    _disposal_enabled: bool
-    _disposal_method_names: List[str]
     _id: str
 
     # -----------------
@@ -157,8 +155,9 @@ class ICreations(ICleanable, Protocol):
         Attempt to clean up an object strictly via a prioritized list of method names.
 
         Behavior:
-          - Returns None if `item` is None or disposal is disabled.
-          - Iterates `self._disposal_method_names` in order (e.g., ["cleanup", "close", "dispose"]).
+          - Returns None if `item` is None.
+          - Iterates the Creation's `disposal_method_names` in order
+            (e.g., ["cleanup", "close", "dispose"]).
           - For the first attribute found on `item` that is callable, calls it.
           - If the call succeeds, returns None.
           - If the call raises, returns a RuntimeError wrapping the original exception.
@@ -326,8 +325,6 @@ class ILesserCreations(ICleanable, Protocol):
     # -----------------
     _unique_per_scope: Dict[str, object]
     _many: Dict[str, List[object]]
-    _disposal_enabled: bool
-    _disposal_method_names: List[str]
     _lock: RLock
     _id: str
 
@@ -363,8 +360,9 @@ class ILesserCreations(ICleanable, Protocol):
         Attempt to clean up an object strictly via a prioritized list of method names.
 
         Behavior:
-          - Returns None if `item` is None or disposal is disabled.
-          - Iterates `self._disposal_method_names` in order (e.g., ["cleanup", "close", "dispose"]).
+          - Returns None if `item` is None.
+          - Iterates the Creation's `disposal_method_names` in order
+            (e.g., ["cleanup", "close", "dispose"]).
           - For the first attribute found on `item` that is callable, calls it.
           - If the call succeeds, returns None.
           - If the call raises, returns a RuntimeError wrapping the original exception.

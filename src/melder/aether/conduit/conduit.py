@@ -866,14 +866,11 @@ class Conduit(Cleanable, IConduit):
         """
         if self._conduit_state == ConduitState.lesser:
             return LesserCreations(
-                disposal_enabled=configuration.get_property("disposal"),
-                disposal_method_names=configuration.get_property("disposal_method_names"),
                 conduit=self,
                 parent_creations=getattr(self, "_parent_creations", None),
             )
         if self._conduit_state == ConduitState.normal:
-            return Creations(disposal_enabled=configuration.get_property("disposal"),
-                             disposal_method_names=configuration.get_property("disposal_method_names"), conduit=self)
+            return Creations(conduit=self)
         self._logger.error("Unknown Conduit state", "_creations_configuration")
         raise RuntimeError("Conduit state is unknown")
 
@@ -1092,11 +1089,7 @@ class Conduit(Cleanable, IConduit):
                 creations_data = self._creations.transfer_data_and_clear()
 
                 # Step 3: Create new Creations and inject data
-                new_creations = Creations(
-                    disposal_enabled=self._configuration.get_property("disposal"),
-                    disposal_method_names=self._configuration.get_property("disposal_method_names"),
-                    conduit=self,
-                )
+                new_creations = Creations(conduit=self)
                 new_creations._upgrade_from_lesser_conduit(**creations_data)
 
                 # Step 4: Replace the old creations

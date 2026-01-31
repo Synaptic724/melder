@@ -220,6 +220,38 @@ class _CountingServiceMany:
         self.cleanup_calls += 1
 
 
+class _DisposalOrderService:
+    """
+    Purpose:
+        Capture disposal order for LIFO cleanup validation.
+    Contract:
+        - Each instance records its creation index.
+        - cleanup appends the index to the shared order list.
+    """
+
+    _counter = 0
+    cleanup_order: list[int] = []
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Capture creation order for LIFO disposal testing.
+        Contract:
+            - order_index increments per instance.
+        """
+        self.order_index = _DisposalOrderService._counter
+        _DisposalOrderService._counter += 1
+
+    def cleanup(self) -> None:
+        """
+        Purpose:
+            Record cleanup order for LIFO assertions.
+        Contract:
+            - Appends order_index to cleanup_order.
+        """
+        _DisposalOrderService.cleanup_order.append(self.order_index)
+
+
 def test_component_conduit_meld_many_registers_multiple_creations() -> None:
     """
     Purpose:
@@ -391,3 +423,35 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
     finally:
         lesser.cleanup()
         root.cleanup()
+
+
+def test_component_conduit_cleanup_disposes_lifo() -> None:
+    """
+    Purpose:
+        Validate cleanup disposes creations in LIFO order.
+    Contract:
+        - Later created instances are disposed before earlier ones.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If disposal order is not LIFO.
+    """
+    _DisposalOrderService._counter = 0
+    _DisposalOrderService.cleanup_order = []
+    spellbook = _make_spellbook(disposal=True, disposal_methods=["cleanup"])
+    spell_id = spellbook.bind(
+        spell=_DisposalOrderService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        conduit.meld(spell=spell_id)
+        conduit.meld(spell=spell_id)
+        conduit.meld(spell=spell_id)
+
+        conduit.cleanup()
+
+        assert _DisposalOrderService.cleanup_order == [2, 1, 0]
+    finally:
+        conduit.cleanup()
