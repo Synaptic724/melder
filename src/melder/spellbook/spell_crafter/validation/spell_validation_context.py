@@ -22,8 +22,6 @@ class SpellValidationContext(Cleanable):
         Phase 2 symbolic graph, if already computed.
     resolution_frame:
         Phase 3 resolution frame / DAG summary, if already computed.
-    scanner:
-        Convenience SpellbookScanner bound to ``spellbook`` (or None).
     cancel_event:
         Optional cancellation token for long-running validations.
     issues:
@@ -36,7 +34,6 @@ class SpellValidationContext(Cleanable):
         "requirements",
         "symbolic_graph",
         "resolution_frame",
-        "scanner",
         "cancel_event",
         "issues",
         "_cleanup_artifacts",
@@ -49,7 +46,6 @@ class SpellValidationContext(Cleanable):
             requirements: Optional['SpellRequirements'],
             symbolic_graph: Optional['SpellSymbolicGraph'],
             resolution_frame: Optional['SpellResolutionFrame'],
-            scanner: Optional['SpellbookScanner'],
             cancel_event: Optional['CancellationEvent'],
             issues: List['SpellValidationIssue'],
             cleanup_artifacts: bool = True,
@@ -66,7 +62,6 @@ class SpellValidationContext(Cleanable):
         self.requirements: Optional['SpellRequirements'] = requirements
         self.symbolic_graph: Optional['SpellSymbolicGraph'] = symbolic_graph
         self.resolution_frame: Optional['SpellResolutionFrame'] = resolution_frame
-        self.scanner: Optional['SpellbookScanner'] = scanner
         self.cancel_event: Optional['CancellationEvent'] = cancel_event
 
         # NOTE: this list is shared with the caller (SpellValidationSystem);
@@ -86,13 +81,6 @@ class SpellValidationContext(Cleanable):
         if self._cleaned:
             return
 
-        # Clean up scanner if we created one.
-        if self.scanner is not None:
-            try:
-                self.scanner.cleanup()
-            except Exception:
-                pass
-
         # Clean up owned artifacts if requested.
         if self._cleanup_artifacts:
             for artifact in (self.requirements, self.symbolic_graph, self.resolution_frame):
@@ -108,7 +96,6 @@ class SpellValidationContext(Cleanable):
         self.requirements = None
         self.symbolic_graph = None
         self.resolution_frame = None
-        self.scanner = None
         self.cancel_event = None
 
         # Detach our reference to the shared issues list without mutating it.

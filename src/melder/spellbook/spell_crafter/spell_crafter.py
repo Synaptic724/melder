@@ -3,7 +3,7 @@ import time
 import inspect
 import typing
 import types
-from typing import Any, Optional, List, Dict, Tuple, Set, Union, get_args, get_origin
+from typing import Any, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -13,7 +13,6 @@ from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency imp
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.spellbook.spell_crafter.spellbook_scanner import SpellbookScanner
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
@@ -190,7 +189,6 @@ class SpellCrafter(Cleanable):
         "_entire_dag_blueprint_phase5",
         "_spell_validator",
         "_spell_system_states",
-        "_spellbook_scanner",
     ]
 
     def __init__(self, spell: ISpell) -> None:
@@ -212,7 +210,6 @@ class SpellCrafter(Cleanable):
         self._spell: ISpell = spell
         self._spell_validator: 'SpellValidationSystem' = self._spell._spellbook._spell_validator
         self._spell_system_states: Optional[ISpellSystemStates] = self._spell._spell_system_states
-        self._spellbook_scanner: SpellbookScanner = SpellbookScanner(self._spell._spellbook)
         self._requirements: Optional[SpellRequirements] = None
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
         # Phase 3 artifact - currently a SpellResolutionFrame summarising the
@@ -582,12 +579,6 @@ class SpellCrafter(Cleanable):
             except Exception:
                 pass
 
-        if self._spellbook_scanner is not None:
-            try:
-                self._spellbook_scanner.cleanup()
-            except Exception:
-                pass
-        self._spellbook_scanner = None
         self._resolution_frame = None
         self._requirements = None
         self._symbolic_graph = None
@@ -695,14 +686,27 @@ class SpellCrafter(Cleanable):
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
 
-    def _iter_all_spells(self, scanner: SpellbookScanner):
+    def _iter_all_spells(self):
         """
-        Small wrapper to keep the scanner usage in one place.
+        Iterate all visible spells (local + contracted) without copying maps.
 
-        Centralising this makes it easier to plug in conduit/ward filtering
-        later without touching Phase 3 logic.
+        Purpose:
+            Provide a single internal iterator that Phase 3 can use for
+            resolution without relying on any scanner wrapper.
+        Contract:
+            - Yields ``(spell_index, spell)`` for local spells first, then
+              contracted spells.
+            - Uses the Spellbook's live internal maps directly; no copies
+              or snapshots are created.
+        Returns:
+            Iterator[Tuple[SpellIndex, ISpell]]: Live iteration stream.
         """
-        return scanner.iter_all_spells()
+        spellbook = self._spell._spellbook
+        for spell_index, spell_instance in spellbook._spells.items():
+            yield spell_index, spell_instance
+        for contracted in spellbook._contracted_spells.values():
+            for spell_index, spell_instance in contracted.items():
+                yield spell_index, spell_instance
 
     def _normalize_annotation_for_matching(self, annotation: Any) -> Any:
         """
@@ -813,7 +817,6 @@ class SpellCrafter(Cleanable):
 
     def _resolve_single_by_annotation(
             self,
-            scanner: SpellbookScanner,
             dep: SpellSymbolicDependency,
     ) -> Dict[Any, ISpell]:
         """
@@ -834,7 +837,7 @@ class SpellCrafter(Cleanable):
 
         candidates: Dict[Any, ISpell] = {}
 
-        for index, spell_obj in self._iter_all_spells(scanner):
+        for index, spell_obj in self._iter_all_spells():
             if self._matches_annotation(
                     annotation,
                     binding_name,
@@ -869,7 +872,6 @@ class SpellCrafter(Cleanable):
 
     def _resolve_collection_by_annotation(
             self,
-            scanner: SpellbookScanner,
             dep: SpellSymbolicDependency,
     ) -> Dict[Any, ISpell]:
         """
@@ -888,7 +890,7 @@ class SpellCrafter(Cleanable):
 
         candidates: Dict[Any, ISpell] = {}
 
-        for index, spell_obj in self._iter_all_spells(scanner):
+        for index, spell_obj in self._iter_all_spells():
             # For collection DI we deliberately allow methods/lambdas - the
             # frame is the grouping mechanism.
             if self._matches_annotation(
@@ -968,7 +970,6 @@ class SpellCrafter(Cleanable):
 
     def _resolve_spellmap_default(
             self,
-            scanner: SpellbookScanner,
             dep: SpellSymbolicDependency,
     ) -> Dict[Any, ISpell]:
         """
@@ -991,7 +992,7 @@ class SpellCrafter(Cleanable):
         binding_name = spellmap.binding_name
 
         if explicit_spell is not None:
-            for index, spell_obj in self._iter_all_spells(scanner):
+            for index, spell_obj in self._iter_all_spells():
                 if spell_obj.spell is not explicit_spell:
                     continue
 
@@ -1006,13 +1007,11 @@ class SpellCrafter(Cleanable):
 
                 candidates[index] = spell_obj
         else:
-            # Frame+binding only - delegate to the scanner helper.
-            frame_candidates = scanner.find_by_frame_and_binding(
-                spellmap.spellframe,
-                spellmap.binding_name,
-                include_contracted=True,
-            )
-            candidates.update(frame_candidates)
+            # Frame+binding only - scan all visible spells for matches.
+            for index, spell_obj in self._iter_all_spells():
+                if spell_obj.spellframe is spellmap.spellframe or spell_obj.spellframe == spellmap.spellframe:
+                    if spell_obj.binding_name == spellmap.binding_name:
+                        candidates[index] = spell_obj
 
         if not candidates:
             raise RuntimeError(
@@ -1300,7 +1299,7 @@ class SpellCrafter(Cleanable):
         Responsibilities:
             * Add a DAG node for the root Spell (current SpellIndex version).
             * For each symbolic dependency:
-                  - resolve normal DI shapes via a SpellbookScanner,
+                  - resolve normal DI shapes via direct Spellbook map iteration,
                   - add DAG nodes for resolved dependency spells,
                   - add edges from each dependency node to the root node,
                     tagging edges with ``param_name`` and ``socket_kind``.
@@ -1347,8 +1346,6 @@ class SpellCrafter(Cleanable):
         # keyed by (param_name, position) -> [spell_id, ...]
         socket_targets: Dict[tuple[str, int], List[str]] = {}
 
-        self._spellbook_scanner = SpellbookScanner(self._spell._spellbook)
-
         for dep in graph.dependencies:
             self._throw_if_cancelled(cancellation_event)
 
@@ -1356,20 +1353,11 @@ class SpellCrafter(Cleanable):
 
             # Only "normal" DI shapes produce concrete DAG edges for now.
             if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
-                resolved = self._resolve_single_by_annotation(
-                    scanner=self._spellbook_scanner,
-                    dep=dep,
-                )
+                resolved = self._resolve_single_by_annotation(dep=dep)
             elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
-                resolved = self._resolve_collection_by_annotation(
-                    scanner=self._spellbook_scanner,
-                    dep=dep,
-                )
+                resolved = self._resolve_collection_by_annotation(dep=dep)
             elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
-                resolved = self._resolve_spellmap_default(
-                    scanner=self._spellbook_scanner,
-                    dep=dep,
-                )
+                resolved = self._resolve_spellmap_default(dep=dep)
             else:
                 # SpellContract / MutationContract / PLAIN and any future shapes
                 # are currently metadata-only at the DAG level. They still
@@ -1458,8 +1446,8 @@ class SpellCrafter(Cleanable):
             * Phases 1 and 2 must already have completed successfully. If
               requirements or symbolic graph are missing, this method raises
               instead of auto-running earlier phases.
-            * Assumes the bound Spell is attached to a Spellbook; the internal
-              SpellbookScanner is created against that Spellbook.
+            * Assumes the bound Spell is attached to a Spellbook; direct
+              Spellbook map iteration is used for resolution.
             * Stores the local DAG and direct dependency list on the Spell via
               :meth:`Spell._add_build_details`, and keeps a
               :class:`SpellResolutionFrame` internally on this SpellCrafter.
@@ -1644,12 +1632,10 @@ class SpellCrafter(Cleanable):
         snapshot = adjacency_builder.build(self._spell_system_states)
 
         # --- 2. Filter to spellbook-visible spells -------------------------
-        visible_spell_ids: Set[str] = set()
-        version_to_spell: Dict[str, ISpell] = {}
-        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
-            spell_id = spell_index.current
-            visible_spell_ids.add(spell_id)
-            version_to_spell[spell_id] = spell_instance
+        # Use the live spell_id_pool (no copies) for version-id -> Spell lookup.
+        spellbook = self._spell._spellbook
+        version_to_spell: Dict[str, ISpell] = spellbook._spell_id_pool
+        visible_spell_ids = version_to_spell.keys()
 
         filtered_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
@@ -1707,7 +1693,6 @@ class SpellCrafter(Cleanable):
         self._entire_dag_blueprint_phase5 = root_blueprints
 
         # Rebuild component-of index and register a revalidation hook for dirty roots.
-        spellbook = self._spell._spellbook
         frame_name = spellbook._aetheric_frame
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
         change_control_manager.rebuild_component_of(root_blueprints)
@@ -1723,15 +1708,9 @@ class SpellCrafter(Cleanable):
                 Set[str]:
                     Root ids that successfully revalidated.
             """
-            # Scanner scoped to this invocation to avoid stale spell refs.
-            scanner = SpellbookScanner(spellbook)
-            version_to_spell: Dict[str, ISpell] = {}
-            for spell_index, spell_instance in scanner.iter_spells():
-                version_to_spell[spell_index.current] = spell_instance
-
             validated_roots: Set[str] = set()
             for root_id in dirty_roots:
-                spell_instance = version_to_spell[root_id]
+                spell_instance = spellbook._spell_id_pool[root_id]
                 crafter = spell_instance._ensure_crafter()
                 crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
                 validated_roots.add(root_id)
@@ -1744,7 +1723,7 @@ class SpellCrafter(Cleanable):
             self,
             *,
             snapshot: SpellSystemAdjacencySnapshot,
-            visible_spell_ids: Set[str],
+            visible_spell_ids: Collection[str],
     ) -> SpellSystemAdjacencySnapshot:
         """
         Internal
@@ -1762,13 +1741,14 @@ class SpellCrafter(Cleanable):
             snapshot:
                 Frame-wide SpellSystemAdjacencySnapshot to filter.
             visible_spell_ids:
-                Version ids visible to this Spellbook.
+                Version ids visible to this Spellbook. This collection is treated
+                as a live view and is not copied.
         Returns:
             SpellSystemAdjacencySnapshot:
                 A filtered snapshot scoped to the provided spell ids.
         """
         self.check_cleaned()
-        all_spell_ids: Set[str] = visible_spell_ids
+        all_spell_ids: Collection[str] = visible_spell_ids
         dependencies: Dict[str, Set[str]] = {}
         reverse_dependencies: Dict[str, Set[str]] = {}
         topologies: Dict[str, "SpellLocalTopology"] = {}
@@ -1785,7 +1765,7 @@ class SpellCrafter(Cleanable):
             if topology is not None:
                 topologies[spell_id] = topology
 
-        root_spell_ids = all_spell_ids.difference(reverse_dependencies.keys())
+        root_spell_ids = {spell_id for spell_id in all_spell_ids if spell_id not in reverse_dependencies}
 
         return SpellSystemAdjacencySnapshot(
             dependencies=dependencies,
@@ -2113,12 +2093,13 @@ class SpellCrafter(Cleanable):
         broken_spell_ids: Set[str] = set()
         spell_lookup: Dict[str, ISpell] = {}
 
-        for spell_index, spell_instance in self._spellbook_scanner.iter_spells():
-            spell_lookup[spell_index.current] = spell_instance
+        spellbook = self._spell._spellbook
+        for spell_id, spell_instance in spellbook._spell_id_pool.items():
+            spell_lookup[spell_id] = spell_instance
             crafter = spell_instance._crafter
-            phase4_results[spell_index.current] = crafter._validation_result_phase4
+            phase4_results[spell_id] = crafter._validation_result_phase4
             if crafter._is_broken:
-                broken_spell_ids.add(spell_index.current)
+                broken_spell_ids.add(spell_id)
 
         strategies = [
             CycleDetectionStrategy(),
@@ -2198,14 +2179,9 @@ class SpellCrafter(Cleanable):
                     dirty_roots: Set[str],
                     cancel_event: Optional[CancellationEvent],
             ) -> Set[str]:
-                scanner = SpellbookScanner(spellbook)
-                version_to_spell: Dict[str, ISpell] = {}
-                for spell_index, spell_instance in scanner.iter_spells():
-                    version_to_spell[spell_index.current] = spell_instance
-
                 validated_roots: Set[str] = set()
                 for root_id in dirty_roots:
-                    spell_instance = version_to_spell[root_id]
+                    spell_instance = spellbook._spell_id_pool[root_id]
                     crafter = spell_instance._crafter
                     crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
                     validated_roots.add(root_id)

@@ -49,7 +49,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         Purpose:
             Detect contract sockets that cannot be resolved or are ambiguous.
         Contract:
-            - Uses SpellbookScanner when available to enumerate providers.
+            - Uses the Spellbook's contracted spell maps when available to enumerate providers.
             - Respects system_state to distinguish automatic vs dynamic behavior.
             - Appends one issue per contract socket mismatch.
         Args:
@@ -72,7 +72,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
 
         spell = context.spell
         spellbook = context.spellbook
-        scanner = context.scanner
+        spellbook = context.spellbook
 
         system_state: Optional[SystemState] = None
         if spellbook is not None:
@@ -84,16 +84,17 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                 system_state = None
 
         provider_map: Dict[Tuple[str, str], List[str]] = {}
-        if scanner is not None:
-            for index, provider_spell in scanner.iter_contracted_spells():
-                if cancel_event is not None and cancel_event.is_set:
-                    cancel_event.throw_if_set()
-                key = SpellInputUtils.make_spell_key_from_parts(
-                    spellframe=provider_spell.spellframe,
-                    spell_name=provider_spell.spell_name,
-                    binding_name=provider_spell.binding_name,
-                )
-                provider_map.setdefault(key, []).append(index.current)
+        if spellbook is not None:
+            for contracted in spellbook._contracted_spells.values():
+                for index, provider_spell in contracted.items():
+                    if cancel_event is not None and cancel_event.is_set:
+                        cancel_event.throw_if_set()
+                    key = SpellInputUtils.make_spell_key_from_parts(
+                        spellframe=provider_spell.spellframe,
+                        spell_name=provider_spell.spell_name,
+                        binding_name=provider_spell.binding_name,
+                    )
+                    provider_map.setdefault(key, []).append(index.current)
 
         automatic_mode = system_state is SystemState.automatic
 

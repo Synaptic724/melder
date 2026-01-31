@@ -45,7 +45,6 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spe
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
-from melder.spellbook.spell_crafter.spellbook_scanner import SpellbookScanner
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
 )
@@ -229,7 +228,7 @@ class SpellValidationSystem(Cleanable):
             - Executes each strategy in registry order against the same context.
             - Appends all reported issues into the result in the order produced.
             - Automatically tags issues with the emitting strategy when missing.
-            - Always cleans the validation context (scanner, references) on exit.
+            - Always cleans the validation context (references) on exit.
         Args:
             spell: Spell instance to validate.
             requirements: Phase 1 requirements artifact, if available.
@@ -249,16 +248,7 @@ class SpellValidationSystem(Cleanable):
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
 
-        # Try to obtain the owning Spellbook without resorting to getattr.
-        spellbook: Optional[ISpellbook]
-        try:
-            spellbook = spell._spellbook
-        except AttributeError:
-            spellbook = None
-
-        scanner: Optional[SpellbookScanner] = None
-        if spellbook is not None:
-            scanner = SpellbookScanner(spellbook)
+        spellbook: Optional[ISpellbook] = spell._spellbook
 
         issues: List['SpellValidationIssue'] = []
 
@@ -268,7 +258,6 @@ class SpellValidationSystem(Cleanable):
             requirements=requirements,
             symbolic_graph=symbolic_graph,
             resolution_frame=resolution_frame,
-            scanner=scanner,
             cancel_event=cancel_event,
             issues=issues,
             cleanup_artifacts=False,
@@ -290,7 +279,7 @@ class SpellValidationSystem(Cleanable):
                         if isinstance(issue, SpellValidationIssue) and issue.source is None:
                             issue.source = source
         finally:
-            # Always tear down the context (scanner, references, etc.)
+            # Always tear down the context (references, etc.)
             try:
                 context.cleanup()
             except Exception:

@@ -68,8 +68,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             cancel_event.throw_if_set()
 
         spell = context.spell
-        scanner = context.scanner
-        if spell is None or scanner is None:
+        spellbook = context.spellbook
+        if spell is None or spellbook is None:
             return
 
         root_key = SpellInputUtils.make_spell_key_from_parts(
@@ -81,7 +81,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         binding_graph: Dict[Tuple[str, str], Set[Tuple[str, str]]] = {}
         binding_to_spells: Dict[Tuple[str, str], List[str]] = {}
 
-        for spell_index, spell_instance in scanner.iter_spells():
+        for spell_index, spell_instance in spellbook._spells.items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
@@ -93,25 +93,16 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             binding_to_spells.setdefault(spell_key, []).append(spell_index.current)
             binding_graph.setdefault(spell_key, set())
 
-            try:
-                crafter = spell_instance._crafter
-            except AttributeError:
-                crafter = None
-
+            crafter = spell_instance._crafter
             if crafter is None or crafter.requirements is None:
                 continue
 
             requirements = crafter.requirements
-            try:
-                if requirements.cleaned:
-                    continue
-            except AttributeError:
-                # Requirements stubs may omit cleaned; treat as active.
-                pass
+            if requirements.cleaned:
+                continue
             try:
                 parameters = requirements.parameters
             except RuntimeError:
-                # Requirements may have been cleaned concurrently; skip safely.
                 continue
 
             for param in parameters:
@@ -119,6 +110,37 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                 if target_key is None:
                     continue
                 binding_graph[spell_key].add(target_key)
+
+        for contracted in spellbook._contracted_spells.values():
+            for spell_index, spell_instance in contracted.items():
+                if cancel_event is not None and cancel_event.is_set:
+                    cancel_event.throw_if_set()
+
+                spell_key = SpellInputUtils.make_spell_key_from_parts(
+                    spellframe=spell_instance.spellframe,
+                    spell_name=spell_instance.spell_name,
+                    binding_name=spell_instance.binding_name,
+                )
+                binding_to_spells.setdefault(spell_key, []).append(spell_index.current)
+                binding_graph.setdefault(spell_key, set())
+
+                crafter = spell_instance._crafter
+                if crafter is None or crafter.requirements is None:
+                    continue
+
+                requirements = crafter.requirements
+                if requirements.cleaned:
+                    continue
+                try:
+                    parameters = requirements.parameters
+                except RuntimeError:
+                    continue
+
+                for param in parameters:
+                    target_key = self._binding_key_for_requirement(param)
+                    if target_key is None:
+                        continue
+                    binding_graph[spell_key].add(target_key)
 
         cycles = self._detect_cycles(root_key, binding_graph, cancel_event)
         if not cycles:

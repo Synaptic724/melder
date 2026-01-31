@@ -31,18 +31,17 @@ class CircularDependencyStrategy(SpellValidationStrategy):
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
 
-        scanner = context.scanner
-        if scanner is None:
+        spellbook = context.spellbook
+        if spellbook is None:
             # Without a Spellbook, we cannot reason about global cycles.
             return
 
         # Build adjacency: version_id -> [dependency_ids...]
         adjacency: Dict[str, List[str]] = {}
-        for index, spell in scanner.iter_all_spells():
+        for spell_id, spell in spellbook._spell_id_pool.items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
-            spell_id = index.current
             deps: List[str] = getattr(spell, "dependencies", [])
             adjacency[spell_id] = list(deps) if deps else []
 

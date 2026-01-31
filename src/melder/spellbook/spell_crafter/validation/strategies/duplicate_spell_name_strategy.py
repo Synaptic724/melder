@@ -39,10 +39,10 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
             cancel_event.throw_if_set()
 
         spell = context.spell
-        scanner = context.scanner
+        spellbook = context.spellbook
 
-        # If we don't have a spell or a scanner, we can't do any global checks.
-        if spell is None or scanner is None:
+        # If we don't have a spell or a spellbook, we can't do any global checks.
+        if spell is None or spellbook is None:
             return
 
         spell_name = getattr(spell, "spell_name", None)
@@ -50,25 +50,13 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
             # Nothing to check if this spell has no name.
             return
 
-        # Find all visible spells (local + contracted) that share this spell_name.
-        matches = scanner.find_by_spell_name(
-            spell_name=spell_name,
-            include_contracted=True,
-        )
-
-        # If this spell is the only one with that name, we're fine.
-        if not matches or len(matches) <= 1:
-            return
-
         # Build a collision list for diagnostics.
-        # Note: matches is Dict[ISpellIndex, ISpell]
         collisions: List[Dict[str, Any]] = []
-        for index, other_spell in matches.items():
-            try:
-                spell_id = index.current
-            except Exception:
-                spell_id = None
-
+        for other_spell in spellbook._spell_id_pool.values():
+            if other_spell.spell_name != spell_name:
+                continue
+            index = other_spell.spell_index
+            spell_id = index.current
             collisions.append(
                 {
                     "spell_index_id": getattr(index, "id", None),
@@ -77,6 +65,10 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
                     "binding_name": getattr(other_spell, "binding_name", None),
                 }
             )
+
+        # If this spell is the only one with that name, we're fine.
+        if len(collisions) <= 1:
+            return
 
         context.issues.append(
             SpellValidationIssue(
@@ -91,7 +83,7 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
                 ),
                 details={
                     "spell_name": spell_name,
-                    "collision_count": len(matches),
+                    "collision_count": len(collisions),
                     "collisions": collisions,
                 },
             )

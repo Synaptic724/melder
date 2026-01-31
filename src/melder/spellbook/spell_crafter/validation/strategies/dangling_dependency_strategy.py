@@ -1,17 +1,16 @@
-from typing import List, Dict
+from typing import List
 
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import SpellValidationIssue
 from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import SpellValidationStrategy
-from melder.utilities.interfaces.interfaces import ISpell
 
 
 class DanglingDependenciesStrategy(SpellValidationStrategy):
     """
     Verify that all dependency spell_ids attached to a spell actually exist.
 
-    This runs at the **Spellbook** level via :class:`SpellbookScanner` and
-    ensures that every id in ``spell.dependencies`` resolves to a visible
-    spell in the owning Spellbook.
+    This runs at the **Spellbook** level using the Spellbook's live
+    spell_id_pool map and ensures that every id in ``spell.dependencies``
+    resolves to a visible spell in the owning Spellbook.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -34,8 +33,8 @@ class DanglingDependenciesStrategy(SpellValidationStrategy):
         if not deps:
             return
 
-        scanner = context.scanner
-        if scanner is None:
+        spellbook = context.spellbook
+        if spellbook is None:
             # We can't validate existence without a Spellbook – warn and bail.
             context.issues.append(
                 SpellValidationIssue(
@@ -50,18 +49,11 @@ class DanglingDependenciesStrategy(SpellValidationStrategy):
             )
             return
 
-        # Map current version ids -> spells.
-        id_to_spell: Dict[str, ISpell] = {}
-        for index, candidate in scanner.iter_all_spells():
-            current_id = index.current
-            if current_id not in id_to_spell:
-                id_to_spell[current_id] = candidate
-
         for dep_id in deps:
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
-            if dep_id not in id_to_spell:
+            if dep_id not in spellbook._spell_id_pool:
                 context.issues.append(
                     SpellValidationIssue(
                         severity="error",
