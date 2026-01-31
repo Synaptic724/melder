@@ -1,4 +1,4 @@
-from typing import Dict, List, Mapping, Optional, Set
+from typing import Dict, List, Mapping, Optional, Set, Tuple
 # Melder imports
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -69,15 +69,36 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
 
             sockets = blueprint.socket_refs
             seen: Set[SocketRef] = set()
-            duplicate_found = False
+            index_by_path: Dict[Tuple[str, ...], Set[SocketRef]] = {}
+            index_by_name: Dict[str, Set[SocketRef]] = {}
+            indexed_sockets: Set[SocketRef] = set()
+
+            dag_index = blueprint.dag_index
+            for sockets_for_path in dag_index._by_exact_path.values():
+                for indexed in sockets_for_path:
+                    indexed_sockets.add(indexed)
+                    path_bucket = index_by_path.get(indexed.param_path)
+                    if path_bucket is None:
+                        path_bucket = set()
+                        index_by_path[indexed.param_path] = path_bucket
+                    path_bucket.add(indexed)
+
+            for sockets_for_name in dag_index._by_name.values():
+                for indexed in sockets_for_name:
+                    indexed_sockets.add(indexed)
+                    name_bucket = index_by_name.get(indexed.param_name)
+                    if name_bucket is None:
+                        name_bucket = set()
+                        index_by_name[indexed.param_name] = name_bucket
+                    name_bucket.add(indexed)
 
             for ref in sockets:
+                path_str = ">".join(ref.param_path)
                 if ref in seen:
-                    duplicate_found = True
                     diagnostics.append(
                         SystemDiagnostic(
                             code="socket_ref_duplicate",
-                            message=f"Duplicate SocketRef detected on root '{root_id}' for path '{'>'.join(ref.param_path)}'.",
+                            message=f"Duplicate SocketRef detected on root '{root_id}' for path '{path_str}'.",
                             severity=SystemDiagnosticSeverity.ERROR,
                             spell_id=ref.node_id,
                             root_id=root_id,
@@ -87,20 +108,20 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
                 seen.add(ref)
 
                 # Validate index contains this socket by path and name
-                by_path = blueprint.dag_index.get_by_exact_path(ref.param_path)
-                if ref not in by_path:
+                by_path = index_by_path.get(ref.param_path)
+                if not by_path or ref not in by_path:
                     diagnostics.append(
                         SystemDiagnostic(
                             code="socket_ref_missing_in_index",
-                            message=f"SocketRef '{'>'.join(ref.param_path)}' missing from DagIndex for root '{root_id}'.",
+                            message=f"SocketRef '{path_str}' missing from DagIndex for root '{root_id}'.",
                             severity=SystemDiagnosticSeverity.ERROR,
                             spell_id=ref.node_id,
                             root_id=root_id,
                             details={"param_path": ref.param_path, "param_name": ref.param_name},
                         )
                     )
-                by_name = blueprint.dag_index.get_by_name(ref.param_name)
-                if ref not in by_name:
+                by_name = index_by_name.get(ref.param_name)
+                if not by_name or ref not in by_name:
                     diagnostics.append(
                         SystemDiagnostic(
                             code="socket_ref_missing_in_index_name",
@@ -113,7 +134,7 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
                     )
 
             # Validate index entries correspond to socket_refs
-            for indexed in blueprint.dag_index.iter_all_sockets():
+            for indexed in indexed_sockets:
                 if indexed not in seen:
                     diagnostics.append(
                         SystemDiagnostic(

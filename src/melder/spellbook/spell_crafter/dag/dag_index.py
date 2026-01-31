@@ -77,8 +77,17 @@ class DagIndex(Cleanable):
         Add a socket reference to the index.
         """
         key = self._path_key(socket.param_path)
-        self._by_exact_path.setdefault(key, []).append(socket)
-        self._by_name.setdefault(socket.param_name, []).append(socket)
+        sockets_by_path = self._by_exact_path.get(key)
+        if sockets_by_path is None:
+            sockets_by_path = []
+            self._by_exact_path[key] = sockets_by_path
+        sockets_by_path.append(socket)
+
+        sockets_by_name = self._by_name.get(socket.param_name)
+        if sockets_by_name is None:
+            sockets_by_name = []
+            self._by_name[socket.param_name] = sockets_by_name
+        sockets_by_name.append(socket)
 
     def get_by_exact_path(self, path: Sequence[str]) -> List[SocketRef]:
         """
