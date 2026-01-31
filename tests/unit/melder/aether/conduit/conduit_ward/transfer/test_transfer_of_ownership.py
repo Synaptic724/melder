@@ -124,6 +124,7 @@ class FakeSpellStatesSystem:
             change_reason=SpellStateChangeReason.new_lineage,
         )
 
+
     def mark_structural_change(
         self,
         *,

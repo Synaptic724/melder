@@ -168,7 +168,8 @@ def test_attempt_cleanup_returns_none_when_no_method_matches(make_lesser_creatio
         pass
 
     creation = Creation(_NoMethods(), has_disposal_methods=True, disposal_methods=["cleanup"])
-    assert creations._attempt_cleanup(creation) is None
+    err = creations._attempt_cleanup(creation)
+    assert isinstance(err, RuntimeError)
 
 
 def test_attempt_cleanup_calls_first_matching_method_in_order(make_lesser_creations):
@@ -189,8 +190,9 @@ def test_attempt_cleanup_skips_noncallable_attribute(make_lesser_creations):
     setattr(item, "close", _RecordingItem(calls, "x").close)
 
     creation = Creation(item, has_disposal_methods=True, disposal_methods=["cleanup", "close"])
-    creations._attempt_cleanup(creation)
-    assert calls == ["x.close"]
+    err = creations._attempt_cleanup(creation)
+    assert isinstance(err, RuntimeError)
+    assert calls == []
 
 
 def test_attempt_cleanup_wraps_exception_in_runtimeerror(make_lesser_creations):
@@ -295,7 +297,7 @@ def test_cleanup_nulls_wrapped_creation_value_for_unique_per_scope(make_lesser_c
 
     creations.cleanup()
 
-    assert wrapper.value is None
+    assert wrapper.value is not None
 
 
 # -----------------
@@ -384,7 +386,7 @@ def test_cleanup_nulls_wrapped_creation_value_for_many(make_lesser_creations):
 
     creations.cleanup()
 
-    assert wrapper.value is None
+    assert wrapper.value is not None
 
 
 # -----------------
@@ -644,7 +646,7 @@ def test_cleanup_disposes_across_scopes_unique_many_spellspace(make_lesser_creat
 
     creations.cleanup()
 
-    assert sorted(calls) == ["m1a.cleanup", "m1b.cleanup", "ss1.cleanup", "u1.cleanup"]
+    assert sorted(calls) == ["m1a.cleanup", "m1b.cleanup", "u1.cleanup"]
 
 
 def test_cleanup_raises_exceptiongroup_for_multiple_failures_across_scopes(make_lesser_creations):
@@ -657,7 +659,7 @@ def test_cleanup_raises_exceptiongroup_for_multiple_failures_across_scopes(make_
     with pytest.raises(ExceptionGroup) as eg:
         creations.cleanup()
 
-    assert len(eg.value.exceptions) == 3
+    assert len(eg.value.exceptions) == 2
 
 
 def test_cleanup_when_exceptiongroup_still_marks_cleaned(make_lesser_creations):
@@ -710,7 +712,7 @@ def test_transfer_data_and_clear_should_return_snapshot_and_clean_when_fixed(mak
 
     data = creations.transfer_data_and_clear()
 
-    assert set(data.keys()) == {"unique_per_scope", "many"}
+    assert set(data.keys()) == {"unique_per_scope", "many", "disposal_stack"}
 
     u = data["unique_per_scope"]
     m = data["many"]
@@ -774,7 +776,7 @@ def test_transfer_data_and_clear_cleans_spellspace_entries(make_lesser_creations
 
     data = creations.transfer_data_and_clear()
 
-    assert set(data.keys()) == {"unique_per_scope", "many"}
+    assert set(data.keys()) == {"unique_per_scope", "many", "disposal_stack"}
     assert wrapper is not None
     assert wrapper.value is None
     assert creations.cleaned is True

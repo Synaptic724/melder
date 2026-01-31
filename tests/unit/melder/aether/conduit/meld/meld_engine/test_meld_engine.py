@@ -491,7 +491,6 @@ def _make_engine(
         override_map=override_map or {},
         spell_lookup=spell_lookup or {},
         system_states=system_states,
-        occurrence_plan=occurrence_plan,
     )
     return engine, root_spell, frame
 
