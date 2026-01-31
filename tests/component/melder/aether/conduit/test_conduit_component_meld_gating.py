@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+
 import pytest
 
 from melder.aether.aether import Aether
@@ -169,3 +171,88 @@ def test_component_conduit_meld_blocks_disabled_system_state() -> None:
             conduit.meld(spell=spell_id)
     finally:
         conduit.cleanup()
+
+
+def test_component_conduit_meld_gate_blocks_until_enabled() -> None:
+    """
+    Purpose:
+        Validate MeldGate blocks melds until re-enabled.
+    Contract:
+        - disable_meld() blocks new meld calls.
+        - enable_meld() releases blocked meld calls.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If meld does not block or does not resume after enable.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        conduit.disable_meld()
+        started = threading.Event()
+        finished = threading.Event()
+        result: dict[str, object] = {}
+
+        def _worker() -> None:
+            started.set()
+            result["value"] = conduit.meld(spell=spell_id)
+            finished.set()
+
+        thread = threading.Thread(target=_worker, daemon=True)
+        thread.start()
+        assert started.wait(0.5) is True
+        assert finished.wait(0.05) is False
+
+        conduit.enable_meld()
+        assert finished.wait(0.5) is True
+        assert isinstance(result["value"], BasicService)
+    finally:
+        conduit.cleanup()
+
+
+def test_component_conduit_meld_gate_shared_with_lesser() -> None:
+    """
+    Purpose:
+        Validate a lesser conduit shares the parent MeldGate.
+    Contract:
+        - Disabling meld on the root blocks melds on its lesser conduit.
+        - Enabling meld on the root releases the lesser.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the MeldGate is not shared across the lineage.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    root = spellbook.conjure(name="root")
+    lesser = root.create_lesser_conduit()
+    try:
+        root.disable_meld()
+        started = threading.Event()
+        finished = threading.Event()
+        result: dict[str, object] = {}
+
+        def _worker() -> None:
+            started.set()
+            result["value"] = lesser.meld(spell=spell_id)
+            finished.set()
+
+        thread = threading.Thread(target=_worker, daemon=True)
+        thread.start()
+        assert started.wait(0.5) is True
+        assert finished.wait(0.05) is False
+
+        root.enable_meld()
+        assert finished.wait(0.5) is True
+        assert isinstance(result["value"], BasicService)
+    finally:
+        root.cleanup()

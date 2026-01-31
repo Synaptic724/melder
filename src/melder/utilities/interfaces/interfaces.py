@@ -3558,6 +3558,7 @@ class IConduit(ICleanable, Protocol):
     _creations: 'Creations | LesserCreations'
     _spellbook: 'ISpellbook'
     _meld: 'Meld'
+    _meld_gate: 'MeldGate'
 
     _conduit_ward: 'ConduitWard'
 
@@ -6857,6 +6858,33 @@ class ISpellSystemStates(ICleanable, Protocol):
           SpellStateChangeReason.register_or_rebind and add it to the dirty set.
 
         This is intended to be called from Spellbook.bind(...) or equivalent.
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    # Meld Gate Control
+    # ------------------------------------------------------------------
+    def enable_meld(self) -> None:
+        """
+        Public API
+
+        Enable meld execution for this conduit lineage.
+
+        Contract:
+            - Delegates to the shared MeldGate for this conduit tree.
+            - Applies to this conduit and all lesser conduits that share the gate.
+        """
+        ...
+
+    def disable_meld(self) -> None:
+        """
+        Public API
+
+        Disable meld execution for this conduit lineage.
+
+        Contract:
+            - Delegates to the shared MeldGate for this conduit tree.
+            - Applies to this conduit and all lesser conduits that share the gate.
         """
         ...
 

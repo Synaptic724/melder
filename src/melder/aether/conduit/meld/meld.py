@@ -1330,6 +1330,14 @@ class Meld(Cleanable, IMeld):
         """
         creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
+        if creations is None and existence in (
+                Existence.unique_per_conduit,
+                Existence.unique_per_spell_space,
+                Existence.many,
+        ):
+            raise RuntimeError(
+                "[MELD] Caller creations are required for per-conduit existences."
+            )
         instance: Any = None
         created = False
 
@@ -1341,8 +1349,9 @@ class Meld(Cleanable, IMeld):
             )
             if not spell.has_disposal_methods:
                 return instance, True
-            with creations._lock:
-                self._register_spell(spell, instance, creations)
+            if spell.is_existing_creation and creations is not None:
+                with creations._lock:
+                    self._register_spell(spell, instance, creations)
             return instance, True
 
         if existence in (
@@ -1357,7 +1366,8 @@ class Meld(Cleanable, IMeld):
                         overrides,
                         caller_creations_lock_held=True,
                     )
-                    self._register_spell(spell, instance, creations)
+                    if spell.is_existing_creation:
+                        self._register_spell(spell, instance, creations)
                     created = True
                 else:
                     self._raise_override_on_existing_instance(
@@ -1379,8 +1389,9 @@ class Meld(Cleanable, IMeld):
                     overrides,
                     caller_creations_lock_held=False,
                 )
-                with creations._lock:
-                    self._register_spell(spell, instance, creations)
+                if spell.is_existing_creation and creations is not None:
+                    with creations._lock:
+                        self._register_spell(spell, instance, creations)
                 created = True
             else:
                 self._raise_override_on_existing_instance(
