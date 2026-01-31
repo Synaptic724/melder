@@ -42,7 +42,7 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
             return
 
         # Frame exists but dependency graph is missing – suspicious but not fatal.
-        if getattr(spell, "dependency_graph", None) is None:
+        if spell.dependency_graph is None:
             context.issues.append(
                 SpellValidationIssue(
                     severity="warning",

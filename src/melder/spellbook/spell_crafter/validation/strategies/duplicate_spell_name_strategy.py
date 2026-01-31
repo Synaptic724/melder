@@ -45,24 +45,23 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
         if spell is None or spellbook is None:
             return
 
-        spell_name = getattr(spell, "spell_name", None)
+        spell_name = spell.spell_name
         if not spell_name:
             # Nothing to check if this spell has no name.
             return
 
         # Build a collision list for diagnostics.
         collisions: List[Dict[str, Any]] = []
-        for other_spell in spellbook._spell_id_pool.values():
+        for spell_id, other_spell in spellbook._spell_id_pool.items():
             if other_spell.spell_name != spell_name:
                 continue
             index = other_spell.spell_index
-            spell_id = index.current
             collisions.append(
                 {
-                    "spell_index_id": getattr(index, "id", None),
+                    "spell_index_id": index.id,
                     "spell_id": spell_id,
-                    "spellframe": getattr(other_spell, "spellframe", None),
-                    "binding_name": getattr(other_spell, "binding_name", None),
+                    "spellframe": other_spell.spellframe,
+                    "binding_name": other_spell.binding_name,
                 }
             )
 

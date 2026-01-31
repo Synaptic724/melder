@@ -281,7 +281,7 @@ class _SpellbookStub:
     Purpose:
         Provide a spellbook stub with validator and change control access.
     Contract:
-        Exposes _spell_validator, _aether, and _aetheric_frame attributes.
+        Exposes _spell_validator, _aether, _aetheric_frame, and _spell_id_pool.
     """
 
     def __init__(
@@ -308,6 +308,7 @@ class _SpellbookStub:
         self._aetheric_frame = frame_name
         self._spells: dict[object, object] = {}
         self._contracted_spells: dict[str, dict[object, object]] = {}
+        self._spell_id_pool: dict[str, object] = {}
 
     @property
     def spells(self) -> dict[object, object]:
@@ -592,89 +593,6 @@ class _CancelStub:
         self.throw_calls += 1
         if self._is_set:
             raise RuntimeError("cancelled")
-
-
-class _SpellbookScannerStub:
-    """
-    Purpose:
-        Provide a SpellbookScanner stub with configurable outputs.
-    Contract:
-        Uses class-level fixtures to serve iteration and lookup data.
-    """
-
-    iter_all_spells_data: list[tuple[object, object]] = []
-    iter_spells_data: list[tuple[object, object]] = []
-    find_by_frame_and_binding_result: dict[object, object] | None = None
-    created: list["_SpellbookScannerStub"] = []
-
-    def __init__(self, spellbook: object) -> None:
-        """
-        Purpose:
-            Record scanner construction for testing.
-        Contract:
-            Stores the spellbook and appends to created list.
-        Args:
-            spellbook: Spellbook instance passed to the scanner.
-        Returns:
-            None.
-        """
-        self.spellbook = spellbook
-        self.cleanup_calls = 0
-        _SpellbookScannerStub.created.append(self)
-
-    def iter_all_spells(self) -> Iterable[tuple[object, object]]:
-        """
-        Purpose:
-            Yield all spells for dependency resolution.
-        Contract:
-            Returns the configured iter_all_spells_data list.
-        Returns:
-            Iterable[tuple[object, object]]: Index/spell pairs.
-        """
-        return list(self.iter_all_spells_data)
-
-    def iter_spells(self) -> Iterable[tuple[object, object]]:
-        """
-        Purpose:
-            Yield spell instances for system-level validation.
-        Contract:
-            Returns the configured iter_spells_data list.
-        Returns:
-            Iterable[tuple[object, object]]: Index/spell pairs.
-        """
-        return list(self.iter_spells_data)
-
-    def find_by_frame_and_binding(
-        self,
-        spellframe: object,
-        binding_name: str | None,
-        *,
-        include_contracted: bool,
-    ) -> dict[object, object] | None:
-        """
-        Purpose:
-            Return configured frame/binding lookup results.
-        Contract:
-            Ignores inputs and returns the configured mapping.
-        Args:
-            spellframe: Frame used for lookup.
-            binding_name: Binding name used for lookup.
-            include_contracted: Whether contracted spellbooks are included.
-        Returns:
-            dict[object, object] | None: Lookup results mapping.
-        """
-        return self.find_by_frame_and_binding_result
-
-    def cleanup(self) -> None:
-        """
-        Purpose:
-            Record cleanup calls for verification.
-        Contract:
-            Increments cleanup_calls on each invocation.
-        Returns:
-            None.
-        """
-        self.cleanup_calls += 1
 
 
 class _RequirementsFinderStub:
@@ -1157,7 +1075,8 @@ def _build_spell_and_crafter(
         Build a SpellCrafter with explicit components for assertions.
     Contract:
         Returns a crafter with a stub spellbook, validator, and spell wired
-        together, and sets spell._crafter on the returned spell.
+        together, registers the spell in the spell_id_pool, and sets
+        spell._crafter on the returned spell.
     Args:
         spell_id: Spell id for the stub spell.
         spell_name: Spell name for the stub spell.
@@ -1185,9 +1104,27 @@ def _build_spell_and_crafter(
         dependency_graph=dependency_graph,
     )
     spellbook._spells[spell.spell_index] = spell
+    spellbook._spell_id_pool[spell.spell_index.current] = spell
     crafter = SpellCrafter(spell)
     spell._crafter = crafter
     return crafter, spell, validator
+
+
+def _set_spell_id_pool(spellbook: _SpellbookStub, spells: Sequence[_SpellStub]) -> None:
+    """
+    Purpose:
+        Reset the Spellbook stub's spell_id_pool to a known spell set.
+    Contract:
+        Clears the live pool and re-inserts spells in the provided order.
+    Args:
+        spellbook: Spellbook stub whose pool should be updated.
+        spells: Spells to insert into the pool.
+    Returns:
+        None.
+    """
+    spellbook._spell_id_pool.clear()
+    for spell in spells:
+        spellbook._spell_id_pool[spell.spell_index.current] = spell
 
 
 def _make_dependency(
@@ -1261,10 +1198,6 @@ def _reset_stub_state() -> None:
     Returns:
         None.
     """
-    _SpellbookScannerStub.iter_all_spells_data = []
-    _SpellbookScannerStub.iter_spells_data = []
-    _SpellbookScannerStub.find_by_frame_and_binding_result = {}
-    _SpellbookScannerStub.created.clear()
     _RequirementsFinderStub.requirements = None
     _RequirementsFinderStub.calls.clear()
     _DagStub.last_instance = None
@@ -1467,7 +1400,6 @@ def test_init_sets_default_state() -> None:
     assert crafter.is_broken is False
     assert crafter._spell_validator is validator
     assert crafter._spell_system_states is None
-    assert crafter._spellbook_scanner is not None
     assert crafter._lock is not None
 
 
@@ -1491,7 +1423,6 @@ def test_cleanup_calls_cleanup_on_artifacts() -> None:
     root_blueprint = _RootBlueprintStub("root")
     system_index = _CleanableStub()
     dag_blueprint = _RootBlueprintStub("dag")
-    scanner = _SpellbookScannerStub(spell._spellbook)
 
     crafter._requirements = requirements
     crafter._symbolic_graph = symbolic
@@ -1501,7 +1432,6 @@ def test_cleanup_calls_cleanup_on_artifacts() -> None:
     crafter._root_blueprint_phase5 = root_blueprint
     crafter._spell_system_index_phase5 = system_index
     crafter._entire_dag_blueprint_phase5 = {"root": dag_blueprint}
-    crafter._spellbook_scanner = scanner
 
     crafter.cleanup()
 
@@ -1513,7 +1443,6 @@ def test_cleanup_calls_cleanup_on_artifacts() -> None:
     assert root_blueprint.cleanup_calls == 1
     assert system_index.cleanup_calls == 1
     assert dag_blueprint.cleanup_calls == 1
-    assert scanner.cleanup_calls == 1
 
 
 def test_cleanup_swallow_exceptions() -> None:
@@ -1531,12 +1460,10 @@ def test_cleanup_swallow_exceptions() -> None:
     requirements = _CleanableStub(raise_on_cleanup=True)
     root_blueprint = _RootBlueprintStub("root", raise_on_cleanup=True)
     dag_blueprint = _RootBlueprintStub("dag", raise_on_cleanup=True)
-    scanner = _SpellbookScannerStub(spell._spellbook)
 
     crafter._requirements = requirements
     crafter._root_blueprint_phase5 = root_blueprint
     crafter._entire_dag_blueprint_phase5 = {"root": dag_blueprint}
-    crafter._spellbook_scanner = scanner
 
     crafter.cleanup()
 
@@ -1544,7 +1471,6 @@ def test_cleanup_swallow_exceptions() -> None:
     assert requirements.cleanup_calls == 1
     assert root_blueprint.cleanup_calls == 1
     assert dag_blueprint.cleanup_calls == 1
-    assert scanner.cleanup_calls == 1
 
 
 def test_cleanup_idempotent() -> None:
@@ -1589,7 +1515,6 @@ def test_cleanup_clears_references() -> None:
     crafter._root_blueprint_phase5 = _RootBlueprintStub("root")
     crafter._spell_system_index_phase5 = _CleanableStub()
     crafter._entire_dag_blueprint_phase5 = {"root": _RootBlueprintStub("root")}
-    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     crafter.cleanup()
 
@@ -1601,7 +1526,6 @@ def test_cleanup_clears_references() -> None:
     assert crafter._root_blueprint_phase5 is None
     assert crafter._spell_system_index_phase5 is None
     assert crafter._entire_dag_blueprint_phase5 is None
-    assert crafter._spellbook_scanner is None
     assert crafter._spell_system_states is None
     assert crafter._spell is None
     assert crafter._spell_validator is None
@@ -1899,22 +1823,36 @@ def test_clear_phase5_artifacts() -> None:
 def test_iter_all_spells_proxy() -> None:
     """
     Purpose:
-        Verify _iter_all_spells proxies to the scanner iterator.
+        Verify _iter_all_spells walks the live spell_id_pool.
     Contract:
-        The helper returns the same sequence produced by the scanner.
+        The helper yields the spell_index/spell pairs in pool insertion order.
     Returns:
         None.
     Raises:
-        AssertionError: If the returned sequence differs from the scanner output.
+        AssertionError: If the returned sequence differs from the pool contents.
     """
     crafter, spell, _ = _build_spell_and_crafter()
-    scanner = _SpellbookScannerStub(spell._spellbook)
-    expected = [("idx", "spell")]
-    _SpellbookScannerStub.iter_all_spells_data = list(expected)
+    spellbook = spell._spellbook
+    first = _SpellStub(
+        spell_id="first",
+        spell_name="first",
+        spellbook=spellbook,
+    )
+    second = _SpellStub(
+        spell_id="second",
+        spell_name="second",
+        spellbook=spellbook,
+    )
+    spellbook._spell_id_pool.clear()
+    spellbook._spell_id_pool[first.spell_index.current] = first
+    spellbook._spell_id_pool[second.spell_index.current] = second
 
-    result = list(crafter._iter_all_spells(scanner))
+    result = list(crafter._iter_all_spells())
 
-    assert result == expected
+    assert result == [
+        (first.spell_index, first),
+        (second.spell_index, second),
+    ]
 
 
 @pytest.mark.parametrize(
@@ -2058,7 +1996,6 @@ def test_resolve_single_by_annotation_no_candidates(method_only: bool) -> None:
         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
         target_annotation=annotation,
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
 
     if method_only:
         method_spell = _SpellStub(
@@ -2068,12 +2005,10 @@ def test_resolve_single_by_annotation_no_candidates(method_only: bool) -> None:
             spell=annotation,
             spellbook=spell._spellbook,
         )
-        _SpellbookScannerStub.iter_all_spells_data = [
-            (_SpellIndexStub("method"), method_spell)
-        ]
+        _set_spell_id_pool(spell._spellbook, [method_spell])
 
     with pytest.raises(RuntimeError, match="no DI candidate"):
-        crafter._resolve_single_by_annotation(scanner, dep)
+        crafter._resolve_single_by_annotation(dep)
 
 
 def test_resolve_single_by_annotation_multiple_candidates() -> None:
@@ -2096,7 +2031,6 @@ def test_resolve_single_by_annotation_multiple_candidates() -> None:
         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
         target_annotation=annotation,
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
 
     first_spell = _SpellStub(
         spell_id="one",
@@ -2113,13 +2047,10 @@ def test_resolve_single_by_annotation_multiple_candidates() -> None:
         spellbook=spell._spellbook,
     )
 
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (_SpellIndexStub("one"), first_spell),
-        (_SpellIndexStub("two"), second_spell),
-    ]
+    _set_spell_id_pool(spell._spellbook, [first_spell, second_spell])
 
     with pytest.raises(RuntimeError, match="multiple DI candidates"):
-        crafter._resolve_single_by_annotation(scanner, dep)
+        crafter._resolve_single_by_annotation(dep)
 
 
 def test_resolve_single_by_annotation_success() -> None:
@@ -2142,7 +2073,6 @@ def test_resolve_single_by_annotation_success() -> None:
         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
         target_annotation=annotation,
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
 
     candidate = _SpellStub(
         spell_id="cand",
@@ -2151,11 +2081,9 @@ def test_resolve_single_by_annotation_success() -> None:
         spell=annotation,
         spellbook=spell._spellbook,
     )
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (_SpellIndexStub("cand"), candidate)
-    ]
+    _set_spell_id_pool(spell._spellbook, [candidate])
 
-    result = crafter._resolve_single_by_annotation(scanner, dep)
+    result = crafter._resolve_single_by_annotation(dep)
 
     assert list(result.values()) == [candidate]
 
@@ -2181,9 +2109,9 @@ def test_resolve_collection_by_annotation_empty_returns_empty() -> None:
         target_annotation=annotation,
         is_collection=True,
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
+    _set_spell_id_pool(spell._spellbook, [])
 
-    result = crafter._resolve_collection_by_annotation(scanner, dep)
+    result = crafter._resolve_collection_by_annotation(dep)
 
     assert result == {}
 
@@ -2209,7 +2137,6 @@ def test_resolve_collection_by_annotation_includes_method_spells() -> None:
         target_annotation=annotation,
         is_collection=True,
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
 
     class_spell = _SpellStub(
         spell_id="class",
@@ -2226,12 +2153,9 @@ def test_resolve_collection_by_annotation_includes_method_spells() -> None:
         spellbook=spell._spellbook,
     )
 
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (_SpellIndexStub("class"), class_spell),
-        (_SpellIndexStub("method"), method_spell),
-    ]
+    _set_spell_id_pool(spell._spellbook, [class_spell, method_spell])
 
-    result = crafter._resolve_collection_by_annotation(scanner, dep)
+    result = crafter._resolve_collection_by_annotation(dep)
 
     assert set(result.values()) == {class_spell, method_spell}
 
@@ -2241,12 +2165,11 @@ def test_resolve_spellmap_default_none_returns_empty() -> None:
     Purpose:
         Ensure SpellMap defaults are optional when not provided.
     Contract:
-        _resolve_spellmap_default returns an empty mapping and does not
-        consult the scanner when spellmap_default is None.
+        _resolve_spellmap_default returns an empty mapping when spellmap_default is None.
     Returns:
         None.
     Raises:
-        AssertionError: If scanner access occurs or a mapping is returned.
+        AssertionError: If a mapping is returned.
     """
     crafter, spell, _ = _build_spell_and_crafter()
     dep = _make_dependency(
@@ -2256,29 +2179,7 @@ def test_resolve_spellmap_default_none_returns_empty() -> None:
         di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
         spellmap_default=None,
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
-
-    def _unexpected_call(*args: object, **kwargs: object) -> None:
-        """
-        Purpose:
-            Fail the test if the scanner is touched.
-        Contract:
-            Raises AssertionError on any invocation.
-        Args:
-            *args: Positional arguments (unused).
-            **kwargs: Keyword arguments (unused).
-        Returns:
-            None.
-        Raises:
-            AssertionError: Always, to flag unexpected access.
-        """
-        raise AssertionError("scanner should not be used when spellmap_default is None.")
-
-    scanner.iter_all_spells = _unexpected_call
-    scanner.find_by_frame_and_binding = _unexpected_call
-    scanner.iter_spells = _unexpected_call
-
-    result = crafter._resolve_spellmap_default(scanner, dep)
+    result = crafter._resolve_spellmap_default(dep)
 
     assert result == {}
 
@@ -2308,7 +2209,6 @@ def test_resolve_spellmap_default_explicit_spell_success() -> None:
             binding_name="bind",
         ),
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
 
     candidate = _SpellStub(
         spell_id="cand",
@@ -2319,11 +2219,9 @@ def test_resolve_spellmap_default_explicit_spell_success() -> None:
         binding_name="bind",
         spellbook=spell._spellbook,
     )
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (_SpellIndexStub("cand"), candidate)
-    ]
+    _set_spell_id_pool(spell._spellbook, [candidate])
 
-    result = crafter._resolve_spellmap_default(scanner, dep)
+    result = crafter._resolve_spellmap_default(dep)
 
     assert list(result.values()) == [candidate]
 
@@ -2352,7 +2250,6 @@ def test_resolve_spellmap_default_explicit_spell_mismatch_raises() -> None:
             binding_name="bind",
         ),
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
 
     candidate = _SpellStub(
         spell_id="cand",
@@ -2363,12 +2260,10 @@ def test_resolve_spellmap_default_explicit_spell_mismatch_raises() -> None:
         binding_name="other",
         spellbook=spell._spellbook,
     )
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (_SpellIndexStub("cand"), candidate)
-    ]
+    _set_spell_id_pool(spell._spellbook, [candidate])
 
     with pytest.raises(RuntimeError, match="SpellMap default could not be resolved"):
-        crafter._resolve_spellmap_default(scanner, dep)
+        crafter._resolve_spellmap_default(dep)
 
 
 def test_resolve_spellmap_default_explicit_spell_multiple_raises() -> None:
@@ -2395,7 +2290,6 @@ def test_resolve_spellmap_default_explicit_spell_multiple_raises() -> None:
             binding_name=None,
         ),
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
 
     first = _SpellStub(
         spell_id="one",
@@ -2412,13 +2306,10 @@ def test_resolve_spellmap_default_explicit_spell_multiple_raises() -> None:
         spellbook=spell._spellbook,
     )
 
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (_SpellIndexStub("one"), first),
-        (_SpellIndexStub("two"), second),
-    ]
+    _set_spell_id_pool(spell._spellbook, [first, second])
 
     with pytest.raises(RuntimeError, match="multiple candidates"):
-        crafter._resolve_spellmap_default(scanner, dep)
+        crafter._resolve_spellmap_default(dep)
 
 
 def test_resolve_spellmap_default_frame_binding_success() -> None:
@@ -2426,7 +2317,7 @@ def test_resolve_spellmap_default_frame_binding_success() -> None:
     Purpose:
         Verify SpellMap defaults resolve via frame and binding lookups.
     Contract:
-        The scanner mapping is returned when exactly one candidate exists.
+        The pool match is returned when exactly one candidate exists.
     Returns:
         None.
     Raises:
@@ -2444,20 +2335,20 @@ def test_resolve_spellmap_default_frame_binding_success() -> None:
             binding_name="bind",
         ),
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
+    frame = dep.spellmap_default.spellframe
 
     candidate = _SpellStub(
         spell_id="cand",
         spell_name="cand",
         spell_type=SpellType.SPELL,
         spell=object(),
+        spellframe=frame,
+        binding_name="bind",
         spellbook=spell._spellbook,
     )
-    _SpellbookScannerStub.find_by_frame_and_binding_result = {
-        _SpellIndexStub("cand"): candidate
-    }
+    _set_spell_id_pool(spell._spellbook, [candidate])
 
-    result = crafter._resolve_spellmap_default(scanner, dep)
+    result = crafter._resolve_spellmap_default(dep)
 
     assert list(result.values()) == [candidate]
 
@@ -2485,12 +2376,10 @@ def test_resolve_spellmap_default_frame_binding_empty_raises() -> None:
             binding_name="bind",
         ),
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
-
-    _SpellbookScannerStub.find_by_frame_and_binding_result = {}
+    _set_spell_id_pool(spell._spellbook, [])
 
     with pytest.raises(RuntimeError, match="SpellMap default could not be resolved"):
-        crafter._resolve_spellmap_default(scanner, dep)
+        crafter._resolve_spellmap_default(dep)
 
 
 def test_resolve_spellmap_default_frame_binding_multiple_raises() -> None:
@@ -2516,13 +2405,15 @@ def test_resolve_spellmap_default_frame_binding_multiple_raises() -> None:
             binding_name="bind",
         ),
     )
-    scanner = _SpellbookScannerStub(spell._spellbook)
+    frame = dep.spellmap_default.spellframe
 
     first = _SpellStub(
         spell_id="one",
         spell_name="one",
         spell_type=SpellType.SPELL,
         spell=object(),
+        spellframe=frame,
+        binding_name="bind",
         spellbook=spell._spellbook,
     )
     second = _SpellStub(
@@ -2530,16 +2421,15 @@ def test_resolve_spellmap_default_frame_binding_multiple_raises() -> None:
         spell_name="two",
         spell_type=SpellType.SPELL,
         spell=object(),
+        spellframe=frame,
+        binding_name="bind",
         spellbook=spell._spellbook,
     )
 
-    _SpellbookScannerStub.find_by_frame_and_binding_result = {
-        _SpellIndexStub("one"): first,
-        _SpellIndexStub("two"): second,
-    }
+    _set_spell_id_pool(spell._spellbook, [first, second])
 
     with pytest.raises(RuntimeError, match="multiple candidates"):
-        crafter._resolve_spellmap_default(scanner, dep)
+        crafter._resolve_spellmap_default(dep)
 
 
 @pytest.mark.parametrize(
@@ -2885,7 +2775,7 @@ def test_build_local_frame_dag_requires_inputs(
         drop_requirements: Whether to clear the requirements argument.
         drop_graph: Whether to clear the graph argument.
         expected_message: Substring expected in the raised error message.
-        monkeypatch: Pytest fixture for patching DAG and scanner types.
+        monkeypatch: Pytest fixture for patching DAG types.
     Returns:
         None.
     Raises:
@@ -2893,7 +2783,6 @@ def test_build_local_frame_dag_requires_inputs(
     """
     crafter, spell, _ = _build_spell_and_crafter()
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     requirements = object()
     graph = _make_symbolic_graph(spell_id=spell.spell_index.current, dependencies=[])
@@ -2931,7 +2820,7 @@ def test_build_local_frame_dag_requires_spell_index(
     Args:
         drop_spell: Whether to clear the spell reference.
         drop_index: Whether to clear the spell index reference.
-        monkeypatch: Pytest fixture for patching DAG and scanner types.
+        monkeypatch: Pytest fixture for patching DAG types.
     Returns:
         None.
     Raises:
@@ -2939,7 +2828,6 @@ def test_build_local_frame_dag_requires_spell_index(
     """
     crafter, spell, _ = _build_spell_and_crafter()
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     if drop_spell:
         crafter._spell = None
@@ -2965,7 +2853,7 @@ def test_build_local_frame_dag_builds_single_dependency(
     Contract:
         The dependency node and edge to the root are registered in the DAG.
     Args:
-        monkeypatch: Pytest fixture for patching DAG and scanner types.
+        monkeypatch: Pytest fixture for patching DAG types.
     Returns:
         None.
     Raises:
@@ -2973,7 +2861,6 @@ def test_build_local_frame_dag_builds_single_dependency(
     """
     crafter, spell, _ = _build_spell_and_crafter()
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     annotation = object()
     dep = _make_dependency(
@@ -2992,9 +2879,7 @@ def test_build_local_frame_dag_builds_single_dependency(
         spell=annotation,
         spellbook=spell._spellbook,
     )
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (_SpellIndexStub("dep-id"), candidate)
-    ]
+    _set_spell_id_pool(spell._spellbook, [candidate])
 
     dag = crafter._build_local_frame_dag(
         requirements=object(),
@@ -3006,7 +2891,6 @@ def test_build_local_frame_dag_builds_single_dependency(
     assert dag.nodes[0][0] == spell.spell_index.current
     assert dag.nodes[1][0] == "dep-id"
     assert dag.dependencies == [("dep-id", spell.spell_index.current, "dep", SocketKind.NORMAL)]
-    assert crafter._spellbook_scanner is _SpellbookScannerStub.created[0]
 
 
 def test_build_local_frame_dag_skips_unresolved_collection(
@@ -3018,7 +2902,7 @@ def test_build_local_frame_dag_skips_unresolved_collection(
     Contract:
         When no candidates are found, only the root node is added.
     Args:
-        monkeypatch: Pytest fixture for patching DAG and scanner types.
+        monkeypatch: Pytest fixture for patching DAG types.
     Returns:
         None.
     Raises:
@@ -3026,7 +2910,6 @@ def test_build_local_frame_dag_skips_unresolved_collection(
     """
     crafter, spell, _ = _build_spell_and_crafter()
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     dep = _make_dependency(
         spell_id=spell.spell_index.current,
@@ -3057,7 +2940,7 @@ def test_build_local_frame_dag_handles_spellmap_default(
     Contract:
         Resolved SpellMap defaults appear as nodes and edges in the DAG.
     Args:
-        monkeypatch: Pytest fixture for patching DAG and scanner types.
+        monkeypatch: Pytest fixture for patching DAG types.
     Returns:
         None.
     Raises:
@@ -3065,7 +2948,6 @@ def test_build_local_frame_dag_handles_spellmap_default(
     """
     crafter, spell, _ = _build_spell_and_crafter()
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     explicit = object()
     dep = _make_dependency(
@@ -3088,9 +2970,7 @@ def test_build_local_frame_dag_handles_spellmap_default(
         spell=explicit,
         spellbook=spell._spellbook,
     )
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (_SpellIndexStub("dep-id"), candidate)
-    ]
+    _set_spell_id_pool(spell._spellbook, [candidate])
 
     dag = crafter._build_local_frame_dag(
         requirements=object(),
@@ -3110,7 +2990,7 @@ def test_build_local_frame_dag_ignores_contract_shapes(
     Contract:
         SpellContract and MutationContract dependencies are metadata-only.
     Args:
-        monkeypatch: Pytest fixture for patching DAG and scanner types.
+        monkeypatch: Pytest fixture for patching DAG types.
     Returns:
         None.
     Raises:
@@ -3127,7 +3007,6 @@ def test_build_local_frame_dag_ignores_contract_shapes(
     )
     crafter, spell, _ = _build_spell_and_crafter(spell_system_states=states)
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     contract_dep = _make_dependency(
         spell_id=spell.spell_index.current,
@@ -3168,7 +3047,7 @@ def test_build_local_frame_dag_updates_states(
     Contract:
         Dependencies and topology are registered when states are provided.
     Args:
-        monkeypatch: Pytest fixture for patching DAG and scanner types.
+        monkeypatch: Pytest fixture for patching DAG types.
     Returns:
         None.
     Raises:
@@ -3185,7 +3064,6 @@ def test_build_local_frame_dag_updates_states(
     )
     crafter, spell, _ = _build_spell_and_crafter(spell_system_states=states)
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     annotation = object()
     dep = _make_dependency(
@@ -3204,9 +3082,7 @@ def test_build_local_frame_dag_updates_states(
         spell=annotation,
         spellbook=spell._spellbook,
     )
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (_SpellIndexStub("dep-id"), candidate)
-    ]
+    _set_spell_id_pool(spell._spellbook, [candidate])
 
     crafter._build_local_frame_dag(
         requirements=object(),
@@ -3239,7 +3115,7 @@ def test_run_phase_local_frame_requires_prior_phases(
     Args:
         drop_requirements: Whether to clear stored requirements.
         drop_graph: Whether to clear stored symbolic graph.
-        monkeypatch: Pytest fixture for patching DAG and scanner types.
+        monkeypatch: Pytest fixture for patching DAG types.
     Returns:
         None.
     Raises:
@@ -3247,7 +3123,6 @@ def test_run_phase_local_frame_requires_prior_phases(
     """
     crafter, spell, _ = _build_spell_and_crafter()
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     crafter._requirements = _RequirementsStub([])
     crafter._symbolic_graph = _make_symbolic_graph(
@@ -3273,7 +3148,7 @@ def test_run_phase_local_frame_sets_resolution_frame(
     Contract:
         The resolution frame captures the DAG ordering returned by the DAG.
     Args:
-        monkeypatch: Pytest fixture for patching DAG and scanner types.
+        monkeypatch: Pytest fixture for patching DAG types.
     Returns:
         None.
     Raises:
@@ -3281,7 +3156,6 @@ def test_run_phase_local_frame_sets_resolution_frame(
     """
     crafter, spell, _ = _build_spell_and_crafter()
     monkeypatch.setattr(spell_crafter_module, "DirectedAcyclicWorkGraph", _DagStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     _DagStub.next_dependency_ids = ["dep", spell.spell_index.current]
     crafter._requirements = _RequirementsStub([])
@@ -3449,8 +3323,6 @@ def test_run_phase_root_blueprints_requires_phase4(
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = {}
 
-    _SpellbookScannerStub.iter_spells_data = [(crafter.spell.spell_index, crafter.spell)]
-    crafter._spellbook_scanner = _SpellbookScannerStub(crafter.spell._spellbook)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
 
@@ -3507,11 +3379,7 @@ def test_run_phase_root_blueprints_builds_index_and_attaches(
         spellbook=spell._spellbook,
     )
 
-    _SpellbookScannerStub.iter_spells_data = [
-        (spell.spell_index, spell),
-        (dep_spell.spell_index, dep_spell),
-    ]
-    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
+    _set_spell_id_pool(spell._spellbook, [spell, dep_spell])
 
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
@@ -3526,20 +3394,21 @@ def test_run_phase_root_blueprints_builds_index_and_attaches(
     assert dep_node.is_root is False
 
 
-def test_run_phase_root_blueprints_skips_missing_root_spell(
+def test_run_phase_root_blueprints_attaches_fallback_blueprint(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Purpose:
-        Ensure Phase 5 skips blueprint attachment when root spell is absent.
+        Ensure Phase 5 attaches a fallback blueprint when the root is missing
+        from the snapshot.
     Contract:
-        Missing root spells do not receive blueprints but execution succeeds.
+        Visible spells receive a blueprint even when the snapshot omits them.
     Args:
         monkeypatch: Pytest fixture for patching Phase 5 builders.
     Returns:
         None.
     Raises:
-        AssertionError: If missing roots cause attachment or errors.
+        AssertionError: If fallback blueprint attachment fails.
     """
     states = _SpellSystemStatesStub(
         states=[
@@ -3558,60 +3427,14 @@ def test_run_phase_root_blueprints_skips_missing_root_spell(
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = {"missing": _RootBlueprintStub("missing")}
 
-    _SpellbookScannerStub.iter_spells_data = []
-    crafter._spellbook_scanner = _SpellbookScannerStub(crafter.spell._spellbook)
-
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
-    assert crafter.root_blueprint_phase5 is None
+    blueprint = crafter.root_blueprint_phase5
+    assert blueprint is not None
+    assert blueprint.root_spell_id == "root"
     assert crafter.spell_system_index_phase5 is not None
-
-
-def test_run_phase_root_blueprints_uses_existing_scanner(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Purpose:
-        Confirm Phase 5 reuses an existing SpellbookScanner instance.
-    Contract:
-        When a scanner is already set, no new scanner is constructed.
-    Args:
-        monkeypatch: Pytest fixture for patching Phase 5 builders.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If a new scanner is created unexpectedly.
-    """
-    states = _SpellSystemStatesStub(
-        states=[
-            _SpellSystemStateStub(
-                current_spell_id="root",
-                direct_dependencies=set(),
-                spell_index_id="lineage-root",
-            ),
-        ]
-    )
-    crafter, spell, _ = _build_spell_and_crafter(spell_system_states=states)
-    crafter._validated_phase4 = True
-    crafter._validation_result_phase4 = object()
-
-    existing_scanner = _SpellbookScannerStub(spell._spellbook)
-    crafter._spellbook_scanner = existing_scanner
-
-    snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids=set())
-    _AdjacencyBuilderStub.next_snapshot = snapshot
-    _RootBlueprintBuilderStub.next_blueprints = {}
-    _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
-
-    monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
-
-    crafter.run_phase_root_blueprints("cid", cancel_event=None)
-
-    assert _SpellbookScannerStub.created == [existing_scanner]
 
 
 def test_run_phase_root_blueprints_change_control_wires_revalidator(
@@ -3651,8 +3474,6 @@ def test_run_phase_root_blueprints_change_control_wires_revalidator(
     blueprints = {"root": _RootBlueprintStub("root")}
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = blueprints
-    _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
-    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
@@ -3673,7 +3494,7 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
         The revalidator calls run_all_phases for matching roots and honors
         cancellation signals.
     Args:
-        monkeypatch: Pytest fixture for patching Phase 5 builders and scanner.
+        monkeypatch: Pytest fixture for patching Phase 5 builders.
     Returns:
         None.
     Raises:
@@ -3701,8 +3522,6 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
     blueprints = {"root": _RootBlueprintStub("root")}
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = blueprints
-    _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
-    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     calls: list[dict[str, object]] = []
 
@@ -3733,7 +3552,6 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
 
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
     monkeypatch.setattr(SpellCrafter, "run_all_phases", _run_all_phases)
 
     crafter.run_phase_root_blueprints("cid", cancel_event=None)
@@ -3789,12 +3607,9 @@ def test_run_phase_root_blueprints_swallow_change_control_errors(
     snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids=set())
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = {}
-    _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
-    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     with pytest.raises(RuntimeError, match="boom"):
         crafter.run_phase_root_blueprints("cid", cancel_event=None)
@@ -3815,8 +3630,6 @@ def test_run_phase_root_blueprints_cancellation() -> None:
     """
     crafter, _, _ = _build_spell_and_crafter()
     cancel = _CancelStub(is_set=True)
-    crafter._spellbook_scanner = _SpellbookScannerStub(crafter.spell._spellbook)
-    _SpellbookScannerStub.iter_spells_data = [(crafter.spell.spell_index, crafter.spell)]
     crafter._spell_system_states = _SpellSystemStatesStub(
         states=[
             _SpellSystemStateStub(
@@ -3881,7 +3694,7 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
     Contract:
         Validation inputs include phase4 results and broken ids from spell crafters.
     Args:
-        monkeypatch: Pytest fixture for patching scanner and validation system types.
+        monkeypatch: Pytest fixture for patching validation system types.
     Returns:
         None.
     Raises:
@@ -3899,17 +3712,8 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
     crafter._validation_result_phase4 = object()
     crafter._is_broken = False
 
-    _SpellbookScannerStub.iter_spells_data = [
-        (spell.spell_index, spell),
-        (other_spell.spell_index, other_spell),
-    ]
-    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
+    _set_spell_id_pool(spell._spellbook, [spell, other_spell])
 
-    monkeypatch.setattr(
-        spell_crafter_module,
-        "SpellbookScanner",
-        _SpellbookScannerStub,
-    )
     monkeypatch.setattr(
         spell_crafter_module,
         "SpellSystemValidationSystem",
@@ -3950,40 +3754,6 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
     ]
 
 
-def test_run_phase_system_validation_uses_existing_scanner(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Purpose:
-        Confirm Phase 6 reuses an existing SpellbookScanner instance.
-    Contract:
-        A pre-set scanner is reused rather than recreated.
-    Args:
-        monkeypatch: Pytest fixture for patching validation system type.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If a new scanner instance is created unexpectedly.
-    """
-    crafter, spell, _ = _build_spell_and_crafter()
-    crafter._entire_dag_blueprint_phase5 = {"root": _RootBlueprintStub("root")}
-    crafter._spell_system_index_phase5 = spell_crafter_module.SpellSystemIndex()
-
-    existing_scanner = _SpellbookScannerStub(spell._spellbook)
-    crafter._spellbook_scanner = existing_scanner
-    _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
-
-    monkeypatch.setattr(
-        spell_crafter_module,
-        "SpellSystemValidationSystem",
-        _SpellSystemValidationSystemStub,
-    )
-
-    crafter.run_phase_system_validation("cid", cancel_event=None)
-
-    assert _SpellbookScannerStub.created == [existing_scanner]
-
-
 def test_run_phase_system_validation_sets_flags(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -3993,7 +3763,7 @@ def test_run_phase_system_validation_sets_flags(
     Contract:
         The validation state is cached and _validated_phase6 is True.
     Args:
-        monkeypatch: Pytest fixture for patching scanner and validation system types.
+        monkeypatch: Pytest fixture for patching validation system types.
     Returns:
         None.
     Raises:
@@ -4003,14 +3773,8 @@ def test_run_phase_system_validation_sets_flags(
     crafter._entire_dag_blueprint_phase5 = {"root": _RootBlueprintStub("root")}
     crafter._spell_system_index_phase5 = spell_crafter_module.SpellSystemIndex()
 
-    _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
-    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
+    _set_spell_id_pool(spell._spellbook, [spell])
 
-    monkeypatch.setattr(
-        spell_crafter_module,
-        "SpellbookScanner",
-        _SpellbookScannerStub,
-    )
     monkeypatch.setattr(
         spell_crafter_module,
         "SpellSystemValidationSystem",

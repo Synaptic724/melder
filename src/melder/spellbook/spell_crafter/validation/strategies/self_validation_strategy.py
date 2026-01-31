@@ -27,7 +27,7 @@ class SelfDependencyStrategy(SpellValidationStrategy):
             cancel_event.throw_if_set()
 
         spell = context.spell
-        deps: List[str] = getattr(spell, "dependencies", [])
+        deps: List[str] = spell.dependencies
         if not deps:
             return
 

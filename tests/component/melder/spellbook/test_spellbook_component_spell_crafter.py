@@ -1,6 +1,6 @@
-import pytest
+from typing import Optional
 
-import melder.spellbook.spell_crafter.spell_crafter as spell_crafter_module
+import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
@@ -51,12 +51,12 @@ def _make_spellbook() -> Spellbook:
     return spellbook
 
 
-def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Optional[object]:
     """
     Purpose:
         Resolve a local Spell instance by its versioned spell id.
     Contract:
-        - Returns the first local spell whose SpellIndex.current matches `spell_id`.
+        - Returns the spell mapped in the live _spell_id_pool for `spell_id`.
         - Returns None if no matching spell is found.
     Args:
         spellbook: Spellbook holding locally bound spells.
@@ -64,16 +64,13 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
     Returns:
         Spell | None: The resolved spell or None if missing.
     """
-    for spell_index, spell in spellbook.spells.items():
-        if spell_index.current == spell_id:
-            return spell
-    return None
+    return spellbook._spell_id_pool.get(spell_id)
 
 
 class _SpellIndexStub:
     """
     Purpose:
-        Provide a minimal SpellIndex-like key for scanner stubs.
+        Provide a minimal SpellIndex-like key for spell-id pool stubs.
     Contract:
         - Exposes a `current` version id.
         - Acts as a stable dictionary key by identity.
@@ -107,23 +104,27 @@ class _SpellIndexStub:
 class _SpellCandidateStub:
     """
     Purpose:
-        Provide a minimal spell object for scanner stubs.
+        Provide a minimal spell object for spell-id pool injection.
     Contract:
         - Exposes spell identity and binding metadata.
+        - Provides a SpellIndex-like `spell_index` attribute.
     """
     def __init__(
         self,
+        *,
+        spell_id: str,
         spell: object,
         spell_name: str,
-        spellframe: object | None = None,
-        binding_name: str | None = None,
+        spellframe: Optional[object] = None,
+        binding_name: Optional[str] = None,
     ) -> None:
         """
         Purpose:
-            Capture spell identity for scanner stubs.
+            Capture spell identity for pool injection.
         Contract:
-            - Stores spell, spell_name, spellframe, and binding_name verbatim.
+            - Stores spell metadata and creates a SpellIndex-like stub.
         Args:
+            spell_id: Versioned spell id for the stub.
             spell: The underlying spell object or class.
             spell_name: Human-readable spell name.
             spellframe: Optional frame marker for matching.
@@ -131,78 +132,11 @@ class _SpellCandidateStub:
         Returns:
             None.
         """
+        self.spell_index = _SpellIndexStub(spell_id)
         self.spell = spell
         self.spell_name = spell_name
         self.spellframe = spellframe
         self.binding_name = binding_name
-
-
-class _SpellbookScannerStub:
-    """
-    Purpose:
-        Replace SpellbookScanner for component tests.
-    Contract:
-        - Returns class-level iterators for spell data.
-        - Provides frame/binding lookup results as configured by tests.
-    """
-    iter_all_spells_data: list[tuple[object, object]] = []
-    find_by_frame_and_binding_data: dict[object, object] = {}
-
-    def __init__(self, spellbook: Spellbook) -> None:
-        """
-        Purpose:
-            Capture the spellbook reference for parity with the real scanner.
-        Contract:
-            - Stores the spellbook for diagnostics only.
-        Args:
-            spellbook: Spellbook passed by SpellCrafter.
-        Returns:
-            None.
-        """
-        self._spellbook = spellbook
-        self._cleaned = False
-
-    def iter_all_spells(self) -> list[tuple[object, object]]:
-        """
-        Purpose:
-            Yield the configured spell list for scanner consumers.
-        Contract:
-            - Returns a new list containing the configured data.
-        Returns:
-            list[tuple[object, object]]: SpellIndex/spell pairs.
-        """
-        return list(self.iter_all_spells_data)
-
-    def find_by_frame_and_binding(
-        self,
-        spellframe: object,
-        binding_name: str | None,
-        include_contracted: bool = True,
-    ) -> dict[object, object]:
-        """
-        Purpose:
-            Return the configured frame/binding candidates.
-        Contract:
-            - Ignores parameters and returns the configured mapping.
-        Args:
-            spellframe: Frame key requested by the caller.
-            binding_name: Binding name requested by the caller.
-            include_contracted: Whether contracted spells should be included.
-        Returns:
-            dict[object, object]: Mapping of SpellIndex-like keys to spell objects.
-        """
-        return dict(self.find_by_frame_and_binding_data)
-
-    def cleanup(self) -> None:
-        """
-        Purpose:
-            Mark the stub as cleaned for parity with the real scanner.
-        Contract:
-            - Sets the cleaned flag to True.
-        Returns:
-            None.
-        """
-        self._cleaned = True
 
 
 class _ValidationResultStub:
@@ -354,16 +288,12 @@ class _SpellSystemStatesStub:
         return self.topology_by_spell.get(spell_index)
 
 
-def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates() -> None:
     """
     Purpose:
         Validate missing SpellMap default candidates raise during Phase 3.
     Contract:
         - run_phase_local_frame raises when SpellMap defaults resolve to none.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
     Returns:
         None.
     Raises:
@@ -406,10 +336,6 @@ def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates
         permissions="create",
     )
 
-    _SpellbookScannerStub.iter_all_spells_data = []
-    _SpellbookScannerStub.find_by_frame_and_binding_data = {}
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
-
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
@@ -421,16 +347,12 @@ def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates
         spellbook.cleanup()
 
 
-def test_component_spell_crafter_spellmap_default_raises_on_multiple_candidates(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_component_spell_crafter_spellmap_default_raises_on_multiple_candidates() -> None:
     """
     Purpose:
         Validate ambiguous SpellMap defaults raise during Phase 3.
     Contract:
         - run_phase_local_frame raises when SpellMap defaults resolve to multiple candidates.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
     Returns:
         None.
     Raises:
@@ -473,17 +395,22 @@ def test_component_spell_crafter_spellmap_default_raises_on_multiple_candidates(
         permissions="create",
     )
 
-    index_a = _SpellIndexStub("candidate-a")
-    index_b = _SpellIndexStub("candidate-b")
-    candidate_a = _SpellCandidateStub(spell=object(), spell_name="Alpha")
-    candidate_b = _SpellCandidateStub(spell=object(), spell_name="Beta")
-
-    _SpellbookScannerStub.iter_all_spells_data = []
-    _SpellbookScannerStub.find_by_frame_and_binding_data = {
-        index_a: candidate_a,
-        index_b: candidate_b,
-    }
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
+    candidate_a = _SpellCandidateStub(
+        spell_id="candidate-a",
+        spell=object(),
+        spell_name="Alpha",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    candidate_b = _SpellCandidateStub(
+        spell_id="candidate-b",
+        spell=object(),
+        spell_name="Beta",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    spellbook._spell_id_pool[candidate_a.spell_index.current] = candidate_a
+    spellbook._spell_id_pool[candidate_b.spell_index.current] = candidate_b
 
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
@@ -496,16 +423,12 @@ def test_component_spell_crafter_spellmap_default_raises_on_multiple_candidates(
         spellbook.cleanup()
 
 
-def test_component_spell_crafter_spellmap_default_prefers_explicit_spell(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_component_spell_crafter_spellmap_default_prefers_explicit_spell() -> None:
     """
     Purpose:
         Validate explicit SpellMap defaults resolve by spell identity.
     Contract:
         - run_phase_local_frame binds the explicit spell only.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
     Returns:
         None.
     Raises:
@@ -549,23 +472,16 @@ def test_component_spell_crafter_spellmap_default_prefers_explicit_spell(
         permissions="create",
     )
 
-    explicit_index = _SpellIndexStub("explicit-id")
-    explicit_spell = _SpellCandidateStub(
+    explicit_id = spellbook.bind(
         spell=BasicService,
-        spell_name="BasicService",
+        existence=Existence.unique,
+        permissions="create",
     )
-    other_index = _SpellIndexStub("other-id")
-    other_spell = _SpellCandidateStub(
+    spellbook.bind(
         spell=OtherService,
-        spell_name="OtherService",
+        existence=Existence.unique,
+        permissions="create",
     )
-
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (explicit_index, explicit_spell),
-        (other_index, other_spell),
-    ]
-    _SpellbookScannerStub.find_by_frame_and_binding_data = {}
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
@@ -574,27 +490,23 @@ def test_component_spell_crafter_spellmap_default_prefers_explicit_spell(
         spell.run_phase_symbolic_graph()
         spell.run_phase_local_frame()
 
-        assert set(spell.dependencies) == {explicit_index.current}
+        assert set(spell.dependencies) == {explicit_id}
         topology = spell._spell_system_states.get_local_topology(spell.spell_index)
         assert topology is not None
         sockets = topology.get_sockets_for_param("service")
         assert len(sockets) == 1
-        assert set(sockets[0].target_spell_ids) == {explicit_index.current}
+        assert set(sockets[0].target_spell_ids) == {explicit_id}
     finally:
         spellbook.cleanup()
 
 
-def test_component_spell_crafter_spellmap_default_resolves_frame_only_candidate(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_component_spell_crafter_spellmap_default_resolves_frame_only_candidate() -> None:
     """
     Purpose:
         Validate frame-only SpellMap defaults resolve via frame/binding lookup.
     Contract:
         - run_phase_local_frame binds the frame-only candidate.
         - system states receive dependency updates for the resolved target.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
     Returns:
         None.
     Raises:
@@ -639,19 +551,13 @@ def test_component_spell_crafter_spellmap_default_resolves_frame_only_candidate(
         permissions="create",
     )
 
-    candidate_index = _SpellIndexStub("service-id")
-    candidate_spell = _SpellCandidateStub(
+    candidate_id = spellbook.bind(
         spell=BasicService,
-        spell_name="BasicService",
+        existence=Existence.unique,
+        permissions="create",
         spellframe=IService,
         binding_name="primary",
     )
-
-    _SpellbookScannerStub.iter_all_spells_data = []
-    _SpellbookScannerStub.find_by_frame_and_binding_data = {
-        candidate_index: candidate_spell,
-    }
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
@@ -660,24 +566,20 @@ def test_component_spell_crafter_spellmap_default_resolves_frame_only_candidate(
         spell.run_phase_symbolic_graph()
         spell.run_phase_local_frame()
 
-        assert set(spell.dependencies) == {candidate_index.current}
+        assert set(spell.dependencies) == {candidate_id}
         dependencies = states.dependencies_by_spell.get(spell.spell_index)
         assert dependencies is not None
-        assert set(dependencies) == {candidate_index.current}
+        assert set(dependencies) == {candidate_id}
     finally:
         spellbook.cleanup()
 
 
-def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_matches(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_matches() -> None:
     """
     Purpose:
         Validate explicit SpellMap defaults raise when duplicates exist.
     Contract:
         - run_phase_local_frame raises when explicit spell resolves to multiple matches.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
     Returns:
         None.
     Raises:
@@ -713,23 +615,22 @@ def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_m
         permissions="create",
     )
 
-    explicit_index_a = _SpellIndexStub("explicit-a")
-    explicit_index_b = _SpellIndexStub("explicit-b")
-    explicit_spell_a = _SpellCandidateStub(
+    candidate_a = _SpellCandidateStub(
+        spell_id="candidate-a",
         spell=BasicService,
-        spell_name="BasicServiceA",
+        spell_name="BasicService-A",
+        spellframe=BasicService,
+        binding_name="primary-a",
     )
-    explicit_spell_b = _SpellCandidateStub(
+    candidate_b = _SpellCandidateStub(
+        spell_id="candidate-b",
         spell=BasicService,
-        spell_name="BasicServiceB",
+        spell_name="BasicService-B",
+        spellframe=BasicService,
+        binding_name="primary-b",
     )
-
-    _SpellbookScannerStub.iter_all_spells_data = [
-        (explicit_index_a, explicit_spell_a),
-        (explicit_index_b, explicit_spell_b),
-    ]
-    _SpellbookScannerStub.find_by_frame_and_binding_data = {}
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
+    spellbook._spell_id_pool[candidate_a.spell_index.current] = candidate_a
+    spellbook._spell_id_pool[candidate_b.spell_index.current] = candidate_b
 
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
@@ -821,17 +722,13 @@ def test_component_spell_crafter_contract_sockets_register_topology() -> None:
         spellbook.cleanup()
 
 
-def test_component_spell_crafter_collection_di_allows_empty_collection(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_component_spell_crafter_collection_di_allows_empty_collection() -> None:
     """
     Purpose:
         Validate empty collection DI does not create dependencies.
     Contract:
         - dependencies remain empty when no collection candidates resolve.
         - topology records the collection socket with no targets.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
     Returns:
         None.
     Raises:
@@ -866,10 +763,6 @@ def test_component_spell_crafter_collection_di_allows_empty_collection(
         existence=Existence.unique,
         permissions="create",
     )
-
-    _SpellbookScannerStub.iter_all_spells_data = []
-    _SpellbookScannerStub.find_by_frame_and_binding_data = {}
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)

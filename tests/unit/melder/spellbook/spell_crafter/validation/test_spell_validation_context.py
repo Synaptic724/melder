@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import pytest
 
 from melder.spellbook.spell_crafter.validation.spell_validation_context import (
@@ -55,42 +53,6 @@ class _CleanableStub(Cleanable):
         raise NotImplementedError("async cleanup not implemented in test stub")
 
 
-class _ScannerStub:
-    """
-    Purpose:
-        Provide a scanner stub with a cleanup method.
-    Contract:
-        Tracks cleanup calls and can raise when configured.
-    """
-
-    def __init__(self, *, raise_on_cleanup: bool = False) -> None:
-        """
-        Purpose:
-            Initialize the stub with optional failure behavior.
-        Contract:
-            Stores the raise_on_cleanup flag and resets the call counter.
-        Args:
-            raise_on_cleanup: Whether cleanup should raise.
-        Returns:
-            None.
-        """
-        self.cleanup_calls = 0
-        self._raise_on_cleanup = raise_on_cleanup
-
-    def cleanup(self) -> None:
-        """
-        Purpose:
-            Record cleanup calls and optionally raise.
-        Contract:
-            Increments cleanup_calls on each invocation.
-        Raises:
-            RuntimeError: When configured to raise.
-        """
-        self.cleanup_calls += 1
-        if self._raise_on_cleanup:
-            raise RuntimeError("scanner boom")
-
-
 def test_init_requires_spell() -> None:
     """
     Purpose:
@@ -109,7 +71,6 @@ def test_init_requires_spell() -> None:
             requirements=None,
             symbolic_graph=None,
             resolution_frame=None,
-            scanner=None,
             cancel_event=None,
             issues=[],
         )
@@ -133,7 +94,6 @@ def test_init_requires_issues_list() -> None:
             requirements=None,
             symbolic_graph=None,
             resolution_frame=None,
-            scanner=None,
             cancel_event=None,
             issues=None,
         )
@@ -155,7 +115,6 @@ def test_init_sets_fields() -> None:
     requirements = object()
     symbolic_graph = object()
     resolution_frame = object()
-    scanner = _ScannerStub()
     cancel_event = object()
     issues: list[object] = []
 
@@ -165,7 +124,6 @@ def test_init_sets_fields() -> None:
         requirements=requirements,
         symbolic_graph=symbolic_graph,
         resolution_frame=resolution_frame,
-        scanner=scanner,
         cancel_event=cancel_event,
         issues=issues,
     )
@@ -175,7 +133,6 @@ def test_init_sets_fields() -> None:
     assert context.requirements is requirements
     assert context.symbolic_graph is symbolic_graph
     assert context.resolution_frame is resolution_frame
-    assert context.scanner is scanner
     assert context.cancel_event is cancel_event
     assert context.issues is issues
 
@@ -198,7 +155,6 @@ def test_issues_list_shared_and_not_cleared_on_cleanup() -> None:
         requirements=None,
         symbolic_graph=None,
         resolution_frame=None,
-        scanner=None,
         cancel_event=None,
         issues=issues,
     )
@@ -227,7 +183,6 @@ def test_cleanup_marks_cleaned_and_drops_references() -> None:
         requirements=object(),
         symbolic_graph=object(),
         resolution_frame=object(),
-        scanner=_ScannerStub(),
         cancel_event=object(),
         issues=[],
     )
@@ -240,68 +195,10 @@ def test_cleanup_marks_cleaned_and_drops_references() -> None:
     assert context.requirements is None
     assert context.symbolic_graph is None
     assert context.resolution_frame is None
-    assert context.scanner is None
     assert context.cancel_event is None
     assert context.issues is None
     with pytest.raises(RuntimeError):
         context.check_cleaned()
-
-
-def test_cleanup_calls_scanner_cleanup() -> None:
-    """
-    Purpose:
-        Ensure scanner cleanup is invoked when present.
-    Contract:
-        Scanner cleanup is called exactly once.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If scanner cleanup is not invoked.
-    """
-    scanner = _ScannerStub()
-    context = SpellValidationContext(
-        spell=object(),
-        spellbook=None,
-        requirements=None,
-        symbolic_graph=None,
-        resolution_frame=None,
-        scanner=scanner,
-        cancel_event=None,
-        issues=[],
-    )
-
-    context.cleanup()
-
-    assert scanner.cleanup_calls == 1
-
-
-def test_cleanup_swallows_scanner_cleanup_errors() -> None:
-    """
-    Purpose:
-        Confirm scanner cleanup exceptions are swallowed.
-    Contract:
-        cleanup completes even if scanner.cleanup raises.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If cleanup raises or cleaned flag is not set.
-    """
-    scanner = _ScannerStub(raise_on_cleanup=True)
-    context = SpellValidationContext(
-        spell=object(),
-        spellbook=None,
-        requirements=None,
-        symbolic_graph=None,
-        resolution_frame=None,
-        scanner=scanner,
-        cancel_event=None,
-        issues=[],
-    )
-
-    context.cleanup()
-
-    assert context.cleaned is True
-
 
 def test_cleanup_calls_artifact_cleanup() -> None:
     """
@@ -323,7 +220,6 @@ def test_cleanup_calls_artifact_cleanup() -> None:
         requirements=requirements,
         symbolic_graph=symbolic_graph,
         resolution_frame=resolution_frame,
-        scanner=None,
         cancel_event=None,
         issues=[],
     )
@@ -355,7 +251,6 @@ def test_cleanup_skips_artifact_cleanup_when_disabled() -> None:
         requirements=requirements,
         symbolic_graph=symbolic_graph,
         resolution_frame=resolution_frame,
-        scanner=None,
         cancel_event=None,
         issues=[],
         cleanup_artifacts=False,
@@ -386,7 +281,6 @@ def test_cleanup_swallows_artifact_cleanup_errors() -> None:
         requirements=requirements,
         symbolic_graph=None,
         resolution_frame=None,
-        scanner=None,
         cancel_event=None,
         issues=[],
     )
@@ -414,7 +308,6 @@ def test_cleanup_is_idempotent() -> None:
         requirements=requirements,
         symbolic_graph=None,
         resolution_frame=None,
-        scanner=None,
         cancel_event=None,
         issues=[],
     )

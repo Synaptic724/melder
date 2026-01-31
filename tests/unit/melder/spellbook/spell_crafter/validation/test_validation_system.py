@@ -175,7 +175,6 @@ class _ContextStub:
         requirements: object | None,
         symbolic_graph: object | None,
         resolution_frame: object | None,
-        scanner: object | None,
         cancel_event: object | None,
         issues: list,
         cleanup_artifacts: bool = True,
@@ -191,7 +190,6 @@ class _ContextStub:
             requirements: Phase 1 requirements artifact.
             symbolic_graph: Phase 2 symbolic graph.
             resolution_frame: Phase 3 resolution frame.
-            scanner: SpellbookScanner instance or None.
             cancel_event: Cancellation event or None.
             issues: Shared issues list.
             cleanup_artifacts: Whether to clean artifacts during context cleanup.
@@ -203,7 +201,6 @@ class _ContextStub:
         self.requirements = requirements
         self.symbolic_graph = symbolic_graph
         self.resolution_frame = resolution_frame
-        self.scanner = scanner
         self.cancel_event = cancel_event
         self.issues = issues
         self.cleanup_artifacts = cleanup_artifacts
@@ -223,42 +220,6 @@ class _ContextStub:
         self.cleanup_calls += 1
         self.cleaned = True
 
-
-class _ScannerStub:
-    """
-    Purpose:
-        Provide a SpellbookScanner stub to track creation and cleanup.
-    Contract:
-        Records the provided spellbook and cleanup calls.
-    """
-
-    created: list["_ScannerStub"] = []
-
-    def __init__(self, spellbook: object) -> None:
-        """
-        Purpose:
-            Record the provided spellbook on construction.
-        Contract:
-            Appends the instance to the created list.
-        Args:
-            spellbook: Spellbook object used for scanning.
-        Returns:
-            None.
-        """
-        self.spellbook = spellbook
-        self.cleanup_calls = 0
-        _ScannerStub.created.append(self)
-
-    def cleanup(self) -> None:
-        """
-        Purpose:
-            Record cleanup calls for verification.
-        Contract:
-            Increments cleanup_calls on each invocation.
-        Returns:
-            None.
-        """
-        self.cleanup_calls += 1
 
 
 class _EmptyNameStrategy:
@@ -380,7 +341,6 @@ class _RecordingStrategy(SpellValidationStrategy):
             "requirements": context.requirements,
             "symbolic_graph": context.symbolic_graph,
             "resolution_frame": context.resolution_frame,
-            "scanner": context.scanner,
             "cancel_event": context.cancel_event,
             "issues": context.issues,
         }
@@ -800,21 +760,17 @@ def test_validate_spell_runs_all_strategies() -> None:
     assert second.calls == 1
 
 
-def test_validate_spell_passes_context_fields_to_strategy(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_validate_spell_passes_context_fields_to_strategy() -> None:
     """
     Purpose:
         Verify context fields are populated as expected for strategies.
     Contract:
         Context fields match the supplied spell and artifacts.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
     Returns:
         None.
     Raises:
         AssertionError: If any context field is incorrect.
     """
-    monkeypatch.setattr(validation_system_module, "SpellbookScanner", _ScannerStub)
-    _ScannerStub.created.clear()
     system = _TestValidationSystem()
     issue = SpellValidationIssue("warning", "W", "warn")
     strategy = _RecordingStrategy(name="rec", issue=issue)
@@ -844,7 +800,6 @@ def test_validate_spell_passes_context_fields_to_strategy(monkeypatch: pytest.Mo
     assert snapshot["symbolic_graph"] is symbolic_graph
     assert snapshot["resolution_frame"] is resolution_frame
     assert snapshot["cancel_event"] is cancel_event
-    assert isinstance(snapshot["scanner"], _ScannerStub)
     assert snapshot["issues"] is strategy.issues_ref
 
 
@@ -1007,146 +962,6 @@ def test_validate_spell_cleanup_context_on_exception(monkeypatch: pytest.MonkeyP
     assert _ContextStub.last_instance is not None
     assert _ContextStub.last_instance.cleaned is True
     assert _ContextStub.last_instance.cleanup_calls == 1
-
-
-def test_validate_spell_with_spellbook_creates_scanner(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Purpose:
-        Verify SpellbookScanner is created and cleaned when spellbook is present.
-    Contract:
-        Scanner records the spellbook and cleanup is invoked once.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If scanner was not created or cleaned.
-    """
-    monkeypatch.setattr(validation_system_module, "SpellbookScanner", _ScannerStub)
-    _ScannerStub.created.clear()
-    system = _TestValidationSystem()
-    system.register_strategy(_RecordingStrategy(name="rec"))
-    spellbook = object()
-    system.validate_spell(
-        spell=_make_spell(spellbook=spellbook, include_spellbook=True),
-        requirements=None,
-        symbolic_graph=None,
-        resolution_frame=None,
-    )
-    assert len(_ScannerStub.created) == 1
-    scanner = _ScannerStub.created[0]
-    assert scanner.spellbook is spellbook
-    assert scanner.cleanup_calls == 1
-
-
-def test_validate_spell_without_spellbook_attribute_skips_scanner(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Purpose:
-        Ensure missing _spellbook attribute prevents scanner creation.
-    Contract:
-        Validation succeeds without invoking SpellbookScanner.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If SpellbookScanner is invoked.
-    """
-    class _BoomScanner:
-        """
-        Purpose:
-            Raise if constructed to detect unintended scanner creation.
-        Contract:
-            __init__ always raises RuntimeError.
-        """
-
-        def __init__(self, spellbook: object) -> None:
-            """
-            Purpose:
-                Raise immediately to fail the test if called.
-            Contract:
-                Always raises RuntimeError.
-            Raises:
-                RuntimeError: Unconditional init error.
-            """
-            raise RuntimeError("scanner should not be created")
-
-    class _SpellNoSpellbook:
-        """
-        Purpose:
-            Spell stub without a _spellbook attribute.
-        Contract:
-            Exposes spell_index and spell_name only.
-        """
-
-        def __init__(self) -> None:
-            """
-            Purpose:
-                Initialize spell id and name for validation.
-            Contract:
-                Sets spell_index.current and spell_name.
-            Returns:
-                None.
-            """
-            self.spell_index = _SpellIndexStub("sid")
-            self.spell_name = "sname"
-
-    monkeypatch.setattr(validation_system_module, "SpellbookScanner", _BoomScanner)
-    system = _TestValidationSystem()
-    result = system.validate_spell(
-        spell=_SpellNoSpellbook(),
-        requirements=None,
-        symbolic_graph=None,
-        resolution_frame=None,
-    )
-    assert result.spell_id == "sid"
-
-
-def test_validate_spell_with_spellbook_none_skips_scanner(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Purpose:
-        Ensure a None spellbook does not trigger scanner creation.
-    Contract:
-        Validation succeeds without invoking SpellbookScanner.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellbookScanner.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If SpellbookScanner is invoked.
-    """
-    class _BoomScanner:
-        """
-        Purpose:
-            Raise if constructed to detect unintended scanner creation.
-        Contract:
-            __init__ always raises RuntimeError.
-        """
-
-        def __init__(self, spellbook: object) -> None:
-            """
-            Purpose:
-                Raise immediately to fail the test if called.
-            Contract:
-                Always raises RuntimeError.
-            Raises:
-                RuntimeError: Unconditional init error.
-            """
-            raise RuntimeError("scanner should not be created")
-
-    monkeypatch.setattr(validation_system_module, "SpellbookScanner", _BoomScanner)
-    system = _TestValidationSystem()
-    result = system.validate_spell(
-        spell=_make_spell(spellbook=None, include_spellbook=True),
-        requirements=None,
-        symbolic_graph=None,
-        resolution_frame=None,
-    )
-    assert result.spell_id == "spell-id"
 
 
 def test_cleanup_clears_strategies_and_marks_cleaned() -> None:

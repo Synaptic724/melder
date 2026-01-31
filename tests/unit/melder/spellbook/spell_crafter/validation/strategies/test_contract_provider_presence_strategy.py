@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Iterable
+from typing import Dict, List, Optional, Tuple
 
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
@@ -125,7 +123,7 @@ class _SpellStub:
 class _ProviderSpellStub:
     """
     Purpose:
-        Provide a minimal provider spell for scanner iteration.
+        Provide a minimal provider spell for contracted provider lookup.
     Contract:
         Exposes spellframe, spell_name, and binding_name attributes.
     """
@@ -135,7 +133,7 @@ class _ProviderSpellStub:
         *,
         spellframe: object,
         spell_name: str,
-        binding_name: str | None,
+        binding_name: Optional[str],
     ) -> None:
         """
         Purpose:
@@ -154,52 +152,6 @@ class _ProviderSpellStub:
         self.binding_name = binding_name
 
 
-class _ScannerStub:
-    """
-    Purpose:
-        Provide a scanner stub yielding spell/index pairs.
-    Contract:
-        Iteration order matches the provided spell list.
-    """
-
-    def __init__(self, spells: list[tuple[_SpellIndexStub, _ProviderSpellStub]]) -> None:
-        """
-        Purpose:
-            Initialize the scanner stub with spell/index pairs.
-        Contract:
-            Stores the provided pairs in order.
-        Args:
-            spells: List of (index, spell) tuples to yield.
-        Returns:
-            None.
-        """
-        self._spells = list(spells)
-
-    def iter_spells(self) -> Iterable[tuple[_SpellIndexStub, _ProviderSpellStub]]:
-        """
-        Purpose:
-            Yield stored spell/index pairs.
-        Contract:
-            Each yielded tuple matches the stored list.
-        Returns:
-            Iterable[tuple[_SpellIndexStub, _ProviderSpellStub]]: Spell/index pairs.
-        """
-        for pair in self._spells:
-            yield pair
-
-    def iter_contracted_spells(self) -> Iterable[tuple[_SpellIndexStub, _ProviderSpellStub]]:
-        """
-        Purpose:
-            Yield stored spell/index pairs as contracted providers.
-        Contract:
-            Each yielded tuple matches the stored list.
-        Returns:
-            Iterable[tuple[_SpellIndexStub, _ProviderSpellStub]]: Spell/index pairs.
-        """
-        for pair in self._spells:
-            yield pair
-
-
 class _ConfigStub:
     """
     Purpose:
@@ -208,7 +160,7 @@ class _ConfigStub:
         Returns the stored SystemState for lookup.
     """
 
-    def __init__(self, system_state: SystemState | None) -> None:
+    def __init__(self, system_state: Optional[SystemState]) -> None:
         """
         Purpose:
             Initialize the configuration stub with a SystemState.
@@ -234,7 +186,7 @@ class _ConfigStub:
         """
         return name == "system_state"
 
-    def get_property(self, name: str) -> SystemState | None:
+    def get_property(self, name: str) -> Optional[SystemState]:
         """
         Purpose:
             Return the stored system_state when requested.
@@ -243,7 +195,7 @@ class _ConfigStub:
         Args:
             name: Property name string.
         Returns:
-            SystemState | None: Stored system state.
+            Optional[SystemState]: Stored system state.
         """
         if name != "system_state":
             return None
@@ -253,32 +205,44 @@ class _ConfigStub:
 class _SpellbookStub:
     """
     Purpose:
-        Provide a spellbook stub that returns configuration.
+        Provide a spellbook stub that returns configuration and contracted spells.
     Contract:
         get_configuration returns the configured config object.
+        _contracted_spells exposes provider spell mappings.
     """
 
-    def __init__(self, config: _ConfigStub | None) -> None:
+    def __init__(
+        self,
+        *,
+        config: Optional[_ConfigStub],
+        contracted_spells: Optional[List[Tuple[_SpellIndexStub, _ProviderSpellStub]]] = None,
+    ) -> None:
         """
         Purpose:
-            Initialize the spellbook stub with a config.
+            Initialize the spellbook stub with a config and contracted spells.
         Contract:
-            Stores the provided config for retrieval.
+            Stores the provided config and contracted spell mappings.
         Args:
             config: Configuration stub or None.
+            contracted_spells: Optional contracted provider spells.
         Returns:
             None.
         """
         self._config = config
+        self._contracted_spells: Dict[str, Dict[_SpellIndexStub, _ProviderSpellStub]] = {}
+        if contracted_spells:
+            self._contracted_spells["contracted"] = {
+                index: spell for index, spell in contracted_spells
+            }
 
-    def get_configuration(self) -> _ConfigStub | None:
+    def get_configuration(self) -> Optional[_ConfigStub]:
         """
         Purpose:
             Return the stored configuration stub.
         Contract:
             Returns the configuration passed at construction.
         Returns:
-            _ConfigStub | None: Stored configuration.
+            Optional[_ConfigStub]: Stored configuration.
         """
         return self._config
 
@@ -286,8 +250,8 @@ class _SpellbookStub:
 def _make_context(
     *,
     requirements: _RequirementsStub,
-    scanner: _ScannerStub | None,
-    system_state: SystemState | None,
+    contracted_spells: Optional[List[Tuple[_SpellIndexStub, _ProviderSpellStub]]],
+    system_state: Optional[SystemState],
 ) -> tuple[SpellValidationContext, list]:
     """
     Purpose:
@@ -296,22 +260,23 @@ def _make_context(
         Returns the context and the shared issues list.
     Args:
         requirements: Requirements stub for the spell.
-        scanner: Scanner stub or None.
+        contracted_spells: Contracted provider spells to expose.
         system_state: SystemState to expose via spellbook config.
     Returns:
         tuple[SpellValidationContext, list]: Context and issues list.
     """
     issues: list = []
-    spellbook = None
-    if system_state is not None:
-        spellbook = _SpellbookStub(_ConfigStub(system_state))
+    config = _ConfigStub(system_state) if system_state is not None else None
+    spellbook = _SpellbookStub(
+        config=config,
+        contracted_spells=contracted_spells,
+    )
     context = SpellValidationContext(
         spell=_SpellStub(),
         spellbook=spellbook,
         requirements=requirements,
         symbolic_graph=None,
         resolution_frame=None,
-        scanner=scanner,
         cancel_event=None,
         issues=issues,
     )
@@ -349,7 +314,7 @@ def test_contract_provider_presence_missing_spell_contract_warns() -> None:
     )
     context, issues = _make_context(
         requirements=requirements,
-        scanner=_ScannerStub([]),
+        contracted_spells=[],
         system_state=None,
     )
 
@@ -391,7 +356,7 @@ def test_contract_provider_presence_automatic_mode_errors() -> None:
     )
     context, issues = _make_context(
         requirements=requirements,
-        scanner=_ScannerStub([]),
+        contracted_spells=[],
         system_state=SystemState.automatic,
     )
 
@@ -431,15 +396,13 @@ def test_contract_provider_presence_ambiguous_spell_contract_errors() -> None:
             )
         ]
     )
-    scanner = _ScannerStub(
-        [
-            (_SpellIndexStub("prov-a"), _ProviderSpellStub(spellframe=IService, spell_name="A", binding_name="primary")),
-            (_SpellIndexStub("prov-b"), _ProviderSpellStub(spellframe=IService, spell_name="B", binding_name="primary")),
-        ]
-    )
+    contracted_spells = [
+        (_SpellIndexStub("prov-a"), _ProviderSpellStub(spellframe=IService, spell_name="A", binding_name="primary")),
+        (_SpellIndexStub("prov-b"), _ProviderSpellStub(spellframe=IService, spell_name="B", binding_name="primary")),
+    ]
     context, issues = _make_context(
         requirements=requirements,
-        scanner=scanner,
+        contracted_spells=contracted_spells,
         system_state=None,
     )
 
@@ -482,7 +445,7 @@ def test_contract_provider_presence_mutation_contract_disabled_early_errors() ->
     )
     context, issues = _make_context(
         requirements=requirements,
-        scanner=_ScannerStub([]),
+        contracted_spells=[],
         system_state=None,
     )
 
@@ -524,7 +487,7 @@ def test_contract_provider_presence_mutation_contract_disabled_late_errors() -> 
     )
     context, issues = _make_context(
         requirements=requirements,
-        scanner=_ScannerStub([]),
+        contracted_spells=[],
         system_state=None,
     )
 

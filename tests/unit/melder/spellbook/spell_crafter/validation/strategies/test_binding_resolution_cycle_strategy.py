@@ -1,4 +1,4 @@
-from __future__ import annotations
+from typing import Dict, List, Optional
 
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
@@ -75,20 +75,28 @@ class _RequirementsStub:
         Provide a requirements stub with parameter access.
     Contract:
         Returns parameters in insertion order.
+        Exposes a cleaned flag for strategy guards.
     """
 
-    def __init__(self, parameters: list[_RequirementStub]) -> None:
+    def __init__(
+        self,
+        parameters: list[_RequirementStub],
+        *,
+        cleaned: bool = False,
+    ) -> None:
         """
         Purpose:
             Initialize the requirements stub.
         Contract:
-            Stores the provided parameters.
+            Stores the provided parameters and cleaned flag.
         Args:
             parameters: List of requirement stubs.
+            cleaned: Whether this requirements artifact should appear cleaned.
         Returns:
             None.
         """
         self._parameters = list(parameters)
+        self.cleaned = cleaned
 
     @property
     def parameters(self) -> tuple[_RequirementStub, ...]:
@@ -111,7 +119,7 @@ class _CrafterStub:
         Stores requirements as provided.
     """
 
-    def __init__(self, requirements: _RequirementsStub | None) -> None:
+    def __init__(self, requirements: Optional[_RequirementsStub]) -> None:
         """
         Purpose:
             Initialize the stub with requirements.
@@ -139,8 +147,8 @@ class _SpellStub:
         spell_id: str,
         spellframe: object,
         spell_name: str,
-        binding_name: str | None,
-        requirements: _RequirementsStub | None,
+        binding_name: Optional[str],
+        requirements: Optional[_RequirementsStub],
     ) -> None:
         """
         Purpose:
@@ -163,38 +171,44 @@ class _SpellStub:
         self._crafter = _CrafterStub(requirements)
 
 
-class _ScannerStub:
+class _SpellbookStub:
     """
     Purpose:
-        Provide a scanner stub yielding spell/index pairs.
+        Provide a spellbook stub with local and contracted spell maps.
     Contract:
-        Iteration order matches the stored spell list.
+        Stores visible spells and a spell_id pool for validation strategies.
     """
 
-    def __init__(self, spells: list[_SpellStub]) -> None:
+    def __init__(
+        self,
+        *,
+        spells: List[_SpellStub],
+        contracted: Optional[List[_SpellStub]] = None,
+    ) -> None:
         """
         Purpose:
-            Initialize the scanner with spells to yield.
+            Initialize the spellbook stub with visible spells.
         Contract:
-            Stores the provided spell list.
+            Builds local and contracted spell maps without copies of spell objects.
         Args:
-            spells: Spell instances to yield.
+            spells: Local spell instances.
+            contracted: Optional contracted spell instances.
         Returns:
             None.
         """
-        self._spells = list(spells)
-
-    def iter_spells(self):
-        """
-        Purpose:
-            Yield stored spells with their indexes.
-        Contract:
-            Each yielded tuple is (spell_index, spell).
-        Returns:
-            Iterable[tuple[_SpellIndexStub, _SpellStub]]: Spell/index pairs.
-        """
-        for spell in self._spells:
-            yield spell.spell_index, spell
+        self._spells: Dict[_SpellIndexStub, _SpellStub] = {
+            spell.spell_index: spell for spell in spells
+        }
+        self._contracted_spells: Dict[str, Dict[_SpellIndexStub, _SpellStub]] = {}
+        self._spell_id_pool: Dict[str, _SpellStub] = {
+            spell.spell_index.current: spell for spell in spells
+        }
+        if contracted:
+            self._contracted_spells["contracted"] = {
+                spell.spell_index: spell for spell in contracted
+            }
+            for spell in contracted:
+                self._spell_id_pool[spell.spell_index.current] = spell
 
 
 def _spellmap_requirement(*, name: str, spellframe: object) -> _RequirementStub:
@@ -217,7 +231,11 @@ def _spellmap_requirement(*, name: str, spellframe: object) -> _RequirementStub:
     )
 
 
-def _make_context(spell: _SpellStub, *, scanner: _ScannerStub) -> tuple[SpellValidationContext, list]:
+def _make_context(
+    spell: _SpellStub,
+    *,
+    spellbook: Optional[_SpellbookStub],
+) -> tuple[SpellValidationContext, list]:
     """
     Purpose:
         Build a SpellValidationContext for binding cycle tests.
@@ -225,18 +243,17 @@ def _make_context(spell: _SpellStub, *, scanner: _ScannerStub) -> tuple[SpellVal
         Returns the context and the shared issues list.
     Args:
         spell: Root spell under validation.
-        scanner: Scanner stub for iterating spells.
+        spellbook: Spellbook stub for spell iteration.
     Returns:
         tuple[SpellValidationContext, list]: Context and issues list.
     """
     issues: list = []
     context = SpellValidationContext(
         spell=spell,
-        spellbook=None,
+        spellbook=spellbook,
         requirements=None,
         symbolic_graph=None,
         resolution_frame=None,
-        scanner=scanner,
         cancel_event=None,
         issues=issues,
     )
@@ -288,7 +305,8 @@ def test_binding_resolution_cycle_emits_issue() -> None:
         requirements=req_b,
     )
 
-    context, issues = _make_context(spell_a, scanner=_ScannerStub([spell_a, spell_b]))
+    spellbook = _SpellbookStub(spells=[spell_a, spell_b])
+    context, issues = _make_context(spell_a, spellbook=spellbook)
 
     BindingResolutionCycleStrategy().validate(context)
 
@@ -342,7 +360,8 @@ def test_binding_resolution_cycle_skips_when_acyclic() -> None:
         requirements=req_b,
     )
 
-    context, issues = _make_context(spell_a, scanner=_ScannerStub([spell_a, spell_b]))
+    spellbook = _SpellbookStub(spells=[spell_a, spell_b])
+    context, issues = _make_context(spell_a, spellbook=spellbook)
 
     BindingResolutionCycleStrategy().validate(context)
 

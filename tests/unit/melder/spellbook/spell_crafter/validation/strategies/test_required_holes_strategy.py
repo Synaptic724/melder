@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Iterable
+from typing import Iterable, List, Optional
 
 import pytest
 
@@ -162,9 +160,9 @@ class _CancelStub:
 def _make_context(
     *,
     spell: _SpellStub,
-    requirements: _RequirementsStub | None,
-    cancel_event: object | None = None,
-    issues: list[SpellValidationIssue] | None = None,
+    requirements: Optional[_RequirementsStub],
+    cancel_event: Optional[object] = None,
+    issues: Optional[List[SpellValidationIssue]] = None,
 ) -> SpellValidationContext:
     """
     Purpose:
@@ -187,7 +185,6 @@ def _make_context(
         requirements=requirements,
         symbolic_graph=None,
         resolution_frame=None,
-        scanner=None,
         cancel_event=cancel_event,
         issues=issues,
     )

@@ -42,7 +42,7 @@ class CircularDependencyStrategy(SpellValidationStrategy):
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
-            deps: List[str] = getattr(spell, "dependencies", [])
+            deps: List[str] = spell.dependencies
             adjacency[spell_id] = list(deps) if deps else []
 
         root_id = context.spell.spell_index.current

@@ -1,9 +1,10 @@
+from typing import Optional
+
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spellbook_scanner import SpellbookScanner
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
 from melder.spellbook.spell_crafter.validation.strategies.annotation_shape_guard_strategy import (
     AnnotationShapeGuardStrategy,
@@ -82,12 +83,12 @@ def _make_spellbook() -> Spellbook:
     return spellbook
 
 
-def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Optional[object]:
     """
     Purpose:
         Resolve a local Spell instance by its versioned spell id.
     Contract:
-        - Returns the first local spell whose SpellIndex.current matches `spell_id`.
+        - Returns the spell mapped in the live _spell_id_pool for `spell_id`.
         - Returns None if no matching spell is found.
     Args:
         spellbook: Spellbook holding locally bound spells.
@@ -95,23 +96,20 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
     Returns:
         Spell | None: The resolved spell or None if missing.
     """
-    for spell_index, spell in spellbook.spells.items():
-        if spell_index.current == spell_id:
-            return spell
-    return None
+    return spellbook._spell_id_pool.get(spell_id)
 
 
 def _make_context(
     *,
     spell: object,
     spellbook: Spellbook,
-    requirements: object | None = None,
-    symbolic_graph: object | None = None,
-    resolution_frame: object | None = None,
+    requirements: Optional[object] = None,
+    symbolic_graph: Optional[object] = None,
+    resolution_frame: Optional[object] = None,
 ) -> tuple[SpellValidationContext, list]:
     """
     Purpose:
-        Build a SpellValidationContext bound to a real SpellbookScanner.
+        Build a SpellValidationContext bound to a real Spellbook.
     Contract:
         - Returns the context and the shared issues list.
     Args:
@@ -124,14 +122,12 @@ def _make_context(
         tuple[SpellValidationContext, list]: The context and issues list.
     """
     issues: list = []
-    scanner = SpellbookScanner(spellbook)
     context = SpellValidationContext(
         spell=spell,
         spellbook=spellbook,
         requirements=requirements,
         symbolic_graph=symbolic_graph,
         resolution_frame=resolution_frame,
-        scanner=scanner,
         cancel_event=None,
         issues=issues,
     )

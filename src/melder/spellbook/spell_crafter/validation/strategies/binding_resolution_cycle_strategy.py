@@ -52,7 +52,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         Contract:
             - Scans available requirements to build a binding-key graph.
             - Emits at least one diagnostic per reachable cycle.
-            - Skips validation if spellbook scanning is unavailable.
+            - Skips validation if the spellbook is unavailable.
         Args:
             context: SpellValidationContext for the spell under validation.
         Returns:
@@ -81,7 +81,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         binding_graph: Dict[Tuple[str, str], Set[Tuple[str, str]]] = {}
         binding_to_spells: Dict[Tuple[str, str], List[str]] = {}
 
-        for spell_index, spell_instance in spellbook._spells.items():
+        for spell_id, spell_instance in spellbook._spell_id_pool.items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
@@ -90,7 +90,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                 spell_name=spell_instance.spell_name,
                 binding_name=spell_instance.binding_name,
             )
-            binding_to_spells.setdefault(spell_key, []).append(spell_index.current)
+            binding_to_spells.setdefault(spell_key, []).append(spell_id)
             binding_graph.setdefault(spell_key, set())
 
             crafter = spell_instance._crafter
@@ -110,37 +110,6 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                 if target_key is None:
                     continue
                 binding_graph[spell_key].add(target_key)
-
-        for contracted in spellbook._contracted_spells.values():
-            for spell_index, spell_instance in contracted.items():
-                if cancel_event is not None and cancel_event.is_set:
-                    cancel_event.throw_if_set()
-
-                spell_key = SpellInputUtils.make_spell_key_from_parts(
-                    spellframe=spell_instance.spellframe,
-                    spell_name=spell_instance.spell_name,
-                    binding_name=spell_instance.binding_name,
-                )
-                binding_to_spells.setdefault(spell_key, []).append(spell_index.current)
-                binding_graph.setdefault(spell_key, set())
-
-                crafter = spell_instance._crafter
-                if crafter is None or crafter.requirements is None:
-                    continue
-
-                requirements = crafter.requirements
-                if requirements.cleaned:
-                    continue
-                try:
-                    parameters = requirements.parameters
-                except RuntimeError:
-                    continue
-
-                for param in parameters:
-                    target_key = self._binding_key_for_requirement(param)
-                    if target_key is None:
-                        continue
-                    binding_graph[spell_key].add(target_key)
 
         cycles = self._detect_cycles(root_key, binding_graph, cancel_event)
         if not cycles:

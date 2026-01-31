@@ -1,6 +1,5 @@
-from __future__ import annotations
-
 import pytest
+from typing import List, Optional
 
 from melder.spellbook.spell_crafter.validation.spell_validation_context import (
     SpellValidationContext,
@@ -48,26 +47,23 @@ class _SpellStub:
         *,
         spell_id: str,
         spell_name: str = "spell-name",
-        dependencies: list[str] | None = None,
-        include_dependencies: bool = True,
+        dependencies: Optional[List[str]] = None,
     ) -> None:
         """
         Purpose:
             Initialize the stub with identifiers and dependencies.
         Contract:
-            When include_dependencies is False, dependencies is not set.
+            dependencies is always set; None represents "no dependencies".
         Args:
             spell_id: Spell identifier for spell_index.current.
             spell_name: Spell name used in diagnostics.
             dependencies: Optional list of dependency ids.
-            include_dependencies: Whether to set the dependencies attribute.
         Returns:
             None.
         """
         self.spell_index = _SpellIndexStub(spell_id)
         self.spell_name = spell_name
-        if include_dependencies:
-            self.dependencies = list(dependencies) if dependencies is not None else []
+        self.dependencies = list(dependencies) if dependencies is not None else None
 
 
 class _CancelStub:
@@ -121,8 +117,8 @@ class _CancelStub:
 def _make_context(
     *,
     spell: _SpellStub,
-    cancel_event: object | None = None,
-    issues: list[SpellValidationIssue] | None = None,
+    cancel_event: Optional[object] = None,
+    issues: Optional[List[SpellValidationIssue]] = None,
 ) -> SpellValidationContext:
     """
     Purpose:
@@ -144,7 +140,6 @@ def _make_context(
         requirements=None,
         symbolic_graph=None,
         resolution_frame=None,
-        scanner=None,
         cancel_event=cancel_event,
         issues=issues,
     )
@@ -187,12 +182,12 @@ def test_validate_no_dependencies_is_noop() -> None:
     assert issues == []
 
 
-def test_validate_missing_dependencies_attribute_is_ok() -> None:
+def test_validate_dependencies_default_none_is_ok() -> None:
     """
     Purpose:
-        Ensure missing dependencies attribute is treated as no dependencies.
+        Ensure default None dependencies are treated as no dependencies.
     Contract:
-        No diagnostics are added when dependencies are absent.
+        No diagnostics are added when dependencies is None by default.
     Returns:
         None.
     Raises:
@@ -200,10 +195,7 @@ def test_validate_missing_dependencies_attribute_is_ok() -> None:
     """
     strategy = SelfDependencyStrategy()
     issues: list[SpellValidationIssue] = []
-    spell = _SpellStub(
-        spell_id="root",
-        include_dependencies=False,
-    )
+    spell = _SpellStub(spell_id="root")
     context = _make_context(spell=spell, issues=issues)
 
     strategy.validate(context)
@@ -227,7 +219,6 @@ def test_validate_dependencies_none_is_noop() -> None:
     spell = _SpellStub(
         spell_id="root",
         dependencies=None,
-        include_dependencies=True,
     )
     context = _make_context(spell=spell, issues=issues)
 

@@ -54,9 +54,10 @@ class _StubSpellIndex:
 class _StubSpellbook:
     """
     Purpose:
-        Provide a minimal Spellbook-like container for SpellbookScanner.
+        Provide a minimal Spellbook-like container for occurrence planning.
     Contract:
-        - Exposes `spells` and `contracted_spells` mappings.
+        - Exposes local and contracted spell mappings used during planning.
+        - Maintains a spell_id -> spell pool for SpellCrafter lookups.
         - Holds a `_spell_validator` attribute for SpellCrafter initialization.
     """
 
@@ -79,12 +80,15 @@ class _StubSpellbook:
             spell.key: spell_index for spell_index, spell in spells.items()
         }
         self._lookup_contracted_spells: Dict[str, Dict[tuple, _StubSpellIndex]] = {}
+        self._spell_id_pool: Dict[str, "_StubSpell"] = {
+            spell_index.current: spell for spell_index, spell in spells.items()
+        }
 
     @property
     def spells(self) -> Dict[_StubSpellIndex, "_StubSpell"]:
         """
         Purpose:
-            Expose local spells for SpellbookScanner.
+            Expose local spells for occurrence-plan tests.
         Contract:
             Returns the stored spells mapping.
         Returns:
@@ -96,7 +100,7 @@ class _StubSpellbook:
     def contracted_spells(self) -> Dict[str, Dict[_StubSpellIndex, "_StubSpell"]]:
         """
         Purpose:
-            Expose contracted spells for SpellbookScanner.
+            Expose contracted spells for occurrence-plan tests.
         Contract:
             Returns an empty mapping by default.
         Returns:
@@ -135,7 +139,7 @@ class _StubSpell:
             spell_name: Human-readable name used in diagnostics.
             existence: Existence policy used by instance planning.
             spell_callable: Callable inspected for SpellContract defaults.
-            spellbook: Optional stub spellbook for scanner access.
+            spellbook: Optional stub spellbook for spell_id pool access.
         Returns:
             None.
         """

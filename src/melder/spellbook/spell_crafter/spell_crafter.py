@@ -688,25 +688,22 @@ class SpellCrafter(Cleanable):
 
     def _iter_all_spells(self):
         """
-        Iterate all visible spells (local + contracted) without copying maps.
+        Iterate all visible spells via the Spellbook's live spell_id_pool.
 
         Purpose:
             Provide a single internal iterator that Phase 3 can use for
             resolution without relying on any scanner wrapper.
         Contract:
-            - Yields ``(spell_index, spell)`` for local spells first, then
-              contracted spells.
-            - Uses the Spellbook's live internal maps directly; no copies
+            - Yields ``(spell_index, spell)`` in the insertion order of
+              ``_spell_id_pool``.
+            - Uses the Spellbook's live ``_spell_id_pool`` directly; no copies
               or snapshots are created.
         Returns:
             Iterator[Tuple[SpellIndex, ISpell]]: Live iteration stream.
         """
         spellbook = self._spell._spellbook
-        for spell_index, spell_instance in spellbook._spells.items():
-            yield spell_index, spell_instance
-        for contracted in spellbook._contracted_spells.values():
-            for spell_index, spell_instance in contracted.items():
-                yield spell_index, spell_instance
+        for spell_instance in spellbook._spell_id_pool.values():
+            yield spell_instance.spell_index, spell_instance
 
     def _normalize_annotation_for_matching(self, annotation: Any) -> Any:
         """
@@ -1634,8 +1631,7 @@ class SpellCrafter(Cleanable):
         # --- 2. Filter to spellbook-visible spells -------------------------
         # Use the live spell_id_pool (no copies) for version-id -> Spell lookup.
         spellbook = self._spell._spellbook
-        version_to_spell: Dict[str, ISpell] = spellbook._spell_id_pool
-        visible_spell_ids = version_to_spell.keys()
+        visible_spell_ids = spellbook._spell_id_pool.keys()
 
         filtered_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
@@ -1652,7 +1648,7 @@ class SpellCrafter(Cleanable):
         for spell_id, deps in filtered_snapshot.dependencies.items():
             state = self._spell_system_states.get_by_spell_id(spell_id)
             lineage_id: str = state.spell_index_id
-            spell_instance = version_to_spell[spell_id]
+            spell_instance = spellbook._spell_id_pool[spell_id]
 
             node = SpellSystemNode(
                 spell_id=spell_id,
@@ -1668,7 +1664,7 @@ class SpellCrafter(Cleanable):
             system_index.upsert_node(node)
 
         # --- 5. Attach artifacts to SpellCrafters -------------------------
-        for spell_id, spell_instance in version_to_spell.items():
+        for spell_id, spell_instance in spellbook._spell_id_pool.items():
             crafter_for_spell = spell_instance._ensure_crafter()
 
             crafter_for_spell.set_spell_system_index_phase5(system_index)

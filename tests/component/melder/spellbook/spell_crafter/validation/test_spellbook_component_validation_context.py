@@ -1,9 +1,10 @@
+from typing import Optional
+
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spellbook_scanner import SpellbookScanner
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import SpellValidationIssue
 from melder.spellbook.spellbook import Spellbook
@@ -48,12 +49,12 @@ def _make_spellbook() -> Spellbook:
     return spellbook
 
 
-def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Optional[object]:
     """
     Purpose:
         Resolve a local Spell instance by its versioned spell id.
     Contract:
-        - Returns the first local spell whose SpellIndex.current matches `spell_id`.
+        - Returns the spell mapped in the live _spell_id_pool for `spell_id`.
         - Returns None if no matching spell is found.
     Args:
         spellbook: Spellbook holding locally bound spells.
@@ -61,10 +62,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
     Returns:
         Spell | None: The resolved spell or None if missing.
     """
-    for spell_index, spell in spellbook.spells.items():
-        if spell_index.current == spell_id:
-            return spell
-    return None
+    return spellbook._spell_id_pool.get(spell_id)
 
 
 def test_component_validation_context_cleanup_preserves_issues_and_cleans_artifacts() -> None:
@@ -73,7 +71,7 @@ def test_component_validation_context_cleanup_preserves_issues_and_cleans_artifa
         Validate SpellValidationContext cleanup preserves shared issues and cleans artifacts.
     Contract:
         - Cleanup leaves the shared issues list intact.
-        - Cleanup calls cleanup on requirements, symbolic graph, resolution frame, and scanner.
+        - Cleanup calls cleanup on requirements, symbolic graph, and resolution frame.
     Returns:
         None.
     Raises:
@@ -101,14 +99,12 @@ def test_component_validation_context_cleanup_preserves_issues_and_cleans_artifa
         assert resolution_frame is not None
 
         issues = [SpellValidationIssue("warning", "TEST", "test")]
-        scanner = SpellbookScanner(spellbook)
         context = SpellValidationContext(
             spell=spell,
             spellbook=spellbook,
             requirements=requirements,
             symbolic_graph=symbolic_graph,
             resolution_frame=resolution_frame,
-            scanner=scanner,
             cancel_event=None,
             issues=issues,
         )
@@ -118,7 +114,6 @@ def test_component_validation_context_cleanup_preserves_issues_and_cleans_artifa
         assert requirements.cleaned is True
         assert symbolic_graph.cleaned is True
         assert resolution_frame.cleaned is True
-        assert scanner.cleaned is True
         assert context.cleaned is True
     finally:
         spellbook.cleanup()

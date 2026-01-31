@@ -1,6 +1,5 @@
-from __future__ import annotations
-
 import pytest
+from typing import Optional, List
 
 from melder.spellbook.spell_crafter.validation.spell_validation_context import (
     SpellValidationContext,
@@ -25,24 +24,21 @@ class _SpellStub:
         self,
         *,
         spell_name: str = "spell-name",
-        dependency_graph: object | None = None,
-        include_dependency_graph: bool = True,
+        dependency_graph: Optional[object] = None,
     ) -> None:
         """
         Purpose:
             Initialize the spell stub.
         Contract:
-            Sets dependency_graph only when include_dependency_graph is True.
+            dependency_graph is always set; None represents "no graph".
         Args:
             spell_name: Spell name used in diagnostics.
             dependency_graph: Dependency graph object or None.
-            include_dependency_graph: Whether to set dependency_graph attribute.
         Returns:
             None.
         """
         self.spell_name = spell_name
-        if include_dependency_graph:
-            self.dependency_graph = dependency_graph
+        self.dependency_graph = dependency_graph
 
 
 class _CancelStub:
@@ -96,9 +92,9 @@ class _CancelStub:
 def _make_context(
     *,
     spell: _SpellStub,
-    resolution_frame: object | None,
-    cancel_event: object | None = None,
-    issues: list[SpellValidationIssue] | None = None,
+    resolution_frame: Optional[object],
+    cancel_event: Optional[object] = None,
+    issues: Optional[List[SpellValidationIssue]] = None,
 ) -> SpellValidationContext:
     """
     Purpose:
@@ -121,7 +117,6 @@ def _make_context(
         requirements=None,
         symbolic_graph=None,
         resolution_frame=resolution_frame,
-        scanner=None,
         cancel_event=cancel_event,
         issues=issues,
     )
@@ -278,12 +273,12 @@ def test_validate_falsey_dependency_graph_is_treated_as_present() -> None:
     assert issues == []
 
 
-def test_validate_missing_dependency_graph_attribute_emits_warning() -> None:
+def test_validate_dependency_graph_none_emits_warning() -> None:
     """
     Purpose:
-        Ensure missing dependency_graph attribute triggers warning.
+        Ensure dependency_graph None triggers a warning.
     Contract:
-        The missing dependency graph warning is appended when attribute is absent.
+        The missing dependency graph warning is appended when graph is None.
     Returns:
         None.
     Raises:
@@ -291,7 +286,7 @@ def test_validate_missing_dependency_graph_attribute_emits_warning() -> None:
     """
     strategy = ResolutionFramePresenceStrategy()
     issues: list[SpellValidationIssue] = []
-    spell = _SpellStub(spell_name="Root", include_dependency_graph=False)
+    spell = _SpellStub(spell_name="Root", dependency_graph=None)
     context = _make_context(
         spell=spell,
         resolution_frame=object(),

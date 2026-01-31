@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Iterable
+from typing import Dict, Iterable, Optional
 
 import pytest
 
@@ -50,60 +48,47 @@ class _SpellStub:
         *,
         spell_id: str,
         spell_name: str = "spell-name",
-        dependencies: list[str] | None = None,
-        include_dependencies: bool = True,
+        dependencies: Optional[list[str]] = None,
     ) -> None:
         """
         Purpose:
             Initialize the stub with identifiers and dependencies.
         Contract:
-            When include_dependencies is False, dependencies is not set.
+            dependencies is always set; None represents "no dependencies".
         Args:
             spell_id: Spell identifier for spell_index.current.
             spell_name: Spell name used in diagnostics.
             dependencies: Optional list of dependency ids.
-            include_dependencies: Whether to set the dependencies attribute.
         Returns:
             None.
         """
         self.spell_index = _SpellIndexStub(spell_id)
         self.spell_name = spell_name
-        if include_dependencies:
-            self.dependencies = list(dependencies) if dependencies is not None else []
+        self.dependencies = list(dependencies) if dependencies is not None else None
 
 
-class _ScannerStub:
+class _SpellbookStub:
     """
     Purpose:
-        Provide a scanner stub yielding spell/index pairs.
+        Provide a spellbook stub exposing a spell_id pool.
     Contract:
-        Iteration order matches the provided spell list.
+        Stores spells by spell_id for validation strategies.
     """
 
     def __init__(self, spells: list[_SpellStub]) -> None:
         """
         Purpose:
-            Store the spells to be yielded during iteration.
+            Store the spells in a spell_id pool.
         Contract:
-            Copies the provided list for stable iteration.
+            Builds a mapping from spell_id to spell.
         Args:
-            spells: Spells to yield in iter_all_spells.
+            spells: Spells to expose via spell_id pool.
         Returns:
             None.
         """
-        self._spells = list(spells)
-
-    def iter_all_spells(self) -> Iterable[tuple[_SpellIndexStub, _SpellStub]]:
-        """
-        Purpose:
-            Yield all spells with their index objects.
-        Contract:
-            Each yielded pair matches spell.spell_index and the spell.
-        Returns:
-            Iterable[tuple[_SpellIndexStub, _SpellStub]]: Index and spell pairs.
-        """
-        for spell in self._spells:
-            yield spell.spell_index, spell
+        self._spell_id_pool: Dict[str, _SpellStub] = {
+            spell.spell_index.current: spell for spell in spells
+        }
 
 
 class _CancelSequence:
@@ -114,7 +99,7 @@ class _CancelSequence:
         Each is_set call advances through the provided sequence.
     """
 
-    def __init__(self, sequence: list[bool], exc: Exception | None = None) -> None:
+    def __init__(self, sequence: list[bool], exc: Optional[Exception] = None) -> None:
         """
         Purpose:
             Initialize the cancellation sequence and exception.
@@ -164,18 +149,18 @@ class _CancelSequence:
 def _make_context(
     *,
     spell: _SpellStub,
-    scanner: _ScannerStub | None,
-    cancel_event: object | None = None,
-    issues: list[SpellValidationIssue] | None = None,
+    spellbook: Optional[_SpellbookStub],
+    cancel_event: Optional[object] = None,
+    issues: Optional[list[SpellValidationIssue]] = None,
 ) -> SpellValidationContext:
     """
     Purpose:
         Build a SpellValidationContext for strategy tests.
     Contract:
-        Returns a context with the provided spell, scanner, and issues list.
+        Returns a context with the provided spell, spellbook, and issues list.
     Args:
         spell: Spell under validation.
-        scanner: Spellbook scanner stub or None.
+        spellbook: Spellbook stub or None.
         cancel_event: Cancellation stub or None.
         issues: Optional issues list to populate.
     Returns:
@@ -185,11 +170,10 @@ def _make_context(
         issues = []
     return SpellValidationContext(
         spell=spell,
-        spellbook=None,
+        spellbook=spellbook,
         requirements=None,
         symbolic_graph=None,
         resolution_frame=None,
-        scanner=scanner,
         cancel_event=cancel_event,
         issues=issues,
     )
@@ -211,12 +195,12 @@ def test_init_sets_name_and_description() -> None:
     assert "cycle" in strategy.description.lower()
 
 
-def test_validate_without_scanner_emits_no_issue() -> None:
+def test_validate_without_spellbook_emits_no_issue() -> None:
     """
     Purpose:
-        Ensure validation exits when no scanner is available.
+        Ensure validation exits when no spellbook is available.
     Contract:
-        No issues are added without a scanner.
+        No issues are added without a spellbook.
     Returns:
         None.
     Raises:
@@ -226,7 +210,7 @@ def test_validate_without_scanner_emits_no_issue() -> None:
     issues: list[SpellValidationIssue] = []
     context = _make_context(
         spell=_SpellStub(spell_id="root"),
-        scanner=None,
+        spellbook=None,
         issues=issues,
     )
 
@@ -235,10 +219,10 @@ def test_validate_without_scanner_emits_no_issue() -> None:
     assert issues == []
 
 
-def test_validate_handles_empty_scanner() -> None:
+def test_validate_handles_empty_spellbook() -> None:
     """
     Purpose:
-        Confirm an empty scanner produces no diagnostics.
+        Confirm an empty spellbook produces no diagnostics.
     Contract:
         No cycle issues are reported when no spells are present.
     Returns:
@@ -248,10 +232,10 @@ def test_validate_handles_empty_scanner() -> None:
     """
     strategy = CircularDependencyStrategy()
     issues: list[SpellValidationIssue] = []
-    scanner = _ScannerStub([])
+    spellbook = _SpellbookStub([])
     context = _make_context(
         spell=_SpellStub(spell_id="root"),
-        scanner=scanner,
+        spellbook=spellbook,
         issues=issues,
     )
 
@@ -274,8 +258,8 @@ def test_validate_ignores_dangling_dependency() -> None:
     strategy = CircularDependencyStrategy()
     issues: list[SpellValidationIssue] = []
     root = _SpellStub(spell_id="root", dependencies=["missing"])
-    scanner = _ScannerStub([root])
-    context = _make_context(spell=root, scanner=scanner, issues=issues)
+    spellbook = _SpellbookStub([root])
+    context = _make_context(spell=root, spellbook=spellbook, issues=issues)
 
     strategy.validate(context)
 
@@ -298,8 +282,8 @@ def test_validate_linear_chain_is_acyclic() -> None:
     spell_a = _SpellStub(spell_id="a", dependencies=["b"])
     spell_b = _SpellStub(spell_id="b", dependencies=["c"])
     spell_c = _SpellStub(spell_id="c", dependencies=[])
-    scanner = _ScannerStub([spell_a, spell_b, spell_c])
-    context = _make_context(spell=spell_a, scanner=scanner, issues=issues)
+    spellbook = _SpellbookStub([spell_a, spell_b, spell_c])
+    context = _make_context(spell=spell_a, spellbook=spellbook, issues=issues)
 
     strategy.validate(context)
 
@@ -320,8 +304,8 @@ def test_validate_detects_self_cycle() -> None:
     strategy = CircularDependencyStrategy()
     issues: list[SpellValidationIssue] = []
     root = _SpellStub(spell_id="a", spell_name="Alpha", dependencies=["a"])
-    scanner = _ScannerStub([root])
-    context = _make_context(spell=root, scanner=scanner, issues=issues)
+    spellbook = _SpellbookStub([root])
+    context = _make_context(spell=root, spellbook=spellbook, issues=issues)
 
     strategy.validate(context)
 
@@ -348,8 +332,8 @@ def test_validate_detects_two_node_cycle() -> None:
     issues: list[SpellValidationIssue] = []
     spell_a = _SpellStub(spell_id="a", spell_name="Alpha", dependencies=["b"])
     spell_b = _SpellStub(spell_id="b", spell_name="Beta", dependencies=["a"])
-    scanner = _ScannerStub([spell_a, spell_b])
-    context = _make_context(spell=spell_a, scanner=scanner, issues=issues)
+    spellbook = _SpellbookStub([spell_a, spell_b])
+    context = _make_context(spell=spell_a, spellbook=spellbook, issues=issues)
 
     strategy.validate(context)
 
@@ -378,8 +362,8 @@ def test_validate_ignores_unreachable_cycle() -> None:
     root = _SpellStub(spell_id="root", dependencies=[])
     spell_b = _SpellStub(spell_id="b", dependencies=["c"])
     spell_c = _SpellStub(spell_id="c", dependencies=["b"])
-    scanner = _ScannerStub([root, spell_b, spell_c])
-    context = _make_context(spell=root, scanner=scanner, issues=issues)
+    spellbook = _SpellbookStub([root, spell_b, spell_c])
+    context = _make_context(spell=root, spellbook=spellbook, issues=issues)
 
     strategy.validate(context)
 
@@ -403,20 +387,20 @@ def test_validate_reports_single_issue_for_multiple_cycles() -> None:
     spell_b = _SpellStub(spell_id="b", dependencies=["a"])
     spell_c = _SpellStub(spell_id="c", dependencies=["d"])
     spell_d = _SpellStub(spell_id="d", dependencies=["c"])
-    scanner = _ScannerStub([spell_a, spell_b, spell_c, spell_d])
-    context = _make_context(spell=spell_a, scanner=scanner, issues=issues)
+    spellbook = _SpellbookStub([spell_a, spell_b, spell_c, spell_d])
+    context = _make_context(spell=spell_a, spellbook=spellbook, issues=issues)
 
     strategy.validate(context)
 
     assert len(issues) == 1
 
 
-def test_validate_missing_dependencies_attribute_is_ok() -> None:
+def test_validate_dependencies_default_none_is_ok() -> None:
     """
     Purpose:
-        Ensure spells without a dependencies attribute are handled safely.
+        Ensure default None dependencies are handled safely.
     Contract:
-        No issues are emitted when dependencies are absent.
+        No issues are emitted when dependencies is None by default.
     Returns:
         None.
     Raises:
@@ -424,12 +408,9 @@ def test_validate_missing_dependencies_attribute_is_ok() -> None:
     """
     strategy = CircularDependencyStrategy()
     issues: list[SpellValidationIssue] = []
-    root = _SpellStub(
-        spell_id="root",
-        include_dependencies=False,
-    )
-    scanner = _ScannerStub([root])
-    context = _make_context(spell=root, scanner=scanner, issues=issues)
+    root = _SpellStub(spell_id="root")
+    spellbook = _SpellbookStub([root])
+    context = _make_context(spell=root, spellbook=spellbook, issues=issues)
 
     strategy.validate(context)
 
@@ -452,7 +433,7 @@ def test_validate_cancel_event_preempts() -> None:
     cancel_event = _CancelSequence([True], exc=RuntimeError("cancelled"))
     context = _make_context(
         spell=_SpellStub(spell_id="root"),
-        scanner=_ScannerStub([]),
+        spellbook=_SpellbookStub([]),
         cancel_event=cancel_event,
         issues=issues,
     )
@@ -479,10 +460,10 @@ def test_validate_cancel_event_during_scan() -> None:
     cancel_event = _CancelSequence([False, False, True], exc=RuntimeError("cancelled"))
     spell_a = _SpellStub(spell_id="a", dependencies=[])
     spell_b = _SpellStub(spell_id="b", dependencies=[])
-    scanner = _ScannerStub([spell_a, spell_b])
+    spellbook = _SpellbookStub([spell_a, spell_b])
     context = _make_context(
         spell=spell_a,
-        scanner=scanner,
+        spellbook=spellbook,
         cancel_event=cancel_event,
         issues=issues,
     )
@@ -512,10 +493,10 @@ def test_validate_cancel_event_during_traversal() -> None:
     )
     spell_a = _SpellStub(spell_id="a", dependencies=["b"])
     spell_b = _SpellStub(spell_id="b", dependencies=[])
-    scanner = _ScannerStub([spell_a, spell_b])
+    spellbook = _SpellbookStub([spell_a, spell_b])
     context = _make_context(
         spell=spell_a,
-        scanner=scanner,
+        spellbook=spellbook,
         cancel_event=cancel_event,
         issues=issues,
     )
