@@ -243,6 +243,9 @@ class SpellSystemRootBlueprintBuilder:
 
         # Start with a fresh index to avoid stale entries in case of reuse.
         blueprint.replace_dag_index(DagIndex())
+        blueprint.check_cleaned()
+        socket_refs = blueprint._socket_refs
+        add_socket = blueprint._dag_index.add_socket
 
         visited: Set[Tuple[str, Tuple[str, ...]]] = set()
         queued: Set[Tuple[str, Tuple[str, ...]]] = {root_key}
@@ -267,7 +270,8 @@ class SpellSystemRootBlueprintBuilder:
                     param_path=socket_path,
                     socket_kind=socket_desc.socket_kind,
                 )
-                blueprint.add_socket_ref(socket_ref)
+                socket_refs.append(socket_ref)
+                add_socket(socket_ref)
 
                 for target_id in socket_desc.target_spell_ids:
                     target_key = (target_id, socket_path)

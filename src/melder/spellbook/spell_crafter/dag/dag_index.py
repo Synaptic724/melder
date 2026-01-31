@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Iterable, Callable, Sequence, Tuple, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -6,7 +6,7 @@ from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpe
 from melder.utilities.general_base.cleanable import Cleanable
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SocketRef:
     """
     Internal
@@ -32,6 +32,17 @@ class SocketRef:
     param_name: str
     param_path: Tuple[str, ...]
     socket_kind: SocketKind
+    _hash: int = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "_hash",
+            hash((self.node_id, self.param_name, self.param_path, self.socket_kind)),
+        )
+
+    def __hash__(self) -> int:
+        return self._hash
 
 
 class DagIndex(Cleanable):
@@ -70,13 +81,18 @@ class DagIndex(Cleanable):
 
     @staticmethod
     def _path_key(path: Sequence[str]) -> str:
+        if len(path) == 1:
+            return path[0]
         return ">".join(path)
 
     def add_socket(self, socket: SocketRef) -> None:
         """
         Add a socket reference to the index.
         """
-        key = self._path_key(socket.param_path)
+        if len(socket.param_path) == 1:
+            key = socket.param_path[0]
+        else:
+            key = self._path_key(socket.param_path)
         sockets_by_path = self._by_exact_path.get(key)
         if sockets_by_path is None:
             sockets_by_path = []
