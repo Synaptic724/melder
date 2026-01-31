@@ -76,7 +76,9 @@ class CircularDependencyStrategy(SpellValidationStrategy):
                 if dep_id not in adjacency:
                     # Dangling dependency – another strategy will handle it.
                     continue
-                dfs(dep_id, path + [dep_id])
+                path.append(dep_id)
+                dfs(dep_id, path)
+                path.pop()
                 if cycle_path:
                     return
 

@@ -51,7 +51,7 @@ class DagIndex(Cleanable):
 
     Lightweight index over :class:`SocketRef` instances, keyed by:
 
-    * exact param path (``"a>b>c"``) and
+    * exact param path tuple (``("a", "b", "c")``) and
     * param name (``"repo"``).
 
     This is the shared substrate for `spell_override` and `mutation_override`
@@ -62,7 +62,7 @@ class DagIndex(Cleanable):
 
     def __init__(self) -> None:
         super().__init__()
-        self._by_exact_path: Dict[str, List[SocketRef]] = {}
+        self._by_exact_path: Dict[Tuple[str, ...], List[SocketRef]] = {}
         self._by_name: Dict[str, List[SocketRef]] = {}
 
 
@@ -80,19 +80,16 @@ class DagIndex(Cleanable):
         self._by_name = None
 
     @staticmethod
-    def _path_key(path: Sequence[str]) -> str:
-        if len(path) == 1:
-            return path[0]
-        return ">".join(path)
+    def _path_key(path: Sequence[str]) -> Tuple[str, ...]:
+        if isinstance(path, tuple):
+            return path
+        return tuple(path)
 
     def add_socket(self, socket: SocketRef) -> None:
         """
         Add a socket reference to the index.
         """
-        if len(socket.param_path) == 1:
-            key = socket.param_path[0]
-        else:
-            key = self._path_key(socket.param_path)
+        key = self._path_key(socket.param_path)
         sockets_by_path = self._by_exact_path.get(key)
         if sockets_by_path is None:
             sockets_by_path = []
@@ -108,6 +105,10 @@ class DagIndex(Cleanable):
     def get_by_exact_path(self, path: Sequence[str]) -> List[SocketRef]:
         """
         Retrieve all sockets that share this exact param path.
+
+        Contract:
+            - Returns a defensive copy to prevent external mutation of
+              internal index buckets.
         """
         key = self._path_key(path)
         sockets = self._by_exact_path.get(key)
@@ -118,6 +119,10 @@ class DagIndex(Cleanable):
     def get_by_name(self, name: str) -> List[SocketRef]:
         """
         Retrieve all sockets whose param name matches the given value.
+
+        Contract:
+            - Returns a defensive copy to prevent external mutation of
+              internal index buckets.
         """
         sockets = self._by_name.get(name)
         if not sockets:

@@ -604,8 +604,10 @@ class OccurrencePlanBuilder(object):
         queue = [node_id for node_id, degree in indegree.items() if degree == 0]
         order: List[str] = []
 
-        while queue:
-            node_id = queue.pop(0)
+        queue_idx = 0
+        while queue_idx < len(queue):
+            node_id = queue[queue_idx]
+            queue_idx += 1
             order.append(node_id)
             for child_id in edges.get(node_id, []):
                 indegree[child_id] -= 1
