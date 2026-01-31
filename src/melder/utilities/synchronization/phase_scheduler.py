@@ -392,7 +392,7 @@ class PhaseScheduler(Cleanable):
             try:
                 uow = self._queue.popleft()
             except IndexError:
-                time.sleep(0.01)
+                time.sleep(0.0001)
                 continue
 
             if uow is self._sentinel:
@@ -487,7 +487,7 @@ class PhaseScheduler(Cleanable):
                 raise PhaseTimeoutError(phase_name, self._barrier_timeout_ms)
 
             # Poll in tight intervals so we can fail fast on exceptions/cancel.
-            wait_timeout = min(0.001, remaining)
+            wait_timeout = min(0.0001, remaining)
             done_now, pending = wait(
                 pending,
                 timeout=wait_timeout,
