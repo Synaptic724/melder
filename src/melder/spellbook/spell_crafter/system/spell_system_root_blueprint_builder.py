@@ -238,16 +238,19 @@ class SpellSystemRootBlueprintBuilder:
         Overlay SocketRefs and build a deep DagIndex for the blueprint.
         """
         queue: Deque[Tuple[str, Tuple[str, ...]]] = deque()
-        queue.append((blueprint.root_spell_id, ()))
+        root_key = (blueprint.root_spell_id, ())
+        queue.append(root_key)
 
         # Start with a fresh index to avoid stale entries in case of reuse.
         blueprint.replace_dag_index(DagIndex())
 
         visited: Set[Tuple[str, Tuple[str, ...]]] = set()
+        queued: Set[Tuple[str, Tuple[str, ...]]] = {root_key}
 
         while queue:
             node_id, path = queue.popleft()
             key = (node_id, path)
+            queued.discard(key)
             if key in visited:
                 continue
             visited.add(key)
@@ -267,4 +270,7 @@ class SpellSystemRootBlueprintBuilder:
                 blueprint.add_socket_ref(socket_ref)
 
                 for target_id in socket_desc.target_spell_ids:
-                    queue.append((target_id, socket_path))
+                    target_key = (target_id, socket_path)
+                    if target_key not in visited and target_key not in queued:
+                        queued.add(target_key)
+                        queue.append(target_key)
