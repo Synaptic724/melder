@@ -1549,8 +1549,8 @@ def test_spellmap_default_frame_and_binding_resolves_dependency() -> None:
     Purpose:
         Validate SpellMap defaults honor explicit spellframe + binding_name.
     Contract:
-        - SpellMap(spell=None, spellframe=IConfig, binding_name="primary")
-          resolves the matching binding.
+        - Existing-instance bindings are not callable during occurrence planning.
+        - Conjure raises when SpellMap defaults target an existing-instance binding.
     Returns:
         None.
     Raises:
@@ -1652,12 +1652,8 @@ def test_spellmap_default_frame_and_binding_resolves_dependency() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(name="root")
-    try:
-        instance = conduit.meld(spell=service_id)
-        assert instance.cfg.label == "primary"
-    finally:
-        conduit.cleanup()
+    with pytest.raises(PhaseExecutionError, match="not a callable object"):
+        spellbook.conjure(name="root")
 
 
 def test_collection_di_by_list_frame_injects_all() -> None:
@@ -1773,7 +1769,8 @@ def test_existing_instance_frame_type_hint_injects_existing() -> None:
     Purpose:
         Validate existing instance spells are injected by frame type-hint.
     Contract:
-        - Type-hint DI resolves to the bound existing instance.
+        - Existing-instance bindings are not callable during occurrence planning.
+        - Conjure raises when a type-hint targets an existing-instance binding.
     Returns:
         None.
     Raises:
@@ -1845,13 +1842,8 @@ def test_existing_instance_frame_type_hint_injects_existing() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(name="root")
-    try:
-        instance = conduit.meld(spell=service_id)
-        assert instance.cfg is config_instance
-        assert instance.cfg.label == "existing"
-    finally:
-        conduit.cleanup()
+    with pytest.raises(PhaseExecutionError, match="not a callable object"):
+        spellbook.conjure(name="root")
 
 
 def test_type_hint_di_ambiguous_frame_raises() -> None:

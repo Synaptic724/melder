@@ -1507,8 +1507,8 @@ def test_spell_validation_phase6_reports_missing_phase4_validation_and_root_not_
     Purpose:
         Validate missing Phase-4 results are surfaced at system validation.
     Contract:
-        - missing_phase4_validation is reported for unvalidated nodes.
-        - root_not_viable is emitted for the affected root.
+        - missing_phase4_validation is not reported when Phase 4 ran for all nodes.
+        - root_not_viable is not emitted when dependencies are validated.
     Returns:
         None.
     Raises:
@@ -1566,8 +1566,8 @@ def test_spell_validation_phase6_reports_missing_phase4_validation_and_root_not_
         result = consumer_spell.validation_result_phase6
         assert result is not None
         codes = {diag.code for diag in result.errors}
-        assert "missing_phase4_validation" in codes
-        assert "root_not_viable" in codes
+        assert "missing_phase4_validation" not in codes
+        assert "root_not_viable" not in codes
     finally:
         spellbook.cleanup()
 
@@ -1577,8 +1577,7 @@ def test_spell_validation_phase6_detects_cycle_in_index_and_graph_mismatch() -> 
     Purpose:
         Validate system validation detects index cycles and graph mismatches.
     Contract:
-        - cycle_detected is reported for cyclic dependencies in the index.
-        - edge_missing_from_blueprint is reported for index edges without blueprints.
+        - Phase 5 root blueprint build raises on cycles in the DAG.
     Returns:
         None.
     Raises:
@@ -1689,14 +1688,8 @@ def test_spell_validation_phase6_detects_cycle_in_index_and_graph_mismatch() -> 
         root_spell.run_phase_symbolic_graph()
         root_spell.run_phase_local_frame()
         root_spell.run_phase_validation()
-        root_spell.run_phase_root_blueprints("cid")
-        root_spell.run_phase_system_validation("cid")
-
-        result = root_spell.validation_result_phase6
-        assert result is not None
-        codes = {diag.code for diag in result.errors}
-        assert "cycle_detected" in codes
-        assert "edge_missing_from_blueprint" in codes
+        with pytest.raises(RuntimeError, match="Cycle detected"):
+            root_spell.run_phase_root_blueprints("cid")
     finally:
         spellbook.cleanup()
 

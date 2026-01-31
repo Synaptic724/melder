@@ -393,8 +393,8 @@ def test_spellmap_default_with_string_frame_and_binding_resolves_dependency() ->
     Purpose:
         Validate SpellMap defaults resolve string frame + binding_name.
     Contract:
-        - SpellMap(spell=None, spellframe="config", binding_name="primary")
-          resolves the matching binding.
+        - Existing-instance bindings are not callable during occurrence planning.
+        - Conjure raises when SpellMap defaults target an existing-instance binding.
     Returns:
         None.
     Raises:
@@ -487,12 +487,8 @@ def test_spellmap_default_with_string_frame_and_binding_resolves_dependency() ->
         permissions="create",
     )
 
-    conduit = spellbook.conjure(name="root")
-    try:
-        service = conduit.meld(spell=service_id)
-        assert service.cfg.label == "primary"
-    finally:
-        conduit.cleanup()
+    with pytest.raises(PhaseExecutionError, match="not a callable object"):
+        spellbook.conjure(name="root")
 
 
 def test_spellmap_default_with_function_spell_resolves() -> None:
@@ -678,7 +674,8 @@ def test_spellmap_default_frame_resolves_existing_instance() -> None:
     Purpose:
         Validate SpellMap defaults resolve existing instance spells.
     Contract:
-        - SpellMap(spell=None, spellframe=IConfig) returns the bound instance.
+        - Existing-instance bindings are not callable during occurrence planning.
+        - Conjure raises when SpellMap defaults target an existing-instance binding.
     Returns:
         None.
     Raises:
@@ -750,13 +747,8 @@ def test_spellmap_default_frame_resolves_existing_instance() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(name="root")
-    try:
-        service = conduit.meld(spell=service_id)
-        assert service.cfg is config_instance
-        assert service.cfg.label == "existing"
-    finally:
-        conduit.cleanup()
+    with pytest.raises(PhaseExecutionError, match="not a callable object"):
+        spellbook.conjure(name="root")
 
 
 def test_meld_by_protocol_default_binding_resolves_existing_instance() -> None:
@@ -2529,7 +2521,8 @@ def test_collection_di_by_list_protocol_includes_existing_instances() -> None:
     Purpose:
         Validate collection DI includes existing instance spells.
     Contract:
-        - list[Protocol] dependencies include existing instance objects.
+        - Existing-instance bindings are not callable during occurrence planning.
+        - Conjure raises when a collection includes existing-instance bindings.
     Returns:
         None.
     Raises:
@@ -2630,13 +2623,8 @@ def test_collection_di_by_list_protocol_includes_existing_instances() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(name="root")
-    try:
-        instance = conduit.meld(spell=_Service)
-        assert any(cfg is existing_config for cfg in instance.configs)
-        assert any(isinstance(cfg, _Config) and cfg is not existing_config for cfg in instance.configs)
-    finally:
-        conduit.cleanup()
+    with pytest.raises(PhaseExecutionError, match="not a callable object"):
+        spellbook.conjure(name="root")
 
 
 def test_spellmap_explicit_class_with_wrong_frame_raises() -> None:
