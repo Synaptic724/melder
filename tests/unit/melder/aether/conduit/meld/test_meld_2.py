@@ -186,7 +186,7 @@ def _make_creations() -> Creations:
         Creations: Initialized creations manager.
     """
     conduit = _ConduitStub("conduit-1", ConduitState.normal)
-    return Creations(False, [], conduit)
+    return Creations(conduit)
 
 
 def _make_lesser_creations(parent: Creations | None = None) -> LesserCreations:
@@ -200,7 +200,7 @@ def _make_lesser_creations(parent: Creations | None = None) -> LesserCreations:
         LesserCreations: Initialized lesser creations manager.
     """
     conduit = _ConduitStub("conduit-1", ConduitState.lesser)
-    return LesserCreations(False, [], conduit, parent)
+    return LesserCreations(conduit, parent)
 
 
 def test_resolve_spell_by_name_uses_name_key() -> None:

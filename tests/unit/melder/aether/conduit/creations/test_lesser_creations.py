@@ -85,16 +85,12 @@ def make_lesser_creations():
 
     def _make(
             *,
-            disposal_enabled: bool = True,
-            disposal_method_names: Optional[List[str]] = None,
             conduit_state: Optional[_ConduitStateStub] = None,
     ) -> tuple[LesserCreations, _DummyLogger]:
         logger = _DummyLogger()
         state = conduit_state if conduit_state is not None else _ConduitStateStub("lesser")
         conduit = _ConduitStub(conduit_id="c-1", logger=logger, state=state)
         creations = LesserCreations(
-            disposal_enabled=disposal_enabled,
-            disposal_method_names=disposal_method_names,
             conduit=conduit,
             parent_creations=None,
         )
@@ -111,14 +107,14 @@ def test_init_raises_when_conduit_state_is_none():
     logger = _DummyLogger()
     conduit = _ConduitStub(conduit_id="c-1", logger=logger, state=None)
     with pytest.raises(RuntimeError, match="no state"):
-        LesserCreations(disposal_enabled=True, disposal_method_names=["cleanup"], conduit=conduit, parent_creations=None)
+        LesserCreations(conduit=conduit, parent_creations=None)
 
 
 def test_init_raises_when_conduit_state_is_not_lesser():
     logger = _DummyLogger()
     conduit = _ConduitStub(conduit_id="c-1", logger=logger, state=_ConduitStateStub("normal"))
     with pytest.raises(RuntimeError, match="LesserCreations can only be initialized"):
-        LesserCreations(disposal_enabled=True, disposal_method_names=["cleanup"], conduit=conduit, parent_creations=None)
+        LesserCreations(conduit=conduit, parent_creations=None)
 
 
 def test_init_accepts_lesser_conduit_state_str(make_lesser_creations):
@@ -128,7 +124,7 @@ def test_init_accepts_lesser_conduit_state_str(make_lesser_creations):
 
 
 def test_init_defaults_disposal_methods_to_empty_list_when_none(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=None)
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
     creations.add_unique_per_scope("spell-1", _RecordingItem(calls, "x"))
     creations.cleanup()
@@ -143,7 +139,7 @@ def test_add_many_records_disposal_metadata(make_lesser_creations):
     Contract:
         - Each many Creation carries the provided disposal metadata.
     """
-    creations, _ = make_lesser_creations(disposal_enabled=False, disposal_method_names=[])
+    creations, _ = make_lesser_creations()
     creations.add_many(
         "spell-1",
         object(),
@@ -165,49 +161,45 @@ def test_attempt_cleanup_returns_none_when_item_none(make_lesser_creations):
     assert creations._attempt_cleanup(None) is None
 
 
-def test_attempt_cleanup_skips_when_disposal_disabled(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_enabled=False, disposal_method_names=["cleanup"])
-    calls: List[str] = []
-    item = _RecordingItem(calls, "x")
-    assert creations._attempt_cleanup(item) is None
-    assert calls == []
-
-
 def test_attempt_cleanup_returns_none_when_no_method_matches(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
 
     class _NoMethods:
         pass
 
-    assert creations._attempt_cleanup(_NoMethods()) is None
+    creation = Creation(_NoMethods(), has_disposal_methods=True, disposal_methods=["cleanup"])
+    assert creations._attempt_cleanup(creation) is None
 
 
 def test_attempt_cleanup_calls_first_matching_method_in_order(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["close", "cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
     item = _RecordingItem(calls, "x")
-    creations._attempt_cleanup(item)
+    creation = Creation(item, has_disposal_methods=True, disposal_methods=["close", "cleanup"])
+    creations._attempt_cleanup(creation)
     assert calls == ["x.close"]
 
 
 def test_attempt_cleanup_skips_noncallable_attribute(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup", "close"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
     item = _NonCallableAttrItem()
     # Provide a callable close so the second option works.
     setattr(item, "close", _RecordingItem(calls, "x").close)
 
-    creations._attempt_cleanup(item)
+    creation = Creation(item, has_disposal_methods=True, disposal_methods=["cleanup", "close"])
+    creations._attempt_cleanup(creation)
     assert calls == ["x.close"]
 
 
 def test_attempt_cleanup_wraps_exception_in_runtimeerror(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
     item = _RecordingItem(calls, "x", raises=True)
 
-    err = creations._attempt_cleanup(item)
+    creation = Creation(item, has_disposal_methods=True, disposal_methods=["cleanup"])
+    err = creations._attempt_cleanup(creation)
 
     assert isinstance(err, RuntimeError)
     assert "cleanup" in str(err)
@@ -219,10 +211,15 @@ def test_attempt_cleanup_wraps_exception_in_runtimeerror(make_lesser_creations):
 # -----------------
 
 def test_add_unique_per_scope_stores_and_cleanup_calls_disposal(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.add_unique_per_scope("spell-1", _RecordingItem(calls, "a"))
+    creations.add_unique_per_scope(
+        "spell-1",
+        _RecordingItem(calls, "a"),
+        has_disposal_methods=True,
+        disposal_methods=["cleanup"],
+    )
     creations.cleanup()
 
     assert calls == ["a.cleanup"]
@@ -245,29 +242,29 @@ def test_add_unique_per_scope_after_cleanup_raises_runtimeerror(make_lesser_crea
 
 
 def test_unique_per_scope_cleanup_calls_disposal_once_per_item(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.add_unique_per_scope("spell-1", _RecordingItem(calls, "a"))
+    creations.add_unique_per_scope("spell-1", _RecordingItem(calls, "a"), has_disposal_methods=True, disposal_methods=["cleanup"])
     creations.cleanup()
 
     assert calls.count("a.cleanup") == 1
 
 
 def test_cleanup_disposes_unique_per_scope_multiple_items(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.add_unique_per_scope("spell-1", _RecordingItem(calls, "a"))
-    creations.add_unique_per_scope("spell-2", _RecordingItem(calls, "b"))
+    creations.add_unique_per_scope("spell-1", _RecordingItem(calls, "a"), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.add_unique_per_scope("spell-2", _RecordingItem(calls, "b"), has_disposal_methods=True, disposal_methods=["cleanup"])
     creations.cleanup()
 
     assert sorted(calls) == ["a.cleanup", "b.cleanup"]
 
 
 def test_cleanup_collects_errors_from_unique_per_scope_disposal_failures(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
-    creations.add_unique_per_scope("spell-1", _RecordingItem([], "a", raises=True))
+    creations, _ = make_lesser_creations()
+    creations.add_unique_per_scope("spell-1", _RecordingItem([], "a", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     with pytest.raises(ExceptionGroup) as eg:
         creations.cleanup()
@@ -277,11 +274,11 @@ def test_cleanup_collects_errors_from_unique_per_scope_disposal_failures(make_le
 
 
 def test_cleanup_continues_after_unique_per_scope_error(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.add_unique_per_scope("spell-1", _RecordingItem(calls, "a", raises=True))
-    creations.add_unique_per_scope("spell-2", _RecordingItem(calls, "b"))
+    creations.add_unique_per_scope("spell-1", _RecordingItem(calls, "a", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.add_unique_per_scope("spell-2", _RecordingItem(calls, "b"), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     with pytest.raises(ExceptionGroup):
         creations.cleanup()
@@ -290,7 +287,7 @@ def test_cleanup_continues_after_unique_per_scope_error(make_lesser_creations):
 
 
 def test_cleanup_nulls_wrapped_creation_value_for_unique_per_scope(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     creations.add_unique_per_scope("spell-1", object())
 
     # No public accessor exists; validate lifecycle safety by holding the wrapper reference.
@@ -306,32 +303,32 @@ def test_cleanup_nulls_wrapped_creation_value_for_unique_per_scope(make_lesser_c
 # -----------------
 
 def test_add_many_disposes_on_cleanup_single_item(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.add_many("spell-1", _RecordingItem(calls, "a"))
+    creations.add_many("spell-1", _RecordingItem(calls, "a"), has_disposal_methods=True, disposal_methods=["cleanup"])
     creations.cleanup()
 
     assert calls == ["a.cleanup"]
 
 
 def test_add_many_multiple_items_same_key_disposed_all(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.add_many("spell-1", _RecordingItem(calls, "a"))
-    creations.add_many("spell-1", _RecordingItem(calls, "b"))
+    creations.add_many("spell-1", _RecordingItem(calls, "a"), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.add_many("spell-1", _RecordingItem(calls, "b"), has_disposal_methods=True, disposal_methods=["cleanup"])
     creations.cleanup()
 
     assert sorted(calls) == ["a.cleanup", "b.cleanup"]
 
 
 def test_add_many_multiple_keys_disposed_all(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.add_many("spell-1", _RecordingItem(calls, "a"))
-    creations.add_many("spell-2", _RecordingItem(calls, "b"))
+    creations.add_many("spell-1", _RecordingItem(calls, "a"), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.add_many("spell-2", _RecordingItem(calls, "b"), has_disposal_methods=True, disposal_methods=["cleanup"])
     creations.cleanup()
 
     assert sorted(calls) == ["a.cleanup", "b.cleanup"]
@@ -346,7 +343,7 @@ def test_add_many_after_cleanup_raises_runtimeerror(make_lesser_creations):
 
 
 def test_add_many_disposal_disabled_does_not_call_underlying_methods(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_enabled=False, disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
     creations.add_many("spell-1", _RecordingItem(calls, "a"))
@@ -356,8 +353,8 @@ def test_add_many_disposal_disabled_does_not_call_underlying_methods(make_lesser
 
 
 def test_add_many_cleanup_collects_errors_for_raising_item(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
-    creations.add_many("spell-1", _RecordingItem([], "a", raises=True))
+    creations, _ = make_lesser_creations()
+    creations.add_many("spell-1", _RecordingItem([], "a", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     with pytest.raises(ExceptionGroup) as eg:
         creations.cleanup()
@@ -366,11 +363,11 @@ def test_add_many_cleanup_collects_errors_for_raising_item(make_lesser_creations
 
 
 def test_add_many_cleanup_disposes_other_items_even_if_one_raises(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.add_many("spell-1", _RecordingItem(calls, "a", raises=True))
-    creations.add_many("spell-1", _RecordingItem(calls, "b"))
+    creations.add_many("spell-1", _RecordingItem(calls, "a", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.add_many("spell-1", _RecordingItem(calls, "b"), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     with pytest.raises(ExceptionGroup):
         creations.cleanup()
@@ -379,7 +376,7 @@ def test_add_many_cleanup_disposes_other_items_even_if_one_raises(make_lesser_cr
 
 
 def test_cleanup_nulls_wrapped_creation_value_for_many(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     creations.add_many("spell-1", object())
 
     # No public accessor exists; validate lifecycle safety by holding the wrapper reference.
@@ -483,11 +480,11 @@ def test_clear_spellspace_instances_preserves_other_buckets(make_lesser_creation
 
 
 def test_clear_spellspace_instances_calls_disposal_on_all_spells_in_bucket(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.register_spellspace_creation("ss-1", "spell-1", _RecordingItem(calls, "a"))
-    creations.register_spellspace_creation("ss-1", "spell-2", _RecordingItem(calls, "b"))
+    creations.register_spellspace_creation("ss-1", "spell-1", _RecordingItem(calls, "a"), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.register_spellspace_creation("ss-1", "spell-2", _RecordingItem(calls, "b"), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     creations.clear_spellspace_instances("ss-1")
 
@@ -495,7 +492,7 @@ def test_clear_spellspace_instances_calls_disposal_on_all_spells_in_bucket(make_
 
 
 def test_clear_spellspace_instances_calls_creation_cleanup_value_becomes_none(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     item = object()
 
     creations.register_spellspace_creation("ss-1", "spell-1", item)
@@ -509,7 +506,7 @@ def test_clear_spellspace_instances_calls_creation_cleanup_value_becomes_none(ma
 
 
 def test_clear_spellspace_instances_disposal_disabled_skips_underlying_disposal(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_enabled=False, disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
     creations.register_spellspace_creation("ss-1", "spell-1", _RecordingItem(calls, "a"))
@@ -519,8 +516,8 @@ def test_clear_spellspace_instances_disposal_disabled_skips_underlying_disposal(
 
 
 def test_clear_spellspace_instances_raises_exceptiongroup_when_any_disposal_fails(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
-    creations.register_spellspace_creation("ss-1", "spell-1", _RecordingItem([], "a", raises=True))
+    creations, _ = make_lesser_creations()
+    creations.register_spellspace_creation("ss-1", "spell-1", _RecordingItem([], "a", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     with pytest.raises(ExceptionGroup) as eg:
         creations.clear_spellspace_instances("ss-1")
@@ -530,9 +527,9 @@ def test_clear_spellspace_instances_raises_exceptiongroup_when_any_disposal_fail
 
 
 def test_clear_spellspace_instances_exceptiongroup_contains_all_errors(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
-    creations.register_spellspace_creation("ss-1", "spell-1", _RecordingItem([], "a", raises=True))
-    creations.register_spellspace_creation("ss-1", "spell-2", _RecordingItem([], "b", raises=True))
+    creations, _ = make_lesser_creations()
+    creations.register_spellspace_creation("ss-1", "spell-1", _RecordingItem([], "a", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.register_spellspace_creation("ss-1", "spell-2", _RecordingItem([], "b", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     with pytest.raises(ExceptionGroup) as eg:
         creations.clear_spellspace_instances("ss-1")
@@ -541,8 +538,8 @@ def test_clear_spellspace_instances_exceptiongroup_contains_all_errors(make_less
 
 
 def test_clear_spellspace_instances_deletes_bucket_even_when_errors(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
-    creations.register_spellspace_creation("ss-1", "spell-1", _RecordingItem([], "a", raises=True))
+    creations, _ = make_lesser_creations()
+    creations.register_spellspace_creation("ss-1", "spell-1", _RecordingItem([], "a", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     with pytest.raises(ExceptionGroup):
         creations.clear_spellspace_instances("ss-1")
@@ -630,20 +627,20 @@ def test_cleanup_nulls_internal_refs_and_logger_fields(make_lesser_creations):
     assert creations._spellspace_instances is None
     assert creations._conduit is None
     assert creations._parent_creations is None
-    assert creations._disposal_method_names is None
+    assert creations._disposal_stack is None
     assert creations._logger is None
     assert creations._log_groups is None
     assert creations._log_sysgroups is None
 
 
 def test_cleanup_disposes_across_scopes_unique_many_spellspace(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
 
-    creations.add_unique_per_scope("u1", _RecordingItem(calls, "u1"))
-    creations.add_many("m1", _RecordingItem(calls, "m1a"))
-    creations.add_many("m1", _RecordingItem(calls, "m1b"))
-    creations.register_spellspace_creation("ss-1", "s1", _RecordingItem(calls, "ss1"))
+    creations.add_unique_per_scope("u1", _RecordingItem(calls, "u1"), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.add_many("m1", _RecordingItem(calls, "m1a"), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.add_many("m1", _RecordingItem(calls, "m1b"), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.register_spellspace_creation("ss-1", "s1", _RecordingItem(calls, "ss1"), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     creations.cleanup()
 
@@ -651,11 +648,11 @@ def test_cleanup_disposes_across_scopes_unique_many_spellspace(make_lesser_creat
 
 
 def test_cleanup_raises_exceptiongroup_for_multiple_failures_across_scopes(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
 
-    creations.add_unique_per_scope("u1", _RecordingItem([], "u1", raises=True))
-    creations.add_many("m1", _RecordingItem([], "m1", raises=True))
-    creations.register_spellspace_creation("ss-1", "s1", _RecordingItem([], "s1", raises=True))
+    creations.add_unique_per_scope("u1", _RecordingItem([], "u1", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.add_many("m1", _RecordingItem([], "m1", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
+    creations.register_spellspace_creation("ss-1", "s1", _RecordingItem([], "s1", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     with pytest.raises(ExceptionGroup) as eg:
         creations.cleanup()
@@ -664,9 +661,9 @@ def test_cleanup_raises_exceptiongroup_for_multiple_failures_across_scopes(make_
 
 
 def test_cleanup_when_exceptiongroup_still_marks_cleaned(make_lesser_creations):
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
 
-    creations.add_unique_per_scope("u1", _RecordingItem([], "u1", raises=True))
+    creations.add_unique_per_scope("u1", _RecordingItem([], "u1", raises=True), has_disposal_methods=True, disposal_methods=["cleanup"])
 
     with pytest.raises(ExceptionGroup):
         creations.cleanup()
@@ -704,7 +701,7 @@ def test_cleanup_is_thread_safe_for_concurrent_calls(make_lesser_creations):
 
 def test_transfer_data_and_clear_should_return_snapshot_and_clean_when_fixed(make_lesser_creations):
     """Verify transfer_data_and_clear returns snapshot data and cleans the manager."""
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     obj_u = object()
     obj_m = object()
 
@@ -743,7 +740,7 @@ def test_transfer_data_and_clear_skips_disposal_for_transferred_entries(make_les
     Raises:
         AssertionError: If disposal is invoked or the manager remains active.
     """
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     calls: List[str] = []
     item = _RecordingItem(calls, "u1", raises=True)
     creations.add_unique_per_scope("u1", item)
@@ -769,7 +766,7 @@ def test_transfer_data_and_clear_cleans_spellspace_entries(make_lesser_creations
     Raises:
         AssertionError: If spellspace entries are transferred or remain active.
     """
-    creations, _ = make_lesser_creations(disposal_method_names=["cleanup"])
+    creations, _ = make_lesser_creations()
     spell_id = "spell-1"
     obj = object()
     creations.register_spellspace_creation("ss-1", spell_id, obj)

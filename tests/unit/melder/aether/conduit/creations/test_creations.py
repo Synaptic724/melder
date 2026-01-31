@@ -148,12 +148,12 @@ def test_init_accepts_empty_disposal_method_names_and_treats_as_empty(normal_con
 
 
 def test_extract_on_empty_returns_empty(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     assert creations.extract_spell_creations("spell-1") == []
 
 
 def test_get_spellspace_creation_on_missing_bucket_returns_none(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     assert creations.get_spellspace_creation("ss-1", "spell-1") is None
 
 
@@ -164,7 +164,7 @@ def test_add_unique_records_disposal_metadata(normal_conduit: FakeConduit) -> No
     Contract:
         - Creation carries has_disposal_methods and disposal method names.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-1"
     obj = object()
 
@@ -187,7 +187,7 @@ def test_add_many_records_disposal_metadata(normal_conduit: FakeConduit) -> None
     Contract:
         - Each many Creation carries the provided disposal metadata.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-1"
     obj = object()
 
@@ -217,7 +217,7 @@ def test_add_many_records_disposal_metadata(normal_conduit: FakeConduit) -> None
     ],
 )
 def test_add_then_extract_singleton_scopes(normal_conduit: FakeConduit, add_op: str, expected_scope: str) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-1"
     obj = object()
 
@@ -251,7 +251,7 @@ def test_add_then_extract_singleton_scopes(normal_conduit: FakeConduit, add_op: 
     ],
 )
 def test_duplicate_key_raises_for_singleton_scopes(normal_conduit: FakeConduit, add_op: str) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-dup"
 
     if add_op == "unique":
@@ -286,7 +286,7 @@ def test_duplicate_key_raises_for_singleton_scopes(normal_conduit: FakeConduit, 
     ],
 )
 def test_mutations_raise_after_cleanup(normal_conduit: FakeConduit, op: str) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
 
     if op == "add_unique":
@@ -317,7 +317,7 @@ def test_mutations_raise_after_cleanup(normal_conduit: FakeConduit, op: str) -> 
 
 @pytest.mark.parametrize("n", [1, 2, 5])
 def test_add_many_extract_returns_all_entries(normal_conduit: FakeConduit, n: int) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-many"
     objs = [object() for _ in range(n)]
 
@@ -331,7 +331,7 @@ def test_add_many_extract_returns_all_entries(normal_conduit: FakeConduit, n: in
 
 
 def test_add_many_extract_removes_key_after_extraction(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-many-2"
     creations.add_many(spell_id, object())
 
@@ -340,7 +340,7 @@ def test_add_many_extract_removes_key_after_extraction(normal_conduit: FakeCondu
 
 
 def test_add_many_allows_multiple_calls_same_key(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-many-3"
 
     a = object()
@@ -357,7 +357,7 @@ def test_add_many_allows_multiple_calls_same_key(normal_conduit: FakeConduit) ->
 # -----------------------------------------------------------------------------
 
 def test_register_spellspace_and_get_returns_creation(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
 
     obj = object()
     creations.register_spellspace_creation("ss-1", "spell-1", obj)
@@ -368,7 +368,7 @@ def test_register_spellspace_and_get_returns_creation(normal_conduit: FakeCondui
 
 
 def test_register_spellspace_duplicate_spell_id_raises(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.register_spellspace_creation("ss-1", "spell-1", object())
 
     with pytest.raises(ValueError, match="already exists"):
@@ -376,17 +376,29 @@ def test_register_spellspace_duplicate_spell_id_raises(normal_conduit: FakeCondu
 
 
 def test_clear_spellspace_instances_missing_id_noop(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.clear_spellspace_instances("ss-missing")
 
 
 def test_clear_spellspace_instances_disposes_and_removes_bucket(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
 
     p1 = Probe()
     p2 = Probe()
-    creations.register_spellspace_creation("ss-1", "spell-a", p1)
-    creations.register_spellspace_creation("ss-1", "spell-b", p2)
+    creations.register_spellspace_creation(
+        "ss-1",
+        "spell-a",
+        p1,
+        has_disposal_methods=True,
+        disposal_methods=["dispose"],
+    )
+    creations.register_spellspace_creation(
+        "ss-1",
+        "spell-b",
+        p2,
+        has_disposal_methods=True,
+        disposal_methods=["dispose"],
+    )
 
     creations.clear_spellspace_instances("ss-1")
 
@@ -407,7 +419,7 @@ def test_clear_spellspace_instances_preserves_other_buckets(normal_conduit: Fake
     Raises:
         AssertionError: If unrelated buckets are cleared.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
 
     obj_a = object()
     obj_b = object()
@@ -423,10 +435,16 @@ def test_clear_spellspace_instances_preserves_other_buckets(normal_conduit: Fake
 
 
 def test_clear_spellspace_instances_raises_exceptiongroup_on_disposal_error(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
 
     bad = ProbeRaises(method="dispose", exc=ValueError("nope"))
-    creations.register_spellspace_creation("ss-1", "spell-a", bad)
+    creations.register_spellspace_creation(
+        "ss-1",
+        "spell-a",
+        bad,
+        has_disposal_methods=True,
+        disposal_methods=["dispose"],
+    )
 
     with pytest.raises(ExceptionGroup) as eg:
         creations.clear_spellspace_instances("ss-1")
@@ -436,7 +454,7 @@ def test_clear_spellspace_instances_raises_exceptiongroup_on_disposal_error(norm
 
 
 def test_extract_spell_creations_removes_spellspace_bucket_when_empty(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
 
     obj = object()
     creations.register_spellspace_creation("ss-1", "spell-1", obj)
@@ -468,7 +486,7 @@ def test_extract_spell_creations_removes_entries_from_multiple_spellspace_bucket
     Raises:
         AssertionError: If entries remain in spellspace buckets.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-ss"
 
     obj_a = object()
@@ -499,7 +517,7 @@ def test_extract_spell_creations_preserves_spellspace_bucket_with_other_spells(
     Raises:
         AssertionError: If remaining spellspace entries are removed.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-a"
     other_spell_id = "spell-b"
     obj_a = object()
@@ -520,7 +538,7 @@ def test_extract_spell_creations_preserves_spellspace_bucket_with_other_spells(
 
 
 def test_extract_spell_creations_can_extract_across_spellspace_and_singletons(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-shared"
 
     obj_unique = object()
@@ -539,21 +557,15 @@ def test_extract_spell_creations_can_extract_across_spellspace_and_singletons(no
 # -----------------------------------------------------------------------------
 
 def test_attempt_cleanup_returns_none_when_item_none(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
     assert creations._attempt_cleanup(None) is None
 
 
-def test_attempt_cleanup_skips_when_disposal_disabled(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=["dispose"])
-    probe = Probe()
-    assert creations._attempt_cleanup(probe) is None
-    assert probe.calls == []
-
-
 def test_attempt_cleanup_no_methods_configured_is_noop(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     probe = Probe()
-    assert creations._attempt_cleanup(probe) is None
+    creation = Creation(probe, has_disposal_methods=False, disposal_methods=None)
+    assert creations._attempt_cleanup(creation) is None
     assert probe.calls == []
 
 
@@ -570,21 +582,23 @@ def test_attempt_cleanup_calls_first_matching_method(
         method_list: list[str],
         expected_call: str,
 ) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=method_list)
+    creations = _mk_creations(conduit=normal_conduit)
     probe = Probe()
+    creation = Creation(probe, has_disposal_methods=True, disposal_methods=method_list)
 
-    assert creations._attempt_cleanup(probe) is None
+    assert creations._attempt_cleanup(creation) is None
     assert probe.calls == [expected_call]
 
 
 def test_attempt_cleanup_skips_non_callable_and_tries_next(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["cleanup", "close"])
+    creations = _mk_creations(conduit=normal_conduit)
 
     probe = Probe()
     # Override the method with a non-callable attribute.
     probe.cleanup = "not callable"  # type: ignore[attr-defined]
+    creation = Creation(probe, has_disposal_methods=True, disposal_methods=["cleanup", "close"])
 
-    assert creations._attempt_cleanup(probe) is None
+    assert creations._attempt_cleanup(creation) is None
     assert probe.calls == ["close"]
 
 
@@ -596,10 +610,11 @@ def test_attempt_cleanup_skips_non_callable_and_tries_next(normal_conduit: FakeC
     ],
 )
 def test_attempt_cleanup_wraps_exception_as_runtimeerror(normal_conduit: FakeConduit, method_name: str) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=[method_name])
+    creations = _mk_creations(conduit=normal_conduit)
 
     bad = ProbeRaises(method=method_name, exc=ValueError("boom"))
-    err = creations._attempt_cleanup(bad)
+    creation = Creation(bad, has_disposal_methods=True, disposal_methods=[method_name])
+    err = creations._attempt_cleanup(creation)
 
     assert isinstance(err, RuntimeError)
     assert bad.calls == [method_name]
@@ -609,8 +624,9 @@ def test_attempt_cleanup_ignores_missing_methods_returns_none(normal_conduit: Fa
     class NoDisposal:
         pass
 
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["cleanup", "close"])
-    err = creations._attempt_cleanup(NoDisposal())
+    creations = _mk_creations(conduit=normal_conduit)
+    creation = Creation(NoDisposal(), has_disposal_methods=True, disposal_methods=["cleanup", "close"])
+    err = creations._attempt_cleanup(creation)
     assert err is None
 
 
@@ -619,7 +635,7 @@ def test_attempt_cleanup_ignores_missing_methods_returns_none(normal_conduit: Fa
 # -----------------------------------------------------------------------------
 
 def test_cleanup_disposes_all_scopes_and_marks_cleaned(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
 
     p_unique = Probe()
     p_scope = Probe()
@@ -629,13 +645,13 @@ def test_cleanup_disposes_all_scopes_and_marks_cleaned(normal_conduit: FakeCondu
     p_many_2 = Probe()
     p_spellspace = Probe()
 
-    creations.add_unique("spell-u", p_unique)
-    creations.add_unique_per_scope("spell-s", p_scope)
-    creations.add_unique_per_lineage("spell-l", p_lineage)
-    creations.add_unique_per_cluster("spell-c", p_cluster)
-    creations.add_many("spell-m", p_many_1)
-    creations.add_many("spell-m", p_many_2)
-    creations.register_spellspace_creation("ss-1", "spell-ss", p_spellspace)
+    creations.add_unique("spell-u", p_unique, has_disposal_methods=True, disposal_methods=["dispose"])
+    creations.add_unique_per_scope("spell-s", p_scope, has_disposal_methods=True, disposal_methods=["dispose"])
+    creations.add_unique_per_lineage("spell-l", p_lineage, has_disposal_methods=True, disposal_methods=["dispose"])
+    creations.add_unique_per_cluster("spell-c", p_cluster, has_disposal_methods=True, disposal_methods=["dispose"])
+    creations.add_many("spell-m", p_many_1, has_disposal_methods=True, disposal_methods=["dispose"])
+    creations.add_many("spell-m", p_many_2, has_disposal_methods=True, disposal_methods=["dispose"])
+    creations.register_spellspace_creation("ss-1", "spell-ss", p_spellspace, has_disposal_methods=True, disposal_methods=["dispose"])
 
     creations.cleanup()
 
@@ -650,10 +666,10 @@ def test_cleanup_disposes_all_scopes_and_marks_cleaned(normal_conduit: FakeCondu
 
 
 def test_cleanup_is_idempotent_and_does_not_double_dispose(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
 
     p = Probe()
-    creations.add_unique("spell-1", p)
+    creations.add_unique("spell-1", p, has_disposal_methods=True, disposal_methods=["dispose"])
 
     creations.cleanup()
     creations.cleanup()
@@ -673,7 +689,7 @@ def test_cleanup_is_thread_safe_for_concurrent_calls(normal_conduit: FakeConduit
     Raises:
         AssertionError: If any cleanup call raises.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     exceptions: List[BaseException] = []
 
     def _worker() -> None:
@@ -706,7 +722,7 @@ def test_cleanup_nulls_internal_refs_and_logger_fields(normal_conduit: FakeCondu
     Raises:
         AssertionError: If references remain after cleanup.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
 
     creations.cleanup()
 
@@ -717,22 +733,22 @@ def test_cleanup_nulls_internal_refs_and_logger_fields(normal_conduit: FakeCondu
     assert creations._unique_per_cluster is None
     assert creations._spellspace_instances is None
     assert creations._conduit is None
-    assert creations._disposal_method_names is None
+    assert creations._disposal_stack is None
     assert creations._logger is None
     assert creations._log_groups is None
     assert creations._log_sysgroups is None
 
 
 def test_cleanup_raises_exceptiongroup_with_all_errors_across_scopes(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
 
     bad_unique = ProbeRaises(method="dispose", exc=ValueError("u"))
     bad_many_1 = ProbeRaises(method="dispose", exc=ValueError("m1"))
     bad_many_2 = ProbeRaises(method="dispose", exc=ValueError("m2"))
 
-    creations.add_unique("spell-u", bad_unique)
-    creations.add_many("spell-m", bad_many_1)
-    creations.add_many("spell-m", bad_many_2)
+    creations.add_unique("spell-u", bad_unique, has_disposal_methods=True, disposal_methods=["dispose"])
+    creations.add_many("spell-m", bad_many_1, has_disposal_methods=True, disposal_methods=["dispose"])
+    creations.add_many("spell-m", bad_many_2, has_disposal_methods=True, disposal_methods=["dispose"])
 
     with pytest.raises(ExceptionGroup) as eg:
         creations.cleanup()
@@ -743,8 +759,13 @@ def test_cleanup_raises_exceptiongroup_with_all_errors_across_scopes(normal_cond
 
 
 def test_cleanup_cleans_even_when_exceptiongroup_raised(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
-    creations.add_unique("spell-u", ProbeRaises(method="dispose", exc=ValueError("x")))
+    creations = _mk_creations(conduit=normal_conduit)
+    creations.add_unique(
+        "spell-u",
+        ProbeRaises(method="dispose", exc=ValueError("x")),
+        has_disposal_methods=True,
+        disposal_methods=["dispose"],
+    )
 
     with pytest.raises(ExceptionGroup):
         creations.cleanup()
@@ -755,7 +776,7 @@ def test_cleanup_cleans_even_when_exceptiongroup_raised(normal_conduit: FakeCond
 
 
 def test_cleanup_handles_unexpected_exception_in_sequence_and_raises_group(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
 
     # Simulate a fatal bug inside one of the cleanup helpers.
     def boom() -> List[Exception]:
@@ -770,10 +791,16 @@ def test_cleanup_handles_unexpected_exception_in_sequence_and_raises_group(norma
 
 
 def test_cleanup_disposes_spellspace_instances(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
 
     p = Probe()
-    creations.register_spellspace_creation("ss-1", "spell-1", p)
+    creations.register_spellspace_creation(
+        "ss-1",
+        "spell-1",
+        p,
+        has_disposal_methods=True,
+        disposal_methods=["dispose"],
+    )
     creations.cleanup()
 
     assert p.calls == ["dispose"]
@@ -797,7 +824,7 @@ def test_extract_spell_creations_across_all_scopes_includes_all_entries(
     Raises:
         AssertionError: If any scope is missing from the extraction.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-all"
 
     obj_unique = object()
@@ -844,7 +871,7 @@ def test_extract_spell_creations_across_all_scopes_includes_all_entries(
     ],
 )
 def test_extract_spell_creations_returns_correct_scope_names(normal_conduit: FakeConduit, scope_case: _RestoreCase) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-x"
     obj = object()
 
@@ -878,7 +905,7 @@ def test_extract_spell_creations_returns_correct_scope_names(normal_conduit: Fak
     ],
 )
 def test_restore_spell_creations_restores_each_scope(normal_conduit: FakeConduit, scope_case: _RestoreCase) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-x"
     obj = object()
 
@@ -908,7 +935,7 @@ def test_restore_spell_creations_restores_spellspace_entries(normal_conduit: Fak
     """
     Verify restore_spell_creations rehydrates spellspace entries.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-x"
     obj = object()
 
@@ -934,7 +961,7 @@ def test_restore_spell_creations_ignores_spellspace_entries_missing_id(
     Raises:
         AssertionError: If missing spellspace_id entries are restored.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-x"
 
     creations.restore_spell_creations(
@@ -946,7 +973,7 @@ def test_restore_spell_creations_ignores_spellspace_entries_missing_id(
 
 
 def test_restore_spell_creations_ignores_invalid_entries(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
 
     # Missing scope and/or creation should be ignored.
     creations.restore_spell_creations("spell-x", [{"scope": None, "creation": None}, {}])
@@ -968,7 +995,7 @@ def test_restore_spell_creations_restores_multiple_many_entries_in_order(
     Raises:
         AssertionError: If ordering is not preserved.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-many"
 
     obj_a = object()
@@ -997,7 +1024,7 @@ def test_restore_spell_creations_restores_multiple_spellspace_entries(
     Raises:
         AssertionError: If spellspace buckets are missing or incorrect.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-ss"
 
     obj_a = object()
@@ -1030,7 +1057,7 @@ def test_restore_spell_creations_ignores_unknown_scope_entries(
     Raises:
         AssertionError: If unknown scopes create entries.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-unknown"
 
     creations.restore_spell_creations(
@@ -1054,7 +1081,7 @@ def test_restore_spell_creations_overwrites_existing_unique_entry(
     Raises:
         AssertionError: If the old entry remains after restore.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-unique"
 
     old_obj = object()
@@ -1085,7 +1112,7 @@ def test_restore_spell_creations_appends_to_existing_many_entries(
     Raises:
         AssertionError: If existing entries are lost or order is incorrect.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-many-append"
 
     existing = object()
@@ -1114,7 +1141,7 @@ def test_restore_spell_creations_overwrites_spellspace_entry(
     Raises:
         AssertionError: If the prior spellspace entry is retained.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-ss-overwrite"
 
     old_obj = object()
@@ -1132,7 +1159,7 @@ def test_restore_spell_creations_overwrites_spellspace_entry(
 
 
 def test_restore_spell_creations_empty_list_noop(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.restore_spell_creations("spell-x", [])
 
 
@@ -1142,7 +1169,7 @@ def test_restore_spell_creations_on_cleaned_with_entries_raises_runtimeerror(
     """
     Verify restore_spell_creations rejects non-empty restores after cleanup.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     spell_id = "spell-x"
 
     creations.add_unique(spell_id, object())
@@ -1165,7 +1192,7 @@ def test_transfer_data_and_clear_returns_data_and_marks_cleaned(
     """
     Verify transfer_data_and_clear returns data and marks the manager cleaned.
     """
-    lesser = _mk_lesser_creations(conduit=lesser_conduit, disposal_enabled=False, disposal_method_names=[])
+    lesser = _mk_lesser_creations(conduit=lesser_conduit)
     p_scope = Probe()
     p_many = Probe()
 
@@ -1185,7 +1212,7 @@ def test_upgrade_from_lesser_transfers_unique_per_scope_and_many(
         normal_conduit: FakeConduit,
         lesser_conduit: FakeConduit,
 ) -> None:
-    lesser = _mk_lesser_creations(conduit=lesser_conduit, disposal_enabled=False, disposal_method_names=[])
+    lesser = _mk_lesser_creations(conduit=lesser_conduit)
 
     p_scope = Probe()
     p_many = Probe()
@@ -1195,7 +1222,7 @@ def test_upgrade_from_lesser_transfers_unique_per_scope_and_many(
 
     data = lesser.transfer_data_and_clear()
 
-    target = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    target = _mk_creations(conduit=normal_conduit)
     target._upgrade_from_lesser_conduit(**data)
 
     extracted_scope = target.extract_spell_creations("spell-s")
@@ -1213,12 +1240,12 @@ def test_upgrade_from_lesser_refuses_when_target_has_both_scopes_nonempty(
         normal_conduit: FakeConduit,
         lesser_conduit: FakeConduit,
 ) -> None:
-    lesser = _mk_lesser_creations(conduit=lesser_conduit, disposal_enabled=False, disposal_method_names=[])
+    lesser = _mk_lesser_creations(conduit=lesser_conduit)
     lesser.add_unique_per_scope("spell-s", Probe())
 
     data = lesser.transfer_data_and_clear()
 
-    target = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    target = _mk_creations(conduit=normal_conduit)
     # Make BOTH buckets non-empty.
     target.add_unique_per_scope("pre-s", Probe())
     target.add_many("pre-m", Probe())
@@ -1231,12 +1258,12 @@ def test_upgrade_from_lesser_allows_overwrite_when_only_unique_per_scope_nonempt
         normal_conduit: FakeConduit,
         lesser_conduit: FakeConduit,
 ) -> None:
-    lesser = _mk_lesser_creations(conduit=lesser_conduit, disposal_enabled=False, disposal_method_names=[])
+    lesser = _mk_lesser_creations(conduit=lesser_conduit)
     lesser.add_unique_per_scope("spell-s", Probe())
 
     data = lesser.transfer_data_and_clear()
 
-    target = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    target = _mk_creations(conduit=normal_conduit)
     target.add_unique_per_scope("pre-s", Probe())
 
     # The current implementation only refuses when BOTH buckets are non-empty.
@@ -1251,12 +1278,12 @@ def test_upgrade_from_lesser_allows_overwrite_when_only_many_nonempty(
         normal_conduit: FakeConduit,
         lesser_conduit: FakeConduit,
 ) -> None:
-    lesser = _mk_lesser_creations(conduit=lesser_conduit, disposal_enabled=False, disposal_method_names=[])
+    lesser = _mk_lesser_creations(conduit=lesser_conduit)
     lesser.add_many("spell-m", Probe())
 
     data = lesser.transfer_data_and_clear()
 
-    target = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    target = _mk_creations(conduit=normal_conduit)
     target.add_many("pre-m", Probe())
 
     # The current implementation only refuses when BOTH buckets are non-empty.
@@ -1272,28 +1299,28 @@ def test_upgrade_from_lesser_allows_overwrite_when_only_many_nonempty(
 # -----------------------------------------------------------------------------
 
 def test_extract_spell_creations_on_cleaned_raises_runtimeerror(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
     with pytest.raises(RuntimeError, match="already been cleaned"):
         creations.extract_spell_creations("spell-1")
 
 
 def test_register_spellspace_creation_on_cleaned_raises_runtimeerror(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
     with pytest.raises(RuntimeError, match="already been cleaned"):
         creations.register_spellspace_creation("ss-1", "spell-1", object())
 
 
 def test_get_spellspace_creation_on_cleaned_raises_runtimeerror(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
     with pytest.raises(RuntimeError, match="already been cleaned"):
         creations.get_spellspace_creation("ss-1", "spell-1")
 
 
 def test_clear_spellspace_instances_on_cleaned_raises_runtimeerror(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
     with pytest.raises(RuntimeError, match="already been cleaned"):
         creations.clear_spellspace_instances("ss-1")
@@ -1304,7 +1331,7 @@ def test_clear_spellspace_instances_on_cleaned_raises_runtimeerror(normal_condui
 # -----------------------------------------------------------------------------
 
 def test_add_unique_duplicate_logs_error(logger: DummyLogger, normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.add_unique("spell-1", object())
 
     with pytest.raises(ValueError):
@@ -1327,7 +1354,7 @@ def test_cleanup_logs_begin_and_complete(logger: DummyLogger, normal_conduit: Fa
     Raises:
         AssertionError: If any debug events are recorded.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=False, disposal_method_names=[])
+    creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
 
     assert not logger.events
@@ -1347,7 +1374,7 @@ def test_attempt_cleanup_logs_no_method_matched(logger: DummyLogger, normal_cond
     Raises:
         AssertionError: If any debug events are recorded.
     """
-    creations = _mk_creations(conduit=normal_conduit, disposal_enabled=True, disposal_method_names=["dispose"])
+    creations = _mk_creations(conduit=normal_conduit)
 
     class NoDisposal:
         pass

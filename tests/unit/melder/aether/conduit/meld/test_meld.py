@@ -497,7 +497,7 @@ def _make_creations(
         conduit_state=ConduitState.normal,
         active_spellspace=active_spellspace,
     )
-    return Creations(False, [], conduit), conduit
+    return Creations(conduit), conduit
 
 
 def test_cleanup_clears_references_and_drops_runtime() -> None:

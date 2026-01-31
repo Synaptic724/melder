@@ -507,7 +507,7 @@ def _make_creations(conduit_id: str = "conduit-1") -> tuple[Creations, _ConduitS
         Tuple of (Creations, conduit stub).
     """
     conduit = _ConduitStub(conduit_id, ConduitState.normal)
-    creations = Creations(False, [], conduit)
+    creations = Creations(conduit)
     return creations, conduit
 
 
@@ -526,7 +526,7 @@ def _make_lesser_creations(
         Tuple of (LesserCreations, conduit stub, parent creations).
     """
     conduit = _ConduitStub(conduit_id, ConduitState.lesser)
-    lesser = LesserCreations(False, [], conduit, parent_creations)
+    lesser = LesserCreations(conduit, parent_creations)
     return lesser, conduit, parent_creations
 
 

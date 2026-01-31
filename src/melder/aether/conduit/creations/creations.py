@@ -54,6 +54,7 @@ class Creations(Cleanable, ICreations):
         self._unique_per_lineage: Dict[str, Creation] = {}
         self._unique_per_cluster: Dict[str, Creation] = {}
         self._spellspace_instances: Dict[str, Dict[str, Creation]] = {}
+        self._spellspace_disposal_stacks: Dict[str, deque] = {}
 
 
     #region Destructor
@@ -82,6 +83,8 @@ class Creations(Cleanable, ICreations):
             # Single try/except around the whole sequence (per request)
             try:
                 errors.extend(self._drain_disposal_stack())
+                for spellspace_id in list(self._spellspace_disposal_stacks.keys()):
+                    errors.extend(self._drain_spellspace_disposal_stack(spellspace_id))
             except Exception as e:
                 # Fatal exception in the sequence (unexpected); record and continue teardown
                 self._logger.error(f"cleanup: fatal error during sequence: {e}", method_name="cleanup",
@@ -96,6 +99,7 @@ class Creations(Cleanable, ICreations):
             self._unique_per_lineage.clear()
             self._unique_per_cluster.clear()
             self._spellspace_instances.clear()
+            self._spellspace_disposal_stacks.clear()
             self._disposal_stack.clear()
             self._unique = None
             self._unique_per_scope = None
@@ -103,6 +107,7 @@ class Creations(Cleanable, ICreations):
             self._unique_per_lineage = None
             self._unique_per_cluster = None
             self._spellspace_instances = None
+            self._spellspace_disposal_stacks = None
             self._conduit = None
             self._disposal_stack = None
 
@@ -134,12 +139,14 @@ class Creations(Cleanable, ICreations):
             List[Exception]: List of any cleanup errors encountered.
         """
         errors: List[Exception] = []
-        for _, bucket in self._spellspace_instances.items():
+        for spellspace_id, bucket in self._spellspace_instances.items():
+            errors.extend(self._drain_spellspace_disposal_stack(spellspace_id))
             for item in bucket.values():
                 if item is not None:
                     item.cleanup()
             bucket.clear()
         self._spellspace_instances.clear()
+        self._spellspace_disposal_stacks.clear()
         return errors
 
     def _attempt_cleanup(self, creation: Creation) -> Optional[Exception]:
@@ -203,6 +210,18 @@ class Creations(Cleanable, ICreations):
         if creation.has_disposal_methods:
             self._disposal_stack.appendleft(creation)
 
+    def _push_spellspace_disposal_creation(self, spellspace_id: str, creation: Creation) -> None:
+        """
+        Internal
+
+        Push a Creation onto a spellspace-local disposal stack when it declares disposal methods.
+        """
+        if creation is None:
+            return
+        if creation.has_disposal_methods:
+            stack = self._spellspace_disposal_stacks.setdefault(spellspace_id, deque())
+            stack.appendleft(creation)
+
     def _remove_disposal_creation(self, creation: Creation) -> None:
         """
         Internal
@@ -220,6 +239,24 @@ class Creations(Cleanable, ICreations):
             if item is not creation
         )
 
+    def _remove_spellspace_disposal_creation(self, spellspace_id: str, creation: Creation) -> None:
+        """
+        Internal
+
+        Remove a Creation from a spellspace-local disposal stack if present.
+        """
+        if creation is None:
+            return
+        if not creation.has_disposal_methods:
+            return
+        stack = self._spellspace_disposal_stacks.get(spellspace_id)
+        if not stack:
+            return
+        self._spellspace_disposal_stacks[spellspace_id] = deque(
+            item for item in stack
+            if item is not creation
+        )
+
     def _drain_disposal_stack(self) -> List[Exception]:
         """
         Internal
@@ -229,6 +266,26 @@ class Creations(Cleanable, ICreations):
         errors: List[Exception] = []
         while self._disposal_stack:
             creation = self._disposal_stack.popleft()
+            if creation is None:
+                continue
+            maybe_error = self._attempt_cleanup(creation)
+            if maybe_error:
+                errors.append(maybe_error)
+            creation.cleanup()
+        return errors
+
+    def _drain_spellspace_disposal_stack(self, spellspace_id: str) -> List[Exception]:
+        """
+        Internal
+
+        Drain a spellspace-local disposal stack in LIFO order and dispose each Creation.
+        """
+        errors: List[Exception] = []
+        stack = self._spellspace_disposal_stacks.get(spellspace_id)
+        if not stack:
+            return errors
+        while stack:
+            creation = stack.popleft()
             if creation is None:
                 continue
             maybe_error = self._attempt_cleanup(creation)
@@ -484,7 +541,7 @@ class Creations(Cleanable, ICreations):
             for spellspace_id, bucket in list(self._spellspace_instances.items()):
                 if spell_id in bucket:
                     creation = bucket.pop(spell_id)
-                    self._remove_disposal_creation(creation)
+                    self._remove_spellspace_disposal_creation(spellspace_id, creation)
                     extracted.append({
                         "scope": "spellspace",
                         "spellspace_id": spellspace_id,
@@ -492,6 +549,7 @@ class Creations(Cleanable, ICreations):
                     })
                     if not bucket:
                         del self._spellspace_instances[spellspace_id]
+                        self._spellspace_disposal_stacks.pop(spellspace_id, None)
 
         return extracted
 
@@ -531,7 +589,7 @@ class Creations(Cleanable, ICreations):
                         continue
                     bucket = self._spellspace_instances.setdefault(spellspace_id, {})
                     bucket[spell_id] = creation
-                    self._push_disposal_creation(creation)
+                    self._push_spellspace_disposal_creation(spellspace_id, creation)
 
     # ------------------------------------------------------------------
     # SpellSpace helpers
@@ -578,7 +636,7 @@ class Creations(Cleanable, ICreations):
             disposal_methods=disposal_methods,
         )
         bucket[spell_id] = creation
-        self._push_disposal_creation(creation)
+        self._push_spellspace_disposal_creation(spellspace_id, creation)
 
     def clear_spellspace_instances(self, spellspace_id: str) -> None:
         """
@@ -589,23 +647,12 @@ class Creations(Cleanable, ICreations):
         if bucket is None:
             return
         errors: List[Exception] = []
-        removals = [
-            creation for creation in bucket.values()
-            if creation is not None and creation.has_disposal_methods
-        ]
-        if removals:
-            removal_ids = {id(item) for item in removals}
-            self._disposal_stack = deque(
-                item for item in self._disposal_stack
-                if id(item) not in removal_ids
-            )
+        errors.extend(self._drain_spellspace_disposal_stack(spellspace_id))
         for item in bucket.values():
             if item is not None:
-                maybe_error = self._attempt_cleanup(item)
-                if maybe_error:
-                    errors.append(maybe_error)
                 item.cleanup()
         bucket.clear()
         del self._spellspace_instances[spellspace_id]
+        self._spellspace_disposal_stacks.pop(spellspace_id, None)
         if errors:
             raise ExceptionGroup("Errors occurred during spellspace cleanup", errors)
