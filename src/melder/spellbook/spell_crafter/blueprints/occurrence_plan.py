@@ -294,6 +294,7 @@ class OccurrencePlan(Cleanable):
         Contract:
             - The returned mapping is owned by the plan and should be treated
               as read-only by callers.
+            - Missing occurrences imply no override payload for that provider.
         """
         self.check_cleaned()
         return self._contract_overrides_by_occurrence
@@ -487,9 +488,11 @@ class OccurrencePlanBuilder(object):
         occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]] = {}
         queue = deque([root_occurrence])
         seen: Set[OccurrenceKey] = set()
+        queued: Set[OccurrenceKey] = {root_occurrence}
 
         while queue:
             occurrence = queue.popleft()
+            queued.discard(occurrence)
             if occurrence in seen:
                 continue
             seen.add(occurrence)
@@ -502,7 +505,8 @@ class OccurrencePlanBuilder(object):
 
             for child_list in dependencies.values():
                 for child_occurrence in child_list:
-                    if child_occurrence not in seen:
+                    if child_occurrence not in seen and child_occurrence not in queued:
+                        queued.add(child_occurrence)
                         queue.append(child_occurrence)
 
         return occurrence_graph
@@ -543,8 +547,10 @@ class OccurrencePlanBuilder(object):
                 continue
 
             queue = deque([(node_id, ())])
+            queued: Set[OccurrenceKey] = {(node_id, ())}
             while queue:
                 occurrence = queue.popleft()
+                queued.discard(occurrence)
                 if occurrence in existing_occurrences:
                     continue
                 existing_occurrences.add(occurrence)
@@ -558,7 +564,11 @@ class OccurrencePlanBuilder(object):
 
                 for child_list in dependencies.values():
                     for child_occurrence in child_list:
-                        if child_occurrence not in existing_occurrences:
+                        if (
+                                child_occurrence not in existing_occurrences
+                                and child_occurrence not in queued
+                        ):
+                            queued.add(child_occurrence)
                             queue.append(child_occurrence)
 
     @staticmethod
@@ -1371,6 +1381,7 @@ class OccurrencePlanBuilder(object):
             - Missing providers mark the plan incomplete in dynamic mode.
             - Invalid override payloads raise MeldExecutionError.
             - Records overrides only when payloads are non-empty and occurrences exist.
+            - Only occurrences with override payloads are added to the map.
 
         Args:
             occurrence_graph: Occurrence graph to validate against.
@@ -1386,7 +1397,6 @@ class OccurrencePlanBuilder(object):
         complete = True
 
         for occurrence, dependencies in occurrence_graph.items():
-            overrides_by_occurrence.setdefault(occurrence, {})
             is_complete = self._compile_contract_overrides_for_occurrence(
                 occurrence=occurrence,
                 dependencies=dependencies,
