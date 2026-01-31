@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Set, Tuple
 
+from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.blueprints.injection_plan import (
     InjectionPlanBuilder,
 )
@@ -10,7 +11,153 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlanBuilder,
 )
 from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+    DirectedAcyclicWorkGraph,
+)
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
+)
+from melder.spellbook.existence.existence import Existence
+
+
+class _StubConfiguration:
+    """
+    Purpose:
+        Provide the minimum Configuration surface used by occurrence planning.
+    Contract:
+        - Stores a fixed SystemState value.
+        - get_property returns that value for any key.
+    Lifecycle:
+        - Test-only stub; no cleanup required.
+    """
+
+    def __init__(self, system_state: SystemState) -> None:
+        """
+        Purpose:
+            Capture a fixed system_state value for test lookups.
+        Contract:
+            - Stores the provided system_state without validation.
+            - Intended only for occurrence-plan unit tests.
+        Args:
+            system_state: SystemState enum to return from get_property.
+        Returns:
+            None.
+        """
+        self._system_state = system_state
+
+    def get_property(self, name: str) -> SystemState:
+        """
+        Purpose:
+            Provide a minimal configuration lookup for system_state.
+        Contract:
+            - Returns the stored system_state for any property name.
+        Args:
+            name: Configuration property key (ignored by this stub).
+        Returns:
+            SystemState: Stored system_state enum value.
+        """
+        return self._system_state
+
+
+class _StubSpellbook:
+    """
+    Purpose:
+        Provide the minimal Spellbook surface used during occurrence planning.
+    Contract:
+        - Exposes _configuration and empty contract maps.
+        - Contract maps remain empty for these tests.
+    Lifecycle:
+        - Test-only stub; no cleanup required.
+    """
+
+    def __init__(self, system_state: SystemState) -> None:
+        """
+        Purpose:
+            Provide the minimum Spellbook surface used by occurrence planning.
+        Contract:
+            - Exposes _configuration, _lookup_contracted_spells, _contracted_spells.
+            - Contract maps are empty for these tests.
+        Args:
+            system_state: SystemState enum for configuration lookup.
+        Returns:
+            None.
+        """
+        self._configuration = _StubConfiguration(system_state)
+        self._lookup_contracted_spells: Dict[Any, Dict[Any, Any]] = {}
+        self._contracted_spells: Dict[Any, Dict[Any, Any]] = {}
+
+
+class _StubSpell:
+    """
+    Purpose:
+        Provide a minimal ISpell surface for occurrence planning.
+    Contract:
+        - Exposes spell_index.current, spell_name, spell callable, existence,
+          and mutation_override.
+        - The spell callable defines no SpellContract defaults.
+    Lifecycle:
+        - Test-only stub; no cleanup required.
+    """
+
+    def __init__(self, spell_id: str, spellbook: _StubSpellbook) -> None:
+        """
+        Purpose:
+            Provide a minimal ISpell-like surface for occurrence planning.
+        Contract:
+            - Exposes spell_index.current, spell_name, spell callable, existence,
+              and mutation_override (None).
+            - The callable has no SpellContract defaults.
+        Args:
+            spell_id: Version id for the stub spell.
+            spellbook: Owning spellbook stub.
+        Returns:
+            None.
+        """
+        self.spell_index = type("SpellIndexStub", (), {"current": spell_id})()
+        self.spell_name = spell_id
+
+        def _callable() -> None:
+            """
+            Purpose:
+                Provide a no-arg callable with no default parameters.
+            Contract:
+                - Returns None.
+            Returns:
+                None.
+            """
+            return None
+
+        self.spell = _callable
+        self.mutation_override = None
+        self.existence = Existence.unique
+        self._spellbook = spellbook
+
+
+class _StubSystemStates:
+    """
+    Purpose:
+        Provide a minimal SpellSystemStates surface for local topology lookup.
+    Contract:
+        - Exposes _local_topologies keyed by spell_id.
+    Lifecycle:
+        - Test-only stub; no cleanup required.
+    """
+
+    def __init__(self, local_topologies: Dict[str, SpellLocalTopology]) -> None:
+        """
+        Purpose:
+            Provide a minimal SpellSystemStates surface for local topology lookup.
+        Contract:
+            - Exposes _local_topologies mapping keyed by spell_id.
+        Args:
+            local_topologies:
+                Mapping from spell_id to SpellLocalTopology instances.
+        Returns:
+            None.
+        """
+        self._local_topologies = local_topologies
 
 
 def test_occurrence_plan_execution_order_linear_chain() -> None:
@@ -111,3 +258,79 @@ def test_injection_plan_missing_contract_overrides_defaults_empty() -> None:
 
     injection_spec = injection_plan.instance_injections[root_instance_key]
     assert injection_spec.contract_payload is None
+
+
+def test_occurrence_plan_topology_preferred_over_dag() -> None:
+    """
+    Purpose:
+        Ensure local topology data suppresses DAG dependency fallback.
+    Contract:
+        - When topology is present, DAG metadata is not appended.
+        - Dependencies reflect only topology targets.
+    Returns:
+        None.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency(parent_key="dag_parent", child_key="root", param_name="dep")
+
+    socket = SpellSocketDescriptor(
+        spell_id="root",
+        param_name="dep",
+        position=0,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=("topo_parent",),
+        dependency_key=None,
+        contract_key=None,
+        contract_late_binding=None,
+    )
+    topology = SpellLocalTopology("root", [socket])
+
+    system_states = _StubSystemStates({"root": topology})
+    spellbook = _StubSpellbook(SystemState.dynamic)
+    root_spell = _StubSpell("root", spellbook)
+
+    builder = OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=object(),
+        spell_lookup={"root": root_spell},
+        system_states=system_states,
+    )
+    dependencies = builder._collect_occurrence_dependencies(
+        occurrence=("root", ()),
+        dag=dag,
+    )
+
+    assert dependencies == {"dep": [("topo_parent", ("dep",))]}
+
+
+def test_occurrence_plan_dag_fallback_when_topology_missing() -> None:
+    """
+    Purpose:
+        Ensure DAG dependencies are used only when no topology is available.
+    Contract:
+        - Missing topology yields DAG-based dependencies.
+        - DAG targets include the expected path segment.
+    Returns:
+        None.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency(parent_key="dag_parent", child_key="root", param_name="dep")
+
+    system_states = _StubSystemStates({})
+    spellbook = _StubSpellbook(SystemState.dynamic)
+    root_spell = _StubSpell("root", spellbook)
+
+    builder = OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=object(),
+        spell_lookup={"root": root_spell},
+        system_states=system_states,
+    )
+    dependencies = builder._collect_occurrence_dependencies(
+        occurrence=("root", ()),
+        dag=dag,
+    )
+
+    assert dependencies == {"dep": [("dag_parent", ("dep",))]}

@@ -650,7 +650,7 @@ class OccurrencePlanBuilder(object):
 
         Contract:
             - Uses system state topology when available.
-            - Falls back to DAG dependency metadata.
+            - Falls back to DAG dependency metadata only when topology is unavailable.
             - Adds SpellContract dependencies when providers are available.
             - Adds mutation override dependencies.
             - Automatic mode treats missing SpellContract providers as build-time errors.
@@ -667,17 +667,18 @@ class OccurrencePlanBuilder(object):
         spell_id, path = occurrence
         dependencies: Dict[str, List[OccurrenceKey]] = {}
 
-        self._append_topology_dependencies(
+        used_topology = self._append_topology_dependencies(
             dependencies=dependencies,
             spell_id=spell_id,
             path=path,
         )
-        self._append_dag_dependencies(
-            dependencies=dependencies,
-            spell_id=spell_id,
-            path=path,
-            dag=dag,
-        )
+        if not used_topology:
+            self._append_dag_dependencies(
+                dependencies=dependencies,
+                spell_id=spell_id,
+                path=path,
+                dag=dag,
+            )
         self._apply_spell_contract_dependencies(
             dependencies=dependencies,
             occurrence=occurrence,
@@ -695,22 +696,26 @@ class OccurrencePlanBuilder(object):
             dependencies: Dict[str, List[OccurrenceKey]],
             spell_id: str,
             path: Tuple[str, ...],
-    ) -> None:
+    ) -> bool:
         """
         Append dependencies discovered from SpellSystemStates local topology.
 
         Contract:
             - No-op if system states or topology are unavailable.
             - Appends child occurrences for each socket target.
+            - Returns True when topology data was available (even if empty).
 
         Args:
             dependencies: Mapping to update in place.
             spell_id: Spell id for the occurrence.
             path: Occurrence path segments.
+
+        Returns:
+            bool: True when local topology data was available; False otherwise.
         """
         topology = self._system_states._local_topologies.get(spell_id)
         if topology is None:
-            return
+            return False
 
         for socket in topology.sockets:
             if not socket.target_spell_ids:
@@ -718,6 +723,7 @@ class OccurrencePlanBuilder(object):
             for target_id in socket.target_spell_ids:
                 child_occurrence = (target_id, path + (socket.param_name,))
                 dependencies.setdefault(socket.param_name, []).append(child_occurrence)
+        return True
 
     def _append_dag_dependencies(
             self,
