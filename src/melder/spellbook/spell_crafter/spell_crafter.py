@@ -2102,7 +2102,8 @@ class SpellCrafter(Cleanable):
 
         Runs system-level validation strategies over Phase-5 artifacts and
         Phase-4 outcomes. Records per-conduit resolution validity via
-        SpellSystemStates and caches the frame-level validation state locally.
+        SpellSystemStates and caches the frame-level validation state on
+        every SpellCrafter in the Spellbook.
 
         Note:
             When Phase-4 results have been cleaned but Phase 4 previously
@@ -2162,6 +2163,10 @@ class SpellCrafter(Cleanable):
 
         self._validation_result_phase6 = validation_state
         self._validated_phase6 = True
+        for spell_instance in spell_lookup.values():
+            crafter = spell_instance._ensure_crafter()
+            crafter._validation_result_phase6 = validation_state
+            crafter._validated_phase6 = True
 
 
     # ------------------------------------------------------------------

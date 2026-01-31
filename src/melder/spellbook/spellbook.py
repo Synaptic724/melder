@@ -3680,8 +3680,8 @@ class Spellbook(Cleanable, ISpellbook):
         Build :class:`UnitOfWork` instances for the **root_blueprints** phase.
 
         This phase is frame-level and must run after Phase 4. We schedule
-        a unit of work for each local spell so that each spell's crafter
-        receives the frame-level artifacts.
+        a single unit of work that runs on one spell's crafter and
+        distributes frame-level artifacts to all spells.
 
         Expected spell surface:
 
@@ -3691,20 +3691,19 @@ class Spellbook(Cleanable, ISpellbook):
         if not self._spells:
             return []
 
-        units: List[IUnitOfWork] = []
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_root_blueprints,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"root_blueprints:{spell.spell_id}",
-                    metadata={
-                        "phase": "root_blueprints",
-                        "spell_id": spell.spell_id,
-                    },
-                )
+        lead_spell = next(iter(self._spells.values()))
+        return [
+            scheduler.create_unit_of_work(
+                func=lead_spell.run_phase_root_blueprints,
+                args=(conduit_id, scheduler.cancel_event,),
+                label=f"root_blueprints:{lead_spell.spell_id}",
+                metadata={
+                    "phase": "root_blueprints",
+                    "spell_id": lead_spell.spell_id,
+                    "scope": "frame",
+                },
             )
-        return units
+        ]
 
     def _phase_occurrence_plan_factory(
             self,
@@ -3865,8 +3864,9 @@ class Spellbook(Cleanable, ISpellbook):
         Build :class:`UnitOfWork` instances for the **system_validation** phase.
 
         This phase validates the system-level DAG for the frame and runs
-        after Phase 5 artifacts have been constructed. We schedule work
-        for every local spell to keep per-spell validation state aligned.
+        after Phase 5 artifacts have been constructed. We schedule a single
+        unit of work that runs on one spell's crafter and propagates the
+        validation state across all spells.
 
         Expected spell surface:
 
@@ -3876,20 +3876,19 @@ class Spellbook(Cleanable, ISpellbook):
         if not self._spells:
             return []
 
-        units: List[IUnitOfWork] = []
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_system_validation,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"system_validation:{spell.spell_id}",
-                    metadata={
-                        "phase": "system_validation",
-                        "spell_id": spell.spell_id,
-                    },
-                )
+        lead_spell = next(iter(self._spells.values()))
+        return [
+            scheduler.create_unit_of_work(
+                func=lead_spell.run_phase_system_validation,
+                args=(conduit_id, scheduler.cancel_event,),
+                label=f"system_validation:{lead_spell.spell_id}",
+                metadata={
+                    "phase": "system_validation",
+                    "spell_id": lead_spell.spell_id,
+                    "scope": "frame",
+                },
             )
-        return units
+        ]
 
     def _phase_change_control_factory(
             self,
@@ -3902,8 +3901,8 @@ class Spellbook(Cleanable, ISpellbook):
         Build :class:`UnitOfWork` instances for the **change_control** phase.
 
         This phase wires change-control hooks and component-of indices for
-        the frame once Phase 5 artifacts exist. We schedule work for every
-        local spell to keep per-spell wiring consistent.
+        the frame once Phase 5 artifacts exist. We schedule a single unit
+        of work that runs on one spell's crafter.
 
         Expected spell surface:
 
@@ -3913,20 +3912,19 @@ class Spellbook(Cleanable, ISpellbook):
         if not self._spells:
             return []
 
-        units: List[IUnitOfWork] = []
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_change_control,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"change_control:{spell.spell_id}",
-                    metadata={
-                        "phase": "change_control",
-                        "spell_id": spell.spell_id,
-                    },
-                )
+        lead_spell = next(iter(self._spells.values()))
+        return [
+            scheduler.create_unit_of_work(
+                func=lead_spell.run_phase_change_control,
+                args=(conduit_id, scheduler.cancel_event,),
+                label=f"change_control:{lead_spell.spell_id}",
+                metadata={
+                    "phase": "change_control",
+                    "spell_id": lead_spell.spell_id,
+                    "scope": "frame",
+                },
             )
-        return units
+        ]
 #endregion
 
 #endregion Resolution Phases

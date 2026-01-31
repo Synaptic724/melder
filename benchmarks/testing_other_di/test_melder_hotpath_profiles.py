@@ -44,7 +44,7 @@ def reset_aether_singleton_for_integration() -> None:
 # Tune profiling intensity here for local runs.
 PROFILE_RUN_HEAVY = False
 PROFILE_RUN_CPROFILE = False
-PROFILE_RUN_TRACEMALLOC = False
+PROFILE_RUN_TRACEMALLOC = True
 PROFILE_RUN_GC_DELTA = False
 PROFILE_RECORD_PHASE_TIMINGS = True
 PROFILE_TOP = 30
