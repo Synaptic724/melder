@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.blueprints.injection_plan import (
@@ -101,7 +101,14 @@ class _StubSpell:
         - Test-only stub; no cleanup required.
     """
 
-    def __init__(self, spell_id: str, spellbook: _StubSpellbook) -> None:
+    def __init__(
+            self,
+            spell_id: str,
+            spellbook: _StubSpellbook,
+            *,
+            existence: Existence,
+            mutation_override: Optional[Dict[str, object]] = None,
+    ) -> None:
         """
         Purpose:
             Provide a minimal ISpell-like surface for occurrence planning.
@@ -112,6 +119,9 @@ class _StubSpell:
         Args:
             spell_id: Version id for the stub spell.
             spellbook: Owning spellbook stub.
+            existence: Existence value for the stub spell.
+            mutation_override:
+                Optional mutation override payload. Empty or None means no override.
         Returns:
             None.
         """
@@ -130,8 +140,8 @@ class _StubSpell:
             return None
 
         self.spell = _callable
-        self.mutation_override = None
-        self.existence = Existence.unique
+        self.mutation_override = mutation_override or {}
+        self.existence = existence
         self._spellbook = spellbook
 
 
@@ -289,7 +299,11 @@ def test_occurrence_plan_topology_preferred_over_dag() -> None:
 
     system_states = _StubSystemStates({"root": topology})
     spellbook = _StubSpellbook(SystemState.dynamic)
-    root_spell = _StubSpell("root", spellbook)
+    root_spell = _StubSpell(
+        "root",
+        spellbook,
+        existence=Existence.unique,
+    )
 
     builder = OccurrencePlanBuilder(
         root_spell=root_spell,
@@ -320,7 +334,11 @@ def test_occurrence_plan_dag_fallback_when_topology_missing() -> None:
 
     system_states = _StubSystemStates({})
     spellbook = _StubSpellbook(SystemState.dynamic)
-    root_spell = _StubSpell("root", spellbook)
+    root_spell = _StubSpell(
+        "root",
+        spellbook,
+        existence=Existence.unique,
+    )
 
     builder = OccurrencePlanBuilder(
         root_spell=root_spell,
@@ -334,3 +352,195 @@ def test_occurrence_plan_dag_fallback_when_topology_missing() -> None:
     )
 
     assert dependencies == {"dep": [("dag_parent", ("dep",))]}
+
+
+def test_occurrence_plan_collapses_shared_occurrences_without_mutation_overrides() -> None:
+    """
+    Purpose:
+        Ensure shared-spell occurrences collapse when mutation overrides are absent.
+    Contract:
+        - Shared spell ids appear only once in the occurrence graph.
+        - Dependency paths for non-shared spells remain path-aware.
+    Returns:
+        None.
+    """
+    root_socket_left = SpellSocketDescriptor(
+        spell_id="root",
+        param_name="left",
+        position=0,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=("left",),
+        dependency_key=None,
+        contract_key=None,
+        contract_late_binding=None,
+    )
+    root_socket_right = SpellSocketDescriptor(
+        spell_id="root",
+        param_name="right",
+        position=1,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=("right",),
+        dependency_key=None,
+        contract_key=None,
+        contract_late_binding=None,
+    )
+    left_socket = SpellSocketDescriptor(
+        spell_id="left",
+        param_name="dep",
+        position=0,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=("shared",),
+        dependency_key=None,
+        contract_key=None,
+        contract_late_binding=None,
+    )
+    right_socket = SpellSocketDescriptor(
+        spell_id="right",
+        param_name="dep",
+        position=0,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=("shared",),
+        dependency_key=None,
+        contract_key=None,
+        contract_late_binding=None,
+    )
+
+    system_states = _StubSystemStates(
+        {
+            "root": SpellLocalTopology("root", [root_socket_left, root_socket_right]),
+            "left": SpellLocalTopology("left", [left_socket]),
+            "right": SpellLocalTopology("right", [right_socket]),
+            "shared": SpellLocalTopology("shared", []),
+        }
+    )
+    spellbook = _StubSpellbook(SystemState.dynamic)
+    spell_lookup = {
+        "root": _StubSpell("root", spellbook, existence=Existence.unique),
+        "left": _StubSpell("left", spellbook, existence=Existence.unique),
+        "right": _StubSpell("right", spellbook, existence=Existence.unique),
+        "shared": _StubSpell("shared", spellbook, existence=Existence.unique),
+    }
+
+    builder = OccurrencePlanBuilder(
+        root_spell=spell_lookup["root"],
+        blueprint=object(),
+        spell_lookup=spell_lookup,
+        system_states=system_states,
+    )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
+    occurrence_graph = builder._build_occurrence_graph(
+        dag=None,
+        root_spell_id="root",
+        collapse_shared_occurrences=collapse_shared_occurrences,
+    )
+
+    shared_occurrences = [occ for occ in occurrence_graph if occ[0] == "shared"]
+    assert len(shared_occurrences) == 1
+    assert occurrence_graph[("left", ("left",))]["dep"] == [("shared", ("left", "dep"))]
+    assert occurrence_graph[("right", ("right",))]["dep"] == [("shared", ("right", "dep"))]
+
+
+def test_occurrence_plan_shared_occurrences_not_collapsed_with_mutation_override() -> None:
+    """
+    Purpose:
+        Ensure shared-spell occurrences are not collapsed when mutation overrides exist.
+    Contract:
+        - Shared spell ids may appear multiple times in the occurrence graph.
+        - Mutation override presence disables shared-occurrence collapse.
+    Returns:
+        None.
+    """
+    root_socket_left = SpellSocketDescriptor(
+        spell_id="root",
+        param_name="left",
+        position=0,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=("left",),
+        dependency_key=None,
+        contract_key=None,
+        contract_late_binding=None,
+    )
+    root_socket_right = SpellSocketDescriptor(
+        spell_id="root",
+        param_name="right",
+        position=1,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=("right",),
+        dependency_key=None,
+        contract_key=None,
+        contract_late_binding=None,
+    )
+    left_socket = SpellSocketDescriptor(
+        spell_id="left",
+        param_name="dep",
+        position=0,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=("shared",),
+        dependency_key=None,
+        contract_key=None,
+        contract_late_binding=None,
+    )
+    right_socket = SpellSocketDescriptor(
+        spell_id="right",
+        param_name="dep",
+        position=0,
+        socket_kind=SocketKind.NORMAL,
+        is_collection=False,
+        is_optional=False,
+        target_spell_ids=("shared",),
+        dependency_key=None,
+        contract_key=None,
+        contract_late_binding=None,
+    )
+
+    system_states = _StubSystemStates(
+        {
+            "root": SpellLocalTopology("root", [root_socket_left, root_socket_right]),
+            "left": SpellLocalTopology("left", [left_socket]),
+            "right": SpellLocalTopology("right", [right_socket]),
+            "shared": SpellLocalTopology("shared", []),
+        }
+    )
+    spellbook = _StubSpellbook(SystemState.dynamic)
+    spell_lookup = {
+        "root": _StubSpell("root", spellbook, existence=Existence.unique),
+        "left": _StubSpell("left", spellbook, existence=Existence.unique),
+        "right": _StubSpell("right", spellbook, existence=Existence.unique),
+        "shared": _StubSpell("shared", spellbook, existence=Existence.unique),
+        "mutator": _StubSpell(
+            "mutator",
+            spellbook,
+            existence=Existence.unique,
+            mutation_override={"*noop": "noop"},
+        ),
+    }
+
+    builder = OccurrencePlanBuilder(
+        root_spell=spell_lookup["root"],
+        blueprint=object(),
+        spell_lookup=spell_lookup,
+        system_states=system_states,
+    )
+    collapse_shared_occurrences = builder._should_collapse_shared_occurrences()
+    occurrence_graph = builder._build_occurrence_graph(
+        dag=None,
+        root_spell_id="root",
+        collapse_shared_occurrences=collapse_shared_occurrences,
+    )
+
+    shared_occurrences = [occ for occ in occurrence_graph if occ[0] == "shared"]
+    assert len(shared_occurrences) == 2

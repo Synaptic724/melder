@@ -402,15 +402,18 @@ class OccurrencePlanBuilder(object):
         root_spell_id = self._blueprint.root_spell_id
         dag = self._blueprint.dag
         ordered_node_ids = self._blueprint.ordered_node_ids
+        collapse_shared_occurrences = self._should_collapse_shared_occurrences()
 
         occurrence_graph = self._build_occurrence_graph(
             dag=dag,
             root_spell_id=root_spell_id,
+            collapse_shared_occurrences=collapse_shared_occurrences,
         )
         self._extend_occurrence_graph_with_ordered_nodes(
             occurrence_graph=occurrence_graph,
             ordered_node_ids=ordered_node_ids,
             dag=dag,
+            collapse_shared_occurrences=collapse_shared_occurrences,
         )
         execution_order = self._build_execution_order(
             occurrence_graph=occurrence_graph,
@@ -463,11 +466,34 @@ class OccurrencePlanBuilder(object):
         """
         return existence is not Existence.many
 
+    def _should_collapse_shared_occurrences(self) -> bool:
+        """
+        Determine whether shared occurrences can be collapsed during expansion.
+
+        Purpose:
+            Avoid expanding repeated shared-spell occurrences when mutation
+            overrides are not present, which reduces path tuple churn in the
+            occurrence graph.
+
+        Contract:
+            - Returns True only when no spell reports a non-empty mutation override.
+            - Uses the spell.mutation_override payload as the signal.
+            - Does not mutate any spell state.
+
+        Returns:
+            bool: True when shared occurrence collapse is allowed.
+        """
+        for spell in self._spell_lookup.values():
+            if spell.mutation_override:
+                return False
+        return True
+
     def _build_occurrence_graph(
             self,
             *,
             dag: Any,
             root_spell_id: str,
+            collapse_shared_occurrences: bool,
     ) -> Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]]:
         """
         Build a path-aware occurrence graph rooted at the entrypoint spell.
@@ -476,10 +502,14 @@ class OccurrencePlanBuilder(object):
             - Returns a mapping of occurrence -> param_name -> child occurrences.
             - Uses local topology when available; falls back to DAG metadata.
             - Includes the root occurrence even if it has no dependencies.
+            - When collapse_shared_occurrences is True, only the first occurrence
+              for shared spell ids is expanded.
 
         Args:
             dag: DirectedAcyclicWorkGraph from the blueprint.
             root_spell_id: Version id for the root spell.
+            collapse_shared_occurrences:
+                When True, skip expanding repeated shared-spell occurrences.
 
         Returns:
             Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]]: Occurrence graph.
@@ -489,12 +519,22 @@ class OccurrencePlanBuilder(object):
         queue = deque([root_occurrence])
         seen: Set[OccurrenceKey] = set()
         queued: Set[OccurrenceKey] = {root_occurrence}
+        shared_seen: Set[str] = set()
 
         while queue:
             occurrence = queue.popleft()
             queued.discard(occurrence)
             if occurrence in seen:
                 continue
+
+            spell_id, _ = occurrence
+            if collapse_shared_occurrences:
+                spell = self._spell_lookup.get(spell_id)
+                if spell is not None and self._is_shared_existence(spell.existence):
+                    if spell_id in shared_seen:
+                        seen.add(occurrence)
+                        continue
+                    shared_seen.add(spell_id)
             seen.add(occurrence)
 
             dependencies = self._collect_occurrence_dependencies(
@@ -517,6 +557,7 @@ class OccurrencePlanBuilder(object):
             occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]],
             ordered_node_ids: Sequence[str],
             dag: Any,
+            collapse_shared_occurrences: bool,
     ) -> None:
         """
         Ensure ordered nodes outside the root path still get occurrences.
@@ -527,6 +568,8 @@ class OccurrencePlanBuilder(object):
               empty paths and expanded via dependency discovery.
             - Newly discovered occurrences are appended without overwriting
               existing entries.
+            - When collapse_shared_occurrences is True, only the first occurrence
+              for shared spell ids is expanded.
 
         Args:
             occurrence_graph:
@@ -535,12 +578,20 @@ class OccurrencePlanBuilder(object):
                 Ordered node ids from the blueprint.
             dag:
                 DirectedAcyclicWorkGraph used for dependency discovery.
+            collapse_shared_occurrences:
+                When True, skip expanding repeated shared-spell occurrences.
 
         Returns:
             None.
         """
         existing_occurrences = set(occurrence_graph.keys())
         present_spell_ids = {spell_id for spell_id, _ in existing_occurrences}
+        shared_seen: Set[str] = set()
+        if collapse_shared_occurrences:
+            for spell_id in present_spell_ids:
+                spell = self._spell_lookup.get(spell_id)
+                if spell is not None and self._is_shared_existence(spell.existence):
+                    shared_seen.add(spell_id)
 
         for node_id in ordered_node_ids:
             if node_id in present_spell_ids:
@@ -553,6 +604,14 @@ class OccurrencePlanBuilder(object):
                 queued.discard(occurrence)
                 if occurrence in existing_occurrences:
                     continue
+                spell_id, _ = occurrence
+                if collapse_shared_occurrences:
+                    spell = self._spell_lookup.get(spell_id)
+                    if spell is not None and self._is_shared_existence(spell.existence):
+                        if spell_id in shared_seen:
+                            existing_occurrences.add(occurrence)
+                            continue
+                        shared_seen.add(spell_id)
                 existing_occurrences.add(occurrence)
                 present_spell_ids.add(occurrence[0])
 
