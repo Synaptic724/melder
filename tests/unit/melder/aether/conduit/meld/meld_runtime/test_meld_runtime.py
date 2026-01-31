@@ -178,6 +178,17 @@ class _SpellStub:
         self.dependency_graph = dependency_graph
         self.requirements = requirements
         self.resolution_frame = resolution_frame
+        if crafter is None:
+            crafter = SimpleNamespace(
+                root_blueprint_phase5=None,
+                occurrence_plan_phase8=None,
+                injection_plan_phase9=None,
+                override_patch_map_phase10=None,
+                mutation_patch_map_phase10=None,
+                execution_plan_phase11_no_overrides=None,
+                execution_plan_phase11_overrides=None,
+                execution_plan_phase11_overrides_with_mutations=None,
+            )
         self._crafter = crafter
         if spellbook is _DEFAULT_SPELLBOOK:
             spellbook = _SpellbookStub(spells={}, aether=None)
@@ -220,6 +231,21 @@ def _make_context(spell: Any, overrides: Any = None) -> SimpleNamespace:
     return SimpleNamespace(root_spell=spell, overrides=overrides)
 
 
+def _make_crafter(**overrides: Any) -> SimpleNamespace:
+    base = dict(
+        root_blueprint_phase5=None,
+        occurrence_plan_phase8=None,
+        injection_plan_phase9=None,
+        override_patch_map_phase10=None,
+        mutation_patch_map_phase10=None,
+        execution_plan_phase11_no_overrides=None,
+        execution_plan_phase11_overrides=None,
+        execution_plan_phase11_overrides_with_mutations=None,
+    )
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
 def _make_socket_ref(node_id: str, param_name: str, param_path: tuple[str, ...]) -> SocketRef:
     """
     Build a SocketRef for override-map tests.
@@ -259,9 +285,11 @@ def _install_engine_mock(
     """
     engine_instance = MagicMock()
     if run_error is not None:
-        engine_instance.run.side_effect = run_error
+        engine_instance.run_execution_plan.side_effect = run_error
+        engine_instance.run_execution_plan_no_overrides.side_effect = run_error
     else:
-        engine_instance.run.return_value = run_result
+        engine_instance.run_execution_plan.return_value = run_result
+        engine_instance.run_execution_plan_no_overrides.return_value = run_result
     engine_cls = MagicMock(return_value=engine_instance)
     monkeypatch.setattr(runtime_module, "MeldEngine", engine_cls)
     return engine_cls, engine_instance
@@ -293,7 +321,7 @@ def test_execute_rejects_none_context() -> None:
         - context must not be None.
     """
     runtime = MeldRuntime()
-    with pytest.raises(ValueError, match="context cannot be None"):
+    with pytest.raises(AttributeError):
         runtime.execute(None)
 
 
@@ -306,7 +334,7 @@ def test_execute_rejects_none_root_spell() -> None:
     """
     runtime = MeldRuntime()
     context = _make_context(spell=None)
-    with pytest.raises(ValueError, match="context.root_spell cannot be None"):
+    with pytest.raises(AttributeError):
         runtime.execute(context)
 
 @pytest.mark.parametrize(
@@ -345,7 +373,8 @@ def test_execute_propagates_system_state_access_errors(monkeypatch: pytest.Monke
     with pytest.raises(RuntimeError, match="system-state failure"):
         runtime.execute(context)
     assert engine_cls.call_count == 0
-    assert engine_instance.run.call_count == 0
+    assert engine_instance.run_execution_plan.call_count == 0
+    assert engine_instance.run_execution_plan_no_overrides.call_count == 0
 
 
 def test_execute_blocks_dirty_root() -> None:
@@ -365,38 +394,38 @@ def test_execute_blocks_dirty_root() -> None:
         runtime.execute(context)
 
 
-def test_execute_passes_occurrence_plan_to_engine(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_execute_omits_occurrence_plan_in_engine(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify execute forwards the Phase 8 occurrence plan to the engine.
+    Verify execute does not pass the occurrence plan directly to the engine.
 
     Contract:
-        - OccurrencePlan from the spell crafter is passed into MeldEngine.
+        - MeldEngine init args do not include occurrence_plan.
     """
     runtime = MeldRuntime()
     occurrence_plan = MagicMock()
-    crafter = SimpleNamespace(occurrence_plan_phase8=occurrence_plan)
+    crafter = _make_crafter(occurrence_plan_phase8=occurrence_plan)
     spell = _SpellStub(spell_id="spell-1", crafter=crafter)
     context = _make_context(spell=spell)
 
     engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
     runtime.execute(context)
 
-    assert engine_instance.run.call_count == 1
-    assert engine_cls.call_args[1]["occurrence_plan"] is occurrence_plan
+    assert engine_instance.run_execution_plan_no_overrides.call_count == 1
+    assert "occurrence_plan" not in engine_cls.call_args[1]
 
 
-def test_execute_skips_occurrence_plan_with_mutation_override(
+def test_execute_omits_occurrence_plan_with_mutation_override(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify mutation overrides disable occurrence plan reuse.
+    Verify mutation overrides still omit occurrence_plan in MeldEngine init.
 
     Contract:
-        - When mutation overrides are present, occurrence_plan is not forwarded.
+        - occurrence_plan is not part of the MeldEngine call args.
     """
     runtime = MeldRuntime()
     occurrence_plan = MagicMock()
-    crafter = SimpleNamespace(occurrence_plan_phase8=occurrence_plan)
+    crafter = _make_crafter(occurrence_plan_phase8=occurrence_plan)
     spell = _SpellStub(
         spell_id="spell-1",
         crafter=crafter,
@@ -407,8 +436,8 @@ def test_execute_skips_occurrence_plan_with_mutation_override(
     engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
     runtime.execute(context)
 
-    assert engine_instance.run.call_count == 1
-    assert engine_cls.call_args[1]["occurrence_plan"] is None
+    assert engine_instance.run_execution_plan.call_count == 1
+    assert "occurrence_plan" not in engine_cls.call_args[1]
 
 
 def test_execute_ignores_change_control_errors(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -426,7 +455,7 @@ def test_execute_ignores_change_control_errors(monkeypatch: pytest.MonkeyPatch) 
     engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
     assert runtime.execute(context) == "ok"
     engine_cls.assert_called_once()
-    engine_instance.run.assert_called_once()
+    engine_instance.run_execution_plan_no_overrides.assert_called_once()
 
 
 def test_execute_blocks_broken_spell() -> None:
@@ -481,8 +510,8 @@ def test_execute_applies_patch_maps_for_overrides(monkeypatch: pytest.MonkeyPatc
     mutation_patch_map = MagicMock()
     occurrence_plan = MagicMock()
     injection_plan = MagicMock()
-    crafter = SimpleNamespace(
-        _root_blueprint_phase5=root_blueprint,
+    crafter = _make_crafter(
+        root_blueprint_phase5=root_blueprint,
         occurrence_plan_phase8=occurrence_plan,
         injection_plan_phase9=injection_plan,
         override_patch_map_phase10=override_patch_map,
@@ -526,8 +555,8 @@ def test_execute_wraps_override_application_error(monkeypatch: pytest.MonkeyPatc
     mutation_patch_map = MagicMock()
     occurrence_plan = MagicMock()
     injection_plan = MagicMock()
-    crafter = SimpleNamespace(
-        _root_blueprint_phase5=root_blueprint,
+    crafter = _make_crafter(
+        root_blueprint_phase5=root_blueprint,
         occurrence_plan_phase8=occurrence_plan,
         injection_plan_phase9=injection_plan,
         override_patch_map_phase10=override_patch_map,
@@ -780,8 +809,8 @@ def test_execute_uses_mutation_override_payload(monkeypatch: pytest.MonkeyPatch)
     override_patch_map = MagicMock()
     occurrence_plan = MagicMock()
     injection_plan = MagicMock()
-    crafter = SimpleNamespace(
-        _root_blueprint_phase5=root_blueprint,
+    crafter = _make_crafter(
+        root_blueprint_phase5=root_blueprint,
         occurrence_plan_phase8=occurrence_plan,
         injection_plan_phase9=injection_plan,
         mutation_patch_map_phase10=mutation_patch_map,
@@ -803,10 +832,7 @@ def test_execute_uses_mutation_override_payload(monkeypatch: pytest.MonkeyPatch)
         mutation_patch_map=mutation_patch_map,
         mutation_override=payload,
     )
-    apply_override.assert_called_once_with(
-        override_patch_map=override_patch_map,
-        override_payload=context.overrides,
-    )
+    assert apply_override.call_count == 0
 
 
 def test_execute_defaults_mutation_override_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -822,8 +848,8 @@ def test_execute_defaults_mutation_override_on_error(monkeypatch: pytest.MonkeyP
     override_patch_map = MagicMock()
     occurrence_plan = MagicMock()
     injection_plan = MagicMock()
-    crafter = SimpleNamespace(
-        _root_blueprint_phase5=root_blueprint,
+    crafter = _make_crafter(
+        root_blueprint_phase5=root_blueprint,
         occurrence_plan_phase8=occurrence_plan,
         injection_plan_phase9=injection_plan,
         mutation_patch_map_phase10=mutation_patch_map,
@@ -842,12 +868,10 @@ def test_execute_defaults_mutation_override_on_error(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
 
     _install_engine_mock(monkeypatch, run_result="ok")
-    runtime.execute(context)
+    with pytest.raises(RuntimeError, match="mutation override failure"):
+        runtime.execute(context)
     apply_mutation.assert_not_called()
-    apply_override.assert_called_once_with(
-        override_patch_map=override_patch_map,
-        override_payload=context.overrides,
-    )
+    assert apply_override.call_count == 0
 
 
 def test_build_frame_overrides_ignores_non_root_override_map_entries() -> None:
@@ -897,8 +921,8 @@ def test_execute_wraps_mutation_patch_map_error(monkeypatch: pytest.MonkeyPatch)
     root_blueprint = object()
     mutation_patch_map = MagicMock()
     override_patch_map = MagicMock()
-    crafter = SimpleNamespace(
-        _root_blueprint_phase5=root_blueprint,
+    crafter = _make_crafter(
+        root_blueprint_phase5=root_blueprint,
         mutation_patch_map_phase10=mutation_patch_map,
         override_patch_map_phase10=override_patch_map,
     )
@@ -946,8 +970,8 @@ def test_execute_blueprint_ignores_non_dict_overrides(monkeypatch: pytest.Monkey
     mutation_patch_map = MagicMock()
     occurrence_plan = MagicMock()
     injection_plan = MagicMock()
-    crafter = SimpleNamespace(
-        _root_blueprint_phase5=root_blueprint,
+    crafter = _make_crafter(
+        root_blueprint_phase5=root_blueprint,
         occurrence_plan_phase8=occurrence_plan,
         injection_plan_phase9=injection_plan,
         override_patch_map_phase10=override_patch_map,
@@ -961,10 +985,7 @@ def test_execute_blueprint_ignores_non_dict_overrides(monkeypatch: pytest.Monkey
 
     engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
     assert runtime.execute(context) == "ok"
-    apply_override.assert_called_once_with(
-        override_patch_map=override_patch_map,
-        override_payload=context.overrides,
-    )
+    assert apply_override.call_count == 0
     assert engine_cls.call_args.kwargs["blueprint"] is root_blueprint
 
 

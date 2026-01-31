@@ -2,6 +2,7 @@ import pytest
 from typing import Dict, Optional
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
@@ -71,6 +72,7 @@ class _StubSpellbook:
             None.
         """
         self._spell_validator = object()
+        self._configuration = _StubConfiguration()
         self._spells = spells
         self._contracted_spells: Dict[str, Dict[_StubSpellIndex, "_StubSpell"]] = {}
         self._lookup_spells: Dict[tuple, _StubSpellIndex] = {
@@ -149,8 +151,35 @@ class _StubSpell:
             spell_name=spell_name,
             binding_name=binding_name,
         )
+        if spellbook is None:
+            spellbook = _StubSpellbook({})
         self._spellbook = spellbook
         self._spell_system_states = None
+        self.is_existing_creation = False
+
+
+class _StubConfiguration:
+    """
+    Purpose:
+        Provide configuration access for system_state.
+    Contract:
+        Returns a dynamic system_state by default.
+    """
+
+    def get_property(self, _name: str) -> SystemState:
+        return SystemState.dynamic
+
+
+class _SystemStatesStub:
+    """
+    Purpose:
+        Provide minimal system states surface for occurrence planning.
+    Contract:
+        - Exposes _local_topologies for topology lookup.
+    """
+
+    def __init__(self) -> None:
+        self._local_topologies: Dict[str, object] = {}
 
 
 def _root_factory(dep: object) -> object:
@@ -230,17 +259,20 @@ def test_occurrence_plan_builder_shared_instances() -> None:
     """
     root_id = "root"
     dep_id = "dep"
+    spellbook = _StubSpellbook({})
     root_spell = _StubSpell(
         spell_id=root_id,
         spell_name="Root",
         existence=Existence.unique,
         spell_callable=_root_factory,
+        spellbook=spellbook,
     )
     dep_spell = _StubSpell(
         spell_id=dep_id,
         spell_name="Dep",
         existence=Existence.unique,
         spell_callable=_dep_factory,
+        spellbook=spellbook,
     )
     blueprint = _make_blueprint(root_id, dep_id)
 
@@ -251,7 +283,7 @@ def test_occurrence_plan_builder_shared_instances() -> None:
             root_id: root_spell,
             dep_id: dep_spell,
         },
-        system_states=None,
+        system_states=_SystemStatesStub(),
     )
     plan = builder.build()
 
@@ -267,7 +299,10 @@ def test_occurrence_plan_builder_shared_instances() -> None:
     assert plan.canonical_occurrences_by_spell_id[dep_id] == (dep_id, ("dep",))
     assert plan.root_instance_key == (root_id, None)
     assert plan.shared_spell_ids == {root_id, dep_id}
-    assert plan.contract_overrides_by_occurrence == {}
+    assert plan.contract_overrides_by_occurrence == {
+        (root_id, ()): {},
+        (dep_id, ("dep",)): {},
+    }
     assert plan.contract_overrides_by_spell_id == {}
     assert plan.contract_dependencies_complete is True
 
@@ -281,17 +316,20 @@ def test_occurrence_plan_builder_many_instances_preserve_paths() -> None:
     """
     root_id = "root"
     dep_id = "dep"
+    spellbook = _StubSpellbook({})
     root_spell = _StubSpell(
         spell_id=root_id,
         spell_name="Root",
         existence=Existence.unique,
         spell_callable=_root_factory,
+        spellbook=spellbook,
     )
     dep_spell = _StubSpell(
         spell_id=dep_id,
         spell_name="Dep",
         existence=Existence.many,
         spell_callable=_dep_factory,
+        spellbook=spellbook,
     )
     blueprint = _make_blueprint(root_id, dep_id)
 
@@ -302,14 +340,17 @@ def test_occurrence_plan_builder_many_instances_preserve_paths() -> None:
             root_id: root_spell,
             dep_id: dep_spell,
         },
-        system_states=None,
+        system_states=_SystemStatesStub(),
     )
     plan = builder.build()
 
     assert plan.instance_keys_by_spell_id[dep_id] == [(dep_id, ("dep",))]
     assert dep_id not in plan.shared_spell_ids
     assert dep_id not in plan.canonical_occurrences_by_spell_id
-    assert plan.contract_overrides_by_occurrence == {}
+    assert plan.contract_overrides_by_occurrence == {
+        (root_id, ()): {},
+        (dep_id, ("dep",)): {},
+    }
     assert plan.contract_overrides_by_spell_id == {}
     assert plan.contract_dependencies_complete is True
 
@@ -330,7 +371,7 @@ def test_run_phase_occurrence_plan_requires_phase5() -> None:
     )
     crafter = SpellCrafter(root_spell)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AttributeError):
         crafter.run_phase_occurrence_plan(conduit_id="conduit")
 
 
@@ -361,10 +402,12 @@ def test_run_phase_occurrence_plan_compiles_for_root() -> None:
     })
     root_spell._spellbook = spellbook
     dep_spell._spellbook = spellbook
+    root_spell._spell_system_states = _SystemStatesStub()
 
     blueprint = _make_blueprint(root_id, dep_id)
 
     crafter = SpellCrafter(root_spell)
+    crafter._spell_system_states = _SystemStatesStub()
     crafter._root_blueprint_phase5 = blueprint
     crafter._entire_dag_blueprint_phase5 = {root_id: blueprint}
 
@@ -387,17 +430,20 @@ def test_occurrence_plan_builder_defers_spell_contracts() -> None:
     """
     root_id = "root"
     dep_id = "dep"
+    spellbook = _StubSpellbook({})
     root_spell = _StubSpell(
         spell_id=root_id,
         spell_name="Root",
         existence=Existence.unique,
         spell_callable=_root_factory_with_contract,
+        spellbook=spellbook,
     )
     dep_spell = _StubSpell(
         spell_id=dep_id,
         spell_name="Dep",
         existence=Existence.unique,
         spell_callable=_dep_factory,
+        spellbook=spellbook,
     )
     blueprint = _make_blueprint(root_id, dep_id)
 
@@ -408,7 +454,7 @@ def test_occurrence_plan_builder_defers_spell_contracts() -> None:
             root_id: root_spell,
             dep_id: dep_spell,
         },
-        system_states=None,
+        system_states=_SystemStatesStub(),
     )
     plan = builder.build()
 
@@ -416,7 +462,10 @@ def test_occurrence_plan_builder_defers_spell_contracts() -> None:
         (root_id, ()): {"dep": [(dep_id, ("dep",))]},
         (dep_id, ("dep",)): {},
     }
-    assert plan.contract_overrides_by_occurrence == {}
+    assert plan.contract_overrides_by_occurrence == {
+        (root_id, ()): {},
+        (dep_id, ("dep",)): {},
+    }
     assert plan.contract_overrides_by_spell_id == {}
     assert plan.contract_dependencies_complete is False
 
@@ -480,7 +529,7 @@ def test_occurrence_plan_builder_resolves_spell_contract_when_available() -> Non
             dep_id: dep_spell,
             provider_id: provider_spell,
         },
-        system_states=None,
+        system_states=_SystemStatesStub(),
     )
     plan = builder.build()
 
@@ -492,6 +541,10 @@ def test_occurrence_plan_builder_resolves_spell_contract_when_available() -> Non
         (dep_id, ("dep",)): {},
         (provider_id, ("contract",)): {},
     }
-    assert plan.contract_overrides_by_occurrence == {}
+    assert plan.contract_overrides_by_occurrence == {
+        (root_id, ()): {},
+        (dep_id, ("dep",)): {},
+        (provider_id, ("contract",)): {},
+    }
     assert plan.contract_overrides_by_spell_id == {}
     assert plan.contract_dependencies_complete is True

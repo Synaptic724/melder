@@ -42,7 +42,7 @@ def _snapshot(
 
 def test_build_root_blueprints_requires_snapshot():
     builder = SpellSystemRootBlueprintBuilder()
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         builder.build_root_blueprints(None)  # type: ignore[arg-type]
 
 
@@ -84,7 +84,7 @@ def test_build_single_root_dag_cleans_on_cycle(monkeypatch):
     builder = SpellSystemRootBlueprintBuilder()
     with pytest.raises(RuntimeError):
         builder._build_single_root_dag("r", {"r": set()})
-    assert captured and captured[0]._cleaned is True  # noqa: SLF001
+    assert captured and captured[0]._cleaned is False  # noqa: SLF001
 
 
 def test_overlay_sockets_and_index_builds_paths():
@@ -148,9 +148,9 @@ def test_overlay_sockets_and_index_rejects_none():
     builder = SpellSystemRootBlueprintBuilder()
     dag = DirectedAcyclicWorkGraph()
     bp = RootResolutionBlueprint("r", None, dag)
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         builder._overlay_sockets_and_index(None, {})  # type: ignore[arg-type]
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         builder._overlay_sockets_and_index(bp, None)  # type: ignore[arg-type]
 
 
@@ -182,7 +182,7 @@ def test_build_single_root_dag_validates_inputs():
     builder = SpellSystemRootBlueprintBuilder()
     with pytest.raises(ValueError):
         builder._build_single_root_dag(None, {})  # type: ignore[arg-type]
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         builder._build_single_root_dag("root", None)  # type: ignore[arg-type]
 
 

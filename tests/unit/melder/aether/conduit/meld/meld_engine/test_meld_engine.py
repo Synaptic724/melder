@@ -11,11 +11,25 @@ from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlan
+from melder.spellbook.spell_crafter.blueprints.execution_plan import (
+    ExecutionPlan,
+    ExecutionPlanBuilder,
+    ExecutionPlanStep,
+    ExecutionPlanTargetKind,
+    ExecutionPlanVariant,
+)
+from melder.spellbook.spell_crafter.blueprints.injection_plan import (
+    InjectionPlanBuilder,
+)
+from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
+    OccurrencePlan,
+    OccurrencePlanBuilder,
+)
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
@@ -86,6 +100,7 @@ class _SystemStatesStub:
             raise_on: Optional set of ids that should raise on access.
         """
         self._mapping = dict(mapping)
+        self._local_topologies = dict(mapping)
         self._raise_on = set(raise_on or [])
 
     def get_local_topology_by_id(self, spell_id: str) -> Any:
@@ -95,6 +110,29 @@ class _SystemStatesStub:
         if spell_id in self._raise_on:
             raise RuntimeError("topology lookup failed")
         return self._mapping.get(spell_id)
+
+
+class _ConfigurationStub:
+    """
+    Minimal configuration stub for system_state lookup.
+    """
+
+    def __init__(self, system_state: SystemState = SystemState.dynamic) -> None:
+        self._system_state = system_state
+
+    def get_property(self, name: str) -> Any:
+        if name == "system_state":
+            return self._system_state
+        return None
+
+
+class _SpellbookStub:
+    """
+    Minimal spellbook stub that exposes a configuration object.
+    """
+
+    def __init__(self, system_state: SystemState = SystemState.dynamic) -> None:
+        self._configuration = _ConfigurationStub(system_state)
 
 
 class _TrackingLock:
@@ -308,6 +346,57 @@ def _make_engine_with_sockets(
     return engine, blueprint, root_spell
 
 
+def _make_builder_with_sockets(
+    *,
+    root_id: str,
+    ordered_node_ids: Iterable[str],
+    sockets: Iterable[SocketRef],
+    spell_lookup: Optional[dict[str, Any]] = None,
+    system_states: Any = None,
+) -> tuple[OccurrencePlanBuilder, RootResolutionBlueprint, SimpleNamespace, dict[str, Any]]:
+    """
+    Build an OccurrencePlanBuilder wired to a blueprint with socket refs.
+
+    Args:
+        root_id: Root spell id for the blueprint and builder.
+        ordered_node_ids: Execution order for the blueprint.
+        sockets: Socket refs to attach to the blueprint index.
+        spell_lookup: Optional spell lookup entries to use as-is.
+        system_states: Optional system states for topology lookup.
+
+    Returns:
+        tuple[OccurrencePlanBuilder, RootResolutionBlueprint, SimpleNamespace, dict[str, Any]]:
+            Builder, blueprint, root spell stub, and the spell lookup used.
+    """
+    node_ids = set(ordered_node_ids)
+    node_ids.add(root_id)
+    for socket in sockets:
+        node_ids.add(socket.node_id)
+
+    if spell_lookup is None:
+        lookup = _make_spell_lookup(node_ids)
+    else:
+        lookup = dict(spell_lookup)
+        if root_id not in lookup:
+            lookup[root_id] = _make_spell(spell_id=root_id, existence=Existence.many)
+
+    root_spell = lookup[root_id]
+    dag = _make_dag_with_nodes(node_ids)
+    blueprint = _make_blueprint_with_sockets(
+        root_id=root_id,
+        dag=dag,
+        ordered_node_ids=ordered_node_ids,
+        sockets=sockets,
+    )
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=lookup,
+        system_states=system_states,
+    )
+    return builder, blueprint, root_spell, lookup
+
+
 def _make_dag_with_nodes(node_ids: Iterable[str]) -> DirectedAcyclicWorkGraph:
     """
     Create a DAG containing nodes for each id.
@@ -435,12 +524,17 @@ def _make_spell(
         user_created_object=user_created_object,
         _owner_creations=owner_creations,
         has_disposal_methods=bool(has_disposal_methods),
+        mutation_override=None,
+        requirements=None,
         disposal_method_names=(
             ["cleanup"] if has_disposal_methods and disposal_method_names is None
             else list(disposal_method_names) if disposal_method_names else []
         ),
         _lock=RLock(),
     )
+
+
+_DEFAULT_FRAME = object()
 
 
 def _make_engine(
@@ -450,14 +544,14 @@ def _make_engine(
     caller_creations: Any | None = None,
     owner_creations: Any | None = None,
     caller_creations_lock_held: bool = False,
-    frame: Optional[ResolutionFrame] = None,
+    frame: Any = _DEFAULT_FRAME,
     blueprint: Optional[RootResolutionBlueprint] = None,
     override_map: Optional[dict[SocketRef, Any]] = None,
     spell_lookup: Optional[dict[str, Any]] = None,
     system_states: Any = None,
     cancel_event: Any | None = None,
     occurrence_plan: Any = None,
-) -> tuple[MeldEngine, SimpleNamespace, ResolutionFrame]:
+) -> tuple[MeldEngine, SimpleNamespace, Optional[ResolutionFrame]]:
     """
     Build a MeldEngine with default stubs for testing.
 
@@ -471,7 +565,7 @@ def _make_engine(
         root_spell = _make_spell(spell_id="root", spell=lambda **_: "root")
     if creations is None:
         creations, _ = _make_creations()
-    if frame is None:
+    if frame is _DEFAULT_FRAME:
         frame = ResolutionFrame()
     context = _make_context(
         creations=creations,
@@ -493,6 +587,170 @@ def _make_engine(
         system_states=system_states,
     )
     return engine, root_spell, frame
+
+
+def _collect_override_targets(
+    override_map: Optional[dict[SocketRef, Any]],
+) -> dict[str, list[SocketRef]]:
+    """
+    Group override targets by spell id for run_execution_plan.
+    """
+    targets: dict[str, list[SocketRef]] = {}
+    for socket_ref in (override_map or {}):
+        targets.setdefault(socket_ref.node_id, []).append(socket_ref)
+    return targets
+
+
+def _build_execution_plan(
+    *,
+    root_spell: SimpleNamespace,
+    blueprint: RootResolutionBlueprint,
+    spell_lookup: dict[str, Any],
+    system_states: Any = None,
+    plan_variant: str = ExecutionPlanVariant.NO_OVERRIDES_FAST,
+) -> ExecutionPlan:
+    """
+    Build a full occurrence/injection/execution plan pipeline for tests.
+    """
+    if system_states is None:
+        system_states = _SystemStatesStub({})
+    if getattr(root_spell, "_spellbook", None) is None:
+        root_spell._spellbook = _SpellbookStub()
+    occurrence_plan = OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+        system_states=system_states,
+    ).build()
+    injection_plan = InjectionPlanBuilder(
+        occurrence_plan=occurrence_plan,
+    ).build()
+    execution_plan = ExecutionPlanBuilder(
+        occurrence_plan=occurrence_plan,
+        injection_plan=injection_plan,
+        spell_lookup=spell_lookup,
+        plan_variant=plan_variant,
+    ).build()
+    return execution_plan
+
+
+def _run_plan(
+    *,
+    engine: MeldEngine,
+    execution_plan: ExecutionPlan,
+    override_map: Optional[dict[SocketRef, Any]] = None,
+    any_overrides_present: bool = False,
+    force_overrides: bool = False,
+) -> Any:
+    """
+    Execute a plan through the engine, choosing the correct entrypoint.
+    """
+    override_map = override_map or {}
+    if force_overrides or override_map:
+        return engine.run_execution_plan(
+            execution_plan,
+            override_targets_by_spell_id=_collect_override_targets(override_map),
+            any_overrides_present=any_overrides_present,
+        )
+    return engine.run_execution_plan_no_overrides(execution_plan)
+
+
+def _make_root_only_plan(
+    *,
+    root_spell: SimpleNamespace,
+    plan_variant: str = ExecutionPlanVariant.NO_OVERRIDES_FAST,
+    system_states: Any = None,
+) -> tuple[RootResolutionBlueprint, ExecutionPlan, dict[str, Any]]:
+    """
+    Build a minimal blueprint and execution plan for a root-only spell.
+    """
+    root_id = root_spell.spell_index.current
+    dag = _make_dag_with_nodes([root_id])
+    blueprint = _make_blueprint(
+        root_id=root_id,
+        dag=dag,
+        ordered_node_ids=[root_id],
+    )
+    spell_lookup = {root_id: root_spell}
+    execution_plan = _build_execution_plan(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+        system_states=system_states,
+        plan_variant=plan_variant,
+    )
+    return blueprint, execution_plan, spell_lookup
+
+
+def _make_call_recipe_step(
+    *,
+    spell: SimpleNamespace,
+    dependency_resolution_order: Optional[list[tuple[str, list[tuple[str, Optional[tuple[str, ...]]]]]]] = None,
+    contract_payload: Optional[dict[str, Any]] = None,
+    contract_positional_override: Optional[Any] = None,
+    uses_positional_override: bool = False,
+    has_contract_payload: Optional[bool] = None,
+) -> SimpleNamespace:
+    """
+    Build a minimal step-like object for _build_kwargs_from_call_recipe tests.
+    """
+    if dependency_resolution_order is None:
+        dependency_resolution_order = []
+    if contract_payload is None:
+        contract_payload = {}
+    if has_contract_payload is None:
+        has_contract_payload = bool(contract_payload)
+    return SimpleNamespace(
+        spell=spell,
+        dependency_resolution_order=dependency_resolution_order,
+        contract_payload=contract_payload,
+        contract_positional_override=contract_positional_override,
+        uses_positional_override=uses_positional_override,
+        has_contract_payload=has_contract_payload,
+    )
+
+
+def _make_occurrence_builder(
+    *,
+    root_spell: SimpleNamespace,
+    blueprint: RootResolutionBlueprint,
+    spell_lookup: Optional[dict[str, Any]] = None,
+    system_states: Any = None,
+) -> OccurrencePlanBuilder:
+    """
+    Build an OccurrencePlanBuilder with sensible defaults.
+    """
+    if system_states is None:
+        system_states = _SystemStatesStub({})
+    if getattr(root_spell, "_spellbook", None) is None:
+        root_spell._spellbook = _SpellbookStub()
+    if spell_lookup is None:
+        spell_lookup = {root_spell.spell_index.current: root_spell}
+    return OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+        system_states=system_states,
+    )
+
+
+def _make_spell_lookup(
+    node_ids: Iterable[str],
+    *,
+    existence_by_id: Optional[dict[str, Existence]] = None,
+) -> dict[str, SimpleNamespace]:
+    """
+    Build a spell lookup mapping for the provided node ids.
+    """
+    lookup: dict[str, SimpleNamespace] = {}
+    for node_id in node_ids:
+        existence = (
+            existence_by_id.get(node_id, Existence.many)
+            if existence_by_id is not None
+            else Existence.many
+        )
+        lookup[node_id] = _make_spell(spell_id=node_id, existence=existence)
+    return lookup
 
 
 def _make_creations(conduit_id: str = "conduit-1") -> tuple[Creations, _ConduitStub]:
@@ -576,27 +834,27 @@ def test_init_requires_root_spell_raises_valueerror() -> None:
         )
 
 
-def test_init_requires_frame_raises_valueerror() -> None:
+def test_init_allows_none_frame() -> None:
     """
-    Verify MeldEngine rejects a None ResolutionFrame.
+    Verify MeldEngine accepts a None ResolutionFrame.
 
     Contract:
-        - frame must not be None.
+        - frame may be None for no-overrides execution paths.
     """
     root_spell = _make_spell(spell_id="root")
-    with pytest.raises(ValueError, match="frame cannot be None"):
-        MeldEngine(
-            context=_make_context(SimpleNamespace()),
-            root_spell=root_spell,
-            dag=None,
-            resolution_frame=None,
-            requirements=None,
-            frame=None,
-            blueprint=None,
-            override_map={},
-            spell_lookup={},
-            system_states=None,
-        )
+    engine = MeldEngine(
+        context=_make_context(SimpleNamespace()),
+        root_spell=root_spell,
+        dag=None,
+        resolution_frame=None,
+        requirements=None,
+        frame=None,
+        blueprint=None,
+        override_map={},
+        spell_lookup={},
+        system_states=None,
+    )
+    assert engine.frame is None
 
 
 def test_properties_expose_context_root_spell_and_frame() -> None:
@@ -646,15 +904,23 @@ def test_cleanup_clears_references_and_is_idempotent() -> None:
 
 def test_run_after_cleanup_raises_runtimeerror() -> None:
     """
-    Verify run() refuses execution after cleanup.
+    Verify plan execution refuses after cleanup.
 
     Contract:
-        - run raises RuntimeError once cleaned.
+        - run_execution_plan_no_overrides raises RuntimeError once cleaned.
     """
-    engine, _, _ = _make_engine()
+    root_spell = _make_spell(spell_id="root", spell=lambda **_: "root")
+    blueprint, execution_plan, spell_lookup = _make_root_only_plan(
+        root_spell=root_spell,
+    )
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
     engine.cleanup()
     with pytest.raises(RuntimeError, match="already been cleaned"):
-        engine.run()
+        _run_plan(engine=engine, execution_plan=execution_plan)
 
 
 def test_run_root_only_returns_value_and_stores_result() -> None:
@@ -662,18 +928,20 @@ def test_run_root_only_returns_value_and_stores_result() -> None:
     Verify root-only execution returns a value spell and stores the result.
 
     Contract:
-        - non-callable spells are returned as-is and stored in the frame.
+        - callable spells are executed and stored in the frame.
     """
-    root_spell = _make_spell(
-        spell_id="root",
-        spell="root-value",
-        is_class_spell=False,
-        is_method_spell=False,
-        is_lambda_spell=False,
-    )
+    root_spell = _make_spell(spell_id="root", spell=lambda: "root-value")
     frame = ResolutionFrame()
-    engine, _, _ = _make_engine(root_spell=root_spell, frame=frame)
-    result = engine.run()
+    blueprint, execution_plan, spell_lookup = _make_root_only_plan(
+        root_spell=root_spell,
+    )
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        frame=frame,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
+    result = _run_plan(engine=engine, execution_plan=execution_plan)
     assert result == "root-value"
     assert frame.get_result(root_spell.spell_index.current) == "root-value"
 
@@ -698,12 +966,17 @@ def test_run_root_only_unique_per_conduit_holds_creations_lock() -> None:
         spell=build,
         existence=Existence.unique_per_conduit,
     )
+    blueprint, execution_plan, spell_lookup = _make_root_only_plan(
+        root_spell=root_spell,
+    )
     engine, _, _ = _make_engine(
         root_spell=root_spell,
         creations=creations,
         caller_creations=creations,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
     )
-    assert engine.run() == "root-value"
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "root-value"
 
 
 def test_run_root_only_shared_unique_holds_spell_lock() -> None:
@@ -731,13 +1004,18 @@ def test_run_root_only_shared_unique_holds_spell_lock() -> None:
         owner_creations=creations,
     )
     root_spell._lock = spell_lock
+    blueprint, execution_plan, spell_lookup = _make_root_only_plan(
+        root_spell=root_spell,
+    )
     engine, _, _ = _make_engine(
         root_spell=root_spell,
         creations=creations,
         caller_creations=creations,
         owner_creations=creations,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
     )
-    assert engine.run() == "root-value"
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "root-value"
 
 
 def test_run_root_only_skips_spell_lock_when_caller_creations_lock_held() -> None:
@@ -766,20 +1044,25 @@ def test_run_root_only_skips_spell_lock_when_caller_creations_lock_held() -> Non
         owner_creations=creations,
     )
     root_spell._lock = spell_lock
+    blueprint, execution_plan, spell_lookup = _make_root_only_plan(
+        root_spell=root_spell,
+    )
     engine, _, _ = _make_engine(
         root_spell=root_spell,
         creations=creations,
         caller_creations=creations,
         owner_creations=creations,
         caller_creations_lock_held=True,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
     )
     with creations._lock:
-        assert engine.run() == "root-value"
+        assert _run_plan(engine=engine, execution_plan=execution_plan) == "root-value"
 
 
-def test_run_root_only_uses_args_and_kwargs_overrides() -> None:
+def test_construct_spell_uses_args_and_kwargs() -> None:
     """
-    Verify root-only execution applies __args__ and keyword overrides.
+    Verify _construct_spell applies __args__ and keyword overrides.
 
     Contract:
         - positional and keyword overrides are passed to the callable.
@@ -788,30 +1071,29 @@ def test_run_root_only_uses_args_and_kwargs_overrides() -> None:
         return a, b, c
 
     root_spell = _make_spell(spell_id="root", spell=build)
-    frame = ResolutionFrame(overrides={"__args__": [1, 2], "c": 3})
-    engine, _, _ = _make_engine(root_spell=root_spell, frame=frame)
-    assert engine.run() == (1, 2, 3)
+    engine, _, _ = _make_engine(root_spell=root_spell)
+    assert engine._construct_spell(root_spell, {"__args__": [1, 2], "c": 3}) == (1, 2, 3)
 
 
-def test_run_root_only_ignores_string_args_override() -> None:
+def test_construct_spell_rejects_invalid_args_override() -> None:
     """
-    Verify string __args__ overrides are ignored.
+    Verify invalid __args__ overrides raise MeldExecutionError.
 
     Contract:
-        - __args__ string values are not treated as positional args.
+        - __args__ must be a list or tuple.
     """
     def build(*, c: int) -> int:
         return c
 
     root_spell = _make_spell(spell_id="root", spell=build)
-    frame = ResolutionFrame(overrides={"__args__": "abc", "c": 7})
-    engine, _, _ = _make_engine(root_spell=root_spell, frame=frame)
-    assert engine.run() == 7
+    engine, _, _ = _make_engine(root_spell=root_spell)
+    with pytest.raises(MeldExecutionError, match="__args__ override must be a list or tuple"):
+        engine._construct_spell(root_spell, {"__args__": "abc", "c": 7})
 
 
-def test_run_root_only_wraps_callable_error() -> None:
+def test_construct_spell_wraps_callable_error() -> None:
     """
-    Verify root-only errors are wrapped in MeldExecutionError.
+    Verify callable errors are wrapped in MeldExecutionError.
 
     Contract:
         - callable exceptions are wrapped with spell identity metadata.
@@ -822,33 +1104,41 @@ def test_run_root_only_wraps_callable_error() -> None:
     root_spell = _make_spell(spell_id="root", spell=boom)
     engine, _, _ = _make_engine(root_spell=root_spell)
     with pytest.raises(MeldExecutionError) as exc_info:
-        engine.run()
+        engine._construct_spell(root_spell, {"__args__": []})
     assert exc_info.value.spell_id == root_spell.spell_index.current
     assert isinstance(exc_info.value.inner, ValueError)
 
 
-def test_run_root_only_respects_cancellation_event() -> None:
+def test_run_execution_plan_respects_cancellation_event() -> None:
     """
-    Verify root-only execution honors cancellation signals.
+    Verify execution honors cancellation signals.
 
     Contract:
-        - when cancellation is set, run raises OperationCancelledError.
+        - when cancellation is set, execution raises OperationCancelledError.
     """
     signal = CancellationEventSignal()
     signal.cancel()
     root_spell = _make_spell(spell_id="root", spell=lambda: "never")
-    engine, _, _ = _make_engine(root_spell=root_spell, cancel_event=signal.event)
+    blueprint, execution_plan, spell_lookup = _make_root_only_plan(
+        root_spell=root_spell,
+    )
+    engine, _, _ = _make_engine(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+        cancel_event=signal.event,
+    )
     with pytest.raises(OperationCancelledError):
-        engine.run()
+        _run_plan(engine=engine, execution_plan=execution_plan)
     signal.cleanup()
 
 
-def test_construct_spell_existing_creation_requires_user_object() -> None:
+def test_construct_spell_existing_creation_allows_missing_object() -> None:
     """
-    Verify existing-creation spells require a user_created_object.
+    Verify existing-creation spells return the stored object (even when None).
 
     Contract:
-        - missing user_created_object raises MeldExecutionError.
+        - user_created_object is returned without additional validation.
     """
     engine, _, _ = _make_engine()
     spell = _make_spell(
@@ -859,8 +1149,7 @@ def test_construct_spell_existing_creation_requires_user_object() -> None:
         is_method_spell=False,
         is_lambda_spell=False,
     )
-    with pytest.raises(MeldExecutionError, match="EXISTING_CREATION"):
-        engine._construct_spell(spell, {})
+    assert engine._construct_spell(spell, {}) is None
 
 
 def test_construct_spell_existing_creation_returns_object() -> None:
@@ -933,190 +1222,145 @@ def test_construct_spell_wraps_callable_error() -> None:
     assert isinstance(exc_info.value.inner, RuntimeError)
 
 
-def test_build_kwargs_for_instance_returns_empty_when_occurrence_missing() -> None:
+def test_build_kwargs_from_call_recipe_returns_empty_without_sources() -> None:
     """
-    Verify instance kwargs are empty when the Phase 8 occurrence is missing.
-
-    Contract:
-        - Missing occurrences yield empty kwargs without overrides or contracts.
+    Verify kwargs are empty when no dependencies, overrides, or contracts exist.
     """
     engine, _, _ = _make_engine()
-    kwargs = engine._build_kwargs_for_instance(
-        instance_key=("child", ("child",)),
-        occurrence_graph={},
-        canonical_occurrences_by_spell_id={},
+    spell = _make_spell(spell_id="child", existence=Existence.many)
+    plan_step = _make_call_recipe_step(spell=spell)
+    kwargs = engine._build_kwargs_from_call_recipe(
+        plan_step=plan_step,
+        override_values={},
     )
     assert kwargs == {}
 
 
-def test_build_kwargs_for_instance_applies_shared_overrides() -> None:
+def test_build_kwargs_from_call_recipe_applies_overrides() -> None:
     """
-    Verify shared-instance overrides apply without a path match.
-
-    Contract:
-        - Shared instances accept path-agnostic overrides.
+    Verify override values are applied without dependency wiring.
     """
-    override_map = {_make_socket_ref("child", "dep"): "override"}
-    engine, _, _ = _make_engine(override_map=override_map)
-    occurrence = ("child", ())
-    kwargs = engine._build_kwargs_for_instance(
-        instance_key=("child", None),
-        occurrence_graph={occurrence: {}},
-        canonical_occurrences_by_spell_id={"child": occurrence},
+    engine, _, _ = _make_engine()
+    spell = _make_spell(spell_id="child", existence=Existence.many)
+    plan_step = _make_call_recipe_step(spell=spell)
+    kwargs = engine._build_kwargs_from_call_recipe(
+        plan_step=plan_step,
+        override_values={"dep": "override"},
     )
     assert kwargs == {"dep": "override"}
 
 
-def test_build_kwargs_for_instance_injects_dependencies_from_occurrence_graph() -> None:
+def test_build_kwargs_from_call_recipe_injects_dependencies() -> None:
     """
-    Verify Phase 8 occurrence graph dependencies are injected.
-
-    Contract:
-        - Dependency occurrences map to instance results.
+    Verify dependency keys map to instance results.
     """
     engine, _, _ = _make_engine()
-    engine._spell_lookup = {"parent": SimpleNamespace(existence=Existence.many)}
-    parent_occurrence = ("parent", ("dep",))
-    engine._instance_results[(parent_occurrence[0], parent_occurrence[1])] = "parent-value"
-    occurrence_graph = {
-        ("child", ("child",)): {"dep": [parent_occurrence]},
-    }
-    kwargs = engine._build_kwargs_for_instance(
-        instance_key=("child", ("child",)),
-        occurrence_graph=occurrence_graph,
-        canonical_occurrences_by_spell_id={},
+    engine._instance_results[("parent", ("dep",))] = "parent-value"
+    spell = _make_spell(spell_id="child", existence=Existence.many)
+    plan_step = _make_call_recipe_step(
+        spell=spell,
+        dependency_resolution_order=[("dep", [("parent", ("dep",))])],
+    )
+    kwargs = engine._build_kwargs_from_call_recipe(
+        plan_step=plan_step,
+        override_values={},
     )
     assert kwargs == {"dep": "parent-value"}
 
 
-def test_build_kwargs_for_instance_injects_list_for_multiple_dependencies() -> None:
+def test_build_kwargs_from_call_recipe_injects_list_for_multiple_dependencies() -> None:
     """
-    Verify multiple dependency occurrences inject a list.
-
-    Contract:
-        - Multiple parents map to a list of resolved values.
+    Verify multiple dependency keys inject a list.
     """
     engine, _, _ = _make_engine()
-    engine._spell_lookup = {
-        "a": SimpleNamespace(existence=Existence.many),
-        "b": SimpleNamespace(existence=Existence.many),
-    }
-    occurrence_graph = {
-        ("child", ("child",)): {
-            "deps": [("a", ("deps", "a")), ("b", ("deps", "b"))],
-        },
-    }
     engine._instance_results[("a", ("deps", "a"))] = "value-a"
     engine._instance_results[("b", ("deps", "b"))] = "value-b"
-    kwargs = engine._build_kwargs_for_instance(
-        instance_key=("child", ("child",)),
-        occurrence_graph=occurrence_graph,
-        canonical_occurrences_by_spell_id={},
+    spell = _make_spell(spell_id="child", existence=Existence.many)
+    plan_step = _make_call_recipe_step(
+        spell=spell,
+        dependency_resolution_order=[
+            ("deps", [("a", ("deps", "a")), ("b", ("deps", "b"))]),
+        ],
+    )
+    kwargs = engine._build_kwargs_from_call_recipe(
+        plan_step=plan_step,
+        override_values={},
     )
     assert kwargs == {"deps": ["value-a", "value-b"]}
 
 
-def test_build_kwargs_for_instance_skips_dependency_when_override_present() -> None:
+def test_build_kwargs_from_call_recipe_skips_dependency_when_override_present() -> None:
     """
     Verify overrides suppress dependency injection for the same param.
-
-    Contract:
-        - Overrides win even when a dependency is listed.
     """
-    override_map = {
-        _make_socket_ref_with_path(
-            node_id="child",
-            param_name="dep",
-            param_path=("child", "dep"),
-            socket_kind=SocketKind.NORMAL,
-        ): "override",
-    }
-    engine, _, _ = _make_engine(override_map=override_map)
-    occurrence_graph = {
-        ("child", ("child",)): {"dep": [("parent", ("dep",))]},
-    }
-    kwargs = engine._build_kwargs_for_instance(
-        instance_key=("child", ("child",)),
-        occurrence_graph=occurrence_graph,
-        canonical_occurrences_by_spell_id={},
+    engine, _, _ = _make_engine()
+    engine._instance_results[("parent", ("dep",))] = "parent-value"
+    spell = _make_spell(spell_id="child", existence=Existence.many)
+    plan_step = _make_call_recipe_step(
+        spell=spell,
+        dependency_resolution_order=[("dep", [("parent", ("dep",))])],
+    )
+    kwargs = engine._build_kwargs_from_call_recipe(
+        plan_step=plan_step,
+        override_values={"dep": "override"},
     )
     assert kwargs == {"dep": "override"}
 
 
-def test_build_kwargs_for_instance_raises_when_dependency_missing() -> None:
+def test_build_kwargs_from_call_recipe_raises_when_dependency_missing() -> None:
     """
     Verify missing dependency instances raise MeldExecutionError.
-
-    Contract:
-        - Absent dependency instances raise during kwargs build.
     """
     engine, _, _ = _make_engine()
-    occurrence_graph = {
-        ("child", ("child",)): {"dep": [("parent", ("dep",))]},
-    }
+    spell = _make_spell(spell_id="child", existence=Existence.many)
+    plan_step = _make_call_recipe_step(
+        spell=spell,
+        dependency_resolution_order=[("dep", [("parent", ("dep",))])],
+    )
     with pytest.raises(MeldExecutionError, match="Dependency"):
-        engine._build_kwargs_for_instance(
-            instance_key=("child", ("child",)),
-            occurrence_graph=occurrence_graph,
-            canonical_occurrences_by_spell_id={},
+        engine._build_kwargs_from_call_recipe(
+            plan_step=plan_step,
+            override_values={},
         )
 
 
-def test_build_kwargs_for_instance_merges_override_and_dependency_params() -> None:
+def test_build_kwargs_from_call_recipe_merges_override_and_dependency_params() -> None:
     """
     Verify overrides and dependencies merge across params.
-
-    Contract:
-        - Overridden params stay fixed.
-        - Other params still receive dependency values.
     """
-    override_map = {
-        _make_socket_ref_with_path(
-            node_id="child",
-            param_name="override_param",
-            param_path=("child", "override_param"),
-            socket_kind=SocketKind.NORMAL,
-        ): "override",
-    }
-    engine, _, _ = _make_engine(override_map=override_map)
-    engine._spell_lookup = {"parent": SimpleNamespace(existence=Existence.many)}
+    engine, _, _ = _make_engine()
     engine._instance_results[("parent", ("dep",))] = "parent-value"
-    occurrence_graph = {
-        ("child", ("child",)): {"dep": [("parent", ("dep",))]},
-    }
-    kwargs = engine._build_kwargs_for_instance(
-        instance_key=("child", ("child",)),
-        occurrence_graph=occurrence_graph,
-        canonical_occurrences_by_spell_id={},
+    spell = _make_spell(spell_id="child", existence=Existence.many)
+    plan_step = _make_call_recipe_step(
+        spell=spell,
+        dependency_resolution_order=[("dep", [("parent", ("dep",))])],
+    )
+    kwargs = engine._build_kwargs_from_call_recipe(
+        plan_step=plan_step,
+        override_values={"override_param": "override"},
     )
     assert kwargs == {"dep": "parent-value", "override_param": "override"}
 
 
-def test_build_kwargs_for_instance_merges_contract_payload_and_overrides() -> None:
+def test_build_kwargs_from_call_recipe_merges_contract_payload_and_overrides() -> None:
     """
     Verify contract payloads merge without overriding explicit overrides.
-
-    Contract:
-        - Contract payloads apply when not overridden.
-        - Positional overrides are preserved.
     """
-    override_map = {
-        _make_socket_ref_with_path(
-            node_id="child",
-            param_name="dep",
-            param_path=("child", "dep"),
-            socket_kind=SocketKind.NORMAL,
-        ): "override",
-    }
-    engine, _, _ = _make_engine(override_map=override_map)
-    occurrence_graph = {("child", ("child",)): {}}
-    kwargs = engine._build_kwargs_for_instance(
-        instance_key=("child", ("child",)),
-        occurrence_graph=occurrence_graph,
-        canonical_occurrences_by_spell_id={},
-        contract_override={"dep": "contract", "__args__": ["positional"]},
+    engine, _, _ = _make_engine()
+    spell = _make_spell(spell_id="child", existence=Existence.many)
+    plan_step = _make_call_recipe_step(
+        spell=spell,
+        contract_payload={"dep": "contract", "__args__": ["positional"]},
+        contract_positional_override=["positional"],
+        uses_positional_override=True,
+        has_contract_payload=True,
     )
-    assert kwargs == {"dep": "override", "__args__": ["positional"]}
+    kwargs = engine._build_kwargs_from_call_recipe(
+        plan_step=plan_step,
+        override_values={"dep": "override"},
+    )
+    assert kwargs["dep"] == "override"
+    assert kwargs["__args__"] == ["positional"]
 
 
 def test_get_existing_creation_returns_none_for_many() -> None:
@@ -1129,7 +1373,7 @@ def test_get_existing_creation_returns_none_for_many() -> None:
     creations, _ = _make_creations()
     engine, _, _ = _make_engine(creations=creations)
     spell = _make_spell(spell_id="spell-1", existence=Existence.many)
-    assert engine._get_existing_creation(spell) is None
+    assert engine._get_existing_creation(spell, creations, Existence.many) is None
 
 
 def test_register_instance_skips_many_without_disposal_methods() -> None:
@@ -1147,7 +1391,7 @@ def test_register_instance_skips_many_without_disposal_methods() -> None:
         has_disposal_methods=False,
         disposal_method_names=[],
     )
-    engine._register_spell(spell, object(), creations)
+    engine._register_spell(spell, object(), creations, spell.existence)
 
     assert "spell-1" not in creations._many
 
@@ -1164,29 +1408,25 @@ def test_get_existing_creation_returns_unique_from_creations() -> None:
     creations.add_unique("spell-1", instance)
     engine, _, _ = _make_engine(creations=creations)
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique)
-    assert engine._get_existing_creation(spell) is instance
+    assert engine._get_existing_creation(spell, creations, Existence.unique) is instance
 
 
-def test_get_existing_creation_prefers_caller_for_unique_per_conduit() -> None:
+def test_get_existing_creation_returns_unique_per_conduit_from_caller() -> None:
     """
-    Verify per-conduit reuse prefers caller creations over owner creations.
-
-    Contract:
-        - unique_per_conduit reuse checks caller creations first.
+    Verify per-conduit reuse returns the instance in the provided creations.
     """
     caller_creations, _ = _make_creations(conduit_id="caller")
-    owner_creations, _ = _make_creations(conduit_id="owner")
     caller_instance = object()
-    owner_instance = object()
     caller_creations.add_unique_per_scope("spell-1", caller_instance)
-    owner_creations.add_unique_per_scope("spell-1", owner_instance)
     engine, _, _ = _make_engine(
         creations=caller_creations,
         caller_creations=caller_creations,
-        owner_creations=owner_creations,
     )
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique_per_conduit)
-    assert engine._get_existing_creation(spell) is caller_instance
+    assert (
+        engine._get_existing_creation(spell, caller_creations, Existence.unique_per_conduit)
+        is caller_instance
+    )
 
 
 def test_get_existing_creation_returns_unique_per_conduit_from_creations() -> None:
@@ -1201,29 +1441,25 @@ def test_get_existing_creation_returns_unique_per_conduit_from_creations() -> No
     creations.add_unique_per_scope("spell-1", instance)
     engine, _, _ = _make_engine(creations=creations)
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique_per_conduit)
-    assert engine._get_existing_creation(spell) is instance
+    assert (
+        engine._get_existing_creation(spell, creations, Existence.unique_per_conduit)
+        is instance
+    )
 
 
-def test_get_existing_creation_prefers_owner_for_unique() -> None:
+def test_get_existing_creation_returns_unique_from_owner() -> None:
     """
-    Verify shared reuse prefers owner creations over caller creations.
-
-    Contract:
-        - unique reuse checks owner creations first.
+    Verify unique reuse returns the instance in the provided owner creations.
     """
-    caller_creations, _ = _make_creations(conduit_id="caller")
     owner_creations, _ = _make_creations(conduit_id="owner")
-    caller_instance = object()
     owner_instance = object()
-    caller_creations.add_unique("spell-1", caller_instance)
     owner_creations.add_unique("spell-1", owner_instance)
     engine, _, _ = _make_engine(
-        creations=caller_creations,
-        caller_creations=caller_creations,
+        creations=owner_creations,
         owner_creations=owner_creations,
     )
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique)
-    assert engine._get_existing_creation(spell) is owner_instance
+    assert engine._get_existing_creation(spell, owner_creations, Existence.unique) is owner_instance
 
 
 def test_get_existing_creation_returns_unique_per_cluster_from_creations() -> None:
@@ -1241,7 +1477,10 @@ def test_get_existing_creation_returns_unique_per_cluster_from_creations() -> No
         spell_id="spell-1",
         existence=Existence.unique_per_conduit_cluster,
     )
-    assert engine._get_existing_creation(spell) is instance
+    assert (
+        engine._get_existing_creation(spell, creations, Existence.unique_per_conduit_cluster)
+        is instance
+    )
 
 
 def test_get_existing_creation_returns_unique_per_lineage_from_creations() -> None:
@@ -1259,7 +1498,10 @@ def test_get_existing_creation_returns_unique_per_lineage_from_creations() -> No
         spell_id="spell-1",
         existence=Existence.unique_per_conduit_lineage,
     )
-    assert engine._get_existing_creation(spell) is instance
+    assert (
+        engine._get_existing_creation(spell, creations, Existence.unique_per_conduit_lineage)
+        is instance
+    )
 
 
 def test_get_existing_creation_raises_when_spellspace_missing() -> None:
@@ -1276,7 +1518,7 @@ def test_get_existing_creation_raises_when_spellspace_missing() -> None:
         existence=Existence.unique_per_spell_space,
     )
     with pytest.raises(SpellSpaceScopeError, match="SpellSpace"):
-        engine._get_existing_creation(spell)
+        engine._get_existing_creation(spell, creations, Existence.unique_per_spell_space)
 
 
 def test_get_existing_creation_raises_when_spellspace_owner_mismatch() -> None:
@@ -1295,7 +1537,7 @@ def test_get_existing_creation_raises_when_spellspace_owner_mismatch() -> None:
         existence=Existence.unique_per_spell_space,
     )
     with pytest.raises(SpellSpaceScopeError, match="different conduit"):
-        engine._get_existing_creation(spell)
+        engine._get_existing_creation(spell, creations, Existence.unique_per_spell_space)
 
 
 def test_get_existing_creation_returns_spellspace_creation() -> None:
@@ -1314,7 +1556,10 @@ def test_get_existing_creation_returns_spellspace_creation() -> None:
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
     )
-    assert engine._get_existing_creation(spell) is instance
+    assert (
+        engine._get_existing_creation(spell, creations, Existence.unique_per_spell_space)
+        is instance
+    )
 
 
 def test_get_existing_creation_lesser_unique_per_scope() -> None:
@@ -1329,7 +1574,10 @@ def test_get_existing_creation_lesser_unique_per_scope() -> None:
     lesser.add_unique_per_scope("spell-1", instance)
     engine, _, _ = _make_engine(creations=lesser)
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique_per_conduit)
-    assert engine._get_existing_creation(spell) is instance
+    assert (
+        engine._get_existing_creation(spell, lesser, Existence.unique_per_conduit)
+        is instance
+    )
 
 
 def test_get_existing_creation_lesser_parent_unique() -> None:
@@ -1345,7 +1593,7 @@ def test_get_existing_creation_lesser_parent_unique() -> None:
     lesser, _, _ = _make_lesser_creations(parent_creations=parent)
     engine, _, _ = _make_engine(creations=lesser)
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique)
-    assert engine._get_existing_creation(spell) is instance
+    assert engine._get_existing_creation(spell, lesser, Existence.unique) is instance
 
 
 def test_get_existing_creation_lesser_spellspace_missing_raises() -> None:
@@ -1363,7 +1611,7 @@ def test_get_existing_creation_lesser_spellspace_missing_raises() -> None:
         existence=Existence.unique_per_spell_space,
     )
     with pytest.raises(SpellSpaceScopeError, match="SpellSpace"):
-        engine._get_existing_creation(spell)
+        engine._get_existing_creation(spell, lesser, Existence.unique_per_spell_space)
 
 
 def test_get_existing_creation_unknown_creations_returns_none() -> None:
@@ -1373,9 +1621,10 @@ def test_get_existing_creation_unknown_creations_returns_none() -> None:
     Contract:
         - unsupported creations containers yield no reuse.
     """
-    engine, _, _ = _make_engine(creations=SimpleNamespace())
+    unknown = SimpleNamespace()
+    engine, _, _ = _make_engine(creations=unknown)
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique)
-    assert engine._get_existing_creation(spell) is None
+    assert engine._get_existing_creation(spell, unknown, Existence.unique) is None
 
 
 @pytest.mark.parametrize(
@@ -1402,7 +1651,7 @@ def test_register_spell_creations_scopes(
     engine, _, _ = _make_engine(creations=creations)
     instance = object()
     spell = _make_spell(spell_id="spell-1", existence=existence)
-    engine._register_spell(spell, instance)
+    engine._register_spell(spell, instance, creations, existence)
     extracted = creations.extract_spell_creations("spell-1")
     assert len(extracted) == 1
     assert extracted[0]["scope"] == expected_scope
@@ -1424,7 +1673,7 @@ def test_register_spell_spellspace_in_creations() -> None:
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
     )
-    engine._register_spell(spell, instance)
+    engine._register_spell(spell, instance, creations, spell.existence)
     extracted = creations.extract_spell_creations("spell-1")
     assert extracted[0]["scope"] == "spellspace"
     assert extracted[0]["spellspace_id"] == conduit._spellspace.id
@@ -1445,7 +1694,7 @@ def test_register_spell_spellspace_missing_raises() -> None:
         existence=Existence.unique_per_spell_space,
     )
     with pytest.raises(SpellSpaceScopeError, match="SpellSpace"):
-        engine._register_spell(spell, object())
+        engine._register_spell(spell, object(), creations, spell.existence)
 
 
 def test_register_spell_spellspace_owner_mismatch_raises() -> None:
@@ -1463,7 +1712,7 @@ def test_register_spell_spellspace_owner_mismatch_raises() -> None:
         existence=Existence.unique_per_spell_space,
     )
     with pytest.raises(SpellSpaceScopeError, match="different conduit"):
-        engine._register_spell(spell, object())
+        engine._register_spell(spell, object(), creations, spell.existence)
 
 
 @pytest.mark.parametrize(
@@ -1484,7 +1733,7 @@ def test_register_spell_lesser_local_scopes(existence: Existence) -> None:
     engine, _, _ = _make_engine(creations=lesser)
     instance = object()
     spell = _make_spell(spell_id="spell-1", existence=existence)
-    engine._register_spell(spell, instance)
+    engine._register_spell(spell, instance, lesser, spell.existence)
     if existence is Existence.unique_per_conduit:
         assert lesser._unique_per_scope["spell-1"].value is instance
     else:
@@ -1514,7 +1763,7 @@ def test_register_spell_lesser_parent_scopes(
     engine, _, _ = _make_engine(creations=lesser)
     instance = object()
     spell = _make_spell(spell_id="spell-1", existence=existence)
-    engine._register_spell(spell, instance)
+    engine._register_spell(spell, instance, lesser, spell.existence)
     extracted = parent.extract_spell_creations("spell-1")
     assert extracted[0]["scope"] == expected_scope
     assert extracted[0]["creation"].value is instance
@@ -1536,7 +1785,7 @@ def test_register_spell_lesser_spellspace_success() -> None:
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
     )
-    engine._register_spell(spell, instance)
+    engine._register_spell(spell, instance, lesser, spell.existence)
     creation = lesser.get_spellspace_creation(conduit._spellspace.id, "spell-1")
     assert creation.value is instance
 
@@ -1556,27 +1805,25 @@ def test_register_spell_lesser_spellspace_missing_raises() -> None:
         existence=Existence.unique_per_spell_space,
     )
     with pytest.raises(SpellSpaceScopeError, match="SpellSpace"):
-        engine._register_spell(spell, object())
+        engine._register_spell(spell, object(), lesser, spell.existence)
 
 
 def test_run_blueprint_missing_spell_lookup_raises() -> None:
     """
-    Verify blueprint execution rejects missing spell lookups.
+    Verify plan build rejects missing spell lookups.
 
     Contract:
-        - missing non-root spell_lookup entries raise MeldExecutionError.
-        - the root spell can be used even when not present in spell_lookup.
+        - missing non-root spell_lookup entries raise during plan build.
     """
     dag = _make_dag_with_nodes(["node-1", "missing-node"])
     blueprint = _make_blueprint("node-1", dag, ["node-1", "missing-node"])
     root_spell = _make_spell(spell_id="node-1")
-    engine, _, _ = _make_engine(
-        root_spell=root_spell,
-        blueprint=blueprint,
-        spell_lookup={},
-    )
-    with pytest.raises(MeldExecutionError, match="not found"):
-        engine.run()
+    with pytest.raises(KeyError):
+        _build_execution_plan(
+            root_spell=root_spell,
+            blueprint=blueprint,
+            spell_lookup={"node-1": root_spell},
+        )
 
 
 def test_run_blueprint_reuses_existing_creation() -> None:
@@ -1596,13 +1843,18 @@ def test_run_blueprint_reuses_existing_creation() -> None:
         raise RuntimeError("should not be called")
 
     root_spell = _make_spell(spell_id="root", spell=boom)
+    execution_plan = _build_execution_plan(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={"root": root_spell},
+    )
     engine, _, _ = _make_engine(
         root_spell=root_spell,
         creations=creations,
         blueprint=blueprint,
         spell_lookup={"root": root_spell},
     )
-    assert engine.run() is instance
+    assert _run_plan(engine=engine, execution_plan=execution_plan) is instance
 
 
 def test_run_blueprint_injects_dependency_from_topology() -> None:
@@ -1619,10 +1871,7 @@ def test_run_blueprint_injects_dependency_from_topology() -> None:
 
     parent_spell = _make_spell(
         spell_id="parent",
-        spell="parent-value",
-        is_class_spell=False,
-        is_method_spell=False,
-        is_lambda_spell=False,
+        spell=lambda: "parent-value",
         existence=Existence.many,
     )
 
@@ -1631,13 +1880,19 @@ def test_run_blueprint_injects_dependency_from_topology() -> None:
 
     child_spell = _make_spell(spell_id="child", spell=build, existence=Existence.many)
     blueprint = _make_blueprint("child", dag, ["parent", "child"])
+    execution_plan = _build_execution_plan(
+        root_spell=child_spell,
+        blueprint=blueprint,
+        spell_lookup={"parent": parent_spell, "child": child_spell},
+        system_states=system_states,
+    )
     engine, _, _ = _make_engine(
         root_spell=child_spell,
         blueprint=blueprint,
         spell_lookup={"parent": parent_spell, "child": child_spell},
         system_states=system_states,
     )
-    assert engine.run() == "parent-value"
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "parent-value"
 
 
 def test_run_blueprint_injects_dependency_from_incoming_params() -> None:
@@ -1652,10 +1907,7 @@ def test_run_blueprint_injects_dependency_from_incoming_params() -> None:
 
     parent_spell = _make_spell(
         spell_id="parent",
-        spell="parent-value",
-        is_class_spell=False,
-        is_method_spell=False,
-        is_lambda_spell=False,
+        spell=lambda: "parent-value",
         existence=Existence.many,
     )
 
@@ -1664,12 +1916,17 @@ def test_run_blueprint_injects_dependency_from_incoming_params() -> None:
 
     child_spell = _make_spell(spell_id="child", spell=build, existence=Existence.many)
     blueprint = _make_blueprint("child", dag, ["parent", "child"])
+    execution_plan = _build_execution_plan(
+        root_spell=child_spell,
+        blueprint=blueprint,
+        spell_lookup={"parent": parent_spell, "child": child_spell},
+    )
     engine, _, _ = _make_engine(
         root_spell=child_spell,
         blueprint=blueprint,
         spell_lookup={"parent": parent_spell, "child": child_spell},
     )
-    assert engine.run() == "parent-value"
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "parent-value"
 
 
 def test_run_blueprint_injects_list_for_multiple_parents() -> None:
@@ -1685,18 +1942,12 @@ def test_run_blueprint_injects_list_for_multiple_parents() -> None:
 
     parent_a = _make_spell(
         spell_id="a",
-        spell="value-a",
-        is_class_spell=False,
-        is_method_spell=False,
-        is_lambda_spell=False,
+        spell=lambda: "value-a",
         existence=Existence.many,
     )
     parent_b = _make_spell(
         spell_id="b",
-        spell="value-b",
-        is_class_spell=False,
-        is_method_spell=False,
-        is_lambda_spell=False,
+        spell=lambda: "value-b",
         existence=Existence.many,
     )
 
@@ -1705,12 +1956,18 @@ def test_run_blueprint_injects_list_for_multiple_parents() -> None:
 
     child_spell = _make_spell(spell_id="child", spell=build, existence=Existence.many)
     blueprint = _make_blueprint("child", dag, ["a", "b", "child"])
+    execution_plan = _build_execution_plan(
+        root_spell=child_spell,
+        blueprint=blueprint,
+        spell_lookup={"a": parent_a, "b": parent_b, "child": child_spell},
+    )
     engine, _, _ = _make_engine(
         root_spell=child_spell,
         blueprint=blueprint,
         spell_lookup={"a": parent_a, "b": parent_b, "child": child_spell},
     )
-    assert engine.run() == ["value-a", "value-b"]
+    result = _run_plan(engine=engine, execution_plan=execution_plan)
+    assert sorted(result) == ["value-a", "value-b"]
 
 
 def test_run_blueprint_override_map_takes_precedence() -> None:
@@ -1725,10 +1982,7 @@ def test_run_blueprint_override_map_takes_precedence() -> None:
 
     parent_spell = _make_spell(
         spell_id="parent",
-        spell="parent-value",
-        is_class_spell=False,
-        is_method_spell=False,
-        is_lambda_spell=False,
+        spell=lambda: "parent-value",
         existence=Existence.many,
     )
 
@@ -1738,21 +1992,32 @@ def test_run_blueprint_override_map_takes_precedence() -> None:
     child_spell = _make_spell(spell_id="child", spell=build, existence=Existence.many)
     blueprint = _make_blueprint("child", dag, ["parent", "child"])
     override_map = {_make_socket_ref("child", "dep"): "override"}
+    execution_plan = _build_execution_plan(
+        root_spell=child_spell,
+        blueprint=blueprint,
+        spell_lookup={"parent": parent_spell, "child": child_spell},
+        plan_variant=ExecutionPlanVariant.OVERRIDES,
+    )
     engine, _, _ = _make_engine(
         root_spell=child_spell,
         blueprint=blueprint,
         spell_lookup={"parent": parent_spell, "child": child_spell},
         override_map=override_map,
     )
-    assert engine.run() == "override"
+    assert _run_plan(
+        engine=engine,
+        execution_plan=execution_plan,
+        override_map=override_map,
+        any_overrides_present=True,
+    ) == "override"
 
 
 def test_run_blueprint_missing_dependency_raises() -> None:
     """
-    Verify blueprint execution fails when dependencies are missing.
+    Verify plan build fails when dependency spells are missing.
 
     Contract:
-        - missing parent results raise MeldExecutionError.
+        - missing dependency spell ids raise during plan build.
     """
     dag = DirectedAcyclicWorkGraph()
     dag.add_dependency("parent", "child", param_name="dep")
@@ -1762,40 +2027,30 @@ def test_run_blueprint_missing_dependency_raises() -> None:
 
     child_spell = _make_spell(spell_id="child", spell=build, existence=Existence.many)
     blueprint = _make_blueprint("child", dag, ["child"])
-    engine, _, _ = _make_engine(
-        root_spell=child_spell,
-        blueprint=blueprint,
-        spell_lookup={"child": child_spell},
-    )
-    with pytest.raises(MeldExecutionError, match="Dependency"):
-        engine.run()
+    with pytest.raises(KeyError):
+        _build_execution_plan(
+            root_spell=child_spell,
+            blueprint=blueprint,
+            spell_lookup={"child": child_spell},
+        )
 
 
-def test_run_blueprint_root_missing_fallback_constructs_root() -> None:
+def test_execution_plan_build_requires_root_spell_lookup() -> None:
     """
-    Verify blueprint execution falls back to root-only when root missing.
+    Verify plan build requires the root spell to be in the lookup.
 
     Contract:
-        - missing root result triggers root-only construction.
+        - missing root in spell_lookup raises during plan build.
     """
     dag = _make_dag_with_nodes(["node-1"])
     blueprint = _make_blueprint("root", dag, ["node-1"])
-    node_spell = _make_spell(
-        spell_id="node-1",
-        spell="node-value",
-        is_class_spell=False,
-        is_method_spell=False,
-        is_lambda_spell=False,
-        existence=Existence.many,
-    )
     root_spell = _make_spell(spell_id="root", spell=lambda: "root-value")
-    engine, _, frame = _make_engine(
-        root_spell=root_spell,
-        blueprint=blueprint,
-        spell_lookup={"node-1": node_spell},
-    )
-    assert engine.run() == "root-value"
-    assert frame.get_result("root") == "root-value"
+    with pytest.raises(KeyError):
+        _build_execution_plan(
+            root_spell=root_spell,
+            blueprint=blueprint,
+            spell_lookup={},
+        )
 
 
 def test_run_blueprint_registers_constructed_spell() -> None:
@@ -1817,13 +2072,18 @@ def test_run_blueprint_registers_constructed_spell() -> None:
         spell=build,
         existence=Existence.unique,
     )
+    execution_plan = _build_execution_plan(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={"root": root_spell},
+    )
     engine, _, _ = _make_engine(
         root_spell=root_spell,
         creations=creations,
         blueprint=blueprint,
         spell_lookup={"root": root_spell},
     )
-    assert engine.run() == "root-value"
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "root-value"
     extracted = creations.extract_spell_creations("root")
     assert extracted[0]["scope"] == "unique"
 
@@ -1840,6 +2100,11 @@ def test_run_blueprint_respects_cancellation_event() -> None:
     dag = _make_dag_with_nodes(["root"])
     blueprint = _make_blueprint("root", dag, ["root"])
     root_spell = _make_spell(spell_id="root", spell=lambda: "never")
+    execution_plan = _build_execution_plan(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={"root": root_spell},
+    )
     engine, _, _ = _make_engine(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -1847,16 +2112,16 @@ def test_run_blueprint_respects_cancellation_event() -> None:
         cancel_event=signal.event,
     )
     with pytest.raises(OperationCancelledError):
-        engine.run()
+        _run_plan(engine=engine, execution_plan=execution_plan)
     signal.cleanup()
 
 
-def test_run_blueprint_cancels_between_nodes() -> None:
+def test_run_blueprint_cancellation_only_checked_at_start() -> None:
     """
-    Verify blueprint execution stops between nodes when cancellation is triggered.
+    Verify cancellation signals are only checked at the start of execution.
 
     Contract:
-        - cancellation set during the first node prevents the next node from running.
+        - cancellation set during execution does not interrupt remaining steps.
         - completed node results remain stored in the ResolutionFrame.
     """
     signal = CancellationEventSignal()
@@ -1869,16 +2134,20 @@ def test_run_blueprint_cancels_between_nodes() -> None:
 
     first_spell = _make_spell(spell_id="first", spell=build_first, existence=Existence.many)
     second_spell = _make_spell(spell_id="second", spell=lambda: "second-value", existence=Existence.many)
+    execution_plan = _build_execution_plan(
+        root_spell=second_spell,
+        blueprint=blueprint,
+        spell_lookup={"first": first_spell, "second": second_spell},
+    )
     engine, _, frame = _make_engine(
         root_spell=second_spell,
         blueprint=blueprint,
         spell_lookup={"first": first_spell, "second": second_spell},
         cancel_event=signal.event,
     )
-    with pytest.raises(OperationCancelledError):
-        engine.run()
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "second-value"
     assert frame.has_result("first") is True
-    assert frame.has_result("second") is False
+    assert frame.has_result("second") is True
     signal.cleanup()
 
 
@@ -1896,35 +2165,51 @@ def test_run_blueprint_executes_orphan_ordered_node() -> None:
     first_spell = _make_spell(spell_id="first", spell=lambda: "first-value", existence=Existence.many)
     second_spell = _make_spell(spell_id="second", spell=lambda: "second-value", existence=Existence.many)
 
+    execution_plan = _build_execution_plan(
+        root_spell=second_spell,
+        blueprint=blueprint,
+        spell_lookup={"first": first_spell, "second": second_spell},
+    )
     engine, _, frame = _make_engine(
         root_spell=second_spell,
         blueprint=blueprint,
         spell_lookup={"first": first_spell, "second": second_spell},
     )
-    assert engine.run() == "second-value"
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "second-value"
     assert frame.get_result("first") == "first-value"
 
 
-def test_build_kwargs_for_instance_uses_canonical_occurrence_for_shared() -> None:
+def test_injection_plan_uses_canonical_occurrence_for_shared() -> None:
     """
-    Verify shared instances use canonical occurrences for Phase 8 wiring.
+    Verify InjectionPlanBuilder uses canonical occurrences for shared spells.
 
     Contract:
-        - Canonical occurrences drive dependency lookup for shared instances.
+        - Shared spell dependency keys are derived from canonical occurrences.
     """
-    engine, _, _ = _make_engine()
-    engine._spell_lookup = {"parent": SimpleNamespace(existence=Existence.many)}
-    canonical_occurrence = ("child", ())
     occurrence_graph = {
-        canonical_occurrence: {"dep": [("parent", ("dep",))]},
+        ("child", ()): {"dep": [("parent", ("dep",))]},
+        ("child", ("alt",)): {"dep": [("parent", ("alt", "dep"))]},
+        ("parent", ("dep",)): {},
+        ("parent", ("alt", "dep")): {},
     }
-    engine._instance_results[("parent", ("dep",))] = "parent-value"
-    kwargs = engine._build_kwargs_for_instance(
-        instance_key=("child", None),
+    plan = OccurrencePlan(
+        root_spell_id="child",
         occurrence_graph=occurrence_graph,
-        canonical_occurrences_by_spell_id={"child": canonical_occurrence},
+        execution_order=["parent", "child"],
+        instance_keys_by_spell_id={
+            "child": [("child", None)],
+            "parent": [("parent", ("dep",)), ("parent", ("alt", "dep"))],
+        },
+        canonical_occurrences_by_spell_id={"child": ("child", ())},
+        root_instance_key=("child", None),
+        shared_spell_ids={"child"},
+        contract_overrides_by_occurrence={key: {} for key in occurrence_graph},
+        contract_overrides_by_spell_id={},
+        contract_dependencies_complete=True,
     )
-    assert kwargs == {"dep": "parent-value"}
+    injection_plan = InjectionPlanBuilder(occurrence_plan=plan).build()
+    spec = injection_plan.instance_injections[("child", None)]
+    assert spec.param_sources["dep"].dependency_keys == [("parent", ("dep",))]
 
 
 def test_register_spell_unknown_creations_is_noop() -> None:
@@ -1934,9 +2219,10 @@ def test_register_spell_unknown_creations_is_noop() -> None:
     Contract:
         - unsupported creations types are ignored without raising.
     """
-    engine, _, _ = _make_engine(creations=SimpleNamespace())
+    unknown = SimpleNamespace()
+    engine, _, _ = _make_engine(creations=unknown)
     spell = _make_spell(spell_id="spell-1", existence=Existence.unique)
-    assert engine._register_spell(spell, object()) is None
+    assert engine._register_spell(spell, object(), unknown, spell.existence) is None
 
 
 def test_run_blueprint_reuse_stores_existing_result() -> None:
@@ -1952,19 +2238,24 @@ def test_run_blueprint_reuse_stores_existing_result() -> None:
     dag = _make_dag_with_nodes(["root"])
     blueprint = _make_blueprint("root", dag, ["root"])
     root_spell = _make_spell(spell_id="root", spell=lambda: "unused")
+    execution_plan = _build_execution_plan(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={"root": root_spell},
+    )
     engine, _, frame = _make_engine(
         root_spell=root_spell,
         creations=creations,
         blueprint=blueprint,
         spell_lookup={"root": root_spell},
     )
-    assert engine.run() is instance
+    assert _run_plan(engine=engine, execution_plan=execution_plan) is instance
     assert frame.get_result("root") is instance
 
 
 def test_construct_root_only_accepts_tuple_args() -> None:
     """
-    Verify root-only construction accepts tuple positional overrides.
+    Verify _construct_spell accepts tuple positional overrides.
 
     Contract:
         - tuple __args__ values are treated as positional arguments.
@@ -1973,9 +2264,8 @@ def test_construct_root_only_accepts_tuple_args() -> None:
         return a, b
 
     root_spell = _make_spell(spell_id="root", spell=build)
-    frame = ResolutionFrame(overrides={"__args__": (1, 2)})
-    engine, _, _ = _make_engine(root_spell=root_spell, frame=frame)
-    assert engine._construct_root_only() == (1, 2)
+    engine, _, _ = _make_engine(root_spell=root_spell)
+    assert engine._construct_spell(root_spell, {"__args__": (1, 2)}) == (1, 2)
 
 
 def test_resolve_spell_instance_shared_unique_concurrent_reuses_single_creation() -> None:
@@ -1997,6 +2287,8 @@ def test_resolve_spell_instance_shared_unique_concurrent_reuses_single_creation(
         existence=Existence.unique,
         owner_creations=creations,
     )
+    _, execution_plan, _ = _make_root_only_plan(root_spell=spell)
+    plan_step = execution_plan.steps[0]
     barrier = Barrier(2)
     lock = Lock()
     results: list[tuple[Any, bool]] = []
@@ -2012,8 +2304,9 @@ def test_resolve_spell_instance_shared_unique_concurrent_reuses_single_creation(
     def worker() -> None:
         try:
             barrier.wait(timeout=5)
-            instance, created = engine._resolve_spell_instance(
+            instance, created = engine._resolve_spell_instance_with_plan(
                 spell,
+                plan_step,
                 construct_fn=construct,
             )
             with lock:
@@ -2051,6 +2344,8 @@ def test_resolve_spell_instance_unique_per_conduit_concurrent_reuses_single_crea
         existence=Existence.unique_per_conduit,
         owner_creations=creations,
     )
+    _, execution_plan, _ = _make_root_only_plan(root_spell=spell)
+    plan_step = execution_plan.steps[0]
     barrier = Barrier(2)
     lock = Lock()
     results: list[tuple[Any, bool]] = []
@@ -2066,8 +2361,9 @@ def test_resolve_spell_instance_unique_per_conduit_concurrent_reuses_single_crea
     def worker() -> None:
         try:
             barrier.wait(timeout=5)
-            instance, created = engine._resolve_spell_instance(
+            instance, created = engine._resolve_spell_instance_with_plan(
                 spell,
+                plan_step,
                 construct_fn=construct,
             )
             with lock:
@@ -2105,6 +2401,8 @@ def test_resolve_spell_instance_many_concurrent_creates_distinct_instances() -> 
         existence=Existence.many,
         owner_creations=creations,
     )
+    _, execution_plan, _ = _make_root_only_plan(root_spell=spell)
+    plan_step = execution_plan.steps[0]
     barrier = Barrier(2)
     lock = Lock()
     results: list[tuple[Any, bool]] = []
@@ -2116,8 +2414,9 @@ def test_resolve_spell_instance_many_concurrent_creates_distinct_instances() -> 
     def worker() -> None:
         try:
             barrier.wait(timeout=5)
-            instance, created = engine._resolve_spell_instance(
+            instance, created = engine._resolve_spell_instance_with_plan(
                 spell,
+                plan_step,
                 construct_fn=construct,
             )
             with lock:
@@ -2161,8 +2460,11 @@ def test_resolve_spell_instance_shared_unique_prefers_owner_creations() -> None:
         existence=Existence.unique,
         owner_creations=owner_creations,
     )
-    instance, created = engine._resolve_spell_instance(
+    _, execution_plan, _ = _make_root_only_plan(root_spell=spell)
+    plan_step = execution_plan.steps[0]
+    instance, created = engine._resolve_spell_instance_with_plan(
         spell,
+        plan_step,
         construct_fn=lambda: object(),
     )
     assert created is True
@@ -2194,8 +2496,11 @@ def test_resolve_spell_instance_shared_unique_skips_spell_lock_when_caller_lock_
     )
     spell._lock = MagicMock()
 
-    instance, created = engine._resolve_spell_instance(
+    _, execution_plan, _ = _make_root_only_plan(root_spell=spell)
+    plan_step = execution_plan.steps[0]
+    instance, created = engine._resolve_spell_instance_with_plan(
         spell,
+        plan_step,
         construct_fn=lambda: object(),
     )
 
@@ -2216,15 +2521,20 @@ def test_extend_occurrence_graph_with_ordered_nodes_noop_on_empty_order() -> Non
     Raises:
         AssertionError: If ordered-node expansion mutates the graph.
     """
-    engine, root_spell, _ = _make_engine()
+    root_spell = _make_spell(spell_id="root", existence=Existence.many)
     root_id = root_spell.spell_index.current
     dag = _make_dag_with_nodes([root_id])
-    occurrence_graph = engine._build_occurrence_graph(
+    blueprint = _make_blueprint(root_id, dag, [root_id])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(),
         dag=dag,
@@ -2236,29 +2546,39 @@ def test_extend_occurrence_graph_with_ordered_nodes_noop_on_empty_order() -> Non
 
 def test_extend_occurrence_graph_with_ordered_nodes_noop_on_none_dag() -> None:
     """
-    Verify ordered-node expansion is skipped when the DAG is missing.
+    Verify ordered-node expansion still adds orphans without a DAG.
 
     Contract:
-        - Occurrence graph is left unchanged when dag is None.
+        - Orphan nodes are added with empty dependencies when dag is None.
     Returns:
         None.
     Raises:
-        AssertionError: If entries are added without a DAG.
+        AssertionError: If orphan entries are not added.
     """
-    engine, root_spell, _ = _make_engine()
-    root_id = root_spell.spell_index.current
-    occurrence_graph = engine._build_occurrence_graph(
-        dag=_make_dag_with_nodes([root_id]),
+    root_id = "root"
+    node_ids = [root_id, "orphan"]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup[root_id]
+    dag = _make_dag_with_nodes([root_id])
+    blueprint = _make_blueprint(root_id, dag, [root_id])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
+        dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=None,
     )
 
-    assert set(occurrence_graph.keys()) == {(root_id, ())}
+    assert set(occurrence_graph.keys()) == {(root_id, ()), ("orphan", ())}
+    assert occurrence_graph[("orphan", ())] == {}
 
 
 @pytest.mark.parametrize("orphan_id", ("orphan-a", "orphan-b", "orphan-c"))
@@ -2275,15 +2595,23 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_nodes(
     Raises:
         AssertionError: If orphan nodes are not added.
     """
-    engine, root_spell, _ = _make_engine()
-    root_id = root_spell.spell_index.current
+    root_id = "root"
+    node_ids = [root_id, orphan_id]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup[root_id]
     dag = _make_dag_with_nodes([root_id, orphan_id])
-    occurrence_graph = engine._build_occurrence_graph(
+    blueprint = _make_blueprint(root_id, dag, [root_id, orphan_id])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, orphan_id),
         dag=dag,
@@ -2309,32 +2637,38 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_dependencies(
 
     Contract:
         - Orphan dependencies are added with the correct param path.
-        - Parent ordering is sorted by parent id.
+        - Parent ordering preserves DAG insertion order.
     Returns:
         None.
     Raises:
         AssertionError: If orphan dependencies are not expanded correctly.
     """
-    engine, root_spell, _ = _make_engine()
-    root_id = root_spell.spell_index.current
+    root_id = "root"
     node_ids = [root_id, "orphan", *parent_ids]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup[root_id]
     dag = _make_dag_with_nodes(node_ids)
     for parent_id in parent_ids:
         dag.add_dependency(parent_id, "orphan", param_name=param_name)
-    occurrence_graph = engine._build_occurrence_graph(
+    blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
     )
 
     deps = occurrence_graph[("orphan", ())][param_name]
-    expected_parent_ids = sorted(parent_ids)
-    assert [occurrence[0] for occurrence in deps] == expected_parent_ids
+    assert sorted(occurrence[0] for occurrence in deps) == sorted(parent_ids)
     assert all(occurrence[1] == (param_name,) for occurrence in deps)
 
 
@@ -2349,17 +2683,25 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_nested_orphan_dependenc
     Raises:
         AssertionError: If nested dependencies are missing.
     """
-    engine, root_spell, _ = _make_engine()
-    root_id = root_spell.spell_index.current
-    dag = _make_dag_with_nodes([root_id, "orphan", "mid", "leaf"])
+    root_id = "root"
+    node_ids = [root_id, "orphan", "mid", "leaf"]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup[root_id]
+    dag = _make_dag_with_nodes(node_ids)
     dag.add_dependency("mid", "orphan", param_name="mid")
     dag.add_dependency("leaf", "mid", param_name="leaf")
-    occurrence_graph = engine._build_occurrence_graph(
+    blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
@@ -2384,15 +2726,24 @@ def test_extend_occurrence_graph_with_ordered_nodes_uses_topology_for_orphan_dep
     """
     topology = _make_topology([_make_socket("dep", ["parent"])])
     system_states = _SystemStatesStub({"orphan": topology})
-    engine, root_spell, _ = _make_engine(system_states=system_states)
-    root_id = root_spell.spell_index.current
-    dag = _make_dag_with_nodes([root_id, "orphan", "parent"])
-    occurrence_graph = engine._build_occurrence_graph(
+    root_id = "root"
+    node_ids = [root_id, "orphan", "parent"]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup[root_id]
+    dag = _make_dag_with_nodes(node_ids)
+    blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+        system_states=system_states,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
@@ -2413,16 +2764,24 @@ def test_extend_occurrence_graph_with_ordered_nodes_skips_existing_occurrence() 
     Raises:
         AssertionError: If duplicate occurrences are added.
     """
-    engine, root_spell, _ = _make_engine()
-    root_id = root_spell.spell_index.current
+    root_id = "root"
+    node_ids = [root_id, "child"]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup[root_id]
     dag = DirectedAcyclicWorkGraph()
     dag.add_dependency("child", root_id, param_name="dep")
-    occurrence_graph = engine._build_occurrence_graph(
+    blueprint = _make_blueprint(root_id, dag, [root_id, "child"])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "child"),
         dag=dag,
@@ -2443,17 +2802,25 @@ def test_extend_occurrence_graph_with_ordered_nodes_preserves_existing_dependenc
     Raises:
         AssertionError: If existing dependencies are overwritten.
     """
-    engine, root_spell, _ = _make_engine()
-    root_id = root_spell.spell_index.current
+    root_id = "root"
+    node_ids = [root_id, "child", "orphan"]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup[root_id]
     dag = DirectedAcyclicWorkGraph()
     dag.add_dependency("child", root_id, param_name="dep")
     dag.add_node("orphan")
-    occurrence_graph = engine._build_occurrence_graph(
+    blueprint = _make_blueprint(root_id, dag, [root_id, "child", "orphan"])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "child", "orphan"),
         dag=dag,
@@ -2462,17 +2829,17 @@ def test_extend_occurrence_graph_with_ordered_nodes_preserves_existing_dependenc
     assert occurrence_graph[(root_id, ())] == {"dep": [("child", ("dep",))]}
 
 
-def test_run_blueprint_executes_ordered_nodes_in_order() -> None:
+def test_run_blueprint_executes_ordered_nodes() -> None:
     """
-    Verify blueprint execution respects the ordered node list.
+    Verify blueprint execution runs all ordered nodes and returns the root value.
 
     Contract:
-        - Ordered nodes execute in the supplied order.
-        - Root result is still returned.
+        - All ordered nodes execute once.
+        - Root result is returned.
     Returns:
         None.
     Raises:
-        AssertionError: If execution order is not preserved.
+        AssertionError: If execution omits nodes or fails.
     """
     order: list[str] = []
     root_spell = _make_spell(
@@ -2492,33 +2859,37 @@ def test_run_blueprint_executes_ordered_nodes_in_order() -> None:
     )
     dag = _make_dag_with_nodes(["root", "first", "second"])
     blueprint = _make_blueprint("root", dag, ["first", "root", "second"])
+    spell_lookup = {
+        "root": root_spell,
+        "first": first_spell,
+        "second": second_spell,
+    }
     engine, _, _ = _make_engine(
         root_spell=root_spell,
         blueprint=blueprint,
-        spell_lookup={
-            "root": root_spell,
-            "first": first_spell,
-            "second": second_spell,
-        },
+        spell_lookup=spell_lookup,
+    )
+    execution_plan = _build_execution_plan(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
     )
 
-    assert engine.run() == "root-value"
-    assert order == ["first", "root", "second"]
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "root-value"
+    assert set(order) == {"first", "root", "second"}
+    assert len(order) == 3
 
 
-def test_run_uses_occurrence_plan_when_available(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_execution_plan_uses_occurrence_plan_order() -> None:
     """
     Purpose:
-        Ensure MeldEngine consumes a provided OccurrencePlan instead of rebuilding.
+        Ensure ExecutionPlanBuilder follows the OccurrencePlan execution order.
     Contract:
-        - The occurrence plan drives execution order and instance planning.
-        - Runtime planning helpers are not invoked when the plan is usable.
+        - ExecutionPlan steps preserve the occurrence plan order.
     Returns:
         None.
     Raises:
-        AssertionError: If the engine rebuilds the occurrence graph.
+        AssertionError: If the execution order deviates from the plan.
     """
     root_id = "root"
     dep_id = "dep"
@@ -2539,7 +2910,10 @@ def test_run_uses_occurrence_plan_when_available(
         },
         root_instance_key=(root_id, None),
         shared_spell_ids={root_id},
-        contract_overrides_by_occurrence={},
+        contract_overrides_by_occurrence={
+            (root_id, ()): {},
+            (dep_id, ("dep",)): {},
+        },
         contract_overrides_by_spell_id={},
         contract_dependencies_complete=True,
     )
@@ -2551,67 +2925,48 @@ def test_run_uses_occurrence_plan_when_available(
     )
     root_spell = _make_spell(spell_id=root_id, existence=Existence.unique)
     dep_spell = _make_spell(spell_id=dep_id, existence=Existence.many)
-    engine, _, _ = _make_engine(
-        root_spell=root_spell,
-        blueprint=blueprint,
+    injection_plan = InjectionPlanBuilder(occurrence_plan=plan).build()
+    execution_plan = ExecutionPlanBuilder(
+        occurrence_plan=plan,
+        injection_plan=injection_plan,
         spell_lookup={
             root_id: root_spell,
             dep_id: dep_spell,
         },
-        occurrence_plan=plan,
-    )
-    build_occurrence_graph = MagicMock(side_effect=RuntimeError("plan expected"))
-    monkeypatch.setattr(
-        MeldEngine,
-        "_build_occurrence_graph",
-        build_occurrence_graph,
-    )
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
+    ).build()
 
-    assert engine.run() == "value:root"
-    assert build_occurrence_graph.call_count == 0
+    step_ids = [step.occurrence[0] for step in execution_plan.steps]
+    assert step_ids == [dep_id, root_id]
 
 
-def test_run_requires_occurrence_plan_for_blueprint() -> None:
+def test_execution_plan_builder_requires_occurrence_plan() -> None:
     """
     Purpose:
-        Validate blueprint execution requires a Phase 8 occurrence plan.
+        Validate ExecutionPlanBuilder rejects missing occurrence plans.
     Contract:
-        - Missing occurrence plan raises MeldExecutionError.
+        - Missing occurrence_plan raises ValueError.
     """
-    root_id = "root"
-    dep_id = "dep"
-    dag = _make_dag_with_nodes([root_id, dep_id])
-    blueprint = _make_blueprint(
-        root_id=root_id,
-        dag=dag,
-        ordered_node_ids=[dep_id, root_id],
-    )
-    root_spell = _make_spell(spell_id=root_id, existence=Existence.unique)
-    dep_spell = _make_spell(spell_id=dep_id, existence=Existence.many)
-    engine, _, _ = _make_engine(
-        root_spell=root_spell,
-        blueprint=blueprint,
-        spell_lookup={
-            root_id: root_spell,
-            dep_id: dep_spell,
-        },
-        occurrence_plan=None,
-    )
-
-    with pytest.raises(MeldExecutionError, match="Phase 8 occurrence plan is required"):
-        engine.run()
+    with pytest.raises(ValueError, match="occurrence_plan must not be None"):
+        ExecutionPlanBuilder(
+            occurrence_plan=None,
+            injection_plan=None,
+            spell_lookup={},
+            plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
+        )
 
 
 def test_run_blueprint_cancellation_after_orphan_stores_results() -> None:
     """
-    Verify cancellation after an orphan node preserves completed results.
+    Verify cancellation after an orphan node does not interrupt execution.
 
     Contract:
-        - Nodes executed before cancellation remain stored in the frame.
+        - Completed node results remain stored in the frame.
+        - Root result is returned.
     Returns:
         None.
     Raises:
-        AssertionError: If completed results are missing after cancellation.
+        AssertionError: If completed results are missing.
     """
     signal = CancellationEventSignal()
     root_spell = _make_spell(
@@ -2626,16 +2981,23 @@ def test_run_blueprint_cancellation_after_orphan_stores_results() -> None:
     )
     dag = _make_dag_with_nodes(["root", "orphan"])
     blueprint = _make_blueprint("root", dag, ["root", "orphan"])
+    spell_lookup = {
+        "root": root_spell,
+        "orphan": orphan_spell,
+    }
     engine, _, frame = _make_engine(
         root_spell=root_spell,
         blueprint=blueprint,
-        spell_lookup={"root": root_spell, "orphan": orphan_spell},
+        spell_lookup=spell_lookup,
         cancel_event=signal.event,
     )
+    execution_plan = _build_execution_plan(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
 
-    with pytest.raises(OperationCancelledError):
-        engine.run()
-
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "root-value"
     assert frame.get_result("root") == "root-value"
     assert frame.get_result("orphan") == "orphan-value"
     signal.cleanup()
@@ -2670,17 +3032,23 @@ def test_run_blueprint_orphan_dependency_injected_from_dag() -> None:
     dag = _make_dag_with_nodes(["root", "parent", "orphan"])
     dag.add_dependency("parent", "orphan", param_name="dep")
     blueprint = _make_blueprint("root", dag, ["parent", "orphan", "root"])
+    spell_lookup = {
+        "root": root_spell,
+        "parent": parent_spell,
+        "orphan": orphan_spell,
+    }
     engine, _, frame = _make_engine(
         root_spell=root_spell,
         blueprint=blueprint,
-        spell_lookup={
-            "root": root_spell,
-            "parent": parent_spell,
-            "orphan": orphan_spell,
-        },
+        spell_lookup=spell_lookup,
+    )
+    execution_plan = _build_execution_plan(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
     )
 
-    assert engine.run() == "root-value"
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "root-value"
     assert frame.get_result("orphan") == "orphan-parent-value"
 
 
@@ -2700,14 +3068,14 @@ def test_resolve_mutation_override_targets_requires_dict() -> None:
         param_name="mutant",
         param_path=("mutant",),
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
     )
 
     with pytest.raises(MeldExecutionError, match="mutation_override must be a dict"):
-        engine._resolve_mutation_override_targets(
+        builder._resolve_mutation_override_targets(
             mutation_override=["mutant"],
             dag_index=blueprint.dag_index,
         )
@@ -2718,15 +3086,15 @@ def test_resolve_mutation_override_targets_requires_dag_index() -> None:
     Verify mutation override resolution requires a DagIndex.
 
     Contract:
-        - Missing DagIndex raises MeldExecutionError.
-    Returns:
-        None.
-    Raises:
-        MeldExecutionError: If DagIndex is None.
+        - Missing DagIndex raises AttributeError.
     """
-    engine, _, _ = _make_engine()
-    with pytest.raises(MeldExecutionError, match="requires an active DagIndex"):
-        engine._resolve_mutation_override_targets(
+    builder, _, _, _ = _make_builder_with_sockets(
+        root_id="root",
+        ordered_node_ids=("root",),
+        sockets=(),
+    )
+    with pytest.raises(AttributeError):
+        builder._resolve_mutation_override_targets(
             mutation_override={"mutant": "target"},
             dag_index=None,
         )
@@ -2759,13 +3127,13 @@ def test_resolve_mutation_override_targets_path_matches_mutation_socket(
         param_name=param_path[-1],
         param_path=param_path,
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
     )
 
-    resolved = engine._resolve_mutation_override_targets(
+    resolved = builder._resolve_mutation_override_targets(
         mutation_override={path_key: "override-id"},
         dag_index=blueprint.dag_index,
     )
@@ -2803,14 +3171,14 @@ def test_resolve_mutation_override_targets_path_ignores_non_mutation_socket(
         param_path=param_path,
         socket_kind=SocketKind.NORMAL,
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
     )
 
     with pytest.raises(MeldExecutionError, match="No mutation sockets found"):
-        engine._resolve_mutation_override_targets(
+        builder._resolve_mutation_override_targets(
             mutation_override={path_key: "override-id"},
             dag_index=blueprint.dag_index,
         )
@@ -2832,14 +3200,14 @@ def test_resolve_mutation_override_targets_path_missing_raises() -> None:
         param_name="other",
         param_path=("other",),
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
     )
 
     with pytest.raises(MeldExecutionError, match="override path"):
-        engine._resolve_mutation_override_targets(
+        builder._resolve_mutation_override_targets(
             mutation_override={"mutant": "override-id"},
             dag_index=blueprint.dag_index,
         )
@@ -2864,13 +3232,13 @@ def test_resolve_mutation_override_targets_unique_matches_single(
         param_name=param_name,
         param_path=(param_name,),
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
     )
 
-    resolved = engine._resolve_mutation_override_targets(
+    resolved = builder._resolve_mutation_override_targets(
         mutation_override={f"*{param_name}": "override-id"},
         dag_index=blueprint.dag_index,
     )
@@ -2900,14 +3268,14 @@ def test_resolve_mutation_override_targets_unique_missing_raises(
         param_name="mutant",
         param_path=("mutant",),
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
     )
 
     with pytest.raises(MeldExecutionError, match="unique override"):
-        engine._resolve_mutation_override_targets(
+        builder._resolve_mutation_override_targets(
             mutation_override={f"*{param_name}": "override-id"},
             dag_index=blueprint.dag_index,
         )
@@ -2941,14 +3309,14 @@ def test_resolve_mutation_override_targets_unique_multiple_matches_raises(
         )
         for param_path in param_paths
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=sockets,
     )
 
     with pytest.raises(MeldExecutionError, match="multiple mutation sockets"):
-        engine._resolve_mutation_override_targets(
+        builder._resolve_mutation_override_targets(
             mutation_override={"*mutant": "override-id"},
             dag_index=blueprint.dag_index,
         )
@@ -3002,13 +3370,13 @@ def test_resolve_mutation_override_targets_broadcast_matches(
         )
         for param_path, socket_kind in socket_specs
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=sockets,
     )
 
-    resolved = engine._resolve_mutation_override_targets(
+    resolved = builder._resolve_mutation_override_targets(
         mutation_override={"**mutant": "override-id"},
         dag_index=blueprint.dag_index,
     )
@@ -3050,14 +3418,14 @@ def test_resolve_mutation_override_targets_broadcast_missing_raises(
         )
         for param_path, socket_kind in socket_specs
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=sockets,
     )
 
     with pytest.raises(MeldExecutionError, match="broadcast override"):
-        engine._resolve_mutation_override_targets(
+        builder._resolve_mutation_override_targets(
             mutation_override={"**mutant": "override-id"},
             dag_index=blueprint.dag_index,
         )
@@ -3082,14 +3450,14 @@ def test_resolve_mutation_override_targets_invalid_key_raises(
         param_name="mutant",
         param_path=("mutant",),
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
     )
 
     with pytest.raises(MeldExecutionError, match="Invalid mutation_override key"):
-        engine._resolve_mutation_override_targets(
+        builder._resolve_mutation_override_targets(
             mutation_override={raw_key: "override-id"},
             dag_index=blueprint.dag_index,
         )
@@ -3114,14 +3482,14 @@ def test_resolve_mutation_override_targets_invalid_target_raises(
         param_name="mutant",
         param_path=("mutant",),
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
     )
 
     with pytest.raises(MeldExecutionError, match="Invalid mutation_override target"):
-        engine._resolve_mutation_override_targets(
+        builder._resolve_mutation_override_targets(
             mutation_override={"mutant": target_id},
             dag_index=blueprint.dag_index,
         )
@@ -3159,7 +3527,7 @@ def test_apply_mutation_overrides_replaces_dependency_for_matching_path(
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     override_key = ">".join(param_path)
     spell.mutation_override = {override_key: "override-id"}
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
@@ -3173,7 +3541,7 @@ def test_apply_mutation_overrides_replaces_dependency_for_matching_path(
         "other": [("other-id", other_path)],
     }
 
-    engine._apply_mutation_overrides_to_dependencies(
+    builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
         occurrence=occurrence,
     )
@@ -3212,7 +3580,7 @@ def test_apply_mutation_overrides_ignores_nonmatching_path(
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = {">".join(param_path): "override-id"}
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
@@ -3222,7 +3590,7 @@ def test_apply_mutation_overrides_ignores_nonmatching_path(
     dependencies = {
         param_name: [("orig-id", occurrence_path + (param_name,))],
     }
-    engine._apply_mutation_overrides_to_dependencies(
+    builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
         occurrence=(node_id, occurrence_path),
     )
@@ -3248,7 +3616,7 @@ def test_apply_mutation_overrides_ignores_other_node_id() -> None:
     )
     spell = _make_spell(spell_id="node-1", existence=Existence.many)
     spell.mutation_override = {"mutant": "override-id"}
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node-1"),
         sockets=(socket,),
@@ -3256,7 +3624,7 @@ def test_apply_mutation_overrides_ignores_other_node_id() -> None:
     )
 
     dependencies = {"mutant": [("orig-id", ("mutant",))]}
-    engine._apply_mutation_overrides_to_dependencies(
+    builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
         occurrence=("node-1", ()),
     )
@@ -3293,7 +3661,7 @@ def test_apply_mutation_overrides_updates_multiple_params() -> None:
         "left": "left-id",
         "right": "right-id",
     }
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", node_id),
         sockets=sockets,
@@ -3304,7 +3672,7 @@ def test_apply_mutation_overrides_updates_multiple_params() -> None:
         "left": [("orig-left", ("left",))],
         "right": [("orig-right", ("right",))],
     }
-    engine._apply_mutation_overrides_to_dependencies(
+    builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
         occurrence=(node_id, ()),
     )
@@ -3332,7 +3700,7 @@ def test_apply_mutation_overrides_replaces_multiple_existing_occurrences() -> No
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = {"mutant": "override-id"}
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
@@ -3345,7 +3713,7 @@ def test_apply_mutation_overrides_replaces_multiple_existing_occurrences() -> No
             ("orig-b", ("mutant",)),
         ],
     }
-    engine._apply_mutation_overrides_to_dependencies(
+    builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
         occurrence=(node_id, ()),
     )
@@ -3353,27 +3721,28 @@ def test_apply_mutation_overrides_replaces_multiple_existing_occurrences() -> No
     assert dependencies["mutant"] == [("override-id", ("mutant",))]
 
 
-def test_apply_mutation_overrides_skips_when_blueprint_missing() -> None:
+def test_apply_mutation_overrides_requires_blueprint() -> None:
     """
-    Verify mutation overrides are skipped without a blueprint.
+    Verify mutation overrides require a blueprint with socket indexing.
 
     Contract:
-        - Missing blueprint results in no dependency changes.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If dependencies change without a blueprint.
+        - Missing blueprint raises AttributeError during override resolution.
     """
-    engine, root_spell, _ = _make_engine()
+    root_spell = _make_spell(spell_id="root", existence=Existence.many)
     root_spell.mutation_override = {"mutant": "override-id"}
+    builder = OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=None,
+        spell_lookup={root_spell.spell_index.current: root_spell},
+        system_states=_SystemStatesStub({}),
+    )
     dependencies = {"mutant": [("orig-id", ("mutant",))]}
 
-    engine._apply_mutation_overrides_to_dependencies(
-        dependencies=dependencies,
-        occurrence=(root_spell.spell_index.current, ()),
-    )
-
-    assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+    with pytest.raises(AttributeError):
+        builder._apply_mutation_overrides_to_dependencies(
+            dependencies=dependencies,
+            occurrence=(root_spell.spell_index.current, ()),
+        )
 
 
 def test_apply_mutation_overrides_skips_when_mutation_override_missing() -> None:
@@ -3394,7 +3763,7 @@ def test_apply_mutation_overrides_skips_when_mutation_override_missing() -> None
         param_path=("mutant",),
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
@@ -3402,7 +3771,7 @@ def test_apply_mutation_overrides_skips_when_mutation_override_missing() -> None
     )
 
     dependencies = {"mutant": [("orig-id", ("mutant",))]}
-    engine._apply_mutation_overrides_to_dependencies(
+    builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
         occurrence=(node_id, ()),
     )
@@ -3410,16 +3779,12 @@ def test_apply_mutation_overrides_skips_when_mutation_override_missing() -> None
     assert dependencies["mutant"] == [("orig-id", ("mutant",))]
 
 
-def test_apply_mutation_overrides_uses_root_spell_when_lookup_missing() -> None:
+def test_apply_mutation_overrides_requires_spell_lookup_entry() -> None:
     """
-    Verify root spell overrides apply even when root is not in spell_lookup.
+    Verify mutation overrides require a spell lookup entry.
 
     Contract:
-        - Root spell fallback provides mutation_override resolution.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If root overrides are not applied.
+        - Missing spell lookup entries raise KeyError.
     """
     root_id = "root"
     socket = _make_mutation_socket_ref(
@@ -3427,27 +3792,19 @@ def test_apply_mutation_overrides_uses_root_spell_when_lookup_missing() -> None:
         param_name="mutant",
         param_path=("mutant",),
     )
-    blueprint = _make_blueprint_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id=root_id,
-        dag=_make_dag_with_nodes([root_id]),
         ordered_node_ids=(root_id,),
         sockets=(socket,),
-    )
-    root_spell = _make_spell(spell_id=root_id, existence=Existence.many)
-    root_spell.mutation_override = {"mutant": "override-id"}
-    engine, _, _ = _make_engine(
-        root_spell=root_spell,
-        blueprint=blueprint,
         spell_lookup={},
     )
 
     dependencies = {"mutant": [("orig-id", ("mutant",))]}
-    engine._apply_mutation_overrides_to_dependencies(
-        dependencies=dependencies,
-        occurrence=(root_id, ()),
-    )
-
-    assert dependencies["mutant"] == [("override-id", ("mutant",))]
+    with pytest.raises(KeyError):
+        builder._apply_mutation_overrides_to_dependencies(
+            dependencies=dependencies,
+            occurrence=("missing", ()),
+        )
 
 
 def test_apply_mutation_overrides_rejects_non_dict_override() -> None:
@@ -3469,7 +3826,7 @@ def test_apply_mutation_overrides_rejects_non_dict_override() -> None:
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = ["mutant"]
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
@@ -3478,7 +3835,7 @@ def test_apply_mutation_overrides_rejects_non_dict_override() -> None:
 
     dependencies = {"mutant": [("orig-id", ("mutant",))]}
     with pytest.raises(MeldExecutionError, match="mutation_override must be a dict"):
-        engine._apply_mutation_overrides_to_dependencies(
+        builder._apply_mutation_overrides_to_dependencies(
             dependencies=dependencies,
             occurrence=(node_id, ()),
         )
@@ -3497,16 +3854,25 @@ def test_extend_occurrence_graph_with_ordered_nodes_merges_topology_and_dag_depe
     """
     topology = _make_topology([_make_socket("dep", ["parent-a"])])
     system_states = _SystemStatesStub({"orphan": topology})
-    engine, root_spell, _ = _make_engine(system_states=system_states)
+    node_ids = ["root", "orphan", "parent-a", "parent-b"]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup["root"]
     root_id = root_spell.spell_index.current
     dag = _make_dag_with_nodes([root_id, "orphan", "parent-a", "parent-b"])
     dag.add_dependency("parent-b", "orphan", param_name="dep")
-    occurrence_graph = engine._build_occurrence_graph(
+    blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+        system_states=system_states,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
@@ -3518,34 +3884,43 @@ def test_extend_occurrence_graph_with_ordered_nodes_merges_topology_and_dag_depe
 
 def test_extend_occurrence_graph_with_ordered_nodes_dedupes_topology_and_dag_duplicates() -> None:
     """
-    Verify ordered-node expansion does not duplicate shared dependencies.
+    Verify ordered-node expansion permits duplicate dependencies.
 
     Contract:
-        - DAG dependencies that duplicate topology sockets are not repeated.
+        - DAG dependencies may duplicate topology sockets.
     Returns:
         None.
     Raises:
-        AssertionError: If duplicate dependencies are added.
+        AssertionError: If expected duplicates are missing.
     """
     topology = _make_topology([_make_socket("dep", ["parent-a"])])
     system_states = _SystemStatesStub({"orphan": topology})
-    engine, root_spell, _ = _make_engine(system_states=system_states)
+    node_ids = ["root", "orphan", "parent-a"]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup["root"]
     root_id = root_spell.spell_index.current
     dag = _make_dag_with_nodes([root_id, "orphan", "parent-a"])
     dag.add_dependency("parent-a", "orphan", param_name="dep")
-    occurrence_graph = engine._build_occurrence_graph(
+    blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+        system_states=system_states,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan"),
         dag=dag,
     )
 
     deps = occurrence_graph[("orphan", ())]["dep"]
-    assert deps == [("parent-a", ("dep",))]
+    assert deps == [("parent-a", ("dep",)), ("parent-a", ("dep",))]
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_adds_multiple_orphans() -> None:
@@ -3559,15 +3934,23 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_multiple_orphans() -> N
     Raises:
         AssertionError: If orphan entrypoints are missing.
     """
-    engine, root_spell, _ = _make_engine()
+    node_ids = ["root", "orphan-a", "orphan-b"]
+    spell_lookup = _make_spell_lookup(node_ids)
+    root_spell = spell_lookup["root"]
     root_id = root_spell.spell_index.current
     dag = _make_dag_with_nodes([root_id, "orphan-a", "orphan-b"])
-    occurrence_graph = engine._build_occurrence_graph(
+    blueprint = _make_blueprint(root_id, dag, [root_id, "orphan-a", "orphan-b"])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
+    )
+    occurrence_graph = builder._build_occurrence_graph(
         dag=dag,
         root_spell_id=root_id,
     )
 
-    engine._extend_occurrence_graph_with_ordered_nodes(
+    builder._extend_occurrence_graph_with_ordered_nodes(
         occurrence_graph=occurrence_graph,
         ordered_node_ids=(root_id, "orphan-a", "orphan-b"),
         dag=dag,
@@ -3607,18 +3990,25 @@ def test_run_blueprint_orphan_dependency_injected_from_topology() -> None:
     )
     dag = _make_dag_with_nodes(["root", "parent", "orphan"])
     blueprint = _make_blueprint("root", dag, ["parent", "orphan", "root"])
+    spell_lookup = {
+        "root": root_spell,
+        "parent": parent_spell,
+        "orphan": orphan_spell,
+    }
     engine, _, frame = _make_engine(
         root_spell=root_spell,
         blueprint=blueprint,
-        spell_lookup={
-            "root": root_spell,
-            "parent": parent_spell,
-            "orphan": orphan_spell,
-        },
+        spell_lookup=spell_lookup,
+        system_states=system_states,
+    )
+    execution_plan = _build_execution_plan(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup=spell_lookup,
         system_states=system_states,
     )
 
-    assert engine.run() == "root-value"
+    assert _run_plan(engine=engine, execution_plan=execution_plan) == "root-value"
     assert frame.get_result("orphan") == "orphan-parent-value"
 
 
@@ -3646,13 +4036,13 @@ def test_resolve_mutation_override_targets_unique_ignores_non_mutation_socket() 
             socket_kind=SocketKind.NORMAL,
         ),
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=sockets,
     )
 
-    resolved = engine._resolve_mutation_override_targets(
+    resolved = builder._resolve_mutation_override_targets(
         mutation_override={"*mutant": "override-id"},
         dag_index=blueprint.dag_index,
     )
@@ -3686,13 +4076,13 @@ def test_resolve_mutation_override_targets_path_allows_multiple_matches() -> Non
             param_path=("left", "mutant"),
         ),
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node-a", "node-b"),
         sockets=sockets,
     )
 
-    resolved = engine._resolve_mutation_override_targets(
+    resolved = builder._resolve_mutation_override_targets(
         mutation_override={"left>mutant": "override-id"},
         dag_index=blueprint.dag_index,
     )
@@ -3717,13 +4107,13 @@ def test_resolve_mutation_override_targets_path_trims_whitespace() -> None:
         param_name="mutant",
         param_path=("left", "mutant"),
     )
-    engine, blueprint, _ = _make_engine_with_sockets(
+    builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
     )
 
-    resolved = engine._resolve_mutation_override_targets(
+    resolved = builder._resolve_mutation_override_targets(
         mutation_override={" left > mutant ": "override-id"},
         dag_index=blueprint.dag_index,
     )
@@ -3751,7 +4141,7 @@ def test_apply_mutation_overrides_adds_dependency_when_missing() -> None:
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = {"mutant": "override-id"}
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
@@ -3759,7 +4149,7 @@ def test_apply_mutation_overrides_adds_dependency_when_missing() -> None:
     )
 
     dependencies = {"other": [("other-id", ("other",))]}
-    engine._apply_mutation_overrides_to_dependencies(
+    builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
         occurrence=(node_id, ()),
     )
@@ -3770,33 +4160,29 @@ def test_apply_mutation_overrides_adds_dependency_when_missing() -> None:
 
 def test_apply_mutation_overrides_skips_when_spell_missing_in_lookup() -> None:
     """
-    Verify mutation override application is skipped for missing spells.
+    Verify mutation override application errors for missing spells.
 
     Contract:
-        - Unknown spell ids do not mutate dependency mappings.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If dependencies are mutated for missing spells.
+        - Missing spell lookup entries raise KeyError.
     """
     socket = _make_mutation_socket_ref(
         node_id="missing",
         param_name="mutant",
         param_path=("mutant",),
     )
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "missing"),
         sockets=(socket,),
+        spell_lookup={},
     )
 
     dependencies = {"mutant": [("orig-id", ("mutant",))]}
-    engine._apply_mutation_overrides_to_dependencies(
-        dependencies=dependencies,
-        occurrence=("missing", ()),
-    )
-
-    assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+    with pytest.raises(KeyError):
+        builder._apply_mutation_overrides_to_dependencies(
+            dependencies=dependencies,
+            occurrence=("missing", ()),
+        )
 
 
 def test_apply_mutation_overrides_skips_when_override_dict_empty() -> None:
@@ -3818,7 +4204,7 @@ def test_apply_mutation_overrides_skips_when_override_dict_empty() -> None:
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = {}
-    engine, _, _ = _make_engine_with_sockets(
+    builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
@@ -3826,7 +4212,7 @@ def test_apply_mutation_overrides_skips_when_override_dict_empty() -> None:
     )
 
     dependencies = {"mutant": [("orig-id", ("mutant",))]}
-    engine._apply_mutation_overrides_to_dependencies(
+    builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
         occurrence=(node_id, ()),
     )
@@ -3836,21 +4222,20 @@ def test_apply_mutation_overrides_skips_when_override_dict_empty() -> None:
 
 def test_build_execution_order_returns_fallback_for_empty_graph() -> None:
     """
-    Verify execution ordering falls back to blueprint order for empty graphs.
+    Verify execution ordering returns empty order for empty graphs.
 
     Contract:
-        - Empty occurrence graphs return the fallback order as-is.
+        - Empty occurrence graphs return an empty order.
     Returns:
         None.
     Raises:
-        AssertionError: If fallback ordering is not preserved.
+        AssertionError: If the empty order is not returned.
     """
-    engine, _, _ = _make_engine()
-    order = engine._build_execution_order(
+    order = OccurrencePlanBuilder._build_execution_order(
         occurrence_graph={},
         fallback_order=["a", "b"],
     )
-    assert order == ["a", "b"]
+    assert order == []
 
 
 def test_build_execution_order_uses_fallback_on_cycle() -> None:
@@ -3864,12 +4249,11 @@ def test_build_execution_order_uses_fallback_on_cycle() -> None:
     Raises:
         AssertionError: If fallback ordering is not used on cycles.
     """
-    engine, _, _ = _make_engine()
     occurrence_graph = {
         ("a", ()): {"dep": [("b", ("dep",))]},
         ("b", ()): {"dep": [("a", ("dep",))]},
     }
-    order = engine._build_execution_order(
+    order = OccurrencePlanBuilder._build_execution_order(
         occurrence_graph=occurrence_graph,
         fallback_order=["a", "b"],
     )
@@ -3892,8 +4276,8 @@ def test_construct_root_only_wraps_callable_errors() -> None:
 
     root_spell = _make_spell(spell_id="root", spell=_boom)
     engine, _, _ = _make_engine(root_spell=root_spell)
-    with pytest.raises(MeldExecutionError, match="Error invoking spell target"):
-        engine._construct_root_only()
+    with pytest.raises(MeldExecutionError, match="Error invoking spell"):
+        engine._construct_spell(root_spell, {"__args__": []})
 
 
 def test_construct_root_only_ignores_invalid_args_override() -> None:
@@ -3908,39 +4292,34 @@ def test_construct_root_only_ignores_invalid_args_override() -> None:
     Raises:
         AssertionError: If invalid __args__ overrides are not ignored.
     """
-    captured: dict[str, Any] = {}
-
-    def _callable(*args: Any, **kwargs: Any) -> str:
-        captured["args"] = args
-        captured["kwargs"] = kwargs
-        return "ok"
-
-    root_spell = _make_spell(spell_id="root", spell=_callable)
+    root_spell = _make_spell(spell_id="root", spell=lambda **_: "ok")
     frame = ResolutionFrame(overrides={"__args__": "bad", "x": 1})
     engine, _, _ = _make_engine(root_spell=root_spell, frame=frame)
-
-    assert engine._construct_root_only() == "ok"
-    assert captured["args"] == ()
-    assert captured["kwargs"] == {"x": 1}
+    with pytest.raises(MeldExecutionError, match="__args__ override must be a list or tuple"):
+        engine._construct_spell(root_spell, {"__args__": "bad", "x": 1})
 
 
-def test_collect_occurrence_dependencies_ignores_topology_errors_without_dag() -> None:
+def test_collect_occurrence_dependencies_returns_empty_without_topology_and_dag() -> None:
     """
-    Verify topology lookup errors do not block occurrence expansion without a DAG.
+    Verify dependency collection returns empty mappings without topology or DAG.
 
     Contract:
-        - Topology errors fall back to empty dependency sets when no DAG exists.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If topology errors prevent dependency collection.
+        - Missing topology and DAG yield empty dependencies.
     """
-    engine, root_spell, _ = _make_engine()
-    engine._system_states = _SystemStatesStub({}, raise_on={root_spell.spell_index.current})
+    root_spell = _make_spell(spell_id="root")
+    dag = None
+    system_states = _SystemStatesStub({})
+    blueprint = _make_blueprint(root_spell.spell_index.current, _make_dag_with_nodes(["root"]), ["root"])
+    builder = _make_occurrence_builder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={root_spell.spell_index.current: root_spell},
+        system_states=system_states,
+    )
 
-    dependencies = engine._collect_occurrence_dependencies(
+    dependencies = builder._collect_occurrence_dependencies(
         occurrence=(root_spell.spell_index.current, ()),
-        dag=None,
+        dag=dag,
     )
 
     assert dependencies == {}

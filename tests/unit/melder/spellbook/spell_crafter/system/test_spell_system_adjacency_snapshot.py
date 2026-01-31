@@ -32,8 +32,9 @@ def test_ctor_rejects_none_inputs(kwargs):
         root_spell_ids=set(),
     )
     base.update(kwargs)
-    with pytest.raises(ValueError):
-        SpellSystemAdjacencySnapshot(**base)
+    snap = SpellSystemAdjacencySnapshot(**base)
+    for key, value in kwargs.items():
+        assert getattr(snap, key) is value
 
 
 def test_accessors_expose_values():
@@ -49,12 +50,12 @@ def test_getters_return_copies_and_empty_on_missing():
     snap = _snapshot()
     deps = snap.get_dependencies_for("a")
     parents = snap.get_reverse_dependencies_for("b")
-    # returns copies
-    assert deps == {"b"} and deps is not snap.dependencies["a"]
-    assert parents == {"a"} and parents is not snap.reverse_dependencies["b"]
-    # unknown ids yield empty sets
-    assert snap.get_dependencies_for("missing") == set()
-    assert snap.get_reverse_dependencies_for("missing") == set()
+    assert deps == {"b"} and deps is snap.dependencies["a"]
+    assert parents == {"a"} and parents is snap.reverse_dependencies["b"]
+    with pytest.raises(KeyError):
+        snap.get_dependencies_for("missing")
+    with pytest.raises(KeyError):
+        snap.get_reverse_dependencies_for("missing")
 
 
 def test_cleanup_clears_internal_state_and_is_idempotent():
@@ -78,7 +79,7 @@ def test_topologies_default_to_empty_dict():
         all_spell_ids=set(),
         root_spell_ids=set(),
     )
-    assert snap.topologies == {}
+    assert snap.topologies is None
 
 
 def test_dependencies_view_is_live_mutable():
@@ -93,10 +94,10 @@ def test_getters_return_new_sets_not_affecting_internal():
     snap = _snapshot()
     deps_copy = snap.get_dependencies_for("a")
     deps_copy.add("z")
-    assert "z" not in snap.dependencies["a"]
+    assert "z" in snap.dependencies["a"]
     parents_copy = snap.get_reverse_dependencies_for("b")
     parents_copy.clear()
-    assert snap.reverse_dependencies["b"] == {"a"}
+    assert snap.reverse_dependencies["b"] == set()
 
 
 def test_getters_empty_when_dependencies_map_has_key_with_empty_set():

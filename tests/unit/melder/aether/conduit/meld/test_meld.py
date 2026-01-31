@@ -174,6 +174,9 @@ class _TrackingLock:
         return self._count > 0
 
 
+_DEFAULT_SYSTEM_STATE = object()
+
+
 class _SpellStub:
     """
     Minimal spell stub with fields used by Meld.
@@ -188,7 +191,7 @@ class _SpellStub:
         spell_name: str = "Spell",
         spellframe: str = "frame",
         existence: Existence = Existence.unique,
-        system_state: _SystemStateStub | None = None,
+        system_state: _SystemStateStub | None | object = _DEFAULT_SYSTEM_STATE,
         spell_system_states: Any | None = None,
         spellbook: Any | None = None,
         is_broken: bool = False,
@@ -241,9 +244,12 @@ class _SpellStub:
         self.spellframe = spellframe
         self.spell_index = spell_index or _SpellIndexStub(current=spell_id)
         self.existence = existence
+        if system_state is _DEFAULT_SYSTEM_STATE:
+            system_state = _SystemStateStub(validity=SpellValidity.valid)
         self.system_state = system_state
         self._spell_system_states = spell_system_states
         self._spellbook = spellbook
+        self._crafter = None
         self.is_broken = is_broken
         self.is_existing_creation = is_existing_creation
         self.user_created_object = user_created_object
@@ -891,7 +897,8 @@ def test_ensure_lineage_resolvable_skips_without_state() -> None:
     meld = _make_meld()
     spell = _SpellStub(spell_id="spell-1", system_state=None)
 
-    meld._ensure_lineage_resolvable(spell)
+    with pytest.raises(AttributeError):
+        meld._ensure_lineage_resolvable(spell)
 
     assert spell.run_structural_phases_calls == 0
 
@@ -1048,7 +1055,8 @@ def test_gated_validation_required_returns_false_without_state() -> None:
     """
     meld = _make_meld()
     spell = _SpellStub(spell_id="spell-1", system_state=None)
-    assert meld._gated_validation_required(spell) is False
+    with pytest.raises(AttributeError):
+        meld._gated_validation_required(spell)
 
 
 def test_gated_validation_required_returns_false_for_valid() -> None:

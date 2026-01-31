@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import threading
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 
 import pytest
 
@@ -89,6 +89,7 @@ class FakeSpellStatesSystem:
     Contract:
     - Registers states by index id.
     - Records structural change requests.
+    - Supports unregister and conduit-dirty calls used during transfers.
     """
 
     def __init__(self) -> None:
@@ -97,6 +98,8 @@ class FakeSpellStatesSystem:
         """
         self._states: Dict[str, FakeState] = {}
         self.mark_calls: List[Dict[str, Any]] = []
+        self.unregister_calls: List[Dict[str, Any]] = []
+        self.conduit_dirty_calls: List[Dict[str, Any]] = []
 
     def get_by_index_id(self, index_id: str) -> Optional[FakeState]:
         """
@@ -124,6 +127,30 @@ class FakeSpellStatesSystem:
             change_reason=SpellStateChangeReason.new_lineage,
         )
 
+    def unregister_lineage(self, spell_index: SpellIndex) -> Optional[FakeState]:
+        """
+        Remove a lineage state when unregistering.
+
+        Args:
+            spell_index: SpellIndex whose state should be removed.
+        Returns:
+            Removed FakeState when present, otherwise None.
+        """
+        removed = self._states.pop(spell_index.id, None)
+        self.unregister_calls.append({"spell_index": spell_index, "removed": removed})
+        return removed
+
+    def compute_impact_closure(self, lineage_ids: List[str]) -> Set[str]:
+        """
+        Return a minimal impact closure for the provided lineage ids.
+
+        Args:
+            lineage_ids: Lineage ids to include in the closure.
+        Returns:
+            Set of lineage ids considered impacted.
+        """
+        return {lineage_id for lineage_id in lineage_ids if lineage_id}
+
 
     def mark_structural_change(
         self,
@@ -139,6 +166,23 @@ class FakeSpellStatesSystem:
             reason: Reason for the structural change.
         """
         self.mark_calls.append({"spell_index": spell_index, "reason": reason})
+
+    def mark_conduit_dirty(
+        self,
+        *,
+        conduit_id: str,
+        change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Record a conduit dirty request.
+
+        Args:
+            conduit_id: Conduit id being marked dirty.
+            change_reason: Optional change reason.
+        """
+        self.conduit_dirty_calls.append(
+            {"conduit_id": conduit_id, "change_reason": change_reason}
+        )
 
 
 class FakeChangeControlManager:
@@ -358,6 +402,7 @@ class FakeFrame:
         """
         self._spell_registry: Dict[str, set[SpellIndex]] = {}
         self._conduit_clusters: Dict[str, FakeCluster] = {}
+        self._conduits: Dict[str, Any] = {}
 
 
 class FakeAether:
@@ -475,6 +520,22 @@ class FakeAether:
         """
         self._remove_spells_from_aether(conduit_id, {spell_index}, frame_name)
 
+    def _get_conduits_in_cluster(self, cluster_name: str, frame_name: str) -> List[str]:
+        """
+        Return conduit ids for a named cluster.
+
+        Args:
+            cluster_name: Cluster name to inspect.
+            frame_name: Frame name to resolve.
+        Returns:
+            List of conduit ids for owners in the cluster share map.
+        """
+        frame = self._get_frame(frame_name)
+        cluster = frame._conduit_clusters.get(cluster_name)
+        if cluster is None:
+            return []
+        return [owner_id for owner_id in cluster.shared_spells.keys() if owner_id]
+
 
 class FakeSpellbook:
     """
@@ -492,8 +553,31 @@ class FakeSpellbook:
         self._spells: Dict[SpellIndex, Any] = {}
         self._lookup_spells: Dict[str, SpellIndex] = {}
         self._spells_by_id: Dict[str, Any] = {}
+        self._contracted_spells: Dict[str, Dict[SpellIndex, Any]] = {}
         self._spell_system_states = states_system
         self._spell_id_pool: Dict[str, SpellIndex] = {}
+        self._risk_register_calls: List[Dict[str, Any]] = []
+        self._risk_unregister_calls: List[Dict[str, Any]] = []
+
+    def _register_spell_with_risk_manager(self, conduit_id: str, spell_obj: Any) -> None:
+        """
+        Record a risk-manager registration call.
+
+        Args:
+            conduit_id: Conduit id registering the spell.
+            spell_obj: Spell being registered.
+        """
+        self._risk_register_calls.append({"conduit_id": conduit_id, "spell": spell_obj})
+
+    def _unregister_spell_with_risk_manager(self, conduit_id: str, spell_obj: Any) -> None:
+        """
+        Record a risk-manager unregister call.
+
+        Args:
+            conduit_id: Conduit id unregistering the spell.
+            spell_obj: Spell being unregistered.
+        """
+        self._risk_unregister_calls.append({"conduit_id": conduit_id, "spell": spell_obj})
 
 
 class FakeConduitWard:
@@ -503,6 +587,7 @@ class FakeConduitWard:
     Contract:
     - _link records peer link attempts.
     - _add_spell_to_contract and _remove_spell_from_contract record arguments.
+    - _get_contracted_conduits returns an empty peer list for tests.
     """
 
     def __init__(self, policy: Policies) -> None:
@@ -578,6 +663,15 @@ class FakeConduitWard:
             conduit_id: Peer conduit id.
         """
         self.remove_calls.append({"spell_id": spell_id, "conduit": conduit, "conduit_id": conduit_id})
+
+    def _get_contracted_conduits(self) -> List[Any]:
+        """
+        Return contracted conduits for this ward.
+
+        Returns:
+            Empty list for the test harness.
+        """
+        return []
 
 
 class FakeConduit:
@@ -864,6 +958,11 @@ def build_environment(
         spell_index=spell_index,
         dependencies=dependencies,
     )
+    spell_obj._spellbook = source_book
+    spell_obj._spell_system_states = states_system
+    spell_index._owner_spellbook = source_book
+    spell_index._owner_spell = spell_obj
+    spell_index._owner_conduit_id = SOURCE_ID
 
     source_book._spells[spell_index] = spell_obj
     source_book._lookup_spells[spell_obj._key] = spell_index
@@ -872,6 +971,7 @@ def build_environment(
     frame._spell_registry[SOURCE_ID] = {spell_index}
     frame._spell_registry[TARGET_ID] = set()
     frame._spell_registry[PEER_ID] = set()
+    frame._conduits = {SOURCE_ID: source, TARGET_ID: target, PEER_ID: peer}
 
     dependency_spells: Dict[str, Any] = {}
     if dependencies and source_has_deps:
@@ -882,6 +982,11 @@ def build_environment(
                 owner_id=SOURCE_ID,
                 spell_index=dep_index,
             )
+            dep_spell._spellbook = source_book
+            dep_spell._spell_system_states = states_system
+            dep_index._owner_spellbook = source_book
+            dep_index._owner_spell = dep_spell
+            dep_index._owner_conduit_id = SOURCE_ID
             source_book._spells[dep_index] = dep_spell
             source_book._lookup_spells[dep_spell._key] = dep_index
             source_book._spells_by_id[dep_index.current] = dep_spell
@@ -895,6 +1000,11 @@ def build_environment(
                 owner_id=TARGET_ID,
                 spell_index=dep_index,
             )
+            dep_spell._spellbook = target_book
+            dep_spell._spell_system_states = states_system
+            dep_index._owner_spellbook = target_book
+            dep_index._owner_spell = dep_spell
+            dep_index._owner_conduit_id = TARGET_ID
             target_book._spells[dep_index] = dep_spell
             target_book._lookup_spells[dep_spell._key] = dep_index
             target_book._spells_by_id[dep_index.current] = dep_spell
@@ -2384,8 +2494,10 @@ def test_execute_invalidate_false_sets_gated_validity() -> None:
     )
     transfer.preflight()
     transfer.execute()
-    assert state.validity == SpellValidity.gated
-    assert state.change_reason == SpellStateChangeReason.structure_changed
+    updated = env.states_system.get_by_index_id(env.spell_index.id)
+    assert updated is not None
+    assert updated.validity == SpellValidity.gated
+    assert updated.change_reason == SpellStateChangeReason.structure_changed
 
 
 def test_execute_failure_lifts_disable_gated() -> None:
@@ -2427,10 +2539,10 @@ def test_execute_failure_lifts_disable_gated() -> None:
 
 def test_mark_lineage_dirty_swallows_exception() -> None:
     """
-    Verify mark_lineage_dirty swallows state update errors.
+    Verify mark_lineage_dirty propagates state update errors.
 
     Contract:
-    - Exceptions from mark_structural_change are suppressed.
+    - Exceptions from mark_structural_change are raised.
     """
     env = build_environment()
 
@@ -2452,7 +2564,8 @@ def test_mark_lineage_dirty_swallows_exception() -> None:
         target_conduit=env.target,
         spell=env.spell,
     )
-    transfer._mark_lineage_dirty(env.spell_index)
+    with pytest.raises(RuntimeError, match="boom"):
+        transfer._mark_lineage_dirty(env.spell_index)
     assert env.states_system.mark_calls == []
 
 
@@ -3342,10 +3455,10 @@ def test_unshare_everywhere_no_contracts_no_error() -> None:
 
 def test_mark_lineage_disabled_swallows_register_lineage_error() -> None:
     """
-    Verify mark_lineage_disabled suppresses register_lineage errors.
+    Verify mark_lineage_disabled propagates register_lineage errors.
 
     Contract:
-    - Exceptions from register_lineage are ignored.
+    - Exceptions from register_lineage are raised.
     """
     env = build_environment()
 
@@ -3367,7 +3480,8 @@ def test_mark_lineage_disabled_swallows_register_lineage_error() -> None:
         target_conduit=env.target,
         spell=env.spell,
     )
-    transfer._mark_lineage_disabled(env.spell_index)
+    with pytest.raises(RuntimeError, match="boom"):
+        transfer._mark_lineage_disabled(env.spell_index)
     assert env.states_system.get_by_index_id(env.spell_index.id) is None
 
 

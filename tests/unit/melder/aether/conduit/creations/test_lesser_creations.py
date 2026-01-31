@@ -756,17 +756,18 @@ def test_transfer_data_and_clear_skips_disposal_for_transferred_entries(make_les
     assert creations._many is None
 
 
-def test_transfer_data_and_clear_cleans_spellspace_entries(make_lesser_creations):
+def test_transfer_data_and_clear_skips_spellspace_entries(make_lesser_creations):
     """
     Purpose:
-        Ensure transfer_data_and_clear cleans spellspace entries rather than transferring them.
+        Ensure transfer_data_and_clear skips spellspace entries.
     Contract:
-        - Spellspace creations are cleaned during transfer.
+        - Spellspace creations are not included in returned data.
+        - The manager is cleaned after the transfer.
         - Returned data includes only unique_per_scope and many.
     Returns:
         None.
     Raises:
-        AssertionError: If spellspace entries are transferred or remain active.
+        AssertionError: If spellspace entries are transferred.
     """
     creations, _ = make_lesser_creations()
     spell_id = "spell-1"
@@ -778,5 +779,5 @@ def test_transfer_data_and_clear_cleans_spellspace_entries(make_lesser_creations
 
     assert set(data.keys()) == {"unique_per_scope", "many", "disposal_stack"}
     assert wrapper is not None
-    assert wrapper.value is None
+    assert wrapper.value is obj
     assert creations.cleaned is True

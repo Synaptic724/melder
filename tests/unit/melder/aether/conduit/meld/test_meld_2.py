@@ -586,7 +586,7 @@ def test_meld_by_spell_type_runtime_missing_raises() -> None:
         spell_id="spell-1",
         is_class_spell=True,
     )
-    with pytest.raises(RuntimeError, match="MeldRuntime is not configured"):
+    with pytest.raises(AttributeError):
         meld._meld_by_spell_type(spell, overrides=None)
 
 

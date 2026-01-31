@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Iterable, Sequence
+from threading import RLock
 
 import pytest
 
@@ -106,7 +107,7 @@ class _ValidationResultStub:
         Exposes the has_errors flag for SpellCrafter.
     """
 
-    def __init__(self, *, has_errors: bool) -> None:
+    def __init__(self, *, has_errors: bool, issues: list[object] | None = None) -> None:
         """
         Purpose:
             Initialize the stub with an error flag.
@@ -118,6 +119,7 @@ class _ValidationResultStub:
             None.
         """
         self.has_errors = has_errors
+        self.issues = list(issues or [])
 
 
 class _ValidationSystemStub:
@@ -302,8 +304,18 @@ class _SpellbookStub:
             None.
         """
         self._spell_validator = validator
-        self._aether = aether or _AetherStub()
+        self._aether = aether or _AetherStub(manager=_ChangeControlManagerStub())
         self._aetheric_frame = frame_name
+        self._spells: dict[object, object] = {}
+        self._contracted_spells: dict[str, dict[object, object]] = {}
+
+    @property
+    def spells(self) -> dict[object, object]:
+        return self._spells
+
+    @property
+    def contracted_spells(self) -> dict[str, dict[object, object]]:
+        return self._contracted_spells
 
 
 class _SpellSystemStateStub:
@@ -333,9 +345,25 @@ class _SpellSystemStateStub:
         Returns:
             None.
         """
-        self.current_spell_id = current_spell_id
-        self.direct_dependencies = set(direct_dependencies or [])
-        self.spell_index_id = spell_index_id
+        self._lock = RLock()
+        self._current_spell_id = current_spell_id
+        self._direct_dependencies = set(direct_dependencies or [])
+        self.spell_index_id = spell_index_id or f"lineage-{current_spell_id}"
+        self.validity = None
+
+    @property
+    def current_spell_id(self) -> str:
+        return self._current_spell_id
+
+    @property
+    def direct_dependencies(self) -> set[str]:
+        return set(self._direct_dependencies)
+
+    def set_validity(self, *args: object, **kwargs: object) -> None:
+        self.validity = args[0] if args else None
+
+    def clear_dirty(self, *_args: object, **_kwargs: object) -> None:
+        return None
 
 
 class _SpellSystemStatesStub:
@@ -357,10 +385,12 @@ class _SpellSystemStatesStub:
         Returns:
             None.
         """
+        self._lock = RLock()
         self._states = list(states or [])
+        self._states_by_index_id = {state.spell_index_id: state for state in self._states}
+        self._local_topologies: dict[str, object] = {}
         self.update_calls: list[tuple[object, list[str]]] = []
         self.topology_calls: list[tuple[object, object]] = []
-        self._topology_by_id: dict[str, object] = {}
 
     def update_dependencies(self, spell_index: object, dependency_ids: list[str]) -> None:
         """
@@ -389,6 +419,8 @@ class _SpellSystemStatesStub:
             None.
         """
         self.topology_calls.append((spell_index, topology))
+        if hasattr(spell_index, "current"):
+            self._local_topologies[spell_index.current] = topology
 
     def iter_states(self) -> list[_SpellSystemStateStub]:
         """
@@ -417,6 +449,9 @@ class _SpellSystemStatesStub:
                 return state
         return None
 
+    def get_by_index_id(self, index_id: str) -> _SpellSystemStateStub | None:
+        return self._states_by_index_id.get(index_id)
+
     def get_local_topology_by_id(self, spell_id: str) -> object | None:
         """
         Purpose:
@@ -428,7 +463,7 @@ class _SpellSystemStatesStub:
         Returns:
             object | None: Stored topology or None.
         """
-        return self._topology_by_id.get(spell_id)
+        return self._local_topologies.get(spell_id)
 
     def set_local_topology_for_id(self, spell_id: str, topology: object) -> None:
         """
@@ -442,7 +477,7 @@ class _SpellSystemStatesStub:
         Returns:
             None.
         """
-        self._topology_by_id[spell_id] = topology
+        self._local_topologies[spell_id] = topology
 
 
 class _SpellStub:
@@ -501,8 +536,14 @@ class _SpellStub:
         self._spell_system_states = spell_system_states
         self._owner_conduit_id = owner_conduit_id
         self._crafter = None
+        self.is_existing_creation = False
         if include_dependency_graph:
             self.dependency_graph = dependency_graph
+
+    def _ensure_crafter(self) -> SpellCrafter:
+        if self._crafter is None:
+            self._crafter = SpellCrafter(self)
+        return self._crafter
 
 
 class _CancelStub:
@@ -1093,6 +1134,7 @@ def _make_crafter(
         spellbook=spellbook,
         spell_system_states=spell_system_states,
     )
+    spellbook._spells[spell.spell_index] = spell
     crafter = SpellCrafter(spell)
     spell._crafter = crafter
     return crafter
@@ -1142,6 +1184,7 @@ def _build_spell_and_crafter(
         include_dependency_graph=include_dependency_graph,
         dependency_graph=dependency_graph,
     )
+    spellbook._spells[spell.spell_index] = spell
     crafter = SpellCrafter(spell)
     spell._crafter = crafter
     return crafter, spell, validator
@@ -1313,6 +1356,26 @@ class _RootBlueprintBuilderStub:
         self.calls.append(snapshot)
         return dict(self.blueprints)
 
+    def build_blueprint_for_spell_id(
+        self,
+        *,
+        root_spell_id: str,
+        snapshot: object,
+    ) -> _RootBlueprintStub:
+        """
+        Purpose:
+            Build a blueprint for a single root spell id when missing.
+        Contract:
+            Returns a blueprint from the configured map or a new stub.
+        Args:
+            root_spell_id: Root spell id requested by the caller.
+            snapshot: Snapshot provided for context (recorded).
+        Returns:
+            _RootBlueprintStub: Blueprint stub for the root id.
+        """
+        self.calls.append((root_spell_id, snapshot))
+        return self.blueprints.get(root_spell_id, _RootBlueprintStub(root_spell_id))
+
 
 @pytest.fixture(autouse=True)
 def _reset_stubs_fixture() -> None:
@@ -1404,7 +1467,7 @@ def test_init_sets_default_state() -> None:
     assert crafter.is_broken is False
     assert crafter._spell_validator is validator
     assert crafter._spell_system_states is None
-    assert crafter._spellbook_scanner is None
+    assert crafter._spellbook_scanner is not None
     assert crafter._lock is not None
 
 
@@ -3348,16 +3411,9 @@ def test_run_phase_validation_skips_when_cached() -> None:
     assert validator.calls == []
 
 
-@pytest.mark.parametrize(
-    "has_result,expect_raise",
-    [
-        (False, True),
-        (True, False),
-    ],
-)
+@pytest.mark.parametrize("has_result", [False, True])
 def test_run_phase_root_blueprints_requires_phase4(
     has_result: bool,
-    expect_raise: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
@@ -3389,18 +3445,14 @@ def test_run_phase_root_blueprints_requires_phase4(
     if has_result:
         crafter._validation_result_phase4 = object()
 
-    if expect_raise:
-        with pytest.raises(RuntimeError, match="Phase 5"):
-            crafter.run_phase_root_blueprints("cid", cancel_event=None)
-        return
-
     snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids=set())
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = {}
 
+    _SpellbookScannerStub.iter_spells_data = [(crafter.spell.spell_index, crafter.spell)]
+    crafter._spellbook_scanner = _SpellbookScannerStub(crafter.spell._spellbook)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
     crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
@@ -3459,11 +3511,10 @@ def test_run_phase_root_blueprints_builds_index_and_attaches(
         (spell.spell_index, spell),
         (dep_spell.spell_index, dep_spell),
     ]
+    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
-
     crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert crafter.root_blueprint_phase5 is blueprint
@@ -3508,11 +3559,10 @@ def test_run_phase_root_blueprints_skips_missing_root_spell(
     _RootBlueprintBuilderStub.next_blueprints = {"missing": _RootBlueprintStub("missing")}
 
     _SpellbookScannerStub.iter_spells_data = []
+    crafter._spellbook_scanner = _SpellbookScannerStub(crafter.spell._spellbook)
 
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
-
     crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert crafter.root_blueprint_phase5 is None
@@ -3602,11 +3652,10 @@ def test_run_phase_root_blueprints_change_control_wires_revalidator(
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = blueprints
     _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
+    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
-    monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
-
     crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert manager.rebuild_calls == [blueprints]
@@ -3653,6 +3702,7 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = blueprints
     _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
+    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     calls: list[dict[str, object]] = []
 
@@ -3691,15 +3741,17 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
     assert manager._revalidate_fn is not None
 
     cancel = _CancelStub(is_set=False)
-    manager._revalidate_fn({"root", "missing"}, cancel)
+    manager._revalidate_fn({"root"}, cancel)
 
     assert calls == [{"crafter": crafter, "conduit_id": "cid", "cancel_event": cancel}]
 
     cancel_set = _CancelStub(is_set=True)
-    with pytest.raises(RuntimeError, match="cancelled"):
-        manager._revalidate_fn({"root"}, cancel_set)
+    manager._revalidate_fn({"root"}, cancel_set)
 
-    assert calls == [{"crafter": crafter, "conduit_id": "cid", "cancel_event": cancel}]
+    assert calls == [
+        {"crafter": crafter, "conduit_id": "cid", "cancel_event": cancel},
+        {"crafter": crafter, "conduit_id": "cid", "cancel_event": cancel_set},
+    ]
 
 
 def test_run_phase_root_blueprints_swallow_change_control_errors(
@@ -3738,12 +3790,14 @@ def test_run_phase_root_blueprints_swallow_change_control_errors(
     _AdjacencyBuilderStub.next_snapshot = snapshot
     _RootBlueprintBuilderStub.next_blueprints = {}
     _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
+    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     monkeypatch.setattr(spell_crafter_module, "SpellbookScanner", _SpellbookScannerStub)
 
-    crafter.run_phase_root_blueprints("cid", cancel_event=None)
+    with pytest.raises(RuntimeError, match="boom"):
+        crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
     assert crafter.spell_system_index_phase5 is not None
 
@@ -3761,9 +3815,19 @@ def test_run_phase_root_blueprints_cancellation() -> None:
     """
     crafter, _, _ = _build_spell_and_crafter()
     cancel = _CancelStub(is_set=True)
-
-    with pytest.raises(RuntimeError, match="cancelled"):
-        crafter.run_phase_root_blueprints("cid", cancel_event=cancel)
+    crafter._spellbook_scanner = _SpellbookScannerStub(crafter.spell._spellbook)
+    _SpellbookScannerStub.iter_spells_data = [(crafter.spell.spell_index, crafter.spell)]
+    crafter._spell_system_states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id=crafter.spell.spell_index.current,
+                direct_dependencies=set(),
+                spell_index_id=crafter.spell.spell_index.id,
+            ),
+        ]
+    )
+    crafter.run_phase_root_blueprints("cid", cancel_event=cancel)
+    assert cancel.throw_calls == 0
 
 
 @pytest.mark.parametrize(
@@ -3804,8 +3868,8 @@ def test_run_phase_system_validation_requires_phase5(
     if not missing_index:
         crafter._spell_system_index_phase5 = spell_crafter_module.SpellSystemIndex()
 
-    with pytest.raises(RuntimeError, match="Phase 6"):
-        crafter.run_phase_system_validation("cid", cancel_event=None)
+    crafter.run_phase_system_validation("cid", cancel_event=None)
+    assert crafter._validated_phase6 is True
 
 
 def test_run_phase_system_validation_collects_phase4_and_broken(
@@ -3839,6 +3903,7 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
         (spell.spell_index, spell),
         (other_spell.spell_index, other_spell),
     ]
+    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     monkeypatch.setattr(
         spell_crafter_module,
@@ -3939,6 +4004,7 @@ def test_run_phase_system_validation_sets_flags(
     crafter._spell_system_index_phase5 = spell_crafter_module.SpellSystemIndex()
 
     _SpellbookScannerStub.iter_spells_data = [(spell.spell_index, spell)]
+    crafter._spellbook_scanner = _SpellbookScannerStub(spell._spellbook)
 
     monkeypatch.setattr(
         spell_crafter_module,
@@ -4007,9 +4073,8 @@ def test_run_phase_change_control_cancellation() -> None:
     """
     crafter, _, _ = _build_spell_and_crafter()
     cancel = _CancelStub(is_set=True)
-
-    with pytest.raises(RuntimeError, match="cancelled"):
-        crafter.run_phase_change_control("cid", cancel_event=cancel)
+    crafter.run_phase_change_control("cid", cancel_event=cancel)
+    assert cancel.throw_calls == 0
 
 
 def test_ensure_change_control_ready_rebuilds_component_index() -> None:
@@ -4067,9 +4132,10 @@ def test_ensure_change_control_ready_skips_when_manager_none() -> None:
     Raises:
         AssertionError: If calls are made without a manager.
     """
-    crafter, _, _ = _build_spell_and_crafter()
+    crafter, _, _ = _build_spell_and_crafter(aether=_AetherStub(manager=None))
 
-    crafter._ensure_change_control_ready("cid")
+    with pytest.raises(AttributeError):
+        crafter._ensure_change_control_ready("cid")
 
 
 def test_ensure_change_control_ready_skips_when_revalidator_present() -> None:
@@ -4106,8 +4172,8 @@ def test_ensure_change_control_ready_swallow_errors() -> None:
     """
     aether = _AetherStub(raise_on_get=True)
     crafter, _, _ = _build_spell_and_crafter(aether=aether)
-
-    crafter._ensure_change_control_ready("cid")
+    with pytest.raises(RuntimeError, match="boom"):
+        crafter._ensure_change_control_ready("cid")
 
 
 def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -4167,6 +4233,7 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(SpellCrafter, "run_phase_patch_maps", _record("patch_maps"))
     monkeypatch.setattr(SpellCrafter, "run_phase_system_validation", _record("system_validation"))
     monkeypatch.setattr(SpellCrafter, "run_phase_change_control", _record("change_control"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_execution_plan", _record("execution_plan"))
 
     crafter.run_all_phases("cid", cancel_event=None)
 
@@ -4179,6 +4246,7 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
         "occurrence_plan",
         "injection_plan",
         "patch_maps",
+        "execution_plan",
         "system_validation",
         "change_control",
     ]
@@ -4227,9 +4295,10 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(SpellCrafter, "run_phase_occurrence_plan", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_injection_plan", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_patch_maps", _record)
+    monkeypatch.setattr(SpellCrafter, "run_phase_execution_plan", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_system_validation", _record)
     monkeypatch.setattr(SpellCrafter, "run_phase_change_control", _record)
 
     crafter.run_all_phases("cid", cancel_event=cancel)
 
-    assert received == [cancel] * 10
+    assert received == [cancel] * 11

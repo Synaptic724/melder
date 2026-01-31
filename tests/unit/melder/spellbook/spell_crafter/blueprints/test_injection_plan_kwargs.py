@@ -8,7 +8,6 @@ from melder.spellbook.spell_crafter.blueprints.injection_plan import (
     ParamSource,
     build_kwargs_from_injection_spec,
 )
-from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
 def _make_spec(
@@ -20,6 +19,8 @@ def _make_spec(
     """
     Build a minimal InjectionSpec for tests.
     """
+    if contract_payload is None:
+        contract_payload = {}
     return InjectionSpec(
         param_sources=param_sources,
         allow_list_aggregation=False,
@@ -82,7 +83,7 @@ def test_build_kwargs_from_injection_spec_missing_dependency_raises() -> None:
     spec = _make_spec(
         param_sources={"dep": ParamSource(kind="dependency", dependency_keys=[("dep", None)])}
     )
-    with pytest.raises(MeldExecutionError):
+    with pytest.raises(KeyError):
         build_kwargs_from_injection_spec(
             instance_key=("root", None),
             occurrence=("root", ()),

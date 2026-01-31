@@ -173,6 +173,20 @@ class DummySpell:
         """
         return ("patch_maps", self.spell_id, conduit_id, cancel_event)
 
+    def run_phase_execution_plan(self, conduit_id, cancel_event):
+        """
+        Purpose:
+            Provide a deterministic Phase 11 marker for tests.
+        Contract:
+            Returns a tuple containing phase name, spell id, conduit id, and cancel event.
+        Args:
+            conduit_id: Conduit identifier forwarded by the scheduler.
+            cancel_event: Cancellation event forwarded by the scheduler.
+        Returns:
+            tuple[str, str, str, object]: Phase marker tuple.
+        """
+        return ("execution_plan", self.spell_id, conduit_id, cancel_event)
+
     def run_phase_system_validation(self, conduit_id, cancel_event):
         """
         Purpose:
@@ -1333,6 +1347,7 @@ def test_run_resolution_phases_success(monkeypatch):
         "root_blueprints",
         "occurrence_plan",
         "injection_plan",
+        "execution_plan",
         "patch_maps",
         "system_validation",
         "change_control",
@@ -2070,6 +2085,7 @@ def test_run_resolution_phases_with_multiple_spells():
         "root_blueprints",
         "occurrence_plan",
         "injection_plan",
+        "execution_plan",
         "patch_maps",
         "system_validation",
         "change_control",

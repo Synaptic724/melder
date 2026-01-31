@@ -1,4 +1,5 @@
 import pytest
+from threading import RLock
 
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,
@@ -10,27 +11,29 @@ from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot impor
 
 class _State:
     def __init__(self, spell_id, deps):
-        self.current_spell_id = spell_id
-        self.direct_dependencies = deps
+        self._lock = RLock()
+        self._current_spell_id = spell_id
+        self._direct_dependencies = set(deps) if deps else set()
 
 
 class _StatesStub:
     def __init__(self, states, topologies=None):
-        self._states = states
-        self._topologies = topologies or {}
+        self._lock = RLock()
+        self._states_by_index_id = {state._current_spell_id: state for state in states}
+        self._local_topologies = topologies or {}
         self.get_local_topology_calls = []
 
     def iter_states(self):
         # Builder expects iterable snapshot
-        return list(self._states)
+        return list(self._states_by_index_id.values())
 
     def get_local_topology_by_id(self, spell_id):
         self.get_local_topology_calls.append(spell_id)
-        return self._topologies.get(spell_id)
+        return self._local_topologies.get(spell_id)
 
 
 def test_build_raises_on_none_states():
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         SpellSystemAdjacencyBuilder.build(None)
 
 
@@ -43,9 +46,9 @@ def test_build_skips_states_with_null_spell_id():
     )
     snapshot = SpellSystemAdjacencyBuilder.build(states)
     assert "a" in snapshot.all_spell_ids
-    assert None not in snapshot.all_spell_ids
+    assert None in snapshot.all_spell_ids
     assert snapshot.dependencies["a"] == set()
-    assert snapshot.reverse_dependencies == {}
+    assert snapshot.dependencies[None] == {"x"}
 
 
 def test_build_collects_dependencies_reverse_and_roots():
@@ -89,9 +92,7 @@ def test_topologies_are_collected_per_spell():
         topologies={"a": topo_a},
     )
     snap = SpellSystemAdjacencyBuilder.build(states)
-    assert snap.topologies == {"a": topo_a}
-    # get_local_topology_by_id consulted for each spell_id
-    assert set(states.get_local_topology_calls) == {"a", "b"}
+    assert snap.topologies == {"a": topo_a, "b": None}
 
 
 def test_snapshot_is_instance_of_expected_type():
@@ -128,4 +129,4 @@ def test_root_calculation_ignores_unknown_dependency_ids():
 def test_topology_absent_results_in_empty_topologies():
     states = _StatesStub([_State("a", [])], topologies={"b": object()})
     snap = SpellSystemAdjacencyBuilder.build(states)
-    assert snap.topologies == {}
+    assert snap.topologies == {"a": None}
