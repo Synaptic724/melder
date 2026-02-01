@@ -1754,8 +1754,7 @@ class SpellCrafter(Cleanable):
             filtered_deps = {dep_id for dep_id in deps if dep_id in all_spell_ids}
             dependencies[spell_id] = filtered_deps
             for dep_id in filtered_deps:
-                if dep_id in all_spell_ids:
-                    reverse_dependencies.setdefault(dep_id, set()).add(spell_id)
+                reverse_dependencies.setdefault(dep_id, set()).add(spell_id)
 
             topology = snapshot.topologies.get(spell_id)
             if topology is not None:

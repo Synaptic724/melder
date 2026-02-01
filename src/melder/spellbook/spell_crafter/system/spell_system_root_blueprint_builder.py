@@ -247,11 +247,14 @@ class SpellSystemRootBlueprintBuilder:
         socket_refs = blueprint._socket_refs
         add_socket = blueprint._dag_index.add_socket
         path_registry = blueprint.path_registry
+        path_registry.check_cleaned()
         root_path_id = path_registry.root_path_id
         root_key = (blueprint.root_spell_id, root_path_id)
         queue.append(root_key)
 
         visited: Set[Tuple[str, int]] = {root_key}
+        # Cache per (parent path id, param name) to avoid repeated registry lookups.
+        path_cache: Dict[Tuple[int, str], int] = {}
 
         while queue:
             node_id, path_id = queue.popleft()
@@ -261,13 +264,15 @@ class SpellSystemRootBlueprintBuilder:
                 continue
 
             for socket_desc in topology.sockets:
-                socket_path_id = path_registry.extend_path(
-                    path_id,
-                    socket_desc.param_name,
-                )
+                param_name = socket_desc.param_name
+                cache_key = (path_id, param_name)
+                socket_path_id = path_cache.get(cache_key)
+                if socket_path_id is None:
+                    socket_path_id = path_registry.extend_path(path_id, param_name)
+                    path_cache[cache_key] = socket_path_id
                 socket_ref = SocketRef(
                     node_id=node_id,
-                    param_name=socket_desc.param_name,
+                    param_name=param_name,
                     param_path_id=socket_path_id,
                     socket_kind=socket_desc.socket_kind,
                 )

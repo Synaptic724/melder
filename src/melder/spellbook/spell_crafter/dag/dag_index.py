@@ -98,11 +98,12 @@ class PathRegistry(Cleanable):
         if existing is not None:
             return existing
 
+        parent_depth = self._depths[parent_id]
         new_id = len(self._segments)
         self._child_ids[key] = new_id
         self._parent_ids.append(parent_id)
         self._segments.append(segment)
-        self._depths.append(self._depths[parent_id] + 1)
+        self._depths.append(parent_depth + 1)
         return new_id
 
     def resolve_path_id(self, segments: Sequence[str]) -> Optional[int]:
@@ -292,15 +293,16 @@ class DagIndex(Cleanable):
         path_id = socket.param_path_id
         sockets_by_path_id = self._by_exact_path_id.get(path_id)
         if sockets_by_path_id is None:
-            sockets_by_path_id = []
-            self._by_exact_path_id[path_id] = sockets_by_path_id
-        sockets_by_path_id.append(socket)
+            self._by_exact_path_id[path_id] = [socket]
+        else:
+            sockets_by_path_id.append(socket)
 
-        sockets_by_name = self._by_name.get(socket.param_name)
+        param_name = socket.param_name
+        sockets_by_name = self._by_name.get(param_name)
         if sockets_by_name is None:
-            sockets_by_name = []
-            self._by_name[socket.param_name] = sockets_by_name
-        sockets_by_name.append(socket)
+            self._by_name[param_name] = [socket]
+        else:
+            sockets_by_name.append(socket)
 
     def get_by_exact_path(self, path: Sequence[str]) -> List[SocketRef]:
         """
