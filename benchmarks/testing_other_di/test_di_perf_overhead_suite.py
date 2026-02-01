@@ -471,91 +471,106 @@ def _lagom_run(s: PerfScenario, mode: str) -> PerfRow:
 
 
 def _injector_run(s: PerfScenario, mode: str) -> PerfRow:
+    """
+    Injector (python-injector) runner.
+
+    Notes:
+        - We do NOT use @provider methods here because injector requires a concrete
+          return type annotation to register providers, and our scenario classes
+          are selected dynamically (s.config_cls / s.logger_cls / s.service_cls).
+        - Instead we:
+            1) Patch __init__ with injector.inject(...) so constructor injection works.
+            2) Bind each class to itself via binder.bind(...), optionally with singleton scope.
+            3) Use injector.get(Class) for resolution.
+
+    Contract:
+        - Build time includes constructor patching + binding registration + Injector creation.
+        - Restores patched __init__ methods before returning.
+    """
     pytest.importorskip("injector", reason="injector is not installed")
-    from injector import Injector as PyInjector
-    from injector import Module, provider, singleton
+    from injector import Binder, Injector as PyInjector, Module, inject, singleton
 
     if mode not in ("singleton", "transient"):
         raise AssertionError(f"Unknown mode: {mode}")
 
-    if mode == "singleton":
+    classes = (s.config_cls, s.logger_cls, s.service_cls)
 
-        class _PerfModule(Module):
-            @provider
-            @singleton
-            def provide_config(self):
-                return s.config_cls()
-
-            @provider
-            @singleton
-            def provide_logger(self, config: s.config_cls):
-                return s.logger_cls(config=config)
-
-            @provider
-            @singleton
-            def provide_service(self, logger: s.logger_cls):
-                return s.service_cls(logger=logger)
-
-    else:
-
-        class _PerfModule(Module):
-            @provider
-            def provide_config(self):
-                return s.config_cls()
-
-            @provider
-            def provide_logger(self, config: s.config_cls):
-                return s.logger_cls(config=config)
-
-            @provider
-            def provide_service(self, logger: s.logger_cls):
-                return s.service_cls(logger=logger)
-
+    # Build-time includes patching + binding + injector creation for fairness.
     t0 = _ns()
-    injector = PyInjector(_PerfModule())
+
+    original_inits: dict[type, object] = {}
+    for cls in classes:
+        original_inits[cls] = cls.__init__
+        cls.__init__ = inject(cls.__init__)
+
+    class _PerfModule(Module):
+        """
+        Injector module used for perf.
+
+        Contract:
+            - Binds config/logger/service classes to themselves.
+            - Applies singleton scope only when mode == "singleton".
+        """
+        def configure(self, binder: Binder) -> None:
+            if mode == "singleton":
+                binder.bind(s.config_cls, to=s.config_cls, scope=singleton)
+                binder.bind(s.logger_cls, to=s.logger_cls, scope=singleton)
+                binder.bind(s.service_cls, to=s.service_cls, scope=singleton)
+            else:
+                binder.bind(s.config_cls, to=s.config_cls)
+                binder.bind(s.logger_cls, to=s.logger_cls)
+                binder.bind(s.service_cls, to=s.service_cls)
+
+    injector = PyInjector([_PerfModule()])
     build_ns = _ns() - t0
 
-    # sanity (NOT timed)
-    cfg1 = injector.get(s.config_cls)
-    cfg2 = injector.get(s.config_cls)
-    assert isinstance(cfg1, s.config_cls)
-    assert isinstance(cfg2, s.config_cls)
+    try:
+        # sanity (NOT timed)
+        cfg1 = injector.get(s.config_cls)
+        cfg2 = injector.get(s.config_cls)
+        assert isinstance(cfg1, s.config_cls)
+        assert isinstance(cfg2, s.config_cls)
 
-    log1 = injector.get(s.logger_cls)
-    log2 = injector.get(s.logger_cls)
-    assert isinstance(log1, s.logger_cls)
-    assert isinstance(log2, s.logger_cls)
+        log1 = injector.get(s.logger_cls)
+        log2 = injector.get(s.logger_cls)
+        assert isinstance(log1, s.logger_cls)
+        assert isinstance(log2, s.logger_cls)
 
-    svc1 = injector.get(s.service_cls)
-    assert isinstance(svc1, s.service_cls)
+        svc1 = injector.get(s.service_cls)
+        assert isinstance(svc1, s.service_cls)
 
-    if mode == "singleton":
-        logger_is_cached: Optional[bool] = (log1 is log2)
-        assert logger_is_cached
-    else:
-        logger_is_cached = None
+        if mode == "singleton":
+            logger_is_cached: Optional[bool] = (log1 is log2)
+            assert logger_is_cached
+        else:
+            logger_is_cached = None
 
-    tries = s.settings.tries
-    warmup = s.settings.warmup
-    gc_disable = s.settings.gc_disable_during_timing
+        tries = s.settings.tries
+        warmup = s.settings.warmup
+        gc_disable = s.settings.gc_disable_during_timing
 
-    cfg_total_ns = _time_loop(lambda: injector.get(s.config_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
-    log_total_ns = _time_loop(lambda: injector.get(s.logger_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
-    svc_total_ns = _time_loop(lambda: injector.get(s.service_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
+        cfg_total_ns = _time_loop(lambda: injector.get(s.config_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
+        log_total_ns = _time_loop(lambda: injector.get(s.logger_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
+        svc_total_ns = _time_loop(lambda: injector.get(s.service_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
 
-    return PerfRow(
-        name="injector",
-        scenario=s.name,
-        mode=mode,
-        build_ns=build_ns,
-        cfg_total_ns=cfg_total_ns,
-        log_total_ns=log_total_ns,
-        svc_total_ns=svc_total_ns,
-        cfg_avg_us=_us_from_ns(cfg_total_ns) / tries,
-        log_avg_us=_us_from_ns(log_total_ns) / tries,
-        svc_avg_us=_us_from_ns(svc_total_ns) / tries,
-        logger_is_cached=logger_is_cached,
-    )
+        return PerfRow(
+            name="injector",
+            scenario=s.name,
+            mode=mode,
+            build_ns=build_ns,
+            cfg_total_ns=cfg_total_ns,
+            log_total_ns=log_total_ns,
+            svc_total_ns=svc_total_ns,
+            cfg_avg_us=_us_from_ns(cfg_total_ns) / tries,
+            log_avg_us=_us_from_ns(log_total_ns) / tries,
+            svc_avg_us=_us_from_ns(svc_total_ns) / tries,
+            logger_is_cached=logger_is_cached,
+        )
+    finally:
+        # Restore patched constructors to avoid cross-test contamination.
+        for cls in classes:
+            cls.__init__ = original_inits[cls]
+
 
 
 # ======================================================================================
