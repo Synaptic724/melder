@@ -308,6 +308,25 @@ def test_occurrence_plan_builder_shared_instances() -> None:
     assert plan.contract_dependencies_complete is True
 
 
+def test_normalize_contract_override_payload_none_returns_empty_dict() -> None:
+    """
+    Verify None contract payloads normalize to an empty dict.
+
+    Contract:
+        - None payloads are treated as no overrides.
+
+    Raises:
+        AssertionError: If None payloads do not normalize to {}.
+    """
+    normalized = OccurrencePlanBuilder._normalize_contract_override_payload(
+        payload=None,
+        consumer_spell_id="spell-1",
+        consumer_spell_name="spell-name",
+        param_name="param",
+    )
+    assert normalized == {}
+
+
 def test_occurrence_plan_builder_many_instances_preserve_paths() -> None:
     """
     Purpose:

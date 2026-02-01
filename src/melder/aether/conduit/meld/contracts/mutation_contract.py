@@ -94,6 +94,8 @@ class MutationContract(Cleanable):
                 Optional override payload to apply when this mutation contract
                 is resolved to a concrete provider. Semantics mirror SpellMap.
 
+                When None, no override payload is attached.
+
             late_binding:
                 When False:
                     - The mutation must be resolved during Phase 5–7
@@ -118,7 +120,8 @@ class MutationContract(Cleanable):
             if binding_name is not None
             else None
         )
-        self.spell_override = spell_override if spell_override is not None else {}
+        # Preserve the caller payload; None means no override is attached.
+        self.spell_override = spell_override
         self.late_binding = late_binding
 
     def cleanup(self) -> None:

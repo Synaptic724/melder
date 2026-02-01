@@ -56,14 +56,16 @@ class ExecutionPlanCallMode:
     Fast-path call modes for NO_OVERRIDES_FAST execution.
 
     Purpose:
-        Capture trivial call shapes (0 or 1 dependency) to avoid per-step
-        list allocation and inner loop overhead.
+        Capture trivial call shapes (0, 1, 2, or 3 dependencies) to avoid
+        per-step list allocation and inner loop overhead.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = ()
     CALL0 = 0
     CALL1 = 1
-    CALLN = 2
+    CALL2 = 2
+    CALL3 = 3
+    CALLN = 4
 
 
 class ExecutionPlanStep:
@@ -1028,6 +1030,19 @@ class ExecutionPlanBuilder:
                     if dep_count == 1:
                         fast_call_modes[step_index] = ExecutionPlanCallMode.CALL1
                         fast_single_dep_indices[step_index] = fast_dep_indices[dep_offset]
+                elif group_count == 2:
+                    group_base = fast_param_group_offsets[step_index]
+                    dep_count_a = fast_param_group_dep_counts[group_base]
+                    dep_count_b = fast_param_group_dep_counts[group_base + 1]
+                    if dep_count_a == 1 and dep_count_b == 1:
+                        fast_call_modes[step_index] = ExecutionPlanCallMode.CALL2
+                elif group_count == 3:
+                    group_base = fast_param_group_offsets[step_index]
+                    dep_count_a = fast_param_group_dep_counts[group_base]
+                    dep_count_b = fast_param_group_dep_counts[group_base + 1]
+                    dep_count_c = fast_param_group_dep_counts[group_base + 2]
+                    if dep_count_a == 1 and dep_count_b == 1 and dep_count_c == 1:
+                        fast_call_modes[step_index] = ExecutionPlanCallMode.CALL3
 
         return (
             fast_dep_indices,

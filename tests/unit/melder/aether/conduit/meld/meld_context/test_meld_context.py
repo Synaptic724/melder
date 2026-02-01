@@ -274,39 +274,40 @@ def test_conduit_metadata_preserves_none_values() -> None:
         context.cleanup()
 
 
-def test_overrides_default_empty_dict() -> None:
+def test_overrides_default_none() -> None:
     """
-    Verify overrides defaults to an empty dict.
+    Verify overrides defaults to None when not provided.
 
     Contract:
-        - overrides is an empty mapping when no overrides are provided.
+        - overrides is None when no overrides are supplied.
 
     Raises:
-        AssertionError: If overrides is not empty by default.
+        AssertionError: If overrides is not None by default.
     """
     root_spell = _make_root_spell(creations=object())
     context = MeldContext(root_spell=root_spell)
     try:
-        assert context.overrides == {}
+        assert context.overrides is None
     finally:
         context.cleanup()
 
 
-def test_overrides_default_distinct_instances() -> None:
+def test_overrides_default_none_for_each_context() -> None:
     """
-    Verify default overrides are distinct per context.
+    Verify default overrides are None per context.
 
     Contract:
-        - Each MeldContext has its own overrides mapping.
+        - Each MeldContext starts with overrides set to None.
 
     Raises:
-        AssertionError: If overrides are shared between contexts.
+        AssertionError: If overrides defaults are not None.
     """
     root_spell = _make_root_spell(creations=object())
     first = MeldContext(root_spell=root_spell)
     second = MeldContext(root_spell=root_spell)
     try:
-        assert first.overrides is not second.overrides
+        assert first.overrides is None
+        assert second.overrides is None
     finally:
         first.cleanup()
         second.cleanup()
@@ -384,7 +385,7 @@ def test_overrides_property_mutations_persist() -> None:
         AssertionError: If override mutations are not persisted.
     """
     root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell)
+    context = MeldContext(root_spell=root_spell, overrides={})
     try:
         context.overrides["x"] = 1
         assert context.overrides["x"] == 1
@@ -450,7 +451,7 @@ def test_cleanup_clears_fields_and_marks_cleaned() -> None:
     assert context.owner_creations is None
     assert context.caller_creations is None
     assert context.caller_creations_lock_held is False
-    assert context.overrides == {}
+    assert context.overrides is None
     assert context.cancel_event is None
     assert context.conduit_id is None
     assert context.conduit_name is None
@@ -520,7 +521,7 @@ def test_cleanup_clears_internal_overrides_only() -> None:
     context = MeldContext(root_spell=root_spell, overrides=overrides)
     context.cleanup()
     assert overrides == {"x": 1}
-    assert context.overrides == {}
+    assert context.overrides is None
 
 
 def test_cleanup_is_idempotent() -> None:

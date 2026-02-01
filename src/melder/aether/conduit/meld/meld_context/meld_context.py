@@ -19,7 +19,7 @@ class MeldContext(Cleanable):
         * The **owner creations container** for shared existences.
         * The **caller creations container** for per-conduit existences.
         * Whether the caller creations lock is already held for this call.
-        * Normalized **per-call overrides** (from `spell_override`).
+        * Optional **per-call overrides** (from `spell_override`).
         * Optional **cancellation** signal.
         * Optional **logger** (wrapped as a `SafeLogger`).
         * Optional **conduit identity** and **aetheric frame** metadata.
@@ -87,7 +87,8 @@ class MeldContext(Cleanable):
             - caller creations default to owner creations when not provided.
             - caller_creations_lock_held indicates whether the caller creations
               lock is already held by the calling thread when the runtime runs.
-            - overrides are copied into a mutable mapping for this call.
+            - overrides are copied into a mutable mapping when provided.
+            - overrides are None when no overrides are supplied.
             - cleanup() must deterministically drop all references.
 
         Args:
@@ -95,7 +96,8 @@ class MeldContext(Cleanable):
                 The root ISpell being activated for this meld call.
             overrides:
                 Optional per-call override mapping (keyword overrides or
-                "__args__" positional overrides).
+                "__args__" positional overrides). When None, no override
+                container is allocated for this context.
             cancel_event:
                 Optional CancellationEvent to support cooperative cancellation.
             logger:
@@ -126,10 +128,9 @@ class MeldContext(Cleanable):
         )
         self._creations: Any = self._owner_creations
         self._caller_creations_lock_held: bool = bool(caller_creations_lock_held)
-        # Normalized, per-call override map (never mutated in place by
-        # the runtime; callers may mutate the dict they get back).
-        self._overrides: MutableMapping[str, Any] = (
-            dict(overrides) if overrides is not None else {}
+        # Normalized, per-call override map (None when no overrides are supplied).
+        self._overrides: Optional[MutableMapping[str, Any]] = (
+            dict(overrides) if overrides is not None else None
         )
         self._cancel_event: Optional[CancellationEvent] = cancel_event
         self._conduit_id: Optional[str] = self._root_spell._owner_conduit_id
@@ -159,7 +160,9 @@ class MeldContext(Cleanable):
         self._owner_creations = None
         self._caller_creations = None
         self._caller_creations_lock_held = False
-        self._overrides.clear()
+        if self._overrides is not None:
+            self._overrides.clear()
+        self._overrides = None
         self._cancel_event = None
         self._conduit_id = None
         self._conduit_name = None
@@ -222,7 +225,7 @@ class MeldContext(Cleanable):
         return self._caller_creations_lock_held
 
     @property
-    def overrides(self) -> MutableMapping[str, Any]:
+    def overrides(self) -> Optional[MutableMapping[str, Any]]:
         """
         The normalized override map for this meld call.
 
@@ -234,6 +237,10 @@ class MeldContext(Cleanable):
 
         The runtime/engine read from this mapping but do not replace it
         wholesale; callers are free to mutate it if they need to.
+
+        Returns:
+            Optional[MutableMapping[str, Any]]:
+                Override payload mapping, or None when no overrides are supplied.
         """
         return self._overrides
 

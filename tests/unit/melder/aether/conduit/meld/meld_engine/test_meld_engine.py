@@ -19,6 +19,7 @@ from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import 
 from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlan,
     ExecutionPlanBuilder,
+    ExecutionPlanCallMode,
     ExecutionPlanStep,
     ExecutionPlanTargetKind,
     ExecutionPlanVariant,
@@ -531,6 +532,18 @@ def _make_spell(
             else list(disposal_method_names) if disposal_method_names else []
         ),
         _lock=RLock(),
+    )
+
+
+def _make_requirement_param(name: str) -> SimpleNamespace:
+    """
+    Build a requirements parameter stub for positional planning.
+    """
+    return SimpleNamespace(
+        name=name,
+        is_keyword_only=False,
+        is_var_keyword=False,
+        is_var_positional=False,
     )
 
 
@@ -2962,6 +2975,158 @@ def test_execution_plan_uses_occurrence_plan_order() -> None:
 
     step_ids = [step.occurrence[0] for step in execution_plan.steps]
     assert step_ids == [dep_id, root_id]
+
+
+def test_execution_plan_fast_plan_marks_call2_for_two_single_deps() -> None:
+    """
+    Purpose:
+        Ensure fast plan uses CALL2 for two single-dependency positional params.
+    Contract:
+        - Root step call mode is CALL2 when two positional groups each have one dep.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the call mode is not CALL2.
+    """
+    root_id = "root"
+    left_id = "left"
+    right_id = "right"
+    occurrence_graph = {
+        (root_id, ()): {
+            "left": [(left_id, ("left",))],
+            "right": [(right_id, ("right",))],
+        },
+        (left_id, ("left",)): {},
+        (right_id, ("right",)): {},
+    }
+    plan = OccurrencePlan(
+        root_spell_id=root_id,
+        occurrence_graph=occurrence_graph,
+        execution_order=[left_id, right_id, root_id],
+        instance_keys_by_spell_id={
+            left_id: [(left_id, ("left",))],
+            right_id: [(right_id, ("right",))],
+            root_id: [(root_id, None)],
+        },
+        canonical_occurrences_by_spell_id={
+            root_id: (root_id, ()),
+        },
+        root_instance_key=(root_id, None),
+        shared_spell_ids={root_id},
+        contract_overrides_by_occurrence={
+            (root_id, ()): {},
+            (left_id, ("left",)): {},
+            (right_id, ("right",)): {},
+        },
+        contract_overrides_by_spell_id={},
+        contract_dependencies_complete=True,
+    )
+    root_spell = _make_spell(spell_id=root_id, existence=Existence.unique)
+    root_spell.requirements = SimpleNamespace(
+        parameters=[
+            _make_requirement_param("left"),
+            _make_requirement_param("right"),
+        ]
+    )
+    left_spell = _make_spell(spell_id=left_id, existence=Existence.many)
+    right_spell = _make_spell(spell_id=right_id, existence=Existence.many)
+    injection_plan = InjectionPlanBuilder(occurrence_plan=plan).build()
+    execution_plan = ExecutionPlanBuilder(
+        occurrence_plan=plan,
+        injection_plan=injection_plan,
+        spell_lookup={
+            root_id: root_spell,
+            left_id: left_spell,
+            right_id: right_spell,
+        },
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
+    ).build()
+
+    fast_plan = execution_plan.fast_plan
+    assert fast_plan is not None
+    root_step_index = fast_plan[19]
+    fast_call_modes = fast_plan[20]
+    assert fast_call_modes[root_step_index] == ExecutionPlanCallMode.CALL2
+
+
+def test_execution_plan_fast_plan_marks_call3_for_three_single_deps() -> None:
+    """
+    Purpose:
+        Ensure fast plan uses CALL3 for three single-dependency positional params.
+    Contract:
+        - Root step call mode is CALL3 when three positional groups each have one dep.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the call mode is not CALL3.
+    """
+    root_id = "root"
+    dep_a_id = "dep-a"
+    dep_b_id = "dep-b"
+    dep_c_id = "dep-c"
+    occurrence_graph = {
+        (root_id, ()): {
+            "a": [(dep_a_id, ("a",))],
+            "b": [(dep_b_id, ("b",))],
+            "c": [(dep_c_id, ("c",))],
+        },
+        (dep_a_id, ("a",)): {},
+        (dep_b_id, ("b",)): {},
+        (dep_c_id, ("c",)): {},
+    }
+    plan = OccurrencePlan(
+        root_spell_id=root_id,
+        occurrence_graph=occurrence_graph,
+        execution_order=[dep_a_id, dep_b_id, dep_c_id, root_id],
+        instance_keys_by_spell_id={
+            dep_a_id: [(dep_a_id, ("a",))],
+            dep_b_id: [(dep_b_id, ("b",))],
+            dep_c_id: [(dep_c_id, ("c",))],
+            root_id: [(root_id, None)],
+        },
+        canonical_occurrences_by_spell_id={
+            root_id: (root_id, ()),
+        },
+        root_instance_key=(root_id, None),
+        shared_spell_ids={root_id},
+        contract_overrides_by_occurrence={
+            (root_id, ()): {},
+            (dep_a_id, ("a",)): {},
+            (dep_b_id, ("b",)): {},
+            (dep_c_id, ("c",)): {},
+        },
+        contract_overrides_by_spell_id={},
+        contract_dependencies_complete=True,
+    )
+    root_spell = _make_spell(spell_id=root_id, existence=Existence.unique)
+    root_spell.requirements = SimpleNamespace(
+        parameters=[
+            _make_requirement_param("a"),
+            _make_requirement_param("b"),
+            _make_requirement_param("c"),
+        ]
+    )
+    dep_a_spell = _make_spell(spell_id=dep_a_id, existence=Existence.many)
+    dep_b_spell = _make_spell(spell_id=dep_b_id, existence=Existence.many)
+    dep_c_spell = _make_spell(spell_id=dep_c_id, existence=Existence.many)
+    injection_plan = InjectionPlanBuilder(occurrence_plan=plan).build()
+    execution_plan = ExecutionPlanBuilder(
+        occurrence_plan=plan,
+        injection_plan=injection_plan,
+        spell_lookup={
+            root_id: root_spell,
+            dep_a_id: dep_a_spell,
+            dep_b_id: dep_b_spell,
+            dep_c_id: dep_c_spell,
+        },
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
+    ).build()
+
+    fast_plan = execution_plan.fast_plan
+    assert fast_plan is not None
+    root_step_index = fast_plan[19]
+    fast_call_modes = fast_plan[20]
+    assert fast_call_modes[root_step_index] == ExecutionPlanCallMode.CALL3
 
 
 def test_execution_plan_builder_requires_occurrence_plan() -> None:

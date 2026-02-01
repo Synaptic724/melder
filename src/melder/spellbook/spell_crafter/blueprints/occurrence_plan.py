@@ -1571,6 +1571,7 @@ class OccurrencePlanBuilder(object):
         Contract:
             - dict payloads are stored verbatim (no copy).
             - list/tuple payloads become {"__args__": payload}.
+            - None payloads produce an empty override map.
 
         Args:
             payload: Raw spell_override payload from the SpellContract.
@@ -1585,6 +1586,8 @@ class OccurrencePlanBuilder(object):
             MeldExecutionError: If the payload is not a dict, list, or tuple, or
                 if __args__ is not a list/tuple when provided.
         """
+        if payload is None:
+            return {}
         if isinstance(payload, dict):
             return payload
         if isinstance(payload, (list, tuple)):

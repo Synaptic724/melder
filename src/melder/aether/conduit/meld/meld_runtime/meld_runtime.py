@@ -180,7 +180,7 @@ class MeldRuntime:
         # Apply mutation overrides (graph-level) and spell overrides (value-level)
         # if we have a deep blueprint. Fallback to simple overrides otherwise.
         execution_blueprint = root_blueprint
-        override_map = {}
+        override_map: Optional[Dict[SocketRef, Any]] = None
         if root_blueprint is not None and has_overrides_or_mutations:
             try:
                 if has_mutation_overrides:
@@ -216,7 +216,7 @@ class MeldRuntime:
             execution_plan_to_run = execution_plan_no_overrides
 
         # Per-execution ResolutionFrame seeded with per-call overrides.
-        frame_overrides = {}
+        frame_overrides: Optional[Dict[str, Any]] = None
         if override_payload or override_map:
             frame_overrides = self._build_frame_overrides(
                 context_overrides=override_payload,
@@ -311,7 +311,7 @@ class MeldRuntime:
             execution_plan_overrides: Optional[ExecutionPlan],
             execution_plan_overrides_with_mutations: Optional[ExecutionPlan],
             override_payload: Optional[Dict[str, Any]],
-            override_map: Dict[SocketRef, Any],
+            override_map: Optional[Dict[SocketRef, Any]],
             mutation_override_payload: Optional[Dict[str, Any]],
     ) -> tuple[Optional[ExecutionPlan], Optional[str]]:
         """
@@ -337,7 +337,7 @@ class MeldRuntime:
 
     @staticmethod
     def _collect_override_targets(
-            override_map: Dict[SocketRef, Any],
+            override_map: Optional[Dict[SocketRef, Any]],
     ) -> Dict[str, list[SocketRef]]:
         """
         Group override targets by spell id for fast-path validation.
@@ -346,8 +346,10 @@ class MeldRuntime:
             - Keys are spell version ids.
             - Values are the SocketRef entries targeted by overrides.
         """
+        if not override_map:
+            return {}
         targets: Dict[str, list[SocketRef]] = {}
-        for socket_ref in (override_map or {}):
+        for socket_ref in override_map:
             targets.setdefault(socket_ref.node_id, []).append(socket_ref)
         return targets
 
@@ -355,7 +357,7 @@ class MeldRuntime:
     def _detect_any_overrides(
             *,
             override_payload: Optional[Dict[str, Any]],
-            override_map: Dict[SocketRef, Any],
+            override_map: Optional[Dict[SocketRef, Any]],
             contract_overrides_by_spell_id: Dict[str, Any],
     ) -> bool:
         """

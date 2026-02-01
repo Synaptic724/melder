@@ -128,6 +128,8 @@ class SpellContract(Cleanable):
                 `SpellContract` itself does *not* interpret this payload; it is
                 carried forward so that the linker / resolution engine can attach
                 it to the eventual provider spell.
+
+                When None, no override payload is attached.
         """
         if spell is None and spellframe is None:
             raise ValueError(
@@ -143,9 +145,8 @@ class SpellContract(Cleanable):
             if binding_name is not None
             else None
         )
-        # Keep a concrete container so we can distinguish “no override” vs
-        # “empty override” at higher layers if needed.
-        self.spell_override = spell_override if spell_override is not None else {}
+        # Preserve the caller payload; None means no override is attached.
+        self.spell_override = spell_override
 
 
     def cleanup(self) -> None:

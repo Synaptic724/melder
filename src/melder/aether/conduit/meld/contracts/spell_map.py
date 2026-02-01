@@ -137,6 +137,8 @@ class SpellMap(Cleanable):
                 Spell metadata (e.g. under `"spell_override"`) or feed it
                 directly into the constructor / callable.
 
+                When None, no override payload is attached.
+
         Raises:
             ValueError:
                 If both `spell` and `spellframe` are None. At least one of them
@@ -155,9 +157,8 @@ class SpellMap(Cleanable):
             if binding_name is not None
             else None
         )
-        # Keep a concrete container for overrides; consumers can distinguish
-        # "no override" vs "empty override" based on how they interpret this.
-        self.spell_override = spell_override if spell_override is not None else {}
+        # Preserve the caller payload; None means no override is attached.
+        self.spell_override = spell_override
 
     def cleanup(self) -> None:
         """

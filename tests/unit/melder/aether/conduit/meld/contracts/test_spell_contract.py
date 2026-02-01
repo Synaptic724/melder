@@ -90,22 +90,20 @@ def test_init_normalizes_binding_name_when_provided() -> None:
     assert contract.binding_name == "primary"
 
 
-def test_default_override_is_distinct_dict() -> None:
+def test_default_override_is_none() -> None:
     """
-    Verify default overrides are independent per instance.
+    Verify default overrides are None per instance.
 
     Contract:
-        - spell_override defaults to an empty dict.
-        - Each instance receives a distinct dict.
+        - spell_override defaults to None.
 
     Raises:
-        AssertionError: If defaults are shared across instances.
+        AssertionError: If defaults are not None.
     """
     first = SpellContract(spell="alpha")
     second = SpellContract(spell="beta")
-    assert first.spell_override == {}
-    assert second.spell_override == {}
-    assert first.spell_override is not second.spell_override
+    assert first.spell_override is None
+    assert second.spell_override is None
 
 
 def test_spell_override_dict_is_preserved() -> None:
