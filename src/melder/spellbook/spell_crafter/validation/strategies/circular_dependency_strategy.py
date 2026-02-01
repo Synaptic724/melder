@@ -25,23 +25,6 @@ class CircularDependencyStrategy(SpellValidationStrategy):
         )
 
     def validate(self, context: SpellValidationContext) -> None:
-        """
-        Validate that the spell dependency graph has no reachable cycles.
-
-        Purpose:
-            Detect circular dependencies starting from the current spell.
-        Contract:
-            - Uses shared adjacency when available.
-            - Falls back to building adjacency from the spellbook.
-            - Emits one error issue when a cycle is detected.
-        Args:
-            context: SpellValidationContext for the spell under validation.
-        Returns:
-            None.
-        Raises:
-            OperationCancelledError:
-                If cancel_event is set during scanning or traversal.
-        """
         self.check_cleaned()
 
         cancel_event = context.cancel_event
@@ -53,18 +36,14 @@ class CircularDependencyStrategy(SpellValidationStrategy):
             # Without a Spellbook, we cannot reason about global cycles.
             return
 
-        adjacency: Dict[str, List[str]]
-        if context.shared_view is not None and context.shared_view.adjacency is not None:
-            adjacency = context.shared_view.adjacency
-        else:
-            # Build adjacency: version_id -> [dependency_ids...]
-            adjacency = {}
-            for spell_id, spell in spellbook._spell_id_pool.items():
-                if cancel_event is not None and cancel_event.is_set:
-                    cancel_event.throw_if_set()
+        # Build adjacency: version_id -> [dependency_ids...]
+        adjacency: Dict[str, List[str]] = {}
+        for spell_id, spell in spellbook._spell_id_pool.items():
+            if cancel_event is not None and cancel_event.is_set:
+                cancel_event.throw_if_set()
 
-                deps: List[str] = spell.dependencies
-                adjacency[spell_id] = list(deps) if deps else []
+            deps: List[str] = spell.dependencies
+            adjacency[spell_id] = list(deps) if deps else []
 
         root_id = context.spell.spell_index.current
 

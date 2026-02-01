@@ -78,46 +78,38 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             binding_name=spell.binding_name,
         )
 
-        if (
-                context.shared_view is not None
-                and context.shared_view.binding_graph is not None
-                and context.shared_view.binding_to_spells is not None
-        ):
-            binding_graph = context.shared_view.binding_graph
-            binding_to_spells = context.shared_view.binding_to_spells
-        else:
-            binding_graph = {}
-            binding_to_spells = {}
+        binding_graph: Dict[Tuple[str, str], Set[Tuple[str, str]]] = {}
+        binding_to_spells: Dict[Tuple[str, str], List[str]] = {}
 
-            for spell_id, spell_instance in spellbook._spell_id_pool.items():
-                if cancel_event is not None and cancel_event.is_set:
-                    cancel_event.throw_if_set()
+        for spell_id, spell_instance in spellbook._spell_id_pool.items():
+            if cancel_event is not None and cancel_event.is_set:
+                cancel_event.throw_if_set()
 
-                spell_key = SpellInputUtils.make_spell_key_from_parts(
-                    spellframe=spell_instance.spellframe,
-                    spell_name=spell_instance.spell_name,
-                    binding_name=spell_instance.binding_name,
-                )
-                binding_to_spells.setdefault(spell_key, []).append(spell_id)
-                binding_graph.setdefault(spell_key, set())
+            spell_key = SpellInputUtils.make_spell_key_from_parts(
+                spellframe=spell_instance.spellframe,
+                spell_name=spell_instance.spell_name,
+                binding_name=spell_instance.binding_name,
+            )
+            binding_to_spells.setdefault(spell_key, []).append(spell_id)
+            binding_graph.setdefault(spell_key, set())
 
-                crafter = spell_instance._crafter
-                if crafter is None or crafter.requirements is None:
+            crafter = spell_instance._crafter
+            if crafter is None or crafter.requirements is None:
+                continue
+
+            requirements = crafter.requirements
+            if requirements.cleaned:
+                continue
+            try:
+                parameters = requirements.parameters
+            except RuntimeError:
+                continue
+
+            for param in parameters:
+                target_key = self._binding_key_for_requirement(param)
+                if target_key is None:
                     continue
-
-                requirements = crafter.requirements
-                if requirements.cleaned:
-                    continue
-                try:
-                    parameters = requirements.parameters
-                except RuntimeError:
-                    continue
-
-                for param in parameters:
-                    target_key = self._binding_key_for_requirement(param)
-                    if target_key is None:
-                        continue
-                    binding_graph[spell_key].add(target_key)
+                binding_graph[spell_key].add(target_key)
 
         cycles = self._detect_cycles(root_key, binding_graph, cancel_event)
         if not cycles:

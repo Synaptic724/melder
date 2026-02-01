@@ -32,22 +32,6 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
         )
 
     def validate(self, context: "SpellValidationContext") -> None:
-        """
-        Validate that no other visible spells share the same spell_name.
-
-        Purpose:
-            Prevent ambiguous meld(spell_name=...) resolution paths.
-        Contract:
-            - Uses shared spell-name collisions when available.
-            - Falls back to scanning the spellbook.
-            - Emits an error issue when duplicates exist.
-        Args:
-            context: SpellValidationContext for the spell under validation.
-        Returns:
-            None.
-        Raises:
-            OperationCancelledError: If cancel_event is set during scanning.
-        """
         self.check_cleaned()
 
         cancel_event = context.cancel_event
@@ -66,23 +50,20 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
             # Nothing to check if this spell has no name.
             return
 
-        if context.shared_view is not None and context.shared_view.spells_by_name is not None:
-            collisions = context.shared_view.spells_by_name.get(spell_name, [])
-        else:
-            # Build a collision list for diagnostics.
-            collisions = []
-            for spell_id, other_spell in spellbook._spell_id_pool.items():
-                if other_spell.spell_name != spell_name:
-                    continue
-                index = other_spell.spell_index
-                collisions.append(
-                    {
-                        "spell_index_id": index.id,
-                        "spell_id": spell_id,
-                        "spellframe": other_spell.spellframe,
-                        "binding_name": other_spell.binding_name,
-                    }
-                )
+        # Build a collision list for diagnostics.
+        collisions: List[Dict[str, Any]] = []
+        for spell_id, other_spell in spellbook._spell_id_pool.items():
+            if other_spell.spell_name != spell_name:
+                continue
+            index = other_spell.spell_index
+            collisions.append(
+                {
+                    "spell_index_id": index.id,
+                    "spell_id": spell_id,
+                    "spellframe": other_spell.spellframe,
+                    "binding_name": other_spell.binding_name,
+                }
+            )
 
         # If this spell is the only one with that name, we're fine.
         if len(collisions) <= 1:

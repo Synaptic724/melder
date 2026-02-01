@@ -3338,14 +3338,6 @@ class Spellbook(Cleanable, ISpellbook):
             return results
         finally:
             try:
-                self._spell_validator.clear_shared_view()
-            except Exception:
-                self._logger.error(
-                    "SpellValidationSystem.clear_shared_view() raised during _run_structural_phases",
-                    "_run_structural_phases",
-                    exc_info=True,
-                )
-            try:
                 scheduler.cleanup()
             except Exception:
                 self._logger.error(
@@ -3359,10 +3351,6 @@ class Spellbook(Cleanable, ISpellbook):
         Internal
 
         Run Phases 1-4 for newly bound spells after conjure.
-
-        Note:
-            Phases 1-3 execute for all provided spells first so the shared
-            Phase 4 validation view reflects the complete dependency state.
 
         Args:
             spells: Newly bound spells that require structural phases.
@@ -3380,17 +3368,7 @@ class Spellbook(Cleanable, ISpellbook):
         cancel_event = cancel_signal.event
         try:
             for spell in spells:
-                spell.run_phase_requirements(cancel_event=cancel_event)
-                spell.run_phase_symbolic_graph(cancel_event=cancel_event)
-                spell.run_phase_local_frame(cancel_event=cancel_event)
-
-            self._spell_validator.prepare_shared_view(
-                spellbook=self,
-                cancel_event=cancel_event,
-            )
-
-            for spell in spells:
-                spell.run_phase_validation(cancel_event=cancel_event)
+                spell.run_structural_phases(cancel_event=cancel_event)
 
             broken_spells: list[ISpell] = []
             for spell in spells:
@@ -3428,14 +3406,6 @@ class Spellbook(Cleanable, ISpellbook):
             except Exception:
                 self._logger.error(
                     "CancellationEventSignal.cleanup() raised during post-conjure structural phases",
-                    "_run_post_conjure_structural_phases",
-                    exc_info=True,
-                )
-            try:
-                self._spell_validator.clear_shared_view()
-            except Exception:
-                self._logger.error(
-                    "SpellValidationSystem.clear_shared_view() raised during post-conjure structural phases",
                     "_run_post_conjure_structural_phases",
                     exc_info=True,
                 )
@@ -3583,10 +3553,6 @@ class Spellbook(Cleanable, ISpellbook):
         """
         self.check_cleaned()
         units: List[IUnitOfWork] = []
-        self._spell_validator.prepare_shared_view(
-            spellbook=self,
-            cancel_event=scheduler.cancel_event,
-        )
 
         for spell in self._spells.values():
             units.append(
