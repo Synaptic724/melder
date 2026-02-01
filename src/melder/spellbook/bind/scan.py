@@ -42,7 +42,7 @@ def _normalize_hooks(
     return tuple(hooks)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ScanBindMetadata:
     """
     Internal

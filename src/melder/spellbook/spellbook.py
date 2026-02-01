@@ -88,6 +88,35 @@ class Spellbook(Cleanable, ISpellbook):
         * If configuration is already shared via an Aether frame, it will be reused.
     """
     __melder_internal__ = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_active_change_request",
+        "_aetheric_frame",
+        "_bind",
+        "_binding_transaction_active",
+        "_block_all_spells",
+        "_conduit",
+        "_configuration",
+        "_configuration_locked",
+        "_conjured",
+        "_contracted_spells",
+        "_contracted_spells_by_id",
+        "_contracted_versions",
+        "_id",
+        "_lock",
+        "_logger",
+        "_lookup_contracted_spells",
+        "_lookup_spells",
+        "_pending_binding_frame_keys",
+        "_pending_structural_spells",
+        "_spell_id_pool",
+        "_spell_system_states",
+        "_spell_validator",
+        "_spell_versions",
+        "_spellbook_validation_required",
+        "_spells",
+        "_spells_by_id",
+        "_whitelist_all_spells",
+    ]
     _aether = Aether()
     def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None,
                  logger: Any | None = None):

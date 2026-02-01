@@ -24,6 +24,17 @@ class Configuration(Cleanable, IConfiguration):
     enforcing idempotent laws across the system. Thread-safe operations are ensured with RLock.
     """
     __melder_internal__ = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_id",
+        "_lock",
+        "_aether_frame",
+        "_frozen",
+        "_logger_factory",
+        "_properties",
+        "available_properties",
+        "_idempotent_keys",
+        "_hooks",
+    ]
     _ALLOWED_HOOKS = (
         # Meld pipeline hooks
         "on_meld_pre_resolve",

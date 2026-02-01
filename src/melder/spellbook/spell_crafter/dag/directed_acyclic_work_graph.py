@@ -30,6 +30,12 @@ class DirectedAcyclicWorkGraph(Cleanable):
     It is intentionally not a general-purpose runtime workflow engine.
     """
     __melder_internal__ = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_id",
+        "_lock",
+        "_nodes",
+        "_socket_kinds",
+    ]
     def __init__(self) -> None:
         super().__init__()
         self._id: str = IDBuilder.create_id()

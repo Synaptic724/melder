@@ -22,7 +22,7 @@ OccurrenceKey = Tuple[str, Tuple[str, ...]]
 InstanceKey = Tuple[str, Optional[Tuple[str, ...]]]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OccurrencePlanSelection:
     """
     Internal

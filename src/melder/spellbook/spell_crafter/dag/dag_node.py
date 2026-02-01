@@ -26,6 +26,15 @@ class DagNode(Cleanable):
         - The DAG object is responsible for computing a topological order.
     """
     __melder_internal__ = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_children_by_param",
+        "_dependencies",
+        "_dependents",
+        "_id",
+        "_incoming_params",
+        "_payload",
+        "_tasks",
+    ]
     def __init__(self, key: str, payload: Any | None = None) -> None:
         """
         Initializes a new DagNode.

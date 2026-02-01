@@ -35,7 +35,7 @@ class _Specificity(IntEnum):
     BROADCAST = 1
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class MutationEdgePatch:
     """
     Internal

@@ -5,6 +5,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 #region InspectorUtility
 class InspectorUtility:
     __melder_internal__ = _mrg.sentinel
+    __slots__ = ()
     @staticmethod
     def safe_repr(obj: Any, max_len: int = 120) -> str:
         """

@@ -684,6 +684,12 @@ class ExecutionPlanBuilder:
     Build a Phase 11 ExecutionPlan from Phase 8/9 artifacts.
     """
     __melder_internal__ = _mrg.sentinel
+    __slots__ = [
+        "_occurrence_plan",
+        "_injection_plan",
+        "_spell_lookup",
+        "_plan_variant",
+    ]
 
     def __init__(
             self,

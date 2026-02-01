@@ -30,6 +30,7 @@ class ClassInspector:
         TypeError: If cls is not a class object.
     """
     __melder_internal__ = _mrg.sentinel
+    __slots__ = ("cls", "dunders", "max_repr", "data")
     utility = InspectorUtility
     def __init__(
             self,

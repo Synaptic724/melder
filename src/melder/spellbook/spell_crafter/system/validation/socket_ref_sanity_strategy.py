@@ -25,6 +25,7 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
       * Every socket_ref is reachable via dag_index by path and by name.
       * Every dag_index entry corresponds to a socket_ref present on the blueprint.
     """
+    __slots__ = ()
     def run(
             self,
             *,

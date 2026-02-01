@@ -36,6 +36,10 @@ class Bind(Cleanable, IBind):
         and its metadata for resolution and dependency injection.
     """
     __melder_internal__ = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_spellbook",
+    ]
     def __init__(self, spellbook: ISpellbook):
         super().__init__()
         self._spellbook: ISpellbook = spellbook

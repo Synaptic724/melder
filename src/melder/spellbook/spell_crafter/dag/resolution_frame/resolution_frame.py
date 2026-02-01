@@ -25,6 +25,12 @@ class ResolutionFrame(Cleanable):
     keyed by ids/names decided by SpellCrafter/DAG builder.
     """
     __melder_internal__ = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_errors",
+        "_id",
+        "_overrides",
+        "_results",
+    ]
     def __init__(self, overrides: Optional[Dict[str, Any]] = None) -> None:
         super().__init__()
         self._id: str = IDBuilder.create_id()

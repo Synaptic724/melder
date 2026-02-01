@@ -20,7 +20,7 @@ class TargetSpecKind(Enum):
     BROADCAST = auto()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class TargetSpec:
     """
     Internal

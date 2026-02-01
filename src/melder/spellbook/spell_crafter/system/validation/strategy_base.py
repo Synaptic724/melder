@@ -20,6 +20,7 @@ class SpellSystemValidationStrategy(ABC):
     """
 
     __melder_internal__ = _mrg.sentinel
+    __slots__ = ()
 
     @abstractmethod
     def run(

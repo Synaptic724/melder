@@ -280,6 +280,7 @@ class DagIndexBuilder:
     deep param paths (``\"orchestrator>order_service>repo\"`` style).
     """
     __melder_internal__ = _mrg.sentinel
+    __slots__ = ()
     @staticmethod
     def build_shallow(
             owner_spell_id: str,
