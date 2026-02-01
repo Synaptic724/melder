@@ -895,8 +895,38 @@ class OccurrencePlanBuilder(object):
                 SpellContract defaults.
         """
         contracts: List[Tuple[str, SpellContract]] = []
-        if spell.requirements is not None:
-            for param in spell.requirements.parameters:
+        requirements = None
+        try:
+            requirements = spell.requirements
+        except AttributeError:
+            requirements = None
+
+        is_existing_creation = False
+        try:
+            is_existing_creation = spell.is_existing_creation
+        except AttributeError:
+            is_existing_creation = False
+
+        if is_existing_creation:
+            call_target = spell.spell
+            signature = inspect.signature(call_target)
+            for param_name, parameter in signature.parameters.items():
+                if param_name in ("self", "cls"):
+                    continue
+                if parameter.kind in (
+                        inspect.Parameter.VAR_POSITIONAL,
+                        inspect.Parameter.VAR_KEYWORD,
+                ):
+                    continue
+                if parameter.default is inspect.Parameter.empty:
+                    continue
+                default_value = parameter.default
+                if isinstance(default_value, SpellContract):
+                    contracts.append((param_name, default_value))
+            return contracts
+
+        if requirements is not None:
+            for param in requirements.parameters:
                 if param.di_shape is ParameterDIShape.SPELL_CONTRACT:
                     default_value = param.default_value
                     if isinstance(default_value, SpellContract):

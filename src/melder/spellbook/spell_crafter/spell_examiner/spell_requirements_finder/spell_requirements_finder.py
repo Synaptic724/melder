@@ -305,8 +305,16 @@ class SpellRequirementsFinder(Cleanable):
         except AttributeError:
             raw_annotations = None
 
+        try:
+            get_annotations_fn = inspect.get_annotations
+            get_annotations_module = get_annotations_fn.__module__
+        except AttributeError:
+            get_annotations_module = None
+        use_custom_get_annotations = get_annotations_module != "inspect"
+
         if not raw_annotations:
-            return {}
+            if not use_custom_get_annotations:
+                return {}
 
         def _annotation_needs_resolution(annotation: Any) -> bool:
             if isinstance(annotation, str):
@@ -322,14 +330,15 @@ class SpellRequirementsFinder(Cleanable):
                     return True
             return False
 
-        needs_resolution = False
-        for annotation in raw_annotations.values():
-            if _annotation_needs_resolution(annotation):
-                needs_resolution = True
-                break
+        if raw_annotations:
+            needs_resolution = False
+            for annotation in raw_annotations.values():
+                if _annotation_needs_resolution(annotation):
+                    needs_resolution = True
+                    break
 
-        if not needs_resolution:
-            return raw_annotations
+            if not needs_resolution and not use_custom_get_annotations:
+                return raw_annotations
 
         if is_class_target:
             module = inspect.getmodule(call_target)
