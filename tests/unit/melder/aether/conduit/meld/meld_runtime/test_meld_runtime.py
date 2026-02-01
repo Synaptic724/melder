@@ -505,9 +505,9 @@ def test_execute_applies_patch_maps_for_overrides(monkeypatch: pytest.MonkeyPatc
         - Engine receives the execution blueprint and override_map.
     """
     runtime = MeldRuntime()
-    root_blueprint = object()
-    mutated_blueprint = object()
     path_registry = PathRegistry()
+    root_blueprint = SimpleNamespace(path_registry=path_registry)
+    mutated_blueprint = SimpleNamespace(path_registry=path_registry)
     override_map = {
         _make_socket_ref(
             node_id="spell-1",
@@ -560,7 +560,7 @@ def test_execute_wraps_override_application_error(monkeypatch: pytest.MonkeyPatc
         - failures applying overrides raise MeldExecutionError with inner.
     """
     runtime = MeldRuntime()
-    root_blueprint = object()
+    root_blueprint = SimpleNamespace(path_registry=PathRegistry())
     override_patch_map = MagicMock()
     override_patch_map.apply.side_effect = RuntimeError("override failure")
     mutation_patch_map = MagicMock()
@@ -616,13 +616,15 @@ def test_build_frame_overrides_merges_context_and_override_map() -> None:
     args = [1, 2]
     context_overrides = {"__args__": args, "x": "context"}
     root_id = "spell-1"
+    path_registry = PathRegistry()
     override_map = {
-        _make_socket_ref(root_id, "x", ("x",)): "override",
+        _make_socket_ref(root_id, "x", ("x",), path_registry=path_registry): "override",
     }
     merged = runtime._build_frame_overrides(
         context_overrides=context_overrides,
         override_map=override_map,
         root_spell_id=root_id,
+        path_registry=path_registry,
     )
     assert merged["__args__"] == [1, 2]
     assert merged["__args__"] is not args
@@ -638,13 +640,15 @@ def test_build_frame_overrides_ignores_non_dict_context_overrides() -> None:
     """
     runtime = MeldRuntime()
     root_id = "spell-1"
+    path_registry = PathRegistry()
     override_map = {
-        _make_socket_ref(root_id, "x", ("x",)): "override",
+        _make_socket_ref(root_id, "x", ("x",), path_registry=path_registry): "override",
     }
     merged = runtime._build_frame_overrides(
         context_overrides=["not", "a", "dict"],
         override_map=override_map,
         root_spell_id=root_id,
+        path_registry=path_registry,
     )
     assert merged == {"x": "override"}
 
@@ -658,15 +662,17 @@ def test_build_frame_overrides_filters_non_root_or_deep_paths() -> None:
     """
     runtime = MeldRuntime()
     root_id = "spell-1"
+    path_registry = PathRegistry()
     override_map = {
-        _make_socket_ref(root_id, "x", ("x",)): "root",
-        _make_socket_ref(root_id, "y", ("root", "y")): "deep",
-        _make_socket_ref("other", "z", ("z",)): "other",
+        _make_socket_ref(root_id, "x", ("x",), path_registry=path_registry): "root",
+        _make_socket_ref(root_id, "y", ("root", "y"), path_registry=path_registry): "deep",
+        _make_socket_ref("other", "z", ("z",), path_registry=path_registry): "other",
     }
     merged = runtime._build_frame_overrides(
         context_overrides={},
         override_map=override_map,
         root_spell_id=root_id,
+        path_registry=path_registry,
     )
     assert merged == {"x": "root"}
 
@@ -894,13 +900,15 @@ def test_build_frame_overrides_ignores_non_root_override_map_entries() -> None:
     """
     runtime = MeldRuntime()
     root_id = "spell-1"
+    path_registry = PathRegistry()
     override_map = {
-        _make_socket_ref("other", "x", ("x",)): "ignored",
+        _make_socket_ref("other", "x", ("x",), path_registry=path_registry): "ignored",
     }
     merged = runtime._build_frame_overrides(
         context_overrides={},
         override_map=override_map,
         root_spell_id=root_id,
+        path_registry=path_registry,
     )
     assert merged == {}
 
@@ -917,6 +925,7 @@ def test_build_frame_overrides_empty_inputs_return_empty() -> None:
         context_overrides=None,
         override_map={},
         root_spell_id="spell-1",
+        path_registry=PathRegistry(),
     )
     assert merged == {}
 
@@ -975,8 +984,9 @@ def test_execute_blueprint_ignores_non_dict_overrides(monkeypatch: pytest.Monkey
         - Execution proceeds using the override_map produced by OverridePatchMap.
     """
     runtime = MeldRuntime()
-    root_blueprint = object()
-    mutated_blueprint = object()
+    path_registry = PathRegistry()
+    root_blueprint = SimpleNamespace(path_registry=path_registry)
+    mutated_blueprint = SimpleNamespace(path_registry=path_registry)
     override_patch_map = MagicMock()
     mutation_patch_map = MagicMock()
     occurrence_plan = MagicMock()
@@ -1013,4 +1023,5 @@ def test_build_frame_overrides_rejects_non_iterable_args() -> None:
             context_overrides={"__args__": 1},
             override_map={},
             root_spell_id="spell-1",
+            path_registry=PathRegistry(),
         )

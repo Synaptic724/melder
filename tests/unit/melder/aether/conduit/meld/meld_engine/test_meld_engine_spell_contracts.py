@@ -69,7 +69,7 @@ def test_iter_spell_contract_defaults_filters_non_contracts() -> None:
             self.marker = marker
 
     builder = object.__new__(OccurrencePlanBuilder)
-    spell = SimpleNamespace(spell=ContractHost)
+    spell = SimpleNamespace(spell=ContractHost, requirements=None)
     contracts = list(builder._iter_spell_contract_defaults(spell))
     assert len(contracts) == 1
     assert contracts[0][0] == "service"

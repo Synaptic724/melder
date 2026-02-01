@@ -42,7 +42,7 @@ def test_build_kwargs_from_injection_spec_single_dependency() -> None:
     )
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results=instance_results,
         override_values={},
@@ -64,7 +64,7 @@ def test_build_kwargs_from_injection_spec_multiple_dependencies() -> None:
     )
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results=instance_results,
         override_values={},
@@ -86,7 +86,7 @@ def test_build_kwargs_from_injection_spec_missing_dependency_raises() -> None:
     with pytest.raises(KeyError):
         build_kwargs_from_injection_spec(
             instance_key=("root", None),
-            occurrence=("root", ()),
+            occurrence=("root", 0),
             injection_spec=spec,
             instance_results={},
             override_values={},
@@ -106,7 +106,7 @@ def test_build_kwargs_from_injection_spec_override_wins() -> None:
     )
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results=instance_results,
         override_values={"dep": "override"},
@@ -129,7 +129,7 @@ def test_build_kwargs_from_injection_spec_contract_payload_applied() -> None:
     )
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results=instance_results,
         override_values={},
@@ -152,7 +152,7 @@ def test_build_kwargs_from_injection_spec_contract_payload_skips_overrides() -> 
     )
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results=instance_results,
         override_values={"dep": "override"},
@@ -176,7 +176,7 @@ def test_build_kwargs_from_injection_spec_positional_override() -> None:
     )
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results=instance_results,
         override_values={},
@@ -200,7 +200,7 @@ def test_build_kwargs_from_injection_spec_retains_args_when_disabled() -> None:
     )
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results=instance_results,
         override_values={},
@@ -223,7 +223,7 @@ def test_build_kwargs_from_injection_spec_override_keeps_contract_payload() -> N
     )
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results=instance_results,
         override_values={"dep": "override"},
@@ -242,7 +242,7 @@ def test_build_kwargs_from_injection_spec_includes_unmatched_override_values() -
     spec = _make_spec(param_sources={})
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results={},
         override_values={"extra": "override"},
@@ -261,7 +261,7 @@ def test_build_kwargs_from_injection_spec_empty_when_no_inputs() -> None:
     spec = _make_spec(param_sources={})
     kwargs = build_kwargs_from_injection_spec(
         instance_key=("root", None),
-        occurrence=("root", ()),
+        occurrence=("root", 0),
         injection_spec=spec,
         instance_results={},
         override_values={},

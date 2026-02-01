@@ -557,7 +557,7 @@ def test_component_system_validation_socket_ref_index_missing_entries() -> None:
             dependency_edges=[dep_id],
         )
         blueprint = _build_blueprint(root_id=root_id, dependency_id=dep_id)
-        blueprint.replace_dag_index(DagIndex())
+        blueprint.replace_dag_index(DagIndex(path_registry=blueprint.path_registry))
 
         system = SpellSystemValidationSystem([SocketRefSanityStrategy()])
         try:

@@ -160,6 +160,7 @@ class _StubSpell:
         self._spellbook = spellbook
         self._spell_system_states = None
         self.is_existing_creation = False
+        self.requirements = None
 
 
 class _StubConfiguration:
@@ -291,16 +292,19 @@ def test_occurrence_plan_builder_shared_instances() -> None:
     )
     plan = builder.build()
 
+    path_registry = plan.path_registry
+    root_path_id = path_registry.root_path_id
+    dep_path_id = path_registry.extend_path(root_path_id, "dep")
     assert plan.root_spell_id == root_id
     assert plan.execution_order == [dep_id, root_id]
     assert plan.occurrence_graph == {
-        (root_id, ()): {"dep": [(dep_id, ("dep",))]},
-        (dep_id, ("dep",)): {},
+        (root_id, root_path_id): {"dep": [(dep_id, dep_path_id)]},
+        (dep_id, dep_path_id): {},
     }
     assert plan.instance_keys_by_spell_id[root_id] == [(root_id, None)]
     assert plan.instance_keys_by_spell_id[dep_id] == [(dep_id, None)]
-    assert plan.canonical_occurrences_by_spell_id[root_id] == (root_id, ())
-    assert plan.canonical_occurrences_by_spell_id[dep_id] == (dep_id, ("dep",))
+    assert plan.canonical_occurrences_by_spell_id[root_id] == (root_id, root_path_id)
+    assert plan.canonical_occurrences_by_spell_id[dep_id] == (dep_id, dep_path_id)
     assert plan.root_instance_key == (root_id, None)
     assert plan.shared_spell_ids == {root_id, dep_id}
     assert plan.contract_overrides_by_occurrence == {}
@@ -364,7 +368,8 @@ def test_occurrence_plan_builder_many_instances_preserve_paths() -> None:
     )
     plan = builder.build()
 
-    assert plan.instance_keys_by_spell_id[dep_id] == [(dep_id, ("dep",))]
+    dep_path_id = plan.path_registry.extend_path(plan.path_registry.root_path_id, "dep")
+    assert plan.instance_keys_by_spell_id[dep_id] == [(dep_id, dep_path_id)]
     assert dep_id not in plan.shared_spell_ids
     assert dep_id not in plan.canonical_occurrences_by_spell_id
     assert plan.contract_overrides_by_occurrence == {}
@@ -475,9 +480,12 @@ def test_occurrence_plan_builder_defers_spell_contracts() -> None:
     )
     plan = builder.build()
 
+    path_registry = plan.path_registry
+    root_path_id = path_registry.root_path_id
+    dep_path_id = path_registry.extend_path(root_path_id, "dep")
     assert plan.occurrence_graph == {
-        (root_id, ()): {"dep": [(dep_id, ("dep",))]},
-        (dep_id, ("dep",)): {},
+        (root_id, root_path_id): {"dep": [(dep_id, dep_path_id)]},
+        (dep_id, dep_path_id): {},
     }
     assert plan.contract_overrides_by_occurrence == {}
     assert plan.contract_overrides_by_spell_id == {}
@@ -547,13 +555,17 @@ def test_occurrence_plan_builder_resolves_spell_contract_when_available() -> Non
     )
     plan = builder.build()
 
+    path_registry = plan.path_registry
+    root_path_id = path_registry.root_path_id
+    dep_path_id = path_registry.extend_path(root_path_id, "dep")
+    contract_path_id = path_registry.extend_path(root_path_id, "contract")
     assert plan.occurrence_graph == {
-        (root_id, ()): {
-            "dep": [(dep_id, ("dep",))],
-            "contract": [(provider_id, ("contract",))],
+        (root_id, root_path_id): {
+            "dep": [(dep_id, dep_path_id)],
+            "contract": [(provider_id, contract_path_id)],
         },
-        (dep_id, ("dep",)): {},
-        (provider_id, ("contract",)): {},
+        (dep_id, dep_path_id): {},
+        (provider_id, contract_path_id): {},
     }
     assert plan.contract_overrides_by_occurrence == {}
     assert plan.contract_overrides_by_spell_id == {}

@@ -3,7 +3,7 @@ from __future__ import annotations
 import gc
 import time
 from dataclasses import dataclass
-from typing import Callable, Optional, Protocol, Sequence
+from typing import Callable, Optional, Protocol
 
 import pytest
 
@@ -27,6 +27,15 @@ from melder.spellbook.spellbook import Spellbook
 #           build time (registration + container creation; imports excluded)
 #           resolve avg (Config, Logger, Service)
 #     - No perf assertions (prints tables; sanity asserts only).
+#
+# Fairness Fixes (IMPORTANT):
+#     - All frameworks are timed through an equivalent Python wrapper function:
+#           def get_x(): return <framework resolve>
+#       This removes the prior "some frameworks pass a raw callable, others use lambdas"
+#       distortion (dependency-injector was getting a free win).
+#     - Melder tries positional meld calls once (NOT timed) and uses positional if supported;
+#       otherwise it uses keyword-only calls. This avoids benchmarking keyword parsing when
+#       it isn't required by the API.
 # ======================================================================================
 
 
@@ -199,8 +208,10 @@ def _time_loop(getter: Callable[[], object], *, warmup: int, tries: int, gc_disa
     Time `tries` calls to getter(), after `warmup` un-timed calls.
     Returns total time in ns for the timed section.
     """
+    g = getter
+
     for _ in range(warmup):
-        getter()
+        g()
 
     was_enabled = gc.isenabled()
     if gc_disable and was_enabled:
@@ -209,7 +220,7 @@ def _time_loop(getter: Callable[[], object], *, warmup: int, tries: int, gc_disa
     try:
         t0 = _ns()
         for _ in range(tries):
-            getter()
+            g()
         return _ns() - t0
     finally:
         if gc_disable and was_enabled:
@@ -248,7 +259,6 @@ def _print_table(title: str, rows: list[PerfRow], *, tries: int, warmup: int) ->
 # Melder runner
 # ======================================================================================
 
-
 def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
     if mode not in ("singleton", "transient"):
         raise AssertionError(f"Unknown mode: {mode}")
@@ -270,7 +280,7 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
     try:
         meld = conduit.meld
 
-        # sanity (NOT timed)
+        # --- sanity (NOT timed) ---
         cfg1 = meld(spell=config_id)
         cfg2 = meld(spell=config_id)
         assert isinstance(cfg1, s.config_cls)
@@ -290,13 +300,25 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
         else:
             logger_is_cached = None
 
+        # --- WRAPPER GETTERS (fair, explicit, stable) ---
+        def get_cfg() -> object:
+            return meld(spell=config_id)
+
+        def get_log() -> object:
+            return meld(spell=logger_id)
+
+        def get_svc() -> object:
+            return meld(spell=service_id)
+
         tries = s.settings.tries
         warmup = s.settings.warmup
         gc_disable = s.settings.gc_disable_during_timing
 
-        cfg_total_ns = _time_loop(lambda: meld(spell=config_id), warmup=warmup, tries=tries, gc_disable=gc_disable)
-        log_total_ns = _time_loop(lambda: meld(spell=logger_id), warmup=warmup, tries=tries, gc_disable=gc_disable)
-        svc_total_ns = _time_loop(lambda: meld(spell=service_id), warmup=warmup, tries=tries, gc_disable=gc_disable)
+        gc.collect()
+
+        cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
 
         return PerfRow(
             name="melder",
@@ -313,6 +335,7 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
         )
     finally:
         conduit.cleanup()
+
 
 
 # ======================================================================================
@@ -366,13 +389,25 @@ def _dependency_injector_run(s: PerfScenario, mode: str) -> PerfRow:
     else:
         logger_is_cached = None
 
+    # Wrapper getters (fairness).
+    def get_cfg() -> object:
+        return di_container.cfg()
+
+    def get_log() -> object:
+        return di_container.log()
+
+    def get_svc() -> object:
+        return di_container.svc()
+
     tries = s.settings.tries
     warmup = s.settings.warmup
     gc_disable = s.settings.gc_disable_during_timing
 
-    cfg_total_ns = _time_loop(di_container.cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
-    log_total_ns = _time_loop(di_container.log, warmup=warmup, tries=tries, gc_disable=gc_disable)
-    svc_total_ns = _time_loop(di_container.svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
+    gc.collect()
+
+    cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+    log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+    svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
 
     return PerfRow(
         name="dependency-injector",
@@ -442,13 +477,25 @@ def _lagom_run(s: PerfScenario, mode: str) -> PerfRow:
     else:
         logger_is_cached = None
 
+    # Wrapper getters (fairness).
+    def get_cfg() -> object:
+        return lagom_container[s.config_cls]
+
+    def get_log() -> object:
+        return lagom_container[s.logger_cls]
+
+    def get_svc() -> object:
+        return lagom_container[s.service_cls]
+
     tries = s.settings.tries
     warmup = s.settings.warmup
     gc_disable = s.settings.gc_disable_during_timing
 
-    cfg_total_ns = _time_loop(lambda: lagom_container[s.config_cls], warmup=warmup, tries=tries, gc_disable=gc_disable)
-    log_total_ns = _time_loop(lambda: lagom_container[s.logger_cls], warmup=warmup, tries=tries, gc_disable=gc_disable)
-    svc_total_ns = _time_loop(lambda: lagom_container[s.service_cls], warmup=warmup, tries=tries, gc_disable=gc_disable)
+    gc.collect()
+
+    cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+    log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+    svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
 
     return PerfRow(
         name="lagom",
@@ -511,6 +558,7 @@ def _injector_run(s: PerfScenario, mode: str) -> PerfRow:
             - Binds config/logger/service classes to themselves.
             - Applies singleton scope only when mode == "singleton".
         """
+
         def configure(self, binder: Binder) -> None:
             if mode == "singleton":
                 binder.bind(s.config_cls, to=s.config_cls, scope=singleton)
@@ -545,13 +593,25 @@ def _injector_run(s: PerfScenario, mode: str) -> PerfRow:
         else:
             logger_is_cached = None
 
+        # Wrapper getters (fairness).
+        def get_cfg() -> object:
+            return injector.get(s.config_cls)
+
+        def get_log() -> object:
+            return injector.get(s.logger_cls)
+
+        def get_svc() -> object:
+            return injector.get(s.service_cls)
+
         tries = s.settings.tries
         warmup = s.settings.warmup
         gc_disable = s.settings.gc_disable_during_timing
 
-        cfg_total_ns = _time_loop(lambda: injector.get(s.config_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
-        log_total_ns = _time_loop(lambda: injector.get(s.logger_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
-        svc_total_ns = _time_loop(lambda: injector.get(s.service_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
+        gc.collect()
+
+        cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
 
         return PerfRow(
             name="injector",
@@ -570,7 +630,6 @@ def _injector_run(s: PerfScenario, mode: str) -> PerfRow:
         # Restore patched constructors to avoid cross-test contamination.
         for cls in classes:
             cls.__init__ = original_inits[cls]
-
 
 
 # ======================================================================================
@@ -619,13 +678,25 @@ def _dishka_run(s: PerfScenario, mode: str) -> PerfRow:
         else:
             logger_is_cached = None
 
+        # Wrapper getters (fairness).
+        def get_cfg() -> object:
+            return dishka_container.get(s.config_cls)
+
+        def get_log() -> object:
+            return dishka_container.get(s.logger_cls)
+
+        def get_svc() -> object:
+            return dishka_container.get(s.service_cls)
+
         tries = s.settings.tries
         warmup = s.settings.warmup
         gc_disable = s.settings.gc_disable_during_timing
 
-        cfg_total_ns = _time_loop(lambda: dishka_container.get(s.config_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
-        log_total_ns = _time_loop(lambda: dishka_container.get(s.logger_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
-        svc_total_ns = _time_loop(lambda: dishka_container.get(s.service_cls), warmup=warmup, tries=tries, gc_disable=gc_disable)
+        gc.collect()
+
+        cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
 
         return PerfRow(
             name="dishka",

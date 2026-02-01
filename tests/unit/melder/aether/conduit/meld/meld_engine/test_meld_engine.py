@@ -31,7 +31,7 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
     OccurrencePlanBuilder,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -222,6 +222,7 @@ def _make_socket_ref(
     Args:
         node_id: Spell id for the node.
         param_name: Parameter name to override.
+        path_registry: PathRegistry that owns the generated path id.
 
     Returns:
         SocketRef: Targeting reference for overrides.
@@ -250,6 +251,7 @@ def _make_socket_ref_with_path(
         node_id: Spell id that owns the socket.
         param_name: Parameter name for the socket.
         param_path: Full parameter path from the root.
+        path_registry: PathRegistry that owns the generated path id.
         socket_kind: SocketKind classification for the socket.
 
     Returns:
@@ -278,6 +280,7 @@ def _make_mutation_socket_ref(
         node_id: Spell id that owns the socket.
         param_name: Parameter name for the socket.
         param_path: Full parameter path from the root.
+        path_registry: PathRegistry that owns the generated path id.
 
     Returns:
         SocketRef: MutationContract socket reference.
@@ -307,6 +310,7 @@ def _make_blueprint_with_sockets(
         dag: DAG used by the blueprint.
         ordered_node_ids: Topological node ordering.
         sockets: SocketRef entries to attach and index.
+        path_registry: PathRegistry to use for the blueprint DagIndex.
 
     Returns:
         RootResolutionBlueprint: Blueprint with sockets indexed.
@@ -337,6 +341,7 @@ def _make_engine_with_sockets(
         root_id: Root spell id for the blueprint and engine.
         ordered_node_ids: Execution order for the blueprint.
         sockets: Socket refs to attach to the blueprint index.
+        path_registry: PathRegistry to use for the blueprint DagIndex.
         spell_lookup: Optional extra spell lookup entries.
 
     Returns:
@@ -353,6 +358,7 @@ def _make_engine_with_sockets(
         dag=dag,
         ordered_node_ids=ordered_node_ids,
         sockets=sockets,
+        path_registry=path_registry,
     )
     root_spell = _make_spell(spell_id=root_id, existence=Existence.many)
     lookup = {root_id: root_spell}
@@ -382,6 +388,7 @@ def _make_builder_with_sockets(
         root_id: Root spell id for the blueprint and builder.
         ordered_node_ids: Execution order for the blueprint.
         sockets: Socket refs to attach to the blueprint index.
+        path_registry: PathRegistry to use for the blueprint DagIndex.
         spell_lookup: Optional spell lookup entries to use as-is.
         system_states: Optional system states for topology lookup.
 
@@ -2227,11 +2234,16 @@ def test_injection_plan_uses_canonical_occurrence_for_shared() -> None:
     Contract:
         - Shared spell dependency keys are derived from canonical occurrences.
     """
+    path_registry = PathRegistry()
+    root_path_id = path_registry.root_path_id
+    dep_path_id = _path_id(path_registry, ("dep",))
+    alt_path_id = _path_id(path_registry, ("alt",))
+    alt_dep_path_id = _path_id(path_registry, ("alt", "dep"))
     occurrence_graph = {
-        ("child", ()): {"dep": [("parent", ("dep",))]},
-        ("child", ("alt",)): {"dep": [("parent", ("alt", "dep"))]},
-        ("parent", ("dep",)): {},
-        ("parent", ("alt", "dep")): {},
+        ("child", root_path_id): {"dep": [("parent", dep_path_id)]},
+        ("child", alt_path_id): {"dep": [("parent", alt_dep_path_id)]},
+        ("parent", dep_path_id): {},
+        ("parent", alt_dep_path_id): {},
     }
     plan = OccurrencePlan(
         root_spell_id="child",
@@ -2239,18 +2251,19 @@ def test_injection_plan_uses_canonical_occurrence_for_shared() -> None:
         execution_order=["parent", "child"],
         instance_keys_by_spell_id={
             "child": [("child", None)],
-            "parent": [("parent", ("dep",)), ("parent", ("alt", "dep"))],
+            "parent": [("parent", dep_path_id), ("parent", alt_dep_path_id)],
         },
-        canonical_occurrences_by_spell_id={"child": ("child", ())},
+        canonical_occurrences_by_spell_id={"child": ("child", root_path_id)},
         root_instance_key=("child", None),
         shared_spell_ids={"child"},
         contract_overrides_by_occurrence={key: {} for key in occurrence_graph},
         contract_overrides_by_spell_id={},
         contract_dependencies_complete=True,
+        path_registry=path_registry,
     )
     injection_plan = InjectionPlanBuilder(occurrence_plan=plan).build()
     spec = injection_plan.instance_injections[("child", None)]
-    assert spec.param_sources["dep"].dependency_keys == [("parent", ("dep",))]
+    assert spec.param_sources["dep"].dependency_keys == [("parent", dep_path_id)]
 
 
 def test_register_spell_unknown_creations_is_noop() -> None:
@@ -2566,6 +2579,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_noop_on_empty_order() -> Non
     root_id = root_spell.spell_index.current
     dag = _make_dag_with_nodes([root_id])
     blueprint = _make_blueprint(root_id, dag, [root_id])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -2584,8 +2599,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_noop_on_empty_order() -> Non
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    assert set(occurrence_graph.keys()) == {(root_id, ())}
-    assert occurrence_graph[(root_id, ())] == {}
+    assert set(occurrence_graph.keys()) == {(root_id, root_path_id)}
+    assert occurrence_graph[(root_id, root_path_id)] == {}
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_noop_on_none_dag() -> None:
@@ -2605,6 +2620,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_noop_on_none_dag() -> None:
     root_spell = spell_lookup[root_id]
     dag = _make_dag_with_nodes([root_id])
     blueprint = _make_blueprint(root_id, dag, [root_id])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -2624,8 +2641,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_noop_on_none_dag() -> None:
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    assert set(occurrence_graph.keys()) == {(root_id, ()), ("orphan", ())}
-    assert occurrence_graph[("orphan", ())] == {}
+    assert set(occurrence_graph.keys()) == {(root_id, root_path_id), ("orphan", root_path_id)}
+    assert occurrence_graph[("orphan", root_path_id)] == {}
 
 
 @pytest.mark.parametrize("orphan_id", ("orphan-a", "orphan-b", "orphan-c"))
@@ -2648,6 +2665,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_nodes(
     root_spell = spell_lookup[root_id]
     dag = _make_dag_with_nodes([root_id, orphan_id])
     blueprint = _make_blueprint(root_id, dag, [root_id, orphan_id])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -2667,8 +2686,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_nodes(
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    assert (orphan_id, ()) in occurrence_graph
-    assert occurrence_graph[(orphan_id, ())] == {}
+    assert (orphan_id, root_path_id) in occurrence_graph
+    assert occurrence_graph[(orphan_id, root_path_id)] == {}
 
 
 @pytest.mark.parametrize(
@@ -2701,6 +2720,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_dependencies(
     for parent_id in parent_ids:
         dag.add_dependency(parent_id, "orphan", param_name=param_name)
     blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -2720,9 +2741,10 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_orphan_dependencies(
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    deps = occurrence_graph[("orphan", ())][param_name]
+    deps = occurrence_graph[("orphan", root_path_id)][param_name]
     assert sorted(occurrence[0] for occurrence in deps) == sorted(parent_ids)
-    assert all(occurrence[1] == (param_name,) for occurrence in deps)
+    param_path_id = _path_id(path_registry, (param_name,))
+    assert all(occurrence[1] == param_path_id for occurrence in deps)
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_adds_nested_orphan_dependencies() -> None:
@@ -2744,6 +2766,10 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_nested_orphan_dependenc
     dag.add_dependency("mid", "orphan", param_name="mid")
     dag.add_dependency("leaf", "mid", param_name="leaf")
     blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
+    mid_path_id = _path_id(path_registry, ("mid",))
+    leaf_path_id = _path_id(path_registry, ("mid", "leaf"))
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -2763,10 +2789,10 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_nested_orphan_dependenc
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    assert ("mid", ("mid",)) in occurrence_graph
-    assert ("leaf", ("mid", "leaf")) in occurrence_graph
-    assert occurrence_graph[("orphan", ())]["mid"] == [("mid", ("mid",))]
-    assert occurrence_graph[("mid", ("mid",))]["leaf"] == [("leaf", ("mid", "leaf"))]
+    assert ("mid", mid_path_id) in occurrence_graph
+    assert ("leaf", leaf_path_id) in occurrence_graph
+    assert occurrence_graph[("orphan", root_path_id)]["mid"] == [("mid", mid_path_id)]
+    assert occurrence_graph[("mid", mid_path_id)]["leaf"] == [("leaf", leaf_path_id)]
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_uses_topology_for_orphan_dependencies() -> None:
@@ -2788,6 +2814,9 @@ def test_extend_occurrence_graph_with_ordered_nodes_uses_topology_for_orphan_dep
     root_spell = spell_lookup[root_id]
     dag = _make_dag_with_nodes(node_ids)
     blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
+    dep_path_id = _path_id(path_registry, ("dep",))
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -2808,8 +2837,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_uses_topology_for_orphan_dep
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    assert occurrence_graph[("orphan", ())]["dep"] == [("parent", ("dep",))]
-    assert ("parent", ("dep",)) in occurrence_graph
+    assert occurrence_graph[("orphan", root_path_id)]["dep"] == [("parent", dep_path_id)]
+    assert ("parent", dep_path_id) in occurrence_graph
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_skips_existing_occurrence() -> None:
@@ -2830,6 +2859,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_skips_existing_occurrence() 
     dag = DirectedAcyclicWorkGraph()
     dag.add_dependency("child", root_id, param_name="dep")
     blueprint = _make_blueprint(root_id, dag, [root_id, "child"])
+    path_registry = blueprint.path_registry
+    dep_path_id = _path_id(path_registry, ("dep",))
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -2850,7 +2881,7 @@ def test_extend_occurrence_graph_with_ordered_nodes_skips_existing_occurrence() 
     )
 
     occurrences = {occurrence for occurrence in occurrence_graph if occurrence[0] == "child"}
-    assert occurrences == {("child", ("dep",))}
+    assert occurrences == {("child", dep_path_id)}
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_preserves_existing_dependencies() -> None:
@@ -2872,6 +2903,9 @@ def test_extend_occurrence_graph_with_ordered_nodes_preserves_existing_dependenc
     dag.add_dependency("child", root_id, param_name="dep")
     dag.add_node("orphan")
     blueprint = _make_blueprint(root_id, dag, [root_id, "child", "orphan"])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
+    dep_path_id = _path_id(path_registry, ("dep",))
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -2891,7 +2925,7 @@ def test_extend_occurrence_graph_with_ordered_nodes_preserves_existing_dependenc
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    assert occurrence_graph[(root_id, ())] == {"dep": [("child", ("dep",))]}
+    assert occurrence_graph[(root_id, root_path_id)] == {"dep": [("child", dep_path_id)]}
 
 
 def test_run_blueprint_executes_ordered_nodes() -> None:
@@ -2958,29 +2992,33 @@ def test_execution_plan_uses_occurrence_plan_order() -> None:
     """
     root_id = "root"
     dep_id = "dep"
+    path_registry = PathRegistry()
+    root_path_id = path_registry.root_path_id
+    dep_path_id = _path_id(path_registry, ("dep",))
     occurrence_graph = {
-        (root_id, ()): {"dep": [(dep_id, ("dep",))]},
-        (dep_id, ("dep",)): {},
+        (root_id, root_path_id): {"dep": [(dep_id, dep_path_id)]},
+        (dep_id, dep_path_id): {},
     }
     plan = OccurrencePlan(
         root_spell_id=root_id,
         occurrence_graph=occurrence_graph,
         execution_order=[dep_id, root_id],
         instance_keys_by_spell_id={
-            dep_id: [(dep_id, ("dep",))],
+            dep_id: [(dep_id, dep_path_id)],
             root_id: [(root_id, None)],
         },
         canonical_occurrences_by_spell_id={
-            root_id: (root_id, ()),
+            root_id: (root_id, root_path_id),
         },
         root_instance_key=(root_id, None),
         shared_spell_ids={root_id},
         contract_overrides_by_occurrence={
-            (root_id, ()): {},
-            (dep_id, ("dep",)): {},
+            (root_id, root_path_id): {},
+            (dep_id, dep_path_id): {},
         },
         contract_overrides_by_spell_id={},
         contract_dependencies_complete=True,
+        path_registry=path_registry,
     )
     dag = _make_dag_with_nodes([root_id, dep_id])
     blueprint = _make_blueprint(
@@ -3019,35 +3057,40 @@ def test_execution_plan_fast_plan_marks_call2_for_two_single_deps() -> None:
     root_id = "root"
     left_id = "left"
     right_id = "right"
+    path_registry = PathRegistry()
+    root_path_id = path_registry.root_path_id
+    left_path_id = _path_id(path_registry, ("left",))
+    right_path_id = _path_id(path_registry, ("right",))
     occurrence_graph = {
-        (root_id, ()): {
-            "left": [(left_id, ("left",))],
-            "right": [(right_id, ("right",))],
+        (root_id, root_path_id): {
+            "left": [(left_id, left_path_id)],
+            "right": [(right_id, right_path_id)],
         },
-        (left_id, ("left",)): {},
-        (right_id, ("right",)): {},
+        (left_id, left_path_id): {},
+        (right_id, right_path_id): {},
     }
     plan = OccurrencePlan(
         root_spell_id=root_id,
         occurrence_graph=occurrence_graph,
         execution_order=[left_id, right_id, root_id],
         instance_keys_by_spell_id={
-            left_id: [(left_id, ("left",))],
-            right_id: [(right_id, ("right",))],
+            left_id: [(left_id, left_path_id)],
+            right_id: [(right_id, right_path_id)],
             root_id: [(root_id, None)],
         },
         canonical_occurrences_by_spell_id={
-            root_id: (root_id, ()),
+            root_id: (root_id, root_path_id),
         },
         root_instance_key=(root_id, None),
         shared_spell_ids={root_id},
         contract_overrides_by_occurrence={
-            (root_id, ()): {},
-            (left_id, ("left",)): {},
-            (right_id, ("right",)): {},
+            (root_id, root_path_id): {},
+            (left_id, left_path_id): {},
+            (right_id, right_path_id): {},
         },
         contract_overrides_by_spell_id={},
         contract_dependencies_complete=True,
+        path_registry=path_registry,
     )
     root_spell = _make_spell(spell_id=root_id, existence=Existence.unique)
     root_spell.requirements = SimpleNamespace(
@@ -3092,39 +3135,45 @@ def test_execution_plan_fast_plan_marks_call3_for_three_single_deps() -> None:
     dep_a_id = "dep-a"
     dep_b_id = "dep-b"
     dep_c_id = "dep-c"
+    path_registry = PathRegistry()
+    root_path_id = path_registry.root_path_id
+    dep_a_path_id = _path_id(path_registry, ("a",))
+    dep_b_path_id = _path_id(path_registry, ("b",))
+    dep_c_path_id = _path_id(path_registry, ("c",))
     occurrence_graph = {
-        (root_id, ()): {
-            "a": [(dep_a_id, ("a",))],
-            "b": [(dep_b_id, ("b",))],
-            "c": [(dep_c_id, ("c",))],
+        (root_id, root_path_id): {
+            "a": [(dep_a_id, dep_a_path_id)],
+            "b": [(dep_b_id, dep_b_path_id)],
+            "c": [(dep_c_id, dep_c_path_id)],
         },
-        (dep_a_id, ("a",)): {},
-        (dep_b_id, ("b",)): {},
-        (dep_c_id, ("c",)): {},
+        (dep_a_id, dep_a_path_id): {},
+        (dep_b_id, dep_b_path_id): {},
+        (dep_c_id, dep_c_path_id): {},
     }
     plan = OccurrencePlan(
         root_spell_id=root_id,
         occurrence_graph=occurrence_graph,
         execution_order=[dep_a_id, dep_b_id, dep_c_id, root_id],
         instance_keys_by_spell_id={
-            dep_a_id: [(dep_a_id, ("a",))],
-            dep_b_id: [(dep_b_id, ("b",))],
-            dep_c_id: [(dep_c_id, ("c",))],
+            dep_a_id: [(dep_a_id, dep_a_path_id)],
+            dep_b_id: [(dep_b_id, dep_b_path_id)],
+            dep_c_id: [(dep_c_id, dep_c_path_id)],
             root_id: [(root_id, None)],
         },
         canonical_occurrences_by_spell_id={
-            root_id: (root_id, ()),
+            root_id: (root_id, root_path_id),
         },
         root_instance_key=(root_id, None),
         shared_spell_ids={root_id},
         contract_overrides_by_occurrence={
-            (root_id, ()): {},
-            (dep_a_id, ("a",)): {},
-            (dep_b_id, ("b",)): {},
-            (dep_c_id, ("c",)): {},
+            (root_id, root_path_id): {},
+            (dep_a_id, dep_a_path_id): {},
+            (dep_b_id, dep_b_path_id): {},
+            (dep_c_id, dep_c_path_id): {},
         },
         contract_overrides_by_spell_id={},
         contract_dependencies_complete=True,
+        path_registry=path_registry,
     )
     root_spell = _make_spell(spell_id=root_id, existence=Existence.unique)
     root_spell.requirements = SimpleNamespace(
@@ -3831,12 +3880,14 @@ def test_apply_mutation_overrides_ignores_nonmatching_path(
     Raises:
         AssertionError: If non-matching paths are rewritten.
     """
+    path_registry = PathRegistry()
     node_id = "node-1"
     param_name = param_path[-1]
     socket = _make_mutation_socket_ref(
         node_id=node_id,
         param_name=param_name,
         param_path=param_path,
+        path_registry=path_registry,
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = {">".join(param_path): "override-id"}
@@ -3845,17 +3896,20 @@ def test_apply_mutation_overrides_ignores_nonmatching_path(
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
         spell_lookup={node_id: spell},
+        path_registry=path_registry,
     )
 
+    parent_path_id = _path_id(path_registry, occurrence_path)
+    child_path_id = _path_id(path_registry, occurrence_path + (param_name,))
     dependencies = {
-        param_name: [("orig-id", occurrence_path + (param_name,))],
+        param_name: [("orig-id", child_path_id)],
     }
     builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
-        occurrence=(node_id, occurrence_path),
+        occurrence=(node_id, parent_path_id),
     )
 
-    assert dependencies[param_name] == [("orig-id", occurrence_path + (param_name,))]
+    assert dependencies[param_name] == [("orig-id", child_path_id)]
 
 
 def test_apply_mutation_overrides_ignores_other_node_id() -> None:
@@ -3869,10 +3923,12 @@ def test_apply_mutation_overrides_ignores_other_node_id() -> None:
     Raises:
         AssertionError: If overrides apply to other nodes.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="other-node",
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     spell = _make_spell(spell_id="node-1", existence=Existence.many)
     spell.mutation_override = {"mutant": "override-id"}
@@ -3881,15 +3937,17 @@ def test_apply_mutation_overrides_ignores_other_node_id() -> None:
         ordered_node_ids=("root", "node-1"),
         sockets=(socket,),
         spell_lookup={"node-1": spell},
+        path_registry=path_registry,
     )
 
-    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    mutant_path_id = _path_id(path_registry, ("mutant",))
+    dependencies = {"mutant": [("orig-id", mutant_path_id)]}
     builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
-        occurrence=("node-1", ()),
+        occurrence=("node-1", path_registry.root_path_id),
     )
 
-    assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+    assert dependencies["mutant"] == [("orig-id", mutant_path_id)]
 
 
 def test_apply_mutation_overrides_updates_multiple_params() -> None:
@@ -3903,17 +3961,20 @@ def test_apply_mutation_overrides_updates_multiple_params() -> None:
     Raises:
         AssertionError: If not all params are updated.
     """
+    path_registry = PathRegistry()
     node_id = "node-1"
     sockets = (
         _make_mutation_socket_ref(
             node_id=node_id,
             param_name="left",
             param_path=("left",),
+            path_registry=path_registry,
         ),
         _make_mutation_socket_ref(
             node_id=node_id,
             param_name="right",
             param_path=("right",),
+            path_registry=path_registry,
         ),
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
@@ -3926,19 +3987,22 @@ def test_apply_mutation_overrides_updates_multiple_params() -> None:
         ordered_node_ids=("root", node_id),
         sockets=sockets,
         spell_lookup={node_id: spell},
+        path_registry=path_registry,
     )
 
+    left_path_id = _path_id(path_registry, ("left",))
+    right_path_id = _path_id(path_registry, ("right",))
     dependencies = {
-        "left": [("orig-left", ("left",))],
-        "right": [("orig-right", ("right",))],
+        "left": [("orig-left", left_path_id)],
+        "right": [("orig-right", right_path_id)],
     }
     builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
-        occurrence=(node_id, ()),
+        occurrence=(node_id, path_registry.root_path_id),
     )
 
-    assert dependencies["left"] == [("left-id", ("left",))]
-    assert dependencies["right"] == [("right-id", ("right",))]
+    assert dependencies["left"] == [("left-id", left_path_id)]
+    assert dependencies["right"] == [("right-id", right_path_id)]
 
 
 def test_apply_mutation_overrides_replaces_multiple_existing_occurrences() -> None:
@@ -3952,11 +4016,13 @@ def test_apply_mutation_overrides_replaces_multiple_existing_occurrences() -> No
     Raises:
         AssertionError: If extra occurrences remain.
     """
+    path_registry = PathRegistry()
     node_id = "node-1"
     socket = _make_mutation_socket_ref(
         node_id=node_id,
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = {"mutant": "override-id"}
@@ -3965,20 +4031,22 @@ def test_apply_mutation_overrides_replaces_multiple_existing_occurrences() -> No
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
         spell_lookup={node_id: spell},
+        path_registry=path_registry,
     )
 
+    mutant_path_id = _path_id(path_registry, ("mutant",))
     dependencies = {
         "mutant": [
-            ("orig-a", ("mutant",)),
-            ("orig-b", ("mutant",)),
+            ("orig-a", mutant_path_id),
+            ("orig-b", mutant_path_id),
         ],
     }
     builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
-        occurrence=(node_id, ()),
+        occurrence=(node_id, path_registry.root_path_id),
     )
 
-    assert dependencies["mutant"] == [("override-id", ("mutant",))]
+    assert dependencies["mutant"] == [("override-id", mutant_path_id)]
 
 
 def test_apply_mutation_overrides_requires_blueprint() -> None:
@@ -3986,22 +4054,16 @@ def test_apply_mutation_overrides_requires_blueprint() -> None:
     Verify mutation overrides require a blueprint with socket indexing.
 
     Contract:
-        - Missing blueprint raises AttributeError during override resolution.
+        - Missing blueprint raises AttributeError during initialization.
     """
     root_spell = _make_spell(spell_id="root", existence=Existence.many)
     root_spell.mutation_override = {"mutant": "override-id"}
-    builder = OccurrencePlanBuilder(
-        root_spell=root_spell,
-        blueprint=None,
-        spell_lookup={root_spell.spell_index.current: root_spell},
-        system_states=_SystemStatesStub({}),
-    )
-    dependencies = {"mutant": [("orig-id", ("mutant",))]}
-
     with pytest.raises(AttributeError):
-        builder._apply_mutation_overrides_to_dependencies(
-            dependencies=dependencies,
-            occurrence=(root_spell.spell_index.current, ()),
+        OccurrencePlanBuilder(
+            root_spell=root_spell,
+            blueprint=None,
+            spell_lookup={root_spell.spell_index.current: root_spell},
+            system_states=_SystemStatesStub({}),
         )
 
 
@@ -4016,11 +4078,13 @@ def test_apply_mutation_overrides_skips_when_mutation_override_missing() -> None
     Raises:
         AssertionError: If dependencies change without overrides.
     """
+    path_registry = PathRegistry()
     node_id = "node-1"
     socket = _make_mutation_socket_ref(
         node_id=node_id,
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     builder, _, _, _ = _make_builder_with_sockets(
@@ -4028,15 +4092,17 @@ def test_apply_mutation_overrides_skips_when_mutation_override_missing() -> None
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
         spell_lookup={node_id: spell},
+        path_registry=path_registry,
     )
 
-    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    mutant_path_id = _path_id(path_registry, ("mutant",))
+    dependencies = {"mutant": [("orig-id", mutant_path_id)]}
     builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
-        occurrence=(node_id, ()),
+        occurrence=(node_id, path_registry.root_path_id),
     )
 
-    assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+    assert dependencies["mutant"] == [("orig-id", mutant_path_id)]
 
 
 def test_apply_mutation_overrides_requires_spell_lookup_entry() -> None:
@@ -4047,23 +4113,27 @@ def test_apply_mutation_overrides_requires_spell_lookup_entry() -> None:
         - Missing spell lookup entries raise KeyError.
     """
     root_id = "root"
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id=root_id,
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     builder, _, _, _ = _make_builder_with_sockets(
         root_id=root_id,
         ordered_node_ids=(root_id,),
         sockets=(socket,),
         spell_lookup={},
+        path_registry=path_registry,
     )
 
-    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    mutant_path_id = _path_id(path_registry, ("mutant",))
+    dependencies = {"mutant": [("orig-id", mutant_path_id)]}
     with pytest.raises(KeyError):
         builder._apply_mutation_overrides_to_dependencies(
             dependencies=dependencies,
-            occurrence=("missing", ()),
+            occurrence=("missing", path_registry.root_path_id),
         )
 
 
@@ -4078,11 +4148,13 @@ def test_apply_mutation_overrides_rejects_non_dict_override() -> None:
     Raises:
         MeldExecutionError: If mutation_override is not a dict.
     """
+    path_registry = PathRegistry()
     node_id = "node-1"
     socket = _make_mutation_socket_ref(
         node_id=node_id,
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = ["mutant"]
@@ -4091,13 +4163,15 @@ def test_apply_mutation_overrides_rejects_non_dict_override() -> None:
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
         spell_lookup={node_id: spell},
+        path_registry=path_registry,
     )
 
-    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    mutant_path_id = _path_id(path_registry, ("mutant",))
+    dependencies = {"mutant": [("orig-id", mutant_path_id)]}
     with pytest.raises(MeldExecutionError, match="mutation_override must be a dict"):
         builder._apply_mutation_overrides_to_dependencies(
             dependencies=dependencies,
-            occurrence=(node_id, ()),
+            occurrence=(node_id, path_registry.root_path_id),
         )
 
 
@@ -4121,6 +4195,9 @@ def test_extend_occurrence_graph_with_ordered_nodes_merges_topology_and_dag_depe
     dag = _make_dag_with_nodes([root_id, "orphan", "parent-a", "parent-b"])
     dag.add_dependency("parent-b", "orphan", param_name="dep")
     blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
+    dep_path_id = _path_id(path_registry, ("dep",))
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -4141,8 +4218,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_merges_topology_and_dag_depe
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    deps = occurrence_graph[("orphan", ())]["dep"]
-    assert deps == [("parent-a", ("dep",))]
+    deps = occurrence_graph[("orphan", root_path_id)]["dep"]
+    assert deps == [("parent-a", dep_path_id)]
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_dedupes_topology_and_dag_duplicates() -> None:
@@ -4165,6 +4242,9 @@ def test_extend_occurrence_graph_with_ordered_nodes_dedupes_topology_and_dag_dup
     dag = _make_dag_with_nodes([root_id, "orphan", "parent-a"])
     dag.add_dependency("parent-a", "orphan", param_name="dep")
     blueprint = _make_blueprint(root_id, dag, [root_id, "orphan"])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
+    dep_path_id = _path_id(path_registry, ("dep",))
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -4185,8 +4265,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_dedupes_topology_and_dag_dup
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    deps = occurrence_graph[("orphan", ())]["dep"]
-    assert deps == [("parent-a", ("dep",))]
+    deps = occurrence_graph[("orphan", root_path_id)]["dep"]
+    assert deps == [("parent-a", dep_path_id)]
 
 
 def test_extend_occurrence_graph_with_ordered_nodes_adds_multiple_orphans() -> None:
@@ -4206,6 +4286,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_multiple_orphans() -> N
     root_id = root_spell.spell_index.current
     dag = _make_dag_with_nodes([root_id, "orphan-a", "orphan-b"])
     blueprint = _make_blueprint(root_id, dag, [root_id, "orphan-a", "orphan-b"])
+    path_registry = blueprint.path_registry
+    root_path_id = path_registry.root_path_id
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -4225,8 +4307,8 @@ def test_extend_occurrence_graph_with_ordered_nodes_adds_multiple_orphans() -> N
         collapse_shared_occurrences=collapse_shared_occurrences,
     )
 
-    assert ("orphan-a", ()) in occurrence_graph
-    assert ("orphan-b", ()) in occurrence_graph
+    assert ("orphan-a", root_path_id) in occurrence_graph
+    assert ("orphan-b", root_path_id) in occurrence_graph
 
 
 def test_run_blueprint_orphan_dependency_injected_from_topology() -> None:
@@ -4292,16 +4374,19 @@ def test_resolve_mutation_override_targets_unique_ignores_non_mutation_socket() 
     Raises:
         AssertionError: If non-mutation sockets influence the match count.
     """
+    path_registry = PathRegistry()
     sockets = (
         _make_mutation_socket_ref(
             node_id="node",
             param_name="mutant",
             param_path=("mutant",),
+            path_registry=path_registry,
         ),
         _make_socket_ref_with_path(
             node_id="node",
             param_name="mutant",
             param_path=("other", "mutant"),
+            path_registry=path_registry,
             socket_kind=SocketKind.NORMAL,
         ),
     )
@@ -4309,6 +4394,7 @@ def test_resolve_mutation_override_targets_unique_ignores_non_mutation_socket() 
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=sockets,
+        path_registry=path_registry,
     )
 
     resolved = builder._resolve_mutation_override_targets(
@@ -4333,22 +4419,26 @@ def test_resolve_mutation_override_targets_path_allows_multiple_matches() -> Non
     Raises:
         AssertionError: If multiple matches are not returned.
     """
+    path_registry = PathRegistry()
     sockets = (
         _make_mutation_socket_ref(
             node_id="node-a",
             param_name="mutant",
             param_path=("left", "mutant"),
+            path_registry=path_registry,
         ),
         _make_mutation_socket_ref(
             node_id="node-b",
             param_name="mutant",
             param_path=("left", "mutant"),
+            path_registry=path_registry,
         ),
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node-a", "node-b"),
         sockets=sockets,
+        path_registry=path_registry,
     )
 
     resolved = builder._resolve_mutation_override_targets(
@@ -4371,15 +4461,18 @@ def test_resolve_mutation_override_targets_path_trims_whitespace() -> None:
     Raises:
         AssertionError: If whitespace prevents path matching.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="node",
         param_name="mutant",
         param_path=("left", "mutant"),
+        path_registry=path_registry,
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
+        path_registry=path_registry,
     )
 
     resolved = builder._resolve_mutation_override_targets(
@@ -4388,7 +4481,7 @@ def test_resolve_mutation_override_targets_path_trims_whitespace() -> None:
     )
 
     assert len(resolved) == 1
-    assert resolved[0][0].param_path == ("left", "mutant")
+    assert path_registry.materialize_path(resolved[0][0].param_path_id) == ("left", "mutant")
 
 
 def test_apply_mutation_overrides_adds_dependency_when_missing() -> None:
@@ -4402,11 +4495,13 @@ def test_apply_mutation_overrides_adds_dependency_when_missing() -> None:
     Raises:
         AssertionError: If missing dependencies are not created.
     """
+    path_registry = PathRegistry()
     node_id = "node-1"
     socket = _make_mutation_socket_ref(
         node_id=node_id,
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = {"mutant": "override-id"}
@@ -4415,16 +4510,19 @@ def test_apply_mutation_overrides_adds_dependency_when_missing() -> None:
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
         spell_lookup={node_id: spell},
+        path_registry=path_registry,
     )
 
-    dependencies = {"other": [("other-id", ("other",))]}
+    mutant_path_id = _path_id(path_registry, ("mutant",))
+    other_path_id = _path_id(path_registry, ("other",))
+    dependencies = {"other": [("other-id", other_path_id)]}
     builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
-        occurrence=(node_id, ()),
+        occurrence=(node_id, path_registry.root_path_id),
     )
 
-    assert dependencies["mutant"] == [("override-id", ("mutant",))]
-    assert dependencies["other"] == [("other-id", ("other",))]
+    assert dependencies["mutant"] == [("override-id", mutant_path_id)]
+    assert dependencies["other"] == [("other-id", other_path_id)]
 
 
 def test_apply_mutation_overrides_skips_when_spell_missing_in_lookup() -> None:
@@ -4434,23 +4532,27 @@ def test_apply_mutation_overrides_skips_when_spell_missing_in_lookup() -> None:
     Contract:
         - Missing spell lookup entries raise KeyError.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="missing",
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "missing"),
         sockets=(socket,),
         spell_lookup={},
+        path_registry=path_registry,
     )
 
-    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    mutant_path_id = _path_id(path_registry, ("mutant",))
+    dependencies = {"mutant": [("orig-id", mutant_path_id)]}
     with pytest.raises(KeyError):
         builder._apply_mutation_overrides_to_dependencies(
             dependencies=dependencies,
-            occurrence=("missing", ()),
+            occurrence=("missing", path_registry.root_path_id),
         )
 
 
@@ -4465,11 +4567,13 @@ def test_apply_mutation_overrides_skips_when_override_dict_empty() -> None:
     Raises:
         AssertionError: If empty overrides change dependencies.
     """
+    path_registry = PathRegistry()
     node_id = "node-1"
     socket = _make_mutation_socket_ref(
         node_id=node_id,
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     spell.mutation_override = {}
@@ -4478,15 +4582,17 @@ def test_apply_mutation_overrides_skips_when_override_dict_empty() -> None:
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
         spell_lookup={node_id: spell},
+        path_registry=path_registry,
     )
 
-    dependencies = {"mutant": [("orig-id", ("mutant",))]}
+    mutant_path_id = _path_id(path_registry, ("mutant",))
+    dependencies = {"mutant": [("orig-id", mutant_path_id)]}
     builder._apply_mutation_overrides_to_dependencies(
         dependencies=dependencies,
-        occurrence=(node_id, ()),
+        occurrence=(node_id, path_registry.root_path_id),
     )
 
-    assert dependencies["mutant"] == [("orig-id", ("mutant",))]
+    assert dependencies["mutant"] == [("orig-id", mutant_path_id)]
 
 
 def test_build_execution_order_returns_fallback_for_empty_graph() -> None:
@@ -4518,9 +4624,12 @@ def test_build_execution_order_uses_fallback_on_cycle() -> None:
     Raises:
         AssertionError: If fallback ordering is not used on cycles.
     """
+    path_registry = PathRegistry()
+    root_path_id = path_registry.root_path_id
+    dep_path_id = _path_id(path_registry, ("dep",))
     occurrence_graph = {
-        ("a", ()): {"dep": [("b", ("dep",))]},
-        ("b", ()): {"dep": [("a", ("dep",))]},
+        ("a", root_path_id): {"dep": [("b", dep_path_id)]},
+        ("b", root_path_id): {"dep": [("a", dep_path_id)]},
     }
     order = OccurrencePlanBuilder._build_execution_order(
         occurrence_graph=occurrence_graph,
@@ -4578,7 +4687,13 @@ def test_collect_occurrence_dependencies_returns_empty_without_topology_and_dag(
     root_spell = _make_spell(spell_id="root")
     dag = None
     system_states = _SystemStatesStub({})
-    blueprint = _make_blueprint(root_spell.spell_index.current, _make_dag_with_nodes(["root"]), ["root"])
+    path_registry = PathRegistry()
+    blueprint = _make_blueprint(
+        root_spell.spell_index.current,
+        _make_dag_with_nodes(["root"]),
+        ["root"],
+        path_registry=path_registry,
+    )
     builder = _make_occurrence_builder(
         root_spell=root_spell,
         blueprint=blueprint,
@@ -4587,7 +4702,7 @@ def test_collect_occurrence_dependencies_returns_empty_without_topology_and_dag(
     )
 
     dependencies = builder._collect_occurrence_dependencies(
-        occurrence=(root_spell.spell_index.current, ()),
+        occurrence=(root_spell.spell_index.current, path_registry.root_path_id),
         dag=dag,
     )
 

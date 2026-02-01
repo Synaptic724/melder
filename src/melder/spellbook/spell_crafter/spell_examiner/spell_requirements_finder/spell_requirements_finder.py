@@ -68,6 +68,19 @@ class SpellRequirementsFinder(Cleanable):
         "_lock",
     ]
 
+    _TYPING_ALIASES: Dict[str, Any] = {
+        "Optional": typing.Optional,
+        "Union": typing.Union,
+        "List": typing.List,
+        "Dict": typing.Dict,
+        "Set": typing.Set,
+        "Tuple": typing.Tuple,
+        "FrozenSet": typing.FrozenSet,
+        "Iterable": typing.Iterable,
+        "Sequence": typing.Sequence,
+        "Mapping": typing.Mapping,
+    }
+
     def __init__(self, spell: ISpell) -> None:
         """
         Initialize a new requirements finder for the given :class:`Spell`.
@@ -354,8 +367,9 @@ class SpellRequirementsFinder(Cleanable):
         # Ensure the typing module is accessible for "typing.Any" style annotations.
         if "typing" not in globalns:
             globalns["typing"] = typing
-        for name, value in typing.__dict__.items():
-            globalns.setdefault(name, value)
+        for name, value in self._TYPING_ALIASES.items():
+            if name not in globalns:
+                globalns[name] = value
 
         try:
             annotations = inspect.get_annotations(

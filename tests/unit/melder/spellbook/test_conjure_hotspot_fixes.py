@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Set, Tuple
+from types import SimpleNamespace
 
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.blueprints.injection_plan import (
@@ -320,19 +321,21 @@ def test_occurrence_plan_topology_preferred_over_dag() -> None:
         spellbook,
         existence=Existence.unique,
     )
+    path_registry = PathRegistry()
 
     builder = OccurrencePlanBuilder(
         root_spell=root_spell,
-        blueprint=object(),
+        blueprint=SimpleNamespace(path_registry=path_registry),
         spell_lookup={"root": root_spell},
         system_states=system_states,
     )
     dependencies = builder._collect_occurrence_dependencies(
-        occurrence=("root", ()),
+        occurrence=("root", path_registry.root_path_id),
         dag=dag,
     )
 
-    assert dependencies == {"dep": [("topo_parent", ("dep",))]}
+    dep_path_id = _path_id(path_registry, ("dep",))
+    assert dependencies == {"dep": [("topo_parent", dep_path_id)]}
 
 
 def test_occurrence_plan_dag_fallback_when_topology_missing() -> None:
@@ -355,19 +358,21 @@ def test_occurrence_plan_dag_fallback_when_topology_missing() -> None:
         spellbook,
         existence=Existence.unique,
     )
+    path_registry = PathRegistry()
 
     builder = OccurrencePlanBuilder(
         root_spell=root_spell,
-        blueprint=object(),
+        blueprint=SimpleNamespace(path_registry=path_registry),
         spell_lookup={"root": root_spell},
         system_states=system_states,
     )
     dependencies = builder._collect_occurrence_dependencies(
-        occurrence=("root", ()),
+        occurrence=("root", path_registry.root_path_id),
         dag=dag,
     )
 
-    assert dependencies == {"dep": [("dag_parent", ("dep",))]}
+    dep_path_id = _path_id(path_registry, ("dep",))
+    assert dependencies == {"dep": [("dag_parent", dep_path_id)]}
 
 
 def test_occurrence_plan_collapses_shared_occurrences_without_mutation_overrides() -> None:
@@ -444,10 +449,11 @@ def test_occurrence_plan_collapses_shared_occurrences_without_mutation_overrides
         "right": _StubSpell("right", spellbook, existence=Existence.unique),
         "shared": _StubSpell("shared", spellbook, existence=Existence.unique),
     }
+    path_registry = PathRegistry()
 
     builder = OccurrencePlanBuilder(
         root_spell=spell_lookup["root"],
-        blueprint=object(),
+        blueprint=SimpleNamespace(path_registry=path_registry),
         spell_lookup=spell_lookup,
         system_states=system_states,
     )
@@ -460,8 +466,14 @@ def test_occurrence_plan_collapses_shared_occurrences_without_mutation_overrides
 
     shared_occurrences = [occ for occ in occurrence_graph if occ[0] == "shared"]
     assert len(shared_occurrences) == 1
-    assert occurrence_graph[("left", ("left",))]["dep"] == [("shared", ("left", "dep"))]
-    assert occurrence_graph[("right", ("right",))]["dep"] == [("shared", ("right", "dep"))]
+    left_path_id = _path_id(path_registry, ("left",))
+    left_dep_path_id = _path_id(path_registry, ("left", "dep"))
+    right_path_id = _path_id(path_registry, ("right",))
+    right_dep_path_id = _path_id(path_registry, ("right", "dep"))
+    assert occurrence_graph[("left", left_path_id)]["dep"] == [("shared", left_dep_path_id)]
+    assert occurrence_graph[("right", right_path_id)]["dep"] == [
+        ("shared", right_dep_path_id)
+    ]
 
 
 def test_occurrence_plan_shared_occurrences_not_collapsed_with_mutation_override() -> None:
@@ -544,10 +556,11 @@ def test_occurrence_plan_shared_occurrences_not_collapsed_with_mutation_override
             mutation_override={"*noop": "noop"},
         ),
     }
+    path_registry = PathRegistry()
 
     builder = OccurrencePlanBuilder(
         root_spell=spell_lookup["root"],
-        blueprint=object(),
+        blueprint=SimpleNamespace(path_registry=path_registry),
         spell_lookup=spell_lookup,
         system_states=system_states,
     )

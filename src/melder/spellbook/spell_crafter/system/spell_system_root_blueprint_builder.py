@@ -191,7 +191,9 @@ class SpellSystemRootBlueprintBuilder:
 
             reachable_ids.add(current_id)
 
-            direct_deps: Set[str] = dependencies.get(current_id, set())
+            direct_deps = dependencies.get(current_id)
+            if not direct_deps:
+                continue
             for dep_id in direct_deps:
                 if allowed_spell_ids is not None and dep_id not in allowed_spell_ids:
                     continue
@@ -213,7 +215,7 @@ class SpellSystemRootBlueprintBuilder:
             (
                 (provider_id, consumer_id, None, None)
                 for consumer_id in reachable_ids
-                for provider_id in dependencies.get(consumer_id, set())
+                for provider_id in (dependencies.get(consumer_id) or ())
                 if provider_id in reachable_ids
             )
         )
@@ -249,16 +251,10 @@ class SpellSystemRootBlueprintBuilder:
         root_key = (blueprint.root_spell_id, root_path_id)
         queue.append(root_key)
 
-        visited: Set[Tuple[str, int]] = set()
-        queued: Set[Tuple[str, int]] = {root_key}
+        visited: Set[Tuple[str, int]] = {root_key}
 
         while queue:
             node_id, path_id = queue.popleft()
-            key = (node_id, path_id)
-            queued.discard(key)
-            if key in visited:
-                continue
-            visited.add(key)
 
             topology = topologies.get(node_id)
             if topology is None:
@@ -280,6 +276,7 @@ class SpellSystemRootBlueprintBuilder:
 
                 for target_id in socket_desc.target_spell_ids:
                     target_key = (target_id, socket_path_id)
-                    if target_key not in visited and target_key not in queued:
-                        queued.add(target_key)
-                        queue.append(target_key)
+                    if target_key in visited:
+                        continue
+                    visited.add(target_key)
+                    queue.append(target_key)
