@@ -722,6 +722,32 @@ class ExecutionPlan(Cleanable):
             self._fast_call3_dep_indices_c,
         )
 
+    @property
+    def fast_transient_plan(
+            self,
+    ) -> Optional[
+        Tuple[
+            int,
+            int,
+            List[Any],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+        ]
+    ]:
+        """
+        Return a specialized transient-only plan for the no-overrides path.
+
+        Contract:
+            - Returns None when no transient-only plan is available.
+            - Only valid when all steps are Existence.many, callable, and require no registration.
+        """
+        return self._fast_transient_plan
+
 
 class ExecutionPlanBuilder:
     """
@@ -870,12 +896,30 @@ class ExecutionPlanBuilder:
                     spell_id_step_index[spell_id] = len(steps) - 1
 
         fast_plan_data = None
+        fast_transient_plan = None
         if self._plan_variant == ExecutionPlanVariant.NO_OVERRIDES_FAST:
             fast_plan_data = self._build_fast_plan_data(
                 steps=steps,
                 instance_key_to_step_index=instance_key_to_step_index,
                 root_instance_key=self._occurrence_plan.root_instance_key,
             )
+            if fast_plan_data is not None:
+                fast_transient_plan = self._build_fast_transient_plan(
+                    steps=steps,
+                    fast_call_targets=fast_plan_data[15],
+                    fast_existence=fast_plan_data[11],
+                    fast_must_register=fast_plan_data[12],
+                    fast_is_existing_creation=fast_plan_data[17],
+                    fast_is_callable=fast_plan_data[18],
+                    fast_call_modes=fast_plan_data[20],
+                    fast_single_dep_indices=fast_plan_data[21],
+                    fast_call2_dep_indices_a=fast_plan_data[22],
+                    fast_call2_dep_indices_b=fast_plan_data[23],
+                    fast_call3_dep_indices_a=fast_plan_data[24],
+                    fast_call3_dep_indices_b=fast_plan_data[25],
+                    fast_call3_dep_indices_c=fast_plan_data[26],
+                    root_step_index=fast_plan_data[19],
+                )
 
         return ExecutionPlan(
             root_spell_id=root_spell_id,

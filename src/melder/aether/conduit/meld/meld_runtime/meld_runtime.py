@@ -250,7 +250,11 @@ class MeldRuntime:
         result = None
         try:
             if has_overrides_or_mutations:
-                override_targets_by_spell_id = self._collect_override_targets(override_map)
+                override_targets_by_spell_id = (
+                    self._collect_override_targets(override_map)
+                    if override_map
+                    else {}
+                )
                 any_overrides_present = self._detect_any_overrides(
                     override_payload=override_payload,
                     override_map=override_map,
