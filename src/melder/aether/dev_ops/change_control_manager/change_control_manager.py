@@ -538,14 +538,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
                 The owning frame instance when available.
         """
         self.check_cleaned()
-        if self._spell_system_states is None:
-            return None
-        try:
-            if self._spell_system_states._frame is None:
-                return None
-            return self._spell_system_states._frame
-        except Exception:
-            return None
+        return self._spell_system_states._frame
 
     def _resolve_conduit_by_id(self, conduit_id: str) -> Optional[Any]:
         """
