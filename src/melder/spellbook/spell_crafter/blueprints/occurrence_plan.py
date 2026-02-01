@@ -10,6 +10,9 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
+from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+    ParameterDIShape,
+)
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
@@ -844,7 +847,7 @@ class OccurrencePlanBuilder(object):
         Contract:
             - Only parameters with SpellContract defaults are treated as
               contract sockets.
-            - Contract sockets are resolved without touching Phase 1 artifacts.
+            - Prefers Phase 1 requirements when available; falls back to signature inspection.
             - Missing contracts raise during plan build in automatic mode.
             - Missing contracts are ignored during plan build in dynamic mode.
 
@@ -882,6 +885,7 @@ class OccurrencePlanBuilder(object):
             - Only parameters with SpellContract defaults are returned.
             - Ignores "self"/"cls" and var-arg parameters.
             - Returns an empty iterable when the signature cannot be resolved.
+            - Prefers Phase 1 requirements when available; falls back to signature inspection.
 
         Args:
             spell: Spell whose constructor or callable signature is inspected.
@@ -890,10 +894,17 @@ class OccurrencePlanBuilder(object):
             Iterable[Tuple[str, SpellContract]]: Parameter names paired with
                 SpellContract defaults.
         """
+        contracts: List[Tuple[str, SpellContract]] = []
+        if spell.requirements is not None:
+            for param in spell.requirements.parameters:
+                if param.di_shape is ParameterDIShape.SPELL_CONTRACT:
+                    default_value = param.default_value
+                    if isinstance(default_value, SpellContract):
+                        contracts.append((param.name, default_value))
+            return contracts
+
         call_target = spell.spell
         signature = inspect.signature(call_target)
-
-        contracts: List[Tuple[str, SpellContract]] = []
         for param_name, parameter in signature.parameters.items():
             if param_name in ("self", "cls"):
                 continue

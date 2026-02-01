@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 from melder.spellbook.spell_crafter.dag.dag_node import DagNode
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 # Melder Imports
@@ -118,6 +118,23 @@ class DirectedAcyclicWorkGraph(Cleanable):
             self._nodes[key] = node
             return node
 
+    def add_nodes_bulk(self, keys: Iterable[str]) -> None:
+        """
+        Add multiple nodes under a single lock.
+
+        Contract:
+            - Skips existing nodes without mutating their payloads.
+            - Raises ValueError if any key is empty.
+        """
+        self.check_cleaned()
+        with self._lock:
+            for key in keys:
+                if not key:
+                    raise ValueError("Node key cannot be empty.")
+                if key in self._nodes:
+                    continue
+                self._nodes[key] = DagNode(key=key, payload=None)
+
     def get_node(self, key: str) -> Optional[DagNode]:
         """
         Retrieves a node by key, or None if not present.
@@ -167,6 +184,35 @@ class DirectedAcyclicWorkGraph(Cleanable):
 
             if socket_kind is not None:
                 self._socket_kinds[(parent, child)] = socket_kind
+
+    def add_dependencies_bulk(
+            self,
+            edges: Iterable[Tuple[str, str, Optional[str], Optional[SocketKind]]],
+    ) -> None:
+        """
+        Add multiple dependency edges under a single lock.
+
+        Contract:
+            - Each edge is (parent_key, child_key, param_name, socket_kind).
+            - Nodes are created on demand if missing.
+            - Raises ValueError if any key is empty.
+        """
+        self.check_cleaned()
+        with self._lock:
+            for parent_key, child_key, param_name, socket_kind in edges:
+                if not parent_key or not child_key:
+                    raise ValueError("Node key cannot be empty.")
+                parent = self._nodes.get(parent_key)
+                if parent is None:
+                    parent = DagNode(key=parent_key, payload=None)
+                    self._nodes[parent_key] = parent
+                child = self._nodes.get(child_key)
+                if child is None:
+                    child = DagNode(key=child_key, payload=None)
+                    self._nodes[child_key] = child
+                child.add_dependency(parent, param_name=param_name)
+                if socket_kind is not None:
+                    self._socket_kinds[(parent, child)] = socket_kind
 
     # --------------------------------------------------------------------- #
     # Topological Sorting

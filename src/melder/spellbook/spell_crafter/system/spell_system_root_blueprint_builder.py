@@ -202,25 +202,21 @@ class SpellSystemRootBlueprintBuilder:
         # 2. Build the DAG nodes (one per reachable version-id).
         # ------------------------------------------------------------------
         dag = DirectedAcyclicWorkGraph()
-
-        for spell_id in reachable_ids:
-            # Purely structural: payload is None. Payloads at this level
-            # would couple the blueprint too tightly to runtime objects.
-            dag.add_node(key=spell_id, payload=None)
+        # Purely structural: payload is None. Payloads at this level
+        # would couple the blueprint too tightly to runtime objects.
+        dag.add_nodes_bulk(reachable_ids)
 
         # ------------------------------------------------------------------
         # 3. Add provider -> dependent edges within the reachable subgraph.
         # ------------------------------------------------------------------
-        for consumer_id in reachable_ids:
-            direct_deps = dependencies.get(consumer_id, set())
-            for provider_id in direct_deps:
-                if provider_id in reachable_ids:
-                    dag.add_dependency(
-                        parent_key=provider_id,
-                        child_key=consumer_id,
-                        param_name=None,
-                        socket_kind=None,
-                    )
+        dag.add_dependencies_bulk(
+            (
+                (provider_id, consumer_id, None, None)
+                for consumer_id in reachable_ids
+                for provider_id in dependencies.get(consumer_id, set())
+                if provider_id in reachable_ids
+            )
+        )
 
         # ------------------------------------------------------------------
         # 4. Compute a stable topological ordering of node ids.

@@ -279,6 +279,8 @@ class SpellRequirementsFinder(Cleanable):
         it falls back to raw annotations and then normalizes any forward
         reference tokens or string expressions it can resolve from the
         available namespaces.
+        If no forward references or string annotations are present, this
+        returns the raw annotations without eval.
 
         Args:
             call_target:
@@ -292,13 +294,48 @@ class SpellRequirementsFinder(Cleanable):
         if call_target is None:
             return {}
 
-        if inspect.isclass(call_target):
+        is_class_target = inspect.isclass(call_target)
+        if is_class_target:
             annotation_target = getattr(call_target, "__init__", call_target)
+        else:
+            annotation_target = call_target
+
+        try:
+            raw_annotations = annotation_target.__annotations__
+        except AttributeError:
+            raw_annotations = None
+
+        if not raw_annotations:
+            return {}
+
+        def _annotation_needs_resolution(annotation: Any) -> bool:
+            if isinstance(annotation, str):
+                return True
+            if isinstance(annotation, typing.ForwardRef):
+                return True
+            origin = get_origin(annotation)
+            if origin is None:
+                return False
+            args = get_args(annotation)
+            for arg in args:
+                if _annotation_needs_resolution(arg):
+                    return True
+            return False
+
+        needs_resolution = False
+        for annotation in raw_annotations.values():
+            if _annotation_needs_resolution(annotation):
+                needs_resolution = True
+                break
+
+        if not needs_resolution:
+            return raw_annotations
+
+        if is_class_target:
             module = inspect.getmodule(call_target)
             globalns = dict(getattr(module, "__dict__", {}) if module else {})
             localns: Dict[str, Any] = dict(vars(call_target))
         else:
-            annotation_target = call_target
             globalns = dict(getattr(call_target, "__globals__", {}) or {})
             localns = {}
 
