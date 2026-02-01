@@ -6869,8 +6869,8 @@ class ISpellSystemStates(ICleanable, Protocol):
         Enable meld execution for this conduit lineage.
 
         Contract:
-            - Delegates to the shared MeldGate for this conduit tree.
-            - Applies to this conduit and all lesser conduits that share the gate.
+            - Delegates to the local MeldGate for this conduit.
+            - MeldGateController can enable all registered gates when needed.
         """
         ...
 
@@ -6881,8 +6881,8 @@ class ISpellSystemStates(ICleanable, Protocol):
         Disable meld execution for this conduit lineage.
 
         Contract:
-            - Delegates to the shared MeldGate for this conduit tree.
-            - Applies to this conduit and all lesser conduits that share the gate.
+            - Delegates to the local MeldGate for this conduit.
+            - MeldGateController can disable all registered gates when needed.
         """
         ...
 
