@@ -589,6 +589,8 @@ class MeldEngine(Cleanable):
 
         fast_plan = execution_plan.fast_plan
         transient_plan = execution_plan.fast_transient_plan
+        has_contract_payloads = execution_plan.fast_has_contract_payloads
+        has_existing_creations = execution_plan.fast_has_existing_creations
         steps = execution_plan.steps
 
         if fast_plan is None:
@@ -694,6 +696,316 @@ class MeldEngine(Cleanable):
             return transient_values[transient_root_index]
 
         if frame is None:
+            if not has_existing_creations:
+                for step_index in range(step_count):
+                    existence = fast_existence[step_index]
+                    spell = fast_spells[step_index]
+                    call_target = fast_call_targets[step_index]
+                    is_callable = fast_is_callable[step_index]
+                    call_mode = fast_call_modes[step_index]
+                    single_dep_index = fast_single_dep_indices[step_index]
+
+                    if existence is Existence.many:
+                        if call_mode == ExecutionPlanCallMode.CALL0:
+                            if not is_callable:
+                                instance = call_target
+                            else:
+                                try:
+                                    instance = call_target()
+                                except Exception as exc:
+                                    raise MeldExecutionError(
+                                        spell_id=spell.spell_index.current,
+                                        spell_name=spell.spell_name,
+                                        message=f"Error invoking spell '{spell.spell_name}'.",
+                                        inner=exc,
+                                    ) from exc
+                        elif call_mode == ExecutionPlanCallMode.CALL1:
+                            arg = fast_values[single_dep_index]
+                            if not is_callable:
+                                instance = call_target
+                            else:
+                                try:
+                                    instance = call_target(arg)
+                                except Exception as exc:
+                                    raise MeldExecutionError(
+                                        spell_id=spell.spell_index.current,
+                                        spell_name=spell.spell_name,
+                                        message=f"Error invoking spell '{spell.spell_name}'.",
+                                        inner=exc,
+                                    ) from exc
+                        elif call_mode == ExecutionPlanCallMode.CALL2:
+                            arg0 = fast_values[fast_call2_dep_indices_a[step_index]]
+                            arg1 = fast_values[fast_call2_dep_indices_b[step_index]]
+                            if not is_callable:
+                                instance = call_target
+                            else:
+                                try:
+                                    instance = call_target(arg0, arg1)
+                                except Exception as exc:
+                                    raise MeldExecutionError(
+                                        spell_id=spell.spell_index.current,
+                                        spell_name=spell.spell_name,
+                                        message=f"Error invoking spell '{spell.spell_name}'.",
+                                        inner=exc,
+                                    ) from exc
+                        elif call_mode == ExecutionPlanCallMode.CALL3:
+                            arg0 = fast_values[fast_call3_dep_indices_a[step_index]]
+                            arg1 = fast_values[fast_call3_dep_indices_b[step_index]]
+                            arg2 = fast_values[fast_call3_dep_indices_c[step_index]]
+                            if not is_callable:
+                                instance = call_target
+                            else:
+                                try:
+                                    instance = call_target(arg0, arg1, arg2)
+                                except Exception as exc:
+                                    raise MeldExecutionError(
+                                        spell_id=spell.spell_index.current,
+                                        spell_name=spell.spell_name,
+                                        message=f"Error invoking spell '{spell.spell_name}'.",
+                                        inner=exc,
+                                    ) from exc
+                        else:
+                            group_offset = fast_param_group_offsets[step_index]
+                            group_count = fast_param_group_counts[step_index]
+                            use_positional = fast_use_positional[step_index]
+
+                            if use_positional:
+                                if group_count:
+                                    args: List[Any] = [None] * group_count
+                                    for group_index in range(group_count):
+                                        param_group_index = group_offset + group_index
+                                        dep_offset = fast_param_group_dep_offsets[param_group_index]
+                                        dep_count = fast_param_group_dep_counts[param_group_index]
+                                        if dep_count == 1:
+                                            value = fast_values[fast_dep_indices[dep_offset]]
+                                        else:
+                                            values: List[Any] = []
+                                            for dep_index in range(dep_count):
+                                                values.append(
+                                                    fast_values[fast_dep_indices[dep_offset + dep_index]]
+                                                )
+                                            value = values
+                                        args[group_index] = value
+                                else:
+                                    args = []
+
+                                if not is_callable:
+                                    instance = call_target
+                                else:
+                                    try:
+                                        instance = call_target(*args)
+                                    except Exception as exc:
+                                        raise MeldExecutionError(
+                                            spell_id=spell.spell_index.current,
+                                            spell_name=spell.spell_name,
+                                            message=f"Error invoking spell '{spell.spell_name}'.",
+                                            inner=exc,
+                                        ) from exc
+                            else:
+                                kwargs: Dict[str, Any] = {}
+                                if group_count:
+                                    for group_index in range(group_count):
+                                        param_group_index = group_offset + group_index
+                                        param_name = fast_param_group_names[param_group_index]
+                                        dep_offset = fast_param_group_dep_offsets[param_group_index]
+                                        dep_count = fast_param_group_dep_counts[param_group_index]
+                                        if dep_count == 1:
+                                            kwargs[param_name] = fast_values[fast_dep_indices[dep_offset]]
+                                        else:
+                                            values = []
+                                            for dep_index in range(dep_count):
+                                                values.append(
+                                                    fast_values[fast_dep_indices[dep_offset + dep_index]]
+                                                )
+                                            kwargs[param_name] = values
+
+                                if has_contract_payloads:
+                                    contract_items = fast_contract_payload_items[step_index]
+                                    if contract_items:
+                                        for param_name, value in contract_items:
+                                            kwargs[param_name] = value
+
+                                if not is_callable:
+                                    instance = call_target
+                                else:
+                                    if has_contract_payloads:
+                                        contract_positional = fast_contract_positional_args[step_index]
+                                        if contract_positional is not None:
+                                            args = list(contract_positional)
+                                        else:
+                                            args = []
+                                    else:
+                                        args = []
+                                    try:
+                                        instance = call_target(*args, **kwargs)
+                                    except Exception as exc:
+                                        raise MeldExecutionError(
+                                            spell_id=spell.spell_index.current,
+                                            spell_name=spell.spell_name,
+                                            message=f"Error invoking spell '{spell.spell_name}'.",
+                                            inner=exc,
+                                        ) from exc
+
+                        if fast_must_register[step_index]:
+                            target_kind = fast_creations_target_kinds[step_index]
+                            if target_kind == ExecutionPlanTargetKind.CALLER:
+                                creations = self._context.caller_creations
+                            else:
+                                owner_creations = spell._owner_creations
+                                if owner_creations is None:
+                                    owner_creations = self._context.owner_creations
+                                creations = owner_creations
+                            if creations is not None:
+                                with creations._lock:
+                                    self._register_spell(spell, instance, creations, existence)
+
+                        fast_values[step_index] = instance
+                        continue
+
+                    def _construct_node_fast() -> Any:
+                        if call_mode == ExecutionPlanCallMode.CALL0:
+                            if not is_callable:
+                                return call_target
+                            try:
+                                return call_target()
+                            except Exception as exc:
+                                raise MeldExecutionError(
+                                    spell_id=spell.spell_index.current,
+                                    spell_name=spell.spell_name,
+                                    message=f"Error invoking spell '{spell.spell_name}'.",
+                                    inner=exc,
+                                ) from exc
+                        if call_mode == ExecutionPlanCallMode.CALL1:
+                            arg = fast_values[single_dep_index]
+                            if not is_callable:
+                                return call_target
+                            try:
+                                return call_target(arg)
+                            except Exception as exc:
+                                raise MeldExecutionError(
+                                    spell_id=spell.spell_index.current,
+                                    spell_name=spell.spell_name,
+                                    message=f"Error invoking spell '{spell.spell_name}'.",
+                                    inner=exc,
+                                ) from exc
+                        if call_mode == ExecutionPlanCallMode.CALL2:
+                            arg0 = fast_values[fast_call2_dep_indices_a[step_index]]
+                            arg1 = fast_values[fast_call2_dep_indices_b[step_index]]
+                            if not is_callable:
+                                return call_target
+                            try:
+                                return call_target(arg0, arg1)
+                            except Exception as exc:
+                                raise MeldExecutionError(
+                                    spell_id=spell.spell_index.current,
+                                    spell_name=spell.spell_name,
+                                    message=f"Error invoking spell '{spell.spell_name}'.",
+                                    inner=exc,
+                                ) from exc
+                        if call_mode == ExecutionPlanCallMode.CALL3:
+                            arg0 = fast_values[fast_call3_dep_indices_a[step_index]]
+                            arg1 = fast_values[fast_call3_dep_indices_b[step_index]]
+                            arg2 = fast_values[fast_call3_dep_indices_c[step_index]]
+                            if not is_callable:
+                                return call_target
+                            try:
+                                return call_target(arg0, arg1, arg2)
+                            except Exception as exc:
+                                raise MeldExecutionError(
+                                    spell_id=spell.spell_index.current,
+                                    spell_name=spell.spell_name,
+                                    message=f"Error invoking spell '{spell.spell_name}'.",
+                                    inner=exc,
+                                ) from exc
+
+                        group_offset = fast_param_group_offsets[step_index]
+                        group_count = fast_param_group_counts[step_index]
+                        use_positional = fast_use_positional[step_index]
+
+                        if use_positional:
+                            if group_count:
+                                args: List[Any] = [None] * group_count
+                                for group_index in range(group_count):
+                                    param_group_index = group_offset + group_index
+                                    dep_offset = fast_param_group_dep_offsets[param_group_index]
+                                    dep_count = fast_param_group_dep_counts[param_group_index]
+                                    if dep_count == 1:
+                                        value = fast_values[fast_dep_indices[dep_offset]]
+                                    else:
+                                        values: List[Any] = []
+                                        for dep_index in range(dep_count):
+                                            values.append(
+                                                fast_values[fast_dep_indices[dep_offset + dep_index]]
+                                            )
+                                        value = values
+                                    args[group_index] = value
+                            else:
+                                args = []
+
+                            if not is_callable:
+                                return call_target
+                            try:
+                                return call_target(*args)
+                            except Exception as exc:
+                                raise MeldExecutionError(
+                                    spell_id=spell.spell_index.current,
+                                    spell_name=spell.spell_name,
+                                    message=f"Error invoking spell '{spell.spell_name}'.",
+                                    inner=exc,
+                                ) from exc
+
+                        kwargs: Dict[str, Any] = {}
+                        if group_count:
+                            for group_index in range(group_count):
+                                param_group_index = group_offset + group_index
+                                param_name = fast_param_group_names[param_group_index]
+                                dep_offset = fast_param_group_dep_offsets[param_group_index]
+                                dep_count = fast_param_group_dep_counts[param_group_index]
+                                if dep_count == 1:
+                                    kwargs[param_name] = fast_values[fast_dep_indices[dep_offset]]
+                                else:
+                                    values = []
+                                    for dep_index in range(dep_count):
+                                        values.append(
+                                            fast_values[fast_dep_indices[dep_offset + dep_index]]
+                                        )
+                                    kwargs[param_name] = values
+
+                        if has_contract_payloads:
+                            contract_items = fast_contract_payload_items[step_index]
+                            if contract_items:
+                                for param_name, value in contract_items:
+                                    kwargs[param_name] = value
+
+                        if not is_callable:
+                            return call_target
+                        if has_contract_payloads:
+                            contract_positional = fast_contract_positional_args[step_index]
+                            if contract_positional is not None:
+                                args = list(contract_positional)
+                            else:
+                                args = []
+                        else:
+                            args = []
+                        try:
+                            return call_target(*args, **kwargs)
+                        except Exception as exc:
+                            raise MeldExecutionError(
+                                spell_id=spell.spell_index.current,
+                                spell_name=spell.spell_name,
+                                message=f"Error invoking spell '{spell.spell_name}'.",
+                                inner=exc,
+                            ) from exc
+
+                    instance, _ = self._resolve_spell_instance_with_plan(
+                        spell,
+                        steps[step_index],
+                        construct_fn=_construct_node_fast,
+                    )
+                    fast_values[step_index] = instance
+
+                return fast_values[fast_root_step_index]
+
             for step_index in range(step_count):
                 existence = fast_existence[step_index]
                 spell = fast_spells[step_index]
@@ -775,8 +1087,12 @@ class MeldEngine(Cleanable):
                         group_offset = fast_param_group_offsets[step_index]
                         group_count = fast_param_group_counts[step_index]
                         use_positional = fast_use_positional[step_index]
-                        contract_positional = fast_contract_positional_args[step_index]
-                        contract_items = fast_contract_payload_items[step_index]
+                        if has_contract_payloads:
+                            contract_positional = fast_contract_positional_args[step_index]
+                            contract_items = fast_contract_payload_items[step_index]
+                        else:
+                            contract_positional = None
+                            contract_items = None
 
                         if use_positional:
                             if group_count:
@@ -936,8 +1252,12 @@ class MeldEngine(Cleanable):
                     group_offset = fast_param_group_offsets[step_index]
                     group_count = fast_param_group_counts[step_index]
                     use_positional = fast_use_positional[step_index]
-                    contract_positional = fast_contract_positional_args[step_index]
-                    contract_items = fast_contract_payload_items[step_index]
+                    if has_contract_payloads:
+                        contract_positional = fast_contract_positional_args[step_index]
+                        contract_items = fast_contract_payload_items[step_index]
+                    else:
+                        contract_positional = None
+                        contract_items = None
                     if use_positional:
                         if group_count:
                             args: List[Any] = [None] * group_count
@@ -1266,8 +1586,12 @@ class MeldEngine(Cleanable):
                 group_offset = fast_param_group_offsets[step_index]
                 group_count = fast_param_group_counts[step_index]
                 use_positional = fast_use_positional[step_index]
-                contract_positional = fast_contract_positional_args[step_index]
-                contract_items = fast_contract_payload_items[step_index]
+                if has_contract_payloads:
+                    contract_positional = fast_contract_positional_args[step_index]
+                    contract_items = fast_contract_payload_items[step_index]
+                else:
+                    contract_positional = None
+                    contract_items = None
 
                 if use_positional:
                     if group_count:

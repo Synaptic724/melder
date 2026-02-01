@@ -1359,6 +1359,9 @@ class Meld(Cleanable, IMeld):
         if existence is Existence.unique_per_spell_space and creations is not None:
             spellspace = self._get_active_spellspace_for_creations(creations)
 
+        if existence is Existence.unique_per_spell_space and creations is not None:
+            spellspace = self._get_active_spellspace_for_creations(creations)
+
         if existence in (
                 Existence.unique_per_conduit,
                 Existence.unique_per_spell_space,
@@ -1376,12 +1379,15 @@ class Meld(Cleanable, IMeld):
                         caller_creations_lock_held=True,
                     )
                     if is_existing_creation:
-                        self._register_spell(
-                            spell,
-                            instance,
-                            creations,
-                            spellspace=spellspace,
-                        )
+                        if spellspace is None:
+                            self._register_spell(spell, instance, creations)
+                        else:
+                            self._register_spell(
+                                spell,
+                                instance,
+                                creations,
+                                spellspace=spellspace,
+                            )
                     created = True
                 else:
                     self._raise_override_on_existing_instance(
@@ -1408,12 +1414,15 @@ class Meld(Cleanable, IMeld):
                 )
                 if is_existing_creation and creations is not None:
                     with creations._lock:
-                        self._register_spell(
-                            spell,
-                            instance,
-                            creations,
-                            spellspace=spellspace,
-                        )
+                        if spellspace is None:
+                            self._register_spell(spell, instance, creations)
+                        else:
+                            self._register_spell(
+                                spell,
+                                instance,
+                                creations,
+                                spellspace=spellspace,
+                            )
                 created = True
             else:
                 self._raise_override_on_existing_instance(
@@ -1483,16 +1492,15 @@ class Meld(Cleanable, IMeld):
         spell_id: str = spell.spell_id
 
         if isinstance(creations, Creations):
-            creation_map = None
-            if existence is Existence.unique:
-                creation_map = creations._unique
-            elif existence is Existence.unique_per_conduit:
-                creation_map = creations._unique_per_scope
-            elif existence is Existence.unique_per_conduit_cluster:
-                creation_map = creations._unique_per_cluster
-            elif existence is Existence.unique_per_conduit_lineage:
-                creation_map = creations._unique_per_lineage
+            creation_map = {
+                Existence.unique: creations._unique,
+                Existence.unique_per_conduit: creations._unique_per_scope,
+                Existence.unique_per_conduit_cluster: creations._unique_per_cluster,
+                Existence.unique_per_conduit_lineage: creations._unique_per_lineage,
+            }.get(existence)
             if creation_map is not None:
+                if not creation_map:
+                    return None
                 creation = creation_map.get(spell_id)
                 return creation.value if creation is not None else None
             if existence is Existence.unique_per_spell_space and spellspace is not None:
@@ -1507,14 +1515,14 @@ class Meld(Cleanable, IMeld):
             # Delegate frame-level singletons to root creations when available.
             parent_creations = creations._parent_creations
             if isinstance(parent_creations, Creations):
-                creation_map = None
-                if existence is Existence.unique:
-                    creation_map = parent_creations._unique
-                elif existence is Existence.unique_per_conduit_cluster:
-                    creation_map = parent_creations._unique_per_cluster
-                elif existence is Existence.unique_per_conduit_lineage:
-                    creation_map = parent_creations._unique_per_lineage
+                creation_map = {
+                    Existence.unique: parent_creations._unique,
+                    Existence.unique_per_conduit_cluster: parent_creations._unique_per_cluster,
+                    Existence.unique_per_conduit_lineage: parent_creations._unique_per_lineage,
+                }.get(existence)
                 if creation_map is not None:
+                    if not creation_map:
+                        return None
                     found = creation_map.get(spell_id)
                     return found.value if found is not None else None
                 if existence is Existence.unique_per_spell_space and spellspace is not None:
@@ -1524,6 +1532,30 @@ class Meld(Cleanable, IMeld):
             return None
 
         return None
+
+    def _get_active_spellspace_for_creations(
+            self,
+            creations: Any,
+    ) -> Any:
+        """
+        Resolve and validate the active SpellSpace for a creations container.
+
+        Contract:
+            - Raises SpellSpaceScopeError when no active spellspace is present.
+            - Raises SpellSpaceScopeError when the active spellspace belongs to
+              a different conduit.
+        """
+        spellspace = creations._conduit.get_active_spellspace()
+        if spellspace is None:
+            raise SpellSpaceScopeError(
+                "Existence.unique_per_spell_space requires an active SpellSpace. "
+                "Use 'with conduit.enter_spellspace()' when melding."
+            )
+        if spellspace.owner_conduit is not creations._conduit:
+            raise SpellSpaceScopeError(
+                "Active SpellSpace belongs to a different conduit."
+            )
+        return spellspace
 
     def _get_active_spellspace_for_creations(
             self,
@@ -1722,7 +1754,7 @@ class Meld(Cleanable, IMeld):
             instance: Any,
             creations: ICreations,
             *,
-            spellspace: Optional[Any] = None,
+            spellspace: Optional[Any],
     ) -> None:
         """
         Handles registration for the full Creations manager (used by a normal Conduit).
@@ -1821,7 +1853,7 @@ class Meld(Cleanable, IMeld):
             instance: Any,
             creations: ILesserCreations,
             *,
-            spellspace: Optional[Any] = None,
+            spellspace: Optional[Any],
     ) -> None:
         """
         Handles registration for the LesserCreations manager (used by a LesserConduit).
