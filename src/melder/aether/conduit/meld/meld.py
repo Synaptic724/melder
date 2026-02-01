@@ -1286,10 +1286,10 @@ class Meld(Cleanable, IMeld):
             ),
         )
 
-    def _resolve_instance_with_locks(
+    def  _resolve_instance_with_locks(
             self,
             spell: ISpell,
-            overrides: Optional[dict[str, Any]],
+            overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
         Internal
@@ -1355,6 +1355,9 @@ class Meld(Cleanable, IMeld):
                             spellspace=spellspace,
                         )
             return instance, True
+
+        if existence is Existence.unique_per_spell_space and creations is not None:
+            spellspace = self._get_active_spellspace_for_creations(creations)
 
         if existence is Existence.unique_per_spell_space and creations is not None:
             spellspace = self._get_active_spellspace_for_creations(creations)
@@ -1529,6 +1532,54 @@ class Meld(Cleanable, IMeld):
             return None
 
         return None
+
+    def _get_active_spellspace_for_creations(
+            self,
+            creations: Any,
+    ) -> Any:
+        """
+        Resolve and validate the active SpellSpace for a creations container.
+
+        Contract:
+            - Raises SpellSpaceScopeError when no active spellspace is present.
+            - Raises SpellSpaceScopeError when the active spellspace belongs to
+              a different conduit.
+        """
+        spellspace = creations._conduit.get_active_spellspace()
+        if spellspace is None:
+            raise SpellSpaceScopeError(
+                "Existence.unique_per_spell_space requires an active SpellSpace. "
+                "Use 'with conduit.enter_spellspace()' when melding."
+            )
+        if spellspace.owner_conduit is not creations._conduit:
+            raise SpellSpaceScopeError(
+                "Active SpellSpace belongs to a different conduit."
+            )
+        return spellspace
+
+    def _get_active_spellspace_for_creations(
+            self,
+            creations: Any,
+    ) -> Any:
+        """
+        Resolve and validate the active SpellSpace for a creations container.
+
+        Contract:
+            - Raises SpellSpaceScopeError when no active spellspace is present.
+            - Raises SpellSpaceScopeError when the active spellspace belongs to
+              a different conduit.
+        """
+        spellspace = creations._conduit.get_active_spellspace()
+        if spellspace is None:
+            raise SpellSpaceScopeError(
+                "Existence.unique_per_spell_space requires an active SpellSpace. "
+                "Use 'with conduit.enter_spellspace()' when melding."
+            )
+        if spellspace.owner_conduit is not creations._conduit:
+            raise SpellSpaceScopeError(
+                "Active SpellSpace belongs to a different conduit."
+            )
+        return spellspace
 
     def _get_active_spellspace_for_creations(
             self,
