@@ -1286,10 +1286,10 @@ class Meld(Cleanable, IMeld):
             ),
         )
 
-    def _resolve_instance_with_locks(
+    def  _resolve_instance_with_locks(
             self,
             spell: ISpell,
-            overrides: Optional[dict[str, Any]],
+            overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
         Internal
@@ -1345,12 +1345,15 @@ class Meld(Cleanable, IMeld):
                 return instance, True
             if is_existing_creation and creations is not None:
                 with creations._lock:
-                    self._register_spell(
-                        spell,
-                        instance,
-                        creations,
-                        spellspace=spellspace,
-                    )
+                    if spellspace is None:
+                        self._register_spell(spell, instance, creations)
+                    else:
+                        self._register_spell(
+                            spell,
+                            instance,
+                            creations,
+                            spellspace=spellspace,
+                        )
             return instance, True
 
         if existence is Existence.unique_per_spell_space and creations is not None:
@@ -1719,7 +1722,7 @@ class Meld(Cleanable, IMeld):
             instance: Any,
             creations: ICreations,
             *,
-            spellspace: Optional[Any],
+            spellspace: Optional[Any] = None,
     ) -> None:
         """
         Handles registration for the full Creations manager (used by a normal Conduit).
@@ -1818,7 +1821,7 @@ class Meld(Cleanable, IMeld):
             instance: Any,
             creations: ILesserCreations,
             *,
-            spellspace: Optional[Any],
+            spellspace: Optional[Any] = None,
     ) -> None:
         """
         Handles registration for the LesserCreations manager (used by a LesserConduit).
