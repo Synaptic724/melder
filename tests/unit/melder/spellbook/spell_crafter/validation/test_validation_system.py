@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable, List, Optional
 
 import pytest
 
@@ -22,11 +23,13 @@ class _SpellIndexStub:
     Purpose:
         Provide a minimal SpellIndex stub with a current id.
     Contract:
-        Stores the current spell id without validation.
+        Stores the current spell id and lineage id without validation.
     Attributes:
         current: Current spell id string.
+        id: Lineage id string.
     """
     current: str
+    id: str = "index-id"
 
 
 class _SpellStub:
@@ -42,7 +45,7 @@ class _SpellStub:
         *,
         spell_id: str = "spell-id",
         spell_name: str = "spell-name",
-        spellbook: object | None = None,
+        spellbook: Optional[object] = None,
         include_spellbook: bool = True,
     ) -> None:
         """
@@ -64,6 +67,70 @@ class _SpellStub:
             self._spellbook = spellbook
 
 
+class _SharedViewSpellStub:
+    """
+    Purpose:
+        Provide a spell stub with the attributes required by shared views.
+    Contract:
+        Exposes dependency metadata and binding identifiers used by Phase 4.
+    """
+
+    def __init__(
+        self,
+        *,
+        spell_id: str,
+        spell_name: str,
+        spellframe: object,
+        binding_name: object,
+        dependencies: Optional[List[str]] = None,
+        crafter: object = None,
+    ) -> None:
+        """
+        Purpose:
+            Initialize a shared-view spell stub with dependency metadata.
+        Contract:
+            Stores attributes verbatim and normalizes dependencies to a list.
+        Args:
+            spell_id: Spell id assigned to spell_index.current.
+            spell_name: Spell name string.
+            spellframe: Frame identifier for the spell.
+            binding_name: Binding name identifier.
+            dependencies: Optional dependency list.
+            crafter: Optional crafter reference (defaults to None).
+        Returns:
+            None.
+        """
+        self.spell_index = _SpellIndexStub(spell_id)
+        self.spell_name = spell_name
+        self.spellframe = spellframe
+        self.binding_name = binding_name
+        self.dependencies = list(dependencies or [])
+        self._crafter = crafter
+
+
+class _SpellbookStub:
+    """
+    Purpose:
+        Provide a minimal spellbook stub for shared view construction.
+    Contract:
+        Exposes a spell id pool mapping for validation system use.
+    """
+
+    def __init__(self, *, spell_lookup: dict[str, object]) -> None:
+        """
+        Purpose:
+            Initialize the stub with a spell lookup map.
+        Contract:
+            Stores the provided mapping without mutation.
+        Args:
+            spell_lookup: Spell id -> spell mapping.
+        Returns:
+            None.
+        """
+        self._spell_id_pool = spell_lookup
+        self._spell_system_states = None
+
+
 class _CancelStub:
     """
     Purpose:
@@ -72,7 +139,7 @@ class _CancelStub:
         Raises the configured exception when is_set is True.
     """
 
-    def __init__(self, *, is_set: bool = True, exc: Exception | None = None) -> None:
+    def __init__(self, *, is_set: bool = True, exc: Optional[Exception] = None) -> None:
         """
         Purpose:
             Initialize the stub with a fixed cancellation state.
@@ -165,18 +232,19 @@ class _ContextStub:
         Records cleanup calls and exposes provided attributes.
     """
 
-    last_instance: "_ContextStub | None" = None
+    last_instance: Optional["_ContextStub"] = None
 
     def __init__(
         self,
         *,
         spell: object,
-        spellbook: object | None,
-        requirements: object | None,
-        symbolic_graph: object | None,
-        resolution_frame: object | None,
-        cancel_event: object | None,
+        spellbook: Optional[object],
+        requirements: Optional[object],
+        symbolic_graph: Optional[object],
+        resolution_frame: Optional[object],
+        cancel_event: Optional[object],
         issues: list,
+        shared_view: object = None,
         cleanup_artifacts: bool = True,
     ) -> None:
         """
@@ -192,6 +260,7 @@ class _ContextStub:
             resolution_frame: Phase 3 resolution frame.
             cancel_event: Cancellation event or None.
             issues: Shared issues list.
+            shared_view: Optional shared view for validation.
             cleanup_artifacts: Whether to clean artifacts during context cleanup.
         Returns:
             None.
@@ -203,6 +272,7 @@ class _ContextStub:
         self.resolution_frame = resolution_frame
         self.cancel_event = cancel_event
         self.issues = issues
+        self.shared_view = shared_view
         self.cleanup_artifacts = cleanup_artifacts
         self.cleanup_calls = 0
         self.cleaned = False
@@ -294,9 +364,9 @@ class _RecordingStrategy(SpellValidationStrategy):
         self,
         *,
         name: str = "recording",
-        issue: SpellValidationIssue | None = None,
+        issue: Optional[SpellValidationIssue] = None,
         raise_on_validate: bool = False,
-        on_validate: callable | None = None,
+        on_validate: Optional[Callable[[], None]] = None,
     ) -> None:
         """
         Purpose:
@@ -314,7 +384,7 @@ class _RecordingStrategy(SpellValidationStrategy):
         super().__init__(name=name)
         self.calls: int = 0
         self.context_snapshots: list[dict[str, object]] = []
-        self.issues_ref: list | None = None
+        self.issues_ref: Optional[list] = None
         self._issue = issue
         self._raise_on_validate = raise_on_validate
         self._on_validate = on_validate
@@ -473,7 +543,7 @@ def _make_spell(
     *,
     spell_id: str = "spell-id",
     spell_name: str = "spell-name",
-    spellbook: object | None = None,
+    spellbook: Optional[object] = None,
     include_spellbook: bool = True,
 ) -> _SpellStub:
     """
@@ -962,6 +1032,43 @@ def test_validate_spell_cleanup_context_on_exception(monkeypatch: pytest.MonkeyP
     assert _ContextStub.last_instance is not None
     assert _ContextStub.last_instance.cleaned is True
     assert _ContextStub.last_instance.cleanup_calls == 1
+
+
+def test_validate_spell_passes_shared_view(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        Ensure validate_spell injects the shared validation view into context.
+    Contract:
+        Context receives the same shared view prepared on the system.
+    Args:
+        monkeypatch: Pytest fixture for patching SpellValidationContext.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the shared view is not passed into the context.
+    """
+    monkeypatch.setattr(validation_system_module, "SpellValidationContext", _ContextStub)
+    system = _TestValidationSystem()
+    spell = _SharedViewSpellStub(
+        spell_id="spell-id",
+        spell_name="spell-name",
+        spellframe="frame",
+        binding_name="binding",
+        dependencies=["dep"],
+    )
+    spellbook = _SpellbookStub(spell_lookup={"spell-id": spell})
+    spell._spellbook = spellbook
+
+    system.prepare_shared_view(spellbook=spellbook)
+    system.validate_spell(
+        spell=spell,
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+
+    assert _ContextStub.last_instance is not None
+    assert _ContextStub.last_instance.shared_view is system._shared_view
 
 
 def test_cleanup_clears_strategies_and_marks_cleaned() -> None:

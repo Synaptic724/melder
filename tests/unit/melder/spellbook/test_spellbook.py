@@ -2,7 +2,7 @@ import types
 import gc
 import threading
 from types import MappingProxyType
-from typing import MutableMapping, cast
+from typing import MutableMapping, Optional, cast
 
 import pytest
 
@@ -696,18 +696,20 @@ class DummySpellValidationSystem:
     Purpose:
         Provide a validation system stub for Spellbook tests.
     Contract:
-        Tracks cleanup calls.
+        Tracks cleanup calls and shared-view lifecycle hooks.
     """
     def __init__(self):
         """
         Purpose:
             Initialize the validation system stub.
         Contract:
-            Sets cleaned to False.
+            Sets cleaned to False and resets shared-view tracking.
         Returns:
             None.
         """
         self.cleaned = False
+        self.shared_view_prepared = False
+        self.shared_view_cleared = False
 
     def cleanup(self):
         """
@@ -719,6 +721,32 @@ class DummySpellValidationSystem:
             None.
         """
         self.cleaned = True
+
+    def prepare_shared_view(self, *, spellbook: object, cancel_event: Optional[object] = None) -> None:
+        """
+        Purpose:
+            Record that shared-view preparation was invoked.
+        Contract:
+            - Marks shared_view_prepared True.
+            - Leaves spellbook and cancel_event untouched.
+        Args:
+            spellbook: Spellbook instance for the validation run.
+            cancel_event: Optional cancellation event.
+        Returns:
+            None.
+        """
+        self.shared_view_prepared = True
+
+    def clear_shared_view(self) -> None:
+        """
+        Purpose:
+            Record that shared-view cleanup was invoked.
+        Contract:
+            Marks shared_view_cleared True.
+        Returns:
+            None.
+        """
+        self.shared_view_cleared = True
 
 
 # Monkeypatch helpers -------------------------------------------------

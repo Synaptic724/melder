@@ -62,7 +62,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Optional[ob
         spellbook: Spellbook holding locally bound spells.
         spell_id: Versioned spell id to locate.
     Returns:
-        Spell | None: The resolved spell or None if missing.
+        Optional[Spell]: The resolved spell or None if missing.
     """
     return spellbook._spell_id_pool.get(spell_id)
 
@@ -147,7 +147,7 @@ class _ValidationResultStub:
         - Exposes the has_errors flag.
         - Provides an issues list for compatibility with contract gating.
     """
-    def __init__(self, has_errors: bool, issues: list[object] | None = None) -> None:
+    def __init__(self, has_errors: bool, issues: Optional[list[object]] = None) -> None:
         """
         Purpose:
             Capture a validation outcome flag.
@@ -170,6 +170,7 @@ class _SpellValidationSystemStub:
         Stand-in for SpellValidationSystem to control validation outcomes.
     Contract:
         - validate_spell returns the configured result and records call count.
+        - shared-view hooks record invocation for phase orchestration.
     """
     def __init__(self, result: _ValidationResultStub) -> None:
         """
@@ -177,6 +178,7 @@ class _SpellValidationSystemStub:
             Store the result to return from validate_spell.
         Contract:
             - call_count starts at zero.
+            - shared_view_prepared and shared_view_cleared start False.
         Args:
             result: Validation result to return.
         Returns:
@@ -184,6 +186,8 @@ class _SpellValidationSystemStub:
         """
         self.result = result
         self.call_count = 0
+        self.shared_view_prepared = False
+        self.shared_view_cleared = False
 
     def validate_spell(
         self,
@@ -191,7 +195,7 @@ class _SpellValidationSystemStub:
         requirements: object,
         symbolic_graph: object,
         resolution_frame: object,
-        cancel_event: object | None = None,
+        cancel_event: object = None,
     ) -> _ValidationResultStub:
         """
         Purpose:
@@ -209,6 +213,31 @@ class _SpellValidationSystemStub:
         """
         self.call_count += 1
         return self.result
+
+    def prepare_shared_view(self, *, spellbook: object, cancel_event: object = None) -> None:
+        """
+        Purpose:
+            Record that shared-view preparation was invoked.
+        Contract:
+            Marks shared_view_prepared True.
+        Args:
+            spellbook: Spellbook instance for the validation run.
+            cancel_event: Optional cancellation event.
+        Returns:
+            None.
+        """
+        self.shared_view_prepared = True
+
+    def clear_shared_view(self) -> None:
+        """
+        Purpose:
+            Record that shared-view cleanup was invoked.
+        Contract:
+            Marks shared_view_cleared True.
+        Returns:
+            None.
+        """
+        self.shared_view_cleared = True
 
 
 class _SpellSystemStatesStub:
@@ -274,7 +303,7 @@ class _SpellSystemStatesStub:
         """
         self.topology_by_spell[spell_index] = topology
 
-    def get_local_topology(self, spell_index: object) -> object | None:
+    def get_local_topology(self, spell_index: object) -> Optional[object]:
         """
         Purpose:
             Return the recorded topology for a lineage.
@@ -283,7 +312,7 @@ class _SpellSystemStatesStub:
         Args:
             spell_index: SpellIndex for the lookup.
         Returns:
-            object | None: The recorded topology or None.
+            Optional[object]: The recorded topology or None.
         """
         return self.topology_by_spell.get(spell_index)
 

@@ -2087,11 +2087,10 @@ class SpellCrafter(Cleanable):
 
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
-        spell_lookup: Dict[str, ISpell] = {}
 
         spellbook = self._spell._spellbook
-        for spell_id, spell_instance in spellbook._spell_id_pool.items():
-            spell_lookup[spell_id] = spell_instance
+        spell_lookup: Dict[str, ISpell] = spellbook._spell_id_pool
+        for spell_id, spell_instance in spell_lookup.items():
             crafter = spell_instance._crafter
             phase4_results[spell_id] = crafter._validation_result_phase4
             if crafter._is_broken:

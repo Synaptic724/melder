@@ -26,6 +26,8 @@ class SpellValidationContext(Cleanable):
         Optional cancellation token for long-running validations.
     issues:
         Shared, mutable list that all strategies append issues into.
+    shared_view:
+        Optional shared validation view built once per Phase 4 run.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -36,6 +38,7 @@ class SpellValidationContext(Cleanable):
         "resolution_frame",
         "cancel_event",
         "issues",
+        "shared_view",
         "_cleanup_artifacts",
     ]
 
@@ -48,8 +51,32 @@ class SpellValidationContext(Cleanable):
             resolution_frame: Optional['SpellResolutionFrame'],
             cancel_event: Optional['CancellationEvent'],
             issues: List['SpellValidationIssue'],
+            shared_view: Optional['SpellValidationSharedView'] = None,
             cleanup_artifacts: bool = True,
     ) -> None:
+        """
+        Initialize a validation context for a single spell.
+
+        Purpose:
+            Bundle per-spell artifacts and shared resources for strategies.
+        Contract:
+            - Requires a non-null spell and issues list.
+            - Stores references without mutating inputs.
+        Args:
+            spell: Spell under validation.
+            spellbook: Owning spellbook, if available.
+            requirements: Phase 1 requirements artifact.
+            symbolic_graph: Phase 2 symbolic graph artifact.
+            resolution_frame: Phase 3 resolution frame artifact.
+            cancel_event: Optional cancellation token.
+            issues: Shared issues list for strategy output.
+            shared_view: Optional shared validation view for Phase 4.
+            cleanup_artifacts: Whether to cleanup artifacts on context cleanup.
+        Returns:
+            None.
+        Raises:
+            ValueError: If spell is None or issues list is None.
+        """
         super().__init__()
 
         if spell is None:
@@ -67,6 +94,7 @@ class SpellValidationContext(Cleanable):
         # NOTE: this list is shared with the caller (SpellValidationSystem);
         # cleanup must not mutate the underlying list contents.
         self.issues: List['SpellValidationIssue'] = issues
+        self.shared_view: Optional['SpellValidationSharedView'] = shared_view
         self._cleanup_artifacts: bool = cleanup_artifacts
 
     def cleanup(self) -> None:
@@ -97,6 +125,7 @@ class SpellValidationContext(Cleanable):
         self.symbolic_graph = None
         self.resolution_frame = None
         self.cancel_event = None
+        self.shared_view = None
 
         # Detach our reference to the shared issues list without mutating it.
         self.issues = None
