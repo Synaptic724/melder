@@ -72,7 +72,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         if spell is None or spellbook is None:
             return
 
-        root_key = spell.key
+        root_key = self._spell_key(spell)
 
         binding_graph: Dict[Tuple[str, str], Set[Tuple[str, str]]] = {}
 
@@ -92,7 +92,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             except RuntimeError:
                 continue
 
-            spell_key = spell_instance.key
+            spell_key = self._spell_key(spell_instance)
             adjacency: Optional[Set[Tuple[str, str]]] = None
             for param in parameters:
                 target_key = self._binding_key_for_requirement(param)
@@ -117,7 +117,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         for spell_id, spell_instance in spellbook._spell_id_pool.items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
-            spell_key = spell_instance.key
+            spell_key = self._spell_key(spell_instance)
             if spell_key not in cycle_key_set:
                 continue
             existing = binding_to_spells.get(spell_key)
@@ -202,6 +202,25 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             return contract.canonical_key
 
         return None
+
+    def _spell_key(self, spell: object) -> Tuple[str, str]:
+        """
+        Resolve the canonical binding key for a spell-like object.
+
+        Purpose:
+            Support test doubles that do not implement the full ISpell surface.
+        Contract:
+            - Returns the spell's canonical key when available.
+            - Falls back to frame/name/binding parts when the key is missing.
+        """
+        try:
+            return spell.key
+        except AttributeError:
+            return SpellInputUtils.make_spell_key_from_parts(
+                spellframe=spell.spellframe,
+                spell_name=spell.spell_name,
+                binding_name=spell.binding_name,
+            )
 
     def _detect_cycles(
         self,
