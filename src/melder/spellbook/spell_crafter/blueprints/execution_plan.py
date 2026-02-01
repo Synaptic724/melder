@@ -373,6 +373,11 @@ class ExecutionPlan(Cleanable):
         "_fast_root_step_index",
         "_fast_call_modes",
         "_fast_single_dep_indices",
+        "_fast_call2_dep_indices_a",
+        "_fast_call2_dep_indices_b",
+        "_fast_call3_dep_indices_a",
+        "_fast_call3_dep_indices_b",
+        "_fast_call3_dep_indices_c",
     ]
 
     def __init__(
@@ -407,6 +412,11 @@ class ExecutionPlan(Cleanable):
             fast_root_step_index: Optional[int] = None,
             fast_call_modes: Optional[List[int]] = None,
             fast_single_dep_indices: Optional[List[int]] = None,
+            fast_call2_dep_indices_a: Optional[List[int]] = None,
+            fast_call2_dep_indices_b: Optional[List[int]] = None,
+            fast_call3_dep_indices_a: Optional[List[int]] = None,
+            fast_call3_dep_indices_b: Optional[List[int]] = None,
+            fast_call3_dep_indices_c: Optional[List[int]] = None,
     ) -> None:
         """
         Initialize a Phase 11 execution plan.
@@ -446,6 +456,11 @@ class ExecutionPlan(Cleanable):
             fast_root_step_index: Root instance index within the fast arrays (fast path).
             fast_call_modes: Call-mode selector per step (fast path).
             fast_single_dep_indices: Single dependency index per step (fast path).
+            fast_call2_dep_indices_a: First dependency index for CALL2 steps (fast path).
+            fast_call2_dep_indices_b: Second dependency index for CALL2 steps (fast path).
+            fast_call3_dep_indices_a: First dependency index for CALL3 steps (fast path).
+            fast_call3_dep_indices_b: Second dependency index for CALL3 steps (fast path).
+            fast_call3_dep_indices_c: Third dependency index for CALL3 steps (fast path).
         """
         super().__init__()
         if root_spell_id is None:
@@ -492,6 +507,11 @@ class ExecutionPlan(Cleanable):
         self._fast_root_step_index = fast_root_step_index
         self._fast_call_modes = fast_call_modes
         self._fast_single_dep_indices = fast_single_dep_indices
+        self._fast_call2_dep_indices_a = fast_call2_dep_indices_a
+        self._fast_call2_dep_indices_b = fast_call2_dep_indices_b
+        self._fast_call3_dep_indices_a = fast_call3_dep_indices_a
+        self._fast_call3_dep_indices_b = fast_call3_dep_indices_b
+        self._fast_call3_dep_indices_c = fast_call3_dep_indices_c
 
     def cleanup(self) -> None:
         """
@@ -550,6 +570,16 @@ class ExecutionPlan(Cleanable):
             self._fast_call_modes.clear()
         if self._fast_single_dep_indices is not None:
             self._fast_single_dep_indices.clear()
+        if self._fast_call2_dep_indices_a is not None:
+            self._fast_call2_dep_indices_a.clear()
+        if self._fast_call2_dep_indices_b is not None:
+            self._fast_call2_dep_indices_b.clear()
+        if self._fast_call3_dep_indices_a is not None:
+            self._fast_call3_dep_indices_a.clear()
+        if self._fast_call3_dep_indices_b is not None:
+            self._fast_call3_dep_indices_b.clear()
+        if self._fast_call3_dep_indices_c is not None:
+            self._fast_call3_dep_indices_c.clear()
         self._root_spell_id = None
         self._root_instance_key = None
         self._steps = None
@@ -579,6 +609,11 @@ class ExecutionPlan(Cleanable):
         self._fast_root_step_index = None
         self._fast_call_modes = None
         self._fast_single_dep_indices = None
+        self._fast_call2_dep_indices_a = None
+        self._fast_call2_dep_indices_b = None
+        self._fast_call3_dep_indices_a = None
+        self._fast_call3_dep_indices_b = None
+        self._fast_call3_dep_indices_c = None
 
     @property
     def root_spell_id(self) -> str:
@@ -635,6 +670,11 @@ class ExecutionPlan(Cleanable):
             int,
             List[int],
             List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
         ]
     ]:
         """
@@ -648,6 +688,7 @@ class ExecutionPlan(Cleanable):
             - Includes the root step index for fast-path result lookup.
             - Includes call-mode metadata and single-dependency indices for
               trivial call shapes.
+            - Includes direct dependency indices for CALL2/CALL3 steps.
         """
         if self._fast_dep_indices is None:
             return None
@@ -674,6 +715,11 @@ class ExecutionPlan(Cleanable):
             self._fast_root_step_index,
             self._fast_call_modes,
             self._fast_single_dep_indices,
+            self._fast_call2_dep_indices_a,
+            self._fast_call2_dep_indices_b,
+            self._fast_call3_dep_indices_a,
+            self._fast_call3_dep_indices_b,
+            self._fast_call3_dep_indices_c,
         )
 
 
@@ -861,6 +907,11 @@ class ExecutionPlanBuilder:
             fast_root_step_index=fast_plan_data[19] if fast_plan_data else None,
             fast_call_modes=fast_plan_data[20] if fast_plan_data else None,
             fast_single_dep_indices=fast_plan_data[21] if fast_plan_data else None,
+            fast_call2_dep_indices_a=fast_plan_data[22] if fast_plan_data else None,
+            fast_call2_dep_indices_b=fast_plan_data[23] if fast_plan_data else None,
+            fast_call3_dep_indices_a=fast_plan_data[24] if fast_plan_data else None,
+            fast_call3_dep_indices_b=fast_plan_data[25] if fast_plan_data else None,
+            fast_call3_dep_indices_c=fast_plan_data[26] if fast_plan_data else None,
         )
 
     def _build_fast_plan_data(
@@ -880,18 +931,23 @@ class ExecutionPlanBuilder:
         List[Optional[List[Tuple[str, Any]]]],
         List[Optional[Any]],
         List[InstanceKey],
-            List[int],
-            List[Existence],
-            List[bool],
-            List[bool],
-            List[ISpell],
-            List[Any],
-            List[Any],
-            List[bool],
-            List[bool],
-            int,
-            List[int],
-            List[int],
+        List[int],
+        List[Existence],
+        List[bool],
+        List[bool],
+        List[ISpell],
+        List[Any],
+        List[Any],
+        List[bool],
+        List[bool],
+        int,
+        List[int],
+        List[int],
+        List[int],
+        List[int],
+        List[int],
+        List[int],
+        List[int],
     ]:
         """
         Build compact arrays for the no-override fast path.
@@ -934,6 +990,11 @@ class ExecutionPlanBuilder:
             )
         fast_call_modes: List[int] = [ExecutionPlanCallMode.CALLN] * step_count
         fast_single_dep_indices: List[int] = [-1] * step_count
+        fast_call2_dep_indices_a: List[int] = [-1] * step_count
+        fast_call2_dep_indices_b: List[int] = [-1] * step_count
+        fast_call3_dep_indices_a: List[int] = [-1] * step_count
+        fast_call3_dep_indices_b: List[int] = [-1] * step_count
+        fast_call3_dep_indices_c: List[int] = [-1] * step_count
 
         seen_spell_ids: set[str] = set()
 
@@ -1043,6 +1104,10 @@ class ExecutionPlanBuilder:
                     dep_count_b = fast_param_group_dep_counts[group_base + 1]
                     if dep_count_a == 1 and dep_count_b == 1:
                         fast_call_modes[step_index] = ExecutionPlanCallMode.CALL2
+                        dep_offset_a = fast_param_group_dep_offsets[group_base]
+                        dep_offset_b = fast_param_group_dep_offsets[group_base + 1]
+                        fast_call2_dep_indices_a[step_index] = fast_dep_indices[dep_offset_a]
+                        fast_call2_dep_indices_b[step_index] = fast_dep_indices[dep_offset_b]
                 elif group_count == 3:
                     group_base = fast_param_group_offsets[step_index]
                     dep_count_a = fast_param_group_dep_counts[group_base]
@@ -1050,6 +1115,12 @@ class ExecutionPlanBuilder:
                     dep_count_c = fast_param_group_dep_counts[group_base + 2]
                     if dep_count_a == 1 and dep_count_b == 1 and dep_count_c == 1:
                         fast_call_modes[step_index] = ExecutionPlanCallMode.CALL3
+                        dep_offset_a = fast_param_group_dep_offsets[group_base]
+                        dep_offset_b = fast_param_group_dep_offsets[group_base + 1]
+                        dep_offset_c = fast_param_group_dep_offsets[group_base + 2]
+                        fast_call3_dep_indices_a[step_index] = fast_dep_indices[dep_offset_a]
+                        fast_call3_dep_indices_b[step_index] = fast_dep_indices[dep_offset_b]
+                        fast_call3_dep_indices_c[step_index] = fast_dep_indices[dep_offset_c]
 
         return (
             fast_dep_indices,
@@ -1074,6 +1145,11 @@ class ExecutionPlanBuilder:
             root_step_index,
             fast_call_modes,
             fast_single_dep_indices,
+            fast_call2_dep_indices_a,
+            fast_call2_dep_indices_b,
+            fast_call3_dep_indices_a,
+            fast_call3_dep_indices_b,
+            fast_call3_dep_indices_c,
         )
 
     @staticmethod
