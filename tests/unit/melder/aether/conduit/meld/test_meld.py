@@ -787,26 +787,6 @@ def test_resolve_local_by_lookup_key_raises_when_spell_missing() -> None:
     with pytest.raises(RuntimeError, match="no spell object found"):
         meld._resolve_local_by_lookup_key(lookup_key)
 
-
-def test_resolve_contracted_by_lookup_key_raises_when_map_missing() -> None:
-    """
-    Verify contracted resolution raises when contracted map is unavailable.
-
-    Contract:
-        - Lookup hit with missing contracted map raises RuntimeError.
-    """
-    lookup_key = ("frame", "binding")
-    spell_index = object()
-    spellbook = _SpellbookStub(
-        contracted_spells={},
-        lookup_contracted_spells={"peer": {lookup_key: spell_index}},
-    )
-    meld = _make_meld(spellbook=spellbook)
-    meld._contracted_spells = None
-    with pytest.raises(RuntimeError, match="contracted spell map is not available"):
-        meld._resolve_contracted_by_lookup_key(lookup_key)
-
-
 def test_resolve_contracted_by_lookup_key_raises_when_conduit_missing() -> None:
     """
     Verify contracted resolution raises when conduit spell map is absent.

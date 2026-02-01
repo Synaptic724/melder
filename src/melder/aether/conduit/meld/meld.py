@@ -1135,21 +1135,12 @@ class Meld(Cleanable, IMeld):
                   * the spell map does not contain a spell object for
                     the resolved ``SpellIndex``.
         """
-        if self._lookup_contracted_spells is None:
-            return None
-
         # If contracted lookup maps exist, we expect contracted spell maps
         # to exist as well. We only enforce this when we actually find a hit.
         for conduit_id, lookup_map in self._lookup_contracted_spells.items():
             spell_index = lookup_map.get(lookup_key)
             if spell_index is None:
                 continue
-
-            if self._contracted_spells is None:
-                raise RuntimeError(
-                    f"[MELD] Contracted lookup map exists for conduit "
-                    f"'{conduit_id}' but contracted spell map is not available."
-                )
 
             spell_map = self._contracted_spells.get(conduit_id)
             if spell_map is None:
@@ -1435,18 +1426,6 @@ class Meld(Cleanable, IMeld):
                 creation = creations._unique.get(spell_id)
                 return creation.value if creation is not None else None
 
-            if existence is Existence.unique_per_conduit:
-                creation = creations._unique_per_scope.get(spell_id)
-                return creation.value if creation is not None else None
-
-            if existence is Existence.unique_per_conduit_cluster:
-                creation = creations._unique_per_cluster.get(spell_id)
-                return creation.value if creation is not None else None
-
-            if existence is Existence.unique_per_conduit_lineage:
-                creation = creations._unique_per_lineage.get(spell_id)
-                return creation.value if creation is not None else None
-
             if existence is Existence.unique_per_spell_space:
                 spellspace = creations._conduit.get_active_spellspace()
                 if spellspace is None:
@@ -1461,6 +1440,18 @@ class Meld(Cleanable, IMeld):
                 creation = creations.get_spellspace_creation(spellspace.id, spell_id)
                 return creation.value if creation is not None else None
 
+            if existence is Existence.unique_per_conduit:
+                creation = creations._unique_per_scope.get(spell_id)
+                return creation.value if creation is not None else None
+
+            if existence is Existence.unique_per_conduit_cluster:
+                creation = creations._unique_per_cluster.get(spell_id)
+                return creation.value if creation is not None else None
+
+            if existence is Existence.unique_per_conduit_lineage:
+                creation = creations._unique_per_lineage.get(spell_id)
+                return creation.value if creation is not None else None
+
             # Defensive fallback
             return None
 
@@ -1470,7 +1461,7 @@ class Meld(Cleanable, IMeld):
                 creation = creations._unique_per_scope.get(spell_id)
                 return creation.value if creation is not None else None
             # Delegate frame-level singletons to parent creations when available.
-            parent_creations = creations._parent_creations
+            parent_creations = creations._parent_creations #TODO: @CODEX, unknown if this means root creations or parent, if its parent we have a bug
             if isinstance(parent_creations, Creations):
                 if existence is Existence.unique:
                     found = parent_creations._unique.get(spell_id)
