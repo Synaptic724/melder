@@ -379,7 +379,6 @@ class ExecutionPlan(Cleanable):
         "_fast_call3_dep_indices_b",
         "_fast_call3_dep_indices_c",
         "_fast_transient_plan",
-
     ]
 
     def __init__(
@@ -433,7 +432,6 @@ class ExecutionPlan(Cleanable):
                     List[int],
                 ]
             ] = None,
-
     ) -> None:
         """
         Initialize a Phase 11 execution plan.
@@ -479,7 +477,6 @@ class ExecutionPlan(Cleanable):
             fast_call3_dep_indices_b: Second dependency index for CALL3 steps (fast path).
             fast_call3_dep_indices_c: Third dependency index for CALL3 steps (fast path).
             fast_transient_plan: Specialized plan for transient-only fast execution.
-
         """
         super().__init__()
         if root_spell_id is None:
@@ -532,7 +529,6 @@ class ExecutionPlan(Cleanable):
         self._fast_call3_dep_indices_b = fast_call3_dep_indices_b
         self._fast_call3_dep_indices_c = fast_call3_dep_indices_c
         self._fast_transient_plan = fast_transient_plan
-
 
     def cleanup(self) -> None:
         """
@@ -640,7 +636,6 @@ class ExecutionPlan(Cleanable):
         self._fast_call3_dep_indices_b = None
         self._fast_call3_dep_indices_c = None
         self._fast_transient_plan = None
-
 
     @property
     def root_spell_id(self) -> str:
@@ -774,7 +769,6 @@ class ExecutionPlan(Cleanable):
             - Only valid when all steps are Existence.many, callable, and require no registration.
         """
         return self._fast_transient_plan
-
 
 
 class ExecutionPlanBuilder:
@@ -985,7 +979,6 @@ class ExecutionPlanBuilder:
             fast_call3_dep_indices_b=fast_plan_data[25] if fast_plan_data else None,
             fast_call3_dep_indices_c=fast_plan_data[26] if fast_plan_data else None,
             fast_transient_plan=fast_transient_plan,
-
         )
 
     def _build_fast_plan_data(

@@ -1324,8 +1324,6 @@ class Meld(Cleanable, IMeld):
         is_existing_creation = spell.is_existing_creation
         has_disposal_methods = spell.has_disposal_methods
         spellspace = None
-        if existence is Existence.unique_per_spell_space and creations is not None:
-            spellspace = self._get_active_spellspace_for_creations(creations)
         if creations is None and existence in (
                 Existence.unique_per_conduit,
                 Existence.unique_per_spell_space,
@@ -1338,14 +1336,11 @@ class Meld(Cleanable, IMeld):
         created = False
 
         if existence is Existence.many:
-            if is_existing_creation:
-                instance = spell.user_created_object
-            else:
-                instance = self._meld_by_spell_type(
-                    spell,
-                    overrides,
-                    caller_creations_lock_held=False,
-                )
+            instance = self._meld_by_spell_type(
+                spell,
+                overrides,
+                caller_creations_lock_held=False,
+            )
             if not has_disposal_methods:
                 return instance, True
             if is_existing_creation and creations is not None:
@@ -1358,6 +1353,9 @@ class Meld(Cleanable, IMeld):
                     )
             return instance, True
 
+        if existence is Existence.unique_per_spell_space and creations is not None:
+            spellspace = self._get_active_spellspace_for_creations(creations)
+
         if existence in (
                 Existence.unique_per_conduit,
                 Existence.unique_per_spell_space,
@@ -1369,14 +1367,11 @@ class Meld(Cleanable, IMeld):
                     spellspace=spellspace,
                 )
                 if instance is None:
-                    if is_existing_creation:
-                        instance = spell.user_created_object
-                    else:
-                        instance = self._meld_by_spell_type(
-                            spell,
-                            overrides,
-                            caller_creations_lock_held=True,
-                        )
+                    instance = self._meld_by_spell_type(
+                        spell,
+                        overrides,
+                        caller_creations_lock_held=True,
+                    )
                     if is_existing_creation:
                         self._register_spell(
                             spell,
@@ -1395,23 +1390,19 @@ class Meld(Cleanable, IMeld):
         with spell._lock:
             if creations is not None:
                 with creations._lock:
-                    instance = self._get_existing_creation_from_creations(
-                        spell=spell,
-                        creations=creations,
-                        spellspace=spellspace,
+                    instance = self._get_existing_creation(
+                        spell,
+                        creations,
                     )
             else:
                 instance = self._get_existing_creation(spell, None)
 
             if instance is None:
-                if is_existing_creation:
-                    instance = spell.user_created_object
-                else:
-                    instance = self._meld_by_spell_type(
-                        spell,
-                        overrides,
-                        caller_creations_lock_held=False,
-                    )
+                instance = self._meld_by_spell_type(
+                    spell,
+                    overrides,
+                    caller_creations_lock_held=False,
+                )
                 if is_existing_creation and creations is not None:
                     with creations._lock:
                         self._register_spell(
@@ -1530,6 +1521,30 @@ class Meld(Cleanable, IMeld):
             return None
 
         return None
+
+    def _get_active_spellspace_for_creations(
+            self,
+            creations: Any,
+    ) -> Any:
+        """
+        Resolve and validate the active SpellSpace for a creations container.
+
+        Contract:
+            - Raises SpellSpaceScopeError when no active spellspace is present.
+            - Raises SpellSpaceScopeError when the active spellspace belongs to
+              a different conduit.
+        """
+        spellspace = creations._conduit.get_active_spellspace()
+        if spellspace is None:
+            raise SpellSpaceScopeError(
+                "Existence.unique_per_spell_space requires an active SpellSpace. "
+                "Use 'with conduit.enter_spellspace()' when melding."
+            )
+        if spellspace.owner_conduit is not creations._conduit:
+            raise SpellSpaceScopeError(
+                "Active SpellSpace belongs to a different conduit."
+            )
+        return spellspace
 
     def _get_active_spellspace_for_creations(
             self,
@@ -1704,7 +1719,7 @@ class Meld(Cleanable, IMeld):
             instance: Any,
             creations: ICreations,
             *,
-            spellspace: Optional[Any] = None,
+            spellspace: Optional[Any],
     ) -> None:
         """
         Handles registration for the full Creations manager (used by a normal Conduit).
@@ -1803,7 +1818,7 @@ class Meld(Cleanable, IMeld):
             instance: Any,
             creations: ILesserCreations,
             *,
-            spellspace: Optional[Any] = None,
+            spellspace: Optional[Any],
     ) -> None:
         """
         Handles registration for the LesserCreations manager (used by a LesserConduit).
