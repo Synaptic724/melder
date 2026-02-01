@@ -20,6 +20,7 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.meld.meld_gate import MeldGate
+from melder.aether.conduit.meld.meld_gate_controller import MeldGateController
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
@@ -52,6 +53,7 @@ class Conduit(Cleanable, IConduit):
             logger: Any | None = None,
             conduit_id: Optional[str] = None,
             meld_gate: MeldGate | None = None,
+            meld_gate_controller: MeldGateController | None = None,
     ):
         """
         Public API
@@ -79,8 +81,11 @@ class Conduit(Cleanable, IConduit):
                 Optional explicit conduit identifier. When None, an ID is generated
                 via IDBuilder.create_id().
             meld_gate (MeldGate | None, optional):
-                Optional shared MeldGate for this conduit lineage. When None,
-                a new MeldGate is created for this Conduit.
+                Optional MeldGate to register for this conduit. When None,
+                a new gate is created via the MeldGateController.
+            meld_gate_controller (MeldGateController | None, optional):
+                Optional controller used to create and register MeldGates for
+                this conduit and its lineage. Normal conduits own the controller.
 
         Raises:
             TypeError:
@@ -119,8 +124,17 @@ class Conduit(Cleanable, IConduit):
 
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
+        self._meld_gate_controller: MeldGateController | None = meld_gate_controller
+        self._owns_meld_gate_controller: bool = False
+        if self._meld_gate_controller is None:
+            self._meld_gate_controller = MeldGateController()
+            self._owns_meld_gate_controller = (conduit_state == ConduitState.normal)
+        elif conduit_state == ConduitState.normal:
+            self._owns_meld_gate_controller = True
         if meld_gate is None:
-            meld_gate = MeldGate()
+            meld_gate = self._meld_gate_controller.create_gate(conduit_id)
+        else:
+            self._meld_gate_controller.register_gate(conduit_id, meld_gate)
         self._meld_gate: MeldGate = meld_gate
         self._spellbook: ISpellbook = spellbook
         self._meld: Meld = Meld(
@@ -222,6 +236,13 @@ class Conduit(Cleanable, IConduit):
         # Lesser conduits share the parent Spellbook and are not root-registered
         # in Aether. We tear down local runtime and lineage links, but do not
         # touch the shared Spellbook/Aether registries.
+        if self._meld_gate_controller is not None:
+            try:
+                self._meld_gate_controller.unregister_gate(self._id)
+            except Exception:
+                self._logger.error(
+                    "Error unregistering meld gate", "_cleanup_lesser_conduit", exc_info=True
+                )
         if self._meld_gate is not None:
             self._meld_gate.cleanup()
         try:
@@ -248,6 +269,8 @@ class Conduit(Cleanable, IConduit):
         self._conduit_ward = None
         self._meld = None
         self._meld_gate = None
+        self._meld_gate_controller = None
+        self._owns_meld_gate_controller = None
         self._creations = None
         self._spellspace_stack = None
         self._spellspace_registry = None
@@ -262,6 +285,13 @@ class Conduit(Cleanable, IConduit):
         Cleans up a normal Conduit.
         """
         # 1) Meld runtime (stop new object creation paths)
+        if self._meld_gate_controller is not None:
+            try:
+                self._meld_gate_controller.unregister_gate(self._id)
+            except Exception:
+                self._logger.error(
+                    "Error unregistering meld gate", "_cleanup_normal_conduit", exc_info=True
+                )
         if self._meld_gate is not None:
             self._meld_gate.cleanup()
         try:
@@ -286,6 +316,15 @@ class Conduit(Cleanable, IConduit):
                 self._creations.cleanup()
         except Exception:
             self._logger.error("Error cleaning creations", "_cleanup_normal_conduit", exc_info=True)
+
+        # 3.5) Meld gate controller (normal conduits only)
+        try:
+            if self._owns_meld_gate_controller and self._meld_gate_controller is not None:
+                self._meld_gate_controller.cleanup()
+        except Exception:
+            self._logger.error(
+                "Error cleaning meld gate controller", "_cleanup_normal_conduit", exc_info=True
+            )
 
         # 4) Unregister from Aether (spells + root conduit + cloud)
         try:
@@ -316,6 +355,8 @@ class Conduit(Cleanable, IConduit):
         self._conduit_ward = None
         self._meld = None
         self._meld_gate = None
+        self._meld_gate_controller = None
+        self._owns_meld_gate_controller = None
         self._creations = None
         self._spellbook = None
         self._configuration = None
@@ -975,29 +1016,34 @@ class Conduit(Cleanable, IConduit):
         if self._meld is not None:
             self._meld.set_meld_hooks(self._conduit_hooks)
 
-    def _set_meld_gate_for_lineage(self, meld_gate: MeldGate) -> None:
+    def _set_meld_gate_controller_for_lineage(
+            self,
+            meld_gate_controller: MeldGateController,
+    ) -> None:
         """
         Internal
 
-        Assign a shared MeldGate to this Conduit and all lesser descendants.
+        Assign a shared MeldGateController and new per-conduit gates across a lineage.
 
         Purpose:
-            Ensure a conduit tree shares a single meld gate so that enable/disable
-            operations apply uniformly across the lineage.
+            Ensure a conduit tree registers per-conduit gates to the same controller
+            so the controller can enable/disable all gates at once.
 
         Contract:
-            - Overwrites `_meld_gate` on this conduit and all lesser conduits.
+            - Overwrites `_meld_gate_controller` on this conduit and all lesser conduits.
+            - Creates and assigns a new MeldGate for each conduit in the lineage.
             - Uses the ConduitWard lineage map to find descendants.
-            - Does not create or dispose the gate (caller owns lifecycle).
+            - Caller owns the controller lifecycle.
         """
-        self._meld_gate = meld_gate
+        self._meld_gate_controller = meld_gate_controller
+        self._meld_gate = meld_gate_controller.create_gate(self._id)
         ward = self._conduit_ward
         if ward is None:
             return
         with ward._lock:
             lesser_conduits = list(ward._lesser_conduits.values())
         for lesser_conduit in lesser_conduits:
-            lesser_conduit._set_meld_gate_for_lineage(meld_gate)
+            lesser_conduit._set_meld_gate_controller_for_lineage(meld_gate_controller)
 
     def upgrade_to_normal(
             self,
@@ -1049,7 +1095,7 @@ class Conduit(Cleanable, IConduit):
             - Transfers existing lesser creations into a normal-creations manager.
             - Rewires meld runtime to use the upgraded creations manager.
             - Seeds per-conduit resolution state from the prior root conduit when available.
-            - Replaces the lineage MeldGate with a new gate for this upgraded tree.
+            - Replaces the lineage MeldGateController and per-conduit gates for this tree.
         """
         with self._lock:
             if not self.__dynamic_environment__:
@@ -1103,7 +1149,11 @@ class Conduit(Cleanable, IConduit):
                 self._conduit_ward._convert_to_normal_conduit()
 
                 # Step 5.5: Replace the meld gate for this upgraded lineage tree.
-                self._set_meld_gate_for_lineage(MeldGate())
+                if self._meld_gate_controller is not None:
+                    self._meld_gate_controller.unregister_gate(self._id)
+                self._meld_gate_controller = MeldGateController()
+                self._owns_meld_gate_controller = True
+                self._set_meld_gate_controller_for_lineage(self._meld_gate_controller)
 
                 # Step 6: Reconfigure the spellbook
                 self._spellbook.create_new_preset_spellbook()
@@ -1181,9 +1231,8 @@ class Conduit(Cleanable, IConduit):
         Creates a **lesser Conduit** (child node) attached to this Conduit.
 
         The lesser conduit inherits the parent's Spellbook and Configuration but is restricted
-        in its ability to establish external links or register new spells. It also
-        shares the parent MeldGate so enable/disable meld operations apply across
-        the lineage tree.
+        in its ability to establish external links or register new spells. It owns
+        a conduit-local MeldGate created by the lineage MeldGateController.
 
         If this (parent) Conduit has lifecycle hooks attached via the Configuration
         for its Spellbook, the following hooks will be fired in order:
@@ -1232,7 +1281,7 @@ class Conduit(Cleanable, IConduit):
                 policy=Policies.default,
                 automatic=self._automatic,
                 logger=logger,
-                meld_gate=self._meld_gate,
+                meld_gate_controller=self._meld_gate_controller,
             )
             # Provide root-scope creations for delegation of frame-level singletons.
             if self._conduit_state == ConduitState.normal:
@@ -2143,8 +2192,8 @@ class Conduit(Cleanable, IConduit):
             Release any blocked meld calls and allow new melds to proceed.
 
         Contract:
-            - Delegates to the shared MeldGate for this conduit tree.
-            - Applies to this conduit and all lesser conduits that share the gate.
+            - Delegates to the local MeldGate for this conduit.
+            - Use MeldGateController to enable all registered gates.
 
         Raises:
             RuntimeError: If the Conduit has been cleaned.
@@ -2162,8 +2211,8 @@ class Conduit(Cleanable, IConduit):
             Block meld calls until enable_meld() is invoked.
 
         Contract:
-            - Delegates to the shared MeldGate for this conduit tree.
-            - Applies to this conduit and all lesser conduits that share the gate.
+            - Delegates to the local MeldGate for this conduit.
+            - Use MeldGateController to disable all registered gates.
 
         Raises:
             RuntimeError: If the Conduit has been cleaned.
@@ -2198,8 +2247,9 @@ class Conduit(Cleanable, IConduit):
 
         Resolution, reuse, and lifecycle behavior are delegated to
         the underlying ``Meld`` instance.
-        If the Conduit lineage has been disabled via the MeldGate, this
-        call blocks until meld execution is re-enabled.
+        If this Conduit's MeldGate is disabled, this call blocks until meld
+        execution is re-enabled. The MeldGateController can disable all
+        registered gates in a lineage.
 
         Args:
             spell_name:
@@ -2230,6 +2280,7 @@ class Conduit(Cleanable, IConduit):
             RuntimeError:
                 - If the Conduit has been cleaned.
                 - If the underlying ``Meld`` instance is missing.
+                - If the MeldGate is closed.
             ValueError:
                 - If none of `spell_name`, `spell`, or `spellframe` are provided.
             TypeError:
@@ -2245,49 +2296,57 @@ class Conduit(Cleanable, IConduit):
                 Propagated from ``Meld.meld`` if hook execution fails.
         """
         self.check_cleaned()
-        if not self._meld_gate.enabled:
-            self._meld_gate.wait()
-        if spell_name is None and spell is None and spellframe is None:
-            self._logger.error(
-                "Conduit.meld requires at least one of spell_name, spell, or spellframe",
-                "meld",
+        self._meld_gate.register_ticket()
+        try:
+            if self._meld_gate.is_closed():
+                raise RuntimeError("[CONDUIT] MeldGate is closed.")
+            if not self._meld_gate.enabled:
+                self._meld_gate.wait()
+            if self._meld_gate.is_closed():
+                raise RuntimeError("[CONDUIT] MeldGate is closed.")
+            if spell_name is None and spell is None and spellframe is None:
+                self._logger.error(
+                    "Conduit.meld requires at least one of spell_name, spell, or spellframe",
+                    "meld",
+                )
+                raise ValueError(
+                    "[CONDUIT] meld(...) requires at least one of "
+                    "`spell_name`, `spell`, or `spellframe`."
+                )
+
+            if spell_name is not None and not isinstance(spell_name, str):
+                self._logger.error("spell_name must be a string when provided", "meld")
+                raise TypeError(
+                    "[CONDUIT] 'spell_name' must be a string when "
+                    "provided to Conduit.meld()."
+                )
+
+            if binding_name is not None and not isinstance(binding_name, str):
+                self._logger.error("binding_name must be a string identifier when provided", "meld")
+                raise TypeError(
+                    "[CONDUIT] 'binding_name' must be a string identifier when "
+                    "provided to Conduit.meld()."
+                )
+
+            if self._meld is None:
+                self._logger.error("Meld instance is not available", "meld")
+                raise RuntimeError("[CONDUIT] Meld instance is not available.")
+
+            self._fire_conduit_hooks("on_meld_pre_resolve", self)
+
+            result = self._meld.meld(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                spell_override=spell_override,
             )
-            raise ValueError(
-                "[CONDUIT] meld(...) requires at least one of "
-                "`spell_name`, `spell`, or `spellframe`."
-            )
 
-        if spell_name is not None and not isinstance(spell_name, str):
-            self._logger.error("spell_name must be a string when provided", "meld")
-            raise TypeError(
-                "[CONDUIT] 'spell_name' must be a string when "
-                "provided to Conduit.meld()."
-            )
+            self._fire_conduit_hooks("on_meld_post_resolve", self)
 
-        if binding_name is not None and not isinstance(binding_name, str):
-            self._logger.error("binding_name must be a string identifier when provided", "meld")
-            raise TypeError(
-                "[CONDUIT] 'binding_name' must be a string identifier when "
-                "provided to Conduit.meld()."
-            )
-
-        if self._meld is None:
-            self._logger.error("Meld instance is not available", "meld")
-            raise RuntimeError("[CONDUIT] Meld instance is not available.")
-
-        self._fire_conduit_hooks("on_meld_pre_resolve", self)
-
-        result = self._meld.meld(
-            spell_name=spell_name,
-            spell=spell,
-            spellframe=spellframe,
-            binding_name=binding_name,
-            spell_override=spell_override,
-        )
-
-        self._fire_conduit_hooks("on_meld_post_resolve", self)
-
-        return result
+            return result
+        finally:
+            self._meld_gate.unregister_ticket()
 
 
 
