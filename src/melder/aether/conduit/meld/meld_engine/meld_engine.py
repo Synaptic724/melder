@@ -588,7 +588,6 @@ class MeldEngine(Cleanable):
         self._any_overrides_present = False
 
         fast_plan = execution_plan.fast_plan
-        transient_plan = execution_plan.fast_transient_plan
         steps = execution_plan.steps
 
         if fast_plan is None:
@@ -649,50 +648,6 @@ class MeldEngine(Cleanable):
         step_count = len(fast_instance_keys)
         fast_values: List[Any] = [None] * step_count
         frame = self._frame
-        if frame is None and transient_plan is not None:
-            (
-                transient_step_count,
-                transient_root_index,
-                transient_targets,
-                transient_call_modes,
-                transient_dep1,
-                transient_dep2a,
-                transient_dep2b,
-                transient_dep3a,
-                transient_dep3b,
-                transient_dep3c,
-            ) = transient_plan
-            transient_values: List[Any] = [None] * transient_step_count
-            for step_index in range(transient_step_count):
-                call_target = transient_targets[step_index]
-                call_mode = transient_call_modes[step_index]
-                try:
-                    if call_mode == ExecutionPlanCallMode.CALL0:
-                        instance = call_target()
-                    elif call_mode == ExecutionPlanCallMode.CALL1:
-                        instance = call_target(transient_values[transient_dep1[step_index]])
-                    elif call_mode == ExecutionPlanCallMode.CALL2:
-                        instance = call_target(
-                            transient_values[transient_dep2a[step_index]],
-                            transient_values[transient_dep2b[step_index]],
-                        )
-                    else:
-                        instance = call_target(
-                            transient_values[transient_dep3a[step_index]],
-                            transient_values[transient_dep3b[step_index]],
-                            transient_values[transient_dep3c[step_index]],
-                        )
-                except Exception as exc:
-                    spell = fast_spells[step_index]
-                    raise MeldExecutionError(
-                        spell_id=spell.spell_index.current,
-                        spell_name=spell.spell_name,
-                        message=f"Error invoking spell '{spell.spell_name}'.",
-                        inner=exc,
-                    ) from exc
-                transient_values[step_index] = instance
-            return transient_values[transient_root_index]
-
         if frame is None:
             for step_index in range(step_count):
                 existence = fast_existence[step_index]

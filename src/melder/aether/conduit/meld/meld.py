@@ -1324,6 +1324,8 @@ class Meld(Cleanable, IMeld):
         is_existing_creation = spell.is_existing_creation
         has_disposal_methods = spell.has_disposal_methods
         spellspace = None
+        if existence is Existence.unique_per_spell_space and creations is not None:
+            spellspace = self._get_active_spellspace_for_creations(creations)
         if creations is None and existence in (
                 Existence.unique_per_conduit,
                 Existence.unique_per_spell_space,
@@ -1355,9 +1357,6 @@ class Meld(Cleanable, IMeld):
                         spellspace=spellspace,
                     )
             return instance, True
-
-        if existence is Existence.unique_per_spell_space and creations is not None:
-            spellspace = self._get_active_spellspace_for_creations(creations)
 
         if existence in (
                 Existence.unique_per_conduit,

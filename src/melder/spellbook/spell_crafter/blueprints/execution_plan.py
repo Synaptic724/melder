@@ -378,7 +378,6 @@ class ExecutionPlan(Cleanable):
         "_fast_call3_dep_indices_a",
         "_fast_call3_dep_indices_b",
         "_fast_call3_dep_indices_c",
-        "_fast_transient_plan",
     ]
 
     def __init__(
@@ -418,20 +417,6 @@ class ExecutionPlan(Cleanable):
             fast_call3_dep_indices_a: Optional[List[int]] = None,
             fast_call3_dep_indices_b: Optional[List[int]] = None,
             fast_call3_dep_indices_c: Optional[List[int]] = None,
-            fast_transient_plan: Optional[
-                Tuple[
-                    int,
-                    int,
-                    List[Any],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                ]
-            ] = None,
     ) -> None:
         """
         Initialize a Phase 11 execution plan.
@@ -476,7 +461,6 @@ class ExecutionPlan(Cleanable):
             fast_call3_dep_indices_a: First dependency index for CALL3 steps (fast path).
             fast_call3_dep_indices_b: Second dependency index for CALL3 steps (fast path).
             fast_call3_dep_indices_c: Third dependency index for CALL3 steps (fast path).
-            fast_transient_plan: Specialized plan for transient-only fast execution.
         """
         super().__init__()
         if root_spell_id is None:
@@ -528,7 +512,6 @@ class ExecutionPlan(Cleanable):
         self._fast_call3_dep_indices_a = fast_call3_dep_indices_a
         self._fast_call3_dep_indices_b = fast_call3_dep_indices_b
         self._fast_call3_dep_indices_c = fast_call3_dep_indices_c
-        self._fast_transient_plan = fast_transient_plan
 
     def cleanup(self) -> None:
         """
@@ -597,10 +580,6 @@ class ExecutionPlan(Cleanable):
             self._fast_call3_dep_indices_b.clear()
         if self._fast_call3_dep_indices_c is not None:
             self._fast_call3_dep_indices_c.clear()
-        if self._fast_transient_plan is not None:
-            for plan_list in self._fast_transient_plan[2:]:
-                if isinstance(plan_list, list):
-                    plan_list.clear()
         self._root_spell_id = None
         self._root_instance_key = None
         self._steps = None
@@ -635,7 +614,6 @@ class ExecutionPlan(Cleanable):
         self._fast_call3_dep_indices_a = None
         self._fast_call3_dep_indices_b = None
         self._fast_call3_dep_indices_c = None
-        self._fast_transient_plan = None
 
     @property
     def root_spell_id(self) -> str:
@@ -978,7 +956,6 @@ class ExecutionPlanBuilder:
             fast_call3_dep_indices_a=fast_plan_data[24] if fast_plan_data else None,
             fast_call3_dep_indices_b=fast_plan_data[25] if fast_plan_data else None,
             fast_call3_dep_indices_c=fast_plan_data[26] if fast_plan_data else None,
-            fast_transient_plan=fast_transient_plan,
         )
 
     def _build_fast_plan_data(
@@ -1217,78 +1194,6 @@ class ExecutionPlanBuilder:
             fast_call3_dep_indices_a,
             fast_call3_dep_indices_b,
             fast_call3_dep_indices_c,
-        )
-
-    def _build_fast_transient_plan(
-            self,
-            *,
-            steps: List[ExecutionPlanStep],
-            fast_call_targets: List[Any],
-            fast_existence: List[Existence],
-            fast_must_register: List[bool],
-            fast_is_existing_creation: List[bool],
-            fast_is_callable: List[bool],
-            fast_call_modes: List[int],
-            fast_single_dep_indices: List[int],
-            fast_call2_dep_indices_a: List[int],
-            fast_call2_dep_indices_b: List[int],
-            fast_call3_dep_indices_a: List[int],
-            fast_call3_dep_indices_b: List[int],
-            fast_call3_dep_indices_c: List[int],
-            root_step_index: int,
-    ) -> Optional[Tuple[int, int, List[Any], List[int], List[int], List[int], List[int], List[int], List[int], List[int]]]:
-        """
-        Build a specialized transient-only plan for no-overrides execution.
-
-        Contract:
-            - Returns None if any step is not a transient callable without registration.
-            - CALLN steps are not supported by the transient plan.
-        """
-        step_count = len(steps)
-        transient_targets: List[Any] = [None] * step_count
-        transient_call_modes: List[int] = [ExecutionPlanCallMode.CALLN] * step_count
-        transient_dep1: List[int] = [-1] * step_count
-        transient_dep2a: List[int] = [-1] * step_count
-        transient_dep2b: List[int] = [-1] * step_count
-        transient_dep3a: List[int] = [-1] * step_count
-        transient_dep3b: List[int] = [-1] * step_count
-        transient_dep3c: List[int] = [-1] * step_count
-
-        for index in range(step_count):
-            if fast_existence[index] is not Existence.many:
-                return None
-            if fast_must_register[index]:
-                return None
-            if fast_is_existing_creation[index]:
-                return None
-            if not fast_is_callable[index]:
-                return None
-            call_mode = fast_call_modes[index]
-            if call_mode == ExecutionPlanCallMode.CALLN:
-                return None
-            transient_targets[index] = fast_call_targets[index]
-            transient_call_modes[index] = call_mode
-            if call_mode == ExecutionPlanCallMode.CALL1:
-                transient_dep1[index] = fast_single_dep_indices[index]
-            elif call_mode == ExecutionPlanCallMode.CALL2:
-                transient_dep2a[index] = fast_call2_dep_indices_a[index]
-                transient_dep2b[index] = fast_call2_dep_indices_b[index]
-            elif call_mode == ExecutionPlanCallMode.CALL3:
-                transient_dep3a[index] = fast_call3_dep_indices_a[index]
-                transient_dep3b[index] = fast_call3_dep_indices_b[index]
-                transient_dep3c[index] = fast_call3_dep_indices_c[index]
-
-        return (
-            step_count,
-            root_step_index,
-            transient_targets,
-            transient_call_modes,
-            transient_dep1,
-            transient_dep2a,
-            transient_dep2b,
-            transient_dep3a,
-            transient_dep3b,
-            transient_dep3c,
         )
 
     @staticmethod
