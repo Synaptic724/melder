@@ -34,6 +34,7 @@ class DagNode(Cleanable):
         "_incoming_params",
         "_payload",
         "_tasks",
+        "__dict__",
     ]
     def __init__(self, key: str, payload: Any | None = None) -> None:
         """

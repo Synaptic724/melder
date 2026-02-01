@@ -27,7 +27,6 @@ class MethodInspector:
         TypeError: If fn is not callable.
     """
     __melder_internal__ = _mrg.sentinel
-    __slots__ = ("fn", "max_repr", "data")
     utility = InspectorUtility
     def __init__(self, fn: Callable, *, max_repr: int = 120):
         """
