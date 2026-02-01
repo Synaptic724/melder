@@ -106,7 +106,6 @@ class ExecutionPlanStep:
         "_owner_conduit_required",
         "_must_register",
         "_disposal_method_names",
-        "_fast_transient_plan",
     ]
 
     def __init__(
@@ -379,6 +378,8 @@ class ExecutionPlan(Cleanable):
         "_fast_call3_dep_indices_a",
         "_fast_call3_dep_indices_b",
         "_fast_call3_dep_indices_c",
+        "_fast_transient_plan",
+
     ]
 
     def __init__(
