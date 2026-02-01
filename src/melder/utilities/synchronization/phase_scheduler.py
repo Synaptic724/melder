@@ -2,7 +2,9 @@ import threading
 import time
 from concurrent.futures import wait, FIRST_EXCEPTION
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
-from collections import deque
+from queue import SimpleQueue
+
+from melder.utilities.custom_exceptions.empty_error import Empty
 from melder.utilities.interfaces.interfaces import IConfiguration, ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
@@ -112,7 +114,7 @@ class PhaseScheduler(Cleanable):
         self._cancel_event: CancellationEvent = self._cancel_signal.event
 
         # Use concurrent containers for shared state.
-        self._queue: deque[Any] = deque()
+        self._queue: SimpleQueue[Any] = SimpleQueue()
         self._threads: List[threading.Thread] = []
         self._workers_started: bool = False
         self._shutdown: bool = False
@@ -183,7 +185,7 @@ class PhaseScheduler(Cleanable):
             # Send a sentinel to each worker if they've been started and the queue exists.
             if self._workers_started and self._queue is not None:
                 for _ in range(self._workers):
-                    self._queue.append(self._sentinel)
+                    self._queue.put(self._sentinel)
 
             # Join threads.
             for thread in self._threads:
@@ -195,7 +197,11 @@ class PhaseScheduler(Cleanable):
 
             # Clean up the queue itself if present.
             if self._queue is not None:
-                self._queue.clear()
+                for _ in range(self._queue.qsize()):
+                    try:
+                        self._queue.get_nowait()
+                    except Exception:
+                        break
                 self._queue = None
 
             if self._threads is not None:
@@ -390,9 +396,8 @@ class PhaseScheduler(Cleanable):
             # Non-blocking dequeue using ConcurrentQueue.
             # If empty, briefly sleep to avoid a hot spin.
             try:
-                uow = self._queue.popleft()
-            except IndexError:
-                time.sleep(0.0001)
+                uow = self._queue.get(timeout=0.1)
+            except Empty:
                 continue
 
             if uow is self._sentinel:
@@ -411,7 +416,6 @@ class PhaseScheduler(Cleanable):
     # ------------------------------------------------------------------
     # Phase execution / barrier
     # ------------------------------------------------------------------
-
     def _run_single_phase(
             self,
             phase_name: str,
@@ -461,61 +465,78 @@ class PhaseScheduler(Cleanable):
 
         # Enqueue all units.
         for uow in units:
-            self._queue.append(uow)
+            self._queue.put(uow)
 
         timeout_sec = self._barrier_timeout_ms / 1000.0
 
-        # Barrier: wait for futures tied to this phase to complete or fail.
-        start = time.monotonic()
-        deadline = start + timeout_sec
-        pending = set(units)
-        done: set[UnitOfWork] = set()
+        # One wait call:
+        # - returns early on first exception (fail-fast)
+        # - otherwise returns when all complete
+        # - or returns at timeout with pending non-empty
+        done, pending = wait(
+            units,
+            timeout=timeout_sec,
+            return_when=FIRST_EXCEPTION,
+        )
 
-        while pending:
-            if self._cancel_signal.is_set:
-                errors = [uow.exception() for uow in done if uow.exception() is not None]
-                if errors:
-                    raise PhaseExecutionError(phase_name, errors)
-                raise PhaseSchedulerError(
-                    f"Phase '{phase_name}' cancelled during execution."
-                )
-
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                # Timed out: signal cancellation and raise.
-                self._cancel_signal.cancel()
-                raise PhaseTimeoutError(phase_name, self._barrier_timeout_ms)
-
-            # Poll in tight intervals so we can fail fast on exceptions/cancel.
-            wait_timeout = min(0.0001, remaining)
-            done_now, pending = wait(
-                pending,
-                timeout=wait_timeout,
-                return_when=FIRST_EXCEPTION,
-            )
-
-            if done_now:
-                done.update(done_now)
-                errors = [uow.exception() for uow in done_now if uow.exception() is not None]
-                if errors:
-                    # Cancel downstream phases.
-                    self._cancel_signal.cancel()
-                    all_errors = [uow.exception() for uow in done if uow.exception() is not None]
-                    raise PhaseExecutionError(phase_name, all_errors)
-
-        # All Futures completed (either with result, exception, or cancellation).
+        # If any completed unit failed, fail fast.
         errors: List[BaseException] = []
-        for uow in units:
-            exc = uow.exception()
+        for uow in done:
+            try:
+                exc = uow.exception()
+            except BaseException as e:
+                # Defensive: Future.exception() can raise (e.g. CancelledError).
+                exc = e
             if exc is not None:
                 errors.append(exc)
 
         if errors:
             # Cancel downstream phases.
             self._cancel_signal.cancel()
+
+            # Best-effort: mark unfinished units as cancelled so nothing is left "pending forever".
+            # IMPORTANT: do NOT call uow.cancel() here because workers still dequeue and call uow().
+            for uow in pending:
+                if not uow.done():
+                    try:
+                        uow.set_exception(
+                            OperationCancelledError(
+                                f"Phase '{phase_name}' aborted due to an earlier failure."
+                            )
+                        )
+                    except Exception:
+                        # Ignore races with workers completing the unit.
+                        pass
+
             raise PhaseExecutionError(phase_name, errors)
 
+        # If cancelled externally (no unit error yet), treat as cancellation.
+        # NOTE: This will only be observed after wait() returns. If you need immediate response to
+        # external cancel, you must add a cancel-aware wakeup (see notes below).
+        if self._cancel_signal.is_set:
+            raise PhaseSchedulerError(
+                f"Phase '{phase_name}' cancelled during execution."
+            )
+
+        # Timeout: no exception, but not all units finished.
+        if pending:
+            self._cancel_signal.cancel()
+
+            for uow in pending:
+                if not uow.done():
+                    try:
+                        uow.set_exception(
+                            OperationCancelledError(
+                                f"Phase '{phase_name}' timed out after {self._barrier_timeout_ms}ms."
+                            )
+                        )
+                    except Exception:
+                        pass
+
+            raise PhaseTimeoutError(phase_name, self._barrier_timeout_ms)
+
         return units
+
 
     # ------------------------------------------------------------------
     # Public run API
