@@ -1754,7 +1754,7 @@ class Meld(Cleanable, IMeld):
             instance: Any,
             creations: ICreations,
             *,
-            spellspace: Optional[Any],
+            spellspace: Optional[Any] = None,
     ) -> None:
         """
         Handles registration for the full Creations manager (used by a normal Conduit).
@@ -1853,7 +1853,7 @@ class Meld(Cleanable, IMeld):
             instance: Any,
             creations: ILesserCreations,
             *,
-            spellspace: Optional[Any],
+            spellspace: Optional[Any] = None,
     ) -> None:
         """
         Handles registration for the LesserCreations manager (used by a LesserConduit).

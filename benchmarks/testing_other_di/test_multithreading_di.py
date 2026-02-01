@@ -566,7 +566,7 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
         - It is intentionally configured to avoid singleton-style caching for Depth9 leaves across resolves.
           (Spellspace caching for Depth3 is still validated within a single spellspace cycle.)
     """
-    threads = _env_int("DI_THREADS", 1)
+    threads = _env_int("DI_THREADS", 10)
     duration_s = _env_float("DI_DURATION_S", 60.0)
     spellspace_every = _env_int("DI_SPELLSPACE_EVERY", 20)
     gc_every = _env_int("DI_GC_EVERY", 2000)
