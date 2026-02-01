@@ -244,7 +244,6 @@ class _ContextStub:
         resolution_frame: Optional[object],
         cancel_event: Optional[object],
         issues: list,
-        shared_view: object = None,
         cleanup_artifacts: bool = True,
     ) -> None:
         """
@@ -260,7 +259,6 @@ class _ContextStub:
             resolution_frame: Phase 3 resolution frame.
             cancel_event: Cancellation event or None.
             issues: Shared issues list.
-            shared_view: Optional shared view for validation.
             cleanup_artifacts: Whether to clean artifacts during context cleanup.
         Returns:
             None.
@@ -272,7 +270,6 @@ class _ContextStub:
         self.resolution_frame = resolution_frame
         self.cancel_event = cancel_event
         self.issues = issues
-        self.shared_view = shared_view
         self.cleanup_artifacts = cleanup_artifacts
         self.cleanup_calls = 0
         self.cleaned = False
@@ -1032,43 +1029,6 @@ def test_validate_spell_cleanup_context_on_exception(monkeypatch: pytest.MonkeyP
     assert _ContextStub.last_instance is not None
     assert _ContextStub.last_instance.cleaned is True
     assert _ContextStub.last_instance.cleanup_calls == 1
-
-
-def test_validate_spell_passes_shared_view(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Purpose:
-        Ensure validate_spell injects the shared validation view into context.
-    Contract:
-        Context receives the same shared view prepared on the system.
-    Args:
-        monkeypatch: Pytest fixture for patching SpellValidationContext.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the shared view is not passed into the context.
-    """
-    monkeypatch.setattr(validation_system_module, "SpellValidationContext", _ContextStub)
-    system = _TestValidationSystem()
-    spell = _SharedViewSpellStub(
-        spell_id="spell-id",
-        spell_name="spell-name",
-        spellframe="frame",
-        binding_name="binding",
-        dependencies=["dep"],
-    )
-    spellbook = _SpellbookStub(spell_lookup={"spell-id": spell})
-    spell._spellbook = spellbook
-
-    system.prepare_shared_view(spellbook=spellbook)
-    system.validate_spell(
-        spell=spell,
-        requirements=None,
-        symbolic_graph=None,
-        resolution_frame=None,
-    )
-
-    assert _ContextStub.last_instance is not None
-    assert _ContextStub.last_instance.shared_view is system._shared_view
 
 
 def test_cleanup_clears_strategies_and_marks_cleaned() -> None:

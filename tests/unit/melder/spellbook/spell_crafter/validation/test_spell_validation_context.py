@@ -116,7 +116,6 @@ def test_init_sets_fields() -> None:
     symbolic_graph = object()
     resolution_frame = object()
     cancel_event = object()
-    shared_view = object()
     issues: list[object] = []
 
     context = SpellValidationContext(
@@ -127,7 +126,6 @@ def test_init_sets_fields() -> None:
         resolution_frame=resolution_frame,
         cancel_event=cancel_event,
         issues=issues,
-        shared_view=shared_view,
     )
 
     assert context.spell is spell
@@ -137,7 +135,6 @@ def test_init_sets_fields() -> None:
     assert context.resolution_frame is resolution_frame
     assert context.cancel_event is cancel_event
     assert context.issues is issues
-    assert context.shared_view is shared_view
 
 
 def test_issues_list_shared_and_not_cleared_on_cleanup() -> None:
@@ -188,7 +185,6 @@ def test_cleanup_marks_cleaned_and_drops_references() -> None:
         resolution_frame=object(),
         cancel_event=object(),
         issues=[],
-        shared_view=object(),
     )
 
     context.cleanup()
@@ -200,7 +196,6 @@ def test_cleanup_marks_cleaned_and_drops_references() -> None:
     assert context.symbolic_graph is None
     assert context.resolution_frame is None
     assert context.cancel_event is None
-    assert context.shared_view is None
     assert context.issues is None
     with pytest.raises(RuntimeError):
         context.check_cleaned()
