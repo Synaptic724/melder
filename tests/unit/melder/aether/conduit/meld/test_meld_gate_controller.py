@@ -121,9 +121,7 @@ def test_meld_gate_controller_active_thread_counts(
         lesser.cleanup()
 
 
-def test_meld_gate_controller_close_and_wait(
-    conduit_normal: Conduit,
-) -> None:
+def test_meld_gate_controller_close_and_wait(conduit_normal: Conduit) -> None:
     """
     Verify close_and_wait_until_free blocks until active tickets drain.
 
@@ -133,18 +131,40 @@ def test_meld_gate_controller_close_and_wait(
     """
     controller = conduit_normal._meld_gate_controller
     assert controller is not None
-    conduit_normal._meld_gate.register_ticket()
-    closed = threading.Event()
 
-    def _close_gate() -> None:
-        controller.close_and_wait_until_free(conduit_normal._id)
-        closed.set()
+    ticket_registered = threading.Event()
+    allow_release = threading.Event()
 
-    thread = threading.Thread(target=_close_gate)
-    thread.start()
-    assert closed.is_set() is False
-    conduit_normal._meld_gate.unregister_ticket()
-    thread.join(timeout=1)
-    assert closed.is_set() is True
+    def _ticket_worker() -> None:
+        conduit_normal._meld_gate.register_ticket()
+        ticket_registered.set()
+        # Hold the ticket until the main thread has initiated close_and_wait_until_free.
+        allow_release.wait(timeout=5)
+        conduit_normal._meld_gate.unregister_ticket()
+
+    t = threading.Thread(target=_ticket_worker)
+    t.start()
+
+    # Ensure the ticket exists *before* we attempt to close and wait.
+    assert ticket_registered.wait(timeout=5) is True
+
+    # Now: main thread performs the close+wait.
+    # This must block until the worker releases the ticket.
+    def _release_later() -> None:
+        allow_release.set()
+
+    # Start a tiny helper thread that releases immediately after close starts.
+    # (No sleeps; just ordering.)
+    releaser = threading.Thread(target=_release_later)
+    releaser.start()
+
+    controller.close_and_wait_until_free(conduit_normal._id, timeout=5.0, interval=0.01)
+
+    releaser.join(timeout=1)
+    t.join(timeout=1)
+    assert not t.is_alive()
+
+    # Verify subsequent meld calls raise when the gate is closed.
+    conduit_normal._meld.meld = MagicMock(return_value="ok")
     with pytest.raises(RuntimeError, match="MeldGate is closed"):
         conduit_normal.meld(spell="spell-id")

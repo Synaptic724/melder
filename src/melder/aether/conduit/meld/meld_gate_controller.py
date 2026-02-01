@@ -157,7 +157,7 @@ class MeldGateController(Cleanable):
         self.check_cleaned()
         return sum(gate.active_ticket_count() for gate in self._meld_gates.values())
 
-    def close_and_wait_until_free(self, conduit_id: str) -> None:
+    def close_and_wait_until_free(self, conduit_id: str, timeout: float = 30.0, interval: float= 0.1) -> None:
         """
         Public API
 
@@ -165,15 +165,18 @@ class MeldGateController(Cleanable):
 
         Args:
             conduit_id: Unique conduit identifier used as the registry key.
+            timeout: Maximum time to wait for tickets to drain (seconds).
+            interval: Polling interval to check for ticket drain (seconds).
 
         Raises:
             RuntimeError: If the controller is cleaned.
+
         """
         self.check_cleaned()
         gate = self._meld_gates.get(conduit_id)
         if gate is None:
             return
-        gate.close_and_wait_until_free()
+        gate.close_and_wait_until_free(timeout=timeout, interval=interval)
 
     def enable_all(self) -> None:
         """
@@ -183,7 +186,7 @@ class MeldGateController(Cleanable):
         """
         self.check_cleaned()
         for gate in self._meld_gates.values():
-            gate.enable()
+            gate.open()
 
     def disable_all(self) -> None:
         """
@@ -193,4 +196,4 @@ class MeldGateController(Cleanable):
         """
         self.check_cleaned()
         for gate in self._meld_gates.values():
-            gate.disable()
+            gate.close()

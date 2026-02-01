@@ -2199,7 +2199,7 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the Conduit has been cleaned.
         """
         self.check_cleaned()
-        self._meld_gate.enable()
+        self._meld_gate.open()
 
     def disable_meld(self) -> None:
         """
@@ -2218,7 +2218,7 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the Conduit has been cleaned.
         """
         self.check_cleaned()
-        self._meld_gate.disable()
+        self._meld_gate.close()
 
     def meld(
             self,
@@ -2296,14 +2296,16 @@ class Conduit(Cleanable, IConduit):
                 Propagated from ``Meld.meld`` if hook execution fails.
         """
         self.check_cleaned()
-        self._meld_gate.register_ticket()
+
+        if not self._meld_gate.enabled:
+            if self._meld_gate.is_closed():
+                raise RuntimeError("[CONDUIT] MeldGate is closed.")
+            self._meld_gate.wait()
+            if self._meld_gate.is_closed():
+                raise RuntimeError("[CONDUIT] MeldGate is closed.")
+
         try:
-            if self._meld_gate.is_closed():
-                raise RuntimeError("[CONDUIT] MeldGate is closed.")
-            if not self._meld_gate.enabled:
-                self._meld_gate.wait()
-            if self._meld_gate.is_closed():
-                raise RuntimeError("[CONDUIT] MeldGate is closed.")
+            self._meld_gate.register_ticket()
             if spell_name is None and spell is None and spellframe is None:
                 self._logger.error(
                     "Conduit.meld requires at least one of spell_name, spell, or spellframe",
