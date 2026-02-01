@@ -112,7 +112,9 @@ class MeldEngine(Cleanable):
         self._override_map: Optional[Dict[SocketRef, Any]] = override_map
         self._spell_lookup: Dict[str, ISpell] = spell_lookup
         self._system_states = system_states
-        self._instance_results: Optional[Dict[_InstanceKey, Any]] = None
+        self._instance_results: Optional[Dict[_InstanceKey, Any]] = (
+            {} if frame is not None else None
+        )
         self._override_targets_by_spell_id: Optional[Dict[str, List[SocketRef]]] = None
         self._any_overrides_present: bool = False
 
