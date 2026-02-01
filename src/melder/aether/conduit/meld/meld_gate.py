@@ -1,7 +1,7 @@
 import threading
+import time
 from collections import deque
 from melder.utilities.general_base.cleanable import Cleanable
-
 
 class MeldGate(Cleanable):
     """
@@ -216,9 +216,9 @@ class MeldGate(Cleanable):
             self.enabled = False
             self._event.set()
 
-        try:
-            # IMPORTANT: wait(...) expects "keep waiting while condition() is True"
-            # so we wait while tickets exist.
-            wait(lambda: self.has_active_tickets(), timeout=timeout, interval=interval)
-        except TimeoutError as e:
-            raise RuntimeError("Timeout waiting for meld tickets to drain.") from e
+
+        deadline = time.monotonic() + timeout
+        while self.has_active_tickets():
+            if time.monotonic() >= deadline:
+                raise RuntimeError("Timeout waiting for meld tickets to drain.")
+            time.sleep(interval)

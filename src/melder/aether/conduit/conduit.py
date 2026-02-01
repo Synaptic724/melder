@@ -2297,12 +2297,13 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
 
+        if self._meld_gate.is_closed():
+            raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
+
         if not self._meld_gate.enabled:
-            if self._meld_gate.is_closed():
-                raise RuntimeError("[CONDUIT] MeldGate is closed.")
             self._meld_gate.wait()
             if self._meld_gate.is_closed():
-                raise RuntimeError("[CONDUIT] MeldGate is closed.")
+                raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
 
         try:
             self._meld_gate.register_ticket()

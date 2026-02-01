@@ -280,6 +280,81 @@ class SpellRequirementsFinder(Cleanable):
 
         return spell.spell
 
+    def _annotation_needs_resolution(self, annotation: Any) -> bool:
+        """
+        Decide whether a single annotation requires forward-ref resolution.
+
+        Purpose:
+            Identify annotations that need evaluation or normalization before
+            Phase 1 classification can run safely.
+        Contract:
+            - Returns True for string and ForwardRef annotations.
+            - Returns True when nested generic args include resolvable tokens.
+            - Returns False when no resolution is required.
+        Args:
+            annotation:
+                The raw annotation object from a signature or __annotations__.
+        Returns:
+            bool: True if resolution is required, otherwise False.
+        """
+        if isinstance(annotation, str):
+            return True
+        if isinstance(annotation, typing.ForwardRef):
+            return True
+        origin = get_origin(annotation)
+        if origin is None:
+            return False
+        args = get_args(annotation)
+        for arg in args:
+            if self._annotation_needs_resolution(arg):
+                return True
+        return False
+
+    def _should_resolve_annotations(
+            self,
+            *,
+            call_target: Any,
+            signature: inspect.Signature,
+    ) -> bool:
+        """
+        Decide whether Phase 1 must resolve annotations for this call target.
+
+        Purpose:
+            Avoid unnecessary annotation resolution when the signature does not
+            include forward refs or string expressions.
+        Contract:
+            - Returns True when inspect.get_annotations is custom.
+            - Returns True when any parameter annotation needs resolution.
+            - Returns False only when all parameter annotations are safe to use as-is.
+        Args:
+            call_target:
+                The callable or class being analyzed.
+            signature:
+                Signature for the call target.
+        Returns:
+            bool: True if annotation resolution should run.
+        """
+        if call_target is None:
+            return False
+
+        try:
+            get_annotations_fn = inspect.get_annotations
+            get_annotations_module = get_annotations_fn.__module__
+        except AttributeError:
+            get_annotations_module = None
+
+        if get_annotations_module != "inspect":
+            return True
+
+        for parameter in signature.parameters.values():
+            annotation = parameter.annotation
+            if annotation is inspect.Parameter.empty:
+                continue
+            if self._annotation_needs_resolution(annotation):
+                return True
+
+        return False
+
     def _resolve_parameter_annotations(
             self,
             call_target: Any,
@@ -329,24 +404,10 @@ class SpellRequirementsFinder(Cleanable):
             if not use_custom_get_annotations:
                 return {}
 
-        def _annotation_needs_resolution(annotation: Any) -> bool:
-            if isinstance(annotation, str):
-                return True
-            if isinstance(annotation, typing.ForwardRef):
-                return True
-            origin = get_origin(annotation)
-            if origin is None:
-                return False
-            args = get_args(annotation)
-            for arg in args:
-                if _annotation_needs_resolution(arg):
-                    return True
-            return False
-
         if raw_annotations:
             needs_resolution = False
             for annotation in raw_annotations.values():
-                if _annotation_needs_resolution(annotation):
+                if self._annotation_needs_resolution(annotation):
                     needs_resolution = True
                     break
 
@@ -398,6 +459,36 @@ class SpellRequirementsFinder(Cleanable):
             )
 
         return normalized
+
+    def _is_simple_annotation_name(self, text: str) -> bool:
+        """
+        Return True if the annotation string is a simple name or dotted path.
+
+        Purpose:
+            Fast-path name-like strings that do not require AST parsing.
+        Contract:
+            - Rejects expressions containing subscripts, unions, or whitespace.
+            - Rejects literal constants like "None", "True", and "False".
+            - Accepts dotted identifier paths (e.g. "pkg.TypeName").
+        Args:
+            text:
+                Raw annotation string.
+        Returns:
+            bool: True if the string is a simple name/path.
+        """
+        if not text:
+            return False
+        if text.strip() != text:
+            return False
+        if text in ("None", "True", "False"):
+            return False
+        if any(token in text for token in ("[", "]", "|", ",", " ", "(", ")", "{", "}", "=")):
+            return False
+        parts = text.split(".")
+        for part in parts:
+            if not part or not part.isidentifier():
+                return False
+        return True
 
     def _resolve_annotation_name(
             self,
@@ -688,6 +779,9 @@ class SpellRequirementsFinder(Cleanable):
             return None
 
         if isinstance(annotation, str):
+            if self._is_simple_annotation_name(annotation):
+                resolved = self._resolve_annotation_name(annotation, globalns, localns)
+                return resolved if resolved is not None else annotation
             parsed, resolved_expr = self._parse_annotation_expression(
                 annotation,
                 globalns,
@@ -806,7 +900,8 @@ class SpellRequirementsFinder(Cleanable):
         * Iterate the parameters in order.
         * For each parameter:
             - Compute basic flags (var-positional, var-keyword, keyword-only, etc.).
-            - Resolve annotations (including forward references) and capture defaults.
+            - Resolve annotations (including forward references) when needed and
+              capture defaults.
             - Classify DI shape via :meth:`_classify_parameter`.
             - Construct a :class:`SpellParameterRequirement` that records all
               relevant metadata.
@@ -830,7 +925,14 @@ class SpellRequirementsFinder(Cleanable):
             return []
 
         requirements: List[SpellParameterRequirement] = []
-        resolved_annotations = self._resolve_parameter_annotations(call_target)
+        needs_resolution = self._should_resolve_annotations(
+            call_target=call_target,
+            signature=signature,
+        )
+        if needs_resolution:
+            resolved_annotations = self._resolve_parameter_annotations(call_target)
+        else:
+            resolved_annotations = {}
 
         for index, (param_name, parameter) in enumerate(signature.parameters.items()):
             self._throw_if_cancelled(cancel_event)
@@ -844,7 +946,10 @@ class SpellRequirementsFinder(Cleanable):
 
             has_annotation = parameter.annotation is not inspect.Parameter.empty
             raw_annotation = parameter.annotation if has_annotation else None
-            annotation = resolved_annotations.get(param_name, raw_annotation)
+            if needs_resolution:
+                annotation = resolved_annotations.get(param_name, raw_annotation)
+            else:
+                annotation = raw_annotation
 
             # Non-DI shapes and boilerplate parameters.
             if param_name in ("self", "cls") or is_var_positional or is_var_keyword:
@@ -975,13 +1080,22 @@ class SpellRequirementsFinder(Cleanable):
             return ParameterDIShape.PLAIN, has_default, None, None
 
         # Unwrap Optional[T] / Union[T, None] / T | None first.
-        base_annotation, is_optional = self._unwrap_optional(annotation)
+        origin = get_origin(annotation)
+        args = get_args(annotation)
+        (
+            base_annotation,
+            is_optional,
+            base_origin,
+            base_args,
+        ) = self._unwrap_optional(
+            annotation=annotation,
+            origin=origin,
+            args=args,
+        )
 
         # Detect list[T] collections.
-        origin = get_origin(base_annotation)
-        args = get_args(base_annotation)
-        if origin is list and len(args) == 1:
-            element_annotation = args[0]
+        if base_origin is list and len(base_args) == 1:
+            element_annotation = base_args[0]
             # Only treat as DI if the element looks like a DI candidate.
             if self._looks_like_di_target(element_annotation):
                 return (
@@ -1003,10 +1117,16 @@ class SpellRequirementsFinder(Cleanable):
         # Everything else is plain.
         return ParameterDIShape.PLAIN, is_optional or has_default, None, None
 
-    def _unwrap_optional(self, annotation: Any) -> Tuple[Any, bool]:
+    def _unwrap_optional(
+            self,
+            *,
+            annotation: Any,
+            origin: Any,
+            args: Tuple[Any, ...],
+    ) -> Tuple[Any, bool, Any, Tuple[Any, ...]]:
         """
         If the annotation is an Optional/Union-with-None, unwrap it and
-        return ``(inner_annotation, is_optional)``.
+        return ``(inner_annotation, is_optional, inner_origin, inner_args)``.
 
         Supported shapes
         ----------------
@@ -1018,9 +1138,8 @@ class SpellRequirementsFinder(Cleanable):
         overall annotation as optional but keep the union intact as the
         "base" annotation.
         """
-        origin = get_origin(annotation)
-        args = get_args(annotation)
-
+        base_annotation = annotation
+        is_optional = False
         if origin in (Union, types.UnionType) and args:
             has_none = False
             non_none_args: List[Any] = []
@@ -1036,13 +1155,20 @@ class SpellRequirementsFinder(Cleanable):
                     non_none_args.append(arg_value)
 
             if has_none:
+                is_optional = True
                 if len(non_none_args) == 1:
-                    return non_none_args[0], True
+                    base_annotation = non_none_args[0]
                 # Multiple non-None types – still optional, but we can't
                 # simplify the union further here.
-                return annotation, True
+                else:
+                    base_annotation = annotation
 
-        return annotation, False
+        if base_annotation is annotation:
+            return base_annotation, is_optional, origin, args
+
+        base_origin = get_origin(base_annotation)
+        base_args = get_args(base_annotation)
+        return base_annotation, is_optional, base_origin, base_args
 
     def _looks_like_di_target(self, annotation: Any) -> bool:
         """
@@ -1060,6 +1186,12 @@ class SpellRequirementsFinder(Cleanable):
         Returns:
             bool: True if this annotation is considered a DI target.
         """
+        if annotation is typing.Any:
+            return False
+
+        if annotation in (int, float, str, bool, bytes, bytearray, complex, object, type(None)):
+            return False
+
         if isinstance(annotation, typing.ForwardRef):
             return True
 

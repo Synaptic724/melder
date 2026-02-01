@@ -72,6 +72,10 @@ class Dep:
     ...
 
 
+class Namespace:
+    Dep = Dep
+
+
 def test_existing_creation_spells_have_no_parameters():
     for st in (
         SpellType.EXISTING_CREATION,
@@ -191,6 +195,16 @@ def test_parameter_classification_shapes_and_optional_logic():
 
 def test_string_annotation_counts_as_di_target():
     def f(x: "Dep"):
+        return x
+
+    reqs = _reqs_for(f, spell_type=SpellType.METHOD)
+    p = _by_name(reqs)["x"]
+    assert p.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+    assert p.annotation is Dep
+
+
+def test_string_annotation_dotted_name_resolves_to_attribute():
+    def f(x: "Namespace.Dep"):
         return x
 
     reqs = _reqs_for(f, spell_type=SpellType.METHOD)
