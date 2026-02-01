@@ -1,12 +1,22 @@
 import pytest
 
+from typing import Sequence
+
 from melder.spellbook.spell_crafter.dag.dag_index import (
     DagIndex,
     DagTargetingEngine,
+    PathRegistry,
     SocketRef,
 )
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
+
+
+def _path_id(registry: PathRegistry, path: Sequence[str]) -> int:
+    current = registry.root_path_id
+    for segment in path:
+        current = registry.extend_path(current, segment)
+    return current
 
 
 def test_component_target_spec_parses_paths_and_wildcards() -> None:
@@ -65,13 +75,13 @@ def test_component_dag_index_collects_and_queries_sockets() -> None:
     repo_socket = SocketRef(
         node_id="root",
         param_name="repo",
-        param_path=("repo",),
+        param_path_id=_path_id(index.path_registry, ("repo",)),
         socket_kind=SocketKind.NORMAL,
     )
     nested_socket = SocketRef(
         node_id="service",
         param_name="repo",
-        param_path=("service", "repo"),
+        param_path_id=_path_id(index.path_registry, ("service", "repo")),
         socket_kind=SocketKind.NORMAL,
     )
     index.add_socket(repo_socket)
@@ -100,7 +110,7 @@ def test_component_dag_index_iter_all_sockets_dedupes_duplicates() -> None:
     socket = SocketRef(
         node_id="root",
         param_name="repo",
-        param_path=("repo",),
+        param_path_id=_path_id(index.path_registry, ("repo",)),
         socket_kind=SocketKind.NORMAL,
     )
     index.add_socket(socket)
@@ -124,7 +134,7 @@ def test_component_dag_targeting_unique_raises_on_multiple_matches() -> None:
         SocketRef(
             node_id="root",
             param_name="repo",
-            param_path=("repo",),
+            param_path_id=_path_id(index.path_registry, ("repo",)),
             socket_kind=SocketKind.NORMAL,
         )
     )
@@ -132,7 +142,7 @@ def test_component_dag_targeting_unique_raises_on_multiple_matches() -> None:
         SocketRef(
             node_id="child",
             param_name="repo",
-            param_path=("child", "repo"),
+            param_path_id=_path_id(index.path_registry, ("child", "repo")),
             socket_kind=SocketKind.NORMAL,
         )
     )
@@ -158,7 +168,7 @@ def test_component_dag_targeting_broadcast_raises_on_no_matches() -> None:
         SocketRef(
             node_id="root",
             param_name="repo",
-            param_path=("repo",),
+            param_path_id=_path_id(index.path_registry, ("repo",)),
             socket_kind=SocketKind.NORMAL,
         )
     )
@@ -183,7 +193,7 @@ def test_component_dag_targeting_rejects_empty_path_spec() -> None:
         SocketRef(
             node_id="root",
             param_name="repo",
-            param_path=("repo",),
+            param_path_id=_path_id(index.path_registry, ("repo",)),
             socket_kind=SocketKind.NORMAL,
         )
     )
@@ -208,7 +218,7 @@ def test_component_dag_index_cleanup_blocks_future_usage() -> None:
         SocketRef(
             node_id="root",
             param_name="repo",
-            param_path=("repo",),
+            param_path_id=_path_id(index.path_registry, ("repo",)),
             socket_kind=SocketKind.NORMAL,
         )
     )
@@ -233,7 +243,7 @@ def test_component_dag_targeting_engine_cleanup_cleans_index() -> None:
         SocketRef(
             node_id="root",
             param_name="repo",
-            param_path=("repo",),
+            param_path_id=_path_id(index.path_registry, ("repo",)),
             socket_kind=SocketKind.NORMAL,
         )
     )

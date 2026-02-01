@@ -31,7 +31,7 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
     OccurrencePlanBuilder,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -203,8 +203,19 @@ def _make_topology(sockets: Iterable[SimpleNamespace]) -> SimpleNamespace:
     """
     return SimpleNamespace(sockets=list(sockets))
 
+def _path_id(path_registry: PathRegistry, param_path: Iterable[str]) -> int:
+    path_id = path_registry.root_path_id
+    for segment in param_path:
+        path_id = path_registry.extend_path(path_id, segment)
+    return path_id
 
-def _make_socket_ref(node_id: str, param_name: str) -> SocketRef:
+
+def _make_socket_ref(
+    node_id: str,
+    param_name: str,
+    *,
+    path_registry: PathRegistry,
+) -> SocketRef:
     """
     Build a SocketRef for override targeting.
 
@@ -215,10 +226,11 @@ def _make_socket_ref(node_id: str, param_name: str) -> SocketRef:
     Returns:
         SocketRef: Targeting reference for overrides.
     """
+    path_id = _path_id(path_registry, (param_name,))
     return SocketRef(
         node_id=node_id,
         param_name=param_name,
-        param_path=(param_name,),
+        param_path_id=path_id,
         socket_kind=SocketKind.NORMAL,
     )
 
@@ -228,6 +240,7 @@ def _make_socket_ref_with_path(
     node_id: str,
     param_name: str,
     param_path: Iterable[str],
+    path_registry: PathRegistry,
     socket_kind: SocketKind,
 ) -> SocketRef:
     """
@@ -242,10 +255,11 @@ def _make_socket_ref_with_path(
     Returns:
         SocketRef: Socket reference with the requested metadata.
     """
+    path_id = _path_id(path_registry, param_path)
     return SocketRef(
         node_id=node_id,
         param_name=param_name,
-        param_path=tuple(param_path),
+        param_path_id=path_id,
         socket_kind=socket_kind,
     )
 
@@ -255,6 +269,7 @@ def _make_mutation_socket_ref(
     node_id: str,
     param_name: str,
     param_path: Iterable[str],
+    path_registry: PathRegistry,
 ) -> SocketRef:
     """
     Build a MutationContract SocketRef for mutation override tests.
@@ -271,6 +286,7 @@ def _make_mutation_socket_ref(
         node_id=node_id,
         param_name=param_name,
         param_path=param_path,
+        path_registry=path_registry,
         socket_kind=SocketKind.MUTATION_CONTRACT,
     )
 
@@ -281,6 +297,7 @@ def _make_blueprint_with_sockets(
     dag: DirectedAcyclicWorkGraph,
     ordered_node_ids: Iterable[str],
     sockets: Iterable[SocketRef],
+    path_registry: PathRegistry,
 ) -> RootResolutionBlueprint:
     """
     Build a RootResolutionBlueprint and attach socket refs for targeting.
@@ -298,6 +315,7 @@ def _make_blueprint_with_sockets(
         root_id=root_id,
         dag=dag,
         ordered_node_ids=ordered_node_ids,
+        path_registry=path_registry,
     )
     for socket in sockets:
         blueprint.add_socket_ref(socket)
@@ -309,6 +327,7 @@ def _make_engine_with_sockets(
     root_id: str,
     ordered_node_ids: Iterable[str],
     sockets: Iterable[SocketRef],
+    path_registry: PathRegistry,
     spell_lookup: Optional[dict[str, Any]] = None,
 ) -> tuple[MeldEngine, RootResolutionBlueprint, SimpleNamespace]:
     """
@@ -352,6 +371,7 @@ def _make_builder_with_sockets(
     root_id: str,
     ordered_node_ids: Iterable[str],
     sockets: Iterable[SocketRef],
+    path_registry: PathRegistry,
     spell_lookup: Optional[dict[str, Any]] = None,
     system_states: Any = None,
 ) -> tuple[OccurrencePlanBuilder, RootResolutionBlueprint, SimpleNamespace, dict[str, Any]]:
@@ -388,6 +408,7 @@ def _make_builder_with_sockets(
         dag=dag,
         ordered_node_ids=ordered_node_ids,
         sockets=sockets,
+        path_registry=path_registry,
     )
     builder = _make_occurrence_builder(
         root_spell=root_spell,
@@ -418,6 +439,8 @@ def _make_blueprint(
     root_id: str,
     dag: DirectedAcyclicWorkGraph,
     ordered_node_ids: Iterable[str],
+    *,
+    path_registry: Optional[PathRegistry] = None,
 ) -> RootResolutionBlueprint:
     """
     Build a RootResolutionBlueprint with a fixed order.
@@ -430,11 +453,13 @@ def _make_blueprint(
     Returns:
         RootResolutionBlueprint: Configured blueprint instance.
     """
+    dag_index = DagIndex(path_registry=path_registry) if path_registry is not None else None
     return RootResolutionBlueprint(
         root_spell_id=root_id,
         root_lineage_id=None,
         dag=dag,
         ordered_node_ids=list(ordered_node_ids),
+        dag_index=dag_index,
     )
 
 
@@ -2003,8 +2028,11 @@ def test_run_blueprint_override_map_takes_precedence() -> None:
         return dep
 
     child_spell = _make_spell(spell_id="child", spell=build, existence=Existence.many)
-    blueprint = _make_blueprint("child", dag, ["parent", "child"])
-    override_map = {_make_socket_ref("child", "dep"): "override"}
+    path_registry = PathRegistry()
+    blueprint = _make_blueprint("child", dag, ["parent", "child"], path_registry=path_registry)
+    override_map = {
+        _make_socket_ref("child", "dep", path_registry=path_registry): "override"
+    }
     execution_plan = _build_execution_plan(
         root_spell=child_spell,
         blueprint=blueprint,
@@ -3252,15 +3280,18 @@ def test_resolve_mutation_override_targets_requires_dict() -> None:
     Raises:
         MeldExecutionError: If a non-dict payload is provided.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="node",
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
+        path_registry=path_registry,
     )
 
     with pytest.raises(MeldExecutionError, match="mutation_override must be a dict"):
@@ -3277,10 +3308,12 @@ def test_resolve_mutation_override_targets_requires_dag_index() -> None:
     Contract:
         - Missing DagIndex raises AttributeError.
     """
+    path_registry = PathRegistry()
     builder, _, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root",),
         sockets=(),
+        path_registry=path_registry,
     )
     with pytest.raises(AttributeError):
         builder._resolve_mutation_override_targets(
@@ -3311,15 +3344,18 @@ def test_resolve_mutation_override_targets_path_matches_mutation_socket(
     Raises:
         AssertionError: If PATH resolution misses the socket.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="node",
         param_name=param_path[-1],
         param_path=param_path,
+        path_registry=path_registry,
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
+        path_registry=path_registry,
     )
 
     resolved = builder._resolve_mutation_override_targets(
@@ -3329,7 +3365,7 @@ def test_resolve_mutation_override_targets_path_matches_mutation_socket(
 
     assert len(resolved) == 1
     resolved_socket, target_id = resolved[0]
-    assert resolved_socket.param_path == param_path
+    assert path_registry.materialize_path(resolved_socket.param_path_id) == param_path
     assert target_id == "override-id"
 
 
@@ -3354,16 +3390,19 @@ def test_resolve_mutation_override_targets_path_ignores_non_mutation_socket(
     Raises:
         MeldExecutionError: If no mutation sockets match the path.
     """
+    path_registry = PathRegistry()
     socket = _make_socket_ref_with_path(
         node_id="node",
         param_name=param_path[-1],
         param_path=param_path,
+        path_registry=path_registry,
         socket_kind=SocketKind.NORMAL,
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
+        path_registry=path_registry,
     )
 
     with pytest.raises(MeldExecutionError, match="No mutation sockets found"):
@@ -3384,15 +3423,18 @@ def test_resolve_mutation_override_targets_path_missing_raises() -> None:
     Raises:
         MeldExecutionError: If the path does not resolve.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="node",
         param_name="other",
         param_path=("other",),
+        path_registry=path_registry,
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
+        path_registry=path_registry,
     )
 
     with pytest.raises(MeldExecutionError, match="override path"):
@@ -3416,15 +3458,18 @@ def test_resolve_mutation_override_targets_unique_matches_single(
     Raises:
         AssertionError: If resolution does not return one socket.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="node",
         param_name=param_name,
         param_path=(param_name,),
+        path_registry=path_registry,
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
+        path_registry=path_registry,
     )
 
     resolved = builder._resolve_mutation_override_targets(
@@ -3452,15 +3497,18 @@ def test_resolve_mutation_override_targets_unique_missing_raises(
     Raises:
         MeldExecutionError: If no mutation socket matches the name.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="node",
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
+        path_registry=path_registry,
     )
 
     with pytest.raises(MeldExecutionError, match="unique override"):
@@ -3490,11 +3538,13 @@ def test_resolve_mutation_override_targets_unique_multiple_matches_raises(
     Raises:
         MeldExecutionError: If multiple mutation sockets match the name.
     """
+    path_registry = PathRegistry()
     sockets = tuple(
         _make_mutation_socket_ref(
             node_id="node",
             param_name=param_path[-1],
             param_path=param_path,
+            path_registry=path_registry,
         )
         for param_path in param_paths
     )
@@ -3502,6 +3552,7 @@ def test_resolve_mutation_override_targets_unique_multiple_matches_raises(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=sockets,
+        path_registry=path_registry,
     )
 
     with pytest.raises(MeldExecutionError, match="multiple mutation sockets"):
@@ -3550,11 +3601,13 @@ def test_resolve_mutation_override_targets_broadcast_matches(
     Raises:
         AssertionError: If broadcast resolution does not return all matches.
     """
+    path_registry = PathRegistry()
     sockets = tuple(
         _make_socket_ref_with_path(
             node_id="node",
             param_name=param_path[-1],
             param_path=param_path,
+            path_registry=path_registry,
             socket_kind=socket_kind,
         )
         for param_path, socket_kind in socket_specs
@@ -3563,6 +3616,7 @@ def test_resolve_mutation_override_targets_broadcast_matches(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=sockets,
+        path_registry=path_registry,
     )
 
     resolved = builder._resolve_mutation_override_targets(
@@ -3570,7 +3624,9 @@ def test_resolve_mutation_override_targets_broadcast_matches(
         dag_index=blueprint.dag_index,
     )
 
-    resolved_paths = sorted(socket.param_path for socket, _ in resolved)
+    resolved_paths = sorted(
+        path_registry.materialize_path(socket.param_path_id) for socket, _ in resolved
+    )
     assert resolved_paths == sorted(expected_paths)
 
 
@@ -3598,11 +3654,13 @@ def test_resolve_mutation_override_targets_broadcast_missing_raises(
     Raises:
         MeldExecutionError: If no mutation sockets match the name.
     """
+    path_registry = PathRegistry()
     sockets = tuple(
         _make_socket_ref_with_path(
             node_id="node",
             param_name=param_path[-1],
             param_path=param_path,
+            path_registry=path_registry,
             socket_kind=socket_kind,
         )
         for param_path, socket_kind in socket_specs
@@ -3611,6 +3669,7 @@ def test_resolve_mutation_override_targets_broadcast_missing_raises(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=sockets,
+        path_registry=path_registry,
     )
 
     with pytest.raises(MeldExecutionError, match="broadcast override"):
@@ -3634,15 +3693,18 @@ def test_resolve_mutation_override_targets_invalid_key_raises(
     Raises:
         MeldExecutionError: If the override key is invalid.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="node",
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
+        path_registry=path_registry,
     )
 
     with pytest.raises(MeldExecutionError, match="Invalid mutation_override key"):
@@ -3666,15 +3728,18 @@ def test_resolve_mutation_override_targets_invalid_target_raises(
     Raises:
         MeldExecutionError: If the target id is invalid.
     """
+    path_registry = PathRegistry()
     socket = _make_mutation_socket_ref(
         node_id="node",
         param_name="mutant",
         param_path=("mutant",),
+        path_registry=path_registry,
     )
     builder, blueprint, _, _ = _make_builder_with_sockets(
         root_id="root",
         ordered_node_ids=("root", "node"),
         sockets=(socket,),
+        path_registry=path_registry,
     )
 
     with pytest.raises(MeldExecutionError, match="Invalid mutation_override target"):
@@ -3706,12 +3771,14 @@ def test_apply_mutation_overrides_replaces_dependency_for_matching_path(
     Raises:
         AssertionError: If rewiring does not occur.
     """
+    path_registry = PathRegistry()
     node_id = "node-1"
     param_name = param_path[-1]
     socket = _make_mutation_socket_ref(
         node_id=node_id,
         param_name=param_name,
         param_path=param_path,
+        path_registry=path_registry,
     )
     spell = _make_spell(spell_id=node_id, existence=Existence.many)
     override_key = ">".join(param_path)
@@ -3721,13 +3788,17 @@ def test_apply_mutation_overrides_replaces_dependency_for_matching_path(
         ordered_node_ids=("root", node_id),
         sockets=(socket,),
         spell_lookup={node_id: spell},
+        path_registry=path_registry,
     )
 
-    occurrence = (node_id, param_path[:-1])
+    parent_path_id = _path_id(path_registry, param_path[:-1])
+    occurrence = (node_id, parent_path_id)
+    child_path_id = _path_id(path_registry, param_path)
     other_path = param_path[:-1] + ("other",)
+    other_path_id = _path_id(path_registry, other_path)
     dependencies = {
-        param_name: [("orig-id", param_path)],
-        "other": [("other-id", other_path)],
+        param_name: [("orig-id", child_path_id)],
+        "other": [("other-id", other_path_id)],
     }
 
     builder._apply_mutation_overrides_to_dependencies(
@@ -3735,8 +3806,8 @@ def test_apply_mutation_overrides_replaces_dependency_for_matching_path(
         occurrence=occurrence,
     )
 
-    assert dependencies[param_name] == [("override-id", param_path)]
-    assert dependencies["other"] == [("other-id", other_path)]
+    assert dependencies[param_name] == [("override-id", child_path_id)]
+    assert dependencies["other"] == [("other-id", other_path_id)]
 
 
 @pytest.mark.parametrize(

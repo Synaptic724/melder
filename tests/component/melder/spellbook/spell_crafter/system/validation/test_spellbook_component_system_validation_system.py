@@ -159,10 +159,12 @@ def _build_blueprint(
         dag=dag,
     )
     if add_socket:
+        path_registry = blueprint.path_registry
+        path_id = path_registry.extend_path(path_registry.root_path_id, "dependency")
         socket = SocketRef(
             node_id=root_id,
             param_name="dependency",
-            param_path=("dependency",),
+            param_path_id=path_id,
             socket_kind=SocketKind.NORMAL,
         )
         blueprint.add_socket_ref(socket)
@@ -609,10 +611,12 @@ def test_component_system_validation_detects_orphan_dag_index_socket() -> None:
             dependency_edges=[dep_id],
         )
         blueprint = _build_blueprint(root_id=root_id, dependency_id=dep_id)
+        path_registry = blueprint.path_registry
+        orphan_path_id = path_registry.extend_path(path_registry.root_path_id, "orphan")
         orphan = SocketRef(
             node_id=root_id,
             param_name="orphan",
-            param_path=("orphan",),
+            param_path_id=orphan_path_id,
             socket_kind=SocketKind.NORMAL,
         )
         blueprint.dag_index.add_socket(orphan)

@@ -304,7 +304,8 @@ def test_component_phase5_contract_dependencies_generate_nested_socket_paths() -
             leaf_a_id,
             leaf_b_id,
         }
-        assert {ref.param_path for ref in blueprint.socket_refs} == {
+        path_registry = blueprint.path_registry
+        assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {
             ("root",),
             ("root", "left"),
             ("root", "right"),

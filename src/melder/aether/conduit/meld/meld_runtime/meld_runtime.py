@@ -20,7 +20,7 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlan,
     ExecutionPlanVariant,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
 
 
 class MeldRuntime:
@@ -222,6 +222,7 @@ class MeldRuntime:
                 context_overrides=override_payload,
                 override_map=override_map,
                 root_spell_id=spell.spell_index.current,
+                path_registry=execution_blueprint.path_registry if execution_blueprint else None,
             )
 
         frame: Optional[ResolutionFrame] = None
@@ -379,6 +380,7 @@ class MeldRuntime:
             context_overrides,
             override_map,
             root_spell_id: str,
+            path_registry: Optional[PathRegistry],
     ):
         """
         Merge plain context overrides with socket-level override_map.
@@ -399,7 +401,12 @@ class MeldRuntime:
                 merged[k] = v
 
         if override_map:
+            if path_registry is None:
+                raise RuntimeError("PathRegistry is required to interpret override paths.")
             for socket_ref, value in override_map.items():
-                if socket_ref.node_id == root_spell_id and len(socket_ref.param_path) == 1:
+                if (
+                        socket_ref.node_id == root_spell_id
+                        and path_registry.depth(socket_ref.param_path_id) == 1
+                ):
                     merged[socket_ref.param_name] = value
         return merged

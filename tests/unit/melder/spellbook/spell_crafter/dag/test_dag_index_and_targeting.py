@@ -1,18 +1,33 @@
 import pytest
 
+from typing import Sequence
+
 from melder.spellbook.spell_crafter.dag.dag_index import (
     DagIndex,
     DagIndexBuilder,
     DagTargetingEngine,
+    PathRegistry,
     SocketRef,
 )
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
 
 
+def _path_id(registry: PathRegistry, path: Sequence[str]) -> int:
+    current = registry.root_path_id
+    for segment in path:
+        current = registry.extend_path(current, segment)
+    return current
+
+
 def test_dag_index_add_and_get():
     index = DagIndex()
-    ref = SocketRef("n1", "p", ("p",), SocketKind.NORMAL)
+    ref = SocketRef(
+        "n1",
+        "p",
+        _path_id(index.path_registry, ("p",)),
+        SocketKind.NORMAL,
+    )
     index.add_socket(ref)
     assert index.get_by_exact_path(("p",)) == [ref]
     assert index.get_by_name("p") == [ref]
@@ -21,7 +36,12 @@ def test_dag_index_add_and_get():
 
 def test_dag_index_iter_all_sockets_dedupes():
     index = DagIndex()
-    ref = SocketRef("n1", "p", ("p",), SocketKind.NORMAL)
+    ref = SocketRef(
+        "n1",
+        "p",
+        _path_id(index.path_registry, ("p",)),
+        SocketKind.NORMAL,
+    )
     index.add_socket(ref)
     index.add_socket(ref)  # same ref; should not duplicate
     assert list(index.iter_all_sockets()) == [ref]
@@ -31,12 +51,25 @@ def test_dag_index_cleanup_blocks_access():
     index = DagIndex()
     index.cleanup()
     with pytest.raises(AttributeError):
-        index.add_socket(SocketRef("n1", "p", ("p",), SocketKind.NORMAL))
+        registry = PathRegistry()
+        index.add_socket(
+            SocketRef(
+                "n1",
+                "p",
+                _path_id(registry, ("p",)),
+                SocketKind.NORMAL,
+            )
+        )
 
 
 def test_dag_targeting_resolve_path_success_and_errors():
     index = DagIndex()
-    ref = SocketRef("n1", "p", ("a", "b"), SocketKind.NORMAL)
+    ref = SocketRef(
+        "n1",
+        "p",
+        _path_id(index.path_registry, ("a", "b")),
+        SocketKind.NORMAL,
+    )
     index.add_socket(ref)
     engine = DagTargetingEngine(index)
     spec = TargetSpec(kind=TargetSpecKind.PATH, path=("a", "b"), param_name=None)
@@ -52,7 +85,12 @@ def test_dag_targeting_resolve_path_success_and_errors():
 
 def test_dag_targeting_resolve_unique_enforces_cardinality():
     index = DagIndex()
-    ref = SocketRef("n1", "p", ("p",), SocketKind.NORMAL)
+    ref = SocketRef(
+        "n1",
+        "p",
+        _path_id(index.path_registry, ("p",)),
+        SocketKind.NORMAL,
+    )
     index.add_socket(ref)
     engine = DagTargetingEngine(index)
     spec = TargetSpec(kind=TargetSpecKind.UNIQUE, path=None, param_name="p")
@@ -64,14 +102,26 @@ def test_dag_targeting_resolve_unique_enforces_cardinality():
         engine.resolve(spec_zero, lambda r: True)
 
     # multiple matches
-    index.add_socket(SocketRef("n2", "p", ("p2",), SocketKind.NORMAL))
+    index.add_socket(
+        SocketRef(
+            "n2",
+            "p",
+            _path_id(index.path_registry, ("p2",)),
+            SocketKind.NORMAL,
+        )
+    )
     with pytest.raises(RuntimeError):
         engine.resolve(spec, lambda r: True)
 
 
 def test_dag_targeting_resolve_broadcast_requires_matches():
     index = DagIndex()
-    ref = SocketRef("n1", "p", ("p",), SocketKind.NORMAL)
+    ref = SocketRef(
+        "n1",
+        "p",
+        _path_id(index.path_registry, ("p",)),
+        SocketKind.NORMAL,
+    )
     index.add_socket(ref)
     engine = DagTargetingEngine(index)
     spec = TargetSpec(kind=TargetSpecKind.BROADCAST, path=None, param_name="p")
@@ -121,7 +171,12 @@ def test_dag_targeting_unknown_kind_raises_runtime():
 
 def test_dag_targeting_filter_can_remove_all_candidates():
     index = DagIndex()
-    ref = SocketRef("n1", "p", ("a",), SocketKind.NORMAL)
+    ref = SocketRef(
+        "n1",
+        "p",
+        _path_id(index.path_registry, ("a",)),
+        SocketKind.NORMAL,
+    )
     index.add_socket(ref)
     engine = DagTargetingEngine(index)
 
@@ -146,7 +201,10 @@ def test_dag_index_builder_shallow_builds_refs():
 
     sockets = [DummySocket("a", SocketKind.NORMAL), DummySocket("b", SocketKind.SPELL_CONTRACT)]
     index = DagIndexBuilder.build_shallow("owner", sockets)
-    paths = {">".join(ref.param_path) for ref in index.iter_all_sockets()}
+    paths = {
+        index.path_registry.format_path(ref.param_path_id)
+        for ref in index.iter_all_sockets()
+    }
     assert paths == {"a", "b"}
     with pytest.raises(ValueError):
         DagIndexBuilder.build_shallow(None, sockets)  # type: ignore[arg-type]

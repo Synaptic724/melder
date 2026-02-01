@@ -10,7 +10,7 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlanBuilder,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -170,6 +170,16 @@ class _StubSystemStates:
         self._local_topologies = local_topologies
 
 
+def _path_id(path_registry: PathRegistry, path: Tuple[str, ...]) -> int:
+    """
+    Build a path id for the provided path segments using the registry.
+    """
+    path_id = path_registry.root_path_id
+    for segment in path:
+        path_id = path_registry.extend_path(path_id, segment)
+    return path_id
+
+
 def test_occurrence_plan_execution_order_linear_chain() -> None:
     """
     Purpose:
@@ -180,10 +190,12 @@ def test_occurrence_plan_execution_order_linear_chain() -> None:
     Returns:
         None.
     """
-    occurrence_graph: Dict[Tuple[str, Tuple[str, ...]], Dict[str, List[Tuple[str, Tuple[str, ...]]]]] = {
-        ("C", ()): {"dep": [("B", ())]},
-        ("B", ()): {"dep": [("A", ())]},
-        ("A", ()): {},
+    path_registry = PathRegistry()
+    root_path_id = path_registry.root_path_id
+    occurrence_graph = {
+        ("C", root_path_id): {"dep": [("B", root_path_id)]},
+        ("B", root_path_id): {"dep": [("A", root_path_id)]},
+        ("A", root_path_id): {},
     }
 
     order = OccurrencePlanBuilder._build_execution_order(
@@ -205,16 +217,17 @@ def test_dag_index_exact_path_lookup_accepts_list_and_tuple() -> None:
         None.
     """
     index = DagIndex()
+    path_registry = index.path_registry
     deep_socket = SocketRef(
         node_id="root",
         param_name="repo",
-        param_path=("left", "repo"),
+        param_path_id=_path_id(path_registry, ("left", "repo")),
         socket_kind=SocketKind.NORMAL,
     )
     shallow_socket = SocketRef(
         node_id="root",
         param_name="left",
-        param_path=("left",),
+        param_path_id=_path_id(path_registry, ("left",)),
         socket_kind=SocketKind.NORMAL,
     )
 
@@ -240,16 +253,18 @@ def test_injection_plan_missing_contract_overrides_defaults_empty() -> None:
     Returns:
         None.
     """
-    occurrence_graph: Dict[Tuple[str, Tuple[str, ...]], Dict[str, List[Tuple[str, Tuple[str, ...]]]]] = {
-        ("root", ()): {},
+    path_registry = PathRegistry()
+    root_path_id = path_registry.root_path_id
+    occurrence_graph = {
+        ("root", root_path_id): {},
     }
     execution_order = ["root"]
     instance_keys_by_spell_id = {"root": [("root", None)]}
-    canonical_occurrences_by_spell_id = {"root": ("root", ())}
+    canonical_occurrences_by_spell_id = {"root": ("root", root_path_id)}
     root_instance_key = ("root", None)
     shared_spell_ids: Set[str] = {"root"}
-    contract_overrides_by_occurrence: Dict[Tuple[str, Tuple[str, ...]], Dict[str, Any]] = {}
-    contract_overrides_by_spell_id: Dict[str, List[Tuple[Tuple[str, Tuple[str, ...]], Dict[str, Any]]]] = {}
+    contract_overrides_by_occurrence: Dict[Tuple[str, int], Dict[str, Any]] = {}
+    contract_overrides_by_spell_id: Dict[str, List[Tuple[Tuple[str, int], Dict[str, Any]]]] = {}
 
     plan = OccurrencePlan(
         root_spell_id="root",
@@ -262,6 +277,7 @@ def test_injection_plan_missing_contract_overrides_defaults_empty() -> None:
         contract_overrides_by_occurrence=contract_overrides_by_occurrence,
         contract_overrides_by_spell_id=contract_overrides_by_spell_id,
         contract_dependencies_complete=True,
+        path_registry=path_registry,
     )
     builder = InjectionPlanBuilder(occurrence_plan=plan)
     injection_plan = builder.build()

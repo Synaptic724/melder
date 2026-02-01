@@ -122,7 +122,7 @@ class ExecutionPlanStep:
             dependency_keys_by_param: Dict[str, List[InstanceKey]],
             dependency_resolution_order: List[tuple[str, List[InstanceKey]]],
             override_keys: List[str],
-            override_match_prefix: Optional[tuple[str, ...]],
+            override_match_prefix: Optional[int],
             override_match_prefix_len: int,
             expects_overrides: bool,
             contract_keys: List[str],
@@ -258,16 +258,16 @@ class ExecutionPlanStep:
         return self._override_keys
 
     @property
-    def override_match_prefix(self) -> Optional[tuple[str, ...]]:
+    def override_match_prefix(self) -> Optional[int]:
         """
-        Return the precomputed override path prefix for this step.
+        Return the precomputed override path id for this step.
         """
         return self._override_match_prefix
 
     @property
     def override_match_prefix_len(self) -> int:
         """
-        Return the cached override path prefix length for this step.
+        Return the cached override path depth for this step.
         """
         return self._override_match_prefix_len
 
@@ -742,6 +742,7 @@ class ExecutionPlanBuilder:
         optimistic_refs: Dict[str, Any] = {}
         available_param_by_spell_id: Dict[str, int] = {}
         instance_key_to_step_index: Dict[InstanceKey, int] = {}
+        path_registry = self._occurrence_plan.path_registry
 
         for spell_id in self._occurrence_plan.execution_order:
             spell = self._spell_lookup.get(spell_id)
@@ -784,7 +785,7 @@ class ExecutionPlanBuilder:
                 expects_overrides = bool(override_keys)
                 override_match_prefix = occurrence[1]
                 override_match_prefix_len = (
-                    len(override_match_prefix)
+                    path_registry.depth(override_match_prefix)
                     if override_match_prefix is not None
                     else 0
                 )

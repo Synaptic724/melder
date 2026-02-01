@@ -9,7 +9,7 @@ import melder.aether.conduit.meld.meld_runtime.meld_runtime as runtime_module
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
@@ -246,7 +246,13 @@ def _make_crafter(**overrides: Any) -> SimpleNamespace:
     return SimpleNamespace(**base)
 
 
-def _make_socket_ref(node_id: str, param_name: str, param_path: tuple[str, ...]) -> SocketRef:
+def _make_socket_ref(
+    node_id: str,
+    param_name: str,
+    param_path: tuple[str, ...],
+    *,
+    path_registry: PathRegistry,
+) -> SocketRef:
     """
     Build a SocketRef for override-map tests.
 
@@ -258,10 +264,13 @@ def _make_socket_ref(node_id: str, param_name: str, param_path: tuple[str, ...])
     Returns:
         SocketRef: Socket reference for override targeting.
     """
+    path_id = path_registry.root_path_id
+    for segment in param_path:
+        path_id = path_registry.extend_path(path_id, segment)
     return SocketRef(
         node_id=node_id,
         param_name=param_name,
-        param_path=param_path,
+        param_path_id=path_id,
         socket_kind=SocketKind.NORMAL,
     )
 
@@ -498,11 +507,13 @@ def test_execute_applies_patch_maps_for_overrides(monkeypatch: pytest.MonkeyPatc
     runtime = MeldRuntime()
     root_blueprint = object()
     mutated_blueprint = object()
+    path_registry = PathRegistry()
     override_map = {
         _make_socket_ref(
             node_id="spell-1",
             param_name="param",
             param_path=("param",),
+            path_registry=path_registry,
         ): "value"
     }
     override_patch_map = MagicMock()

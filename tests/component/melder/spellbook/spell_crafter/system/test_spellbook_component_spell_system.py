@@ -301,7 +301,8 @@ def test_component_spell_system_builds_root_blueprint_from_snapshot() -> None:
         socket = sockets[0]
         assert socket.node_id == consumer_id
         assert socket.param_name == "service"
-        assert socket.param_path == ("service",)
+        path_registry = blueprint.path_registry
+        assert path_registry.materialize_path(socket.param_path_id) == ("service",)
 
         by_path = blueprint.dag_index.get_by_exact_path(("service",))
         assert by_path and by_path[0] == socket
@@ -445,10 +446,12 @@ def test_component_spell_system_validation_reports_orphan_socket_ref() -> None:
             spellbook
         )
         blueprint = blueprints[root_id]
+        path_registry = blueprint.path_registry
+        orphan_path_id = path_registry.extend_path(path_registry.root_path_id, "orphan")
         orphan = SocketRef(
             node_id=root_id,
             param_name="orphan",
-            param_path=("orphan",),
+            param_path_id=orphan_path_id,
             socket_kind=SocketKind.NORMAL,
         )
         blueprint.dag_index.add_socket(orphan)

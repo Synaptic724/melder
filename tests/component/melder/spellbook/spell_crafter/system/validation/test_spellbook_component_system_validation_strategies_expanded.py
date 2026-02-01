@@ -5,7 +5,7 @@ import pytest
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -156,7 +156,20 @@ def _make_blueprint(
     )
 
 
-def _make_socket_ref(*, node_id: str, name: str, path: tuple[str, ...]) -> SocketRef:
+def _path_id(path_registry: PathRegistry, path: tuple[str, ...]) -> int:
+    path_id = path_registry.root_path_id
+    for segment in path:
+        path_id = path_registry.extend_path(path_id, segment)
+    return path_id
+
+
+def _make_socket_ref(
+    *,
+    node_id: str,
+    name: str,
+    path: tuple[str, ...],
+    path_registry: PathRegistry,
+) -> SocketRef:
     """
     Purpose:
         Build a simple SocketRef for socket sanity tests.
@@ -172,7 +185,7 @@ def _make_socket_ref(*, node_id: str, name: str, path: tuple[str, ...]) -> Socke
     return SocketRef(
         node_id=node_id,
         param_name=name,
-        param_path=path,
+        param_path_id=_path_id(path_registry, path),
         socket_kind=SocketKind.NORMAL,
     )
 
@@ -957,7 +970,12 @@ def test_component_socket_ref_sanity_no_issues_for_valid_index() -> None:
     """
     strategy = SocketRefSanityStrategy()
     blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
-    socket = _make_socket_ref(node_id="root", name="service", path=("service",))
+    socket = _make_socket_ref(
+        node_id="root",
+        name="service",
+        path=("service",),
+        path_registry=blueprint.path_registry,
+    )
     blueprint.add_socket_ref(socket)
     diagnostics: list[SystemDiagnostic] = []
 
@@ -986,7 +1004,12 @@ def test_component_socket_ref_sanity_reports_duplicate_socket_ref() -> None:
     """
     strategy = SocketRefSanityStrategy()
     blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
-    socket = _make_socket_ref(node_id="root", name="service", path=("service",))
+    socket = _make_socket_ref(
+        node_id="root",
+        name="service",
+        path=("service",),
+        path_registry=blueprint.path_registry,
+    )
     blueprint.add_socket_ref(socket)
     blueprint.add_socket_ref(socket)
     diagnostics: list[SystemDiagnostic] = []
@@ -1016,9 +1039,15 @@ def test_component_socket_ref_sanity_reports_missing_index_entries() -> None:
     """
     strategy = SocketRefSanityStrategy()
     blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
-    socket = _make_socket_ref(node_id="root", name="service", path=("service",))
+    path_registry = blueprint.path_registry
+    socket = _make_socket_ref(
+        node_id="root",
+        name="service",
+        path=("service",),
+        path_registry=path_registry,
+    )
     blueprint.add_socket_ref(socket)
-    blueprint.replace_dag_index(DagIndex())
+    blueprint.replace_dag_index(DagIndex(path_registry=path_registry))
     diagnostics: list[SystemDiagnostic] = []
 
     strategy.run(
@@ -1048,7 +1077,12 @@ def test_component_socket_ref_sanity_reports_orphan_index_socket() -> None:
     """
     strategy = SocketRefSanityStrategy()
     blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
-    orphan = _make_socket_ref(node_id="root", name="orphan", path=("orphan",))
+    orphan = _make_socket_ref(
+        node_id="root",
+        name="orphan",
+        path=("orphan",),
+        path_registry=blueprint.path_registry,
+    )
     blueprint.dag_index.add_socket(orphan)
     diagnostics: list[SystemDiagnostic] = []
 
@@ -1078,7 +1112,12 @@ def test_component_socket_ref_sanity_scopes_diagnostics_to_root() -> None:
     strategy = SocketRefSanityStrategy()
     blueprint_a = _make_blueprint(root_id="root-a", edges={"root-a": {"dep"}})
     blueprint_b = _make_blueprint(root_id="root-b", edges={"root-b": {"dep"}})
-    socket = _make_socket_ref(node_id="root-a", name="service", path=("service",))
+    socket = _make_socket_ref(
+        node_id="root-a",
+        name="service",
+        path=("service",),
+        path_registry=blueprint_a.path_registry,
+    )
     blueprint_a.add_socket_ref(socket)
     blueprint_a.add_socket_ref(socket)
     diagnostics: list[SystemDiagnostic] = []

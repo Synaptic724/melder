@@ -8,7 +8,7 @@ from melder.aether.conduit.meld.overrides.spell_overrider import SpellOverrider
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -35,6 +35,7 @@ def _make_socket_ref(
     node_id: str,
     param_name: str,
     param_path: tuple[str, ...],
+    path_registry: PathRegistry,
     socket_kind: SocketKind = SocketKind.NORMAL,
 ) -> SocketRef:
     """
@@ -50,10 +51,13 @@ def _make_socket_ref(
     Returns:
         SocketRef: Socket reference with the requested attributes.
     """
+    path_id = path_registry.root_path_id
+    for segment in param_path:
+        path_id = path_registry.extend_path(path_id, segment)
     return SocketRef(
         node_id=node_id,
         param_name=param_name,
-        param_path=param_path,
+        param_path_id=path_id,
         socket_kind=socket_kind,
     )
 
@@ -63,6 +67,7 @@ def _make_blueprint(
     root_id: str,
     root_lineage_id: str,
     socket_refs: Iterable[SocketRef],
+    path_registry: PathRegistry,
 ) -> RootResolutionBlueprint:
     """
     Purpose:
@@ -79,7 +84,7 @@ def _make_blueprint(
     """
     dag = DirectedAcyclicWorkGraph()
     dag.add_node(root_id)
-    index = DagIndex()
+    index = DagIndex(path_registry=path_registry)
     socket_list = list(socket_refs)
     for socket_ref in socket_list:
         dag.add_node(socket_ref.node_id)
@@ -122,16 +127,18 @@ def _build_matrix_blueprint() -> _MatrixData:
         ("node-mode", "mode", ("root", "ops", "sink", "mode")),
         ("node-level", "level", ("root", "ops", "trace", "level")),
     ]
+    path_registry = PathRegistry()
     sockets = [
         _make_socket_ref(
             node_id=node_id,
             param_name=param_name,
             param_path=param_path,
+            path_registry=path_registry,
         )
         for node_id, param_name, param_path in specs
     ]
     by_path: dict[str, SocketRef] = {
-        ">".join(socket.param_path): socket for socket in sockets
+        path_registry.format_path(socket.param_path_id): socket for socket in sockets
     }
     by_name: dict[str, list[SocketRef]] = {}
     for socket in sockets:
@@ -140,6 +147,7 @@ def _build_matrix_blueprint() -> _MatrixData:
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=sockets,
+        path_registry=path_registry,
     )
     return _MatrixData(blueprint=blueprint, by_path=by_path, by_name=by_name)
 

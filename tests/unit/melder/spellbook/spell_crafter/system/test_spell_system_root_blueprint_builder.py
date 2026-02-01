@@ -121,7 +121,11 @@ def test_overlay_sockets_and_index_builds_paths():
     blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
 
     sockets = blueprint.socket_refs
-    assert {s.param_path for s in sockets} == {("child",), ("child", "leaf")}
+    path_registry = blueprint.path_registry
+    assert {path_registry.materialize_path(s.param_path_id) for s in sockets} == {
+        ("child",),
+        ("child", "leaf"),
+    }
 
     root_socket = blueprint.dag_index.get_by_exact_path(("child",))[0]
     child_socket = blueprint.dag_index.get_by_exact_path(("child", "leaf"))[0]
@@ -174,8 +178,15 @@ def test_overlay_walks_branching_paths():
     assert {s.param_name for s in blueprint.socket_refs} == {"a", "b"}
     by_name_a = blueprint.dag_index.get_by_name("a")
     by_name_b = blueprint.dag_index.get_by_name("b")
-    assert len(by_name_a) == 1 and by_name_a[0].param_path == ("a",)
-    assert len(by_name_b) == 1 and by_name_b[0].param_path == ("b",)
+    path_registry = blueprint.path_registry
+    assert (
+        len(by_name_a) == 1
+        and path_registry.materialize_path(by_name_a[0].param_path_id) == ("a",)
+    )
+    assert (
+        len(by_name_b) == 1
+        and path_registry.materialize_path(by_name_b[0].param_path_id) == ("b",)
+    )
 
 
 def test_build_single_root_dag_validates_inputs():
@@ -255,7 +266,12 @@ def test_overlay_allows_multiple_sockets_same_path():
     deps = {"root": {"child"}, "child": set()}
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    shared_refs = [s for s in bp.socket_refs if s.param_path == ("shared",)]
+    path_registry = bp.path_registry
+    shared_refs = [
+        s
+        for s in bp.socket_refs
+        if path_registry.materialize_path(s.param_path_id) == ("shared",)
+    ]
     assert len(shared_refs) == 2
     assert {s.param_name for s in shared_refs} == {"shared"}
 
@@ -271,7 +287,10 @@ def test_dependency_without_topology_still_in_dag():
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
     assert set(bp.dag.nodes.keys()) == {"root", "mid", "leaf"}
     # Only the socket from root->mid is recorded; no refs for deeper missing topology.
-    assert {r.param_path for r in bp.socket_refs} == {("mid",)}
+    path_registry = bp.path_registry
+    assert {path_registry.materialize_path(r.param_path_id) for r in bp.socket_refs} == {
+        ("mid",)
+    }
 
 
 def test_overlay_stops_on_missing_topology_paths():
@@ -282,7 +301,10 @@ def test_overlay_stops_on_missing_topology_paths():
     )
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    assert {s.param_path for s in bp.socket_refs} == {("mid",)}
+    path_registry = bp.path_registry
+    assert {path_registry.materialize_path(s.param_path_id) for s in bp.socket_refs} == {
+        ("mid",)
+    }
 
 
 def test_overlay_handles_shared_target_under_different_paths():
@@ -308,7 +330,12 @@ def test_overlay_handles_shared_target_under_different_paths():
         topologies={"root": topo_root, "a": topo_child, "b": topo_child_b},
     )
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    paths = {s.param_path for s in bp.socket_refs if s.param_name == "leaf"}
+    path_registry = bp.path_registry
+    paths = {
+        path_registry.materialize_path(s.param_path_id)
+        for s in bp.socket_refs
+        if s.param_name == "leaf"
+    }
     assert paths == {("a", "leaf"), ("b", "leaf")}
 
 
@@ -366,7 +393,10 @@ def test_overlay_handles_deep_chain_paths():
     )
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo_root, "a": topo_a, "b": topo_b})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    assert ("a", "b", "c") in {s.param_path for s in bp.socket_refs}
+    path_registry = bp.path_registry
+    assert ("a", "b", "c") in {
+        path_registry.materialize_path(s.param_path_id) for s in bp.socket_refs
+    }
 
 
 def test_overlay_idempotent_call_replaces_index():

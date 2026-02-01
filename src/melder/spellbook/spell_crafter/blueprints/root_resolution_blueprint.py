@@ -4,7 +4,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class RootResolutionBlueprint(Cleanable):
@@ -18,7 +18,7 @@ class RootResolutionBlueprint(Cleanable):
         * It just packages:
             - the deep DAG (all reachable version-ids),
             - a stable execution order (dependencies before root),
-            - socket metadata for targeting (SocketRef + DagIndex).
+            - socket metadata for targeting (SocketRef + DagIndex + PathRegistry).
 
     Identity model:
         root_spell_id:
@@ -146,7 +146,7 @@ class RootResolutionBlueprint(Cleanable):
     def socket_refs(self) -> List[SocketRef]:
         """
         All sockets participating in this deep DAG, with param paths
-        from the root (for overrides and diagnostics).
+        from the root represented as PathIds (for overrides and diagnostics).
         """
         self.check_cleaned()
         return list(self._socket_refs)
@@ -159,6 +159,14 @@ class RootResolutionBlueprint(Cleanable):
         self.check_cleaned()
         return self._dag_index
 
+    @property
+    def path_registry(self) -> PathRegistry:
+        """
+        PathRegistry used to intern param paths for this blueprint.
+        """
+        self.check_cleaned()
+        return self._dag_index.path_registry
+
     # ------------------------------------------------------------------ #
     # Mutators used by the Phase 5 frame compiler                        #
     # ------------------------------------------------------------------ #
@@ -166,6 +174,9 @@ class RootResolutionBlueprint(Cleanable):
     def add_socket_ref(self, socket: SocketRef) -> None:
         """
         Append a single socket reference and index it.
+
+        Contract:
+            - SocketRef param_path_id must belong to this blueprint's registry.
         """
         self.check_cleaned()
         if socket is None:

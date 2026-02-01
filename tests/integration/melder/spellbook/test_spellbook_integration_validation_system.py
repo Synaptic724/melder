@@ -2112,10 +2112,12 @@ def test_spell_validation_phase6_reports_orphan_dag_index_socket() -> None:
         assert blueprints is not None
         root_blueprint = blueprints.get(consumer_id)
         assert root_blueprint is not None
+        path_registry = root_blueprint.path_registry
+        orphan_path_id = path_registry.extend_path(path_registry.root_path_id, "orphan")
         orphan = SocketRef(
             node_id=consumer_id,
             param_name="orphan",
-            param_path=("orphan",),
+            param_path_id=orphan_path_id,
             socket_kind=SocketKind.NORMAL,
         )
         root_blueprint.dag_index.add_socket(orphan)

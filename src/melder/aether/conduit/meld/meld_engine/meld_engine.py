@@ -25,8 +25,8 @@ from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
-_OccurrenceKey = tuple[str, tuple[str, ...]]
-_InstanceKey = tuple[str, Optional[tuple[str, ...]]]
+_OccurrenceKey = tuple[str, int]
+_InstanceKey = tuple[str, Optional[int]]
 
 
 class MeldEngine(Cleanable):
@@ -242,7 +242,7 @@ class MeldEngine(Cleanable):
             *,
             override_targets: List[SocketRef],
             shared: bool,
-            match_prefix: Optional[tuple[str, ...]],
+            match_prefix: Optional[int],
             match_prefix_len: int,
     ) -> Dict[str, Any]:
         """
@@ -250,17 +250,20 @@ class MeldEngine(Cleanable):
             Select overrides applicable to a specific spell instance.
         Contract:
             - Shared instances accept path-agnostic overrides for their params.
-            - Per-path instances accept overrides whose param_path matches the
-              occurrence path.
+            - Per-path instances accept overrides whose param_path parent id
+              matches the occurrence path id.
         Args:
             override_targets: Override socket refs scoped to the current spell id.
             shared: Whether the instance is shared.
-            match_prefix: Precomputed occurrence-path prefix for matching overrides.
-            match_prefix_len: Cached length of the match prefix.
+            match_prefix: Precomputed occurrence-path id for matching overrides.
+            match_prefix_len: Cached depth of the match prefix.
         Returns:
             Dict[str, Any]: Parameter name to override value mapping.
         """
         overrides: Dict[str, Any] = {}
+        path_registry = None
+        if self._blueprint is not None:
+            path_registry = self._blueprint.path_registry
         for socket_ref in override_targets:
             value = self._override_map.get(socket_ref)
             if value is None and socket_ref not in self._override_map:
@@ -268,20 +271,16 @@ class MeldEngine(Cleanable):
             if shared:
                 overrides[socket_ref.param_name] = value
                 continue
-            if not socket_ref.param_path:
-                continue
             if match_prefix is None:
                 continue
-            param_path = socket_ref.param_path
-            if len(param_path) - 1 != match_prefix_len:
+            if path_registry is None:
                 continue
-            matched = True
-            for index in range(match_prefix_len):
-                if param_path[index] != match_prefix[index]:
-                    matched = False
-                    break
-            if matched:
-                overrides[socket_ref.param_name] = value
+            parent_id = path_registry.parent_id(socket_ref.param_path_id)
+            if parent_id is None or parent_id != match_prefix:
+                continue
+            if path_registry.depth(socket_ref.param_path_id) != match_prefix_len + 1:
+                continue
+            overrides[socket_ref.param_name] = value
         return overrides
 
     def _build_kwargs_from_call_recipe(

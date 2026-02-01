@@ -188,13 +188,14 @@ def test_component_dag_targeting_resolves_deep_path() -> None:
     blueprint, ids = _build_blueprint()
     try:
         engine = DagTargetingEngine(blueprint.dag_index)
+        path_registry = blueprint.path_registry
         sockets = engine.resolve(
             TargetSpec.parse("repo>logger"),
             lambda socket: socket.socket_kind is SocketKind.NORMAL,
         )
         assert len(sockets) == 1
         socket = sockets[0]
-        assert socket.param_path == ("repo", "logger")
+        assert path_registry.materialize_path(socket.param_path_id) == ("repo", "logger")
         assert socket.node_id == ids["repo"]
     finally:
         blueprint.cleanup()
@@ -212,11 +213,15 @@ def test_component_dag_targeting_broadcast_matches_multiple_paths() -> None:
     blueprint, _ids = _build_blueprint()
     try:
         engine = DagTargetingEngine(blueprint.dag_index)
+        path_registry = blueprint.path_registry
         sockets = engine.resolve(
             TargetSpec.parse("**service"),
             lambda socket: socket.socket_kind is SocketKind.NORMAL,
         )
-        paths = sorted(socket.param_path for socket in sockets)
+        paths = sorted(
+            path_registry.materialize_path(socket.param_path_id)
+            for socket in sockets
+        )
         assert paths == [("repo", "service"), ("service",)]
     finally:
         blueprint.cleanup()
@@ -258,13 +263,14 @@ def test_component_dag_targeting_path_ignores_same_name_elsewhere() -> None:
     blueprint, ids = _build_blueprint()
     try:
         engine = DagTargetingEngine(blueprint.dag_index)
+        path_registry = blueprint.path_registry
         sockets = engine.resolve(
             TargetSpec.parse("service"),
             lambda socket: socket.socket_kind is SocketKind.NORMAL,
         )
         assert len(sockets) == 1
         socket = sockets[0]
-        assert socket.param_path == ("service",)
+        assert path_registry.materialize_path(socket.param_path_id) == ("service",)
         assert socket.node_id == ids["root"]
     finally:
         blueprint.cleanup()

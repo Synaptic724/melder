@@ -137,7 +137,7 @@ class GraphMutator(Cleanable):
 
         # Build socket_refs/index; reuse existing ones for unchanged nodes.
         new_socket_refs = list(source.socket_refs)
-        new_index = DagIndex()
+        new_index = DagIndex(path_registry=source.path_registry.clone())
         for ref in new_socket_refs:
             new_index.add_socket(ref)
         # For newly introduced nodes, we do not have topology; only index the mutation socket itself.
@@ -145,11 +145,10 @@ class GraphMutator(Cleanable):
             spec = TargetSpec.parse(raw_key)
             sockets = self._engine.resolve(spec, _filter_mutation)
             for socket_ref in sockets:
-                param_path = socket_ref.param_path
                 new_ref = SocketRef(
                     node_id=target_id,
                     param_name=socket_ref.param_name,
-                    param_path=param_path,
+                    param_path_id=socket_ref.param_path_id,
                     socket_kind=socket_ref.socket_kind,
                 )
                 new_socket_refs.append(new_ref)

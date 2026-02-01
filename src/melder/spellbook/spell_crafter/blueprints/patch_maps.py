@@ -48,7 +48,7 @@ class MutationEdgePatch:
     Contract:
         - child_spell_id identifies the dependent spell node.
         - param_name identifies the parameter the mutation targets.
-        - param_path matches the socket reference path from the root.
+        - param_path_id matches the socket reference path from the root.
         - old_parent_id is set when a single existing parent matches; otherwise None.
         - new_parent_id is populated at apply time by the mutation logic.
 
@@ -57,8 +57,8 @@ class MutationEdgePatch:
             Spell id of the dependent node.
         param_name (str):
             Parameter name associated with the mutation contract.
-        param_path (Sequence[str]):
-            Parameter path from the root occurrence to the socket.
+        param_path_id (int):
+            PathId from the root occurrence to the socket.
         old_parent_id (Optional[str]):
             Prior parent id when resolvable to a single node; otherwise None.
         new_parent_id (Optional[str]):
@@ -67,7 +67,7 @@ class MutationEdgePatch:
     __melder_internal__ = _mrg.sentinel
     child_spell_id: str
     param_name: str
-    param_path: Sequence[str]
+    param_path_id: int
     old_parent_id: Optional[str]
     new_parent_id: Optional[str]
 
@@ -415,7 +415,7 @@ class MutationPatchMap(Cleanable):
                     MutationEdgePatch(
                         child_spell_id=patch.child_spell_id,
                         param_name=patch.param_name,
-                        param_path=tuple(patch.param_path),
+                        param_path_id=patch.param_path_id,
                         old_parent_id=patch.old_parent_id,
                         new_parent_id=target_id,
                     )
@@ -510,7 +510,7 @@ def apply_mutation_patch_map(
     ordered_ids = new_dag.collect_dependency_ids()
 
     new_socket_refs = list(source.socket_refs)
-    new_index = DagIndex()
+    new_index = DagIndex(path_registry=source.path_registry.clone())
     for ref in new_socket_refs:
         new_index.add_socket(ref)
     for patch in patches:
@@ -519,7 +519,7 @@ def apply_mutation_patch_map(
         new_ref = SocketRef(
             node_id=patch.new_parent_id,
             param_name=patch.param_name,
-            param_path=tuple(patch.param_path),
+            param_path_id=patch.param_path_id,
             socket_kind=SocketKind.MUTATION_CONTRACT,
         )
         new_socket_refs.append(new_ref)
@@ -648,10 +648,11 @@ class PatchMapBuilder(object):
         specificity_by_spec: Dict[str, _Specificity] = {}
 
         sockets = list(self._blueprint.socket_refs or [])
+        path_registry = self._blueprint.path_registry
         by_name: Dict[str, List[SocketRef]] = {}
         for socket in sockets:
             by_name.setdefault(socket.param_name, []).append(socket)
-            path_key = ">".join(socket.param_path)
+            path_key = path_registry.format_path(socket.param_path_id)
             targets_by_spec[path_key] = [socket]
             specificity_by_spec[path_key] = _Specificity.PATH
 
@@ -688,10 +689,11 @@ class PatchMapBuilder(object):
             ref for ref in (self._blueprint.socket_refs or [])
             if ref.socket_kind is SocketKind.MUTATION_CONTRACT
         ]
+        path_registry = self._blueprint.path_registry
         by_name: Dict[str, List[SocketRef]] = {}
         for socket in sockets:
             by_name.setdefault(socket.param_name, []).append(socket)
-            path_key = ">".join(socket.param_path)
+            path_key = path_registry.format_path(socket.param_path_id)
             targets_by_spec[path_key] = _build_mutation_patches(
                 blueprint=self._blueprint,
                 socket_ref=socket,
@@ -785,7 +787,7 @@ def _build_mutation_patches(
         MutationEdgePatch(
             child_spell_id=child_id,
             param_name=socket_ref.param_name,
-            param_path=socket_ref.param_path,
+            param_path_id=socket_ref.param_path_id,
             old_parent_id=old_parent_id,
             new_parent_id=None,
         )

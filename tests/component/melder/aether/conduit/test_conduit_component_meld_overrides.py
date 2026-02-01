@@ -659,7 +659,8 @@ def test_component_meld_root_blueprint_paths_two_node_graph() -> None:
     assert service_id in ordered_ids
     assert ordered_ids[-1] == service_id
 
-    socket_paths = {socket.param_path for socket in blueprint.socket_refs}
+    path_registry = blueprint.path_registry
+    socket_paths = {path_registry.materialize_path(socket.param_path_id) for socket in blueprint.socket_refs}
     assert socket_paths == {("repo",), ("repo", "name")}
     assert len(blueprint.dag_index.get_by_exact_path(("repo",))) == 1
     assert len(blueprint.dag_index.get_by_exact_path(("repo", "name"))) == 1
@@ -727,7 +728,8 @@ def test_component_meld_root_blueprint_paths_shared_dependency() -> None:
         ("service_a", "repo", "name"),
         ("service_b", "repo", "name"),
     }
-    socket_paths = {socket.param_path for socket in blueprint.socket_refs}
+    path_registry = blueprint.path_registry
+    socket_paths = {path_registry.materialize_path(socket.param_path_id) for socket in blueprint.socket_refs}
     assert socket_paths == expected_paths
     for path in expected_paths:
         assert len(blueprint.dag_index.get_by_exact_path(path)) == 1

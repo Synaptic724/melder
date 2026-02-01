@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from typing import Optional
+
 import pytest
 
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -157,6 +159,7 @@ def _socket_ref(
     node_id: str = "node",
     param_name: str = "param",
     param_path: tuple[str, ...] = ("param",),
+    path_registry: PathRegistry,
     socket_kind: SocketKind = SocketKind.NORMAL,
 ) -> SocketRef:
     """
@@ -172,10 +175,13 @@ def _socket_ref(
     Returns:
         SocketRef: The configured socket reference.
     """
+    path_id = path_registry.root_path_id
+    for segment in param_path:
+        path_id = path_registry.extend_path(path_id, segment)
     return SocketRef(
         node_id=node_id,
         param_name=param_name,
-        param_path=param_path,
+        param_path_id=path_id,
         socket_kind=socket_kind,
     )
 
@@ -185,6 +191,7 @@ def _make_blueprint(
     root_id: str,
     socket_refs: tuple[SocketRef, ...] | None = None,
     dag_index: DagIndex | None = None,
+    path_registry: Optional[PathRegistry] = None,
     sync_refs: bool = False,
 ) -> RootResolutionBlueprint:
     """
@@ -206,11 +213,17 @@ def _make_blueprint(
     for ref in socket_refs or ():
         dag.add_node(ref.node_id)
 
+    if dag_index is None:
+        if path_registry is None:
+            path_registry = PathRegistry()
+        dag_index = DagIndex(path_registry=path_registry)
+
     if sync_refs:
         blueprint = RootResolutionBlueprint(
             root_spell_id=root_id,
             root_lineage_id=f"lineage-{root_id}",
             dag=dag,
+            dag_index=dag_index,
         )
         for ref in socket_refs or ():
             blueprint.add_socket_ref(ref)
@@ -261,11 +274,23 @@ def test_synced_socket_refs_and_index_produce_no_diagnostics() -> None:
     Raises:
         AssertionError: If diagnostics are emitted.
     """
-    ref_a = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    ref_b = _socket_ref(node_id="b", param_name="q", param_path=("p", "q"))
+    path_registry = PathRegistry()
+    ref_a = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    ref_b = _socket_ref(
+        node_id="b",
+        param_name="q",
+        param_path=("p", "q"),
+        path_registry=path_registry,
+    )
     blueprint = _make_blueprint(
         root_id="root",
         socket_refs=(ref_a, ref_b),
+        path_registry=path_registry,
         sync_refs=True,
     )
     diags: list[SystemDiagnostic] = []
@@ -293,8 +318,19 @@ def test_duplicate_socket_ref_emits_duplicate_diagnostic() -> None:
     Raises:
         AssertionError: If duplicate diagnostics are missing or incorrect.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    blueprint = _make_blueprint(root_id="root", socket_refs=(ref,), sync_refs=True)
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        socket_refs=(ref,),
+        path_registry=path_registry,
+        sync_refs=True,
+    )
     blueprint.add_socket_ref(ref)
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
@@ -323,8 +359,19 @@ def test_duplicate_socket_ref_multiple_times_emits_multiple_duplicates() -> None
     Raises:
         AssertionError: If duplicate count is incorrect.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    blueprint = _make_blueprint(root_id="root", socket_refs=(ref,), sync_refs=True)
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        socket_refs=(ref,),
+        path_registry=path_registry,
+        sync_refs=True,
+    )
     blueprint.add_socket_ref(ref)
     blueprint.add_socket_ref(ref)
     diags: list[SystemDiagnostic] = []
@@ -353,8 +400,18 @@ def test_missing_in_index_emits_path_and_name_diagnostics() -> None:
     Raises:
         AssertionError: If expected diagnostics are missing.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    blueprint = _make_blueprint(root_id="root", socket_refs=(ref,))
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        socket_refs=(ref,),
+        path_registry=path_registry,
+    )
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
         index=_index("a"),
@@ -381,14 +438,21 @@ def test_missing_in_index_by_name_only_emits_name_diagnostic() -> None:
     Raises:
         AssertionError: If the wrong diagnostics are emitted.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    index = DagIndex()
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    index = DagIndex(path_registry=path_registry)
     index.add_socket(ref)
     index._by_name[ref.param_name] = []
     blueprint = _make_blueprint(
         root_id="root",
         socket_refs=(ref,),
         dag_index=index,
+        path_registry=path_registry,
     )
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
@@ -416,14 +480,21 @@ def test_missing_in_index_by_path_only_emits_path_diagnostic() -> None:
     Raises:
         AssertionError: If the wrong diagnostics are emitted.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    index = DagIndex()
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    index = DagIndex(path_registry=path_registry)
     index.add_socket(ref)
-    index._by_exact_path = {}
+    index._by_exact_path_id = {}
     blueprint = _make_blueprint(
         root_id="root",
         socket_refs=(ref,),
         dag_index=index,
+        path_registry=path_registry,
     )
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
@@ -451,13 +522,20 @@ def test_orphan_socket_in_index_emits_orphan_diagnostic() -> None:
     Raises:
         AssertionError: If orphan diagnostics are missing.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    index = DagIndex()
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    index = DagIndex(path_registry=path_registry)
     index.add_socket(ref)
     blueprint = _make_blueprint(
         root_id="root",
         socket_refs=(),
         dag_index=index,
+        path_registry=path_registry,
     )
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
@@ -486,9 +564,25 @@ def test_orphan_socket_with_valid_ref_only_reports_orphan() -> None:
     Raises:
         AssertionError: If unexpected diagnostics appear.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    orphan = _socket_ref(node_id="b", param_name="q", param_path=("q",))
-    blueprint = _make_blueprint(root_id="root", socket_refs=(ref,), sync_refs=True)
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    orphan = _socket_ref(
+        node_id="b",
+        param_name="q",
+        param_path=("q",),
+        path_registry=path_registry,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        socket_refs=(ref,),
+        path_registry=path_registry,
+        sync_refs=True,
+    )
     blueprint.dag_index.add_socket(orphan)
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
@@ -515,15 +609,27 @@ def test_multiple_orphan_sockets_emit_multiple_diagnostics() -> None:
     Raises:
         AssertionError: If orphan count is incorrect.
     """
-    ref_a = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    ref_b = _socket_ref(node_id="b", param_name="q", param_path=("q",))
-    index = DagIndex()
+    path_registry = PathRegistry()
+    ref_a = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    ref_b = _socket_ref(
+        node_id="b",
+        param_name="q",
+        param_path=("q",),
+        path_registry=path_registry,
+    )
+    index = DagIndex(path_registry=path_registry)
     index.add_socket(ref_a)
     index.add_socket(ref_b)
     blueprint = _make_blueprint(
         root_id="root",
         socket_refs=(),
         dag_index=index,
+        path_registry=path_registry,
     )
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
@@ -551,8 +657,18 @@ def test_diagnostics_list_reused_appends_entries() -> None:
     Raises:
         AssertionError: If existing diagnostics are lost.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    blueprint = _make_blueprint(root_id="root", socket_refs=(ref,))
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        socket_refs=(ref,),
+        path_registry=path_registry,
+    )
     existing = [SystemDiagnostic("pre", "keep")]
     SocketRefSanityStrategy().run(
         index=_index("a"),
@@ -579,8 +695,18 @@ def test_cancel_event_halts_before_processing() -> None:
     Raises:
         RuntimeError: When cancellation is signaled.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    blueprint = _make_blueprint(root_id="root", socket_refs=(ref,))
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        socket_refs=(ref,),
+        path_registry=path_registry,
+    )
     diags: list[SystemDiagnostic] = []
     with pytest.raises(RuntimeError, match="cancelled"):
         SocketRefSanityStrategy().run(
@@ -607,11 +733,23 @@ def test_cancel_event_checked_between_roots() -> None:
     Raises:
         RuntimeError: When cancellation is toggled on.
     """
-    ref_a = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    ref_b = _socket_ref(node_id="b", param_name="q", param_path=("q",))
+    path_registry_a = PathRegistry()
+    path_registry_b = PathRegistry()
+    ref_a = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry_a,
+    )
+    ref_b = _socket_ref(
+        node_id="b",
+        param_name="q",
+        param_path=("q",),
+        path_registry=path_registry_b,
+    )
     blueprints = {
-        "r1": _make_blueprint(root_id="r1", socket_refs=(ref_a,)),
-        "r2": _make_blueprint(root_id="r2", socket_refs=(ref_b,)),
+        "r1": _make_blueprint(root_id="r1", socket_refs=(ref_a,), path_registry=path_registry_a),
+        "r2": _make_blueprint(root_id="r2", socket_refs=(ref_b,), path_registry=path_registry_b),
     }
     diags: list[SystemDiagnostic] = []
     with pytest.raises(RuntimeError, match="cancelled"):
@@ -639,11 +777,23 @@ def test_missing_refs_across_multiple_roots_include_root_id() -> None:
     Raises:
         AssertionError: If root ids are not included.
     """
-    ref_a = _socket_ref(node_id="a", param_name="p", param_path=("p",))
-    ref_b = _socket_ref(node_id="b", param_name="q", param_path=("q",))
+    path_registry_a = PathRegistry()
+    path_registry_b = PathRegistry()
+    ref_a = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("p",),
+        path_registry=path_registry_a,
+    )
+    ref_b = _socket_ref(
+        node_id="b",
+        param_name="q",
+        param_path=("q",),
+        path_registry=path_registry_b,
+    )
     blueprints = {
-        "r1": _make_blueprint(root_id="r1", socket_refs=(ref_a,)),
-        "r2": _make_blueprint(root_id="r2", socket_refs=(ref_b,)),
+        "r1": _make_blueprint(root_id="r1", socket_refs=(ref_a,), path_registry=path_registry_a),
+        "r2": _make_blueprint(root_id="r2", socket_refs=(ref_b,), path_registry=path_registry_b),
     }
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
@@ -670,8 +820,19 @@ def test_duplicate_message_includes_param_path() -> None:
     Raises:
         AssertionError: If the path is not present in the message.
     """
-    ref = _socket_ref(node_id="a", param_name="p", param_path=("a", "b"))
-    blueprint = _make_blueprint(root_id="root", socket_refs=(ref,), sync_refs=True)
+    path_registry = PathRegistry()
+    ref = _socket_ref(
+        node_id="a",
+        param_name="p",
+        param_path=("a", "b"),
+        path_registry=path_registry,
+    )
+    blueprint = _make_blueprint(
+        root_id="root",
+        socket_refs=(ref,),
+        path_registry=path_registry,
+        sync_refs=True,
+    )
     blueprint.add_socket_ref(ref)
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(

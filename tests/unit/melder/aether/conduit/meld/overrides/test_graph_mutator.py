@@ -8,7 +8,7 @@ from melder.aether.conduit.meld.overrides.graph_mutator import GraphMutator
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -20,6 +20,7 @@ def _make_socket_ref(
     node_id: str,
     param_name: str,
     param_path: tuple[str, ...],
+    path_registry: PathRegistry,
     socket_kind: SocketKind = SocketKind.MUTATION_CONTRACT,
 ) -> SocketRef:
     """
@@ -34,10 +35,13 @@ def _make_socket_ref(
     Returns:
         SocketRef: Socket reference with the provided attributes.
     """
+    path_id = path_registry.root_path_id
+    for segment in param_path:
+        path_id = path_registry.extend_path(path_id, segment)
     return SocketRef(
         node_id=node_id,
         param_name=param_name,
-        param_path=param_path,
+        param_path_id=path_id,
         socket_kind=socket_kind,
     )
 
@@ -76,6 +80,7 @@ def _make_blueprint(
     root_lineage_id: str,
     edges: Iterable[tuple[str, str, Optional[str], Optional[SocketKind]]],
     socket_refs: Iterable[SocketRef],
+    path_registry: PathRegistry,
     node_ids: Optional[Iterable[str]] = None,
 ) -> RootResolutionBlueprint:
     """
@@ -93,7 +98,7 @@ def _make_blueprint(
     """
     dag = _build_dag(edges=edges, node_ids=node_ids)
     ordered_ids = dag.collect_dependency_ids()
-    index = DagIndex()
+    index = DagIndex(path_registry=path_registry)
     for ref in socket_refs:
         index.add_socket(ref)
     return RootResolutionBlueprint(
@@ -166,16 +171,19 @@ def test_cleanup_clears_references_and_is_idempotent() -> None:
         - cleanup nulls engine and blueprint references.
         - cleanup is idempotent.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     engine_mock = MagicMock()
@@ -197,16 +205,19 @@ def test_apply_returns_original_for_empty_override(payload) -> None:
     Contract:
         - falsy mutation_override returns the same blueprint instance.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     assert mutator.apply(payload) is blueprint
@@ -219,16 +230,19 @@ def test_apply_rejects_non_dict_override() -> None:
     Contract:
         - mutation_override must be a dict when truthy.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     with pytest.raises(RuntimeError, match="mutation_override must be a dict"):
@@ -242,16 +256,19 @@ def test_apply_rejects_invalid_override_key() -> None:
     Contract:
         - empty or whitespace keys raise RuntimeError.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     with pytest.raises(RuntimeError, match="Invalid mutation_override key"):
@@ -266,16 +283,19 @@ def test_apply_rejects_invalid_override_target(target_id) -> None:
     Contract:
         - non-string or empty target ids raise RuntimeError.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     with pytest.raises(RuntimeError, match="Invalid mutation_override target"):
@@ -290,16 +310,19 @@ def test_apply_rewires_mutation_socket_to_new_target() -> None:
         - old parent edge is removed for the mutation param.
         - new parent edge is added for the override target.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("old-parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-parent"})
@@ -314,16 +337,19 @@ def test_apply_preserves_root_identity() -> None:
     Contract:
         - root_spell_id and root_lineage_id remain unchanged.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("old-parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-parent"})
@@ -338,25 +364,29 @@ def test_apply_adds_new_socket_ref_for_target() -> None:
     Contract:
         - new socket refs include the override target id.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("old-parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-parent"})
     mutated_refs = mutated.socket_refs
     assert len(mutated_refs) == 2
+    mutated_registry = mutated.path_registry
     assert any(
         ref.node_id == "new-parent"
         and ref.param_name == "dep"
-        and ref.param_path == ("dep",)
+        and mutated_registry.materialize_path(ref.param_path_id) == ("dep",)
         for ref in mutated_refs
     )
 
@@ -368,16 +398,19 @@ def test_apply_preserves_non_mutation_edges() -> None:
     Contract:
         - edges with non-mutation socket kinds are preserved.
     """
+    path_registry = PathRegistry()
     mutation_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
         socket_kind=SocketKind.MUTATION_CONTRACT,
     )
     normal_ref = _make_socket_ref(
         node_id="child",
         param_name="other",
         param_path=("other",),
+        path_registry=path_registry,
         socket_kind=SocketKind.NORMAL,
     )
     blueprint = _make_blueprint(
@@ -388,6 +421,7 @@ def test_apply_preserves_non_mutation_edges() -> None:
             ("normal-parent", "child", "other", SocketKind.NORMAL),
         ],
         socket_refs=[mutation_ref, normal_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-parent"})
@@ -402,16 +436,19 @@ def test_apply_leaves_source_dag_untouched() -> None:
     Contract:
         - source DAG edges remain as originally defined.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("old-parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     _ = mutator.apply({"dep": "new-parent"})
@@ -425,16 +462,19 @@ def test_apply_adds_new_node_for_target() -> None:
     Contract:
         - override target ids are present in the mutated DAG nodes.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("old-parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-parent"})
@@ -448,10 +488,12 @@ def test_apply_preserves_socket_kind_on_new_edge() -> None:
     Contract:
         - new edge in the mutated DAG preserves socket_kind.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
         socket_kind=SocketKind.MUTATION_CONTRACT,
     )
     blueprint = _make_blueprint(
@@ -459,6 +501,7 @@ def test_apply_preserves_socket_kind_on_new_edge() -> None:
         root_lineage_id="lineage-1",
         edges=[("old-parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-parent"})
@@ -474,16 +517,19 @@ def test_apply_orders_new_target_before_child() -> None:
     Contract:
         - ordered_node_ids contains the new parent before its child.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("old-parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-parent"})
@@ -498,16 +544,19 @@ def test_apply_skips_nonexistent_child_nodes() -> None:
     Contract:
         - missing child nodes are ignored without raising.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="missing-child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         edges=[],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
         node_ids=["root"],
     )
     mutator = GraphMutator(blueprint)
@@ -522,16 +571,19 @@ def test_apply_filters_only_mutation_sockets() -> None:
     Contract:
         - normal sockets are ignored by the mutation filter.
     """
+    path_registry = PathRegistry()
     mutation_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
         socket_kind=SocketKind.MUTATION_CONTRACT,
     )
     normal_ref = _make_socket_ref(
         node_id="other-child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
         socket_kind=SocketKind.NORMAL,
     )
     blueprint = _make_blueprint(
@@ -542,6 +594,7 @@ def test_apply_filters_only_mutation_sockets() -> None:
             ("normal-parent", "other-child", "dep", SocketKind.NORMAL),
         ],
         socket_refs=[mutation_ref, normal_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-parent"})
@@ -556,10 +609,12 @@ def test_apply_raises_when_no_mutation_socket_matches() -> None:
     Contract:
         - DagTargetingEngine raises when no mutation sockets match.
     """
+    path_registry = PathRegistry()
     normal_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
         socket_kind=SocketKind.NORMAL,
     )
     blueprint = _make_blueprint(
@@ -567,6 +622,7 @@ def test_apply_raises_when_no_mutation_socket_matches() -> None:
         root_lineage_id="lineage-1",
         edges=[("parent", "child", "dep", SocketKind.NORMAL)],
         socket_refs=[normal_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     with pytest.raises(RuntimeError, match="No sockets found"):
@@ -580,15 +636,18 @@ def test_apply_handles_multiple_overrides() -> None:
     Contract:
         - each override rewires its corresponding mutation socket.
     """
+    path_registry = PathRegistry()
     ref_a = _make_socket_ref(
         node_id="child-a",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     ref_b = _make_socket_ref(
         node_id="child-b",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child-a",
@@ -598,6 +657,7 @@ def test_apply_handles_multiple_overrides() -> None:
             ("old-b", "child-b", "dep", SocketKind.MUTATION_CONTRACT),
         ],
         socket_refs=[ref_a, ref_b],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-parent"})
@@ -613,16 +673,19 @@ def test_cleanup_swallows_engine_cleanup_errors() -> None:
         - cleanup suppresses engine cleanup errors.
         - engine and blueprint references are nulled.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="child",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child",
         root_lineage_id="lineage-1",
         edges=[("parent", "child", "dep", SocketKind.MUTATION_CONTRACT)],
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     engine_mock = MagicMock()
@@ -642,15 +705,18 @@ def test_apply_handles_multiple_distinct_override_keys() -> None:
     Contract:
         - Each override key rewires only its targeted mutation socket.
     """
+    path_registry = PathRegistry()
     ref_a = _make_socket_ref(
         node_id="child-a",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     ref_b = _make_socket_ref(
         node_id="child-b",
         param_name="other",
         param_path=("other",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="child-a",
@@ -660,6 +726,7 @@ def test_apply_handles_multiple_distinct_override_keys() -> None:
             ("old-b", "child-b", "other", SocketKind.MUTATION_CONTRACT),
         ],
         socket_refs=[ref_a, ref_b],
+        path_registry=path_registry,
     )
     mutator = GraphMutator(blueprint)
     mutated = mutator.apply({"dep": "new-a", "other": "new-b"})

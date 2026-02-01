@@ -135,10 +135,11 @@ def test_component_dag_index_builder_builds_from_local_topology() -> None:
 
         service_refs = index.get_by_name("service")
         count_refs = index.get_by_name("count")
+        path_registry = index.path_registry
         assert len(service_refs) == 1
         assert len(count_refs) == 1
-        assert service_refs[0].param_path == ("service",)
-        assert count_refs[0].param_path == ("count",)
+        assert path_registry.materialize_path(service_refs[0].param_path_id) == ("service",)
+        assert path_registry.materialize_path(count_refs[0].param_path_id) == ("count",)
         assert service_refs[0].socket_kind is SocketKind.NORMAL
         assert count_refs[0].socket_kind is SocketKind.NORMAL
     finally:
@@ -217,12 +218,13 @@ def test_component_dag_index_builder_preserves_contract_socket_kinds() -> None:
 
         service_refs = index.get_by_name("service")
         mutation_refs = index.get_by_name("mutation")
+        path_registry = index.path_registry
         assert len(service_refs) == 1
         assert len(mutation_refs) == 1
         assert service_refs[0].socket_kind is SocketKind.SPELL_CONTRACT
         assert mutation_refs[0].socket_kind is SocketKind.MUTATION_CONTRACT
-        assert service_refs[0].param_path == ("service",)
-        assert mutation_refs[0].param_path == ("mutation",)
+        assert path_registry.materialize_path(service_refs[0].param_path_id) == ("service",)
+        assert path_registry.materialize_path(mutation_refs[0].param_path_id) == ("mutation",)
     finally:
         spellbook.cleanup()
 
@@ -290,8 +292,9 @@ def test_component_dag_index_builder_keeps_collection_paths_shallow() -> None:
             topology.sockets,
         )
         refs = index.get_by_exact_path(("services",))
+        path_registry = index.path_registry
         assert len(refs) == 1
         assert refs[0].param_name == "services"
-        assert refs[0].param_path == ("services",)
+        assert path_registry.materialize_path(refs[0].param_path_id) == ("services",)
     finally:
         spellbook.cleanup()

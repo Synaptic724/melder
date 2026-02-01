@@ -232,23 +232,29 @@ class SpellSystemRootBlueprintBuilder:
     ) -> None:
         """
         Overlay SocketRefs and build a deep DagIndex for the blueprint.
+
+        Contract:
+            - PathIds are extended via the blueprint PathRegistry.
+            - SocketRefs are indexed by PathId and param name.
         """
-        queue: Deque[Tuple[str, Tuple[str, ...]]] = deque()
-        root_key = (blueprint.root_spell_id, ())
-        queue.append(root_key)
+        queue: Deque[Tuple[str, int]] = deque()
 
         # Start with a fresh index to avoid stale entries in case of reuse.
         blueprint.replace_dag_index(DagIndex())
         blueprint.check_cleaned()
         socket_refs = blueprint._socket_refs
         add_socket = blueprint._dag_index.add_socket
+        path_registry = blueprint.path_registry
+        root_path_id = path_registry.root_path_id
+        root_key = (blueprint.root_spell_id, root_path_id)
+        queue.append(root_key)
 
-        visited: Set[Tuple[str, Tuple[str, ...]]] = set()
-        queued: Set[Tuple[str, Tuple[str, ...]]] = {root_key}
+        visited: Set[Tuple[str, int]] = set()
+        queued: Set[Tuple[str, int]] = {root_key}
 
         while queue:
-            node_id, path = queue.popleft()
-            key = (node_id, path)
+            node_id, path_id = queue.popleft()
+            key = (node_id, path_id)
             queued.discard(key)
             if key in visited:
                 continue
@@ -259,18 +265,21 @@ class SpellSystemRootBlueprintBuilder:
                 continue
 
             for socket_desc in topology.sockets:
-                socket_path = path + (socket_desc.param_name,)
+                socket_path_id = path_registry.extend_path(
+                    path_id,
+                    socket_desc.param_name,
+                )
                 socket_ref = SocketRef(
                     node_id=node_id,
                     param_name=socket_desc.param_name,
-                    param_path=socket_path,
+                    param_path_id=socket_path_id,
                     socket_kind=socket_desc.socket_kind,
                 )
                 socket_refs.append(socket_ref)
                 add_socket(socket_ref)
 
                 for target_id in socket_desc.target_spell_ids:
-                    target_key = (target_id, socket_path)
+                    target_key = (target_id, socket_path_id)
                     if target_key not in visited and target_key not in queued:
                         queued.add(target_key)
                         queue.append(target_key)

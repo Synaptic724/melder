@@ -70,18 +70,19 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
 
             sockets = blueprint.socket_refs
             seen: Set[SocketRef] = set()
-            index_by_path: Dict[Tuple[str, ...], Set[SocketRef]] = {}
+            index_by_path: Dict[int, Set[SocketRef]] = {}
             index_by_name: Dict[str, Set[SocketRef]] = {}
             indexed_sockets: Set[SocketRef] = set()
 
             dag_index = blueprint.dag_index
-            for sockets_for_path in dag_index._by_exact_path.values():
+            path_registry = dag_index.path_registry
+            for sockets_for_path in dag_index._by_exact_path_id.values():
                 for indexed in sockets_for_path:
                     indexed_sockets.add(indexed)
-                    path_bucket = index_by_path.get(indexed.param_path)
+                    path_bucket = index_by_path.get(indexed.param_path_id)
                     if path_bucket is None:
                         path_bucket = set()
-                        index_by_path[indexed.param_path] = path_bucket
+                        index_by_path[indexed.param_path_id] = path_bucket
                     path_bucket.add(indexed)
 
             for sockets_for_name in dag_index._by_name.values():
@@ -94,7 +95,7 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
                     name_bucket.add(indexed)
 
             for ref in sockets:
-                path_str = ">".join(ref.param_path)
+                path_str = path_registry.format_path(ref.param_path_id)
                 if ref in seen:
                     diagnostics.append(
                         SystemDiagnostic(
@@ -103,13 +104,16 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
                             severity=SystemDiagnosticSeverity.ERROR,
                             spell_id=ref.node_id,
                             root_id=root_id,
-                            details={"param_path": ref.param_path, "param_name": ref.param_name},
+                            details={
+                                "param_path": path_registry.materialize_path(ref.param_path_id),
+                                "param_name": ref.param_name,
+                            },
                         )
                     )
                 seen.add(ref)
 
                 # Validate index contains this socket by path and name
-                by_path = index_by_path.get(ref.param_path)
+                by_path = index_by_path.get(ref.param_path_id)
                 if not by_path or ref not in by_path:
                     diagnostics.append(
                         SystemDiagnostic(
@@ -118,7 +122,10 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
                             severity=SystemDiagnosticSeverity.ERROR,
                             spell_id=ref.node_id,
                             root_id=root_id,
-                            details={"param_path": ref.param_path, "param_name": ref.param_name},
+                            details={
+                                "param_path": path_registry.materialize_path(ref.param_path_id),
+                                "param_name": ref.param_name,
+                            },
                         )
                     )
                 by_name = index_by_name.get(ref.param_name)
@@ -130,7 +137,10 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
                             severity=SystemDiagnosticSeverity.ERROR,
                             spell_id=ref.node_id,
                             root_id=root_id,
-                            details={"param_path": ref.param_path, "param_name": ref.param_name},
+                            details={
+                                "param_path": path_registry.materialize_path(ref.param_path_id),
+                                "param_name": ref.param_name,
+                            },
                         )
                     )
 
@@ -140,10 +150,19 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
                     diagnostics.append(
                         SystemDiagnostic(
                             code="dag_index_orphan_socket",
-                            message=f"DagIndex contains socket '{'>'.join(indexed.param_path)}' not present in socket_refs for root '{root_id}'.",
+                            message=(
+                                "DagIndex contains socket '{0}' not present in "
+                                "socket_refs for root '{1}'."
+                            ).format(
+                                path_registry.format_path(indexed.param_path_id),
+                                root_id,
+                            ),
                             severity=SystemDiagnosticSeverity.ERROR,
                             spell_id=indexed.node_id,
                             root_id=root_id,
-                            details={"param_path": indexed.param_path, "param_name": indexed.param_name},
+                            details={
+                                "param_path": path_registry.materialize_path(indexed.param_path_id),
+                                "param_name": indexed.param_name,
+                            },
                         )
                     )

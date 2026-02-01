@@ -6,6 +6,198 @@ from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpe
 from melder.utilities.general_base.cleanable import Cleanable
 
 
+class PathRegistry(Cleanable):
+    """
+    Internal
+
+    Intern parameter path segments into stable integer PathIds.
+
+    Purpose:
+        Replace per-socket tuple path churn with compact ids that can be
+        compared and extended cheaply during Phase 5 and Phase 8 builds.
+
+    Contract:
+        - PathIds are stable for the lifetime of the registry.
+        - The root path id represents the empty path.
+        - extend_path returns the same id for the same (parent, segment) pair.
+        - resolve_path_id returns None when any segment is unknown.
+        - materialize_path returns a new tuple of path segments for diagnostics.
+
+    Threading:
+        - Not thread-safe. Builder-owned only.
+    """
+    __melder_internal__ = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_root_path_id",
+        "_parent_ids",
+        "_segments",
+        "_depths",
+        "_child_ids",
+    ]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._root_path_id = 0
+        self._parent_ids: List[Optional[int]] = [None]
+        self._segments: List[Optional[str]] = [None]
+        self._depths: List[int] = [0]
+        self._child_ids: Dict[Tuple[int, str], int] = {}
+
+    def cleanup(self) -> None:
+        """
+        Deterministically clear the registry contents.
+
+        Contract:
+            - Idempotent: safe to call multiple times.
+            - Drops all internal lists and maps.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._parent_ids.clear()
+        self._segments.clear()
+        self._depths.clear()
+        self._child_ids.clear()
+        self._parent_ids = None
+        self._segments = None
+        self._depths = None
+        self._child_ids = None
+        self._root_path_id = None
+
+    @property
+    def root_path_id(self) -> int:
+        """
+        Return the root path id representing the empty path.
+        """
+        self.check_cleaned()
+        return self._root_path_id
+
+    def extend_path(self, parent_id: int, segment: str) -> int:
+        """
+        Extend a parent path id with a single segment.
+
+        Contract:
+            - Returns existing ids for repeated (parent_id, segment) pairs.
+            - New ids are appended and assigned a depth of parent + 1.
+
+        Args:
+            parent_id: PathId of the parent path.
+            segment: Path segment to append.
+
+        Returns:
+            int: PathId representing parent + segment.
+        """
+        self.check_cleaned()
+        if parent_id is None:
+            raise ValueError("parent_id must not be None.")
+        if segment is None:
+            raise ValueError("segment must not be None.")
+
+        key = (parent_id, segment)
+        existing = self._child_ids.get(key)
+        if existing is not None:
+            return existing
+
+        new_id = len(self._segments)
+        self._child_ids[key] = new_id
+        self._parent_ids.append(parent_id)
+        self._segments.append(segment)
+        self._depths.append(self._depths[parent_id] + 1)
+        return new_id
+
+    def resolve_path_id(self, segments: Sequence[str]) -> Optional[int]:
+        """
+        Resolve a sequence of path segments to a PathId.
+
+        Contract:
+            - Returns the root id when segments is empty.
+            - Returns None when any segment is unknown.
+
+        Args:
+            segments: Path segments to resolve.
+
+        Returns:
+            Optional[int]: PathId if resolved; otherwise None.
+        """
+        self.check_cleaned()
+        if segments is None:
+            raise ValueError("segments must not be None.")
+        current_id = self._root_path_id
+        for segment in segments:
+            key = (current_id, segment)
+            next_id = self._child_ids.get(key)
+            if next_id is None:
+                return None
+            current_id = next_id
+        return current_id
+
+    def parent_id(self, path_id: int) -> Optional[int]:
+        """
+        Return the parent PathId for the provided path id.
+
+        Contract:
+            - Returns None for the root path.
+        """
+        self.check_cleaned()
+        if path_id == self._root_path_id:
+            return None
+        return self._parent_ids[path_id]
+
+    def depth(self, path_id: int) -> int:
+        """
+        Return the depth (segment count) for the provided path id.
+        """
+        self.check_cleaned()
+        return self._depths[path_id]
+
+    def materialize_path(self, path_id: int) -> Tuple[str, ...]:
+        """
+        Materialize a path id into a tuple of path segments.
+
+        Contract:
+            - Returns a new tuple for each call.
+            - Does not mutate the registry.
+        """
+        self.check_cleaned()
+        if path_id == self._root_path_id:
+            return ()
+        segments: List[str] = []
+        current_id = path_id
+        while current_id != self._root_path_id:
+            segment = self._segments[current_id]
+            if segment is None:
+                raise RuntimeError("PathRegistry encountered an empty segment.")
+            segments.append(segment)
+            current_id = self._parent_ids[current_id]
+            if current_id is None:
+                raise RuntimeError("PathRegistry encountered an empty parent id.")
+        segments.reverse()
+        return tuple(segments)
+
+    def format_path(self, path_id: int) -> str:
+        """
+        Format a path id into the canonical 'a>b>c' string.
+        """
+        return ">".join(self.materialize_path(path_id))
+
+    def clone(self) -> "PathRegistry":
+        """
+        Clone the registry to decouple derived blueprints.
+
+        Contract:
+            - Returns a new PathRegistry with identical path ids.
+            - Copies internal lists/maps to avoid shared mutation.
+        """
+        self.check_cleaned()
+        cloned = PathRegistry()
+        cloned._root_path_id = self._root_path_id
+        cloned._parent_ids = list(self._parent_ids)
+        cloned._segments = list(self._segments)
+        cloned._depths = list(self._depths)
+        cloned._child_ids = dict(self._child_ids)
+        return cloned
+
+
 @dataclass(frozen=True, slots=True)
 class SocketRef:
     """
@@ -21,8 +213,8 @@ class SocketRef:
         param_name:
             The parameter name on the constructor (e.g. ``"logger"``).
 
-        param_path:
-            The param path from the root spell (e.g. ``("orchestrator", "order_service", "repo")``).
+        param_path_id:
+            Interned path id from the RootResolutionBlueprint PathRegistry.
 
         socket_kind:
             The logical kind of socket – normal DI, SpellContract, MutationContract.
@@ -30,7 +222,7 @@ class SocketRef:
     __melder_internal__ = _mrg.sentinel
     node_id: str
     param_name: str
-    param_path: Tuple[str, ...]
+    param_path_id: int
     socket_kind: SocketKind
     _hash: int = field(init=False, repr=False, compare=False)
 
@@ -38,7 +230,7 @@ class SocketRef:
         object.__setattr__(
             self,
             "_hash",
-            hash((self.node_id, self.param_name, self.param_path, self.socket_kind)),
+            hash((self.node_id, self.param_name, self.param_path_id, self.socket_kind)),
         )
 
     def __hash__(self) -> int:
@@ -51,18 +243,21 @@ class DagIndex(Cleanable):
 
     Lightweight index over :class:`SocketRef` instances, keyed by:
 
-    * exact param path tuple (``("a", "b", "c")``) and
+    * exact param path id (interned in a PathRegistry) and
     * param name (``"repo"``).
 
     This is the shared substrate for `spell_override` and `mutation_override`
     targeting. It is intentionally dumb: no graph logic, no Melder awareness.
     """
     __melder_internal__ = _mrg.sentinel
-    __slots__ = Cleanable.__slots__ + ["_by_exact_path", "_by_name"]
+    __slots__ = Cleanable.__slots__ + ["_path_registry", "_by_exact_path_id", "_by_name"]
 
-    def __init__(self) -> None:
+    def __init__(self, path_registry: Optional[PathRegistry] = None) -> None:
         super().__init__()
-        self._by_exact_path: Dict[Tuple[str, ...], List[SocketRef]] = {}
+        self._path_registry: PathRegistry = (
+            path_registry if path_registry is not None else PathRegistry()
+        )
+        self._by_exact_path_id: Dict[int, List[SocketRef]] = {}
         self._by_name: Dict[str, List[SocketRef]] = {}
 
 
@@ -74,27 +269,32 @@ class DagIndex(Cleanable):
             return
 
         self._cleaned = True
-        self._by_exact_path.clear()
-        self._by_exact_path = None
+        if self._path_registry is not None:
+            self._path_registry.cleanup()
+        self._path_registry = None
+        self._by_exact_path_id.clear()
+        self._by_exact_path_id = None
         self._by_name.clear()
         self._by_name = None
 
-    @staticmethod
-    def _path_key(path: Sequence[str]) -> Tuple[str, ...]:
-        if isinstance(path, tuple):
-            return path
-        return tuple(path)
+    @property
+    def path_registry(self) -> PathRegistry:
+        """
+        Return the PathRegistry used by this index.
+        """
+        self.check_cleaned()
+        return self._path_registry
 
     def add_socket(self, socket: SocketRef) -> None:
         """
         Add a socket reference to the index.
         """
-        key = self._path_key(socket.param_path)
-        sockets_by_path = self._by_exact_path.get(key)
-        if sockets_by_path is None:
-            sockets_by_path = []
-            self._by_exact_path[key] = sockets_by_path
-        sockets_by_path.append(socket)
+        path_id = socket.param_path_id
+        sockets_by_path_id = self._by_exact_path_id.get(path_id)
+        if sockets_by_path_id is None:
+            sockets_by_path_id = []
+            self._by_exact_path_id[path_id] = sockets_by_path_id
+        sockets_by_path_id.append(socket)
 
         sockets_by_name = self._by_name.get(socket.param_name)
         if sockets_by_name is None:
@@ -110,8 +310,10 @@ class DagIndex(Cleanable):
             - Returns a defensive copy to prevent external mutation of
               internal index buckets.
         """
-        key = self._path_key(path)
-        sockets = self._by_exact_path.get(key)
+        path_id = self._path_registry.resolve_path_id(path)
+        if path_id is None:
+            return []
+        sockets = self._by_exact_path_id.get(path_id)
         if not sockets:
             return []
         return list(sockets)
@@ -134,7 +336,7 @@ class DagIndex(Cleanable):
         Iterate all known sockets. Primarily useful for debugging / tests.
         """
         seen: Dict[SocketRef, None] = {}
-        for sockets in self._by_exact_path.values():
+        for sockets in self._by_exact_path_id.values():
             for socket in sockets:
                 if socket in seen:
                     continue
@@ -274,7 +476,7 @@ class DagIndexBuilder:
     Placeholder index builder.
 
     In this stage we only support building a shallow index for a *single*
-    spell's constructor sockets (param_path is just ``(param_name,)``).
+    spell's constructor sockets (param_path_id represents ``(param_name,)``).
 
     Phases 5–7 will extend this to walk the full system blueprint and assign
     deep param paths (``\"orchestrator>order_service>repo\"`` style).
@@ -291,20 +493,22 @@ class DagIndexBuilder:
 
         Each socket is indexed under a single-segment param path:
 
-            param_path = (socket.param_name,)
+            param_path_id -> (socket.param_name,)
         """
         if owner_spell_id is None:
             raise ValueError("owner_spell_id must not be None.")
 
         index = DagIndex()
+        path_registry = index.path_registry
+        root_path_id = path_registry.root_path_id
         for socket in sockets:
             # Avoid circular imports by using duck-typing on the descriptor.
             param_name = socket.param_name
-            path = (param_name,)
+            path_id = path_registry.extend_path(root_path_id, param_name)
             ref = SocketRef(
                 node_id=owner_spell_id,
                 param_name=param_name,
-                param_path=path,
+                param_path_id=path_id,
                 socket_kind=socket.socket_kind,
             )
             index.add_socket(ref)

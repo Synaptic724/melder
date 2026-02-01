@@ -8,7 +8,7 @@ from melder.aether.conduit.meld.overrides.spell_overrider import SpellOverrider
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -20,6 +20,7 @@ def _make_socket_ref(
     node_id: str,
     param_name: str,
     param_path: tuple[str, ...],
+    path_registry: PathRegistry,
     socket_kind: SocketKind = SocketKind.NORMAL,
 ) -> SocketRef:
     """
@@ -34,10 +35,13 @@ def _make_socket_ref(
     Returns:
         SocketRef: Socket reference with the requested attributes.
     """
+    path_id = path_registry.root_path_id
+    for segment in param_path:
+        path_id = path_registry.extend_path(path_id, segment)
     return SocketRef(
         node_id=node_id,
         param_name=param_name,
-        param_path=param_path,
+        param_path_id=path_id,
         socket_kind=socket_kind,
     )
 
@@ -47,6 +51,7 @@ def _make_blueprint(
     root_id: str,
     root_lineage_id: str,
     socket_refs: Iterable[SocketRef],
+    path_registry: PathRegistry,
 ) -> RootResolutionBlueprint:
     """
     Build a RootResolutionBlueprint with sockets indexed for overrides.
@@ -61,7 +66,7 @@ def _make_blueprint(
     """
     dag = DirectedAcyclicWorkGraph()
     dag.add_node(root_id)
-    index = DagIndex()
+    index = DagIndex(path_registry=path_registry)
     socket_list = list(socket_refs)
     for socket_ref in socket_list:
         dag.add_node(socket_ref.node_id)
@@ -97,15 +102,18 @@ def test_cleanup_clears_references_and_is_idempotent() -> None:
         - cleanup nulls engine and blueprint references.
         - cleanup is idempotent.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
     engine_mock = MagicMock()
@@ -131,15 +139,18 @@ def test_cleanup_ignores_engine_cleanup_errors() -> None:
         - engine cleanup errors do not propagate.
         - cleanup still nulls references.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
     engine_mock = MagicMock()
@@ -159,15 +170,18 @@ def test_apply_returns_empty_for_none_override() -> None:
     Contract:
         - None spell_override returns {}.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -181,15 +195,18 @@ def test_apply_returns_empty_for_empty_override() -> None:
     Contract:
         - empty dict spell_override returns {}.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -203,20 +220,24 @@ def test_apply_path_targets_all_exact_matches() -> None:
     Contract:
         - path overrides apply to every socket with the same param_path.
     """
+    path_registry = PathRegistry()
     socket_a = _make_socket_ref(
         node_id="node-1",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     socket_b = _make_socket_ref(
         node_id="node-2",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_a, socket_b],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -232,20 +253,24 @@ def test_apply_unique_targets_single_match() -> None:
     Contract:
         - unique overrides map to the single matching socket.
     """
+    path_registry = PathRegistry()
     socket_repo = _make_socket_ref(
         node_id="node-1",
         param_name="repo",
         param_path=("repo",),
+        path_registry=path_registry,
     )
     socket_logger = _make_socket_ref(
         node_id="node-2",
         param_name="logger",
         param_path=("logger",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_repo, socket_logger],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -261,15 +286,18 @@ def test_apply_unique_raises_for_zero_match() -> None:
     Contract:
         - missing unique targets raise RuntimeError.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -284,20 +312,24 @@ def test_apply_unique_raises_for_multiple_matches() -> None:
     Contract:
         - unique overrides must resolve to exactly one socket.
     """
+    path_registry = PathRegistry()
     socket_a = _make_socket_ref(
         node_id="node-1",
         param_name="repo",
         param_path=("repo",),
+        path_registry=path_registry,
     )
     socket_b = _make_socket_ref(
         node_id="node-2",
         param_name="repo",
         param_path=("alt", "repo"),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_a, socket_b],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -312,20 +344,24 @@ def test_apply_broadcast_targets_all_matches() -> None:
     Contract:
         - broadcast overrides apply to every matching socket.
     """
+    path_registry = PathRegistry()
     socket_a = _make_socket_ref(
         node_id="node-1",
         param_name="logger",
         param_path=("logger",),
+        path_registry=path_registry,
     )
     socket_b = _make_socket_ref(
         node_id="node-2",
         param_name="logger",
         param_path=("child", "logger"),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_a, socket_b],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -341,15 +377,18 @@ def test_apply_broadcast_raises_for_no_matches() -> None:
     Contract:
         - missing broadcast targets raise RuntimeError.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -364,15 +403,18 @@ def test_apply_prefers_more_specific_overrides() -> None:
     Contract:
         - more specific overrides replace less specific ones.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="repo",
         param_path=("repo",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -388,15 +430,18 @@ def test_apply_raises_on_conflicting_same_specificity() -> None:
     Contract:
         - same-specificity overrides with different values are rejected.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="b",
         param_path=("a", "b"),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -411,15 +456,18 @@ def test_apply_after_cleanup_raises() -> None:
     Contract:
         - cleaned instances raise RuntimeError on apply.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -441,15 +489,18 @@ def test_apply_allows_same_specificity_same_value() -> None:
     Raises:
         AssertionError: If the override map is incorrect.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="b",
         param_path=("a", "b"),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -469,15 +520,18 @@ def test_apply_keeps_more_specific_override_when_lower_specificity_is_late() -> 
     Raises:
         AssertionError: If the path override is replaced.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="repo",
         param_path=("repo",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 
@@ -497,15 +551,18 @@ def test_apply_raises_for_empty_override_key() -> None:
     Raises:
         AssertionError: If invalid keys do not raise.
     """
+    path_registry = PathRegistry()
     socket_ref = _make_socket_ref(
         node_id="node-1",
         param_name="dep",
         param_path=("dep",),
+        path_registry=path_registry,
     )
     blueprint = _make_blueprint(
         root_id="root",
         root_lineage_id="lineage-1",
         socket_refs=[socket_ref],
+        path_registry=path_registry,
     )
     overrider = SpellOverrider(blueprint)
 

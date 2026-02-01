@@ -1,13 +1,22 @@
 import pytest
 
+from typing import Sequence
+
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
+from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+
+
+def _path_id(registry: PathRegistry, path: Sequence[str]) -> int:
+    current = registry.root_path_id
+    for segment in path:
+        current = registry.extend_path(current, segment)
+    return current
 
 
 def _make_blueprint(
@@ -24,6 +33,11 @@ def _make_blueprint(
     dag.add_node("root")
     dag.add_dependency("a", "root")
     dag.add_dependency("b", "root")
+    if dag_index is None:
+        dag_index = DagIndex()
+    if sockets:
+        for socket in sockets:
+            dag_index.add_socket(socket)
     return RootResolutionBlueprint(
         root_spell_id=root_id,
         root_lineage_id=lineage_id,
@@ -42,11 +56,22 @@ def test_init_requires_root_id_and_dag():
 
 
 def test_properties_return_copies_and_metadata():
+    index = DagIndex()
     sockets = (
-        SocketRef("root", "p", ("p",), SocketKind.NORMAL),
-        SocketRef("child", "c", ("root", "c"), SocketKind.SPELL_CONTRACT),
+        SocketRef(
+            "root",
+            "p",
+            _path_id(index.path_registry, ("p",)),
+            SocketKind.NORMAL,
+        ),
+        SocketRef(
+            "child",
+            "c",
+            _path_id(index.path_registry, ("root", "c")),
+            SocketKind.SPELL_CONTRACT,
+        ),
     )
-    bp = _make_blueprint(sockets=sockets)
+    bp = _make_blueprint(sockets=sockets, dag_index=index)
     assert bp.root_spell_id == "root"
     assert bp.root_lineage_id == "lineage"
     assert bp.dag is not None
@@ -59,8 +84,14 @@ def test_properties_return_copies_and_metadata():
 
 
 def test_add_socket_ref_indexes_dag_index():
-    bp = _make_blueprint()
-    ref = SocketRef("root", "param", ("root", "param"), SocketKind.NORMAL)
+    index = DagIndex()
+    bp = _make_blueprint(dag_index=index)
+    ref = SocketRef(
+        "root",
+        "param",
+        _path_id(index.path_registry, ("root", "param")),
+        SocketKind.NORMAL,
+    )
     bp.add_socket_ref(ref)
     assert bp.socket_refs == [ref]
     assert bp.dag_index.get_by_exact_path(("root", "param")) == [ref]
@@ -76,7 +107,12 @@ def test_add_socket_ref_rejects_none():
 def test_replace_dag_index_swaps_reference():
     bp = _make_blueprint()
     replacement = DagIndex()
-    ref = SocketRef("root", "p", ("p",), SocketKind.NORMAL)
+    ref = SocketRef(
+        "root",
+        "p",
+        _path_id(replacement.path_registry, ("p",)),
+        SocketKind.NORMAL,
+    )
     replacement.add_socket(ref)
     bp.replace_dag_index(replacement)
     assert bp.dag_index is replacement
@@ -86,7 +122,14 @@ def test_replace_dag_index_swaps_reference():
 
 def test_cleanup_idempotent_and_nulls_references():
     bp = _make_blueprint()
-    bp.add_socket_ref(SocketRef("root", "p", ("p",), SocketKind.NORMAL))
+    bp.add_socket_ref(
+        SocketRef(
+            "root",
+            "p",
+            _path_id(bp.path_registry, ("p",)),
+            SocketKind.NORMAL,
+        )
+    )
     dag = bp.dag
     index = bp.dag_index
     bp.cleanup()
@@ -105,7 +148,14 @@ def test_accessors_raise_after_cleanup():
     with pytest.raises(RuntimeError):
         _ = bp.ordered_node_ids
     with pytest.raises(RuntimeError):
-        bp.add_socket_ref(SocketRef("root", "p", ("p",), SocketKind.NORMAL))
+        bp.add_socket_ref(
+            SocketRef(
+                "root",
+                "p",
+                _path_id(PathRegistry(), ("p",)),
+                SocketKind.NORMAL,
+            )
+        )
 
 
 def test_ordered_node_ids_returns_copy():
@@ -125,7 +175,12 @@ def test_replace_dag_index_then_add_socket_ref_uses_new_index():
     bp = _make_blueprint()
     new_index = DagIndex()
     bp.replace_dag_index(new_index)
-    ref = SocketRef("root", "p", ("p",), SocketKind.NORMAL)
+    ref = SocketRef(
+        "root",
+        "p",
+        _path_id(new_index.path_registry, ("p",)),
+        SocketKind.NORMAL,
+    )
     bp.add_socket_ref(ref)
     assert bp.dag_index is new_index
     assert bp.dag_index.get_by_exact_path(("p",)) == [ref]
