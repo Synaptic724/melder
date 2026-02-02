@@ -509,6 +509,15 @@ class ISpell(ICleanable, Protocol):
     resolution_profile: Optional['SpellResolutionProfile']
     _crafter: Optional[Any] # 'SpellCrafter'
 
+    # Phase 11 execution-plan metrics (populated during conjure)
+    execution_plan_step_count: Optional[int]
+    execution_plan_unique_spell_count: Optional[int]
+    execution_plan_max_occurrence_depth: Optional[int]
+    execution_plan_max_dependency_count: Optional[int]
+    execution_plan_has_calln: Optional[bool]
+    execution_plan_has_contract_payloads: Optional[bool]
+    execution_plan_has_existing_creations: Optional[bool]
+
     # Ownership (filled after Conduit creation)
     _owner_conduit_id: Optional[str]
     _owner_conduit_name: Optional[str]

@@ -1667,6 +1667,16 @@ class Meld(Cleanable, IMeld):
             return instance
 
         if spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell:
+            if (
+                    overrides is None
+                    and not spell.has_mutation_override
+                    and self._should_use_fast_transient_shortcut(spell)
+            ):
+                return self._runtime.execute_fast_transient(
+                    spell=spell,
+                    conduit_id=self._get_resolution_conduit_id(),
+                )
+
             context = self._create_meld_context(
                 spell,
                 overrides,
@@ -1684,6 +1694,32 @@ class Meld(Cleanable, IMeld):
 
         # 2) Anything else is currently unsupported.
         raise RuntimeError(f"[MELD] Unsupported SpellType encountered: {spell.spell_type}")
+
+    def _should_use_fast_transient_shortcut(self, spell: ISpell) -> bool:
+        """
+        Determine whether to route to the fast transient executor.
+
+        Contract:
+            - Only considers the no-overrides execution plan.
+            - Uses cached Phase 11 metrics when available.
+        """
+        crafter = spell._crafter
+        if crafter is None:
+            return False
+        plan = crafter.execution_plan_phase11_no_overrides
+        if plan is None or plan.fast_transient_plan is None:
+            return False
+
+        step_count = spell.execution_plan_step_count
+        if step_count is None:
+            step_count = len(plan.steps)
+
+        max_depth = spell.execution_plan_max_occurrence_depth
+        if max_depth is None:
+            max_depth = 0
+
+        # Favor the fast shortcut for small/shallow graphs where overhead dominates.
+        return step_count <= 16 and max_depth <= 6
 
 
 # ----------------------------------------------------------------------
