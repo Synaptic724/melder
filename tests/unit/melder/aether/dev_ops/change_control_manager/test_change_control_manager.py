@@ -11,6 +11,8 @@ from melder.utilities.interfaces.interfaces import ISpellIndex, ISpellSystemStat
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
+CONDUIT_ID = "conduit-1"
+
 # ----------------------------------------------------------------------
 # Fixtures
 # ----------------------------------------------------------------------
@@ -37,7 +39,7 @@ def test_init_success(manager, mock_sss):
     assert manager._spell_system_states is mock_sss
     assert isinstance(manager._pending_changes, dict)
     assert len(manager._pending_changes) == 0
-    assert not manager._monitor_active
+    assert not manager._monitor_active_by_conduit
 
 def test_init_validates_args():
     with pytest.raises(ValueError, match="spell_system_states cannot be None"):
@@ -126,7 +128,7 @@ def test_rebuild_component_of(manager):
     
     blueprints = {"A": bp_a, "C": bp_c}
     
-    manager.rebuild_component_of(blueprints)
+    manager.rebuild_component_of(CONDUIT_ID, blueprints)
     
     # Check mappings
     # "A" is component of A (root)
@@ -136,8 +138,8 @@ def test_rebuild_component_of(manager):
     # Implementation detail check or functional check via notification
     # Let's verify via dirty propagation
     manager.notify_spell_changed("B")
-    assert manager.is_root_dirty("A")
-    assert not manager.is_root_dirty("C")
+    assert manager.is_root_dirty(CONDUIT_ID, "A")
+    assert not manager.is_root_dirty(CONDUIT_ID, "C")
 
 def test_rebuild_clears_previous_state(manager):
     """
@@ -151,34 +153,36 @@ def test_rebuild_clears_previous_state(manager):
     # Initial state
     bp1 = MagicMock(spec=RootResolutionBlueprint)
     bp1.dag.nodes.keys.return_value = ["Old"]
-    manager.rebuild_component_of({"OldRoot": bp1})
+    manager.rebuild_component_of(CONDUIT_ID, {"OldRoot": bp1})
     manager.notify_spell_changed("Old")
-    assert manager.is_root_dirty("OldRoot")
+    assert manager.is_root_dirty(CONDUIT_ID, "OldRoot")
     
     # Rebuild
     bp2 = MagicMock(spec=RootResolutionBlueprint)
     bp2.dag.nodes.keys.return_value = ["New"]
-    manager.rebuild_component_of({"NewRoot": bp2})
+    manager.rebuild_component_of(CONDUIT_ID, {"NewRoot": bp2})
     
     # Old state should be gone
-    assert not manager.is_root_dirty("OldRoot")
-    assert not manager._dirty_spells
+    assert not manager.is_root_dirty(CONDUIT_ID, "OldRoot")
+    assert not manager._dirty_spells_by_conduit[CONDUIT_ID]
 
 def test_notify_activates_monitor(manager):
     """
     Verify `notify_spell_changed` activates the monitoring state.
 
     Contract:
-    - Even if a spell maps to no roots, the manager must transition
-      `_monitor_active` to True to indicate drift has occurred.
-    - The spell ID must be recorded in `_dirty_spells`.
+    - When a spell maps to a root for the conduit, monitoring is activated.
+    - The spell ID is recorded under the conduit-scoped dirty spell set.
     """
-    assert not manager._monitor_active
-    manager.notify_spell_changed("anything")
-    # Even if not mapped, it activates monitor?
-    # Implementation: _monitor_active = True
-    assert manager._monitor_active
-    assert "anything" in manager._dirty_spells
+    bp = MagicMock(spec=RootResolutionBlueprint)
+    bp.dag.nodes.keys.return_value = ["Root", "Leaf"]
+    manager.rebuild_component_of(CONDUIT_ID, {"Root": bp})
+
+    assert not manager._monitor_active_by_conduit.get(CONDUIT_ID, False)
+    manager.notify_spell_changed("Leaf")
+
+    assert manager._monitor_active_by_conduit[CONDUIT_ID]
+    assert "Leaf" in manager._dirty_spells_by_conduit[CONDUIT_ID]
 
 def test_revalidate_dirty_roots_success(manager):
     """
@@ -187,22 +191,22 @@ def test_revalidate_dirty_roots_success(manager):
     Contract:
     - Calling `revalidate_dirty_roots` invokes the registered callback with current dirty roots.
     - If the callback succeeds (returns normally), the dirty roots are cleared.
-    - `_monitor_active` is reset if no dirty roots remain.
+    - Per-conduit monitor state is reset if no dirty roots remain.
     """
     # Setup dirty state
     bp = MagicMock(spec=RootResolutionBlueprint)
     bp.dag.nodes.keys.return_value = ["Leaf"]
-    manager.rebuild_component_of({"Root": bp})
+    manager.rebuild_component_of(CONDUIT_ID, {"Root": bp})
     
     manager.notify_spell_changed("Leaf")
-    assert manager.is_root_dirty("Root")
+    assert manager.is_root_dirty(CONDUIT_ID, "Root")
     
     # Register revalidator
     validator = MagicMock(return_value={"Root"})
-    manager.set_revalidator(validator)
+    manager.set_revalidator(CONDUIT_ID, validator)
     
     # Revalidate
-    manager.revalidate_dirty_roots()
+    manager.revalidate_dirty_roots(CONDUIT_ID)
     
     # Check validator called with dirty roots
     validator.assert_called_once()
@@ -210,8 +214,8 @@ def test_revalidate_dirty_roots_success(manager):
     assert args[0] == {"Root"}
     
     # Check state cleared
-    assert not manager.is_root_dirty("Root")
-    assert not manager._monitor_active
+    assert not manager.is_root_dirty(CONDUIT_ID, "Root")
+    assert not manager._monitor_active_by_conduit[CONDUIT_ID]
 
 def test_revalidate_dirty_roots_partial(manager):
     """
@@ -225,21 +229,21 @@ def test_revalidate_dirty_roots_partial(manager):
     bp_a.dag.nodes.keys.return_value = ["LeafA"]
     bp_b = MagicMock(spec=RootResolutionBlueprint)
     bp_b.dag.nodes.keys.return_value = ["LeafB"]
-    manager.rebuild_component_of({"RootA": bp_a, "RootB": bp_b})
+    manager.rebuild_component_of(CONDUIT_ID, {"RootA": bp_a, "RootB": bp_b})
 
     manager.notify_spell_changed("LeafA")
     manager.notify_spell_changed("LeafB")
 
     validator = MagicMock(return_value={"RootA"})
-    manager.set_revalidator(validator)
+    manager.set_revalidator(CONDUIT_ID, validator)
 
-    manager.revalidate_dirty_roots()
+    manager.revalidate_dirty_roots(CONDUIT_ID)
 
     args, _ = validator.call_args
     assert args[0] == {"RootA", "RootB"}
-    assert not manager.is_root_dirty("RootA")
-    assert manager.is_root_dirty("RootB")
-    assert manager._monitor_active
+    assert not manager.is_root_dirty(CONDUIT_ID, "RootA")
+    assert manager.is_root_dirty(CONDUIT_ID, "RootB")
+    assert manager._monitor_active_by_conduit[CONDUIT_ID]
 
 def test_revalidate_handles_cancel(manager):
     """
@@ -250,14 +254,14 @@ def test_revalidate_handles_cancel(manager):
     - If the callback or check raises due to cancellation, the state remains dirty.
     """
     validator = MagicMock()
-    manager.set_revalidator(validator)
+    manager.set_revalidator(CONDUIT_ID, validator)
     
     cancel = MagicMock(spec=CancellationEvent)
     cancel.is_set = True
     cancel.throw_if_set.side_effect = InterruptedError("Cancelled")
     
     with pytest.raises(InterruptedError):
-        manager.revalidate_dirty_roots(cancel_event=cancel)
+        manager.revalidate_dirty_roots(CONDUIT_ID, cancel_event=cancel)
     
     validator.assert_not_called()
 
@@ -266,12 +270,12 @@ def test_revalidate_does_nothing_if_clean(manager):
     Verify revalidation is a no-op if there are no dirty roots.
 
     Contract:
-    - Optimization: Do not call the revalidator if `_dirty_roots` is empty.
+    - Optimization: Do not call the revalidator if no dirty roots exist.
     """
     validator = MagicMock()
-    manager.set_revalidator(validator)
+    manager.set_revalidator(CONDUIT_ID, validator)
     
-    manager.revalidate_dirty_roots()
+    manager.revalidate_dirty_roots(CONDUIT_ID)
     validator.assert_not_called()
 
 
@@ -581,18 +585,18 @@ def test_revalidate_keeps_dirty_on_failure(manager):
     # Setup dirty
     bp = MagicMock(spec=RootResolutionBlueprint)
     bp.dag.nodes.keys.return_value = ["Leaf"]
-    manager.rebuild_component_of({"Root": bp})
+    manager.rebuild_component_of(CONDUIT_ID, {"Root": bp})
     manager.notify_spell_changed("Leaf")
     
     # Validator fails
     validator = MagicMock(side_effect=ValueError("Fail"))
-    manager.set_revalidator(validator)
+    manager.set_revalidator(CONDUIT_ID, validator)
     
     with pytest.raises(ValueError):
-        manager.revalidate_dirty_roots()
+        manager.revalidate_dirty_roots(CONDUIT_ID)
         
     # Should still be dirty
-    assert manager.is_root_dirty("Root")
+    assert manager.is_root_dirty(CONDUIT_ID, "Root")
 
 # ----------------------------------------------------------------------
 # 4. Cleanup
@@ -614,9 +618,9 @@ def test_cleanup_clears_state(manager):
     
     assert manager._cleaned
     assert manager._pending_changes is None
-    assert manager._component_of is None
+    assert manager._component_of_by_conduit is None
     assert manager._spell_system_states is None
-    assert manager._revalidate_fn is None
+    assert manager._revalidate_fn_by_conduit is None
 
 def test_methods_raise_after_cleanup(manager, mock_spell_index):
     """
@@ -634,7 +638,7 @@ def test_methods_raise_after_cleanup(manager, mock_spell_index):
         manager.get_pending_change("id")
         
     with pytest.raises(RuntimeError):
-        manager.rebuild_component_of({})
+        manager.rebuild_component_of(CONDUIT_ID, {})
 
 def test_cleanup_idempotent(manager):
     """
@@ -656,21 +660,25 @@ def test_describe(manager, mock_spell_index):
 
     Contract:
     - The returned dictionary must contain keys for all major state components
-      (pending_changes, dirty_spells, dirty_roots, component_of, etc.).
+      (pending_changes, dirty_spells_by_conduit, dirty_roots_by_conduit,
+      component_of_by_conduit, etc.).
     """
     manager.register_pending_change(mock_spell_index, "reason")
+    bp = MagicMock(spec=RootResolutionBlueprint)
+    bp.dag.nodes.keys.return_value = ["s1"]
+    manager.rebuild_component_of(CONDUIT_ID, {"s1": bp})
     manager.notify_spell_changed("s1")
     
     info = manager.describe()
     assert "spell-123" in info["pending_changes"]
-    assert "s1" in info["dirty_spells"]
-    assert info["monitor_active"] is True
+    assert "s1" in info["dirty_spells_by_conduit"][CONDUIT_ID]
+    assert info["monitor_active_by_conduit"][CONDUIT_ID] is True
 
 def test_rebuild_component_of_empty(manager):
     """Verify rebuilding with empty blueprints clears everything."""
-    manager.rebuild_component_of({})
-    assert manager.describe()["component_of"] == {}
-    assert not manager._dirty_roots
+    manager.rebuild_component_of(CONDUIT_ID, {})
+    assert manager.describe()["component_of_by_conduit"][CONDUIT_ID] == {}
+    assert not manager._dirty_roots_by_conduit[CONDUIT_ID]
 
 def test_rebuild_component_of_disjoint_graphs(manager):
     """Verify handling of multiple disjoint DAGs."""
@@ -680,46 +688,53 @@ def test_rebuild_component_of_disjoint_graphs(manager):
     bp2 = MagicMock(spec=RootResolutionBlueprint)
     bp2.dag.nodes.keys.return_value = ["C", "D"]
     
-    manager.rebuild_component_of({"R1": bp1, "R2": bp2})
+    manager.rebuild_component_of(CONDUIT_ID, {"R1": bp1, "R2": bp2})
     
     manager.notify_spell_changed("B")
-    assert manager.is_root_dirty("R1")
-    assert not manager.is_root_dirty("R2")
+    assert manager.is_root_dirty(CONDUIT_ID, "R1")
+    assert not manager.is_root_dirty(CONDUIT_ID, "R2")
     
     manager.notify_spell_changed("D")
-    assert manager.is_root_dirty("R2")
+    assert manager.is_root_dirty(CONDUIT_ID, "R2")
 
 def test_notify_spell_changed_unknown_spell(manager):
-    """Verify notifying a spell not in the map just adds it to dirty spells."""
+    """Verify notifying a spell not in the map does not add dirty state."""
+    bp = MagicMock(spec=RootResolutionBlueprint)
+    bp.dag.nodes.keys.return_value = ["Known"]
+    manager.rebuild_component_of(CONDUIT_ID, {"Known": bp})
+
     manager.notify_spell_changed("GhostSpell")
-    assert "GhostSpell" in manager._dirty_spells
-    # No roots should be dirty if it maps to nothing
-    assert not manager._dirty_roots
+    assert "GhostSpell" not in manager._dirty_spells_by_conduit[CONDUIT_ID]
+    assert not manager._dirty_roots_by_conduit[CONDUIT_ID]
 
 def test_notify_provider_changed_alias(manager):
     """Verify notify_provider_changed aliases notify_spell_changed (side effects)."""
+    bp = MagicMock(spec=RootResolutionBlueprint)
+    bp.dag.nodes.keys.return_value = ["spell-alias"]
+    manager.rebuild_component_of(CONDUIT_ID, {"spell-alias": bp})
+
     manager.notify_provider_changed("spell-alias")
-    assert "spell-alias" in manager._dirty_spells
-    assert manager._monitor_active
+    assert "spell-alias" in manager._dirty_spells_by_conduit[CONDUIT_ID]
+    assert manager._monitor_active_by_conduit[CONDUIT_ID]
 
 def test_is_root_dirty_false_if_not_active(manager):
     """Verify returns False if monitor is not active, even if requested."""
     # Force dirty roots but inactive monitor (unlikely state, but possible via manual manipulation)
     with manager._lock:
-        manager._dirty_roots.add("R1")
-        manager._monitor_active = False
+        manager._dirty_roots_by_conduit.setdefault(CONDUIT_ID, set()).add("R1")
+        manager._monitor_active_by_conduit[CONDUIT_ID] = False
         
-    assert not manager.is_root_dirty("R1")
+    assert not manager.is_root_dirty(CONDUIT_ID, "R1")
 
 def test_is_root_dirty_none_input(manager):
     """Verify `is_root_dirty` handles None/empty inputs gracefully (returns False)."""
-    assert not manager.is_root_dirty(None)
-    assert not manager.is_root_dirty("")
+    assert not manager.is_root_dirty("", "root")
+    assert not manager.is_root_dirty(CONDUIT_ID, "")
 
 def test_set_revalidator_none_check(manager):
     """Verify `set_revalidator` raises ValueError if callback is None."""
     with pytest.raises(ValueError, match="revalidator fn must not be None"):
-        manager.set_revalidator(None)
+        manager.set_revalidator(CONDUIT_ID, None)
 
 def test_concurrency_register_change(manager, mock_spell_index):
     """Verify multiple threads registering changes works safely."""

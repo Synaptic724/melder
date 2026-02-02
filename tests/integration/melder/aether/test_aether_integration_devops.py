@@ -395,6 +395,7 @@ def test_aether_devops_revalidate_pipeline_from_states() -> None:
     aether = Aether()
     states = aether._get_spell_system_states(frame_name)
     devops = aether._get_devops_manager(frame_name)
+    conduit_id = "conduit-1"
 
     socket = SpellSocketDescriptor(
         spell_id=service_id,
@@ -417,15 +418,15 @@ def test_aether_devops_revalidate_pipeline_from_states() -> None:
         states.register_local_topology(service_index, topology)
         snapshot = SpellSystemAdjacencyBuilder.build(states)
         blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
-        devops.change_control_manager.rebuild_component_of(blueprints)
-        devops.change_control_manager.set_revalidator(_revalidate)
+        devops.change_control_manager.rebuild_component_of(conduit_id, blueprints)
+        devops.change_control_manager.set_revalidator(conduit_id, _revalidate)
 
         devops.change_control_manager.notify_spell_changed(config_id)
-        assert devops.change_control_manager.is_root_dirty(service_id) is True
+        assert devops.change_control_manager.is_root_dirty(conduit_id, service_id) is True
 
-        devops.revalidate_dirty_roots()
+        devops.revalidate_dirty_roots(conduit_id)
         assert calls == [{service_id}]
-        assert devops.change_control_manager.is_root_dirty(service_id) is False
+        assert devops.change_control_manager.is_root_dirty(conduit_id, service_id) is False
     finally:
         for blueprint in blueprints.values():
             blueprint.cleanup()

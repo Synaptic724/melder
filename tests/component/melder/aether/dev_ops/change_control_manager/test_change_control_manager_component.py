@@ -19,6 +19,8 @@ from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEventSignal,
 )
 
+CONDUIT_ID = "conduit-1"
+
 
 def _register_lineage(states, spell_id: str) -> SpellIndex:
     """
@@ -92,9 +94,9 @@ def test_component_change_control_rebuild_component_of_maps_root_and_dependency(
     blueprints: dict[str, object] = {}
     try:
         blueprints = _build_root_blueprints(states)
-        manager.rebuild_component_of(blueprints)
+        manager.rebuild_component_of(CONDUIT_ID, blueprints)
         info = manager.describe()
-        component_of = info["component_of"]
+        component_of = info["component_of_by_conduit"][CONDUIT_ID]
         assert component_of[root_id] == {root_id}
         assert component_of[dep_id] == {root_id}
     finally:
@@ -129,8 +131,8 @@ def test_component_change_control_includes_deep_dependencies() -> None:
     blueprints: dict[str, object] = {}
     try:
         blueprints = _build_root_blueprints(states)
-        manager.rebuild_component_of(blueprints)
-        component_of = manager.describe()["component_of"]
+        manager.rebuild_component_of(CONDUIT_ID, blueprints)
+        component_of = manager.describe()["component_of_by_conduit"][CONDUIT_ID]
         assert component_of[root_id] == {root_id}
         assert component_of[mid_id] == {root_id}
         assert component_of[leaf_id] == {root_id}
@@ -181,17 +183,17 @@ def test_component_change_control_revalidate_dirty_roots_uses_blueprint_roots() 
 
     try:
         blueprints = _build_root_blueprints(states)
-        manager.rebuild_component_of(blueprints)
-        manager.set_revalidator(_revalidate)
+        manager.rebuild_component_of(CONDUIT_ID, blueprints)
+        manager.set_revalidator(CONDUIT_ID, _revalidate)
 
         manager.notify_spell_changed(dep_id)
-        assert manager.is_root_dirty(root_id) is True
+        assert manager.is_root_dirty(CONDUIT_ID, root_id) is True
 
-        manager.revalidate_dirty_roots()
+        manager.revalidate_dirty_roots(CONDUIT_ID)
         assert calls == [{root_id}]
         info = manager.describe()
-        assert info["dirty_roots"] == set()
-        assert info["monitor_active"] is False
+        assert info["dirty_roots_by_conduit"][CONDUIT_ID] == set()
+        assert info["monitor_active_by_conduit"][CONDUIT_ID] is False
     finally:
         _cleanup_blueprints(blueprints)
         manager.cleanup()
@@ -717,11 +719,9 @@ def test_component_change_control_abort_request_releases_embargoes() -> None:
 def test_component_change_control_notify_unknown_spell_tracks_dirty() -> None:
     """
     Purpose:
-        Validate unknown spell ids are tracked as dirty with monitoring active.
+        Validate unknown spell ids do not mark dirty state without mappings.
     Contract:
-        - notify_spell_changed records the spell id in dirty_spells.
-        - dirty_roots remains empty when no component_of mapping exists.
-        - monitor_active is True after notification.
+        - notify_spell_changed leaves dirty state empty without component_of mappings.
     Returns:
         None.
     Raises:
@@ -730,11 +730,12 @@ def test_component_change_control_notify_unknown_spell_tracks_dirty() -> None:
     frame = AethericFrame("component-ccm-unknown")
     manager = frame.dev_ops_manager.change_control_manager
     try:
+        manager.rebuild_component_of(CONDUIT_ID, {})
         manager.notify_spell_changed("ghost-spell")
         info = manager.describe()
-        assert "ghost-spell" in info["dirty_spells"]
-        assert info["dirty_roots"] == set()
-        assert info["monitor_active"] is True
+        assert info["dirty_spells_by_conduit"][CONDUIT_ID] == set()
+        assert info["dirty_roots_by_conduit"][CONDUIT_ID] == set()
+        assert info["monitor_active_by_conduit"][CONDUIT_ID] is False
     finally:
         frame.cleanup()
 
@@ -768,18 +769,18 @@ def test_component_change_control_revalidate_dirty_roots_failure_keeps_dirty() -
 
     try:
         blueprints = _build_root_blueprints(states)
-        manager.rebuild_component_of(blueprints)
-        manager.set_revalidator(_revalidate)
+        manager.rebuild_component_of(CONDUIT_ID, blueprints)
+        manager.set_revalidator(CONDUIT_ID, _revalidate)
 
         manager.notify_spell_changed(dep_id)
-        assert manager.is_root_dirty(root_id) is True
+        assert manager.is_root_dirty(CONDUIT_ID, root_id) is True
 
         with pytest.raises(RuntimeError, match="revalidate failed"):
-            manager.revalidate_dirty_roots()
+            manager.revalidate_dirty_roots(CONDUIT_ID)
 
         info = manager.describe()
-        assert root_id in info["dirty_roots"]
-        assert info["monitor_active"] is True
+        assert root_id in info["dirty_roots_by_conduit"][CONDUIT_ID]
+        assert info["monitor_active_by_conduit"][CONDUIT_ID] is True
     finally:
         _cleanup_blueprints(blueprints)
         frame.cleanup()
@@ -810,14 +811,14 @@ def test_component_change_control_revalidate_dirty_roots_no_revalidator_noop() -
 
     try:
         blueprints = _build_root_blueprints(states)
-        manager.rebuild_component_of(blueprints)
+        manager.rebuild_component_of(CONDUIT_ID, blueprints)
         manager.notify_spell_changed(dep_id)
-        assert manager.is_root_dirty(root_id) is True
+        assert manager.is_root_dirty(CONDUIT_ID, root_id) is True
 
-        manager.revalidate_dirty_roots()
+        manager.revalidate_dirty_roots(CONDUIT_ID)
         info = manager.describe()
-        assert root_id in info["dirty_roots"]
-        assert info["monitor_active"] is True
+        assert root_id in info["dirty_roots_by_conduit"][CONDUIT_ID]
+        assert info["monitor_active_by_conduit"][CONDUIT_ID] is True
     finally:
         _cleanup_blueprints(blueprints)
         frame.cleanup()
@@ -854,19 +855,19 @@ def test_component_change_control_revalidate_dirty_roots_respects_cancellation()
 
     try:
         blueprints = _build_root_blueprints(states)
-        manager.rebuild_component_of(blueprints)
-        manager.set_revalidator(_revalidate)
+        manager.rebuild_component_of(CONDUIT_ID, blueprints)
+        manager.set_revalidator(CONDUIT_ID, _revalidate)
         manager.notify_spell_changed(dep_id)
-        assert manager.is_root_dirty(root_id) is True
+        assert manager.is_root_dirty(CONDUIT_ID, root_id) is True
 
         signal.cancel()
         with pytest.raises(OperationCancelledError):
-            manager.revalidate_dirty_roots(cancel_event=signal.event)
+            manager.revalidate_dirty_roots(CONDUIT_ID, cancel_event=signal.event)
 
         assert calls == []
         info = manager.describe()
-        assert root_id in info["dirty_roots"]
-        assert info["monitor_active"] is True
+        assert root_id in info["dirty_roots_by_conduit"][CONDUIT_ID]
+        assert info["monitor_active_by_conduit"][CONDUIT_ID] is True
     finally:
         signal.cleanup()
         _cleanup_blueprints(blueprints)

@@ -361,11 +361,12 @@ class _ChangeControlManagerStub:
         """
         self._dirty_roots = set(dirty_roots or [])
 
-    def is_root_dirty(self, root_id: str) -> bool:
+    def is_root_dirty(self, conduit_id: str, root_id: str) -> bool:
         """
         Return True when the root id is marked dirty.
 
         Args:
+            conduit_id: Conduit id scope for the check.
             root_id: Spell root id to check.
         Returns:
             bool: True when the root id is dirty.

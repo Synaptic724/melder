@@ -1612,6 +1612,8 @@ class SpellCrafter(Cleanable):
             - A root-only blueprint map for system validation (Phase 6).
             - Per-spell blueprints attached to constructed spells so Phase 8-10
               and Phase 11 compilation can proceed for any meldable spell.
+            - The change-control component-of map is rebuilt from **owned** roots
+              only, so contracted roots are not revalidated by this conduit.
 
         Args:
             conduit_id:
@@ -1691,7 +1693,8 @@ class SpellCrafter(Cleanable):
         # Rebuild component-of index and register a revalidation hook for dirty roots.
         frame_name = spellbook._aetheric_frame
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
-        change_control_manager.rebuild_component_of(conduit_id, root_blueprints)
+        owned_root_blueprints = self._filter_root_blueprints_to_owned(root_blueprints)
+        change_control_manager.rebuild_component_of(conduit_id, owned_root_blueprints)
 
         def _revalidate_dirty_roots(
                 dirty_roots: Set[str],
@@ -1769,6 +1772,39 @@ class SpellCrafter(Cleanable):
             root_spell_ids=root_spell_ids,
             topologies=topologies,
         )
+
+    def _filter_root_blueprints_to_owned(
+            self,
+            root_blueprints: Dict[str, RootResolutionBlueprint],
+    ) -> Dict[str, RootResolutionBlueprint]:
+        """
+        Internal
+
+        Filter root blueprints to owned spell ids only.
+
+        Purpose:
+            Limit component-of rebuilds to spell ids owned by this Spellbook
+            while still allowing contracted spells to appear as dependencies
+            under owned roots.
+        Contract:
+            - Returns a new mapping containing only roots present in
+              `spellbook._spells_by_id`.
+            - Does not mutate the provided root_blueprints mapping.
+        Args:
+            root_blueprints:
+                Mapping of root spell_id to RootResolutionBlueprint.
+        Returns:
+            Dict[str, RootResolutionBlueprint]:
+                Filtered mapping containing only owned roots.
+        """
+        self.check_cleaned()
+        spellbook = self._spell._spellbook
+        owned_spell_ids = spellbook._spells_by_id.keys()
+        return {
+            root_id: blueprint
+            for root_id, blueprint in root_blueprints.items()
+            if root_id in owned_spell_ids
+        }
 
 
     # ------------------------------------------------------------------
@@ -2167,7 +2203,8 @@ class SpellCrafter(Cleanable):
         spellbook = self._spell._spellbook
         frame_name = spellbook._aetheric_frame
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
-        change_control_manager.rebuild_component_of(conduit_id, self._entire_dag_blueprint_phase5)
+        owned_root_blueprints = self._filter_root_blueprints_to_owned(self._entire_dag_blueprint_phase5)
+        change_control_manager.rebuild_component_of(conduit_id, owned_root_blueprints)
         if conduit_id not in change_control_manager._revalidate_fn_by_conduit:
             def _revalidate_dirty_roots(
                     dirty_roots: Set[str],

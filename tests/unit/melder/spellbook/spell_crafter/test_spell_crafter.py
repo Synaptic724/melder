@@ -192,39 +192,46 @@ class _ChangeControlManagerStub:
         Purpose:
             Initialize the stub call trackers.
         Contract:
-            Sets _revalidate_fn to None and clears call lists.
+            Initializes per-conduit revalidator storage and clears call lists.
         Returns:
             None.
         """
-        self._revalidate_fn = None
-        self.rebuild_calls: list[object] = []
+        self._revalidate_fn_by_conduit: dict[str, object] = {}
+        self.rebuild_calls: list[dict[str, object]] = []
         self.set_calls = 0
 
-    def rebuild_component_of(self, root_blueprints: object) -> None:
+    def rebuild_component_of(self, conduit_id: str, root_blueprints: object) -> None:
         """
         Purpose:
             Record rebuild_component_of calls.
         Contract:
-            Appends the provided root blueprints to rebuild_calls.
+            Appends conduit and blueprint payload to rebuild_calls.
         Args:
+            conduit_id: Conduit identifier used for the rebuild.
             root_blueprints: Root blueprint mapping passed in.
         Returns:
             None.
         """
-        self.rebuild_calls.append(root_blueprints)
+        self.rebuild_calls.append(
+            {
+                "conduit_id": conduit_id,
+                "root_blueprints": root_blueprints,
+            }
+        )
 
-    def set_revalidator(self, fn: object) -> None:
+    def set_revalidator(self, conduit_id: str, fn: object) -> None:
         """
         Purpose:
             Record revalidator registration.
         Contract:
-            Stores the function and increments set_calls.
+            Stores the function by conduit id and increments set_calls.
         Args:
+            conduit_id: Conduit identifier for this revalidator.
             fn: Revalidator callable.
         Returns:
             None.
         """
-        self._revalidate_fn = fn
+        self._revalidate_fn_by_conduit[conduit_id] = fn
         self.set_calls += 1
 
 
@@ -281,7 +288,8 @@ class _SpellbookStub:
     Purpose:
         Provide a spellbook stub with validator and change control access.
     Contract:
-        Exposes _spell_validator, _aether, _aetheric_frame, and _spell_id_pool.
+        Exposes _spell_validator, _aether, _aetheric_frame, _spells_by_id,
+        and _spell_id_pool.
     """
 
     def __init__(
@@ -295,7 +303,7 @@ class _SpellbookStub:
         Purpose:
             Initialize the spellbook stub.
         Contract:
-            Stores validator, aether, and frame name.
+            Stores validator, aether, frame name, and id lookup maps.
         Args:
             validator: Validation system stub.
             aether: Aether stub for change control lookups.
@@ -308,6 +316,7 @@ class _SpellbookStub:
         self._aetheric_frame = frame_name
         self._spells: dict[object, object] = {}
         self._contracted_spells: dict[str, dict[object, object]] = {}
+        self._spells_by_id: dict[str, object] = {}
         self._spell_id_pool: dict[str, object] = {}
 
     @property
@@ -1075,8 +1084,8 @@ def _build_spell_and_crafter(
         Build a SpellCrafter with explicit components for assertions.
     Contract:
         Returns a crafter with a stub spellbook, validator, and spell wired
-        together, registers the spell in the spell_id_pool, and sets
-        spell._crafter on the returned spell.
+        together, registers the spell in the spell_id_pool and spells_by_id,
+        and sets spell._crafter on the returned spell.
     Args:
         spell_id: Spell id for the stub spell.
         spell_name: Spell name for the stub spell.
@@ -1104,6 +1113,7 @@ def _build_spell_and_crafter(
         dependency_graph=dependency_graph,
     )
     spellbook._spells[spell.spell_index] = spell
+    spellbook._spells_by_id[spell.spell_index.current] = spell
     spellbook._spell_id_pool[spell.spell_index.current] = spell
     crafter = SpellCrafter(spell)
     spell._crafter = crafter
@@ -3479,9 +3489,84 @@ def test_run_phase_root_blueprints_change_control_wires_revalidator(
     monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
     crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
-    assert manager.rebuild_calls == [blueprints]
+    assert manager.rebuild_calls == [
+        {
+            "conduit_id": "cid",
+            "root_blueprints": blueprints,
+        }
+    ]
     assert manager.set_calls == 1
-    assert manager._revalidate_fn is not None
+    assert manager._revalidate_fn_by_conduit["cid"] is not None
+
+
+def test_run_phase_root_blueprints_filters_component_of_to_owned_roots(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify component_of rebuilds are limited to owned roots.
+    Contract:
+        Change control receives only owned root blueprints even when
+        contracted roots are visible.
+    Args:
+        monkeypatch: Pytest fixture for patching Phase 5 builders.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If contracted roots are included in rebuild payload.
+    """
+    manager = _ChangeControlManagerStub()
+    aether = _AetherStub(manager=manager)
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(
+                current_spell_id="owned",
+                direct_dependencies=set(),
+                spell_index_id="lineage-owned",
+            ),
+            _SpellSystemStateStub(
+                current_spell_id="contracted",
+                direct_dependencies=set(),
+                spell_index_id="lineage-contracted",
+            ),
+        ]
+    )
+    crafter, owned_spell, _ = _build_spell_and_crafter(
+        spell_id="owned",
+        spell_system_states=states,
+        aether=aether,
+    )
+    crafter._validated_phase4 = True
+    crafter._validation_result_phase4 = object()
+
+    contracted_spell = _SpellStub(
+        spell_id="contracted",
+        spellbook=owned_spell._spellbook,
+        spell_system_states=states,
+    )
+    owned_spell._spellbook._spell_id_pool["contracted"] = contracted_spell
+
+    snapshot = _AdjacencySnapshotStub(
+        dependencies={"owned": set(), "contracted": set()},
+        root_spell_ids={"owned", "contracted"},
+    )
+    blueprints = {
+        "owned": _RootBlueprintStub("owned"),
+        "contracted": _RootBlueprintStub("contracted"),
+    }
+    _AdjacencyBuilderStub.next_snapshot = snapshot
+    _RootBlueprintBuilderStub.next_blueprints = blueprints
+
+    monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
+    monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
+    crafter.run_phase_root_blueprints("cid", cancel_event=None)
+
+    assert manager.rebuild_calls == [
+        {
+            "conduit_id": "cid",
+            "root_blueprints": {"owned": blueprints["owned"]},
+        }
+    ]
 
 
 def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
@@ -3556,15 +3641,16 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
 
     crafter.run_phase_root_blueprints("cid", cancel_event=None)
 
-    assert manager._revalidate_fn is not None
+    revalidate_fn = manager._revalidate_fn_by_conduit.get("cid")
+    assert revalidate_fn is not None
 
     cancel = _CancelStub(is_set=False)
-    manager._revalidate_fn({"root"}, cancel)
+    revalidate_fn({"root"}, cancel)
 
     assert calls == [{"crafter": crafter, "conduit_id": "cid", "cancel_event": cancel}]
 
     cancel_set = _CancelStub(is_set=True)
-    manager._revalidate_fn({"root"}, cancel_set)
+    revalidate_fn({"root"}, cancel_set)
 
     assert calls == [
         {"crafter": crafter, "conduit_id": "cid", "cancel_event": cancel},
@@ -3836,6 +3922,7 @@ def test_run_phase_change_control_cancellation() -> None:
         AssertionError: If cancellation does not raise.
     """
     crafter, _, _ = _build_spell_and_crafter()
+    crafter._entire_dag_blueprint_phase5 = {}
     cancel = _CancelStub(is_set=True)
     crafter.run_phase_change_control("cid", cancel_event=cancel)
     assert cancel.throw_calls == 0
@@ -3861,7 +3948,12 @@ def test_ensure_change_control_ready_rebuilds_component_index() -> None:
 
     crafter._ensure_change_control_ready("cid")
 
-    assert manager.rebuild_calls == [blueprints]
+    assert manager.rebuild_calls == [
+        {
+            "conduit_id": "cid",
+            "root_blueprints": blueprints,
+        }
+    ]
 
 
 def test_ensure_change_control_ready_registers_revalidator_when_missing() -> None:
@@ -3878,11 +3970,12 @@ def test_ensure_change_control_ready_registers_revalidator_when_missing() -> Non
     manager = _ChangeControlManagerStub()
     aether = _AetherStub(manager=manager)
     crafter, _, _ = _build_spell_and_crafter(aether=aether)
+    crafter._entire_dag_blueprint_phase5 = {}
 
     crafter._ensure_change_control_ready("cid")
 
     assert manager.set_calls == 1
-    assert manager._revalidate_fn is not None
+    assert manager._revalidate_fn_by_conduit["cid"] is not None
 
 
 def test_ensure_change_control_ready_skips_when_manager_none() -> None:
@@ -3907,16 +4000,17 @@ def test_ensure_change_control_ready_skips_when_revalidator_present() -> None:
     Purpose:
         Ensure existing revalidator prevents duplicate registration.
     Contract:
-        set_revalidator is not called when _revalidate_fn is already set.
+        set_revalidator is not called when the conduit revalidator is already set.
     Returns:
         None.
     Raises:
         AssertionError: If set_revalidator is called unexpectedly.
     """
     manager = _ChangeControlManagerStub()
-    manager._revalidate_fn = object()
+    manager._revalidate_fn_by_conduit["cid"] = object()
     aether = _AetherStub(manager=manager)
     crafter, _, _ = _build_spell_and_crafter(aether=aether)
+    crafter._entire_dag_blueprint_phase5 = {}
 
     crafter._ensure_change_control_ready("cid")
 

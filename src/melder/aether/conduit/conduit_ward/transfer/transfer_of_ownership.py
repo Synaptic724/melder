@@ -902,20 +902,7 @@ class TransferOfOwnership:
                 if src_had:
                     src_book._spells.pop(spell_obj.spell_index, None)
                     src_book._lookup_spells.pop(spell_obj._key, None)
-                    if src_book._spells_by_id is not None:
-                        existing = src_book._spells_by_id.get(spell_id)
-                        if existing is not None and existing is not spell_obj:
-                            raise RuntimeError(
-                                f"Owned spell_id mismatch for transfer (spell_id={spell_id})"
-                            )
-                        src_book._spells_by_id.pop(spell_id, None)
-                    if src_book._spell_id_pool is not None:
-                        existing_pool = src_book._spell_id_pool.get(spell_id)
-                        if existing_pool is not None and existing_pool is not spell_obj:
-                            raise RuntimeError(
-                                f"spell_id_pool mismatch for transfer (spell_id={spell_id})"
-                            )
-                        src_book._spell_id_pool.pop(spell_id, None)
+                    src_book._unregister_owned_spell_id(spell_id, spell_obj)
                     src_states.unregister_lineage(spell_obj.spell_index)
                     self._register_rollback(
                         lambda: self._rollback_spellbook_move(spell_obj, src_book, tgt_book)
