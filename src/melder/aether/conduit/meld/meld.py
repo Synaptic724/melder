@@ -1,4 +1,5 @@
 import inspect
+import random
 from threading import RLock
 from typing import Optional, Dict, Any, Callable, List, Tuple
 
@@ -119,6 +120,7 @@ class Meld(Cleanable, IMeld):
         self._input_resolution_cache: Dict[tuple, ISpell] = {}
         self._spell_lookup_cache: Dict[tuple[str, str], ISpell] = {}
         self._spell_id_cache: Dict[str, ISpell] = {}
+        self._lookup_key_cache: Dict[tuple, tuple[str, str]] = {}
         self._singleton_hit_cache: Dict[str, Any] = {}
         self._max_resolution_cache_size: int = 2048
         self._max_singleton_cache_size: int = 4096
@@ -184,6 +186,7 @@ class Meld(Cleanable, IMeld):
             self._input_resolution_cache = None
             self._spell_lookup_cache = None
             self._spell_id_cache = None
+            self._lookup_key_cache = None
             self._singleton_hit_cache = None
             self._max_resolution_cache_size = None
             self._max_singleton_cache_size = None
@@ -965,6 +968,11 @@ class Meld(Cleanable, IMeld):
             cached = self._input_resolution_cache.get(cache_key)
             if cached is not None:
                 return cached
+            cached_lookup_key = self._lookup_key_cache.get(cache_key)
+            if cached_lookup_key is not None:
+                resolved = self._resolve_spell_by_lookup_key(cached_lookup_key)
+                self._cache_input_resolution(cache_key, resolved)
+                return resolved
 
         # 1) string spell → treated as spell_id (SHA)
         if isinstance(spell, str):
@@ -987,6 +995,7 @@ class Meld(Cleanable, IMeld):
             )
             lookup_key = (frame_key, bind_key)
             resolved = self._resolve_spell_by_lookup_key(lookup_key)
+            self._cache_lookup_key(cache_key, lookup_key)
             self._cache_input_resolution(cache_key, resolved)
             return resolved
         if spell_for_name is None and spell_name is not None:
@@ -1000,6 +1009,7 @@ class Meld(Cleanable, IMeld):
 
         lookup_key = (frame_key, bind_key)
         resolved = self._resolve_spell_by_lookup_key(lookup_key)
+        self._cache_lookup_key(cache_key, lookup_key)
         self._cache_input_resolution(cache_key, resolved)
         return resolved
 
@@ -1336,6 +1346,93 @@ class Meld(Cleanable, IMeld):
                 "Shared instances cannot be overridden after creation."
             ),
         )
+
+    def _cache_input_resolution(
+            self,
+            cache_key: Optional[tuple],
+            spell: ISpell,
+    ) -> None:
+        if cache_key is None:
+            return
+        if self._input_resolution_cache is None:
+            return
+        if len(self._input_resolution_cache) >= self._max_resolution_cache_size:
+            self._evict_random_cache_entry(self._input_resolution_cache)
+        self._input_resolution_cache[cache_key] = spell
+
+    def _cache_spell_lookup(
+            self,
+            lookup_key: tuple[str, str],
+            spell: ISpell,
+    ) -> None:
+        if self._spell_lookup_cache is None:
+            return
+        if len(self._spell_lookup_cache) >= self._max_resolution_cache_size:
+            self._evict_random_cache_entry(self._spell_lookup_cache)
+        self._spell_lookup_cache[lookup_key] = spell
+
+    def _cache_spell_id(
+            self,
+            spell_id: str,
+            spell: ISpell,
+    ) -> None:
+        if self._spell_id_cache is None:
+            return
+        if len(self._spell_id_cache) >= self._max_resolution_cache_size:
+            self._evict_random_cache_entry(self._spell_id_cache)
+        self._spell_id_cache[spell_id] = spell
+
+    def _cache_lookup_key(
+            self,
+            cache_key: Optional[tuple],
+            lookup_key: tuple[str, str],
+    ) -> None:
+        if cache_key is None:
+            return
+        if self._lookup_key_cache is None:
+            return
+        if len(self._lookup_key_cache) >= self._max_resolution_cache_size:
+            self._evict_random_cache_entry(self._lookup_key_cache)
+        self._lookup_key_cache[cache_key] = lookup_key
+
+    def _cache_singleton_hit(
+            self,
+            spell: ISpell,
+            instance: Any,
+    ) -> None:
+        if self._singleton_hit_cache is None:
+            return
+        if len(self._singleton_hit_cache) >= self._max_singleton_cache_size:
+            self._evict_random_cache_entry(self._singleton_hit_cache)
+        self._singleton_hit_cache[spell.spell_id] = instance
+
+    @staticmethod
+    def _evict_random_cache_entry(cache: Dict[Any, Any]) -> None:
+        if not cache:
+            return
+        cache.pop(random.choice(list(cache.keys())), None)
+
+    def _get_cached_singleton(
+            self,
+            spell: ISpell,
+            creations: Any,
+            spellspace: Optional[Any],
+    ) -> Optional[Any]:
+        cached = self._singleton_hit_cache.get(spell.spell_id)
+        if cached is None:
+            return None
+        if creations is None:
+            return cached
+        with creations._lock:
+            instance = self._get_existing_creation_from_creations(
+                spell=spell,
+                creations=creations,
+                spellspace=spellspace,
+            )
+        if instance is None:
+            self._singleton_hit_cache.pop(spell.spell_id, None)
+            return None
+        return instance
 
     def _cache_input_resolution(
             self,
@@ -1844,6 +1941,21 @@ class Meld(Cleanable, IMeld):
                     conduit_id=self._get_resolution_conduit_id(),
                 )
 
+            if (
+                    spell.existence is not Existence.many
+                    and overrides is None
+                    and not spell.has_mutation_override
+                    and spell.execution_plan_preferred_route
+                    and spell.execution_plan_preferred_route.startswith("FAST_TRANSIENT")
+            ):
+                return self._runtime.execute_shared_pooled(
+                    spell=spell,
+                    overrides=None,
+                    caller_creations=self._creations,
+                    caller_creations_lock_held=caller_creations_lock_held,
+                    conduit_id=self._get_resolution_conduit_id(),
+                )
+
             context = self._create_meld_context(
                 spell,
                 overrides,
@@ -1861,6 +1973,35 @@ class Meld(Cleanable, IMeld):
 
         # 2) Anything else is currently unsupported.
         raise RuntimeError(f"[MELD] Unsupported SpellType encountered: {spell.spell_type}")
+
+    def _should_use_fast_transient_shortcut(self, spell: ISpell) -> bool:
+        """
+        Determine whether to route to the fast transient executor.
+
+        Contract:
+            - Only considers the no-overrides execution plan.
+            - Uses cached Phase 11 metrics when available.
+        """
+        crafter = spell._crafter
+        if crafter is None:
+            return False
+        preferred_route = spell.execution_plan_preferred_route
+        if preferred_route and preferred_route.startswith("FAST_TRANSIENT"):
+            return True
+        plan = crafter.execution_plan_phase11_no_overrides
+        if plan is None or plan.fast_transient_plan is None:
+            return False
+
+        step_count = spell.execution_plan_step_count
+        if step_count is None:
+            step_count = len(plan.steps)
+
+        max_depth = spell.execution_plan_max_occurrence_depth
+        if max_depth is None:
+            max_depth = 0
+
+        # Favor the fast shortcut for small/shallow graphs where overhead dominates.
+        return step_count <= 16 and max_depth <= 6
 
     def _should_use_fast_transient_shortcut(self, spell: ISpell) -> bool:
         """

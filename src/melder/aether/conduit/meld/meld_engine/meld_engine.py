@@ -1357,6 +1357,7 @@ class MeldEngine(Cleanable):
             return fast_values[fast_root_step_index]
 
         set_result = frame.set_result
+        pending_registrations: Dict[Any, List[tuple[ISpell, Any, Existence]]] = {}
         for step_index in range(step_count):
             instance_key = fast_instance_keys[step_index]
             existence = fast_existence[step_index]
@@ -1472,8 +1473,11 @@ class MeldEngine(Cleanable):
                             owner_creations = self._context.owner_creations
                         creations = owner_creations
                     if creations is not None:
-                        with creations._lock:
-                            self._register_spell(spell, instance, creations, existence)
+                        pending = pending_registrations.get(creations)
+                        if pending is None:
+                            pending = []
+                            pending_registrations[creations] = pending
+                        pending.append((spell, instance, existence))
 
                 if fast_set_result_flags[step_index]:
                     set_result(instance_key[0], instance)
@@ -1583,6 +1587,14 @@ class MeldEngine(Cleanable):
             if fast_set_result_flags[step_index]:
                 set_result(instance_key[0], instance)
             fast_values[step_index] = instance
+
+        if pending_registrations:
+            for creations, batch in pending_registrations.items():
+                if creations is None:
+                    continue
+                with creations._lock:
+                    for spell, instance, existence in batch:
+                        self._register_spell(spell, instance, creations, existence)
 
         return fast_values[fast_root_step_index]
 

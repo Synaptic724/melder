@@ -517,6 +517,7 @@ class ISpell(ICleanable, Protocol):
     execution_plan_has_calln: Optional[bool]
     execution_plan_has_contract_payloads: Optional[bool]
     execution_plan_has_existing_creations: Optional[bool]
+    execution_plan_preferred_route: Optional[str]
 
     # Ownership (filled after Conduit creation)
     _owner_conduit_id: Optional[str]
