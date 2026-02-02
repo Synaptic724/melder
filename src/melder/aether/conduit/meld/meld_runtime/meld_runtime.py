@@ -18,6 +18,7 @@ from melder.spellbook.spell_crafter.blueprints.patch_maps import (
 )
 from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlan,
+    ExecutionPlanCallMode,
     ExecutionPlanVariant,
 )
 from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
@@ -62,6 +63,170 @@ class MeldRuntime:
     # Core API
     # ------------------------------------------------------------------ #
 
+    def execute_fast_transient(
+            self,
+            *,
+            spell: ISpell,
+            conduit_id: Optional[str],
+    ) -> Any:
+        """
+        Execute a fast transient-only plan without constructing a MeldEngine.
+
+        Contract:
+            - Only valid when no overrides or mutations apply.
+            - Requires a Phase 11 no-overrides plan with a transient fast plan.
+            - Performs the same spell invariant checks as execute().
+        """
+        if spell is None:
+            raise ValueError("spell must not be None.")
+
+        self._enforce_spell_invariants(spell, conduit_id)
+
+        crafter = spell._crafter
+        if crafter is None:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Missing SpellCrafter artifacts for fast transient execution.",
+            )
+        execution_plan = crafter.execution_plan_phase11_no_overrides
+        if execution_plan is None:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Missing Phase 11 execution plan for fast transient execution.",
+            )
+        transient_plan = execution_plan.fast_transient_plan
+        if transient_plan is None:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Fast transient plan is unavailable for this spell.",
+            )
+
+        (
+            transient_step_count,
+            transient_root_index,
+            transient_targets,
+            transient_call_modes,
+            transient_dep1,
+            transient_dep2a,
+            transient_dep2b,
+            transient_dep3a,
+            transient_dep3b,
+            transient_dep3c,
+            transient_dep4a,
+            transient_dep4b,
+            transient_dep4c,
+            transient_dep4d,
+            transient_dep5a,
+            transient_dep5b,
+            transient_dep5c,
+            transient_dep5d,
+            transient_dep5e,
+            transient_dep6a,
+            transient_dep6b,
+            transient_dep6c,
+            transient_dep6d,
+            transient_dep6e,
+            transient_dep6f,
+            transient_dep7a,
+            transient_dep7b,
+            transient_dep7c,
+            transient_dep7d,
+            transient_dep7e,
+            transient_dep7f,
+            transient_dep7g,
+            transient_dep8a,
+            transient_dep8b,
+            transient_dep8c,
+            transient_dep8d,
+            transient_dep8e,
+            transient_dep8f,
+            transient_dep8g,
+            transient_dep8h,
+        ) = transient_plan
+
+        transient_values: list[Any] = [None] * transient_step_count
+        steps = execution_plan.steps
+        for step_index in range(transient_step_count):
+            call_target = transient_targets[step_index]
+            call_mode = transient_call_modes[step_index]
+            try:
+                if call_mode == ExecutionPlanCallMode.CALL0:
+                    instance = call_target()
+                elif call_mode == ExecutionPlanCallMode.CALL1:
+                    instance = call_target(transient_values[transient_dep1[step_index]])
+                elif call_mode == ExecutionPlanCallMode.CALL2:
+                    instance = call_target(
+                        transient_values[transient_dep2a[step_index]],
+                        transient_values[transient_dep2b[step_index]],
+                    )
+                elif call_mode == ExecutionPlanCallMode.CALL3:
+                    instance = call_target(
+                        transient_values[transient_dep3a[step_index]],
+                        transient_values[transient_dep3b[step_index]],
+                        transient_values[transient_dep3c[step_index]],
+                    )
+                elif call_mode == ExecutionPlanCallMode.CALL4:
+                    instance = call_target(
+                        transient_values[transient_dep4a[step_index]],
+                        transient_values[transient_dep4b[step_index]],
+                        transient_values[transient_dep4c[step_index]],
+                        transient_values[transient_dep4d[step_index]],
+                    )
+                elif call_mode == ExecutionPlanCallMode.CALL5:
+                    instance = call_target(
+                        transient_values[transient_dep5a[step_index]],
+                        transient_values[transient_dep5b[step_index]],
+                        transient_values[transient_dep5c[step_index]],
+                        transient_values[transient_dep5d[step_index]],
+                        transient_values[transient_dep5e[step_index]],
+                    )
+                elif call_mode == ExecutionPlanCallMode.CALL6:
+                    instance = call_target(
+                        transient_values[transient_dep6a[step_index]],
+                        transient_values[transient_dep6b[step_index]],
+                        transient_values[transient_dep6c[step_index]],
+                        transient_values[transient_dep6d[step_index]],
+                        transient_values[transient_dep6e[step_index]],
+                        transient_values[transient_dep6f[step_index]],
+                    )
+                elif call_mode == ExecutionPlanCallMode.CALL7:
+                    instance = call_target(
+                        transient_values[transient_dep7a[step_index]],
+                        transient_values[transient_dep7b[step_index]],
+                        transient_values[transient_dep7c[step_index]],
+                        transient_values[transient_dep7d[step_index]],
+                        transient_values[transient_dep7e[step_index]],
+                        transient_values[transient_dep7f[step_index]],
+                        transient_values[transient_dep7g[step_index]],
+                    )
+                elif call_mode == ExecutionPlanCallMode.CALL8:
+                    instance = call_target(
+                        transient_values[transient_dep8a[step_index]],
+                        transient_values[transient_dep8b[step_index]],
+                        transient_values[transient_dep8c[step_index]],
+                        transient_values[transient_dep8d[step_index]],
+                        transient_values[transient_dep8e[step_index]],
+                        transient_values[transient_dep8f[step_index]],
+                        transient_values[transient_dep8g[step_index]],
+                        transient_values[transient_dep8h[step_index]],
+                    )
+                else:
+                    raise RuntimeError("Unsupported transient call mode.")
+            except Exception as exc:
+                step_spell = steps[step_index].spell
+                raise MeldExecutionError(
+                    spell_id=step_spell.spell_index.current,
+                    spell_name=step_spell.spell_name,
+                    message=f"Error invoking spell '{step_spell.spell_name}'.",
+                    inner=exc,
+                ) from exc
+            transient_values[step_index] = instance
+
+        return transient_values[transient_root_index]
+
     def execute(self, context: "MeldContext") -> Any:
         """
         Execute a single meld call described by `context`.
@@ -98,65 +263,7 @@ class MeldRuntime:
                 If the context is None or missing a root spell.
         """
         spell: ISpell = context.root_spell
-
-        # ------------------------------------------------------------------ #
-        # System-level gating (Phase 6 / Change-control)                    #
-        # ------------------------------------------------------------------ #
-        if spell._spellbook._spellbook_validation_required:
-            if spell.system_state is not None:
-                validity = spell.system_state.validity
-                if validity in (
-                        SpellValidity.invalid,
-                        SpellValidity.gated,
-                        SpellValidity.disabled,
-                ):
-                    raise MeldExecutionError(
-                        spell_id=spell.spell_index.current,
-                        spell_name=spell.spell_name,
-                        message=(
-                            "Cannot execute meld runtime for a spell whose lineage is "
-                            f"{validity.name}."
-                        ),
-                    )
-
-            # Change-control dirty-root gating
-            try:
-                spellbook = spell._spellbook
-                aether = spellbook._aether
-                manager = aether._get_change_control_manager(spell.aetheric_frame)
-                conduit_id = context.conduit_id
-                if manager is not None and conduit_id and manager.is_root_dirty(conduit_id, spell.spell_index.current):
-                    raise MeldExecutionError(
-                        spell_id=spell.spell_index.current,
-                        spell_name=spell.spell_name,
-                        message=(
-                            "Cannot execute meld runtime while the root is marked dirty. "
-                            "Revalidation is required."
-                            ),
-                        )
-            except MeldExecutionError:
-                raise
-            except Exception:
-                # Change-control is optional; if unavailable we proceed.
-                pass
-
-            # --- Invariants from the SpellCrafter / validation pipeline ----
-            if spell.is_broken:
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message="Cannot execute meld runtime for a broken spell.",
-                )
-
-            if not spell.validated:
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message=(
-                        "Spell has not been validated. Run the SpellCrafter "
-                        "phases before attempting to meld this spell."
-                    ),
-                )
+        self._enforce_spell_invariants(spell, context.conduit_id)
 
         # Snapshot build-time artifacts. These may be None depending on
         # how far the SpellCrafter pipeline has run; the engine can decide
@@ -340,6 +447,69 @@ class MeldRuntime:
             execution_plan_no_overrides,
             ExecutionPlanVariant.NO_OVERRIDES_FAST,
         )
+
+    def _enforce_spell_invariants(
+            self,
+            spell: ISpell,
+            conduit_id: Optional[str],
+    ) -> None:
+        """
+        Validate spell invariants and change-control gates before execution.
+        """
+        if spell._spellbook._spellbook_validation_required:
+            if spell.system_state is not None:
+                validity = spell.system_state.validity
+                if validity in (
+                        SpellValidity.invalid,
+                        SpellValidity.gated,
+                        SpellValidity.disabled,
+                ):
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Cannot execute meld runtime for a spell whose lineage is "
+                            f"{validity.name}."
+                        ),
+                    )
+
+            # Change-control dirty-root gating
+            try:
+                spellbook = spell._spellbook
+                aether = spellbook._aether
+                manager = aether._get_change_control_manager(spell.aetheric_frame)
+                if manager is not None and conduit_id and manager.is_root_dirty(conduit_id, spell.spell_index.current):
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Cannot execute meld runtime while the root is marked dirty. "
+                            "Revalidation is required."
+                        ),
+                    )
+            except MeldExecutionError:
+                raise
+            except Exception:
+                # Change-control is optional; if unavailable we proceed.
+                pass
+
+            # --- Invariants from the SpellCrafter / validation pipeline ----
+            if spell.is_broken:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message="Cannot execute meld runtime for a broken spell.",
+                )
+
+            if not spell.validated:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Spell has not been validated. Run the SpellCrafter "
+                        "phases before attempting to meld this spell."
+                    ),
+                )
 
     @staticmethod
     def _collect_override_targets(

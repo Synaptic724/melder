@@ -62,6 +62,7 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
 from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlan,
     ExecutionPlanBuilder,
+    ExecutionPlanCallMode,
     ExecutionPlanVariant,
 )
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
@@ -1971,6 +1972,63 @@ class SpellCrafter(Cleanable):
     # Phase 11 - Execution Assembly Plan
     # ------------------------------------------------------------------
 
+    def _cache_execution_plan_metrics(
+            self,
+            *,
+            occurrence_plan: OccurrencePlan,
+            plan: ExecutionPlan,
+    ) -> None:
+        """
+        Cache Phase 11 execution-plan metrics on the owning spell.
+
+        Contract:
+            - Requires valid Phase 8 occurrence plan and Phase 11 plan inputs.
+            - Stores derived metrics on the spell for fast runtime inspection.
+            - Intended for small/shallow graph path selection heuristics.
+        """
+        if occurrence_plan is None or plan is None:
+            return
+
+        steps = plan.steps
+        step_count = len(steps)
+        unique_spell_count = len(plan.spell_id_step_index)
+
+        max_dependency_count = 0
+        has_contract_payloads = False
+        has_existing_creations = False
+
+        for step in steps:
+            dependency_count = len(step.dependency_keys)
+            if dependency_count > max_dependency_count:
+                max_dependency_count = dependency_count
+            if step.has_contract_payload:
+                has_contract_payloads = True
+            if step.spell.is_existing_creation:
+                has_existing_creations = True
+
+        max_occurrence_depth = 0
+        occurrence_graph = occurrence_plan.occurrence_graph
+        if occurrence_graph:
+            path_registry = occurrence_plan.path_registry
+            for _, path_id in occurrence_graph.keys():
+                depth = path_registry.depth(path_id)
+                if depth > max_occurrence_depth:
+                    max_occurrence_depth = depth
+
+        has_calln: Optional[bool] = None
+        fast_plan = plan.fast_plan
+        if fast_plan is not None:
+            fast_call_modes = fast_plan[20]
+            has_calln = ExecutionPlanCallMode.CALLN in fast_call_modes
+
+        self._spell.execution_plan_step_count = step_count
+        self._spell.execution_plan_unique_spell_count = unique_spell_count
+        self._spell.execution_plan_max_occurrence_depth = max_occurrence_depth
+        self._spell.execution_plan_max_dependency_count = max_dependency_count
+        self._spell.execution_plan_has_calln = has_calln
+        self._spell.execution_plan_has_contract_payloads = has_contract_payloads
+        self._spell.execution_plan_has_existing_creations = has_existing_creations
+
     def run_phase_execution_plan(
             self,
             conduit_id: str,
@@ -2012,6 +2070,11 @@ class SpellCrafter(Cleanable):
             injection_plan=self._injection_plan_phase9,
             spell_lookup=self._spell._spellbook._spell_id_pool,
             plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
+        )
+
+        self._cache_execution_plan_metrics(
+            occurrence_plan=self._occurrence_plan_phase8,
+            plan=plan_no_overrides,
         )
 
         self._cleanup_execution_plans_phase11()
@@ -2267,5 +2330,3 @@ class SpellCrafter(Cleanable):
         self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         self.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         self.cleanup_phase_artifacts()
-
-
