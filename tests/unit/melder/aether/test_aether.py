@@ -806,8 +806,8 @@ def test_revalidate_dirty_roots_delegates(aether_with_mocks):
     # Ensure mocked frame reports not cleaned
     a._default_frame._cleaned = False
     
-    a._revalidate_dirty_roots()
-    mock_devops.revalidate_dirty_roots.assert_called()
+    a._revalidate_dirty_roots("conduit-1")
+    mock_devops.revalidate_dirty_roots.assert_called_with("conduit-1", cancel_event=None)
 
 def test_get_managers_access(aether_with_mocks):
     """Verify accessors for sub-managers."""

@@ -3226,6 +3226,87 @@ def test_update_owned_spell_id_updates_map_and_versions():
     assert "new-id" in sb._spell_versions
 
 
+def test_spell_id_pool_matches_owned_and_contracted_union() -> None:
+    """
+    Purpose:
+        Verify spell_id_pool reflects the union of owned and contracted ids.
+    Contract:
+        _spell_id_pool keys equal owned ids plus all contracted ids, and each
+        pooled spell instance matches the source map.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If pool keys or values diverge from the owned/contracted maps.
+    """
+    sb = Spellbook()
+    owned_spell = DummySpell(spell_id="owned-id")
+    contracted_spell = DummySpell(spell_id="contracted-id")
+    sb._register_owned_spell_id("owned-id", owned_spell)
+    sb._create_link_contract("peer")
+    sb._register_contracted_spell_id("peer", "contracted-id", contracted_spell)
+
+    # Materialize id sets for deterministic comparison of union coverage.
+    owned_ids = set(sb._spells_by_id.keys())
+    contracted_ids = set()
+    for spell_map in sb._contracted_spells_by_id.values():
+        contracted_ids.update(spell_map.keys())
+    expected_ids = owned_ids.union(contracted_ids)
+
+    assert set(sb._spell_id_pool.keys()) == expected_ids
+    for spell_id in expected_ids:
+        pooled = sb._spell_id_pool[spell_id]
+        if spell_id in sb._spells_by_id:
+            assert pooled is sb._spells_by_id[spell_id]
+            continue
+        matched = None
+        for spell_map in sb._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                matched = spell_map[spell_id]
+                break
+        assert matched is not None
+        assert pooled is matched
+
+
+def test_unregister_owned_spell_id_removes_mapping() -> None:
+    """
+    Purpose:
+        Verify owned spell_id unregistration clears owned maps.
+    Contract:
+        _unregister_owned_spell_id removes entries from the owned id map and pool.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If owned maps retain the removed spell_id.
+    """
+    sb = Spellbook()
+    spell = DummySpell(spell_id="owned-id")
+    sb._register_owned_spell_id("owned-id", spell)
+    assert sb._spells_by_id["owned-id"] is spell
+    assert sb._spell_id_pool["owned-id"] is spell
+    sb._unregister_owned_spell_id("owned-id", spell)
+    assert "owned-id" not in sb._spells_by_id
+    assert "owned-id" not in sb._spell_id_pool
+
+
+def test_unregister_owned_spell_id_rejects_mismatch() -> None:
+    """
+    Purpose:
+        Ensure owned spell_id unregistration rejects mismatched spells.
+    Contract:
+        _unregister_owned_spell_id raises when the id maps to a different spell.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the mismatch does not raise.
+    """
+    sb = Spellbook()
+    spell_a = DummySpell(spell_id="owned-id")
+    spell_b = DummySpell(spell_id="owned-id")
+    sb._register_owned_spell_id("owned-id", spell_a)
+    with pytest.raises(RuntimeError, match="Owned spell_id mapped"):
+        sb._unregister_owned_spell_id("owned-id", spell_b)
+
+
 def test_register_contracted_spell_id_adds_mapping():
     """
     Purpose:

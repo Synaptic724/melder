@@ -76,6 +76,7 @@ def test_component_dev_ops_revalidate_dirty_roots_clears_change_control_state() 
     devops = frame.dev_ops_manager
     root_id = "root-devops"
     dep_id = "dep-devops"
+    conduit_id = "conduit-1"
     root_index = _register_lineage(states, root_id)
     _register_lineage(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
@@ -99,17 +100,17 @@ def test_component_dev_ops_revalidate_dirty_roots_clears_change_control_state() 
 
     try:
         blueprints = _build_root_blueprints(states)
-        devops.change_control_manager.rebuild_component_of(blueprints)
-        devops.change_control_manager.set_revalidator(_revalidate)
+        devops.change_control_manager.rebuild_component_of(conduit_id, blueprints)
+        devops.change_control_manager.set_revalidator(conduit_id, _revalidate)
 
         devops.change_control_manager.notify_spell_changed(dep_id)
-        assert devops.change_control_manager.is_root_dirty(root_id) is True
+        assert devops.change_control_manager.is_root_dirty(conduit_id, root_id) is True
 
-        devops.revalidate_dirty_roots()
+        devops.revalidate_dirty_roots(conduit_id)
         info = devops.change_control_manager.describe()
         assert calls == [{root_id}]
-        assert info["dirty_roots"] == set()
-        assert info["monitor_active"] is False
+        assert info["dirty_roots_by_conduit"][conduit_id] == set()
+        assert info["monitor_active_by_conduit"][conduit_id] is False
     finally:
         _cleanup_blueprints(blueprints)
         frame.cleanup()

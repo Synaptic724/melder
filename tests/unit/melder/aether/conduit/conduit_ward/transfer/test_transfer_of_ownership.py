@@ -191,19 +191,26 @@ class FakeChangeControlManager:
 
     Contract:
     - Allows register/get/clear of pending change entries by index id.
+    - Exposes conduit-scoped revalidator callbacks for incident warnings.
     """
 
-    def __init__(self, *, revalidate_fn: Optional[Callable[[], None]] = None) -> None:
+    def __init__(
+        self,
+        *,
+        revalidate_fn_by_conduit: Optional[Dict[str, Callable[[], None]]] = None,
+    ) -> None:
         """
         Initialize the pending change store.
 
         Args:
-            revalidate_fn: Optional revalidator callback to expose.
+            revalidate_fn_by_conduit: Optional mapping of conduit ids to revalidators.
         """
         self._pending: Dict[str, Dict[str, Any]] = {}
         self._register_calls: List[Dict[str, Any]] = []
         self._clear_calls: List[str] = []
-        self._revalidate_fn = revalidate_fn
+        self._revalidate_fn_by_conduit: Dict[str, Callable[[], None]] = (
+            revalidate_fn_by_conduit or {}
+        )
 
     def get_pending_change(self, index_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -578,6 +585,26 @@ class FakeSpellbook:
             spell_obj: Spell being unregistered.
         """
         self._risk_unregister_calls.append({"conduit_id": conduit_id, "spell": spell_obj})
+
+    def _unregister_owned_spell_id(self, spell_id: str, spell_obj: Any) -> None:
+        """
+        Remove owned spell_id mappings for the given spell.
+
+        Args:
+            spell_id: Current version id for the spell.
+            spell_obj: Owned spell instance being removed.
+        Raises:
+            RuntimeError: If the owned map or pool map references a different spell.
+        """
+        existing = self._spells_by_id.get(spell_id)
+        if existing is not None and existing is not spell_obj:
+            raise RuntimeError(f"Owned spell_id mapped to a different spell (spell_id={spell_id}).")
+        self._spells_by_id.pop(spell_id, None)
+
+        existing_pool = self._spell_id_pool.get(spell_id)
+        if existing_pool is not None and existing_pool is not spell_obj:
+            raise RuntimeError(f"spell_id_pool mapped to a different spell (spell_id={spell_id}).")
+        self._spell_id_pool.pop(spell_id, None)
 
 
 class FakeConduitWard:
@@ -2902,7 +2929,7 @@ def test_record_incident_skips_warning_when_revalidator_present() -> None:
         """
         return None
 
-    env.change_control_manager._revalidate_fn = revalidate_stub
+    env.change_control_manager._revalidate_fn_by_conduit[env.source._id] = revalidate_stub
     transfer = TransferOfOwnership(
         source_conduit=env.source,
         target_conduit=env.target,

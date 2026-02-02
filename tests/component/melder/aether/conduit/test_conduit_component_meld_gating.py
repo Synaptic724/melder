@@ -92,16 +92,17 @@ def test_component_conduit_meld_blocks_dirty_root_change_control() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
+        conduit_id = conduit._id
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spell.run_all_phases("cid")
+        spell.run_all_phases(conduit_id)
 
         change_control_manager = spellbook._aether._get_change_control_manager(
             spellbook._aetheric_frame
         )
         assert change_control_manager is not None
         change_control_manager.notify_spell_changed(spell_id)
-        assert change_control_manager.is_root_dirty(spell_id) is True
+        assert change_control_manager.is_root_dirty(conduit_id, spell_id) is True
 
         with pytest.raises(MeldExecutionError, match="dirty"):
             conduit.meld(spell=spell_id)

@@ -11,6 +11,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 
+CONDUIT_ID = "cid"
 
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_component_change_control() -> None:
@@ -86,7 +87,7 @@ def _run_spell_to_phase5(spell: Any) -> None:
     spell.run_phase_symbolic_graph()
     spell.run_phase_local_frame()
     spell.run_phase_validation()
-    spell.run_phase_root_blueprints("cid")
+    spell.run_phase_root_blueprints(CONDUIT_ID)
 
 
 def test_component_change_control_wires_component_of_for_local_root() -> None:
@@ -142,17 +143,17 @@ def test_component_change_control_wires_component_of_for_local_root() -> None:
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
         _run_spell_to_phase5(consumer_spell)
-        consumer_spell.run_phase_change_control("cid")
+        consumer_spell.run_phase_change_control(CONDUIT_ID)
 
         manager = Spellbook._aether._get_change_control_manager(
             spellbook._aetheric_frame
         )
         assert manager is not None
         info = manager.describe()
-        component_of = info["component_of"]
+        component_of = info["component_of_by_conduit"][CONDUIT_ID]
         assert component_of[consumer_id] == {consumer_id}
         assert component_of[service_id] == {consumer_id}
-        assert info["revalidator_registered"] is True
+        assert CONDUIT_ID in info["revalidator_registered_by_conduit"]
     finally:
         spellbook.cleanup()
 
@@ -216,15 +217,15 @@ def test_component_change_control_revalidator_clears_dirty_roots() -> None:
         )
         assert manager is not None
         info = manager.describe()
-        assert info["revalidator_registered"] is True
+        assert CONDUIT_ID in info["revalidator_registered_by_conduit"]
 
         manager.notify_spell_changed(service_id)
-        assert manager.is_root_dirty(consumer_id) is True
+        assert manager.is_root_dirty(CONDUIT_ID, consumer_id) is True
 
-        manager.revalidate_dirty_roots()
+        manager.revalidate_dirty_roots(CONDUIT_ID)
         after = manager.describe()
-        assert after["dirty_roots"] == set()
-        assert after["monitor_active"] is False
+        assert after["dirty_roots_by_conduit"][CONDUIT_ID] == set()
+        assert after["monitor_active_by_conduit"][CONDUIT_ID] is False
     finally:
         spellbook.cleanup()
 
@@ -302,10 +303,10 @@ def test_component_change_control_tracks_contracted_dependency_in_component_of()
         )
         assert manager is not None
         info = manager.describe()
-        component_of = info["component_of"]
+        component_of = info["component_of_by_conduit"][CONDUIT_ID]
         assert component_of[service_id] == {consumer_id}
         assert component_of[consumer_id] == {consumer_id}
-        assert info["revalidator_registered"] is True
+        assert CONDUIT_ID in info["revalidator_registered_by_conduit"]
     finally:
         if borrower is not None:
             borrower.cleanup()
@@ -414,7 +415,7 @@ def test_component_change_control_excludes_uncontracted_remote_spells() -> None:
         )
         assert manager is not None
         info = manager.describe()
-        component_of = info["component_of"]
+        component_of = info["component_of_by_conduit"][CONDUIT_ID]
         assert component_of[service_id] == {consumer_id}
         assert remote_id not in component_of
     finally:
@@ -517,7 +518,7 @@ def test_component_change_control_shared_dependency_maps_to_multiple_roots() -> 
         )
         assert manager is not None
         info = manager.describe()
-        component_of = info["component_of"]
+        component_of = info["component_of_by_conduit"][CONDUIT_ID]
         assert component_of[service_id] == {consumer_a_id, consumer_b_id}
         assert component_of[consumer_a_id] == {consumer_a_id}
         assert component_of[consumer_b_id] == {consumer_b_id}

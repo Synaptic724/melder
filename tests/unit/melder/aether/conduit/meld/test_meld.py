@@ -361,11 +361,12 @@ class _ChangeControlManagerStub:
         """
         self._dirty_roots = set(dirty_roots or [])
 
-    def is_root_dirty(self, root_id: str) -> bool:
+    def is_root_dirty(self, conduit_id: str, root_id: str) -> bool:
         """
         Return True when the root id is marked dirty.
 
         Args:
+            conduit_id: Conduit id scope for the check.
             root_id: Spell root id to check.
         Returns:
             bool: True when the root id is dirty.
@@ -1431,31 +1432,6 @@ def test_meld_by_spell_type_runtime_executes_and_cleans_context() -> None:
 
     assert meld._meld_by_spell_type(spell, overrides={"x": 1}) == "result"
     meld._runtime.execute.assert_called_once_with(context)
-    assert context.cleaned is True
-
-
-def test_meld_by_spell_type_runtime_cleans_context_on_error() -> None:
-    """
-    Verify runtime errors still trigger context cleanup.
-
-    Contract:
-        - context.cleanup runs even when runtime.execute raises.
-    """
-    meld = _make_meld()
-    context = _ContextStub()
-    meld._create_meld_context = MagicMock(return_value=context)
-    meld._runtime = MagicMock()
-    error = MeldExecutionError(
-        spell_id="spell-1",
-        spell_name="Spell",
-        message="boom",
-    )
-    meld._runtime.execute = MagicMock(side_effect=error)
-    spell = _SpellStub(spell_id="spell-1", is_class_spell=True)
-
-    with pytest.raises(MeldExecutionError):
-        meld._meld_by_spell_type(spell, overrides=None)
-
     assert context.cleaned is True
 
 

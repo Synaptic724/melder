@@ -553,6 +553,26 @@ class FakeSpellbook:
         """
         self._risk_unregister_calls.append({"conduit_id": conduit_id, "spell": spell_obj})
 
+    def _unregister_owned_spell_id(self, spell_id: str, spell_obj: Any) -> None:
+        """
+        Remove owned spell_id mappings for the given spell.
+
+        Args:
+            spell_id: Current version id for the spell.
+            spell_obj: Owned spell instance being removed.
+        Raises:
+            RuntimeError: If the owned map or pool map references a different spell.
+        """
+        existing = self._spells_by_id.get(spell_id)
+        if existing is not None and existing is not spell_obj:
+            raise RuntimeError(f"Owned spell_id mapped to a different spell (spell_id={spell_id}).")
+        self._spells_by_id.pop(spell_id, None)
+
+        existing_pool = self._spell_id_pool.get(spell_id)
+        if existing_pool is not None and existing_pool is not spell_obj:
+            raise RuntimeError(f"spell_id_pool mapped to a different spell (spell_id={spell_id}).")
+        self._spell_id_pool.pop(spell_id, None)
+
 
 class FakeConduitWard:
     """
