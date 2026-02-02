@@ -157,6 +157,52 @@ class MeldContext(Cleanable):
         self._conduit_name = None
         self._aetheric_frame = None
 
+    def reset(
+            self,
+            *,
+            root_spell: ISpell,
+            overrides: Optional[Mapping[str, Any]] = None,
+            caller_creations: Optional[Any] = None,
+            caller_creations_lock_held: bool = False,
+    ) -> None:
+        """
+        Reset the context for reuse in another meld call.
+
+        Contract:
+            - root_spell must not be None.
+            - overrides are copied into a mutable mapping when provided.
+            - caller_creations defaults to the owner creations when not provided.
+            - marks the context as active for the next execution.
+        """
+        if root_spell is None:
+            raise ValueError("root_spell cannot be None.")
+
+        self._cleaned = False
+        self._root_spell = root_spell
+        self._owner_creations = root_spell._owner_creations
+        self._caller_creations = (
+            caller_creations
+            if caller_creations is not None
+            else self._owner_creations
+        )
+        self._creations = self._owner_creations
+        self._caller_creations_lock_held = bool(caller_creations_lock_held)
+
+        if overrides is None:
+            if self._overrides is not None:
+                self._overrides.clear()
+            self._overrides = None
+        else:
+            if self._overrides is None:
+                self._overrides = dict(overrides)
+            else:
+                self._overrides.clear()
+                self._overrides.update(overrides)
+
+        self._conduit_id = root_spell._owner_conduit_id
+        self._conduit_name = root_spell._owner_conduit_name
+        self._aetheric_frame = root_spell.aetheric_frame
+
 
 
     # ------------------------------------------------------------------ #

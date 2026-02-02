@@ -152,6 +152,48 @@ class MeldEngine(Cleanable):
         self._any_overrides_present = None
         self._cleaned = True
 
+    def reset(
+            self,
+            *,
+            context: "MeldContext",
+            root_spell: ISpell,
+            dag: Any,
+            resolution_frame: Any,
+            requirements: Any,
+            frame: Optional[ResolutionFrame],
+            blueprint: Optional[RootResolutionBlueprint],
+            override_map: Optional[Dict[SocketRef, Any]],
+            spell_lookup: Dict[str, ISpell],
+            system_states: Any,
+    ) -> None:
+        """
+        Reset this engine for reuse in another meld call.
+
+        Contract:
+            - Overwrites all per-call references.
+            - Reinitializes per-call tracking fields.
+            - Clears the cleaned flag to allow execution.
+        """
+        if context is None:
+            raise ValueError("context cannot be None.")
+        if root_spell is None:
+            raise ValueError("root_spell cannot be None.")
+
+        self._cleaned = False
+        self._context = context
+        self._root_spell = root_spell
+        self._dag = dag
+        self._resolution_frame = resolution_frame
+        self._requirements = requirements
+        self._frame = frame
+        self._blueprint = blueprint
+        self._override_map = override_map
+        self._spell_lookup = spell_lookup
+        self._system_states = system_states
+        self._instance_results = {} if frame is not None else None
+        self._override_targets_by_spell_id = None
+        self._any_overrides_present = False
+
     # ------------------------------------------------------------------ #
     # Properties
     # ------------------------------------------------------------------ #
