@@ -1289,9 +1289,9 @@ class TransferOfOwnership:
         except Exception:
             pass
 
-        # If no revalidator is wired, emit a reminder incident.
+        # If no revalidator is wired for any conduit, emit a reminder incident.
         try:
-            if self._change_control_manager._revalidate_fn is None:
+            if not self._change_control_manager._revalidate_fn_by_conduit:
                 self._incident_manager.create_incident(
                     kind="ownership_transfer_needs_revalidation",
                     severity=IncidentSeverity.warning,

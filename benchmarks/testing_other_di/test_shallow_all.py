@@ -9,8 +9,9 @@ import random
 import sys
 import threading
 import time
+import typing
 from dataclasses import dataclass
-from typing import Any, Callable, Iterable, Optional, Sequence
+from typing import Any, Callable, Optional
 
 import pytest
 
@@ -22,6 +23,244 @@ from tests.mocks.spellbook.deep_layers import (
     get_depth_7_classes,
     get_depth_9_classes,
 )
+
+# ======================================================================================
+# Extra shallow/wide/diamond graphs (local mocks)
+# ======================================================================================
+
+
+# ---- SOLO (no dependencies) ---------------------------------------------------------
+
+
+class SoloRootA:
+    __slots__ = ()
+
+
+class SoloRootB:
+    __slots__ = ()
+
+
+class SoloSpaceRoot:
+    __slots__ = ()
+
+
+# ---- SHALLOW (depth-2: root -> leaves) ----------------------------------------------
+
+
+class ShallowLeafA:
+    __slots__ = ()
+
+
+class ShallowLeafB:
+    __slots__ = ()
+
+
+class ShallowRootAB:
+    __slots__ = ("a", "b")
+
+    def __init__(self, a: ShallowLeafA, b: ShallowLeafB) -> None:
+        self.a = a
+        self.b = b
+
+
+class ShallowLeafC:
+    __slots__ = ()
+
+
+class ShallowRootC:
+    __slots__ = ("c",)
+
+    def __init__(self, c: ShallowLeafC) -> None:
+        self.c = c
+
+
+class ShallowSpaceLeaf:
+    __slots__ = ()
+
+
+class ShallowSpaceRoot:
+    __slots__ = ("leaf",)
+
+    def __init__(self, leaf: ShallowSpaceLeaf) -> None:
+        self.leaf = leaf
+
+
+# ---- WIDE (one root has many inputs) ------------------------------------------------
+# Wide8 is intentionally "wide shallow": root has 8 leaf params (arity > CALL3)
+# Wide9 is intentionally "wide grouped": 3 groups of 3 leaves (arity <= CALL3 everywhere)
+
+
+class Wide8Leaf0:
+    __slots__ = ()
+
+
+class Wide8Leaf1:
+    __slots__ = ()
+
+
+class Wide8Leaf2:
+    __slots__ = ()
+
+
+class Wide8Leaf3:
+    __slots__ = ()
+
+
+class Wide8Leaf4:
+    __slots__ = ()
+
+
+class Wide8Leaf5:
+    __slots__ = ()
+
+
+class Wide8Leaf6:
+    __slots__ = ()
+
+
+class Wide8Leaf7:
+    __slots__ = ()
+
+
+class Wide8Root:
+    __slots__ = ("leaves",)
+
+    def __init__(
+            self,
+            l0: Wide8Leaf0,
+            l1: Wide8Leaf1,
+            l2: Wide8Leaf2,
+            l3: Wide8Leaf3,
+            l4: Wide8Leaf4,
+            l5: Wide8Leaf5,
+            l6: Wide8Leaf6,
+            l7: Wide8Leaf7,
+    ) -> None:
+        self.leaves = (l0, l1, l2, l3, l4, l5, l6, l7)
+
+
+class Wide9Leaf0:
+    __slots__ = ()
+
+
+class Wide9Leaf1:
+    __slots__ = ()
+
+
+class Wide9Leaf2:
+    __slots__ = ()
+
+
+class Wide9Leaf3:
+    __slots__ = ()
+
+
+class Wide9Leaf4:
+    __slots__ = ()
+
+
+class Wide9Leaf5:
+    __slots__ = ()
+
+
+class Wide9Leaf6:
+    __slots__ = ()
+
+
+class Wide9Leaf7:
+    __slots__ = ()
+
+
+class Wide9Leaf8:
+    __slots__ = ()
+
+
+class Wide9Group0:
+    __slots__ = ("a", "b", "c")
+
+    def __init__(self, a: Wide9Leaf0, b: Wide9Leaf1, c: Wide9Leaf2) -> None:
+        self.a = a
+        self.b = b
+        self.c = c
+
+
+class Wide9Group1:
+    __slots__ = ("a", "b", "c")
+
+    def __init__(self, a: Wide9Leaf3, b: Wide9Leaf4, c: Wide9Leaf5) -> None:
+        self.a = a
+        self.b = b
+        self.c = c
+
+
+class Wide9Group2:
+    __slots__ = ("a", "b", "c")
+
+    def __init__(self, a: Wide9Leaf6, b: Wide9Leaf7, c: Wide9Leaf8) -> None:
+        self.a = a
+        self.b = b
+        self.c = c
+
+
+class Wide9Root:
+    __slots__ = ("g0", "g1", "g2")
+
+    def __init__(self, g0: Wide9Group0, g1: Wide9Group1, g2: Wide9Group2) -> None:
+        self.g0 = g0
+        self.g1 = g1
+        self.g2 = g2
+
+
+class WideSpaceLeaf:
+    __slots__ = ()
+
+
+class WideSpaceRoot:
+    __slots__ = ("leaf",)
+
+    def __init__(self, leaf: WideSpaceLeaf) -> None:
+        self.leaf = leaf
+
+
+# ---- DIAMOND (shared dependency requested multiple times) ----------------------------
+# This is the one that can reveal "within-resolve dedupe" for transients.
+
+
+class DiamondSharedLeaf:
+    __slots__ = ()
+
+
+class DiamondLeft:
+    __slots__ = ("leaf",)
+
+    def __init__(self, leaf: DiamondSharedLeaf) -> None:
+        self.leaf = leaf
+
+
+class DiamondRight:
+    __slots__ = ("leaf",)
+
+    def __init__(self, leaf: DiamondSharedLeaf) -> None:
+        self.leaf = leaf
+
+
+class DiamondRoot:
+    __slots__ = ("left", "right")
+
+    def __init__(self, left: DiamondLeft, right: DiamondRight) -> None:
+        self.left = left
+        self.right = right
+
+
+class DiamondSpaceLeaf:
+    __slots__ = ()
+
+
+class DiamondSpaceRoot:
+    __slots__ = ("leaf",)
+
+    def __init__(self, leaf: DiamondSpaceLeaf) -> None:
+        self.leaf = leaf
 
 
 # ======================================================================================
@@ -68,31 +307,7 @@ def _parse_csv(value: str) -> list[str]:
     return [p for p in parts if p]
 
 
-def _ctor_param_types(cls: type) -> tuple[tuple[str, type], ...]:
-    """
-    Extract typed constructor parameters for dynamic DI harness wiring.
-
-    Contract:
-        - Raises AssertionError if a parameter has no annotation or a non-type annotation.
-    """
-    sig = inspect.signature(cls.__init__)
-    params = list(sig.parameters.values())[1:]  # skip self
-    out: list[tuple[str, type]] = []
-    for p in params:
-        if p.annotation is inspect._empty:
-            raise AssertionError(f"{cls.__name__}.__init__ param '{p.name}' missing annotation")
-        if not isinstance(p.annotation, type):
-            raise AssertionError(
-                f"{cls.__name__}.__init__ param '{p.name}' has non-type annotation: {p.annotation!r}"
-            )
-        out.append((p.name, p.annotation))
-    return tuple(out)
-
-
 def _maybe_print_gil_status(prefix: str) -> None:
-    """
-    Print whether the GIL is enabled, when running on a free-threading build that exposes sys._is_gil_enabled().
-    """
     if not _env_bool("DI_PRINT_GIL", False):
         return
     flag = getattr(sys, "_is_gil_enabled", None)
@@ -105,9 +320,33 @@ def _maybe_print_gil_status(prefix: str) -> None:
         print(f"[{prefix}] GIL enabled? (error calling sys._is_gil_enabled)")
 
 
-# ======================================================================================
-# Graph spec
-# ======================================================================================
+def _ctor_param_types(cls: type) -> tuple[tuple[str, type], ...]:
+    """
+    Extract typed constructor parameters for a class.
+
+    Contract:
+        - Must work even when annotations are deferred/strings (free-threading builds, future annotations, etc.)
+        - Raises AssertionError if any parameter lacks a resolvable concrete type.
+    """
+    sig = inspect.signature(cls.__init__)
+    params = list(sig.parameters.values())[1:]  # skip self
+
+    try:
+        hints = typing.get_type_hints(cls.__init__, include_extras=True)
+    except Exception:
+        hints = getattr(cls.__init__, "__annotations__", {}) or {}
+
+    out: list[tuple[str, type]] = []
+    for p in params:
+        ann = hints.get(p.name, p.annotation)
+        if ann is inspect._empty or ann is None:
+            raise AssertionError(f"{cls.__name__}.__init__ param '{p.name}' missing annotation")
+        if not isinstance(ann, type):
+            raise AssertionError(
+                f"{cls.__name__}.__init__ param '{p.name}' has non-type annotation: {ann!r}"
+            )
+        out.append((p.name, ann))
+    return tuple(out)
 
 
 @dataclass(frozen=True)
@@ -117,12 +356,13 @@ class _GraphSpec:
         Describe a benchmark graph orientation.
 
     Contract:
-        - root_a / root_b are the two roots used for the main resolve workload.
-        - spellspace_root is used for the spellspace caching cycle.
-        - *_classes are the exact class sets registered into each container.
-        - transient_probe extracts (leaf_a, leaf_b) objects used to validate "no transient caching"
-          across two consecutive resolves while both roots are alive.
-          Return None to disable transient validation for this graph.
+        - root_a / root_b: main resolve roots for throughput loop
+        - spellspace_root: must be cached within a spellspace cycle
+        - *_classes must be topologically ordered (deps before dependents)
+        - transient_probe:
+            returns (obj1, obj2) from a resolved root to validate "no transient caching across resolves"
+        - within_resolve_probe:
+            returns (obj1, obj2) from the SAME resolved root to validate "no within-resolve dedupe" if enabled
     """
     name: str
     root_a: type
@@ -132,18 +372,24 @@ class _GraphSpec:
     root_b_classes: tuple[type, ...]
     spellspace_classes: tuple[type, ...]
     transient_probe: Optional[Callable[[Any], tuple[object, object]]]
+    within_resolve_probe: Optional[Callable[[Any], tuple[object, object]]]
+    within_resolve_expect_distinct: bool
 
 
 class _GraphFactory:
     """
-    Builds graph specs. This version ships with the existing deep_layers graphs.
+    Builds graph specs. Extend here for new shapes.
 
-    Extend here if/when you add wide fanout / diamond / tree mocks.
+    Supported names:
+        deep     - existing deep_layers (Depth9 vs Depth7 + spellspace Depth3)
+        solo     - no dependencies
+        shallow  - depth-2 roots
+        wide     - one wide arity root + one grouped-wide root
+        diamond  - shared dependency requested twice inside same resolve
     """
     @staticmethod
     def deep_layers() -> _GraphSpec:
         def _probe_depth9(root: Any) -> tuple[object, object]:
-            # Keep both roots alive during validation so identity comparisons are reliable.
             layer2 = root.left
             layer3 = layer2.left
             layer4 = layer3.left
@@ -164,15 +410,98 @@ class _GraphFactory:
             root_b_classes=get_depth_7_classes(),
             spellspace_classes=get_depth_3_classes(),
             transient_probe=_probe_depth9,
+            within_resolve_probe=None,
+            within_resolve_expect_distinct=True,
+        )
+
+    @staticmethod
+    def solo() -> _GraphSpec:
+        return _GraphSpec(
+            name="solo",
+            root_a=SoloRootA,
+            root_b=SoloRootB,
+            spellspace_root=SoloSpaceRoot,
+            root_a_classes=(SoloRootA,),
+            root_b_classes=(SoloRootB,),
+            spellspace_classes=(SoloSpaceRoot,),
+            transient_probe=None,
+            within_resolve_probe=None,
+            within_resolve_expect_distinct=True,
+        )
+
+    @staticmethod
+    def shallow() -> _GraphSpec:
+        def _probe(root: Any) -> tuple[object, object]:
+            # root_a is ShallowRootAB
+            return root.a, root.b
+
+        return _GraphSpec(
+            name="shallow",
+            root_a=ShallowRootAB,
+            root_b=ShallowRootC,
+            spellspace_root=ShallowSpaceRoot,
+            root_a_classes=(ShallowLeafA, ShallowLeafB, ShallowRootAB),
+            root_b_classes=(ShallowLeafC, ShallowRootC),
+            spellspace_classes=(ShallowSpaceLeaf, ShallowSpaceRoot),
+            transient_probe=_probe,
+            within_resolve_probe=None,
+            within_resolve_expect_distinct=True,
+        )
+
+    @staticmethod
+    def wide() -> _GraphSpec:
+        def _probe(root: Any) -> tuple[object, object]:
+            # root_a is Wide8Root
+            return root.leaves[0], root.leaves[1]
+
+        return _GraphSpec(
+            name="wide",
+            root_a=Wide8Root,
+            root_b=Wide9Root,
+            spellspace_root=WideSpaceRoot,
+            root_a_classes=(
+                Wide8Leaf0, Wide8Leaf1, Wide8Leaf2, Wide8Leaf3,
+                Wide8Leaf4, Wide8Leaf5, Wide8Leaf6, Wide8Leaf7,
+                Wide8Root,
+            ),
+            root_b_classes=(
+                Wide9Leaf0, Wide9Leaf1, Wide9Leaf2,
+                Wide9Leaf3, Wide9Leaf4, Wide9Leaf5,
+                Wide9Leaf6, Wide9Leaf7, Wide9Leaf8,
+                Wide9Group0, Wide9Group1, Wide9Group2,
+                Wide9Root,
+            ),
+            spellspace_classes=(WideSpaceLeaf, WideSpaceRoot),
+            transient_probe=_probe,
+            within_resolve_probe=None,
+            within_resolve_expect_distinct=True,
+        )
+
+    @staticmethod
+    def diamond() -> _GraphSpec:
+        def _within(root: Any) -> tuple[object, object]:
+            # Expect distinct transient leaves within the same resolve if semantics are "pure transient"
+            return root.left.leaf, root.right.leaf
+
+        return _GraphSpec(
+            name="diamond",
+            root_a=DiamondRoot,
+            root_b=ShallowRootAB,  # mix a different shape to avoid overfitting
+            spellspace_root=DiamondSpaceRoot,
+            root_a_classes=(DiamondSharedLeaf, DiamondLeft, DiamondRight, DiamondRoot),
+            root_b_classes=(ShallowLeafA, ShallowLeafB, ShallowRootAB),
+            spellspace_classes=(DiamondSpaceLeaf, DiamondSpaceRoot),
+            transient_probe=None,
+            within_resolve_probe=_within,
+            within_resolve_expect_distinct=True,
         )
 
 
 def _selected_graphs() -> list[_GraphSpec]:
     """
-    Select which graph specs to run.
-
     Env:
-        DI_GRAPHS: comma-separated list. Currently supports: deep
+        DI_GRAPHS: comma-separated list of graph shapes to run.
+            Supported: deep, solo, shallow, wide, diamond
         Default: deep
     """
     want = _parse_csv(_env_str("DI_GRAPHS", "deep"))
@@ -180,132 +509,17 @@ def _selected_graphs() -> list[_GraphSpec]:
     for name in want:
         if name == "deep":
             out.append(_GraphFactory.deep_layers())
+        elif name == "solo":
+            out.append(_GraphFactory.solo())
+        elif name == "shallow":
+            out.append(_GraphFactory.shallow())
+        elif name == "wide":
+            out.append(_GraphFactory.wide())
+        elif name == "diamond":
+            out.append(_GraphFactory.diamond())
         else:
-            raise AssertionError(f"Unknown graph '{name}'. Supported: deep")
+            raise AssertionError("Unknown graph '{0}'. Supported: deep,solo,shallow,wide,diamond".format(name))
     return out
-
-
-# ======================================================================================
-# Workload config
-# ======================================================================================
-
-
-@dataclass(frozen=True)
-class _StressConfig:
-    """
-    Controls for the throughput/lock-contention stress test.
-
-    Environment variables (defaults match your original test behavior):
-        DI_THREADS              (default 10)
-        DI_DURATION_S           (default 60.0)
-        DI_SPELLSPACE_EVERY     (default 20)
-        DI_GC_EVERY             (default 2000)
-
-    Additional options:
-        DI_PATTERN              alternating | burst | ratio | random  (default alternating)
-        DI_BURST_LEN            burst length when DI_PATTERN=burst (default 64)
-        DI_RATIO_P              probability of root_a when DI_PATTERN=ratio (default 0.5)
-        DI_RANDOM_SEED          base seed for DI_PATTERN=random (default 1337)
-
-        DI_GC_MODE              periodic | disabled | none (default periodic)
-            - periodic: gc.collect() every DI_GC_EVERY
-            - disabled: gc.disable() during worker loop, re-enable after
-            - none: no explicit gc.collect() calls (GC still runs if enabled)
-
-        DI_VALIDATE_TRANSIENT_EVERY
-            If > 0: every N operations per thread, validate that two consecutive resolves
-            produce distinct transient objects (probe-dependent).
-            Default 0 (off) to keep max throughput.
-
-        DI_PRINT_GIL
-            If true: print sys._is_gil_enabled() for each lib run when available.
-    """
-    threads: int
-    duration_s: float
-    spellspace_every: int
-    gc_every: int
-    pattern: str
-    burst_len: int
-    ratio_p: float
-    random_seed: int
-    gc_mode: str
-    validate_transient_every: int
-
-    @staticmethod
-    def from_env() -> _StressConfig:
-        return _StressConfig(
-            threads=_env_int("DI_THREADS", 10),
-            duration_s=_env_float("DI_DURATION_S", 25.0),
-            spellspace_every=_env_int("DI_SPELLSPACE_EVERY", 20),
-            gc_every=_env_int("DI_GC_EVERY", 2000),
-            pattern=_env_str("DI_PATTERN", "alternating").lower(),
-            burst_len=_env_int("DI_BURST_LEN", 64),
-            ratio_p=_env_float("DI_RATIO_P", 0.5),
-            random_seed=_env_int("DI_RANDOM_SEED", 1337),
-            gc_mode=_env_str("DI_GC_MODE", "periodic").lower(),
-            validate_transient_every=_env_int("DI_VALIDATE_TRANSIENT_EVERY", 0),
-        )
-
-
-@dataclass(frozen=True)
-class _LatencyConfig:
-    """
-    Controls for the single-thread latency sampler (optional test).
-
-    Env:
-        DI_RUN_LATENCY          (default false) -> if false, test is skipped.
-        DI_LATENCY_DURATION_S   (default 10.0)
-        DI_LATENCY_SAMPLE_EVERY (default 10)  -> sample 1 in N ops to reduce measurement overhead.
-        DI_PATTERN              same semantics as stress test; default alternating.
-    """
-    duration_s: float
-    sample_every: int
-    pattern: str
-    burst_len: int
-    ratio_p: float
-    random_seed: int
-
-    @staticmethod
-    def from_env() -> _LatencyConfig:
-        return _LatencyConfig(
-            duration_s=_env_float("DI_LATENCY_DURATION_S", 10.0),
-            sample_every=max(1, _env_int("DI_LATENCY_SAMPLE_EVERY", 10)),
-            pattern=_env_str("DI_PATTERN", "alternating").lower(),
-            burst_len=_env_int("DI_BURST_LEN", 64),
-            ratio_p=_env_float("DI_RATIO_P", 0.5),
-            random_seed=_env_int("DI_RANDOM_SEED", 1337),
-        )
-
-
-@dataclass
-class _ThreadStats:
-    steps: int = 0
-    root_a: int = 0
-    root_b: int = 0
-    spellspaces: int = 0
-    errors: int = 0
-
-
-@dataclass(frozen=True)
-class _RuntimeOps:
-    """
-    Per-library operations for the stress runs.
-
-    Contract:
-        - get_root_a/get_root_b return the resolved root object.
-        - spellspace_cycle must validate caching semantics within the spellspace context.
-        - cleanup() must be callable once after all threads finish.
-    """
-    name: str
-    get_root_a: Callable[[], Any]
-    get_root_b: Callable[[], Any]
-    spellspace_cycle: Callable[[], None]
-    cleanup: Callable[[], None]
-
-
-# ======================================================================================
-# Library selection
-# ======================================================================================
 
 
 def _selected_libs() -> tuple[str, ...]:
@@ -320,8 +534,130 @@ def _selected_libs() -> tuple[str, ...]:
     want = tuple(_parse_csv(raw))
     for lib in want:
         if lib not in supported:
-            raise AssertionError(f"Unknown lib '{lib}'. Supported: {supported}")
+            raise AssertionError("Unknown lib '{0}'. Supported: {1}".format(lib, supported))
     return want
+
+
+# ======================================================================================
+# Controls
+# ======================================================================================
+
+
+@dataclass(frozen=True)
+class _StressConfig:
+    """
+    Controls (env vars):
+        DI_THREADS                  default 10
+        DI_DURATION_S               default 60.0
+        DI_PATTERN                  alternating | burst | ratio | random (default alternating)
+        DI_BURST_LEN                default 64
+        DI_RATIO_P                  default 0.5
+        DI_RANDOM_SEED              default 1337
+
+        DI_SPELLSPACE_EVERY         default 20
+        DI_GC_EVERY                 default 2000
+        DI_GC_MODE                  periodic | disabled | none (default periodic)
+
+        DI_VALIDATE_TRANSIENT_EVERY default 0 (off)
+            - if > 0 and transient_probe present:
+              every N ops, take two consecutive root_a resolves and assert probe objects differ.
+
+        DI_VALIDATE_WITHIN_EVERY    default 0 (off)
+            - if > 0 and within_resolve_probe present:
+              every N ops, resolve root_a once and assert probe pair is distinct (if expected).
+
+        DI_PRINT_GIL                default false
+    """
+    threads: int
+    duration_s: float
+    pattern: str
+    burst_len: int
+    ratio_p: float
+    random_seed: int
+    spellspace_every: int
+    gc_every: int
+    gc_mode: str
+    validate_transient_every: int
+    validate_within_every: int
+
+    @staticmethod
+    def from_env() -> _StressConfig:
+        return _StressConfig(
+            threads=_env_int("DI_THREADS", 10),
+            duration_s=_env_float("DI_DURATION_S", 25.0),
+            pattern=_env_str("DI_PATTERN", "alternating").lower(),
+            burst_len=_env_int("DI_BURST_LEN", 64),
+            ratio_p=_env_float("DI_RATIO_P", 0.5),
+            random_seed=_env_int("DI_RANDOM_SEED", 1337),
+            spellspace_every=_env_int("DI_SPELLSPACE_EVERY", 20),
+            gc_every=_env_int("DI_GC_EVERY", 2000),
+            gc_mode=_env_str("DI_GC_MODE", "periodic").lower(),
+            validate_transient_every=_env_int("DI_VALIDATE_TRANSIENT_EVERY", 1),
+            validate_within_every=_env_int("DI_VALIDATE_WITHIN_EVERY", 1),
+        )
+
+
+@dataclass
+class _ThreadStats:
+    steps: int = 0
+    a: int = 0
+    b: int = 0
+    spellspaces: int = 0
+    errors: int = 0
+
+
+@dataclass(frozen=True)
+class _RuntimeOps:
+    """
+    Per-library operations for the stress run.
+
+    Contract:
+        - get_root_a/get_root_b return the resolved root instance
+        - spellspace_cycle validates caching semantics within a spellspace context
+        - cleanup callable once after threads finish
+    """
+    name: str
+    get_root_a: Callable[[], Any]
+    get_root_b: Callable[[], Any]
+    spellspace_cycle: Callable[[], None]
+    cleanup: Callable[[], None]
+
+
+# ======================================================================================
+# Workload selector
+# ======================================================================================
+
+
+class _WorkSelector:
+    """
+    Supported patterns:
+        alternating:  A, B, A, B, ...
+        burst:        A x burst_len, B x burst_len, repeat
+        ratio:        choose A with probability ratio_p else B
+        random:       pseudo-random A/B choices with a per-thread RNG
+    """
+    __slots__ = ("pattern", "burst_len", "ratio_p", "rng")
+
+    def __init__(self, *, pattern: str, burst_len: int, ratio_p: float, rng: Optional[random.Random]) -> None:
+        self.pattern = pattern
+        self.burst_len = burst_len
+        self.ratio_p = ratio_p
+        self.rng = rng
+
+    def choose_a(self, i: int) -> bool:
+        if self.pattern == "alternating":
+            return (i & 1) == 0
+        if self.pattern == "burst":
+            block = (i // self.burst_len) & 1
+            return block == 0
+        if self.pattern == "ratio":
+            r = random.random() if self.rng is None else self.rng.random()
+            return r < self.ratio_p
+        if self.pattern == "random":
+            if self.rng is None:
+                raise AssertionError("random pattern requires rng")
+            return self.rng.random() < 0.5
+        raise AssertionError("Unknown DI_PATTERN: {0}".format(self.pattern))
 
 
 # ======================================================================================
@@ -333,15 +669,11 @@ def _build_runtime_dependency_injector(g: _GraphSpec) -> _RuntimeOps:
     pytest.importorskip("dependency_injector")
     from dependency_injector import providers
 
-    root_a_classes = g.root_a_classes
-    root_b_classes = g.root_b_classes
-    space_classes = g.spellspace_classes
-
-    space_types = set(space_classes)
+    space_types = set(g.spellspace_classes)
 
     all_classes: list[type] = []
     seen: set[type] = set()
-    for cls in root_a_classes + root_b_classes + space_classes:
+    for cls in g.root_a_classes + g.root_b_classes + g.spellspace_classes:
         if cls not in seen:
             all_classes.append(cls)
             seen.add(cls)
@@ -354,7 +686,7 @@ def _build_runtime_dependency_injector(g: _GraphSpec) -> _RuntimeOps:
         for pname, ptype in param_specs:
             dep = providers_by_type.get(ptype)
             if dep is None:
-                raise AssertionError(f"DI wiring error: {cls.__name__} depends on {ptype.__name__} before registered")
+                raise AssertionError("DI wiring error: {0} depends on {1} before registered".format(cls, ptype))
             kwargs[pname] = dep
 
         if cls in space_types:
@@ -390,7 +722,7 @@ def _build_runtime_dependency_injector(g: _GraphSpec) -> _RuntimeOps:
         ctx.run(run)
 
     def cleanup() -> None:
-        for _, prov in providers_by_type.items():
+        for prov in providers_by_type.values():
             reset = getattr(prov, "reset", None)
             if reset is not None:
                 reset()
@@ -518,12 +850,12 @@ def _build_runtime_injector(g: _GraphSpec) -> _RuntimeOps:
             return wrapped
 
     spellspace = ScopeDecorator(SpellspaceScope)
-    spellspace_types = set(g.spellspace_classes)
+    space_types = set(g.spellspace_classes)
 
     class PerfModule(Module):
         def configure(self, binder: Binder) -> None:
             for cls in all_classes:
-                if cls in spellspace_types:
+                if cls in space_types:
                     binder.bind(cls, to=cls, scope=spellspace)
                 else:
                     binder.bind(cls, to=cls)
@@ -584,10 +916,10 @@ def _build_runtime_dishka(g: _GraphSpec) -> _RuntimeOps:
             seen.add(cls)
 
     provider = Provider()
-    spellspace_types = set(g.spellspace_classes)
+    space_types = set(g.spellspace_classes)
 
     for cls in all_classes:
-        if cls in spellspace_types:
+        if cls in space_types:
             provider.provide(cls, scope=Scope.REQUEST, cache=True)
         else:
             provider.provide(cls, scope=Scope.APP, cache=False)
@@ -629,7 +961,6 @@ def _build_runtime_dishka(g: _GraphSpec) -> _RuntimeOps:
 
 
 def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
-    # Local import so competitor-only runs don't pay import cost up front.
     from melder.aether.aether import Aether
     from melder.aether.conduit.conduit import Conduit
     from melder.spellbook.existence.existence import Existence
@@ -644,22 +975,18 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
     cfg = spellbook.get_configuration()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    # Bind transient graphs (many)
     ids_a: dict[type, str] = {}
     for cls in g.root_a_classes:
         ids_a[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
 
     ids_b: dict[type, str] = {}
     for cls in g.root_b_classes:
-        # Avoid re-binding classes already present
         if cls in ids_a:
             continue
         ids_b[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
 
-    # Bind spellspace graph (unique per spellspace)
     ids_space: dict[type, str] = {}
     for cls in g.spellspace_classes:
-        # Avoid re-binding classes already present
         if cls in ids_a or cls in ids_b:
             continue
         ids_space[cls] = spellbook.bind(
@@ -668,20 +995,15 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
             permissions="create",
         )
 
-    # Root IDs
     root_a_id = ids_a.get(g.root_a)
     if root_a_id is None:
         raise AssertionError("Melder: missing root_a id")
-    root_b_id = ids_b.get(g.root_b)
-    if root_b_id is None:
-        # root_b may be in ids_a if graphs share classes
-        root_b_id = ids_a.get(g.root_b)
+
+    root_b_id = ids_b.get(g.root_b) or ids_a.get(g.root_b)
     if root_b_id is None:
         raise AssertionError("Melder: missing root_b id")
-    root_space_id = ids_space.get(g.spellspace_root)
-    if root_space_id is None:
-        # spellspace root might have been bound earlier (rare)
-        root_space_id = ids_a.get(g.spellspace_root) or ids_b.get(g.spellspace_root)
+
+    root_space_id = ids_space.get(g.spellspace_root) or ids_a.get(g.spellspace_root) or ids_b.get(g.spellspace_root)
     if root_space_id is None:
         raise AssertionError("Melder: missing spellspace root id")
 
@@ -738,47 +1060,80 @@ def _build_ops(lib: str, g: _GraphSpec) -> _RuntimeOps:
         return _build_runtime_dishka(g)
     if lib == "melder":
         return _build_runtime_melder(g)
-    raise AssertionError(f"Unknown lib: {lib}")
+    raise AssertionError("Unknown lib: {0}".format(lib))
 
 
 # ======================================================================================
-# Workload selection
+# Smoke + single-resolve tests (fast)
 # ======================================================================================
 
 
-class _WorkSelector:
+@pytest.mark.parametrize("lib", _selected_libs())
+@pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
+def test_single_resolve_smoke(lib: str, graph: str) -> None:
     """
-    Produces "next operation kind" decisions for each worker thread.
-
-    Supported patterns:
-        alternating:  A, B, A, B, ...
-        burst:        A x burst_len, B x burst_len, repeat
-        ratio:        choose A with probability ratio_p else B
-        random:       pseudo-random A/B choices with a per-thread RNG
+    Fast sanity test:
+      - build runtime ops
+      - resolve root_a once
+      - resolve root_b once
+      - run spellspace cycle once
     """
-    __slots__ = ("pattern", "burst_len", "ratio_p", "rng")
+    gspecs = {g.name: g for g in _selected_graphs()}
+    g = gspecs[graph]
+    ops = _build_ops(lib, g)
+    _maybe_print_gil_status(f"{ops.name}/smoke")
 
-    def __init__(self, *, pattern: str, burst_len: int, ratio_p: float, rng: Optional[random.Random]) -> None:
-        self.pattern = pattern
-        self.burst_len = burst_len
-        self.ratio_p = ratio_p
-        self.rng = rng
+    try:
+        r1 = ops.get_root_a()
+        r2 = ops.get_root_b()
+        assert isinstance(r1, g.root_a)
+        assert isinstance(r2, g.root_b)
+        ops.spellspace_cycle()
+    finally:
+        ops.cleanup()
 
-    def choose_a(self, i: int) -> bool:
-        if self.pattern == "alternating":
-            return (i & 1) == 0
-        if self.pattern == "burst":
-            # blocks of A then B
-            block = (i // self.burst_len) & 1
-            return block == 0
-        if self.pattern == "ratio":
-            r = random.random() if self.rng is None else self.rng.random()
-            return r < self.ratio_p
-        if self.pattern == "random":
-            if self.rng is None:
-                raise AssertionError("random pattern requires rng")
-            return self.rng.random() < 0.5
-        raise AssertionError(f"Unknown DI_PATTERN: {self.pattern}")
+
+@pytest.mark.parametrize("lib", _selected_libs())
+@pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
+def test_single_resolve_timings(lib: str, graph: str) -> None:
+    """
+    Optional single-resolve timing prints (cold/second).
+
+    Enable with:
+        DI_RUN_SINGLE=1
+    """
+    if not _env_bool("DI_RUN_SINGLE", True):
+        pytest.skip("DI_RUN_SINGLE not enabled")
+
+    gspecs = {g.name: g for g in _selected_graphs()}
+    g = gspecs[graph]
+    ops = _build_ops(lib, g)
+    _maybe_print_gil_status(f"{ops.name}/single")
+
+    try:
+        t0 = time.perf_counter_ns()
+        _ = ops.get_root_a()
+        cold_a = time.perf_counter_ns() - t0
+
+        t0 = time.perf_counter_ns()
+        _ = ops.get_root_a()
+        second_a = time.perf_counter_ns() - t0
+
+        t0 = time.perf_counter_ns()
+        _ = ops.get_root_b()
+        cold_b = time.perf_counter_ns() - t0
+
+        t0 = time.perf_counter_ns()
+        _ = ops.get_root_b()
+        second_b = time.perf_counter_ns() - t0
+
+        print(
+            f"[{ops.name}] single ({g.name}) "
+            f"A cold={cold_a/1_000.0:.2f}us second={second_a/1_000.0:.2f}us | "
+            f"B cold={cold_b/1_000.0:.2f}us second={second_b/1_000.0:.2f}us"
+        )
+    finally:
+        ops.cleanup()
 
 
 # ======================================================================================
@@ -791,16 +1146,18 @@ class _WorkSelector:
 @pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
 def test_threaded_di_stress(lib: str, graph: str) -> None:
     """
-    Multi-threaded stress benchmark (shared runtime per lib), with many controllable knobs.
+    Throughput/lock-contention stress benchmark.
 
-    Default behavior matches your original test:
-        - DI_THREADS=10
-        - DI_DURATION_S=60
-        - DI_PATTERN=alternating
-        - DI_SPELLSPACE_EVERY=20
-        - DI_GC_MODE=periodic (gc.collect every DI_GC_EVERY=2000)
+    Default behavior matches your old test:
+        DI_THREADS=10
+        DI_DURATION_S=60
+        DI_PATTERN=alternating
+        DI_SPELLSPACE_EVERY=20
+        DI_GC_MODE=periodic (collect every DI_GC_EVERY=2000)
 
-    Use env vars to tune behavior; see _StressConfig docstring.
+    Set:
+        DI_GRAPHS=deep,solo,shallow,wide,diamond
+    to run all shapes.
     """
     gspecs = {g.name: g for g in _selected_graphs()}
     g = gspecs[graph]
@@ -822,19 +1179,16 @@ def test_threaded_di_stress(lib: str, graph: str) -> None:
         raise AssertionError("DI_RATIO_P must be between 0 and 1")
 
     ops = _build_ops(lib, g)
-
     _maybe_print_gil_status(ops.name)
 
     stats: list[_ThreadStats] = [_ThreadStats() for _ in range(cfg.threads)]
     errors: list[BaseException] = []
     stop_event = threading.Event()
     start_barrier = threading.Barrier(cfg.threads + 1)
-
     stop_time_holder: list[float] = [0.0]
 
     def worker(ix: int) -> None:
         try:
-            # Optional: disable GC during the loop for cleaner throughput measurement.
             was_enabled = gc.isenabled()
             if cfg.gc_mode == "disabled" and was_enabled:
                 gc.disable()
@@ -861,35 +1215,43 @@ def test_threaded_di_stress(lib: str, graph: str) -> None:
 
                 while not stop_event.is_set() and time.perf_counter() < stop_at:
                     do_a = selector.choose_a(local_i)
+
                     if do_a:
                         root = ops.get_root_a()
                         if not isinstance(root, g.root_a):
                             raise AssertionError("Resolved root_a returned wrong type")
-                        local_stats.root_a += 1
+                        local_stats.a += 1
                     else:
                         root = ops.get_root_b()
                         if not isinstance(root, g.root_b):
                             raise AssertionError("Resolved root_b returned wrong type")
-                        local_stats.root_b += 1
+                        local_stats.b += 1
 
                     local_stats.steps += 1
                     local_i += 1
 
-                    # Validate spellspace caching
+                    # Spellspace correctness
                     if (local_i % cfg.spellspace_every) == 0:
                         ops.spellspace_cycle()
                         local_stats.spellspaces += 1
 
-                    # Optional transient correctness spot-check:
-                    # Two consecutive resolves while both roots are alive => leaf identity must differ.
+                    # Transient anti-cache: across resolves
                     if cfg.validate_transient_every > 0 and g.transient_probe is not None:
                         if (local_i % cfg.validate_transient_every) == 0:
                             r1 = ops.get_root_a()
                             r2 = ops.get_root_a()
-                            a1, b1 = g.transient_probe(r1)
-                            a2, b2 = g.transient_probe(r2)
-                            if a1 is a2 or b1 is b2:
+                            o11, o12 = g.transient_probe(r1)
+                            o21, o22 = g.transient_probe(r2)
+                            if o11 is o21 or o12 is o22:
                                 raise AssertionError("Transient probe failed: cached transient subtree detected")
+
+                    # Transient anti-dedupe: within a resolve (diamond-style)
+                    if cfg.validate_within_every > 0 and g.within_resolve_probe is not None:
+                        if (local_i % cfg.validate_within_every) == 0:
+                            r = ops.get_root_a()
+                            x, y = g.within_resolve_probe(r)
+                            if g.within_resolve_expect_distinct and (x is y):
+                                raise AssertionError("Within-resolve probe failed: transient dedupe detected")
 
                     # GC policy
                     if cfg.gc_mode == "periodic":
@@ -911,7 +1273,6 @@ def test_threaded_di_stress(lib: str, graph: str) -> None:
         threads_list.append(t)
         t.start()
 
-    # Start all threads together, then set stop time.
     start_barrier.wait()
     start_t = time.perf_counter()
     stop_time_holder[0] = start_t + cfg.duration_s
@@ -925,8 +1286,8 @@ def test_threaded_di_stress(lib: str, graph: str) -> None:
             raise errors[0]
 
         total_steps = sum(s.steps for s in stats)
-        total_a = sum(s.root_a for s in stats)
-        total_b = sum(s.root_b for s in stats)
+        total_a = sum(s.a for s in stats)
+        total_b = sum(s.b for s in stats)
         total_spaces = sum(s.spellspaces for s in stats)
         total_err = sum(s.errors for s in stats)
 
@@ -938,240 +1299,5 @@ def test_threaded_di_stress(lib: str, graph: str) -> None:
             f"steps={total_steps}, steps/s={steps_per_s:,.0f}, "
             f"a={total_a}, b={total_b}, spellspaces={total_spaces}, errors={total_err}"
         )
-    finally:
-        ops.cleanup()
-
-
-# ======================================================================================
-# Optional: Thread scaling matrix (skip unless DI_RUN_MATRIX=1)
-# ======================================================================================
-
-
-@pytest.mark.timeout(420)
-@pytest.mark.parametrize("lib", _selected_libs())
-@pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
-@pytest.mark.parametrize("threads", (1, 2, 4, 8, 10, 16))
-def test_threaded_di_stress_thread_matrix(lib: str, graph: str, threads: int) -> None:
-    """
-    Thread-count scaling matrix.
-
-    Disabled by default. Enable with:
-        DI_RUN_MATRIX=1
-
-    Uses a shorter duration by default:
-        DI_MATRIX_DURATION_S (default 10)
-    """
-    if not _env_bool("DI_RUN_MATRIX", True):
-        pytest.skip("DI_RUN_MATRIX not enabled")
-
-    gspecs = {g.name: g for g in _selected_graphs()}
-    g = gspecs[graph]
-
-    cfg = _StressConfig.from_env()
-    duration_s = _env_float("DI_MATRIX_DURATION_S", 10.0)
-
-    # Override only what we need for the matrix.
-    cfg2 = _StressConfig(
-        threads=threads,
-        duration_s=duration_s,
-        spellspace_every=cfg.spellspace_every,
-        gc_every=cfg.gc_every,
-        pattern=cfg.pattern,
-        burst_len=cfg.burst_len,
-        ratio_p=cfg.ratio_p,
-        random_seed=cfg.random_seed,
-        gc_mode=cfg.gc_mode,
-        validate_transient_every=cfg.validate_transient_every,
-    )
-
-    ops = _build_ops(lib, g)
-    _maybe_print_gil_status(f"{ops.name}/matrix")
-
-    stats: list[_ThreadStats] = [_ThreadStats() for _ in range(cfg2.threads)]
-    errors: list[BaseException] = []
-    stop_event = threading.Event()
-    start_barrier = threading.Barrier(cfg2.threads + 1)
-    stop_time_holder: list[float] = [0.0]
-
-    def worker(ix: int) -> None:
-        try:
-            start_barrier.wait()
-            stop_at = stop_time_holder[0]
-            local_i = 0
-            local_stats = stats[ix]
-
-            rng: Optional[random.Random]
-            if cfg2.pattern in ("ratio", "random"):
-                rng = random.Random(cfg2.random_seed + ix)
-            else:
-                rng = None
-
-            selector = _WorkSelector(
-                pattern=cfg2.pattern,
-                burst_len=cfg2.burst_len,
-                ratio_p=cfg2.ratio_p,
-                rng=rng,
-            )
-
-            while not stop_event.is_set() and time.perf_counter() < stop_at:
-                if selector.choose_a(local_i):
-                    ops.get_root_a()
-                    local_stats.root_a += 1
-                else:
-                    ops.get_root_b()
-                    local_stats.root_b += 1
-
-                local_stats.steps += 1
-                local_i += 1
-
-                if (local_i % cfg2.spellspace_every) == 0:
-                    ops.spellspace_cycle()
-                    local_stats.spellspaces += 1
-
-                if cfg2.gc_mode == "periodic":
-                    if (local_i % cfg2.gc_every) == 0:
-                        gc.collect()
-
-        except BaseException as e:
-            stats[ix].errors += 1
-            errors.append(e)
-            stop_event.set()
-
-    threads_list: list[threading.Thread] = []
-    for i in range(cfg2.threads):
-        t = threading.Thread(target=worker, args=(i,), daemon=True)
-        threads_list.append(t)
-        t.start()
-
-    start_barrier.wait()
-    start_t = time.perf_counter()
-    stop_time_holder[0] = start_t + cfg2.duration_s
-
-    for t in threads_list:
-        t.join()
-
-    elapsed_s = time.perf_counter() - start_t
-    try:
-        if errors:
-            raise errors[0]
-
-        total_steps = sum(s.steps for s in stats)
-        steps_per_s = total_steps / elapsed_s if elapsed_s > 0 else 0.0
-
-        print(
-            f"[{ops.name}] matrix ({g.name}): "
-            f"threads={cfg2.threads}, duration={elapsed_s:.2f}s, steps/s={steps_per_s:,.0f}"
-        )
-    finally:
-        ops.cleanup()
-
-
-# ======================================================================================
-# Optional: Single-thread latency sampler (skip unless DI_RUN_LATENCY=1)
-# ======================================================================================
-
-
-def _percentile(sorted_vals: list[int], p: float) -> int:
-    """
-    p in [0, 1]. Returns a value from sorted_vals.
-    """
-    if not sorted_vals:
-        return 0
-    if p <= 0:
-        return sorted_vals[0]
-    if p >= 1:
-        return sorted_vals[-1]
-    idx = int((len(sorted_vals) - 1) * p)
-    return sorted_vals[idx]
-
-
-@pytest.mark.timeout(420)
-@pytest.mark.parametrize("lib", _selected_libs())
-@pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
-def test_single_thread_latency_sampler(lib: str, graph: str) -> None:
-    """
-    Single-thread latency sampling:
-        - samples root_a / root_b / spellspace_cycle latencies
-        - reports p50/p95/p99 in microseconds
-
-    Disabled by default. Enable with:
-        DI_RUN_LATENCY=1
-    """
-    if not _env_bool("DI_RUN_LATENCY", False):
-        pytest.skip("DI_RUN_LATENCY not enabled")
-
-    gspecs = {g.name: g for g in _selected_graphs()}
-    g = gspecs[graph]
-
-    cfg = _LatencyConfig.from_env()
-    ops = _build_ops(lib, g)
-
-    _maybe_print_gil_status(f"{ops.name}/latency")
-
-    rng: Optional[random.Random]
-    if cfg.pattern in ("ratio", "random"):
-        rng = random.Random(cfg.random_seed)
-    else:
-        rng = None
-
-    selector = _WorkSelector(
-        pattern=cfg.pattern,
-        burst_len=cfg.burst_len,
-        ratio_p=cfg.ratio_p,
-        rng=rng,
-    )
-
-    # Sampled latencies in ns
-    a_lat: list[int] = []
-    b_lat: list[int] = []
-    space_lat: list[int] = []
-
-    stop_at = time.perf_counter() + cfg.duration_s
-    i = 0
-    try:
-        while time.perf_counter() < stop_at:
-            do_a = selector.choose_a(i)
-
-            # resolve a/b
-            if (i % cfg.sample_every) == 0:
-                t0 = time.perf_counter_ns()
-                if do_a:
-                    ops.get_root_a()
-                else:
-                    ops.get_root_b()
-                dt = time.perf_counter_ns() - t0
-                if do_a:
-                    a_lat.append(dt)
-                else:
-                    b_lat.append(dt)
-            else:
-                if do_a:
-                    ops.get_root_a()
-                else:
-                    ops.get_root_b()
-
-            i += 1
-
-            # spellspace sampling (also sampled)
-            if (i % (cfg.sample_every * 5)) == 0:
-                t0 = time.perf_counter_ns()
-                ops.spellspace_cycle()
-                dt = time.perf_counter_ns() - t0
-                space_lat.append(dt)
-
-        a_lat.sort()
-        b_lat.sort()
-        space_lat.sort()
-
-        def _fmt(vals: list[int]) -> str:
-            p50 = _percentile(vals, 0.50) / 1_000.0
-            p95 = _percentile(vals, 0.95) / 1_000.0
-            p99 = _percentile(vals, 0.99) / 1_000.0
-            return f"p50={p50:.2f}us p95={p95:.2f}us p99={p99:.2f}us n={len(vals)}"
-
-        print(f"[{ops.name}] latency ({g.name}) root_a: {_fmt(a_lat)}")
-        print(f"[{ops.name}] latency ({g.name}) root_b: {_fmt(b_lat)}")
-        print(f"[{ops.name}] latency ({g.name}) spellspace: {_fmt(space_lat)}")
-
     finally:
         ops.cleanup()

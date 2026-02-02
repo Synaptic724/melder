@@ -40,7 +40,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         change-control admission helpers. This is not a hot-path resolver.
     Contract:
         - Tracks pending change metadata by SpellIndex id.
-        - Tracks component-of and dirty root state for targeted revalidation.
+        - Tracks per-conduit component-of and dirty root state for targeted revalidation.
         - Provides accessors for change-control scaffolding managers.
         - Does not own SpellSystemStates lifecycle.
     Args:
@@ -62,11 +62,11 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         "_lock",
         "_spell_system_states",
         "_pending_changes",
-        "_component_of",
-        "_dirty_spells",
-        "_dirty_roots",
-        "_monitor_active",
-        "_revalidate_fn",
+        "_component_of_by_conduit",
+        "_dirty_spells_by_conduit",
+        "_dirty_roots_by_conduit",
+        "_monitor_active_by_conduit",
+        "_revalidate_fn_by_conduit",
         "_change_control_enabled",
         "_transaction_manager",
         "_conflict_manager",
@@ -106,14 +106,15 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
         # spell_index_id -> Dict[str, Any]
         self._pending_changes: Dict[str, Dict[str, Any]] = {}
-        # spell_id (version) -> set[root_id]
-        self._component_of: Dict[str, Set[str]] = {}
-        self._dirty_spells: Set[str] = set()
-        self._dirty_roots: Set[str] = set()
-        self._monitor_active: bool = False
-        self._revalidate_fn: Optional[
-            Callable[[Set[str], Optional[CancellationEvent]], Optional[Set[str]]]
-        ] = None
+        # conduit_id -> (spell_id -> set[root_id])
+        self._component_of_by_conduit: Dict[str, Dict[str, Set[str]]] = {}
+        self._dirty_spells_by_conduit: Dict[str, Set[str]] = {}
+        self._dirty_roots_by_conduit: Dict[str, Set[str]] = {}
+        self._monitor_active_by_conduit: Dict[str, bool] = {}
+        self._revalidate_fn_by_conduit: Dict[
+            str,
+            Callable[[Set[str], Optional[CancellationEvent]], Optional[Set[str]]],
+        ] = {}
         self._change_control_enabled: bool = True
         self._transaction_manager: ChangeControlTransactionManager = ChangeControlTransactionManager()
         self._conflict_manager: ChangeControlConflictManager = ChangeControlConflictManager()
@@ -161,22 +162,33 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
                 self._pending_changes.clear()
                 self._pending_changes = None
 
-            if self._component_of is not None:
-                for roots in self._component_of.values():
-                    roots.clear()
-                self._component_of.clear()
-                self._component_of = None
+            if self._component_of_by_conduit is not None:
+                for component_of in self._component_of_by_conduit.values():
+                    for roots in component_of.values():
+                        roots.clear()
+                    component_of.clear()
+                self._component_of_by_conduit.clear()
+                self._component_of_by_conduit = None
 
-            if self._dirty_spells is not None:
-                self._dirty_spells.clear()
-                self._dirty_spells = None
+            if self._dirty_spells_by_conduit is not None:
+                for dirty_spells in self._dirty_spells_by_conduit.values():
+                    dirty_spells.clear()
+                self._dirty_spells_by_conduit.clear()
+                self._dirty_spells_by_conduit = None
 
-            if self._dirty_roots is not None:
-                self._dirty_roots.clear()
-                self._dirty_roots = None
+            if self._dirty_roots_by_conduit is not None:
+                for dirty_roots in self._dirty_roots_by_conduit.values():
+                    dirty_roots.clear()
+                self._dirty_roots_by_conduit.clear()
+                self._dirty_roots_by_conduit = None
 
-            self._monitor_active = False
-            self._revalidate_fn = None
+            if self._monitor_active_by_conduit is not None:
+                self._monitor_active_by_conduit.clear()
+                self._monitor_active_by_conduit = None
+
+            if self._revalidate_fn_by_conduit is not None:
+                self._revalidate_fn_by_conduit.clear()
+                self._revalidate_fn_by_conduit = None
             self._change_control_enabled = None
 
             if self._transaction_manager is not None:
@@ -1155,74 +1167,94 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     # ----------------------------------------------------------------------
     def set_revalidator(
             self,
+            conduit_id: str,
             fn: Callable[[Set[str], Optional[CancellationEvent]], Optional[Set[str]]],
     ) -> None:
         """
         Register a callable that performs revalidation for dirty roots.
 
         Purpose:
-            Provide a hook to revalidate roots after change detection.
+            Provide a conduit-scoped hook to revalidate roots after change detection.
         Contract:
-            - Stored callable is invoked by revalidate_dirty_roots().
+            - Stored callable is invoked by revalidate_dirty_roots(conduit_id).
             - Callable signature: fn(dirty_roots, cancel_event) -> Optional[Set[str]].
             - Returning None indicates all supplied roots were validated.
             - Returning a subset allows partial validation without clearing all roots.
         Args:
+            conduit_id:
+                Conduit identifier whose dirty roots this revalidator handles.
             fn:
                 Callable that performs revalidation on supplied root ids.
         Returns:
             None.
         Raises:
-            ValueError: If fn is None.
+            ValueError: If conduit_id is empty or fn is None.
             RuntimeError: If this manager has been cleaned.
         Threading:
             Acquires the internal lock while updating state.
         """
         self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
         if fn is None:
             raise ValueError("revalidator fn must not be None.")
         with self._lock:
-            self._revalidate_fn = fn
+            self._revalidate_fn_by_conduit[conduit_id] = fn
 
     def rebuild_component_of(
             self,
+            conduit_id: str,
             root_blueprints: Dict[str, RootResolutionBlueprint],
     ) -> None:
         """
-        Rebuild the component-of index from root blueprints.
+        Rebuild the component-of index for a conduit from root blueprints.
 
         Purpose:
             Recompute root dependencies used for targeted revalidation.
         Contract:
-            - Clears existing component-of mappings.
-            - Resets dirty tracking and monitoring flags.
+            - Clears existing component-of mappings for the supplied conduit.
+            - Resets dirty tracking and monitoring flags for that conduit.
         Args:
+            conduit_id:
+                Conduit identifier whose component-of map should be rebuilt.
             root_blueprints:
                 Mapping of root spell_id to root resolution blueprint.
         Returns:
             None.
         Raises:
-            ValueError: If root_blueprints is None.
+            ValueError: If conduit_id is empty or root_blueprints is None.
             RuntimeError: If this manager has been cleaned.
         Threading:
             Acquires the internal lock while rebuilding mappings.
         """
         self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
         if root_blueprints is None:
             raise ValueError("root_blueprints must not be None.")
 
         with self._lock:
-            self._component_of.clear()
+            component_of = self._component_of_by_conduit.get(conduit_id)
+            if component_of is None:
+                component_of = {}
+                self._component_of_by_conduit[conduit_id] = component_of
+            else:
+                for roots in component_of.values():
+                    roots.clear()
+                component_of.clear()
+
             for root_id, blueprint in root_blueprints.items():
                 dag = blueprint.dag
                 for node_id in dag.nodes.keys():
-                    self._component_of.setdefault(node_id, set()).add(root_id)
+                    component_of.setdefault(node_id, set()).add(root_id)
                 # Ensure root is present in its own set.
-                self._component_of.setdefault(root_id, set()).add(root_id)
+                component_of.setdefault(root_id, set()).add(root_id)
 
-            self._dirty_spells.clear()
-            self._dirty_roots.clear()
-            self._monitor_active = False
+            dirty_spells = self._dirty_spells_by_conduit.setdefault(conduit_id, set())
+            dirty_roots = self._dirty_roots_by_conduit.setdefault(conduit_id, set())
+            dirty_spells.clear()
+            dirty_roots.clear()
+            self._monitor_active_by_conduit[conduit_id] = False
 
     def notify_spell_changed(self, spell_id: str) -> None:
         """
@@ -1232,7 +1264,8 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             Record change signals that may require root revalidation.
         Contract:
             - Marks the spell id dirty.
-            - Marks dependent roots dirty and enables monitoring.
+            - Marks dependent roots dirty and enables monitoring for any conduit
+              that includes the spell in its component-of map.
         Args:
             spell_id:
                 Versioned spell id that changed.
@@ -1247,29 +1280,36 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         self.check_cleaned()
         if not spell_id:
             raise ValueError("spell_id cannot be empty")
-
+        affected_roots_by_conduit: Dict[str, Set[str]] = {}
         with self._lock:
-            self._dirty_spells.add(spell_id)
-            affected_roots = set(self._component_of.get(spell_id, ()))
-            self._dirty_roots.update(affected_roots)
-            self._monitor_active = True
+            for conduit_id, component_of in self._component_of_by_conduit.items():
+                affected_roots = set(component_of.get(spell_id, ()))
+                if not affected_roots:
+                    continue
+                affected_roots_by_conduit[conduit_id] = affected_roots
+                dirty_spells = self._dirty_spells_by_conduit.setdefault(conduit_id, set())
+                dirty_roots = self._dirty_roots_by_conduit.setdefault(conduit_id, set())
+                dirty_spells.add(spell_id)
+                dirty_roots.update(affected_roots)
+                self._monitor_active_by_conduit[conduit_id] = True
 
-        if not affected_roots:
+        if not affected_roots_by_conduit:
             return
 
         # Mirror dirty roots into SpellSystemStates so DevOps risk gating
         # can detect that revalidation is required.
-        for root_id in affected_roots:
-            try:
-                state = self._spell_system_states.get_by_spell_id(root_id)
-            except Exception:
-                state = None
-            if state is None:
-                continue
-            try:
-                state.mark_dependency_change()
-            except Exception:
-                pass
+        for affected_roots in affected_roots_by_conduit.values():
+            for root_id in affected_roots:
+                try:
+                    state = self._spell_system_states.get_by_spell_id(root_id)
+                except Exception:
+                    state = None
+                if state is None:
+                    continue
+                try:
+                    state.mark_dependency_change()
+                except Exception:
+                    pass
 
     def notify_provider_changed(self, spell_id: str) -> None:
         """
@@ -1292,59 +1332,77 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         self.notify_spell_changed(spell_id)
 
-    def revalidate_dirty_roots(self, cancel_event: Optional["CancellationEvent"] = None) -> None:
+    def revalidate_dirty_roots(
+            self,
+            conduit_id: str,
+            cancel_event: Optional["CancellationEvent"] = None,
+    ) -> None:
         """
         Invoke the registered revalidator for current dirty roots.
 
         Purpose:
-            Execute the revalidator callback on the current dirty root set.
+            Execute the conduit-scoped revalidator on the current dirty root set.
         Contract:
-            - Uses a snapshot of dirty roots.
+            - Uses a snapshot of dirty roots for the supplied conduit.
             - Calls the revalidator outside the lock.
             - Clears dirty flags only for roots reported as validated.
             - A None return from the revalidator implies all supplied roots validated.
         Args:
+            conduit_id:
+                Conduit identifier whose dirty roots should be revalidated.
             cancel_event:
                 Optional cancellation signal to abort validation.
         Returns:
             None.
         Raises:
+            ValueError: If conduit_id is empty.
             RuntimeError: If this manager has been cleaned.
             OperationCancelledError: If the cancel_event is set.
         Threading:
             Copies state under lock and executes revalidation without the lock.
         """
         self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
         with self._lock:
-            if not self._dirty_roots or self._revalidate_fn is None:
+            dirty_roots = self._dirty_roots_by_conduit.get(conduit_id)
+            revalidator = self._revalidate_fn_by_conduit.get(conduit_id)
+            if not dirty_roots or revalidator is None:
                 return
-            dirty_roots = set(self._dirty_roots)
+            dirty_roots_snapshot = set(dirty_roots)
         # Call outside the lock to avoid deadlocks.
-        validated_roots = self._revalidate_fn(dirty_roots, cancel_event)
+        validated_roots = revalidator(dirty_roots_snapshot, cancel_event)
         if validated_roots is None:
-            validated_roots = dirty_roots
+            validated_roots = dirty_roots_snapshot
         else:
             validated_roots = set(validated_roots)
         with self._lock:
-            self._dirty_roots.difference_update(validated_roots)
-            if not self._dirty_roots:
-                self._dirty_spells.clear()
-                self._monitor_active = False
+            dirty_roots = self._dirty_roots_by_conduit.get(conduit_id)
+            if dirty_roots is None:
+                return
+            dirty_roots.difference_update(validated_roots)
+            if not dirty_roots:
+                dirty_spells = self._dirty_spells_by_conduit.get(conduit_id)
+                if dirty_spells is not None:
+                    dirty_spells.clear()
+                self._monitor_active_by_conduit[conduit_id] = False
 
     # ----------------------------------------------------------------------
     # Introspection helpers
     # ----------------------------------------------------------------------
-    def is_root_dirty(self, root_id: str) -> bool:
+    def is_root_dirty(self, conduit_id: str, root_id: str) -> bool:
         """
-        Return True if the supplied root id is marked dirty.
+        Return True if the supplied root id is marked dirty for a conduit.
 
         Purpose:
             Allow callers to check if a root requires revalidation.
         Contract:
-            - Returns False if monitoring is inactive.
+            - Returns False if monitoring is inactive for the conduit.
         Args:
+            conduit_id:
+                Conduit identifier whose dirty-root state should be queried.
             root_id:
                 Versioned root spell id to check.
         Returns:
@@ -1356,19 +1414,23 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             Acquires the internal lock while reading state.
         """
         self.check_cleaned()
-        if not root_id:
+        if not conduit_id or not root_id:
             return False
         with self._lock:
-            if not self._monitor_active:
+            if not self._monitor_active_by_conduit.get(conduit_id, False):
                 return False
-            return root_id in self._dirty_roots
+            dirty_roots = self._dirty_roots_by_conduit.get(conduit_id)
+            if dirty_roots is None:
+                return False
+            return root_id in dirty_roots
 
     def describe(self) -> Dict[str, Any]:
         """
         Diagnostic snapshot of change-control state.
 
         Purpose:
-            Provide a tooling-friendly snapshot of change-control registries.
+            Provide a tooling-friendly snapshot of change-control registries,
+            including conduit-scoped dirty/component-of maps.
         Contract:
             - Returns a new mapping containing copies of internal state.
         Returns:
@@ -1383,11 +1445,23 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         with self._lock:
             return {
                 "pending_changes": dict(self._pending_changes),
-                "dirty_spells": set(self._dirty_spells),
-                "dirty_roots": set(self._dirty_roots),
-                "component_of": {k: set(v) for k, v in self._component_of.items()},
-                "monitor_active": self._monitor_active,
-                "revalidator_registered": self._revalidate_fn is not None,
+                "dirty_spells_by_conduit": {
+                    conduit_id: set(spells)
+                    for conduit_id, spells in self._dirty_spells_by_conduit.items()
+                },
+                "dirty_roots_by_conduit": {
+                    conduit_id: set(roots)
+                    for conduit_id, roots in self._dirty_roots_by_conduit.items()
+                },
+                "component_of_by_conduit": {
+                    conduit_id: {
+                        spell_id: set(root_ids)
+                        for spell_id, root_ids in component_of.items()
+                    }
+                    for conduit_id, component_of in self._component_of_by_conduit.items()
+                },
+                "monitor_active_by_conduit": dict(self._monitor_active_by_conduit),
+                "revalidator_registered_by_conduit": set(self._revalidate_fn_by_conduit.keys()),
                 "transaction_manager": (
                     self._transaction_manager.describe()
                     if self._transaction_manager is not None

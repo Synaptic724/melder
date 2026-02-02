@@ -453,7 +453,8 @@ class Meld(Cleanable, IMeld):
             spellbook = spell._spellbook
             frame_name = spellbook._aetheric_frame
             ccm = spellbook._aether._get_change_control_manager(frame_name)
-            if ccm is not None and ccm.is_root_dirty(spell.spell_index.current):
+            conduit_id = self._get_resolution_conduit_id()
+            if ccm is not None and conduit_id and ccm.is_root_dirty(conduit_id, spell.spell_index.current):
                 raise MeldExecutionError(spell_id=spell.spell_index.current, spell_name=spell.spell_name, message=f"Root '{spell.spell_index.current}' is dirty under change-control; revalidation required.")
         except MeldExecutionError:
             raise

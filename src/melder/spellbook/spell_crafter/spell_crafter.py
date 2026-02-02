@@ -1691,7 +1691,7 @@ class SpellCrafter(Cleanable):
         # Rebuild component-of index and register a revalidation hook for dirty roots.
         frame_name = spellbook._aetheric_frame
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
-        change_control_manager.rebuild_component_of(root_blueprints)
+        change_control_manager.rebuild_component_of(conduit_id, root_blueprints)
 
         def _revalidate_dirty_roots(
                 dirty_roots: Set[str],
@@ -1713,7 +1713,7 @@ class SpellCrafter(Cleanable):
 
             return validated_roots
 
-        change_control_manager.set_revalidator(_revalidate_dirty_roots)
+        change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
 
     def _filter_snapshot_to_visible_spells(
             self,
@@ -2152,7 +2152,7 @@ class SpellCrafter(Cleanable):
         """
         Phase 7 - Change-control wiring.
 
-        Behaviour (frame-level, idempotent):
+        Behaviour (conduit-scoped, idempotent):
         - Ensure ChangeControlManager is present for the frame.
         - Ensure the component-of index is (re)built from the Phase-5 root blueprints.
         - Ensure the revalidator hook is registered.
@@ -2167,8 +2167,8 @@ class SpellCrafter(Cleanable):
         spellbook = self._spell._spellbook
         frame_name = spellbook._aetheric_frame
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
-        change_control_manager.rebuild_component_of(self._entire_dag_blueprint_phase5)
-        if change_control_manager._revalidate_fn is None:
+        change_control_manager.rebuild_component_of(conduit_id, self._entire_dag_blueprint_phase5)
+        if conduit_id not in change_control_manager._revalidate_fn_by_conduit:
             def _revalidate_dirty_roots(
                     dirty_roots: Set[str],
                     cancel_event: Optional[CancellationEvent],
@@ -2182,7 +2182,7 @@ class SpellCrafter(Cleanable):
 
                 return validated_roots
 
-            change_control_manager.set_revalidator(_revalidate_dirty_roots)
+            change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
 
 
     # ------------------------------------------------------------------

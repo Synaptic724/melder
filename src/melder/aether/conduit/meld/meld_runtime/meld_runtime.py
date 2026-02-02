@@ -124,7 +124,8 @@ class MeldRuntime:
                 spellbook = spell._spellbook
                 aether = spellbook._aether
                 manager = aether._get_change_control_manager(spell.aetheric_frame)
-                if manager is not None and manager.is_root_dirty(spell.spell_index.current):
+                conduit_id = context.conduit_id
+                if manager is not None and conduit_id and manager.is_root_dirty(conduit_id, spell.spell_index.current):
                     raise MeldExecutionError(
                         spell_id=spell.spell_index.current,
                         spell_name=spell.spell_name,

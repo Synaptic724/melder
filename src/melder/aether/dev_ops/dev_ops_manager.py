@@ -103,16 +103,22 @@ class DevOpsManager(Cleanable, IDevOpsManager):
         with self._lock:
             return self._risk_manager
 
-    def revalidate_dirty_roots(self, cancel_event: Optional[CancellationEvent] = None) -> None:
+    def revalidate_dirty_roots(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
         """
-        Trigger revalidation for all dirty roots using the registered hook.
+        Trigger revalidation for dirty roots within a conduit scope.
         """
         self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
         with self._lock:
             ccm = self._change_control_manager
         if ccm is None:
             return
-        ccm.revalidate_dirty_roots(cancel_event=cancel_event)
+        ccm.revalidate_dirty_roots(conduit_id, cancel_event=cancel_event)
 
     @property
     def spell_system_states(self) -> Optional[ISpellSystemStates]:
