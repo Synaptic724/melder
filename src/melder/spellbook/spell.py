@@ -39,6 +39,8 @@ class Spell(Cleanable, ISpell):
     - Enables hook-based lifecycle support (pre, activation, post).
     - Acts as a source of truth for spell identity and access.
     - Stores conjure-time disposal metadata (matched method names + boolean flag).
+    - Caches Phase 11 execution-plan metrics (node count, max depth, etc.) for
+      runtime path selection.
 
     🔐 Permissions (Permissions Enum):
         - `read`: Allows other conduits to use the spell as-is, but not modify or recreate it.
@@ -147,6 +149,14 @@ class Spell(Cleanable, ISpell):
         "permissions",
         "profile",
         "resolution_profile",
+        "execution_plan_step_count",
+        "execution_plan_unique_spell_count",
+        "execution_plan_max_occurrence_depth",
+        "execution_plan_max_dependency_count",
+        "execution_plan_has_calln",
+        "execution_plan_has_contract_payloads",
+        "execution_plan_has_existing_creations",
+        "execution_plan_preferred_route",
         "retries",
         "spell",
         "spell_id",
@@ -272,6 +282,16 @@ class Spell(Cleanable, ISpell):
         # Optional resolution profile (DI contract), to be populated by the
         # resolution pipeline (SpellExaminer → ResolutionProfileStrategy).
         self.resolution_profile: Optional[SpellResolutionProfile] = None
+
+        # Phase 11 execution-plan metrics (populated during conjure).
+        self.execution_plan_step_count: Optional[int] = None
+        self.execution_plan_unique_spell_count: Optional[int] = None
+        self.execution_plan_max_occurrence_depth: Optional[int] = None
+        self.execution_plan_max_dependency_count: Optional[int] = None
+        self.execution_plan_has_calln: Optional[bool] = None
+        self.execution_plan_has_contract_payloads: Optional[bool] = None
+        self.execution_plan_has_existing_creations: Optional[bool] = None
+        self.execution_plan_preferred_route: Optional[str] = None
 
         # Per-spell compiler / resolution helper (SpellCrafter).
         # This owns all Phase 1–7 artifacts and is disposable.
@@ -434,6 +454,14 @@ class Spell(Cleanable, ISpell):
             self.has_disposal_methods = None
             self.dependency_graph = None
             self.resolution_profile = None
+            self.execution_plan_step_count = None
+            self.execution_plan_unique_spell_count = None
+            self.execution_plan_max_occurrence_depth = None
+            self.execution_plan_max_dependency_count = None
+            self.execution_plan_has_calln = None
+            self.execution_plan_has_contract_payloads = None
+            self.execution_plan_has_existing_creations = None
+            self.execution_plan_preferred_route = None
             self.profile = None
             self.spell = None
             self._key = None

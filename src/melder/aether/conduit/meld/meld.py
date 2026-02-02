@@ -1,4 +1,5 @@
 import inspect
+import random
 from threading import RLock
 from typing import Optional, Dict, Any, Callable, List, Tuple
 
@@ -115,6 +116,15 @@ class Meld(Cleanable, IMeld):
         # Conduit-local instantiation manager (Creations or LesserCreations)
         self._creations = creations
 
+        # Front-door caches (fast-path resolution + instance hits)
+        self._input_resolution_cache: Dict[tuple, ISpell] = {}
+        self._spell_lookup_cache: Dict[tuple[str, str], ISpell] = {}
+        self._spell_id_cache: Dict[str, ISpell] = {}
+        self._lookup_key_cache: Dict[tuple, tuple[str, str]] = {}
+        self._singleton_hit_cache: Dict[str, Any] = {}
+        self._max_resolution_cache_size: int = 2048
+        self._max_singleton_cache_size: int = 4096
+
         # DAG-based runtime that will actually execute the DI graph for
         # factory-style spells (class / method / lambda).
         self._runtime: MeldRuntime = MeldRuntime()
@@ -166,8 +176,20 @@ class Meld(Cleanable, IMeld):
             # Clear creations reference
             self._creations = None
             self._conduit_id = None
+            if self._runtime is not None:
+                try:
+                    self._runtime.cleanup()
+                except Exception:
+                    pass
             self._runtime = None
             self._meld_hooks = None
+            self._input_resolution_cache = None
+            self._spell_lookup_cache = None
+            self._spell_id_cache = None
+            self._lookup_key_cache = None
+            self._singleton_hit_cache = None
+            self._max_resolution_cache_size = None
+            self._max_singleton_cache_size = None
 
 
     # region Context Manager
@@ -937,9 +959,26 @@ class Meld(Cleanable, IMeld):
                 a lookup key resolves to a SpellIndex that has no
                 corresponding spell object).
         """
+        cache_key = None
+        try:
+            cache_key = (spell, spell_name, spellframe, binding_name)
+        except TypeError:
+            cache_key = None
+        if cache_key is not None:
+            cached = self._input_resolution_cache.get(cache_key)
+            if cached is not None:
+                return cached
+            cached_lookup_key = self._lookup_key_cache.get(cache_key)
+            if cached_lookup_key is not None:
+                resolved = self._resolve_spell_by_lookup_key(cached_lookup_key)
+                self._cache_input_resolution(cache_key, resolved)
+                return resolved
+
         # 1) string spell → treated as spell_id (SHA)
         if isinstance(spell, str):
-            return self._resolve_spell_by_id(spell)
+            resolved = self._resolve_spell_by_id(spell)
+            self._cache_input_resolution(cache_key, resolved)
+            return resolved
 
         # 2) Everything else → (frame_key, binding_key) path
 
@@ -955,7 +994,10 @@ class Meld(Cleanable, IMeld):
                 binding_name=binding_name,
             )
             lookup_key = (frame_key, bind_key)
-            return self._resolve_spell_by_lookup_key(lookup_key)
+            resolved = self._resolve_spell_by_lookup_key(lookup_key)
+            self._cache_lookup_key(cache_key, lookup_key)
+            self._cache_input_resolution(cache_key, resolved)
+            return resolved
         if spell_for_name is None and spell_name is not None:
             spell_for_name = spell_name
 
@@ -966,7 +1008,10 @@ class Meld(Cleanable, IMeld):
         )
 
         lookup_key = (frame_key, bind_key)
-        return self._resolve_spell_by_lookup_key(lookup_key)
+        resolved = self._resolve_spell_by_lookup_key(lookup_key)
+        self._cache_lookup_key(cache_key, lookup_key)
+        self._cache_input_resolution(cache_key, resolved)
+        return resolved
 
     def _resolve_spell_by_id(self, spell_id: str) -> ISpell:
         """
@@ -992,19 +1037,28 @@ class Meld(Cleanable, IMeld):
                 If no spell with the given ``spell_id`` exists in either
                 the local or contracted spell maps.
         """
+        cached = self._spell_id_cache.get(spell_id)
+        if cached is not None:
+            return cached
+
         # Local spells
         pooled_spell = self._spell_id_pool.get(spell_id)
         if pooled_spell is not None:
+            self._cache_spell_id(spell_id, pooled_spell)
             return pooled_spell
 
         # Local spells
         if spell_id in self._spells_by_id:
-            return self._spells_by_id[spell_id]
+            resolved = self._spells_by_id[spell_id]
+            self._cache_spell_id(spell_id, resolved)
+            return resolved
 
         # Contracted spells (per-conduit maps)
         for spell_map in self._contracted_spells_by_id.values():
             if spell_id in spell_map:
-                return spell_map[spell_id]
+                resolved = spell_map[spell_id]
+                self._cache_spell_id(spell_id, resolved)
+                return resolved
 
         raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
 
@@ -1047,14 +1101,20 @@ class Meld(Cleanable, IMeld):
         """
         frame_key, bind_key = lookup_key
 
+        cached = self._spell_lookup_cache.get(lookup_key)
+        if cached is not None:
+            return cached
+
         # 1) Local lookup
         local_spell = self._resolve_local_by_lookup_key(lookup_key)
         if local_spell is not None:
+            self._cache_spell_lookup(lookup_key, local_spell)
             return local_spell
 
         # 2) Contracted lookup
         contracted_spell = self._resolve_contracted_by_lookup_key(lookup_key)
         if contracted_spell is not None:
+            self._cache_spell_lookup(lookup_key, contracted_spell)
             return contracted_spell
 
         # 3) Not found anywhere
@@ -1287,6 +1347,93 @@ class Meld(Cleanable, IMeld):
             ),
         )
 
+    def _cache_input_resolution(
+            self,
+            cache_key: Optional[tuple],
+            spell: ISpell,
+    ) -> None:
+        if cache_key is None:
+            return
+        if self._input_resolution_cache is None:
+            return
+        if len(self._input_resolution_cache) >= self._max_resolution_cache_size:
+            self._evict_random_cache_entry(self._input_resolution_cache)
+        self._input_resolution_cache[cache_key] = spell
+
+    def _cache_spell_lookup(
+            self,
+            lookup_key: tuple[str, str],
+            spell: ISpell,
+    ) -> None:
+        if self._spell_lookup_cache is None:
+            return
+        if len(self._spell_lookup_cache) >= self._max_resolution_cache_size:
+            self._evict_random_cache_entry(self._spell_lookup_cache)
+        self._spell_lookup_cache[lookup_key] = spell
+
+    def _cache_spell_id(
+            self,
+            spell_id: str,
+            spell: ISpell,
+    ) -> None:
+        if self._spell_id_cache is None:
+            return
+        if len(self._spell_id_cache) >= self._max_resolution_cache_size:
+            self._evict_random_cache_entry(self._spell_id_cache)
+        self._spell_id_cache[spell_id] = spell
+
+    def _cache_lookup_key(
+            self,
+            cache_key: Optional[tuple],
+            lookup_key: tuple[str, str],
+    ) -> None:
+        if cache_key is None:
+            return
+        if self._lookup_key_cache is None:
+            return
+        if len(self._lookup_key_cache) >= self._max_resolution_cache_size:
+            self._evict_random_cache_entry(self._lookup_key_cache)
+        self._lookup_key_cache[cache_key] = lookup_key
+
+    def _cache_singleton_hit(
+            self,
+            spell: ISpell,
+            instance: Any,
+    ) -> None:
+        if self._singleton_hit_cache is None:
+            return
+        if len(self._singleton_hit_cache) >= self._max_singleton_cache_size:
+            self._evict_random_cache_entry(self._singleton_hit_cache)
+        self._singleton_hit_cache[spell.spell_id] = instance
+
+    @staticmethod
+    def _evict_random_cache_entry(cache: Dict[Any, Any]) -> None:
+        if not cache:
+            return
+        cache.pop(random.choice(list(cache.keys())), None)
+
+    def _get_cached_singleton(
+            self,
+            spell: ISpell,
+            creations: Any,
+            spellspace: Optional[Any],
+    ) -> Optional[Any]:
+        cached = self._singleton_hit_cache.get(spell.spell_id)
+        if cached is None:
+            return None
+        if creations is None:
+            return cached
+        with creations._lock:
+            instance = self._get_existing_creation_from_creations(
+                spell=spell,
+                creations=creations,
+                spellspace=spellspace,
+            )
+        if instance is None:
+            self._singleton_hit_cache.pop(spell.spell_id, None)
+            return None
+        return instance
+
     def  _resolve_instance_with_locks(
             self,
             spell: ISpell,
@@ -1360,9 +1507,6 @@ class Meld(Cleanable, IMeld):
         if existence is Existence.unique_per_spell_space and creations is not None:
             spellspace = self._get_active_spellspace_for_creations(creations)
 
-        if existence is Existence.unique_per_spell_space and creations is not None:
-            spellspace = self._get_active_spellspace_for_creations(creations)
-
         if existence in (
                 Existence.unique_per_conduit,
                 Existence.unique_per_spell_space,
@@ -1395,7 +1539,26 @@ class Meld(Cleanable, IMeld):
                         spell=spell,
                         overrides=overrides,
                     )
+            if (
+                    overrides is None
+                    and existence is Existence.unique_per_conduit
+            ):
+                self._cache_singleton_hit(spell, instance)
             return instance, created
+
+        if overrides is None and existence in (
+                Existence.unique,
+                Existence.unique_per_conduit,
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        ):
+            cached = self._get_cached_singleton(
+                spell=spell,
+                creations=creations,
+                spellspace=spellspace,
+            )
+            if cached is not None:
+                return cached, False
 
         with spell._lock:
             if creations is not None:
@@ -1425,11 +1588,31 @@ class Meld(Cleanable, IMeld):
                                 spellspace=spellspace,
                             )
                 created = True
+                if (
+                        overrides is None
+                        and existence in (
+                            Existence.unique,
+                            Existence.unique_per_conduit,
+                            Existence.unique_per_conduit_cluster,
+                            Existence.unique_per_conduit_lineage,
+                        )
+                ):
+                    self._cache_singleton_hit(spell, instance)
             else:
                 self._raise_override_on_existing_instance(
                     spell=spell,
                     overrides=overrides,
                 )
+                if (
+                        overrides is None
+                        and existence in (
+                            Existence.unique,
+                            Existence.unique_per_conduit,
+                            Existence.unique_per_conduit_cluster,
+                            Existence.unique_per_conduit_lineage,
+                        )
+                ):
+                    self._cache_singleton_hit(spell, instance)
 
         return instance, created
 
@@ -1667,6 +1850,44 @@ class Meld(Cleanable, IMeld):
             return instance
 
         if spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell:
+            if (
+                    overrides is None
+                    and not spell.has_mutation_override
+                    and self._should_use_fast_transient_shortcut(spell)
+            ):
+                return self._runtime.execute_fast_transient(
+                    spell=spell,
+                    conduit_id=self._get_resolution_conduit_id(),
+                )
+
+            if (
+                    spell.existence is Existence.many
+                    and overrides is None
+                    and not spell.has_mutation_override
+            ):
+                return self._runtime.execute_transient_pooled(
+                    spell=spell,
+                    overrides=None,
+                    caller_creations=self._creations,
+                    caller_creations_lock_held=caller_creations_lock_held,
+                    conduit_id=self._get_resolution_conduit_id(),
+                )
+
+            if (
+                    spell.existence is not Existence.many
+                    and overrides is None
+                    and not spell.has_mutation_override
+                    and spell.execution_plan_preferred_route
+                    and spell.execution_plan_preferred_route.startswith("FAST_TRANSIENT")
+            ):
+                return self._runtime.execute_shared_pooled(
+                    spell=spell,
+                    overrides=None,
+                    caller_creations=self._creations,
+                    caller_creations_lock_held=caller_creations_lock_held,
+                    conduit_id=self._get_resolution_conduit_id(),
+                )
+
             context = self._create_meld_context(
                 spell,
                 overrides,
@@ -1684,6 +1905,35 @@ class Meld(Cleanable, IMeld):
 
         # 2) Anything else is currently unsupported.
         raise RuntimeError(f"[MELD] Unsupported SpellType encountered: {spell.spell_type}")
+
+    def _should_use_fast_transient_shortcut(self, spell: ISpell) -> bool:
+        """
+        Determine whether to route to the fast transient executor.
+
+        Contract:
+            - Only considers the no-overrides execution plan.
+            - Uses cached Phase 11 metrics when available.
+        """
+        crafter = spell._crafter
+        if crafter is None:
+            return False
+        preferred_route = spell.execution_plan_preferred_route
+        if preferred_route and preferred_route.startswith("FAST_TRANSIENT"):
+            return True
+        plan = crafter.execution_plan_phase11_no_overrides
+        if plan is None or plan.fast_transient_plan is None:
+            return False
+
+        step_count = spell.execution_plan_step_count
+        if step_count is None:
+            step_count = len(plan.steps)
+
+        max_depth = spell.execution_plan_max_occurrence_depth
+        if max_depth is None:
+            max_depth = 0
+
+        # Favor the fast shortcut for small/shallow graphs where overhead dominates.
+        return step_count <= 16 and max_depth <= 6
 
 
 # ----------------------------------------------------------------------

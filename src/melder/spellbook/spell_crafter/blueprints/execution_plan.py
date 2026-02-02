@@ -65,7 +65,12 @@ class ExecutionPlanCallMode:
     CALL1 = 1
     CALL2 = 2
     CALL3 = 3
-    CALLN = 4
+    CALL4 = 4
+    CALL5 = 5
+    CALL6 = 6
+    CALL7 = 7
+    CALL8 = 8
+    CALLN = 9
 
 
 class ExecutionPlanStep:
@@ -378,6 +383,36 @@ class ExecutionPlan(Cleanable):
         "_fast_call3_dep_indices_a",
         "_fast_call3_dep_indices_b",
         "_fast_call3_dep_indices_c",
+        "_fast_call4_dep_indices_a",
+        "_fast_call4_dep_indices_b",
+        "_fast_call4_dep_indices_c",
+        "_fast_call4_dep_indices_d",
+        "_fast_call5_dep_indices_a",
+        "_fast_call5_dep_indices_b",
+        "_fast_call5_dep_indices_c",
+        "_fast_call5_dep_indices_d",
+        "_fast_call5_dep_indices_e",
+        "_fast_call6_dep_indices_a",
+        "_fast_call6_dep_indices_b",
+        "_fast_call6_dep_indices_c",
+        "_fast_call6_dep_indices_d",
+        "_fast_call6_dep_indices_e",
+        "_fast_call6_dep_indices_f",
+        "_fast_call7_dep_indices_a",
+        "_fast_call7_dep_indices_b",
+        "_fast_call7_dep_indices_c",
+        "_fast_call7_dep_indices_d",
+        "_fast_call7_dep_indices_e",
+        "_fast_call7_dep_indices_f",
+        "_fast_call7_dep_indices_g",
+        "_fast_call8_dep_indices_a",
+        "_fast_call8_dep_indices_b",
+        "_fast_call8_dep_indices_c",
+        "_fast_call8_dep_indices_d",
+        "_fast_call8_dep_indices_e",
+        "_fast_call8_dep_indices_f",
+        "_fast_call8_dep_indices_g",
+        "_fast_call8_dep_indices_h",
         "_fast_transient_plan",
         "_fast_has_contract_payloads",
         "_fast_has_existing_creations",
@@ -420,11 +455,75 @@ class ExecutionPlan(Cleanable):
             fast_call3_dep_indices_a: Optional[List[int]] = None,
             fast_call3_dep_indices_b: Optional[List[int]] = None,
             fast_call3_dep_indices_c: Optional[List[int]] = None,
+            fast_call4_dep_indices_a: Optional[List[int]] = None,
+            fast_call4_dep_indices_b: Optional[List[int]] = None,
+            fast_call4_dep_indices_c: Optional[List[int]] = None,
+            fast_call4_dep_indices_d: Optional[List[int]] = None,
+            fast_call5_dep_indices_a: Optional[List[int]] = None,
+            fast_call5_dep_indices_b: Optional[List[int]] = None,
+            fast_call5_dep_indices_c: Optional[List[int]] = None,
+            fast_call5_dep_indices_d: Optional[List[int]] = None,
+            fast_call5_dep_indices_e: Optional[List[int]] = None,
+            fast_call6_dep_indices_a: Optional[List[int]] = None,
+            fast_call6_dep_indices_b: Optional[List[int]] = None,
+            fast_call6_dep_indices_c: Optional[List[int]] = None,
+            fast_call6_dep_indices_d: Optional[List[int]] = None,
+            fast_call6_dep_indices_e: Optional[List[int]] = None,
+            fast_call6_dep_indices_f: Optional[List[int]] = None,
+            fast_call7_dep_indices_a: Optional[List[int]] = None,
+            fast_call7_dep_indices_b: Optional[List[int]] = None,
+            fast_call7_dep_indices_c: Optional[List[int]] = None,
+            fast_call7_dep_indices_d: Optional[List[int]] = None,
+            fast_call7_dep_indices_e: Optional[List[int]] = None,
+            fast_call7_dep_indices_f: Optional[List[int]] = None,
+            fast_call7_dep_indices_g: Optional[List[int]] = None,
+            fast_call8_dep_indices_a: Optional[List[int]] = None,
+            fast_call8_dep_indices_b: Optional[List[int]] = None,
+            fast_call8_dep_indices_c: Optional[List[int]] = None,
+            fast_call8_dep_indices_d: Optional[List[int]] = None,
+            fast_call8_dep_indices_e: Optional[List[int]] = None,
+            fast_call8_dep_indices_f: Optional[List[int]] = None,
+            fast_call8_dep_indices_g: Optional[List[int]] = None,
+            fast_call8_dep_indices_h: Optional[List[int]] = None,
             fast_transient_plan: Optional[
                 Tuple[
                     int,
                     int,
                     List[Any],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
+                    List[int],
                     List[int],
                     List[int],
                     List[int],
@@ -480,6 +579,36 @@ class ExecutionPlan(Cleanable):
             fast_call3_dep_indices_a: First dependency index for CALL3 steps (fast path).
             fast_call3_dep_indices_b: Second dependency index for CALL3 steps (fast path).
             fast_call3_dep_indices_c: Third dependency index for CALL3 steps (fast path).
+            fast_call4_dep_indices_a: First dependency index for CALL4 steps (fast path).
+            fast_call4_dep_indices_b: Second dependency index for CALL4 steps (fast path).
+            fast_call4_dep_indices_c: Third dependency index for CALL4 steps (fast path).
+            fast_call4_dep_indices_d: Fourth dependency index for CALL4 steps (fast path).
+            fast_call5_dep_indices_a: First dependency index for CALL5 steps (fast path).
+            fast_call5_dep_indices_b: Second dependency index for CALL5 steps (fast path).
+            fast_call5_dep_indices_c: Third dependency index for CALL5 steps (fast path).
+            fast_call5_dep_indices_d: Fourth dependency index for CALL5 steps (fast path).
+            fast_call5_dep_indices_e: Fifth dependency index for CALL5 steps (fast path).
+            fast_call6_dep_indices_a: First dependency index for CALL6 steps (fast path).
+            fast_call6_dep_indices_b: Second dependency index for CALL6 steps (fast path).
+            fast_call6_dep_indices_c: Third dependency index for CALL6 steps (fast path).
+            fast_call6_dep_indices_d: Fourth dependency index for CALL6 steps (fast path).
+            fast_call6_dep_indices_e: Fifth dependency index for CALL6 steps (fast path).
+            fast_call6_dep_indices_f: Sixth dependency index for CALL6 steps (fast path).
+            fast_call7_dep_indices_a: First dependency index for CALL7 steps (fast path).
+            fast_call7_dep_indices_b: Second dependency index for CALL7 steps (fast path).
+            fast_call7_dep_indices_c: Third dependency index for CALL7 steps (fast path).
+            fast_call7_dep_indices_d: Fourth dependency index for CALL7 steps (fast path).
+            fast_call7_dep_indices_e: Fifth dependency index for CALL7 steps (fast path).
+            fast_call7_dep_indices_f: Sixth dependency index for CALL7 steps (fast path).
+            fast_call7_dep_indices_g: Seventh dependency index for CALL7 steps (fast path).
+            fast_call8_dep_indices_a: First dependency index for CALL8 steps (fast path).
+            fast_call8_dep_indices_b: Second dependency index for CALL8 steps (fast path).
+            fast_call8_dep_indices_c: Third dependency index for CALL8 steps (fast path).
+            fast_call8_dep_indices_d: Fourth dependency index for CALL8 steps (fast path).
+            fast_call8_dep_indices_e: Fifth dependency index for CALL8 steps (fast path).
+            fast_call8_dep_indices_f: Sixth dependency index for CALL8 steps (fast path).
+            fast_call8_dep_indices_g: Seventh dependency index for CALL8 steps (fast path).
+            fast_call8_dep_indices_h: Eighth dependency index for CALL8 steps (fast path).
             fast_transient_plan: Specialized plan for transient-only fast execution.
             fast_has_contract_payloads: True when any fast step has contract payloads.
             fast_has_existing_creations: True when any fast step is an existing-creation.
@@ -534,6 +663,36 @@ class ExecutionPlan(Cleanable):
         self._fast_call3_dep_indices_a = fast_call3_dep_indices_a
         self._fast_call3_dep_indices_b = fast_call3_dep_indices_b
         self._fast_call3_dep_indices_c = fast_call3_dep_indices_c
+        self._fast_call4_dep_indices_a = fast_call4_dep_indices_a
+        self._fast_call4_dep_indices_b = fast_call4_dep_indices_b
+        self._fast_call4_dep_indices_c = fast_call4_dep_indices_c
+        self._fast_call4_dep_indices_d = fast_call4_dep_indices_d
+        self._fast_call5_dep_indices_a = fast_call5_dep_indices_a
+        self._fast_call5_dep_indices_b = fast_call5_dep_indices_b
+        self._fast_call5_dep_indices_c = fast_call5_dep_indices_c
+        self._fast_call5_dep_indices_d = fast_call5_dep_indices_d
+        self._fast_call5_dep_indices_e = fast_call5_dep_indices_e
+        self._fast_call6_dep_indices_a = fast_call6_dep_indices_a
+        self._fast_call6_dep_indices_b = fast_call6_dep_indices_b
+        self._fast_call6_dep_indices_c = fast_call6_dep_indices_c
+        self._fast_call6_dep_indices_d = fast_call6_dep_indices_d
+        self._fast_call6_dep_indices_e = fast_call6_dep_indices_e
+        self._fast_call6_dep_indices_f = fast_call6_dep_indices_f
+        self._fast_call7_dep_indices_a = fast_call7_dep_indices_a
+        self._fast_call7_dep_indices_b = fast_call7_dep_indices_b
+        self._fast_call7_dep_indices_c = fast_call7_dep_indices_c
+        self._fast_call7_dep_indices_d = fast_call7_dep_indices_d
+        self._fast_call7_dep_indices_e = fast_call7_dep_indices_e
+        self._fast_call7_dep_indices_f = fast_call7_dep_indices_f
+        self._fast_call7_dep_indices_g = fast_call7_dep_indices_g
+        self._fast_call8_dep_indices_a = fast_call8_dep_indices_a
+        self._fast_call8_dep_indices_b = fast_call8_dep_indices_b
+        self._fast_call8_dep_indices_c = fast_call8_dep_indices_c
+        self._fast_call8_dep_indices_d = fast_call8_dep_indices_d
+        self._fast_call8_dep_indices_e = fast_call8_dep_indices_e
+        self._fast_call8_dep_indices_f = fast_call8_dep_indices_f
+        self._fast_call8_dep_indices_g = fast_call8_dep_indices_g
+        self._fast_call8_dep_indices_h = fast_call8_dep_indices_h
         self._fast_transient_plan = fast_transient_plan
         self._fast_has_contract_payloads = fast_has_contract_payloads
         self._fast_has_existing_creations = fast_has_existing_creations
@@ -605,6 +764,66 @@ class ExecutionPlan(Cleanable):
             self._fast_call3_dep_indices_b.clear()
         if self._fast_call3_dep_indices_c is not None:
             self._fast_call3_dep_indices_c.clear()
+        if self._fast_call4_dep_indices_a is not None:
+            self._fast_call4_dep_indices_a.clear()
+        if self._fast_call4_dep_indices_b is not None:
+            self._fast_call4_dep_indices_b.clear()
+        if self._fast_call4_dep_indices_c is not None:
+            self._fast_call4_dep_indices_c.clear()
+        if self._fast_call4_dep_indices_d is not None:
+            self._fast_call4_dep_indices_d.clear()
+        if self._fast_call5_dep_indices_a is not None:
+            self._fast_call5_dep_indices_a.clear()
+        if self._fast_call5_dep_indices_b is not None:
+            self._fast_call5_dep_indices_b.clear()
+        if self._fast_call5_dep_indices_c is not None:
+            self._fast_call5_dep_indices_c.clear()
+        if self._fast_call5_dep_indices_d is not None:
+            self._fast_call5_dep_indices_d.clear()
+        if self._fast_call5_dep_indices_e is not None:
+            self._fast_call5_dep_indices_e.clear()
+        if self._fast_call6_dep_indices_a is not None:
+            self._fast_call6_dep_indices_a.clear()
+        if self._fast_call6_dep_indices_b is not None:
+            self._fast_call6_dep_indices_b.clear()
+        if self._fast_call6_dep_indices_c is not None:
+            self._fast_call6_dep_indices_c.clear()
+        if self._fast_call6_dep_indices_d is not None:
+            self._fast_call6_dep_indices_d.clear()
+        if self._fast_call6_dep_indices_e is not None:
+            self._fast_call6_dep_indices_e.clear()
+        if self._fast_call6_dep_indices_f is not None:
+            self._fast_call6_dep_indices_f.clear()
+        if self._fast_call7_dep_indices_a is not None:
+            self._fast_call7_dep_indices_a.clear()
+        if self._fast_call7_dep_indices_b is not None:
+            self._fast_call7_dep_indices_b.clear()
+        if self._fast_call7_dep_indices_c is not None:
+            self._fast_call7_dep_indices_c.clear()
+        if self._fast_call7_dep_indices_d is not None:
+            self._fast_call7_dep_indices_d.clear()
+        if self._fast_call7_dep_indices_e is not None:
+            self._fast_call7_dep_indices_e.clear()
+        if self._fast_call7_dep_indices_f is not None:
+            self._fast_call7_dep_indices_f.clear()
+        if self._fast_call7_dep_indices_g is not None:
+            self._fast_call7_dep_indices_g.clear()
+        if self._fast_call8_dep_indices_a is not None:
+            self._fast_call8_dep_indices_a.clear()
+        if self._fast_call8_dep_indices_b is not None:
+            self._fast_call8_dep_indices_b.clear()
+        if self._fast_call8_dep_indices_c is not None:
+            self._fast_call8_dep_indices_c.clear()
+        if self._fast_call8_dep_indices_d is not None:
+            self._fast_call8_dep_indices_d.clear()
+        if self._fast_call8_dep_indices_e is not None:
+            self._fast_call8_dep_indices_e.clear()
+        if self._fast_call8_dep_indices_f is not None:
+            self._fast_call8_dep_indices_f.clear()
+        if self._fast_call8_dep_indices_g is not None:
+            self._fast_call8_dep_indices_g.clear()
+        if self._fast_call8_dep_indices_h is not None:
+            self._fast_call8_dep_indices_h.clear()
         if self._fast_transient_plan is not None:
             for plan_list in self._fast_transient_plan[2:]:
                 if isinstance(plan_list, list):
@@ -643,6 +862,36 @@ class ExecutionPlan(Cleanable):
         self._fast_call3_dep_indices_a = None
         self._fast_call3_dep_indices_b = None
         self._fast_call3_dep_indices_c = None
+        self._fast_call4_dep_indices_a = None
+        self._fast_call4_dep_indices_b = None
+        self._fast_call4_dep_indices_c = None
+        self._fast_call4_dep_indices_d = None
+        self._fast_call5_dep_indices_a = None
+        self._fast_call5_dep_indices_b = None
+        self._fast_call5_dep_indices_c = None
+        self._fast_call5_dep_indices_d = None
+        self._fast_call5_dep_indices_e = None
+        self._fast_call6_dep_indices_a = None
+        self._fast_call6_dep_indices_b = None
+        self._fast_call6_dep_indices_c = None
+        self._fast_call6_dep_indices_d = None
+        self._fast_call6_dep_indices_e = None
+        self._fast_call6_dep_indices_f = None
+        self._fast_call7_dep_indices_a = None
+        self._fast_call7_dep_indices_b = None
+        self._fast_call7_dep_indices_c = None
+        self._fast_call7_dep_indices_d = None
+        self._fast_call7_dep_indices_e = None
+        self._fast_call7_dep_indices_f = None
+        self._fast_call7_dep_indices_g = None
+        self._fast_call8_dep_indices_a = None
+        self._fast_call8_dep_indices_b = None
+        self._fast_call8_dep_indices_c = None
+        self._fast_call8_dep_indices_d = None
+        self._fast_call8_dep_indices_e = None
+        self._fast_call8_dep_indices_f = None
+        self._fast_call8_dep_indices_g = None
+        self._fast_call8_dep_indices_h = None
         self._fast_transient_plan = None
         self._fast_has_contract_payloads = None
         self._fast_has_existing_creations = None
@@ -707,6 +956,32 @@ class ExecutionPlan(Cleanable):
             List[int],
             List[int],
             List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
         ]
     ]:
         """
@@ -720,7 +995,7 @@ class ExecutionPlan(Cleanable):
             - Includes the root step index for fast-path result lookup.
             - Includes call-mode metadata and single-dependency indices for
               trivial call shapes.
-            - Includes direct dependency indices for CALL2/CALL3 steps.
+            - Includes direct dependency indices for CALL2–CALL8 steps.
         """
         if self._fast_dep_indices is None:
             return None
@@ -752,6 +1027,36 @@ class ExecutionPlan(Cleanable):
             self._fast_call3_dep_indices_a,
             self._fast_call3_dep_indices_b,
             self._fast_call3_dep_indices_c,
+            self._fast_call4_dep_indices_a,
+            self._fast_call4_dep_indices_b,
+            self._fast_call4_dep_indices_c,
+            self._fast_call4_dep_indices_d,
+            self._fast_call5_dep_indices_a,
+            self._fast_call5_dep_indices_b,
+            self._fast_call5_dep_indices_c,
+            self._fast_call5_dep_indices_d,
+            self._fast_call5_dep_indices_e,
+            self._fast_call6_dep_indices_a,
+            self._fast_call6_dep_indices_b,
+            self._fast_call6_dep_indices_c,
+            self._fast_call6_dep_indices_d,
+            self._fast_call6_dep_indices_e,
+            self._fast_call6_dep_indices_f,
+            self._fast_call7_dep_indices_a,
+            self._fast_call7_dep_indices_b,
+            self._fast_call7_dep_indices_c,
+            self._fast_call7_dep_indices_d,
+            self._fast_call7_dep_indices_e,
+            self._fast_call7_dep_indices_f,
+            self._fast_call7_dep_indices_g,
+            self._fast_call8_dep_indices_a,
+            self._fast_call8_dep_indices_b,
+            self._fast_call8_dep_indices_c,
+            self._fast_call8_dep_indices_d,
+            self._fast_call8_dep_indices_e,
+            self._fast_call8_dep_indices_f,
+            self._fast_call8_dep_indices_g,
+            self._fast_call8_dep_indices_h,
         )
 
     @property
@@ -762,6 +1067,40 @@ class ExecutionPlan(Cleanable):
             int,
             int,
             List[Any],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
             List[int],
             List[int],
             List[int],
@@ -968,6 +1307,36 @@ class ExecutionPlanBuilder:
                     fast_call3_dep_indices_a=fast_plan_data[24],
                     fast_call3_dep_indices_b=fast_plan_data[25],
                     fast_call3_dep_indices_c=fast_plan_data[26],
+                    fast_call4_dep_indices_a=fast_plan_data[27],
+                    fast_call4_dep_indices_b=fast_plan_data[28],
+                    fast_call4_dep_indices_c=fast_plan_data[29],
+                    fast_call4_dep_indices_d=fast_plan_data[30],
+                    fast_call5_dep_indices_a=fast_plan_data[31],
+                    fast_call5_dep_indices_b=fast_plan_data[32],
+                    fast_call5_dep_indices_c=fast_plan_data[33],
+                    fast_call5_dep_indices_d=fast_plan_data[34],
+                    fast_call5_dep_indices_e=fast_plan_data[35],
+                    fast_call6_dep_indices_a=fast_plan_data[36],
+                    fast_call6_dep_indices_b=fast_plan_data[37],
+                    fast_call6_dep_indices_c=fast_plan_data[38],
+                    fast_call6_dep_indices_d=fast_plan_data[39],
+                    fast_call6_dep_indices_e=fast_plan_data[40],
+                    fast_call6_dep_indices_f=fast_plan_data[41],
+                    fast_call7_dep_indices_a=fast_plan_data[42],
+                    fast_call7_dep_indices_b=fast_plan_data[43],
+                    fast_call7_dep_indices_c=fast_plan_data[44],
+                    fast_call7_dep_indices_d=fast_plan_data[45],
+                    fast_call7_dep_indices_e=fast_plan_data[46],
+                    fast_call7_dep_indices_f=fast_plan_data[47],
+                    fast_call7_dep_indices_g=fast_plan_data[48],
+                    fast_call8_dep_indices_a=fast_plan_data[49],
+                    fast_call8_dep_indices_b=fast_plan_data[50],
+                    fast_call8_dep_indices_c=fast_plan_data[51],
+                    fast_call8_dep_indices_d=fast_plan_data[52],
+                    fast_call8_dep_indices_e=fast_plan_data[53],
+                    fast_call8_dep_indices_f=fast_plan_data[54],
+                    fast_call8_dep_indices_g=fast_plan_data[55],
+                    fast_call8_dep_indices_h=fast_plan_data[56],
                     root_step_index=fast_plan_data[19],
                 )
 
@@ -1006,6 +1375,36 @@ class ExecutionPlanBuilder:
             fast_call3_dep_indices_a=fast_plan_data[24] if fast_plan_data else None,
             fast_call3_dep_indices_b=fast_plan_data[25] if fast_plan_data else None,
             fast_call3_dep_indices_c=fast_plan_data[26] if fast_plan_data else None,
+            fast_call4_dep_indices_a=fast_plan_data[27] if fast_plan_data else None,
+            fast_call4_dep_indices_b=fast_plan_data[28] if fast_plan_data else None,
+            fast_call4_dep_indices_c=fast_plan_data[29] if fast_plan_data else None,
+            fast_call4_dep_indices_d=fast_plan_data[30] if fast_plan_data else None,
+            fast_call5_dep_indices_a=fast_plan_data[31] if fast_plan_data else None,
+            fast_call5_dep_indices_b=fast_plan_data[32] if fast_plan_data else None,
+            fast_call5_dep_indices_c=fast_plan_data[33] if fast_plan_data else None,
+            fast_call5_dep_indices_d=fast_plan_data[34] if fast_plan_data else None,
+            fast_call5_dep_indices_e=fast_plan_data[35] if fast_plan_data else None,
+            fast_call6_dep_indices_a=fast_plan_data[36] if fast_plan_data else None,
+            fast_call6_dep_indices_b=fast_plan_data[37] if fast_plan_data else None,
+            fast_call6_dep_indices_c=fast_plan_data[38] if fast_plan_data else None,
+            fast_call6_dep_indices_d=fast_plan_data[39] if fast_plan_data else None,
+            fast_call6_dep_indices_e=fast_plan_data[40] if fast_plan_data else None,
+            fast_call6_dep_indices_f=fast_plan_data[41] if fast_plan_data else None,
+            fast_call7_dep_indices_a=fast_plan_data[42] if fast_plan_data else None,
+            fast_call7_dep_indices_b=fast_plan_data[43] if fast_plan_data else None,
+            fast_call7_dep_indices_c=fast_plan_data[44] if fast_plan_data else None,
+            fast_call7_dep_indices_d=fast_plan_data[45] if fast_plan_data else None,
+            fast_call7_dep_indices_e=fast_plan_data[46] if fast_plan_data else None,
+            fast_call7_dep_indices_f=fast_plan_data[47] if fast_plan_data else None,
+            fast_call7_dep_indices_g=fast_plan_data[48] if fast_plan_data else None,
+            fast_call8_dep_indices_a=fast_plan_data[49] if fast_plan_data else None,
+            fast_call8_dep_indices_b=fast_plan_data[50] if fast_plan_data else None,
+            fast_call8_dep_indices_c=fast_plan_data[51] if fast_plan_data else None,
+            fast_call8_dep_indices_d=fast_plan_data[52] if fast_plan_data else None,
+            fast_call8_dep_indices_e=fast_plan_data[53] if fast_plan_data else None,
+            fast_call8_dep_indices_f=fast_plan_data[54] if fast_plan_data else None,
+            fast_call8_dep_indices_g=fast_plan_data[55] if fast_plan_data else None,
+            fast_call8_dep_indices_h=fast_plan_data[56] if fast_plan_data else None,
             fast_transient_plan=fast_transient_plan,
             fast_has_contract_payloads=fast_has_contract_payloads,
             fast_has_existing_creations=fast_has_existing_creations,
@@ -1092,6 +1491,36 @@ class ExecutionPlanBuilder:
         fast_call3_dep_indices_a: List[int] = [-1] * step_count
         fast_call3_dep_indices_b: List[int] = [-1] * step_count
         fast_call3_dep_indices_c: List[int] = [-1] * step_count
+        fast_call4_dep_indices_a: List[int] = [-1] * step_count
+        fast_call4_dep_indices_b: List[int] = [-1] * step_count
+        fast_call4_dep_indices_c: List[int] = [-1] * step_count
+        fast_call4_dep_indices_d: List[int] = [-1] * step_count
+        fast_call5_dep_indices_a: List[int] = [-1] * step_count
+        fast_call5_dep_indices_b: List[int] = [-1] * step_count
+        fast_call5_dep_indices_c: List[int] = [-1] * step_count
+        fast_call5_dep_indices_d: List[int] = [-1] * step_count
+        fast_call5_dep_indices_e: List[int] = [-1] * step_count
+        fast_call6_dep_indices_a: List[int] = [-1] * step_count
+        fast_call6_dep_indices_b: List[int] = [-1] * step_count
+        fast_call6_dep_indices_c: List[int] = [-1] * step_count
+        fast_call6_dep_indices_d: List[int] = [-1] * step_count
+        fast_call6_dep_indices_e: List[int] = [-1] * step_count
+        fast_call6_dep_indices_f: List[int] = [-1] * step_count
+        fast_call7_dep_indices_a: List[int] = [-1] * step_count
+        fast_call7_dep_indices_b: List[int] = [-1] * step_count
+        fast_call7_dep_indices_c: List[int] = [-1] * step_count
+        fast_call7_dep_indices_d: List[int] = [-1] * step_count
+        fast_call7_dep_indices_e: List[int] = [-1] * step_count
+        fast_call7_dep_indices_f: List[int] = [-1] * step_count
+        fast_call7_dep_indices_g: List[int] = [-1] * step_count
+        fast_call8_dep_indices_a: List[int] = [-1] * step_count
+        fast_call8_dep_indices_b: List[int] = [-1] * step_count
+        fast_call8_dep_indices_c: List[int] = [-1] * step_count
+        fast_call8_dep_indices_d: List[int] = [-1] * step_count
+        fast_call8_dep_indices_e: List[int] = [-1] * step_count
+        fast_call8_dep_indices_f: List[int] = [-1] * step_count
+        fast_call8_dep_indices_g: List[int] = [-1] * step_count
+        fast_call8_dep_indices_h: List[int] = [-1] * step_count
 
         seen_spell_ids: set[str] = set()
 
@@ -1218,6 +1647,151 @@ class ExecutionPlanBuilder:
                         fast_call3_dep_indices_a[step_index] = fast_dep_indices[dep_offset_a]
                         fast_call3_dep_indices_b[step_index] = fast_dep_indices[dep_offset_b]
                         fast_call3_dep_indices_c[step_index] = fast_dep_indices[dep_offset_c]
+                elif group_count == 4:
+                    group_base = fast_param_group_offsets[step_index]
+                    dep_count_a = fast_param_group_dep_counts[group_base]
+                    dep_count_b = fast_param_group_dep_counts[group_base + 1]
+                    dep_count_c = fast_param_group_dep_counts[group_base + 2]
+                    dep_count_d = fast_param_group_dep_counts[group_base + 3]
+                    if (
+                            dep_count_a == 1
+                            and dep_count_b == 1
+                            and dep_count_c == 1
+                            and dep_count_d == 1
+                    ):
+                        fast_call_modes[step_index] = ExecutionPlanCallMode.CALL4
+                        dep_offset_a = fast_param_group_dep_offsets[group_base]
+                        dep_offset_b = fast_param_group_dep_offsets[group_base + 1]
+                        dep_offset_c = fast_param_group_dep_offsets[group_base + 2]
+                        dep_offset_d = fast_param_group_dep_offsets[group_base + 3]
+                        fast_call4_dep_indices_a[step_index] = fast_dep_indices[dep_offset_a]
+                        fast_call4_dep_indices_b[step_index] = fast_dep_indices[dep_offset_b]
+                        fast_call4_dep_indices_c[step_index] = fast_dep_indices[dep_offset_c]
+                        fast_call4_dep_indices_d[step_index] = fast_dep_indices[dep_offset_d]
+                elif group_count == 5:
+                    group_base = fast_param_group_offsets[step_index]
+                    dep_count_a = fast_param_group_dep_counts[group_base]
+                    dep_count_b = fast_param_group_dep_counts[group_base + 1]
+                    dep_count_c = fast_param_group_dep_counts[group_base + 2]
+                    dep_count_d = fast_param_group_dep_counts[group_base + 3]
+                    dep_count_e = fast_param_group_dep_counts[group_base + 4]
+                    if (
+                            dep_count_a == 1
+                            and dep_count_b == 1
+                            and dep_count_c == 1
+                            and dep_count_d == 1
+                            and dep_count_e == 1
+                    ):
+                        fast_call_modes[step_index] = ExecutionPlanCallMode.CALL5
+                        dep_offset_a = fast_param_group_dep_offsets[group_base]
+                        dep_offset_b = fast_param_group_dep_offsets[group_base + 1]
+                        dep_offset_c = fast_param_group_dep_offsets[group_base + 2]
+                        dep_offset_d = fast_param_group_dep_offsets[group_base + 3]
+                        dep_offset_e = fast_param_group_dep_offsets[group_base + 4]
+                        fast_call5_dep_indices_a[step_index] = fast_dep_indices[dep_offset_a]
+                        fast_call5_dep_indices_b[step_index] = fast_dep_indices[dep_offset_b]
+                        fast_call5_dep_indices_c[step_index] = fast_dep_indices[dep_offset_c]
+                        fast_call5_dep_indices_d[step_index] = fast_dep_indices[dep_offset_d]
+                        fast_call5_dep_indices_e[step_index] = fast_dep_indices[dep_offset_e]
+                elif group_count == 6:
+                    group_base = fast_param_group_offsets[step_index]
+                    dep_count_a = fast_param_group_dep_counts[group_base]
+                    dep_count_b = fast_param_group_dep_counts[group_base + 1]
+                    dep_count_c = fast_param_group_dep_counts[group_base + 2]
+                    dep_count_d = fast_param_group_dep_counts[group_base + 3]
+                    dep_count_e = fast_param_group_dep_counts[group_base + 4]
+                    dep_count_f = fast_param_group_dep_counts[group_base + 5]
+                    if (
+                            dep_count_a == 1
+                            and dep_count_b == 1
+                            and dep_count_c == 1
+                            and dep_count_d == 1
+                            and dep_count_e == 1
+                            and dep_count_f == 1
+                    ):
+                        fast_call_modes[step_index] = ExecutionPlanCallMode.CALL6
+                        dep_offset_a = fast_param_group_dep_offsets[group_base]
+                        dep_offset_b = fast_param_group_dep_offsets[group_base + 1]
+                        dep_offset_c = fast_param_group_dep_offsets[group_base + 2]
+                        dep_offset_d = fast_param_group_dep_offsets[group_base + 3]
+                        dep_offset_e = fast_param_group_dep_offsets[group_base + 4]
+                        dep_offset_f = fast_param_group_dep_offsets[group_base + 5]
+                        fast_call6_dep_indices_a[step_index] = fast_dep_indices[dep_offset_a]
+                        fast_call6_dep_indices_b[step_index] = fast_dep_indices[dep_offset_b]
+                        fast_call6_dep_indices_c[step_index] = fast_dep_indices[dep_offset_c]
+                        fast_call6_dep_indices_d[step_index] = fast_dep_indices[dep_offset_d]
+                        fast_call6_dep_indices_e[step_index] = fast_dep_indices[dep_offset_e]
+                        fast_call6_dep_indices_f[step_index] = fast_dep_indices[dep_offset_f]
+                elif group_count == 7:
+                    group_base = fast_param_group_offsets[step_index]
+                    dep_count_a = fast_param_group_dep_counts[group_base]
+                    dep_count_b = fast_param_group_dep_counts[group_base + 1]
+                    dep_count_c = fast_param_group_dep_counts[group_base + 2]
+                    dep_count_d = fast_param_group_dep_counts[group_base + 3]
+                    dep_count_e = fast_param_group_dep_counts[group_base + 4]
+                    dep_count_f = fast_param_group_dep_counts[group_base + 5]
+                    dep_count_g = fast_param_group_dep_counts[group_base + 6]
+                    if (
+                            dep_count_a == 1
+                            and dep_count_b == 1
+                            and dep_count_c == 1
+                            and dep_count_d == 1
+                            and dep_count_e == 1
+                            and dep_count_f == 1
+                            and dep_count_g == 1
+                    ):
+                        fast_call_modes[step_index] = ExecutionPlanCallMode.CALL7
+                        dep_offset_a = fast_param_group_dep_offsets[group_base]
+                        dep_offset_b = fast_param_group_dep_offsets[group_base + 1]
+                        dep_offset_c = fast_param_group_dep_offsets[group_base + 2]
+                        dep_offset_d = fast_param_group_dep_offsets[group_base + 3]
+                        dep_offset_e = fast_param_group_dep_offsets[group_base + 4]
+                        dep_offset_f = fast_param_group_dep_offsets[group_base + 5]
+                        dep_offset_g = fast_param_group_dep_offsets[group_base + 6]
+                        fast_call7_dep_indices_a[step_index] = fast_dep_indices[dep_offset_a]
+                        fast_call7_dep_indices_b[step_index] = fast_dep_indices[dep_offset_b]
+                        fast_call7_dep_indices_c[step_index] = fast_dep_indices[dep_offset_c]
+                        fast_call7_dep_indices_d[step_index] = fast_dep_indices[dep_offset_d]
+                        fast_call7_dep_indices_e[step_index] = fast_dep_indices[dep_offset_e]
+                        fast_call7_dep_indices_f[step_index] = fast_dep_indices[dep_offset_f]
+                        fast_call7_dep_indices_g[step_index] = fast_dep_indices[dep_offset_g]
+                elif group_count == 8:
+                    group_base = fast_param_group_offsets[step_index]
+                    dep_count_a = fast_param_group_dep_counts[group_base]
+                    dep_count_b = fast_param_group_dep_counts[group_base + 1]
+                    dep_count_c = fast_param_group_dep_counts[group_base + 2]
+                    dep_count_d = fast_param_group_dep_counts[group_base + 3]
+                    dep_count_e = fast_param_group_dep_counts[group_base + 4]
+                    dep_count_f = fast_param_group_dep_counts[group_base + 5]
+                    dep_count_g = fast_param_group_dep_counts[group_base + 6]
+                    dep_count_h = fast_param_group_dep_counts[group_base + 7]
+                    if (
+                            dep_count_a == 1
+                            and dep_count_b == 1
+                            and dep_count_c == 1
+                            and dep_count_d == 1
+                            and dep_count_e == 1
+                            and dep_count_f == 1
+                            and dep_count_g == 1
+                            and dep_count_h == 1
+                    ):
+                        fast_call_modes[step_index] = ExecutionPlanCallMode.CALL8
+                        dep_offset_a = fast_param_group_dep_offsets[group_base]
+                        dep_offset_b = fast_param_group_dep_offsets[group_base + 1]
+                        dep_offset_c = fast_param_group_dep_offsets[group_base + 2]
+                        dep_offset_d = fast_param_group_dep_offsets[group_base + 3]
+                        dep_offset_e = fast_param_group_dep_offsets[group_base + 4]
+                        dep_offset_f = fast_param_group_dep_offsets[group_base + 5]
+                        dep_offset_g = fast_param_group_dep_offsets[group_base + 6]
+                        dep_offset_h = fast_param_group_dep_offsets[group_base + 7]
+                        fast_call8_dep_indices_a[step_index] = fast_dep_indices[dep_offset_a]
+                        fast_call8_dep_indices_b[step_index] = fast_dep_indices[dep_offset_b]
+                        fast_call8_dep_indices_c[step_index] = fast_dep_indices[dep_offset_c]
+                        fast_call8_dep_indices_d[step_index] = fast_dep_indices[dep_offset_d]
+                        fast_call8_dep_indices_e[step_index] = fast_dep_indices[dep_offset_e]
+                        fast_call8_dep_indices_f[step_index] = fast_dep_indices[dep_offset_f]
+                        fast_call8_dep_indices_g[step_index] = fast_dep_indices[dep_offset_g]
+                        fast_call8_dep_indices_h[step_index] = fast_dep_indices[dep_offset_h]
 
         return (
             fast_dep_indices,
@@ -1247,6 +1821,36 @@ class ExecutionPlanBuilder:
             fast_call3_dep_indices_a,
             fast_call3_dep_indices_b,
             fast_call3_dep_indices_c,
+            fast_call4_dep_indices_a,
+            fast_call4_dep_indices_b,
+            fast_call4_dep_indices_c,
+            fast_call4_dep_indices_d,
+            fast_call5_dep_indices_a,
+            fast_call5_dep_indices_b,
+            fast_call5_dep_indices_c,
+            fast_call5_dep_indices_d,
+            fast_call5_dep_indices_e,
+            fast_call6_dep_indices_a,
+            fast_call6_dep_indices_b,
+            fast_call6_dep_indices_c,
+            fast_call6_dep_indices_d,
+            fast_call6_dep_indices_e,
+            fast_call6_dep_indices_f,
+            fast_call7_dep_indices_a,
+            fast_call7_dep_indices_b,
+            fast_call7_dep_indices_c,
+            fast_call7_dep_indices_d,
+            fast_call7_dep_indices_e,
+            fast_call7_dep_indices_f,
+            fast_call7_dep_indices_g,
+            fast_call8_dep_indices_a,
+            fast_call8_dep_indices_b,
+            fast_call8_dep_indices_c,
+            fast_call8_dep_indices_d,
+            fast_call8_dep_indices_e,
+            fast_call8_dep_indices_f,
+            fast_call8_dep_indices_g,
+            fast_call8_dep_indices_h,
         )
 
     def _build_fast_transient_plan(
@@ -1265,8 +1869,83 @@ class ExecutionPlanBuilder:
             fast_call3_dep_indices_a: List[int],
             fast_call3_dep_indices_b: List[int],
             fast_call3_dep_indices_c: List[int],
+            fast_call4_dep_indices_a: List[int],
+            fast_call4_dep_indices_b: List[int],
+            fast_call4_dep_indices_c: List[int],
+            fast_call4_dep_indices_d: List[int],
+            fast_call5_dep_indices_a: List[int],
+            fast_call5_dep_indices_b: List[int],
+            fast_call5_dep_indices_c: List[int],
+            fast_call5_dep_indices_d: List[int],
+            fast_call5_dep_indices_e: List[int],
+            fast_call6_dep_indices_a: List[int],
+            fast_call6_dep_indices_b: List[int],
+            fast_call6_dep_indices_c: List[int],
+            fast_call6_dep_indices_d: List[int],
+            fast_call6_dep_indices_e: List[int],
+            fast_call6_dep_indices_f: List[int],
+            fast_call7_dep_indices_a: List[int],
+            fast_call7_dep_indices_b: List[int],
+            fast_call7_dep_indices_c: List[int],
+            fast_call7_dep_indices_d: List[int],
+            fast_call7_dep_indices_e: List[int],
+            fast_call7_dep_indices_f: List[int],
+            fast_call7_dep_indices_g: List[int],
+            fast_call8_dep_indices_a: List[int],
+            fast_call8_dep_indices_b: List[int],
+            fast_call8_dep_indices_c: List[int],
+            fast_call8_dep_indices_d: List[int],
+            fast_call8_dep_indices_e: List[int],
+            fast_call8_dep_indices_f: List[int],
+            fast_call8_dep_indices_g: List[int],
+            fast_call8_dep_indices_h: List[int],
             root_step_index: int,
-    ) -> Optional[Tuple[int, int, List[Any], List[int], List[int], List[int], List[int], List[int], List[int], List[int]]]:
+    ) -> Optional[
+        Tuple[
+            int,
+            int,
+            List[Any],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+            List[int],
+        ]
+    ]:
         """
         Build a specialized transient-only plan for no-overrides execution.
 
@@ -1283,6 +1962,36 @@ class ExecutionPlanBuilder:
         transient_dep3a: List[int] = [-1] * step_count
         transient_dep3b: List[int] = [-1] * step_count
         transient_dep3c: List[int] = [-1] * step_count
+        transient_dep4a: List[int] = [-1] * step_count
+        transient_dep4b: List[int] = [-1] * step_count
+        transient_dep4c: List[int] = [-1] * step_count
+        transient_dep4d: List[int] = [-1] * step_count
+        transient_dep5a: List[int] = [-1] * step_count
+        transient_dep5b: List[int] = [-1] * step_count
+        transient_dep5c: List[int] = [-1] * step_count
+        transient_dep5d: List[int] = [-1] * step_count
+        transient_dep5e: List[int] = [-1] * step_count
+        transient_dep6a: List[int] = [-1] * step_count
+        transient_dep6b: List[int] = [-1] * step_count
+        transient_dep6c: List[int] = [-1] * step_count
+        transient_dep6d: List[int] = [-1] * step_count
+        transient_dep6e: List[int] = [-1] * step_count
+        transient_dep6f: List[int] = [-1] * step_count
+        transient_dep7a: List[int] = [-1] * step_count
+        transient_dep7b: List[int] = [-1] * step_count
+        transient_dep7c: List[int] = [-1] * step_count
+        transient_dep7d: List[int] = [-1] * step_count
+        transient_dep7e: List[int] = [-1] * step_count
+        transient_dep7f: List[int] = [-1] * step_count
+        transient_dep7g: List[int] = [-1] * step_count
+        transient_dep8a: List[int] = [-1] * step_count
+        transient_dep8b: List[int] = [-1] * step_count
+        transient_dep8c: List[int] = [-1] * step_count
+        transient_dep8d: List[int] = [-1] * step_count
+        transient_dep8e: List[int] = [-1] * step_count
+        transient_dep8f: List[int] = [-1] * step_count
+        transient_dep8g: List[int] = [-1] * step_count
+        transient_dep8h: List[int] = [-1] * step_count
 
         for index in range(step_count):
             if fast_existence[index] is not Existence.many:
@@ -1307,6 +2016,41 @@ class ExecutionPlanBuilder:
                 transient_dep3a[index] = fast_call3_dep_indices_a[index]
                 transient_dep3b[index] = fast_call3_dep_indices_b[index]
                 transient_dep3c[index] = fast_call3_dep_indices_c[index]
+            elif call_mode == ExecutionPlanCallMode.CALL4:
+                transient_dep4a[index] = fast_call4_dep_indices_a[index]
+                transient_dep4b[index] = fast_call4_dep_indices_b[index]
+                transient_dep4c[index] = fast_call4_dep_indices_c[index]
+                transient_dep4d[index] = fast_call4_dep_indices_d[index]
+            elif call_mode == ExecutionPlanCallMode.CALL5:
+                transient_dep5a[index] = fast_call5_dep_indices_a[index]
+                transient_dep5b[index] = fast_call5_dep_indices_b[index]
+                transient_dep5c[index] = fast_call5_dep_indices_c[index]
+                transient_dep5d[index] = fast_call5_dep_indices_d[index]
+                transient_dep5e[index] = fast_call5_dep_indices_e[index]
+            elif call_mode == ExecutionPlanCallMode.CALL6:
+                transient_dep6a[index] = fast_call6_dep_indices_a[index]
+                transient_dep6b[index] = fast_call6_dep_indices_b[index]
+                transient_dep6c[index] = fast_call6_dep_indices_c[index]
+                transient_dep6d[index] = fast_call6_dep_indices_d[index]
+                transient_dep6e[index] = fast_call6_dep_indices_e[index]
+                transient_dep6f[index] = fast_call6_dep_indices_f[index]
+            elif call_mode == ExecutionPlanCallMode.CALL7:
+                transient_dep7a[index] = fast_call7_dep_indices_a[index]
+                transient_dep7b[index] = fast_call7_dep_indices_b[index]
+                transient_dep7c[index] = fast_call7_dep_indices_c[index]
+                transient_dep7d[index] = fast_call7_dep_indices_d[index]
+                transient_dep7e[index] = fast_call7_dep_indices_e[index]
+                transient_dep7f[index] = fast_call7_dep_indices_f[index]
+                transient_dep7g[index] = fast_call7_dep_indices_g[index]
+            elif call_mode == ExecutionPlanCallMode.CALL8:
+                transient_dep8a[index] = fast_call8_dep_indices_a[index]
+                transient_dep8b[index] = fast_call8_dep_indices_b[index]
+                transient_dep8c[index] = fast_call8_dep_indices_c[index]
+                transient_dep8d[index] = fast_call8_dep_indices_d[index]
+                transient_dep8e[index] = fast_call8_dep_indices_e[index]
+                transient_dep8f[index] = fast_call8_dep_indices_f[index]
+                transient_dep8g[index] = fast_call8_dep_indices_g[index]
+                transient_dep8h[index] = fast_call8_dep_indices_h[index]
 
         return (
             step_count,
@@ -1319,6 +2063,36 @@ class ExecutionPlanBuilder:
             transient_dep3a,
             transient_dep3b,
             transient_dep3c,
+            transient_dep4a,
+            transient_dep4b,
+            transient_dep4c,
+            transient_dep4d,
+            transient_dep5a,
+            transient_dep5b,
+            transient_dep5c,
+            transient_dep5d,
+            transient_dep5e,
+            transient_dep6a,
+            transient_dep6b,
+            transient_dep6c,
+            transient_dep6d,
+            transient_dep6e,
+            transient_dep6f,
+            transient_dep7a,
+            transient_dep7b,
+            transient_dep7c,
+            transient_dep7d,
+            transient_dep7e,
+            transient_dep7f,
+            transient_dep7g,
+            transient_dep8a,
+            transient_dep8b,
+            transient_dep8c,
+            transient_dep8d,
+            transient_dep8e,
+            transient_dep8f,
+            transient_dep8g,
+            transient_dep8h,
         )
 
     @staticmethod
