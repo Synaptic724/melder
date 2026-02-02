@@ -47,9 +47,13 @@ class _ChangeControlManagerStub:
         self._is_dirty = is_dirty
         self._raise_on_call = raise_on_call
 
-    def is_root_dirty(self, root_id: str) -> bool:
+    def is_root_dirty(self, conduit_id: str, root_id: str) -> bool:
         """
         Return whether the root is dirty or raise if configured.
+
+        Args:
+            conduit_id: Conduit id scope for the check.
+            root_id: Root id being queried.
         """
         if self._raise_on_call:
             raise RuntimeError("change-control failure")
@@ -217,18 +221,31 @@ class _SpellStub:
         return self._mutation_override
 
 
-def _make_context(spell: Any, overrides: Any = None) -> SimpleNamespace:
+def _make_context(
+    spell: Any,
+    overrides: Any = None,
+    *,
+    conduit_id: Optional[str] = "conduit-1",
+    cancel_event: Any = None,
+) -> SimpleNamespace:
     """
     Build a minimal MeldContext-like stub.
 
     Args:
         spell: Root spell to expose via context.root_spell.
         overrides: Optional overrides payload for the context.
+        conduit_id: Conduit id to expose for change-control checks.
+        cancel_event: Optional cancellation event for engine execution.
 
     Returns:
         SimpleNamespace: Context stub with root_spell and overrides.
     """
-    return SimpleNamespace(root_spell=spell, overrides=overrides)
+    return SimpleNamespace(
+        root_spell=spell,
+        overrides=overrides,
+        conduit_id=conduit_id,
+        cancel_event=cancel_event,
+    )
 
 
 def _make_crafter(**overrides: Any) -> SimpleNamespace:

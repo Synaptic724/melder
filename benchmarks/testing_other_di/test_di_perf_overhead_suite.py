@@ -1,1177 +1,814 @@
 from __future__ import annotations
 
-import contextlib
-import contextvars
 import gc
-import inspect
-import os
-import random
-import sys
-import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Iterable, Optional, Sequence
+from typing import Callable, Optional, Protocol
 
 import pytest
 
-from tests.mocks.spellbook.deep_layers import (
-    Depth3Root,
-    Depth7Root,
-    Depth9Root,
-    get_depth_3_classes,
-    get_depth_7_classes,
-    get_depth_9_classes,
-)
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spellbook import Spellbook
 
 
 # ======================================================================================
-# Shared helpers
+# Purpose:
+#     A fairer DI performance suite with two scenarios:
+#         1) "lite" constructors  -> exposes DI overhead (tiny work per object)
+#         2) "heavy" constructors -> realistic object build cost (DI mostly hidden)
+#
+# Contract:
+#     - Uses the same 3-node graph shape for all frameworks:
+#           Service -> Logger -> Config
+#     - Measures:
+#           build time (registration + container creation; imports excluded)
+#           resolve avg (Config, Logger, Service)
+#     - No perf assertions (prints tables; sanity asserts only).
+#
+# Fairness Fixes (IMPORTANT):
+#     - All frameworks are timed through an equivalent Python wrapper function:
+#           def get_x(): return <framework resolve>
+#       This removes the prior "some frameworks pass a raw callable, others use lambdas"
+#       distortion (dependency-injector was getting a free win).
+#     - Melder tries positional meld calls once (NOT timed) and uses positional if supported;
+#       otherwise it uses keyword-only calls. This avoids benchmarking keyword parsing when
+#       it isn't required by the API.
 # ======================================================================================
 
 
-def _env_str(name: str, default: str) -> str:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    s = raw.strip()
-    return s if s else default
-
-
-def _env_int(name: str, default: int) -> int:
-    raw = os.getenv(name)
-    if raw is None or raw.strip() == "":
-        return default
-    return int(raw)
-
-
-def _env_float(name: str, default: float) -> float:
-    raw = os.getenv(name)
-    if raw is None or raw.strip() == "":
-        return default
-    return float(raw)
-
-
-def _env_bool(name: str, default: bool) -> bool:
-    raw = os.getenv(name)
-    if raw is None or raw.strip() == "":
-        return default
-    s = raw.strip().lower()
-    if s in ("1", "true", "yes", "y", "on"):
-        return True
-    if s in ("0", "false", "no", "n", "off"):
-        return False
-    return default
-
-
-def _parse_csv(value: str) -> list[str]:
-    parts = [p.strip() for p in value.split(",")]
-    return [p for p in parts if p]
-
-
-def _ctor_param_types(cls: type) -> tuple[tuple[str, type], ...]:
-    """
-    Extract typed constructor parameters for dynamic DI harness wiring.
-
-    Contract:
-        - Raises AssertionError if a parameter has no annotation or a non-type annotation.
-    """
-    sig = inspect.signature(cls.__init__)
-    params = list(sig.parameters.values())[1:]  # skip self
-    out: list[tuple[str, type]] = []
-    for p in params:
-        if p.annotation is inspect._empty:
-            raise AssertionError(f"{cls.__name__}.__init__ param '{p.name}' missing annotation")
-        if not isinstance(p.annotation, type):
-            raise AssertionError(
-                f"{cls.__name__}.__init__ param '{p.name}' has non-type annotation: {p.annotation!r}"
-            )
-        out.append((p.name, p.annotation))
-    return tuple(out)
-
-
-def _maybe_print_gil_status(prefix: str) -> None:
-    """
-    Print whether the GIL is enabled, when running on a free-threading build that exposes sys._is_gil_enabled().
-    """
-    if not _env_bool("DI_PRINT_GIL", False):
-        return
-    flag = getattr(sys, "_is_gil_enabled", None)
-    if flag is None:
-        print(f"[{prefix}] GIL enabled? (sys._is_gil_enabled not available)")
-        return
-    try:
-        print(f"[{prefix}] GIL enabled? {flag()}")
-    except Exception:
-        print(f"[{prefix}] GIL enabled? (error calling sys._is_gil_enabled)")
-
-
 # ======================================================================================
-# Graph spec
+# Scenario: LITE constructors (DI overhead is visible)
 # ======================================================================================
 
 
-@dataclass(frozen=True)
-class _GraphSpec:
+class LiteConfig:
+    __slots__ = ("value",)
+
+    def __init__(self) -> None:
+        self.value = 123
+
+
+class LiteLogger:
+    __slots__ = ("config", "level")
+
+    def __init__(self, config: LiteConfig) -> None:
+        self.config = config
+        self.level = 20
+
+
+class LiteService:
+    __slots__ = ("logger", "routing")
+
+    def __init__(self, logger: LiteLogger) -> None:
+        self.logger = logger
+        # keep a tiny structure so service isn't a total no-op
+        self.routing = (logger.level, logger.config.value)
+
+
+# ======================================================================================
+# Scenario: HEAVY constructors (realistic object build dominates)
+# ======================================================================================
+
+
+class HeavyConfig:
+    __slots__ = ("table", "values")
+
+    def __init__(self) -> None:
+        self.table = {f"key{i}": i for i in range(2000)}
+        self.values = [i * 3 for i in range(2000)]
+
+
+class HeavyLogger:
+    __slots__ = ("config", "levels", "prefix_cache")
+
+    def __init__(self, config: HeavyConfig) -> None:
+        self.config = config
+        self.levels = {"DEBUG": 10, "INFO": 20, "WARN": 30, "ERROR": 40}
+        self.prefix_cache = [f"[{i:04d}]" for i in range(2000)]
+
+
+class HeavyService:
+    __slots__ = ("logger", "routing")
+
+    def __init__(self, logger: HeavyLogger) -> None:
+        self.logger = logger
+        self.routing = {f"route{i}": (i % 17, i % 23) for i in range(5000)}
+
+
+# ======================================================================================
+# Protocols (optional: stable “interfaces”; not used as DI keys in this suite)
+# ======================================================================================
+
+
+class IConfig(Protocol):
+    ...
+
+
+class ILogger(Protocol):
+    ...
+
+
+class IService(Protocol):
+    ...
+
+
+# ======================================================================================
+# Aether singleton reset (Melder isolation)
+# ======================================================================================
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_integration() -> None:
     """
     Purpose:
-        Describe a benchmark graph orientation.
+        Ensure integration tests start with a clean Aether singleton.
 
     Contract:
-        - root_a / root_b are the two roots used for the main resolve workload.
-        - spellspace_root is used for the spellspace caching cycle.
-        - *_classes are the exact class sets registered into each container.
-        - transient_probe extracts (leaf_a, leaf_b) objects used to validate "no transient caching"
-          across two consecutive resolves while both roots are alive.
-          Return None to disable transient validation for this graph.
+        - Resets the Aether singleton before the test runs.
+        - Rebinds Spellbook._aether and Conduit._aether to the new instance.
+        - Resets the singleton again after the test for isolation.
     """
-    name: str
-    root_a: type
-    root_b: type
-    spellspace_root: type
-    root_a_classes: tuple[type, ...]
-    root_b_classes: tuple[type, ...]
-    spellspace_classes: tuple[type, ...]
-    transient_probe: Optional[Callable[[Any], tuple[object, object]]]
-
-
-class _GraphFactory:
-    """
-    Builds graph specs. This version ships with the existing deep_layers graphs.
-
-    Extend here if/when you add wide fanout / diamond / tree mocks.
-    """
-    @staticmethod
-    def deep_layers() -> _GraphSpec:
-        def _probe_depth9(root: Any) -> tuple[object, object]:
-            # Keep both roots alive during validation so identity comparisons are reliable.
-            layer2 = root.left
-            layer3 = layer2.left
-            layer4 = layer3.left
-            layer5 = layer4.left
-            layer6 = layer5.left
-            layer7 = layer6.left
-            layer8 = layer7.left
-            leaf_a = layer8.left
-            leaf_b = layer8.right
-            return leaf_a, leaf_b
-
-        return _GraphSpec(
-            name="deep",
-            root_a=Depth9Root,
-            root_b=Depth7Root,
-            spellspace_root=Depth3Root,
-            root_a_classes=get_depth_9_classes(),
-            root_b_classes=get_depth_7_classes(),
-            spellspace_classes=get_depth_3_classes(),
-            transient_probe=_probe_depth9,
-        )
-
-
-def _selected_graphs() -> list[_GraphSpec]:
-    """
-    Select which graph specs to run.
-
-    Env:
-        DI_GRAPHS: comma-separated list. Currently supports: deep
-        Default: deep
-    """
-    want = _parse_csv(_env_str("DI_GRAPHS", "deep"))
-    out: list[_GraphSpec] = []
-    for name in want:
-        if name == "deep":
-            out.append(_GraphFactory.deep_layers())
-        else:
-            raise AssertionError(f"Unknown graph '{name}'. Supported: deep")
-    return out
-
-
-# ======================================================================================
-# Workload config
-# ======================================================================================
-
-
-@dataclass(frozen=True)
-class _StressConfig:
-    """
-    Controls for the throughput/lock-contention stress test.
-
-    Environment variables (defaults match your original test behavior):
-        DI_THREADS              (default 10)
-        DI_DURATION_S           (default 60.0)
-        DI_SPELLSPACE_EVERY     (default 20)
-        DI_GC_EVERY             (default 2000)
-
-    Additional options:
-        DI_PATTERN              alternating | burst | ratio | random  (default alternating)
-        DI_BURST_LEN            burst length when DI_PATTERN=burst (default 64)
-        DI_RATIO_P              probability of root_a when DI_PATTERN=ratio (default 0.5)
-        DI_RANDOM_SEED          base seed for DI_PATTERN=random (default 1337)
-
-        DI_GC_MODE              periodic | disabled | none (default periodic)
-            - periodic: gc.collect() every DI_GC_EVERY
-            - disabled: gc.disable() during worker loop, re-enable after
-            - none: no explicit gc.collect() calls (GC still runs if enabled)
-
-        DI_VALIDATE_TRANSIENT_EVERY
-            If > 0: every N operations per thread, validate that two consecutive resolves
-            produce distinct transient objects (probe-dependent).
-            Default 0 (off) to keep max throughput.
-
-        DI_PRINT_GIL
-            If true: print sys._is_gil_enabled() for each lib run when available.
-    """
-    threads: int
-    duration_s: float
-    spellspace_every: int
-    gc_every: int
-    pattern: str
-    burst_len: int
-    ratio_p: float
-    random_seed: int
-    gc_mode: str
-    validate_transient_every: int
-
-    @staticmethod
-    def from_env() -> _StressConfig:
-        return _StressConfig(
-            threads=_env_int("DI_THREADS", 10),
-            duration_s=_env_float("DI_DURATION_S", 25.0),
-            spellspace_every=_env_int("DI_SPELLSPACE_EVERY", 20),
-            gc_every=_env_int("DI_GC_EVERY", 2000),
-            pattern=_env_str("DI_PATTERN", "alternating").lower(),
-            burst_len=_env_int("DI_BURST_LEN", 64),
-            ratio_p=_env_float("DI_RATIO_P", 0.5),
-            random_seed=_env_int("DI_RANDOM_SEED", 1337),
-            gc_mode=_env_str("DI_GC_MODE", "periodic").lower(),
-            validate_transient_every=_env_int("DI_VALIDATE_TRANSIENT_EVERY", 0),
-        )
-
-
-@dataclass(frozen=True)
-class _LatencyConfig:
-    """
-    Controls for the single-thread latency sampler (optional test).
-
-    Env:
-        DI_RUN_LATENCY          (default false) -> if false, test is skipped.
-        DI_LATENCY_DURATION_S   (default 10.0)
-        DI_LATENCY_SAMPLE_EVERY (default 10)  -> sample 1 in N ops to reduce measurement overhead.
-        DI_PATTERN              same semantics as stress test; default alternating.
-    """
-    duration_s: float
-    sample_every: int
-    pattern: str
-    burst_len: int
-    ratio_p: float
-    random_seed: int
-
-    @staticmethod
-    def from_env() -> _LatencyConfig:
-        return _LatencyConfig(
-            duration_s=_env_float("DI_LATENCY_DURATION_S", 10.0),
-            sample_every=max(1, _env_int("DI_LATENCY_SAMPLE_EVERY", 10)),
-            pattern=_env_str("DI_PATTERN", "alternating").lower(),
-            burst_len=_env_int("DI_BURST_LEN", 64),
-            ratio_p=_env_float("DI_RATIO_P", 0.5),
-            random_seed=_env_int("DI_RANDOM_SEED", 1337),
-        )
-
-
-@dataclass
-class _ThreadStats:
-    steps: int = 0
-    root_a: int = 0
-    root_b: int = 0
-    spellspaces: int = 0
-    errors: int = 0
-
-
-@dataclass(frozen=True)
-class _RuntimeOps:
-    """
-    Per-library operations for the stress runs.
-
-    Contract:
-        - get_root_a/get_root_b return the resolved root object.
-        - spellspace_cycle must validate caching semantics within the spellspace context.
-        - cleanup() must be callable once after all threads finish.
-    """
-    name: str
-    get_root_a: Callable[[], Any]
-    get_root_b: Callable[[], Any]
-    spellspace_cycle: Callable[[], None]
-    cleanup: Callable[[], None]
-
-
-# ======================================================================================
-# Library selection
-# ======================================================================================
-
-
-def _selected_libs() -> tuple[str, ...]:
-    """
-    Env:
-        DI_LIBS: comma-separated list of libs to run.
-                 Supported: dependency-injector, lagom, injector, dishka, melder
-        Default: all
-    """
-    supported = ("dependency-injector", "lagom", "injector", "dishka", "melder")
-    raw = _env_str("DI_LIBS", ",".join(supported))
-    want = tuple(_parse_csv(raw))
-    for lib in want:
-        if lib not in supported:
-            raise AssertionError(f"Unknown lib '{lib}'. Supported: {supported}")
-    return want
-
-
-# ======================================================================================
-# Runtime builders (per lib)
-# ======================================================================================
-
-
-def _build_runtime_dependency_injector(g: _GraphSpec) -> _RuntimeOps:
-    pytest.importorskip("dependency_injector")
-    from dependency_injector import providers
-
-    root_a_classes = g.root_a_classes
-    root_b_classes = g.root_b_classes
-    space_classes = g.spellspace_classes
-
-    space_types = set(space_classes)
-
-    all_classes: list[type] = []
-    seen: set[type] = set()
-    for cls in root_a_classes + root_b_classes + space_classes:
-        if cls not in seen:
-            all_classes.append(cls)
-            seen.add(cls)
-
-    providers_by_type: dict[type, Any] = {}
-
-    for cls in all_classes:
-        param_specs = _ctor_param_types(cls)
-        kwargs: dict[str, Any] = {}
-        for pname, ptype in param_specs:
-            dep = providers_by_type.get(ptype)
-            if dep is None:
-                raise AssertionError(f"DI wiring error: {cls.__name__} depends on {ptype.__name__} before registered")
-            kwargs[pname] = dep
-
-        if cls in space_types:
-            prov = providers.ContextLocalSingleton(cls, **kwargs)
-        else:
-            prov = providers.Factory(cls, **kwargs)
-
-        providers_by_type[cls] = prov
-
-    def get_root_a() -> Any:
-        root = providers_by_type[g.root_a]()
-        if not isinstance(root, g.root_a):
-            raise AssertionError("Dependency Injector: root_a resolve returned wrong type")
-        return root
-
-    def get_root_b() -> Any:
-        root = providers_by_type[g.root_b]()
-        if not isinstance(root, g.root_b):
-            raise AssertionError("Dependency Injector: root_b resolve returned wrong type")
-        return root
-
-    def spellspace_cycle() -> None:
-        ctx = contextvars.Context()
-
-        def run() -> None:
-            r1 = providers_by_type[g.spellspace_root]()
-            r2 = providers_by_type[g.spellspace_root]()
-            if not isinstance(r1, g.spellspace_root):
-                raise AssertionError("Dependency Injector: spellspace root resolve returned wrong type")
-            if r1 is not r2:
-                raise AssertionError("Dependency Injector: spellspace root not cached within spellspace")
-
-        ctx.run(run)
-
-    def cleanup() -> None:
-        for _, prov in providers_by_type.items():
-            reset = getattr(prov, "reset", None)
-            if reset is not None:
-                reset()
-        gc.collect()
-
-    return _RuntimeOps(
-        name="dependency-injector",
-        get_root_a=get_root_a,
-        get_root_b=get_root_b,
-        spellspace_cycle=spellspace_cycle,
-        cleanup=cleanup,
-    )
-
-
-def _build_runtime_lagom(g: _GraphSpec) -> _RuntimeOps:
-    pytest.importorskip("lagom")
-    from lagom import Container
-
-    container = Container()
-
-    def _make_leaf_factory(_cls: type) -> Callable[[], Any]:
-        def factory() -> Any:
-            return _cls()
-        return factory
-
-    def _make_factory(_cls: type, _specs: tuple[tuple[str, type], ...]) -> Callable[[Any], Any]:
-        def factory(c: Any) -> Any:
-            kwargs = {pname: c[ptype] for pname, ptype in _specs}
-            return _cls(**kwargs)
-        return factory
-
-    all_classes: list[type] = []
-    seen: set[type] = set()
-    for cls in g.root_a_classes + g.root_b_classes + g.spellspace_classes:
-        if cls not in seen:
-            all_classes.append(cls)
-            seen.add(cls)
-
-    for cls in all_classes:
-        specs = _ctor_param_types(cls)
-        if not specs:
-            container[cls] = _make_leaf_factory(cls)
-        else:
-            container[cls] = _make_factory(cls, specs)
-
-    def get_root_a() -> Any:
-        root = container[g.root_a]
-        if not isinstance(root, g.root_a):
-            raise AssertionError("Lagom: root_a resolve returned wrong type")
-        return root
-
-    def get_root_b() -> Any:
-        root = container[g.root_b]
-        if not isinstance(root, g.root_b):
-            raise AssertionError("Lagom: root_b resolve returned wrong type")
-        return root
-
-    def spellspace_cycle() -> None:
-        with container.temporary_singletons(list(g.spellspace_classes)) as space:
-            r1 = space[g.spellspace_root]
-            r2 = space[g.spellspace_root]
-            if not isinstance(r1, g.spellspace_root):
-                raise AssertionError("Lagom: spellspace root resolve returned wrong type")
-            if r1 is not r2:
-                raise AssertionError("Lagom: spellspace root not cached within spellspace")
-
-    def cleanup() -> None:
-        gc.collect()
-
-    return _RuntimeOps(
-        name="lagom",
-        get_root_a=get_root_a,
-        get_root_b=get_root_b,
-        spellspace_cycle=spellspace_cycle,
-        cleanup=cleanup,
-    )
-
-
-@dataclass
-class _InjectorState:
-    injector: Any
-    spellspace_scope_type: type
-    original_inits: dict[type, Any]
-
-
-def _build_runtime_injector(g: _GraphSpec) -> _RuntimeOps:
-    pytest.importorskip("injector")
-    from injector import Binder, Injector, Module, Scope, ScopeDecorator, InstanceProvider, inject
-
-    all_classes: list[type] = []
-    seen: set[type] = set()
-    for cls in g.root_a_classes + g.root_b_classes + g.spellspace_classes:
-        if cls not in seen:
-            all_classes.append(cls)
-            seen.add(cls)
-
-    original_inits: dict[type, Any] = {}
-    for cls in all_classes:
-        original_inits[cls] = cls.__init__
-        cls.__init__ = inject(cls.__init__)
-
-    cache_var: contextvars.ContextVar[dict[Any, Any] | None] = contextvars.ContextVar(
-        "di_thread_spellspace_cache", default=None
-    )
-
-    class SpellspaceScope(Scope):
-        @contextlib.contextmanager
-        def enter(self) -> Any:
-            token = cache_var.set({})
-            try:
-                yield
-            finally:
-                cache_var.reset(token)
-
-        def get(self, key: Any, provider: Any) -> Any:
-            cache = cache_var.get()
-            if cache is None:
-                return provider
-            existing = cache.get(key)
-            if existing is not None:
-                return existing
-            instance = provider.get(self.injector)
-            wrapped = InstanceProvider(instance)
-            cache[key] = wrapped
-            return wrapped
-
-    spellspace = ScopeDecorator(SpellspaceScope)
-    spellspace_types = set(g.spellspace_classes)
-
-    class PerfModule(Module):
-        def configure(self, binder: Binder) -> None:
-            for cls in all_classes:
-                if cls in spellspace_types:
-                    binder.bind(cls, to=cls, scope=spellspace)
-                else:
-                    binder.bind(cls, to=cls)
-
-    injector = Injector([PerfModule()])
-
-    state = _InjectorState(
-        injector=injector,
-        spellspace_scope_type=SpellspaceScope,
-        original_inits=original_inits,
-    )
-
-    def get_root_a() -> Any:
-        root = state.injector.get(g.root_a)
-        if not isinstance(root, g.root_a):
-            raise AssertionError("Injector: root_a resolve returned wrong type")
-        return root
-
-    def get_root_b() -> Any:
-        root = state.injector.get(g.root_b)
-        if not isinstance(root, g.root_b):
-            raise AssertionError("Injector: root_b resolve returned wrong type")
-        return root
-
-    def spellspace_cycle() -> None:
-        scope = state.injector.get(state.spellspace_scope_type)
-        with scope.enter():
-            r1 = state.injector.get(g.spellspace_root)
-            r2 = state.injector.get(g.spellspace_root)
-            if not isinstance(r1, g.spellspace_root):
-                raise AssertionError("Injector: spellspace root resolve returned wrong type")
-            if r1 is not r2:
-                raise AssertionError("Injector: spellspace root not cached within spellspace")
-
-    def cleanup() -> None:
-        for cls, orig in state.original_inits.items():
-            cls.__init__ = orig
-        gc.collect()
-
-    return _RuntimeOps(
-        name="injector",
-        get_root_a=get_root_a,
-        get_root_b=get_root_b,
-        spellspace_cycle=spellspace_cycle,
-        cleanup=cleanup,
-    )
-
-
-def _build_runtime_dishka(g: _GraphSpec) -> _RuntimeOps:
-    pytest.importorskip("dishka")
-    from dishka import Provider, Scope, make_container
-
-    all_classes: list[type] = []
-    seen: set[type] = set()
-    for cls in g.root_a_classes + g.root_b_classes + g.spellspace_classes:
-        if cls not in seen:
-            all_classes.append(cls)
-            seen.add(cls)
-
-    provider = Provider()
-    spellspace_types = set(g.spellspace_classes)
-
-    for cls in all_classes:
-        if cls in spellspace_types:
-            provider.provide(cls, scope=Scope.REQUEST, cache=True)
-        else:
-            provider.provide(cls, scope=Scope.APP, cache=False)
-
-    container = make_container(provider)
-
-    def get_root_a() -> Any:
-        root = container.get(g.root_a)
-        if not isinstance(root, g.root_a):
-            raise AssertionError("Dishka: root_a resolve returned wrong type")
-        return root
-
-    def get_root_b() -> Any:
-        root = container.get(g.root_b)
-        if not isinstance(root, g.root_b):
-            raise AssertionError("Dishka: root_b resolve returned wrong type")
-        return root
-
-    def spellspace_cycle() -> None:
-        with container() as request_container:
-            r1 = request_container.get(g.spellspace_root)
-            r2 = request_container.get(g.spellspace_root)
-            if not isinstance(r1, g.spellspace_root):
-                raise AssertionError("Dishka: spellspace root resolve returned wrong type")
-            if r1 is not r2:
-                raise AssertionError("Dishka: spellspace root not cached within spellspace")
-
-    def cleanup() -> None:
-        container.close()
-        gc.collect()
-
-    return _RuntimeOps(
-        name="dishka",
-        get_root_a=get_root_a,
-        get_root_b=get_root_b,
-        spellspace_cycle=spellspace_cycle,
-        cleanup=cleanup,
-    )
-
-
-def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
-    # Local import so competitor-only runs don't pay import cost up front.
-    from melder.aether.aether import Aether
-    from melder.aether.conduit.conduit import Conduit
-    from melder.spellbook.existence.existence import Existence
-    from melder.spellbook.spellbook import Spellbook
-
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
 
-    spellbook = Spellbook(aetheric_frame="threaded-di-stress")
-    cfg = spellbook.get_configuration()
+
+# ======================================================================================
+# Timing helpers
+# ======================================================================================
+
+
+def _ns() -> int:
+    return time.perf_counter_ns()
+
+
+def _ms_from_ns(ns: int) -> float:
+    return ns / 1_000_000.0
+
+
+def _us_from_ns(ns: int) -> float:
+    return ns / 1_000.0
+
+
+@dataclass(frozen=True)
+class PerfSettings:
+    """
+    In-file configuration for perf loops.
+    """
+    __slots__ = ("tries", "warmup", "gc_disable_during_timing")
+
+    tries: int
+    warmup: int
+    gc_disable_during_timing: bool
+
+
+@dataclass(frozen=True)
+class PerfScenario:
+    """
+    Scenario definition for a 3-node graph.
+
+    Graph:
+        Service -> Logger -> Config
+    """
+    __slots__ = ("name", "config_cls", "logger_cls", "service_cls", "settings")
+
+    name: str
+    config_cls: type
+    logger_cls: type
+    service_cls: type
+    settings: PerfSettings
+
+
+@dataclass(frozen=True)
+class PerfRow:
+    name: str
+    scenario: str
+    mode: str  # "singleton" | "transient"
+    build_ns: int
+    cfg_total_ns: int
+    log_total_ns: int
+    svc_total_ns: int
+    cfg_avg_us: float
+    log_avg_us: float
+    svc_avg_us: float
+    logger_is_cached: Optional[bool]  # only checked for singleton
+
+
+def _time_loop(getter: Callable[[], object], *, warmup: int, tries: int, gc_disable: bool) -> int:
+    """
+    Time `tries` calls to getter(), after `warmup` un-timed calls.
+    Returns total time in ns for the timed section.
+    """
+    g = getter
+
+    for _ in range(warmup):
+        g()
+
+    was_enabled = gc.isenabled()
+    if gc_disable and was_enabled:
+        gc.disable()
+
+    try:
+        t0 = _ns()
+        for _ in range(tries):
+            g()
+        return _ns() - t0
+    finally:
+        if gc_disable and was_enabled:
+            gc.enable()
+
+
+def _format_row(r: PerfRow, *, tries: int, warmup: int) -> str:
+    cache = "n/a" if r.logger_is_cached is None else ("yes" if r.logger_is_cached else "no")
+    return (
+        f"{r.name:<20} | {r.mode:<9} | "
+        f"build={_ms_from_ns(r.build_ns):>8.3f}ms | "
+        f"cfg={r.cfg_avg_us:>8.2f}us | "
+        f"log={r.log_avg_us:>8.2f}us | "
+        f"svc={r.svc_avg_us:>8.2f}us | "
+        f"(tries={tries}, warmup={warmup}) | "
+        f"log_cached={cache}"
+    )
+
+
+def _print_table(title: str, rows: list[PerfRow], *, tries: int, warmup: int) -> None:
+    print("\n" + "=" * 118)
+    print(title)
+    print("-" * 118)
+    print(
+        f"{'framework':<20} | {'mode':<9} | "
+        f"{'build':>14} | {'cfg avg':>12} | {'log avg':>12} | {'svc avg':>12} | "
+        f"{'loop':>20} | {'log_cached':>12}"
+    )
+    print("-" * 118)
+    for r in rows:
+        print(_format_row(r, tries=tries, warmup=warmup))
+    print("=" * 118 + "\n")
+
+
+# ======================================================================================
+# Melder runner
+# ======================================================================================
+
+def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
+    if mode not in ("singleton", "transient"):
+        raise AssertionError(f"Unknown mode: {mode}")
+
+    cfg = Configuration()
+    cfg.dynamic_defaults()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    # Bind transient graphs (many)
-    ids_a: dict[type, str] = {}
-    for cls in g.root_a_classes:
-        ids_a[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
+    existence = Existence.unique if mode == "singleton" else Existence.many
 
-    ids_b: dict[type, str] = {}
-    for cls in g.root_b_classes:
-        # Avoid re-binding classes already present
-        if cls in ids_a:
-            continue
-        ids_b[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
+    t0 = _ns()
+    spellbook = Spellbook(configuration=cfg)
+    config_id = spellbook.bind(spell=s.config_cls, existence=existence, permissions="create")
+    logger_id = spellbook.bind(spell=s.logger_cls, existence=existence, permissions="create")
+    service_id = spellbook.bind(spell=s.service_cls, existence=existence, permissions="create")
+    conduit = spellbook.conjure(name=f"perf-{s.name}-{mode}", automatic=True)
+    build_ns = _ns() - t0
 
-    # Bind spellspace graph (unique per spellspace)
-    ids_space: dict[type, str] = {}
-    for cls in g.spellspace_classes:
-        # Avoid re-binding classes already present
-        if cls in ids_a or cls in ids_b:
-            continue
-        ids_space[cls] = spellbook.bind(
-            spell=cls,
-            existence=Existence.unique_per_spell_space,
-            permissions="create",
-        )
+    try:
+        meld = conduit.meld
 
-    # Root IDs
-    root_a_id = ids_a.get(g.root_a)
-    if root_a_id is None:
-        raise AssertionError("Melder: missing root_a id")
-    root_b_id = ids_b.get(g.root_b)
-    if root_b_id is None:
-        # root_b may be in ids_a if graphs share classes
-        root_b_id = ids_a.get(g.root_b)
-    if root_b_id is None:
-        raise AssertionError("Melder: missing root_b id")
-    root_space_id = ids_space.get(g.spellspace_root)
-    if root_space_id is None:
-        # spellspace root might have been bound earlier (rare)
-        root_space_id = ids_a.get(g.spellspace_root) or ids_b.get(g.spellspace_root)
-    if root_space_id is None:
-        raise AssertionError("Melder: missing spellspace root id")
+        # --- sanity (NOT timed) ---
+        cfg1 = meld(spell=config_id)
+        cfg2 = meld(spell=config_id)
+        assert isinstance(cfg1, s.config_cls)
+        assert isinstance(cfg2, s.config_cls)
 
-    conduit = spellbook.conjure(name="threaded-di-stress")
+        log1 = meld(spell=logger_id)
+        log2 = meld(spell=logger_id)
+        assert isinstance(log1, s.logger_cls)
+        assert isinstance(log2, s.logger_cls)
 
-    def get_root_a() -> Any:
-        root = conduit.meld(spell=root_a_id)
-        if not isinstance(root, g.root_a):
-            raise AssertionError("Melder: root_a meld returned wrong type")
-        return root
+        svc1 = meld(spell=service_id)
+        assert isinstance(svc1, s.service_cls)
 
-    def get_root_b() -> Any:
-        root = conduit.meld(spell=root_b_id)
-        if not isinstance(root, g.root_b):
-            raise AssertionError("Melder: root_b meld returned wrong type")
-        return root
+        if mode == "singleton":
+            logger_is_cached: Optional[bool] = (log1 is log2)
+            assert logger_is_cached
+        else:
+            logger_is_cached = None
 
-    def spellspace_cycle() -> None:
-        with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=root_space_id)
-            r2 = space.meld(spell=root_space_id)
-            if not isinstance(r1, g.spellspace_root):
-                raise AssertionError("Melder: spellspace root meld returned wrong type")
-            if r1 is not r2:
-                raise AssertionError("Melder: spellspace root not cached within spellspace")
+        # --- WRAPPER GETTERS (fair, explicit, stable) ---
+        def get_cfg() -> object:
+            return meld(spell=config_id)
 
-    def cleanup() -> None:
-        try:
-            conduit.cleanup()
-        finally:
-            Aether._reset_singleton_for_tests()
-            aether2 = Aether()
-            Spellbook._aether = aether2
-            Conduit._aether = aether2
+        def get_log() -> object:
+            return meld(spell=logger_id)
+
+        def get_svc() -> object:
+            return meld(spell=service_id)
+
+        tries = s.settings.tries
+        warmup = s.settings.warmup
+        gc_disable = s.settings.gc_disable_during_timing
+
         gc.collect()
 
-    return _RuntimeOps(
-        name="melder",
-        get_root_a=get_root_a,
-        get_root_b=get_root_b,
-        spellspace_cycle=spellspace_cycle,
-        cleanup=cleanup,
-    )
+        cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
 
-
-def _build_ops(lib: str, g: _GraphSpec) -> _RuntimeOps:
-    if lib == "dependency-injector":
-        return _build_runtime_dependency_injector(g)
-    if lib == "lagom":
-        return _build_runtime_lagom(g)
-    if lib == "injector":
-        return _build_runtime_injector(g)
-    if lib == "dishka":
-        return _build_runtime_dishka(g)
-    if lib == "melder":
-        return _build_runtime_melder(g)
-    raise AssertionError(f"Unknown lib: {lib}")
-
-
-# ======================================================================================
-# Workload selection
-# ======================================================================================
-
-
-class _WorkSelector:
-    """
-    Produces "next operation kind" decisions for each worker thread.
-
-    Supported patterns:
-        alternating:  A, B, A, B, ...
-        burst:        A x burst_len, B x burst_len, repeat
-        ratio:        choose A with probability ratio_p else B
-        random:       pseudo-random A/B choices with a per-thread RNG
-    """
-    __slots__ = ("pattern", "burst_len", "ratio_p", "rng")
-
-    def __init__(self, *, pattern: str, burst_len: int, ratio_p: float, rng: Optional[random.Random]) -> None:
-        self.pattern = pattern
-        self.burst_len = burst_len
-        self.ratio_p = ratio_p
-        self.rng = rng
-
-    def choose_a(self, i: int) -> bool:
-        if self.pattern == "alternating":
-            return (i & 1) == 0
-        if self.pattern == "burst":
-            # blocks of A then B
-            block = (i // self.burst_len) & 1
-            return block == 0
-        if self.pattern == "ratio":
-            r = random.random() if self.rng is None else self.rng.random()
-            return r < self.ratio_p
-        if self.pattern == "random":
-            if self.rng is None:
-                raise AssertionError("random pattern requires rng")
-            return self.rng.random() < 0.5
-        raise AssertionError(f"Unknown DI_PATTERN: {self.pattern}")
-
-
-# ======================================================================================
-# Throughput / contention stress test
-# ======================================================================================
-
-
-@pytest.mark.timeout(420)
-@pytest.mark.parametrize("lib", _selected_libs())
-@pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
-def test_threaded_di_stress(lib: str, graph: str) -> None:
-    """
-    Multi-threaded stress benchmark (shared runtime per lib), with many controllable knobs.
-
-    Default behavior matches your original test:
-        - DI_THREADS=10
-        - DI_DURATION_S=60
-        - DI_PATTERN=alternating
-        - DI_SPELLSPACE_EVERY=20
-        - DI_GC_MODE=periodic (gc.collect every DI_GC_EVERY=2000)
-
-    Use env vars to tune behavior; see _StressConfig docstring.
-    """
-    gspecs = {g.name: g for g in _selected_graphs()}
-    g = gspecs[graph]
-
-    cfg = _StressConfig.from_env()
-    if cfg.threads <= 0:
-        raise AssertionError("DI_THREADS must be > 0")
-    if cfg.duration_s <= 0:
-        raise AssertionError("DI_DURATION_S must be > 0")
-    if cfg.spellspace_every <= 0:
-        raise AssertionError("DI_SPELLSPACE_EVERY must be > 0")
-    if cfg.gc_every <= 0:
-        raise AssertionError("DI_GC_EVERY must be > 0")
-    if cfg.pattern not in ("alternating", "burst", "ratio", "random"):
-        raise AssertionError("DI_PATTERN must be: alternating|burst|ratio|random")
-    if cfg.gc_mode not in ("periodic", "disabled", "none"):
-        raise AssertionError("DI_GC_MODE must be: periodic|disabled|none")
-    if not (0.0 <= cfg.ratio_p <= 1.0):
-        raise AssertionError("DI_RATIO_P must be between 0 and 1")
-
-    ops = _build_ops(lib, g)
-
-    _maybe_print_gil_status(ops.name)
-
-    stats: list[_ThreadStats] = [_ThreadStats() for _ in range(cfg.threads)]
-    errors: list[BaseException] = []
-    stop_event = threading.Event()
-    start_barrier = threading.Barrier(cfg.threads + 1)
-
-    stop_time_holder: list[float] = [0.0]
-
-    def worker(ix: int) -> None:
-        try:
-            # Optional: disable GC during the loop for cleaner throughput measurement.
-            was_enabled = gc.isenabled()
-            if cfg.gc_mode == "disabled" and was_enabled:
-                gc.disable()
-
-            try:
-                start_barrier.wait()
-                stop_at = stop_time_holder[0]
-
-                local_i = 0
-                local_stats = stats[ix]
-
-                rng: Optional[random.Random]
-                if cfg.pattern in ("ratio", "random"):
-                    rng = random.Random(cfg.random_seed + ix)
-                else:
-                    rng = None
-
-                selector = _WorkSelector(
-                    pattern=cfg.pattern,
-                    burst_len=cfg.burst_len,
-                    ratio_p=cfg.ratio_p,
-                    rng=rng,
-                )
-
-                while not stop_event.is_set() and time.perf_counter() < stop_at:
-                    do_a = selector.choose_a(local_i)
-                    if do_a:
-                        root = ops.get_root_a()
-                        if not isinstance(root, g.root_a):
-                            raise AssertionError("Resolved root_a returned wrong type")
-                        local_stats.root_a += 1
-                    else:
-                        root = ops.get_root_b()
-                        if not isinstance(root, g.root_b):
-                            raise AssertionError("Resolved root_b returned wrong type")
-                        local_stats.root_b += 1
-
-                    local_stats.steps += 1
-                    local_i += 1
-
-                    # Validate spellspace caching
-                    if (local_i % cfg.spellspace_every) == 0:
-                        ops.spellspace_cycle()
-                        local_stats.spellspaces += 1
-
-                    # Optional transient correctness spot-check:
-                    # Two consecutive resolves while both roots are alive => leaf identity must differ.
-                    if cfg.validate_transient_every > 0 and g.transient_probe is not None:
-                        if (local_i % cfg.validate_transient_every) == 0:
-                            r1 = ops.get_root_a()
-                            r2 = ops.get_root_a()
-                            a1, b1 = g.transient_probe(r1)
-                            a2, b2 = g.transient_probe(r2)
-                            if a1 is a2 or b1 is b2:
-                                raise AssertionError("Transient probe failed: cached transient subtree detected")
-
-                    # GC policy
-                    if cfg.gc_mode == "periodic":
-                        if (local_i % cfg.gc_every) == 0:
-                            gc.collect()
-
-            finally:
-                if cfg.gc_mode == "disabled" and was_enabled:
-                    gc.enable()
-
-        except BaseException as e:
-            stats[ix].errors += 1
-            errors.append(e)
-            stop_event.set()
-
-    threads_list: list[threading.Thread] = []
-    for i in range(cfg.threads):
-        t = threading.Thread(target=worker, args=(i,), daemon=True)
-        threads_list.append(t)
-        t.start()
-
-    # Start all threads together, then set stop time.
-    start_barrier.wait()
-    start_t = time.perf_counter()
-    stop_time_holder[0] = start_t + cfg.duration_s
-
-    for t in threads_list:
-        t.join()
-
-    elapsed_s = time.perf_counter() - start_t
-    try:
-        if errors:
-            raise errors[0]
-
-        total_steps = sum(s.steps for s in stats)
-        total_a = sum(s.root_a for s in stats)
-        total_b = sum(s.root_b for s in stats)
-        total_spaces = sum(s.spellspaces for s in stats)
-        total_err = sum(s.errors for s in stats)
-
-        steps_per_s = total_steps / elapsed_s if elapsed_s > 0 else 0.0
-
-        print(
-            f"[{ops.name}] threaded stress ({g.name}): "
-            f"threads={cfg.threads}, duration={elapsed_s:.2f}s, "
-            f"steps={total_steps}, steps/s={steps_per_s:,.0f}, "
-            f"a={total_a}, b={total_b}, spellspaces={total_spaces}, errors={total_err}"
+        return PerfRow(
+            name="melder",
+            scenario=s.name,
+            mode=mode,
+            build_ns=build_ns,
+            cfg_total_ns=cfg_total_ns,
+            log_total_ns=log_total_ns,
+            svc_total_ns=svc_total_ns,
+            cfg_avg_us=_us_from_ns(cfg_total_ns) / tries,
+            log_avg_us=_us_from_ns(log_total_ns) / tries,
+            svc_avg_us=_us_from_ns(svc_total_ns) / tries,
+            logger_is_cached=logger_is_cached,
         )
     finally:
-        ops.cleanup()
+        conduit.cleanup()
 
-
-# ======================================================================================
-# Optional: Thread scaling matrix (skip unless DI_RUN_MATRIX=1)
-# ======================================================================================
-
-
-@pytest.mark.timeout(420)
-@pytest.mark.parametrize("lib", _selected_libs())
-@pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
-@pytest.mark.parametrize("threads", (1, 2, 4, 8, 10, 16))
-def test_threaded_di_stress_thread_matrix(lib: str, graph: str, threads: int) -> None:
-    """
-    Thread-count scaling matrix.
-
-    Disabled by default. Enable with:
-        DI_RUN_MATRIX=1
-
-    Uses a shorter duration by default:
-        DI_MATRIX_DURATION_S (default 10)
-    """
-    if not _env_bool("DI_RUN_MATRIX", True):
-        pytest.skip("DI_RUN_MATRIX not enabled")
-
-    gspecs = {g.name: g for g in _selected_graphs()}
-    g = gspecs[graph]
-
-    cfg = _StressConfig.from_env()
-    duration_s = _env_float("DI_MATRIX_DURATION_S", 10.0)
-
-    # Override only what we need for the matrix.
-    cfg2 = _StressConfig(
-        threads=threads,
-        duration_s=duration_s,
-        spellspace_every=cfg.spellspace_every,
-        gc_every=cfg.gc_every,
-        pattern=cfg.pattern,
-        burst_len=cfg.burst_len,
-        ratio_p=cfg.ratio_p,
-        random_seed=cfg.random_seed,
-        gc_mode=cfg.gc_mode,
-        validate_transient_every=cfg.validate_transient_every,
-    )
-
-    ops = _build_ops(lib, g)
-    _maybe_print_gil_status(f"{ops.name}/matrix")
-
-    stats: list[_ThreadStats] = [_ThreadStats() for _ in range(cfg2.threads)]
-    errors: list[BaseException] = []
-    stop_event = threading.Event()
-    start_barrier = threading.Barrier(cfg2.threads + 1)
-    stop_time_holder: list[float] = [0.0]
-
-    def worker(ix: int) -> None:
-        try:
-            start_barrier.wait()
-            stop_at = stop_time_holder[0]
-            local_i = 0
-            local_stats = stats[ix]
-
-            rng: Optional[random.Random]
-            if cfg2.pattern in ("ratio", "random"):
-                rng = random.Random(cfg2.random_seed + ix)
-            else:
-                rng = None
-
-            selector = _WorkSelector(
-                pattern=cfg2.pattern,
-                burst_len=cfg2.burst_len,
-                ratio_p=cfg2.ratio_p,
-                rng=rng,
-            )
-
-            while not stop_event.is_set() and time.perf_counter() < stop_at:
-                if selector.choose_a(local_i):
-                    ops.get_root_a()
-                    local_stats.root_a += 1
-                else:
-                    ops.get_root_b()
-                    local_stats.root_b += 1
-
-                local_stats.steps += 1
-                local_i += 1
-
-                if (local_i % cfg2.spellspace_every) == 0:
-                    ops.spellspace_cycle()
-                    local_stats.spellspaces += 1
-
-                if cfg2.gc_mode == "periodic":
-                    if (local_i % cfg2.gc_every) == 0:
-                        gc.collect()
-
-        except BaseException as e:
-            stats[ix].errors += 1
-            errors.append(e)
-            stop_event.set()
-
-    threads_list: list[threading.Thread] = []
-    for i in range(cfg2.threads):
-        t = threading.Thread(target=worker, args=(i,), daemon=True)
-        threads_list.append(t)
-        t.start()
-
-    start_barrier.wait()
-    start_t = time.perf_counter()
-    stop_time_holder[0] = start_t + cfg2.duration_s
-
-    for t in threads_list:
-        t.join()
-
-    elapsed_s = time.perf_counter() - start_t
-    try:
-        if errors:
-            raise errors[0]
-
-        total_steps = sum(s.steps for s in stats)
-        steps_per_s = total_steps / elapsed_s if elapsed_s > 0 else 0.0
-
-        print(
-            f"[{ops.name}] matrix ({g.name}): "
-            f"threads={cfg2.threads}, duration={elapsed_s:.2f}s, steps/s={steps_per_s:,.0f}"
-        )
-    finally:
-        ops.cleanup()
 
 
 # ======================================================================================
-# Optional: Single-thread latency sampler (skip unless DI_RUN_LATENCY=1)
+# dependency-injector runner
 # ======================================================================================
 
 
-def _percentile(sorted_vals: list[int], p: float) -> int:
-    """
-    p in [0, 1]. Returns a value from sorted_vals.
-    """
-    if not sorted_vals:
-        return 0
-    if p <= 0:
-        return sorted_vals[0]
-    if p >= 1:
-        return sorted_vals[-1]
-    idx = int((len(sorted_vals) - 1) * p)
-    return sorted_vals[idx]
+def _dependency_injector_run(s: PerfScenario, mode: str) -> PerfRow:
+    pytest.importorskip("dependency_injector", reason="dependency-injector is not installed")
+    from dependency_injector import containers, providers
 
+    if mode not in ("singleton", "transient"):
+        raise AssertionError(f"Unknown mode: {mode}")
 
-@pytest.mark.timeout(420)
-@pytest.mark.parametrize("lib", _selected_libs())
-@pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
-def test_single_thread_latency_sampler(lib: str, graph: str) -> None:
-    """
-    Single-thread latency sampling:
-        - samples root_a / root_b / spellspace_cycle latencies
-        - reports p50/p95/p99 in microseconds
+    t0 = _ns()
 
-    Disabled by default. Enable with:
-        DI_RUN_LATENCY=1
-    """
-    if not _env_bool("DI_RUN_LATENCY", False):
-        pytest.skip("DI_RUN_LATENCY not enabled")
+    if mode == "singleton":
 
-    gspecs = {g.name: g for g in _selected_graphs()}
-    g = gspecs[graph]
+        class _DIContainer(containers.DeclarativeContainer):
+            cfg = providers.Singleton(s.config_cls)
+            log = providers.Singleton(s.logger_cls, config=cfg)
+            svc = providers.Singleton(s.service_cls, logger=log)
 
-    cfg = _LatencyConfig.from_env()
-    ops = _build_ops(lib, g)
-
-    _maybe_print_gil_status(f"{ops.name}/latency")
-
-    rng: Optional[random.Random]
-    if cfg.pattern in ("ratio", "random"):
-        rng = random.Random(cfg.random_seed)
     else:
-        rng = None
 
-    selector = _WorkSelector(
-        pattern=cfg.pattern,
-        burst_len=cfg.burst_len,
-        ratio_p=cfg.ratio_p,
-        rng=rng,
+        class _DIContainer(containers.DeclarativeContainer):
+            cfg = providers.Factory(s.config_cls)
+            log = providers.Factory(s.logger_cls, config=cfg)
+            svc = providers.Factory(s.service_cls, logger=log)
+
+    di_container = _DIContainer()
+    build_ns = _ns() - t0
+
+    # sanity (NOT timed)
+    cfg1 = di_container.cfg()
+    cfg2 = di_container.cfg()
+    assert isinstance(cfg1, s.config_cls)
+    assert isinstance(cfg2, s.config_cls)
+
+    log1 = di_container.log()
+    log2 = di_container.log()
+    assert isinstance(log1, s.logger_cls)
+    assert isinstance(log2, s.logger_cls)
+
+    svc1 = di_container.svc()
+    assert isinstance(svc1, s.service_cls)
+
+    if mode == "singleton":
+        logger_is_cached: Optional[bool] = (log1 is log2)
+        assert logger_is_cached
+    else:
+        logger_is_cached = None
+
+    # Wrapper getters (fairness).
+    def get_cfg() -> object:
+        return di_container.cfg()
+
+    def get_log() -> object:
+        return di_container.log()
+
+    def get_svc() -> object:
+        return di_container.svc()
+
+    tries = s.settings.tries
+    warmup = s.settings.warmup
+    gc_disable = s.settings.gc_disable_during_timing
+
+    gc.collect()
+
+    cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+    log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+    svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
+
+    return PerfRow(
+        name="dependency-injector",
+        scenario=s.name,
+        mode=mode,
+        build_ns=build_ns,
+        cfg_total_ns=cfg_total_ns,
+        log_total_ns=log_total_ns,
+        svc_total_ns=svc_total_ns,
+        cfg_avg_us=_us_from_ns(cfg_total_ns) / tries,
+        log_avg_us=_us_from_ns(log_total_ns) / tries,
+        svc_avg_us=_us_from_ns(svc_total_ns) / tries,
+        logger_is_cached=logger_is_cached,
     )
 
-    # Sampled latencies in ns
-    a_lat: list[int] = []
-    b_lat: list[int] = []
-    space_lat: list[int] = []
 
-    stop_at = time.perf_counter() + cfg.duration_s
-    i = 0
-    try:
-        while time.perf_counter() < stop_at:
-            do_a = selector.choose_a(i)
+# ======================================================================================
+# Lagom runner
+# ======================================================================================
 
-            # resolve a/b
-            if (i % cfg.sample_every) == 0:
-                t0 = time.perf_counter_ns()
-                if do_a:
-                    ops.get_root_a()
-                else:
-                    ops.get_root_b()
-                dt = time.perf_counter_ns() - t0
-                if do_a:
-                    a_lat.append(dt)
-                else:
-                    b_lat.append(dt)
+
+def _lagom_run(s: PerfScenario, mode: str) -> PerfRow:
+    pytest.importorskip("lagom", reason="lagom is not installed")
+    from lagom import Container as LagomContainer
+    from lagom import Singleton as LagomSingleton
+
+    if mode not in ("singleton", "transient"):
+        raise AssertionError(f"Unknown mode: {mode}")
+
+    def _build_logger(container: LagomContainer):
+        cfg_obj = container[s.config_cls]
+        return s.logger_cls(config=cfg_obj)
+
+    def _build_service(container: LagomContainer):
+        log_obj = container[s.logger_cls]
+        return s.service_cls(logger=log_obj)
+
+    t0 = _ns()
+    lagom_container = LagomContainer()
+    if mode == "singleton":
+        lagom_container[s.config_cls] = LagomSingleton(s.config_cls)
+        lagom_container[s.logger_cls] = LagomSingleton(_build_logger)
+        lagom_container[s.service_cls] = LagomSingleton(_build_service)
+    else:
+        lagom_container[s.config_cls] = s.config_cls
+        lagom_container[s.logger_cls] = _build_logger
+        lagom_container[s.service_cls] = _build_service
+    build_ns = _ns() - t0
+
+    # sanity (NOT timed)
+    cfg1 = lagom_container[s.config_cls]
+    cfg2 = lagom_container[s.config_cls]
+    assert isinstance(cfg1, s.config_cls)
+    assert isinstance(cfg2, s.config_cls)
+
+    log1 = lagom_container[s.logger_cls]
+    log2 = lagom_container[s.logger_cls]
+    assert isinstance(log1, s.logger_cls)
+    assert isinstance(log2, s.logger_cls)
+
+    svc1 = lagom_container[s.service_cls]
+    assert isinstance(svc1, s.service_cls)
+
+    if mode == "singleton":
+        logger_is_cached: Optional[bool] = (log1 is log2)
+        assert logger_is_cached
+    else:
+        logger_is_cached = None
+
+    # Wrapper getters (fairness).
+    def get_cfg() -> object:
+        return lagom_container[s.config_cls]
+
+    def get_log() -> object:
+        return lagom_container[s.logger_cls]
+
+    def get_svc() -> object:
+        return lagom_container[s.service_cls]
+
+    tries = s.settings.tries
+    warmup = s.settings.warmup
+    gc_disable = s.settings.gc_disable_during_timing
+
+    gc.collect()
+
+    cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+    log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+    svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
+
+    return PerfRow(
+        name="lagom",
+        scenario=s.name,
+        mode=mode,
+        build_ns=build_ns,
+        cfg_total_ns=cfg_total_ns,
+        log_total_ns=log_total_ns,
+        svc_total_ns=svc_total_ns,
+        cfg_avg_us=_us_from_ns(cfg_total_ns) / tries,
+        log_avg_us=_us_from_ns(log_total_ns) / tries,
+        svc_avg_us=_us_from_ns(svc_total_ns) / tries,
+        logger_is_cached=logger_is_cached,
+    )
+
+
+# ======================================================================================
+# Injector (python-injector) runner
+# ======================================================================================
+
+
+def _injector_run(s: PerfScenario, mode: str) -> PerfRow:
+    """
+    Injector (python-injector) runner.
+
+    Notes:
+        - We do NOT use @provider methods here because injector requires a concrete
+          return type annotation to register providers, and our scenario classes
+          are selected dynamically (s.config_cls / s.logger_cls / s.service_cls).
+        - Instead we:
+            1) Patch __init__ with injector.inject(...) so constructor injection works.
+            2) Bind each class to itself via binder.bind(...), optionally with singleton scope.
+            3) Use injector.get(Class) for resolution.
+
+    Contract:
+        - Build time includes constructor patching + binding registration + Injector creation.
+        - Restores patched __init__ methods before returning.
+    """
+    pytest.importorskip("injector", reason="injector is not installed")
+    from injector import Binder, Injector as PyInjector, Module, inject, singleton
+
+    if mode not in ("singleton", "transient"):
+        raise AssertionError(f"Unknown mode: {mode}")
+
+    classes = (s.config_cls, s.logger_cls, s.service_cls)
+
+    # Build-time includes patching + binding + injector creation for fairness.
+    t0 = _ns()
+
+    original_inits: dict[type, object] = {}
+    for cls in classes:
+        original_inits[cls] = cls.__init__
+        cls.__init__ = inject(cls.__init__)
+
+    class _PerfModule(Module):
+        """
+        Injector module used for perf.
+
+        Contract:
+            - Binds config/logger/service classes to themselves.
+            - Applies singleton scope only when mode == "singleton".
+        """
+
+        def configure(self, binder: Binder) -> None:
+            if mode == "singleton":
+                binder.bind(s.config_cls, to=s.config_cls, scope=singleton)
+                binder.bind(s.logger_cls, to=s.logger_cls, scope=singleton)
+                binder.bind(s.service_cls, to=s.service_cls, scope=singleton)
             else:
-                if do_a:
-                    ops.get_root_a()
-                else:
-                    ops.get_root_b()
+                binder.bind(s.config_cls, to=s.config_cls)
+                binder.bind(s.logger_cls, to=s.logger_cls)
+                binder.bind(s.service_cls, to=s.service_cls)
 
-            i += 1
+    injector = PyInjector([_PerfModule()])
+    build_ns = _ns() - t0
 
-            # spellspace sampling (also sampled)
-            if (i % (cfg.sample_every * 5)) == 0:
-                t0 = time.perf_counter_ns()
-                ops.spellspace_cycle()
-                dt = time.perf_counter_ns() - t0
-                space_lat.append(dt)
+    try:
+        # sanity (NOT timed)
+        cfg1 = injector.get(s.config_cls)
+        cfg2 = injector.get(s.config_cls)
+        assert isinstance(cfg1, s.config_cls)
+        assert isinstance(cfg2, s.config_cls)
 
-        a_lat.sort()
-        b_lat.sort()
-        space_lat.sort()
+        log1 = injector.get(s.logger_cls)
+        log2 = injector.get(s.logger_cls)
+        assert isinstance(log1, s.logger_cls)
+        assert isinstance(log2, s.logger_cls)
 
-        def _fmt(vals: list[int]) -> str:
-            p50 = _percentile(vals, 0.50) / 1_000.0
-            p95 = _percentile(vals, 0.95) / 1_000.0
-            p99 = _percentile(vals, 0.99) / 1_000.0
-            return f"p50={p50:.2f}us p95={p95:.2f}us p99={p99:.2f}us n={len(vals)}"
+        svc1 = injector.get(s.service_cls)
+        assert isinstance(svc1, s.service_cls)
 
-        print(f"[{ops.name}] latency ({g.name}) root_a: {_fmt(a_lat)}")
-        print(f"[{ops.name}] latency ({g.name}) root_b: {_fmt(b_lat)}")
-        print(f"[{ops.name}] latency ({g.name}) spellspace: {_fmt(space_lat)}")
+        if mode == "singleton":
+            logger_is_cached: Optional[bool] = (log1 is log2)
+            assert logger_is_cached
+        else:
+            logger_is_cached = None
 
+        # Wrapper getters (fairness).
+        def get_cfg() -> object:
+            return injector.get(s.config_cls)
+
+        def get_log() -> object:
+            return injector.get(s.logger_cls)
+
+        def get_svc() -> object:
+            return injector.get(s.service_cls)
+
+        tries = s.settings.tries
+        warmup = s.settings.warmup
+        gc_disable = s.settings.gc_disable_during_timing
+
+        gc.collect()
+
+        cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
+
+        return PerfRow(
+            name="injector",
+            scenario=s.name,
+            mode=mode,
+            build_ns=build_ns,
+            cfg_total_ns=cfg_total_ns,
+            log_total_ns=log_total_ns,
+            svc_total_ns=svc_total_ns,
+            cfg_avg_us=_us_from_ns(cfg_total_ns) / tries,
+            log_avg_us=_us_from_ns(log_total_ns) / tries,
+            svc_avg_us=_us_from_ns(svc_total_ns) / tries,
+            logger_is_cached=logger_is_cached,
+        )
     finally:
-        ops.cleanup()
+        # Restore patched constructors to avoid cross-test contamination.
+        for cls in classes:
+            cls.__init__ = original_inits[cls]
+
+
+# ======================================================================================
+# Dishka runner
+# ======================================================================================
+
+
+def _dishka_run(s: PerfScenario, mode: str) -> PerfRow:
+    pytest.importorskip("dishka", reason="dishka is not installed")
+    from dishka import Provider, Scope, make_container
+
+    if mode not in ("singleton", "transient"):
+        raise AssertionError(f"Unknown mode: {mode}")
+
+    t0 = _ns()
+    provider = Provider(scope=Scope.APP)
+    if mode == "singleton":
+        provider.provide(s.config_cls)
+        provider.provide(s.logger_cls)
+        provider.provide(s.service_cls)
+    else:
+        provider.provide(s.config_cls, cache=False)
+        provider.provide(s.logger_cls, cache=False)
+        provider.provide(s.service_cls, cache=False)
+    dishka_container = make_container(provider)
+    build_ns = _ns() - t0
+
+    try:
+        # sanity (NOT timed)
+        cfg1 = dishka_container.get(s.config_cls)
+        cfg2 = dishka_container.get(s.config_cls)
+        assert isinstance(cfg1, s.config_cls)
+        assert isinstance(cfg2, s.config_cls)
+
+        log1 = dishka_container.get(s.logger_cls)
+        log2 = dishka_container.get(s.logger_cls)
+        assert isinstance(log1, s.logger_cls)
+        assert isinstance(log2, s.logger_cls)
+
+        svc1 = dishka_container.get(s.service_cls)
+        assert isinstance(svc1, s.service_cls)
+
+        if mode == "singleton":
+            logger_is_cached: Optional[bool] = (log1 is log2)
+            assert logger_is_cached
+        else:
+            logger_is_cached = None
+
+        # Wrapper getters (fairness).
+        def get_cfg() -> object:
+            return dishka_container.get(s.config_cls)
+
+        def get_log() -> object:
+            return dishka_container.get(s.logger_cls)
+
+        def get_svc() -> object:
+            return dishka_container.get(s.service_cls)
+
+        tries = s.settings.tries
+        warmup = s.settings.warmup
+        gc_disable = s.settings.gc_disable_during_timing
+
+        gc.collect()
+
+        cfg_total_ns = _time_loop(get_cfg, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        log_total_ns = _time_loop(get_log, warmup=warmup, tries=tries, gc_disable=gc_disable)
+        svc_total_ns = _time_loop(get_svc, warmup=warmup, tries=tries, gc_disable=gc_disable)
+
+        return PerfRow(
+            name="dishka",
+            scenario=s.name,
+            mode=mode,
+            build_ns=build_ns,
+            cfg_total_ns=cfg_total_ns,
+            log_total_ns=log_total_ns,
+            svc_total_ns=svc_total_ns,
+            cfg_avg_us=_us_from_ns(cfg_total_ns) / tries,
+            log_avg_us=_us_from_ns(log_total_ns) / tries,
+            svc_avg_us=_us_from_ns(svc_total_ns) / tries,
+            logger_is_cached=logger_is_cached,
+        )
+    finally:
+        dishka_container.close()
+
+
+# ======================================================================================
+# Unified run
+# ======================================================================================
+
+
+def _run_all_frameworks(s: PerfScenario, mode: str) -> list[PerfRow]:
+    rows: list[PerfRow] = []
+    rows.append(_melder_run(s, mode))
+    rows.append(_dependency_injector_run(s, mode))
+    rows.append(_lagom_run(s, mode))
+    rows.append(_injector_run(s, mode))
+    rows.append(_dishka_run(s, mode))
+    return rows
+
+
+# ======================================================================================
+# Scenarios
+# ======================================================================================
+
+
+def _lite_settings() -> PerfSettings:
+    # Large iteration count so sub-micro overhead shows up clearly.
+    return PerfSettings(tries=50_000, warmup=500, gc_disable_during_timing=True)
+
+
+def _heavy_settings() -> PerfSettings:
+    # Smaller iteration count because constructors dominate.
+    return PerfSettings(tries=1_000, warmup=50, gc_disable_during_timing=False)
+
+
+def _lite_scenario() -> PerfScenario:
+    return PerfScenario(
+        name="lite",
+        config_cls=LiteConfig,
+        logger_cls=LiteLogger,
+        service_cls=LiteService,
+        settings=_lite_settings(),
+    )
+
+
+def _heavy_scenario() -> PerfScenario:
+    return PerfScenario(
+        name="heavy",
+        config_cls=HeavyConfig,
+        logger_cls=HeavyLogger,
+        service_cls=HeavyService,
+        settings=_heavy_settings(),
+    )
+
+
+# ======================================================================================
+# Tests
+# ======================================================================================
+
+
+def test_perf_overhead_lite_graph_singletons_all_frameworks() -> None:
+    s = _lite_scenario()
+    rows = _run_all_frameworks(s, mode="singleton")
+    _print_table(
+        "LITE graph perf (SINGLETON / UNIQUE semantics) — DI overhead is visible",
+        rows,
+        tries=s.settings.tries,
+        warmup=s.settings.warmup,
+    )
+
+
+def test_perf_overhead_lite_graph_transient_all_frameworks() -> None:
+    s = _lite_scenario()
+    rows = _run_all_frameworks(s, mode="transient")
+    _print_table(
+        "LITE graph perf (TRANSIENT / MANY semantics) — DI overhead is visible",
+        rows,
+        tries=s.settings.tries,
+        warmup=s.settings.warmup,
+    )
+
+
+def test_perf_realistic_heavy_graph_singletons_all_frameworks() -> None:
+    s = _heavy_scenario()
+    rows = _run_all_frameworks(s, mode="singleton")
+    _print_table(
+        "HEAVY graph perf (SINGLETON / UNIQUE semantics) — constructors dominate only on first resolve (excluded)",
+        rows,
+        tries=s.settings.tries,
+        warmup=s.settings.warmup,
+    )
+
+
+def test_perf_realistic_heavy_graph_transient_all_frameworks() -> None:
+    s = _heavy_scenario()
+    rows = _run_all_frameworks(s, mode="transient")
+    _print_table(
+        "HEAVY graph perf (TRANSIENT / MANY semantics) — constructors dominate (DI mostly hidden)",
+        rows,
+        tries=s.settings.tries,
+        warmup=s.settings.warmup,
+    )

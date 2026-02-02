@@ -154,29 +154,29 @@ def test_revalidate_delegates_to_ccm(manager, mock_dependencies):
     Verify `revalidate_dirty_roots` delegates to ChangeControlManager.
 
     Contract:
-    - Calls `ccm.revalidate_dirty_roots(cancel_event=None)` by default.
+    - Calls `ccm.revalidate_dirty_roots(conduit_id, cancel_event=None)` by default.
     """
     mock_ccm = mock_dependencies["mock_ccm"]
-    manager.revalidate_dirty_roots()
-    mock_ccm.revalidate_dirty_roots.assert_called_once_with(cancel_event=None)
+    manager.revalidate_dirty_roots("conduit-1")
+    mock_ccm.revalidate_dirty_roots.assert_called_once_with("conduit-1", cancel_event=None)
 
 def test_revalidate_passes_cancel_event(manager, mock_dependencies):
     """Verify cancel_event is passed through to CCM."""
     mock_ccm = mock_dependencies["mock_ccm"]
     event = MagicMock(spec=CancellationEvent)
-    manager.revalidate_dirty_roots(cancel_event=event)
-    mock_ccm.revalidate_dirty_roots.assert_called_once_with(cancel_event=event)
+    manager.revalidate_dirty_roots("conduit-1", cancel_event=event)
+    mock_ccm.revalidate_dirty_roots.assert_called_once_with("conduit-1", cancel_event=event)
 
 def test_revalidate_raises_if_cleaned(manager):
     """Verify method raises RuntimeError if manager is cleaned."""
     manager.cleanup()
     with pytest.raises(RuntimeError):
-        manager.revalidate_dirty_roots()
+        manager.revalidate_dirty_roots("conduit-1")
 
 def test_revalidate_thread_safety(manager):
     """Verify method acquires lock during execution."""
     with patch.object(manager, "_lock") as mock_lock:
-        manager.revalidate_dirty_roots()
+        manager.revalidate_dirty_roots("conduit-1")
         mock_lock.__enter__.assert_called()
         mock_lock.__exit__.assert_called()
 
@@ -189,13 +189,13 @@ def test_revalidate_safe_if_ccm_none(manager):
     # Force state bypassing cleanup logic
     manager._change_control_manager = None
     # Should not raise AttributeError
-    manager.revalidate_dirty_roots()
+    manager.revalidate_dirty_roots("conduit-1")
 
 def test_revalidate_propagates_exceptions(manager, mock_dependencies):
     """Verify exceptions from CCM are propagated (not swallowed)."""
     mock_dependencies["mock_ccm"].revalidate_dirty_roots.side_effect = ValueError("Boom")
     with pytest.raises(ValueError, match="Boom"):
-        manager.revalidate_dirty_roots()
+        manager.revalidate_dirty_roots("conduit-1")
 
 # ----------------------------------------------------------------------
 # 6. Cleanup Tests
@@ -315,7 +315,11 @@ def test_revalidate_dirty_roots_kwarg_compat(manager, mock_dependencies):
     """Ensure kwargs are handled or at least explicitly accepted if signature changes."""
     # Current signature is explicit (cancel_event=None).
     # Just reaffirming no crash with explicit kwarg.
-    manager.revalidate_dirty_roots(cancel_event=None)
+    manager.revalidate_dirty_roots("conduit-1", cancel_event=None)
+    mock_dependencies["mock_ccm"].revalidate_dirty_roots.assert_called_once_with(
+        "conduit-1",
+        cancel_event=None,
+    )
 
 def test_lock_is_reentrant(manager):
     """Verify the lock used is indeed RLock (reentrant)."""
@@ -368,11 +372,11 @@ def test_full_lifecycle_flow(mock_sss, mock_dependencies):
     """Integration-lite: Create, use, clean, verify."""
     mgr = DevOpsManager(mock_sss)
     assert mgr.incident_manager is not None
-    mgr.revalidate_dirty_roots()
+    mgr.revalidate_dirty_roots("conduit-1")
     mgr.cleanup()
     assert mgr._cleaned
     with pytest.raises(RuntimeError):
-        mgr.revalidate_dirty_roots()
+        mgr.revalidate_dirty_roots("conduit-1")
 
 def test_cleanup_lock_nullification(manager):
     """Verify lock is set to None specifically at end of cleanup."""
@@ -405,4 +409,4 @@ def test_cleanable_interface_compliance(manager):
 
 def test_revalidate_dirty_roots_does_not_return_value(manager):
     """Verify it returns None."""
-    assert manager.revalidate_dirty_roots() is None
+    assert manager.revalidate_dirty_roots("conduit-1") is None

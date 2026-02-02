@@ -582,6 +582,60 @@ class Spellbook(Cleanable, ISpellbook):
             if self._spell_versions is not None:
                 self._spell_versions.add(new_id)
 
+    def _unregister_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
+        """
+        Internal
+
+        Remove an owned spell_id mapping for the given spell.
+
+        Purpose:
+            Keep owned spell_id lookups and the spell_id_pool consistent when
+            a locally owned spell is removed or transferred.
+        Contract:
+            - Removes the spell_id from `_spells_by_id` when present.
+            - Removes the spell_id from `_spell_id_pool` when present.
+            - Raises if the spell_id maps to a different spell in either map.
+        Args:
+            spell_id (str): Current version id for the spell.
+            spell (ISpell): Owned spell instance being removed.
+        Raises:
+            RuntimeError: If the owned id map is missing.
+            RuntimeError: If the spell_id maps to a different spell.
+        Threading:
+            - Acquires the Spellbook lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._spells_by_id is None:
+                self._logger.error(
+                    "Owned spell_id map is not available.",
+                    "_unregister_owned_spell_id",
+                )
+                raise RuntimeError("Owned spell_id map is not available.")
+            existing = self._spells_by_id.get(spell_id)
+            if existing is not None and existing is not spell:
+                self._logger.error(
+                    f"Owned spell_id mapped to a different spell (spell_id={spell_id}).",
+                    "_unregister_owned_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"Owned spell_id mapped to a different spell (spell_id={spell_id})."
+                )
+            self._spells_by_id.pop(spell_id, None)
+
+            existing_pool = self._spell_id_pool.get(spell_id)
+            if existing_pool is not None and existing_pool is not spell:
+                self._logger.error(
+                    f"spell_id_pool mapped to a different spell (spell_id={spell_id}).",
+                    "_unregister_owned_spell_id",
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"spell_id_pool mapped to a different spell (spell_id={spell_id})."
+                )
+            self._spell_id_pool.pop(spell_id, None)
+
     def _register_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: ISpell) -> None:
         """
         Internal

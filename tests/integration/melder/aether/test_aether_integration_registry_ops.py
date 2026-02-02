@@ -277,6 +277,7 @@ def test_aether_revalidate_dirty_roots_calls_change_control() -> None:
     """
     aether = Aether()
     frame_name = "frame-devops"
+    conduit_id = "conduit-1"
     aether._ensure_frame(frame_name)
     ccm = aether._get_change_control_manager(frame_name)
 
@@ -291,19 +292,19 @@ def test_aether_revalidate_dirty_roots_calls_change_control() -> None:
     )
 
     try:
-        ccm.rebuild_component_of({"root": blueprint})
+        ccm.rebuild_component_of(conduit_id, {"root": blueprint})
         calls: list[set[str]] = []
 
         def revalidator(dirty_roots: set[str], _cancel: object | None) -> None:
             calls.append(set(dirty_roots))
 
-        ccm.set_revalidator(revalidator)
+        ccm.set_revalidator(conduit_id, revalidator)
         ccm.notify_spell_changed("dep")
-        assert ccm.is_root_dirty("root") is True
+        assert ccm.is_root_dirty(conduit_id, "root") is True
 
-        aether._revalidate_dirty_roots(frame_name)
+        aether._revalidate_dirty_roots(conduit_id, frame_name)
 
         assert calls == [{"root"}]
-        assert ccm.is_root_dirty("root") is False
+        assert ccm.is_root_dirty(conduit_id, "root") is False
     finally:
         blueprint.cleanup()
