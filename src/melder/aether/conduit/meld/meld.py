@@ -1434,73 +1434,6 @@ class Meld(Cleanable, IMeld):
             return None
         return instance
 
-    def _cache_input_resolution(
-            self,
-            cache_key: Optional[tuple],
-            spell: ISpell,
-    ) -> None:
-        if cache_key is None:
-            return
-        if self._input_resolution_cache is None:
-            return
-        if len(self._input_resolution_cache) >= self._max_resolution_cache_size:
-            self._input_resolution_cache.clear()
-        self._input_resolution_cache[cache_key] = spell
-
-    def _cache_spell_lookup(
-            self,
-            lookup_key: tuple[str, str],
-            spell: ISpell,
-    ) -> None:
-        if self._spell_lookup_cache is None:
-            return
-        if len(self._spell_lookup_cache) >= self._max_resolution_cache_size:
-            self._spell_lookup_cache.clear()
-        self._spell_lookup_cache[lookup_key] = spell
-
-    def _cache_spell_id(
-            self,
-            spell_id: str,
-            spell: ISpell,
-    ) -> None:
-        if self._spell_id_cache is None:
-            return
-        if len(self._spell_id_cache) >= self._max_resolution_cache_size:
-            self._spell_id_cache.clear()
-        self._spell_id_cache[spell_id] = spell
-
-    def _cache_singleton_hit(
-            self,
-            spell: ISpell,
-            instance: Any,
-    ) -> None:
-        if self._singleton_hit_cache is None:
-            return
-        if len(self._singleton_hit_cache) >= self._max_singleton_cache_size:
-            self._singleton_hit_cache.clear()
-        self._singleton_hit_cache[spell.spell_id] = instance
-
-    def _get_cached_singleton(
-            self,
-            spell: ISpell,
-            creations: Any,
-            spellspace: Optional[Any],
-    ) -> Optional[Any]:
-        cached = self._singleton_hit_cache.get(spell.spell_id)
-        if cached is None:
-            return None
-        if creations is None:
-            return cached
-        with creations._lock:
-            instance = self._get_existing_creation_from_creations(
-                spell=spell,
-                creations=creations,
-                spellspace=spellspace,
-            )
-        if instance is None:
-            self._singleton_hit_cache.pop(spell.spell_id, None)
-            return None
-        return instance
 
     def  _resolve_instance_with_locks(
             self,
@@ -1809,54 +1742,6 @@ class Meld(Cleanable, IMeld):
             )
         return spellspace
 
-    def _get_active_spellspace_for_creations(
-            self,
-            creations: Any,
-    ) -> Any:
-        """
-        Resolve and validate the active SpellSpace for a creations container.
-
-        Contract:
-            - Raises SpellSpaceScopeError when no active spellspace is present.
-            - Raises SpellSpaceScopeError when the active spellspace belongs to
-              a different conduit.
-        """
-        spellspace = creations._conduit.get_active_spellspace()
-        if spellspace is None:
-            raise SpellSpaceScopeError(
-                "Existence.unique_per_spell_space requires an active SpellSpace. "
-                "Use 'with conduit.enter_spellspace()' when melding."
-            )
-        if spellspace.owner_conduit is not creations._conduit:
-            raise SpellSpaceScopeError(
-                "Active SpellSpace belongs to a different conduit."
-            )
-        return spellspace
-
-    def _get_active_spellspace_for_creations(
-            self,
-            creations: Any,
-    ) -> Any:
-        """
-        Resolve and validate the active SpellSpace for a creations container.
-
-        Contract:
-            - Raises SpellSpaceScopeError when no active spellspace is present.
-            - Raises SpellSpaceScopeError when the active spellspace belongs to
-              a different conduit.
-        """
-        spellspace = creations._conduit.get_active_spellspace()
-        if spellspace is None:
-            raise SpellSpaceScopeError(
-                "Existence.unique_per_spell_space requires an active SpellSpace. "
-                "Use 'with conduit.enter_spellspace()' when melding."
-            )
-        if spellspace.owner_conduit is not creations._conduit:
-            raise SpellSpaceScopeError(
-                "Active SpellSpace belongs to a different conduit."
-            )
-        return spellspace
-
     # ----------------------------------------------------------------------
     # Spell-type–aware dispatch and registration
     # ----------------------------------------------------------------------
@@ -1988,32 +1873,6 @@ class Meld(Cleanable, IMeld):
         preferred_route = spell.execution_plan_preferred_route
         if preferred_route and preferred_route.startswith("FAST_TRANSIENT"):
             return True
-        plan = crafter.execution_plan_phase11_no_overrides
-        if plan is None or plan.fast_transient_plan is None:
-            return False
-
-        step_count = spell.execution_plan_step_count
-        if step_count is None:
-            step_count = len(plan.steps)
-
-        max_depth = spell.execution_plan_max_occurrence_depth
-        if max_depth is None:
-            max_depth = 0
-
-        # Favor the fast shortcut for small/shallow graphs where overhead dominates.
-        return step_count <= 16 and max_depth <= 6
-
-    def _should_use_fast_transient_shortcut(self, spell: ISpell) -> bool:
-        """
-        Determine whether to route to the fast transient executor.
-
-        Contract:
-            - Only considers the no-overrides execution plan.
-            - Uses cached Phase 11 metrics when available.
-        """
-        crafter = spell._crafter
-        if crafter is None:
-            return False
         plan = crafter.execution_plan_phase11_no_overrides
         if plan is None or plan.fast_transient_plan is None:
             return False
