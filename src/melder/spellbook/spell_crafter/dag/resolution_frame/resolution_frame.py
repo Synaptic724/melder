@@ -61,6 +61,36 @@ class ResolutionFrame(Cleanable):
         # We keep _lock and _id intact; only logical state is wiped.
         self._cleaned = True
 
+    def reset(self, overrides: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Reset the frame for reuse in another meld execution.
+
+        Contract:
+            - Clears overrides, results, and errors.
+            - Reinitializes internal mappings if they were cleaned.
+            - Generates a fresh id for the new execution run.
+        """
+        self._cleaned = False
+        self._id = IDBuilder.create_id()
+
+        if self._overrides is None:
+            self._overrides = {}
+        else:
+            self._overrides.clear()
+
+        if overrides:
+            self._overrides.update(overrides)
+
+        if self._results is None:
+            self._results = {}
+        else:
+            self._results.clear()
+
+        if self._errors is None:
+            self._errors = {}
+        else:
+            self._errors.clear()
+
 
     # ------------------------------------------------------------------ #
     # Properties
