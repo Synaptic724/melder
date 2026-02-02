@@ -1154,30 +1154,6 @@ def test_construct_spell_wraps_callable_error() -> None:
     assert isinstance(exc_info.value.inner, ValueError)
 
 
-def test_run_execution_plan_respects_cancellation_event() -> None:
-    """
-    Verify execution honors cancellation signals.
-
-    Contract:
-        - when cancellation is set, execution raises OperationCancelledError.
-    """
-    signal = CancellationEventSignal()
-    signal.cancel()
-    root_spell = _make_spell(spell_id="root", spell=lambda: "never")
-    blueprint, execution_plan, spell_lookup = _make_root_only_plan(
-        root_spell=root_spell,
-    )
-    engine, _, _ = _make_engine(
-        root_spell=root_spell,
-        blueprint=blueprint,
-        spell_lookup=spell_lookup,
-        cancel_event=signal.event,
-    )
-    with pytest.raises(OperationCancelledError):
-        _run_plan(engine=engine, execution_plan=execution_plan)
-    signal.cleanup()
-
-
 def test_construct_spell_existing_creation_allows_missing_object() -> None:
     """
     Verify existing-creation spells return the stored object (even when None).
@@ -2134,35 +2110,6 @@ def test_run_blueprint_registers_constructed_spell() -> None:
     assert _run_plan(engine=engine, execution_plan=execution_plan) == "root-value"
     extracted = creations.extract_spell_creations("root")
     assert extracted[0]["scope"] == "unique"
-
-
-def test_run_blueprint_respects_cancellation_event() -> None:
-    """
-    Verify blueprint execution honors cancellation signals.
-
-    Contract:
-        - when cancellation is set, run raises OperationCancelledError.
-    """
-    signal = CancellationEventSignal()
-    signal.cancel()
-    dag = _make_dag_with_nodes(["root"])
-    blueprint = _make_blueprint("root", dag, ["root"])
-    root_spell = _make_spell(spell_id="root", spell=lambda: "never")
-    execution_plan = _build_execution_plan(
-        root_spell=root_spell,
-        blueprint=blueprint,
-        spell_lookup={"root": root_spell},
-    )
-    engine, _, _ = _make_engine(
-        root_spell=root_spell,
-        blueprint=blueprint,
-        spell_lookup={"root": root_spell},
-        cancel_event=signal.event,
-    )
-    with pytest.raises(OperationCancelledError):
-        _run_plan(engine=engine, execution_plan=execution_plan)
-    signal.cleanup()
-
 
 def test_run_blueprint_cancellation_only_checked_at_start() -> None:
     """

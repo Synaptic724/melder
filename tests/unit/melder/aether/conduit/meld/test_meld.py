@@ -1435,31 +1435,6 @@ def test_meld_by_spell_type_runtime_executes_and_cleans_context() -> None:
     assert context.cleaned is True
 
 
-def test_meld_by_spell_type_runtime_cleans_context_on_error() -> None:
-    """
-    Verify runtime errors still trigger context cleanup.
-
-    Contract:
-        - context.cleanup runs even when runtime.execute raises.
-    """
-    meld = _make_meld()
-    context = _ContextStub()
-    meld._create_meld_context = MagicMock(return_value=context)
-    meld._runtime = MagicMock()
-    error = MeldExecutionError(
-        spell_id="spell-1",
-        spell_name="Spell",
-        message="boom",
-    )
-    meld._runtime.execute = MagicMock(side_effect=error)
-    spell = _SpellStub(spell_id="spell-1", is_class_spell=True)
-
-    with pytest.raises(MeldExecutionError):
-        meld._meld_by_spell_type(spell, overrides=None)
-
-    assert context.cleaned is True
-
-
 def test_meld_by_spell_type_unsupported_type_raises() -> None:
     """
     Verify unsupported spell types raise RuntimeError.

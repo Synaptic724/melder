@@ -23,6 +23,40 @@ from tests.mocks.spellbook.deep_layers import (
     get_depth_7_classes,
     get_depth_9_classes,
 )
+def _env_int_nonneg(name: str, default: int) -> int:
+    v = _env_int(name, default)
+    return v if v >= 0 else 0
+
+
+def _warmup_ops(ops: _RuntimeOps, *, iters: int) -> None:
+    """
+    Warm up a single-graph ops object to exclude lazy-first-resolve work from timed runs.
+    """
+    if iters <= 0:
+        return
+
+    # Warm roots
+    for _ in range(iters):
+        ops.get_root_a()
+        ops.get_root_b()
+
+    # Warm spellspace path at least once
+    ops.spellspace_cycle()
+
+
+def _warmup_rotation_ops(ops: _RotationOps, *, iters: int) -> None:
+    """
+    Warm up a rotation ops object for every graph index.
+    """
+    if iters <= 0:
+        return
+
+    gcount = len(ops.graphs)
+    for gix in range(gcount):
+        for _ in range(iters):
+            ops.get_root_a(gix)
+            ops.get_root_b(gix)
+        ops.spellspace_cycle(gix)
 
 # ======================================================================================
 # Synthetic graphs: solo / shallow / wide / diamond
@@ -373,6 +407,11 @@ def _ctor_param_types(cls: type) -> tuple[tuple[str, type], ...]:
     return tuple(out)
 
 
+# ======================================================================================
+# Graph Specs
+# ======================================================================================
+
+
 @dataclass(frozen=True)
 class _GraphSpec:
     """
@@ -399,39 +438,12 @@ class _GraphSpec:
 class _GraphFactory:
     """
     Supported shapes:
-        deep     - existing deep_layers (Depth9 vs Depth7 + spellspace Depth3)
         solo     - no dependencies
         shallow  - depth-2 roots
         wide     - wide arity root + grouped-wide root
         diamond  - shared dependency requested twice inside same resolve
+        deep     - existing deep_layers (Depth9 vs Depth7 + spellspace Depth3)
     """
-    @staticmethod
-    def deep_layers() -> _GraphSpec:
-        def _probe_depth9(root: Any) -> tuple[object, object]:
-            layer2 = root.left
-            layer3 = layer2.left
-            layer4 = layer3.left
-            layer5 = layer4.left
-            layer6 = layer5.left
-            layer7 = layer6.left
-            layer8 = layer7.left
-            leaf_a = layer8.left
-            leaf_b = layer8.right
-            return leaf_a, leaf_b
-
-        return _GraphSpec(
-            name="deep",
-            root_a=Depth9Root,
-            root_b=Depth7Root,
-            spellspace_root=Depth3Root,
-            root_a_classes=get_depth_9_classes(),
-            root_b_classes=get_depth_7_classes(),
-            spellspace_classes=get_depth_3_classes(),
-            transient_probe=_probe_depth9,
-            within_resolve_probe=None,
-            within_resolve_expect_distinct=True,
-        )
-
     @staticmethod
     def solo() -> _GraphSpec:
         return _GraphSpec(
@@ -511,23 +523,58 @@ class _GraphFactory:
             within_resolve_expect_distinct=True,
         )
 
+    @staticmethod
+    def deep_layers() -> _GraphSpec:
+        def _probe_depth9(root: Any) -> tuple[object, object]:
+            layer2 = root.left
+            layer3 = layer2.left
+            layer4 = layer3.left
+            layer5 = layer4.left
+            layer6 = layer5.left
+            layer7 = layer6.left
+            layer8 = layer7.left
+            leaf_a = layer8.left
+            leaf_b = layer8.right
+            return leaf_a, leaf_b
+
+        return _GraphSpec(
+            name="deep",
+            root_a=Depth9Root,
+            root_b=Depth7Root,
+            spellspace_root=Depth3Root,
+            root_a_classes=get_depth_9_classes(),
+            root_b_classes=get_depth_7_classes(),
+            spellspace_classes=get_depth_3_classes(),
+            transient_probe=_probe_depth9,
+            within_resolve_probe=None,
+            within_resolve_expect_distinct=True,
+        )
+
+
+def _all_graphs() -> list[_GraphSpec]:
+    return [
+        _GraphFactory.solo(),
+        _GraphFactory.shallow(),
+        _GraphFactory.wide(),
+        _GraphFactory.diamond(),
+        _GraphFactory.deep_layers(),
+    ]
+
 
 def _selected_graphs() -> list[_GraphSpec]:
-    want = _parse_csv(_env_str("DI_GRAPHS", "deep"))
+    """
+    Env:
+        DI_GRAPHS: comma-separated list (default runs everything)
+    """
+    default = "solo,shallow,wide,diamond,deep"
+    want = _parse_csv(_env_str("DI_GRAPHS", default))
+    graphs_by_name = {g.name: g for g in _all_graphs()}
     out: list[_GraphSpec] = []
     for name in want:
-        if name == "deep":
-            out.append(_GraphFactory.deep_layers())
-        elif name == "solo":
-            out.append(_GraphFactory.solo())
-        elif name == "shallow":
-            out.append(_GraphFactory.shallow())
-        elif name == "wide":
-            out.append(_GraphFactory.wide())
-        elif name == "diamond":
-            out.append(_GraphFactory.diamond())
-        else:
-            raise AssertionError(f"Unknown graph '{name}'. Supported: deep,solo,shallow,wide,diamond")
+        g = graphs_by_name.get(name)
+        if g is None:
+            raise AssertionError(f"Unknown graph '{name}'. Supported: {list(graphs_by_name.keys())}")
+        out.append(g)
     return out
 
 
@@ -541,12 +588,40 @@ def _selected_libs() -> tuple[str, ...]:
     return want
 
 
+def _union_classes(graphs: list[_GraphSpec]) -> list[type]:
+    """
+    Union all classes across graphs in a stable order (deps before dependents within each graph).
+    Graphs are independent, so concatenation + de-dupe is enough.
+    """
+    out: list[type] = []
+    seen: set[type] = set()
+    for g in graphs:
+        for cls in g.root_a_classes + g.root_b_classes + g.spellspace_classes:
+            if cls in seen:
+                continue
+            out.append(cls)
+            seen.add(cls)
+    return out
+
+
+def _union_spellspace_types(graphs: list[_GraphSpec]) -> set[type]:
+    out: set[type] = set()
+    for g in graphs:
+        out.update(g.spellspace_classes)
+    return out
+
+
+# ======================================================================================
+# Stress config
+# ======================================================================================
+
+
 @dataclass(frozen=True)
 class _StressConfig:
     """
     Controls (env vars):
-        DI_THREADS                  default 10
-        DI_DURATION_S               default 60.0
+        DI_THREADS                  default 1
+        DI_DURATION_S               default 15.0
         DI_PATTERN                  alternating | burst | ratio | random (default alternating)
         DI_BURST_LEN                default 64
         DI_RATIO_P                  default 0.5
@@ -558,6 +633,10 @@ class _StressConfig:
 
         DI_VALIDATE_TRANSIENT_EVERY default 0 (off)
         DI_VALIDATE_WITHIN_EVERY    default 0 (off)
+
+    Additional toggles:
+        DI_RUN_ROTATION             default 1
+        DI_RUN_PER_GRAPH            default 0
     """
     threads: int
     duration_s: float
@@ -570,10 +649,12 @@ class _StressConfig:
     gc_mode: str
     validate_transient_every: int
     validate_within_every: int
+    warmup_iters: int
 
     @staticmethod
     def from_env() -> _StressConfig:
         return _StressConfig(
+            warmup_iters=_env_int_nonneg("DI_WARMUP_ITERS", 50),
             threads=_env_int("DI_THREADS", 1),
             duration_s=_env_float("DI_DURATION_S", 15.0),
             pattern=_env_str("DI_PATTERN", "alternating").lower(),
@@ -591,10 +672,12 @@ class _StressConfig:
 @dataclass
 class _ThreadStats:
     steps: int = 0
-    a: int = 0
-    b: int = 0
-    spellspaces: int = 0
     errors: int = 0
+    spellspaces: int = 0
+    # Per-graph counts (allocated by caller)
+    g_steps: Optional[list[int]] = None
+    g_a: Optional[list[int]] = None
+    g_b: Optional[list[int]] = None
 
 
 @dataclass(frozen=True)
@@ -603,6 +686,16 @@ class _RuntimeOps:
     get_root_a: Callable[[], Any]
     get_root_b: Callable[[], Any]
     spellspace_cycle: Callable[[], None]
+    cleanup: Callable[[], None]
+
+
+@dataclass(frozen=True)
+class _RotationOps:
+    name: str
+    graphs: list[_GraphSpec]
+    get_root_a: Callable[[int], Any]
+    get_root_b: Callable[[int], Any]
+    spellspace_cycle: Callable[[int], None]
     cleanup: Callable[[], None]
 
 
@@ -632,7 +725,7 @@ class _WorkSelector:
 
 
 # ======================================================================================
-# Runtime builders per lib
+# Per-graph runtime builders per lib (unchanged semantics)
 # ======================================================================================
 
 
@@ -1035,6 +1128,403 @@ def _build_ops(lib: str, g: _GraphSpec) -> _RuntimeOps:
 
 
 # ======================================================================================
+# Rotation runtime builders (one container per lib, union of all graphs)
+# ======================================================================================
+
+
+def _build_rotation_dependency_injector(graphs: list[_GraphSpec]) -> _RotationOps:
+    pytest.importorskip("dependency_injector")
+    from dependency_injector import providers
+
+    all_classes = _union_classes(graphs)
+    space_types = _union_spellspace_types(graphs)
+
+    providers_by_type: dict[type, Any] = {}
+
+    for cls in all_classes:
+        param_specs = _ctor_param_types(cls)
+        kwargs: dict[str, Any] = {}
+        for pname, ptype in param_specs:
+            dep = providers_by_type.get(ptype)
+            if dep is None:
+                raise AssertionError(f"DI wiring error: {cls.__name__} depends on {ptype.__name__} before registered")
+            kwargs[pname] = dep
+
+        if cls in space_types:
+            prov = providers.ContextLocalSingleton(cls, **kwargs)
+        else:
+            prov = providers.Factory(cls, **kwargs)
+
+        providers_by_type[cls] = prov
+
+    def get_root_a(ix: int) -> Any:
+        g = graphs[ix]
+        root = providers_by_type[g.root_a]()
+        if not isinstance(root, g.root_a):
+            raise AssertionError("Dependency Injector: root_a resolve returned wrong type")
+        return root
+
+    def get_root_b(ix: int) -> Any:
+        g = graphs[ix]
+        root = providers_by_type[g.root_b]()
+        if not isinstance(root, g.root_b):
+            raise AssertionError("Dependency Injector: root_b resolve returned wrong type")
+        return root
+
+    def spellspace_cycle(ix: int) -> None:
+        g = graphs[ix]
+        ctx = contextvars.Context()
+
+        def run() -> None:
+            r1 = providers_by_type[g.spellspace_root]()
+            r2 = providers_by_type[g.spellspace_root]()
+            if not isinstance(r1, g.spellspace_root):
+                raise AssertionError("Dependency Injector: spellspace root resolve returned wrong type")
+            if r1 is not r2:
+                raise AssertionError("Dependency Injector: spellspace root not cached within spellspace")
+
+        ctx.run(run)
+
+    def cleanup() -> None:
+        for prov in providers_by_type.values():
+            reset = getattr(prov, "reset", None)
+            if reset is not None:
+                reset()
+        gc.collect()
+
+    return _RotationOps(
+        name="dependency-injector",
+        graphs=graphs,
+        get_root_a=get_root_a,
+        get_root_b=get_root_b,
+        spellspace_cycle=spellspace_cycle,
+        cleanup=cleanup,
+    )
+
+
+def _build_rotation_lagom(graphs: list[_GraphSpec]) -> _RotationOps:
+    pytest.importorskip("lagom")
+    from lagom import Container
+
+    container = Container()
+    all_classes = _union_classes(graphs)
+
+    def _make_leaf_factory(_cls: type) -> Callable[[], Any]:
+        def factory() -> Any:
+            return _cls()
+        return factory
+
+    def _make_factory(_cls: type, _specs: tuple[tuple[str, type], ...]) -> Callable[[Any], Any]:
+        def factory(c: Any) -> Any:
+            kwargs = {pname: c[ptype] for pname, ptype in _specs}
+            return _cls(**kwargs)
+        return factory
+
+    for cls in all_classes:
+        specs = _ctor_param_types(cls)
+        if not specs:
+            container[cls] = _make_leaf_factory(cls)
+        else:
+            container[cls] = _make_factory(cls, specs)
+
+    def get_root_a(ix: int) -> Any:
+        g = graphs[ix]
+        root = container[g.root_a]
+        if not isinstance(root, g.root_a):
+            raise AssertionError("Lagom: root_a resolve returned wrong type")
+        return root
+
+    def get_root_b(ix: int) -> Any:
+        g = graphs[ix]
+        root = container[g.root_b]
+        if not isinstance(root, g.root_b):
+            raise AssertionError("Lagom: root_b resolve returned wrong type")
+        return root
+
+    def spellspace_cycle(ix: int) -> None:
+        g = graphs[ix]
+        with container.temporary_singletons(list(g.spellspace_classes)) as space:
+            r1 = space[g.spellspace_root]
+            r2 = space[g.spellspace_root]
+            if not isinstance(r1, g.spellspace_root):
+                raise AssertionError("Lagom: spellspace root resolve returned wrong type")
+            if r1 is not r2:
+                raise AssertionError("Lagom: spellspace root not cached within spellspace")
+
+    def cleanup() -> None:
+        gc.collect()
+
+    return _RotationOps(
+        name="lagom",
+        graphs=graphs,
+        get_root_a=get_root_a,
+        get_root_b=get_root_b,
+        spellspace_cycle=spellspace_cycle,
+        cleanup=cleanup,
+    )
+
+
+def _build_rotation_injector(graphs: list[_GraphSpec]) -> _RotationOps:
+    pytest.importorskip("injector")
+    from injector import Binder, Injector, Module, Scope, ScopeDecorator, InstanceProvider, inject
+
+    all_classes = _union_classes(graphs)
+    space_types = _union_spellspace_types(graphs)
+
+    # Patch constructors so Injector performs ctor injection.
+    original_inits: dict[type, Any] = {}
+    for cls in all_classes:
+        original_inits[cls] = cls.__init__
+        cls.__init__ = inject(cls.__init__)
+
+    cache_var: contextvars.ContextVar[dict[Any, Any] | None] = contextvars.ContextVar(
+        "di_thread_spellspace_cache", default=None
+    )
+
+    class SpellspaceScope(Scope):
+        @contextlib.contextmanager
+        def enter(self) -> Any:
+            token = cache_var.set({})
+            try:
+                yield
+            finally:
+                cache_var.reset(token)
+
+        def get(self, key: Any, provider: Any) -> Any:
+            cache = cache_var.get()
+            if cache is None:
+                return provider
+            existing = cache.get(key)
+            if existing is not None:
+                return existing
+            instance = provider.get(self.injector)
+            wrapped = InstanceProvider(instance)
+            cache[key] = wrapped
+            return wrapped
+
+    spellspace = ScopeDecorator(SpellspaceScope)
+
+    class PerfModule(Module):
+        def configure(self, binder: Binder) -> None:
+            for cls in all_classes:
+                if cls in space_types:
+                    binder.bind(cls, to=cls, scope=spellspace)
+                else:
+                    binder.bind(cls, to=cls)
+
+    injector = Injector([PerfModule()])
+
+    def get_root_a(ix: int) -> Any:
+        g = graphs[ix]
+        root = injector.get(g.root_a)
+        if not isinstance(root, g.root_a):
+            raise AssertionError("Injector: root_a resolve returned wrong type")
+        return root
+
+    def get_root_b(ix: int) -> Any:
+        g = graphs[ix]
+        root = injector.get(g.root_b)
+        if not isinstance(root, g.root_b):
+            raise AssertionError("Injector: root_b resolve returned wrong type")
+        return root
+
+    def spellspace_cycle(ix: int) -> None:
+        g = graphs[ix]
+        scope = injector.get(SpellspaceScope)
+        with scope.enter():
+            r1 = injector.get(g.spellspace_root)
+            r2 = injector.get(g.spellspace_root)
+            if not isinstance(r1, g.spellspace_root):
+                raise AssertionError("Injector: spellspace root resolve returned wrong type")
+            if r1 is not r2:
+                raise AssertionError("Injector: spellspace root not cached within spellspace")
+
+    def cleanup() -> None:
+        for cls, orig in original_inits.items():
+            cls.__init__ = orig
+        gc.collect()
+
+    return _RotationOps(
+        name="injector",
+        graphs=graphs,
+        get_root_a=get_root_a,
+        get_root_b=get_root_b,
+        spellspace_cycle=spellspace_cycle,
+        cleanup=cleanup,
+    )
+
+
+def _build_rotation_dishka(graphs: list[_GraphSpec]) -> _RotationOps:
+    pytest.importorskip("dishka")
+    from dishka import Provider, Scope, make_container
+
+    all_classes = _union_classes(graphs)
+    space_types = _union_spellspace_types(graphs)
+
+    provider = Provider()
+    for cls in all_classes:
+        if cls in space_types:
+            provider.provide(cls, scope=Scope.REQUEST, cache=True)
+        else:
+            provider.provide(cls, scope=Scope.APP, cache=False)
+
+    container = make_container(provider)
+
+    def get_root_a(ix: int) -> Any:
+        g = graphs[ix]
+        root = container.get(g.root_a)
+        if not isinstance(root, g.root_a):
+            raise AssertionError("Dishka: root_a resolve returned wrong type")
+        return root
+
+    def get_root_b(ix: int) -> Any:
+        g = graphs[ix]
+        root = container.get(g.root_b)
+        if not isinstance(root, g.root_b):
+            raise AssertionError("Dishka: root_b resolve returned wrong type")
+        return root
+
+    def spellspace_cycle(ix: int) -> None:
+        g = graphs[ix]
+        with container() as request_container:
+            r1 = request_container.get(g.spellspace_root)
+            r2 = request_container.get(g.spellspace_root)
+            if not isinstance(r1, g.spellspace_root):
+                raise AssertionError("Dishka: spellspace root resolve returned wrong type")
+            if r1 is not r2:
+                raise AssertionError("Dishka: spellspace root not cached within spellspace")
+
+    def cleanup() -> None:
+        container.close()
+        gc.collect()
+
+    return _RotationOps(
+        name="dishka",
+        graphs=graphs,
+        get_root_a=get_root_a,
+        get_root_b=get_root_b,
+        spellspace_cycle=spellspace_cycle,
+        cleanup=cleanup,
+    )
+
+
+def _build_rotation_melder(graphs: list[_GraphSpec]) -> _RotationOps:
+    from melder.aether.aether import Aether
+    from melder.aether.conduit.conduit import Conduit
+    from melder.spellbook.existence.existence import Existence
+    from melder.spellbook.spellbook import Spellbook
+
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+    spellbook = Spellbook(aetheric_frame="threaded-di-stress-rotation")
+    cfg = spellbook.get_configuration()
+    cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    # Bind everything once
+    all_classes = _union_classes(graphs)
+    space_types = _union_spellspace_types(graphs)
+
+    spell_ids: dict[type, str] = {}
+
+    # Bind spellspace-scoped first
+    for cls in all_classes:
+        if cls not in space_types:
+            continue
+        spell_ids[cls] = spellbook.bind(
+            spell=cls,
+            existence=Existence.unique_per_spell_space,
+            permissions="create",
+        )
+
+    # Bind transient rest
+    for cls in all_classes:
+        if cls in spell_ids:
+            continue
+        spell_ids[cls] = spellbook.bind(
+            spell=cls,
+            existence=Existence.many,
+            permissions="create",
+        )
+
+    # Resolve root ids per graph
+    root_a_ids: list[str] = []
+    root_b_ids: list[str] = []
+    space_root_ids: list[str] = []
+
+    for g in graphs:
+        ra = spell_ids.get(g.root_a)
+        rb = spell_ids.get(g.root_b)
+        rs = spell_ids.get(g.spellspace_root)
+        if ra is None or rb is None or rs is None:
+            raise AssertionError("Melder rotation: missing spell ids for graph")
+        root_a_ids.append(ra)
+        root_b_ids.append(rb)
+        space_root_ids.append(rs)
+
+    conduit = spellbook.conjure(name="threaded-di-stress-rotation")
+
+    def get_root_a(ix: int) -> Any:
+        g = graphs[ix]
+        root = conduit.meld(spell=root_a_ids[ix])
+        if not isinstance(root, g.root_a):
+            raise AssertionError("Melder: root_a meld returned wrong type")
+        return root
+
+    def get_root_b(ix: int) -> Any:
+        g = graphs[ix]
+        root = conduit.meld(spell=root_b_ids[ix])
+        if not isinstance(root, g.root_b):
+            raise AssertionError("Melder: root_b meld returned wrong type")
+        return root
+
+    def spellspace_cycle(ix: int) -> None:
+        g = graphs[ix]
+        with conduit.enter_spellspace() as space:
+            r1 = space.meld(spell=space_root_ids[ix])
+            r2 = space.meld(spell=space_root_ids[ix])
+            if not isinstance(r1, g.spellspace_root):
+                raise AssertionError("Melder: spellspace root meld returned wrong type")
+            if r1 is not r2:
+                raise AssertionError("Melder: spellspace root not cached within spellspace")
+
+    def cleanup() -> None:
+        try:
+            conduit.cleanup()
+        finally:
+            Aether._reset_singleton_for_tests()
+            aether2 = Aether()
+            Spellbook._aether = aether2
+            Conduit._aether = aether2
+        gc.collect()
+
+    return _RotationOps(
+        name="melder",
+        graphs=graphs,
+        get_root_a=get_root_a,
+        get_root_b=get_root_b,
+        spellspace_cycle=spellspace_cycle,
+        cleanup=cleanup,
+    )
+
+
+def _build_rotation_ops(lib: str, graphs: list[_GraphSpec]) -> _RotationOps:
+    if lib == "dependency-injector":
+        return _build_rotation_dependency_injector(graphs)
+    if lib == "lagom":
+        return _build_rotation_lagom(graphs)
+    if lib == "injector":
+        return _build_rotation_injector(graphs)
+    if lib == "dishka":
+        return _build_rotation_dishka(graphs)
+    if lib == "melder":
+        return _build_rotation_melder(graphs)
+    raise AssertionError(f"Unknown lib: {lib}")
+
+
+# ======================================================================================
 # Smoke + single resolve tests
 # ======================================================================================
 
@@ -1094,16 +1584,25 @@ def test_single_resolve_timings(graph: str, lib: str) -> None:
 
 
 # ======================================================================================
-# Stress test (throughput / contention)
+# Rotation stress (DEFAULT)
 # ======================================================================================
 
 
 @pytest.mark.timeout(420)
-@pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
 @pytest.mark.parametrize("lib", _selected_libs())
-def test_threaded_di_stress(graph: str, lib: str) -> None:
-    gspecs = {g.name: g for g in _selected_graphs()}
-    g = gspecs[graph]
+def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
+    """
+    Runs ALL selected graphs in a single rotation loop per lib.
+
+    This is what you asked for: one run that cycles solo/shallow/wide/diamond/deep continuously.
+    """
+    if not _env_bool("DI_RUN_ROTATION", True):
+        pytest.skip("DI_RUN_ROTATION disabled")
+
+    graphs = _selected_graphs()
+    if not graphs:
+        raise AssertionError("No graphs selected")
+
     cfg = _StressConfig.from_env()
 
     if cfg.threads <= 0:
@@ -1121,7 +1620,176 @@ def test_threaded_di_stress(graph: str, lib: str) -> None:
     if not (0.0 <= cfg.ratio_p <= 1.0):
         raise AssertionError("DI_RATIO_P must be between 0 and 1")
 
+    ops = _build_rotation_ops(lib, graphs)
+    _warmup_rotation_ops(ops, iters=cfg.warmup_iters)
+    _maybe_print_gil_status(ops.name)
+
+    gcount = len(graphs)
+    stats: list[_ThreadStats] = [
+        _ThreadStats(g_steps=[0] * gcount, g_a=[0] * gcount, g_b=[0] * gcount)
+        for _ in range(cfg.threads)
+    ]
+    errors: list[BaseException] = []
+    stop_event = threading.Event()
+    start_barrier = threading.Barrier(cfg.threads + 1)
+    stop_time_holder: list[float] = [0.0]
+    selector_seed = cfg.random_seed
+
+    def worker(ix: int) -> None:
+        try:
+            was_enabled = gc.isenabled()
+            if cfg.gc_mode == "disabled" and was_enabled:
+                gc.disable()
+
+            try:
+                start_barrier.wait()
+                stop_at = stop_time_holder[0]
+
+                local_i = 0
+                local_stats = stats[ix]
+
+                rng: Optional[random.Random]
+                if cfg.pattern in ("ratio", "random"):
+                    rng = random.Random(selector_seed + ix)
+                else:
+                    rng = None
+
+                selector = _WorkSelector(
+                    pattern=cfg.pattern,
+                    burst_len=cfg.burst_len,
+                    ratio_p=cfg.ratio_p,
+                    rng=rng,
+                )
+
+                while not stop_event.is_set() and time.perf_counter() < stop_at:
+                    gix = local_i % gcount
+                    g = graphs[gix]
+                    do_a = selector.choose_a(local_i)
+
+                    if do_a:
+                        root = ops.get_root_a(gix)
+                        if not isinstance(root, g.root_a):
+                            raise AssertionError("Rotation: resolved root_a wrong type")
+                        local_stats.g_a[gix] += 1
+                    else:
+                        root = ops.get_root_b(gix)
+                        if not isinstance(root, g.root_b):
+                            raise AssertionError("Rotation: resolved root_b wrong type")
+                        local_stats.g_b[gix] += 1
+
+                    local_stats.steps += 1
+                    local_stats.g_steps[gix] += 1
+                    local_i += 1
+
+                    if (local_i % cfg.spellspace_every) == 0:
+                        ops.spellspace_cycle(gix)
+                        local_stats.spellspaces += 1
+
+                    # Across-resolve transient anti-cache (only for graphs that supply transient_probe)
+                    if cfg.validate_transient_every > 0 and g.transient_probe is not None:
+                        if (local_i % cfg.validate_transient_every) == 0:
+                            r1 = ops.get_root_a(gix)
+                            r2 = ops.get_root_a(gix)
+                            o11, o12 = g.transient_probe(r1)
+                            o21, o22 = g.transient_probe(r2)
+                            if o11 is o21 or o12 is o22:
+                                raise AssertionError("Rotation transient probe failed: cached transient subtree detected")
+
+                    # Within-resolve transient anti-dedupe (diamond-style)
+                    if cfg.validate_within_every > 0 and g.within_resolve_probe is not None:
+                        if (local_i % cfg.validate_within_every) == 0:
+                            r = ops.get_root_a(gix)
+                            x, y = g.within_resolve_probe(r)
+                            if g.within_resolve_expect_distinct and (x is y):
+                                raise AssertionError("Rotation within-resolve probe failed: transient dedupe detected")
+
+                    if cfg.gc_mode == "periodic":
+                        if (local_i % cfg.gc_every) == 0:
+                            gc.collect()
+
+            finally:
+                if cfg.gc_mode == "disabled" and was_enabled:
+                    gc.enable()
+
+        except BaseException as e:
+            local_stats = stats[ix]
+            local_stats.errors += 1
+            errors.append(e)
+            stop_event.set()
+
+    threads_list: list[threading.Thread] = []
+    for i in range(cfg.threads):
+        t = threading.Thread(target=worker, args=(i,), daemon=True)
+        threads_list.append(t)
+        t.start()
+
+    start_barrier.wait()
+    start_t = time.perf_counter()
+    stop_time_holder[0] = start_t + cfg.duration_s
+
+    for t in threads_list:
+        t.join()
+
+    elapsed_s = time.perf_counter() - start_t
+    try:
+        if errors:
+            raise errors[0]
+
+        total_steps = sum(s.steps for s in stats)
+        total_spaces = sum(s.spellspaces for s in stats)
+        total_err = sum(s.errors for s in stats)
+        steps_per_s = total_steps / elapsed_s if elapsed_s > 0 else 0.0
+
+        per_graph_steps = [0] * gcount
+        per_graph_a = [0] * gcount
+        per_graph_b = [0] * gcount
+        for s in stats:
+            for i in range(gcount):
+                per_graph_steps[i] += s.g_steps[i]
+                per_graph_a[i] += s.g_a[i]
+                per_graph_b[i] += s.g_b[i]
+
+        per_graph_summary = ", ".join(
+            f"{graphs[i].name}:{per_graph_steps[i]}"
+            for i in range(gcount)
+        )
+
+        print(
+            f"[{ops.name}] ROTATION: "
+            f"threads={cfg.threads}, duration={elapsed_s:.2f}s, "
+            f"steps={total_steps}, steps/s={steps_per_s:,.0f}, "
+            f"spellspaces={total_spaces}, errors={total_err}, "
+            f"per_graph=({per_graph_summary})"
+        )
+
+    finally:
+        ops.cleanup()
+
+
+# ======================================================================================
+# Per-graph stress (optional)
+# ======================================================================================
+
+
+@pytest.mark.timeout(420)
+@pytest.mark.parametrize("graph", [g.name for g in _selected_graphs()])
+@pytest.mark.parametrize("lib", _selected_libs())
+def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
+    """
+    Old per-graph run, still available.
+
+    Enable with:
+        DI_RUN_PER_GRAPH=1
+    """
+    if not _env_bool("DI_RUN_PER_GRAPH", True):
+        pytest.skip("DI_RUN_PER_GRAPH disabled")
+
+    gspecs = {g.name: g for g in _selected_graphs()}
+    g = gspecs[graph]
+    cfg = _StressConfig.from_env()
+
     ops = _build_ops(lib, g)
+    _warmup_ops(ops, iters=cfg.warmup_iters)
     _maybe_print_gil_status(ops.name)
 
     stats: list[_ThreadStats] = [_ThreadStats() for _ in range(cfg.threads)]
@@ -1129,7 +1797,6 @@ def test_threaded_di_stress(graph: str, lib: str) -> None:
     stop_event = threading.Event()
     start_barrier = threading.Barrier(cfg.threads + 1)
     stop_time_holder: list[float] = [0.0]
-
     selector_seed = cfg.random_seed
 
     def worker(ix: int) -> None:
@@ -1165,12 +1832,10 @@ def test_threaded_di_stress(graph: str, lib: str) -> None:
                         root = ops.get_root_a()
                         if not isinstance(root, g.root_a):
                             raise AssertionError("Resolved root_a returned wrong type")
-                        local_stats.a += 1
                     else:
                         root = ops.get_root_b()
                         if not isinstance(root, g.root_b):
                             raise AssertionError("Resolved root_b returned wrong type")
-                        local_stats.b += 1
 
                     local_stats.steps += 1
                     local_i += 1
@@ -1178,24 +1843,6 @@ def test_threaded_di_stress(graph: str, lib: str) -> None:
                     if (local_i % cfg.spellspace_every) == 0:
                         ops.spellspace_cycle()
                         local_stats.spellspaces += 1
-
-                    # Across-resolve transient anti-cache
-                    if cfg.validate_transient_every > 0 and g.transient_probe is not None:
-                        if (local_i % cfg.validate_transient_every) == 0:
-                            r1 = ops.get_root_a()
-                            r2 = ops.get_root_a()
-                            o11, o12 = g.transient_probe(r1)
-                            o21, o22 = g.transient_probe(r2)
-                            if o11 is o21 or o12 is o22:
-                                raise AssertionError("Transient probe failed: cached transient subtree detected")
-
-                    # Within-resolve transient anti-dedupe (diamond)
-                    if cfg.validate_within_every > 0 and g.within_resolve_probe is not None:
-                        if (local_i % cfg.validate_within_every) == 0:
-                            r = ops.get_root_a()
-                            x, y = g.within_resolve_probe(r)
-                            if g.within_resolve_expect_distinct and (x is y):
-                                raise AssertionError("Within-resolve probe failed: transient dedupe detected")
 
                     if cfg.gc_mode == "periodic":
                         if (local_i % cfg.gc_every) == 0:
@@ -1229,18 +1876,15 @@ def test_threaded_di_stress(graph: str, lib: str) -> None:
             raise errors[0]
 
         total_steps = sum(s.steps for s in stats)
-        total_a = sum(s.a for s in stats)
-        total_b = sum(s.b for s in stats)
         total_spaces = sum(s.spellspaces for s in stats)
         total_err = sum(s.errors for s in stats)
-
         steps_per_s = total_steps / elapsed_s if elapsed_s > 0 else 0.0
 
         print(
-            f"[{ops.name}] threaded stress ({g.name}): "
+            f"[{ops.name}] per-graph ({g.name}): "
             f"threads={cfg.threads}, duration={elapsed_s:.2f}s, "
             f"steps={total_steps}, steps/s={steps_per_s:,.0f}, "
-            f"a={total_a}, b={total_b}, spellspaces={total_spaces}, errors={total_err}"
+            f"spellspaces={total_spaces}, errors={total_err}"
         )
     finally:
         ops.cleanup()
