@@ -1346,7 +1346,6 @@ class Meld(Cleanable, IMeld):
                 "Shared instances cannot be overridden after creation."
             ),
         )
-
     def _cache_input_resolution(
             self,
             cache_key: Optional[tuple],
@@ -1360,6 +1359,7 @@ class Meld(Cleanable, IMeld):
             self._evict_random_cache_entry(self._input_resolution_cache)
         self._input_resolution_cache[cache_key] = spell
 
+
     def _cache_spell_lookup(
             self,
             lookup_key: tuple[str, str],
@@ -1371,6 +1371,7 @@ class Meld(Cleanable, IMeld):
             self._evict_random_cache_entry(self._spell_lookup_cache)
         self._spell_lookup_cache[lookup_key] = spell
 
+
     def _cache_spell_id(
             self,
             spell_id: str,
@@ -1381,6 +1382,7 @@ class Meld(Cleanable, IMeld):
         if len(self._spell_id_cache) >= self._max_resolution_cache_size:
             self._evict_random_cache_entry(self._spell_id_cache)
         self._spell_id_cache[spell_id] = spell
+
 
     def _cache_lookup_key(
             self,
@@ -1406,11 +1408,19 @@ class Meld(Cleanable, IMeld):
             self._evict_random_cache_entry(self._singleton_hit_cache)
         self._singleton_hit_cache[spell.spell_id] = instance
 
+
     @staticmethod
     def _evict_random_cache_entry(cache: Dict[Any, Any]) -> None:
+        """
+        Evict exactly one entry in O(1) time.
+
+        NOTE:
+            This intentionally avoids random eviction + list(cache.keys()) which is O(n)
+            and causes jitter in microbenchmarks.
+        """
         if not cache:
             return
-        cache.pop(random.choice(list(cache.keys())), None)
+        cache.pop(next(iter(cache)), None)
 
     def _get_cached_singleton(
             self,
@@ -1418,7 +1428,8 @@ class Meld(Cleanable, IMeld):
             creations: Any,
             spellspace: Optional[Any],
     ) -> Optional[Any]:
-        cached = self._singleton_hit_cache.get(spell.spell_id)
+        spell_id = spell.spell_id
+        cached = self._singleton_hit_cache.get(spell_id)
         if cached is None:
             return None
         if creations is None:
@@ -1430,7 +1441,7 @@ class Meld(Cleanable, IMeld):
                 spellspace=spellspace,
             )
         if instance is None:
-            self._singleton_hit_cache.pop(spell.spell_id, None)
+            self._singleton_hit_cache.pop(spell_id, None)
             return None
         return instance
 

@@ -699,8 +699,7 @@ class MeldRuntime:
                 and len(self._transient_asset_pool) >= self._max_transient_asset_pool_size
         ):
             if self._transient_asset_pool:
-                random_key = random.choice(list(self._transient_asset_pool.keys()))
-                self._transient_asset_pool.pop(random_key, None)
+                self._transient_asset_pool.pop(next(iter(self._transient_asset_pool)), None)
 
         pool = self._transient_asset_pool.get(spell_id)
         if pool is None:
@@ -726,8 +725,7 @@ class MeldRuntime:
                 and len(self._shared_asset_pool) >= self._max_shared_asset_pool_size
         ):
             if self._shared_asset_pool:
-                random_key = random.choice(list(self._shared_asset_pool.keys()))
-                self._shared_asset_pool.pop(random_key, None)
+                self._shared_asset_pool.pop(next(iter(self._shared_asset_pool)), None)
 
         pool = self._shared_asset_pool.get(spell_id)
         if pool is None:
