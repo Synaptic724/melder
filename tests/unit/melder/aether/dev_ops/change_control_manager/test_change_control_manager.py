@@ -245,6 +245,94 @@ def test_revalidate_dirty_roots_partial(manager):
     assert manager.is_root_dirty(CONDUIT_ID, "RootB")
     assert manager._monitor_active_by_conduit[CONDUIT_ID]
 
+def test_component_of_isolated_by_conduit(manager):
+    """
+    Purpose:
+        Verify component-of maps do not overwrite across conduits.
+    Contract:
+        - rebuild_component_of for one conduit does not alter other conduits.
+        - Each conduit retains its own root mappings.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conduit isolation is violated.
+    """
+    bp_a = MagicMock(spec=RootResolutionBlueprint)
+    bp_a.dag.nodes.keys.return_value = ["LeafA"]
+    bp_b = MagicMock(spec=RootResolutionBlueprint)
+    bp_b.dag.nodes.keys.return_value = ["LeafB"]
+
+    manager.rebuild_component_of("conduit-a", {"RootA": bp_a})
+    manager.rebuild_component_of("conduit-b", {"RootB": bp_b})
+
+    assert manager._component_of_by_conduit["conduit-a"]["LeafA"] == {"RootA"}
+    assert manager._component_of_by_conduit["conduit-b"]["LeafB"] == {"RootB"}
+    assert "LeafB" not in manager._component_of_by_conduit["conduit-a"]
+    assert "LeafA" not in manager._component_of_by_conduit["conduit-b"]
+
+
+def test_notify_spell_changed_scoped_to_conduit(manager):
+    """
+    Purpose:
+        Verify dirty tracking only activates for conduits that map the spell id.
+    Contract:
+        - notify_spell_changed only marks conduits whose component-of map includes the spell.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If dirty tracking bleeds across conduits.
+    """
+    bp_a = MagicMock(spec=RootResolutionBlueprint)
+    bp_a.dag.nodes.keys.return_value = ["LeafA"]
+    bp_b = MagicMock(spec=RootResolutionBlueprint)
+    bp_b.dag.nodes.keys.return_value = ["LeafB"]
+
+    manager.rebuild_component_of("conduit-a", {"RootA": bp_a})
+    manager.rebuild_component_of("conduit-b", {"RootB": bp_b})
+
+    manager.notify_spell_changed("LeafA")
+
+    assert manager.is_root_dirty("conduit-a", "RootA")
+    assert not manager.is_root_dirty("conduit-b", "RootB")
+    assert manager._monitor_active_by_conduit["conduit-a"] is True
+    assert manager._monitor_active_by_conduit["conduit-b"] is False
+
+
+def test_revalidate_dirty_roots_scoped_to_conduit(manager):
+    """
+    Purpose:
+        Verify revalidation only clears dirty roots for the requested conduit.
+    Contract:
+        - revalidate_dirty_roots calls the revalidator for the supplied conduit.
+        - Other conduits retain their dirty state and do not invoke their validators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If revalidation affects other conduits.
+    """
+    bp_a = MagicMock(spec=RootResolutionBlueprint)
+    bp_a.dag.nodes.keys.return_value = ["LeafA"]
+    bp_b = MagicMock(spec=RootResolutionBlueprint)
+    bp_b.dag.nodes.keys.return_value = ["LeafB"]
+
+    manager.rebuild_component_of("conduit-a", {"RootA": bp_a})
+    manager.rebuild_component_of("conduit-b", {"RootB": bp_b})
+
+    manager.notify_spell_changed("LeafA")
+    manager.notify_spell_changed("LeafB")
+
+    validator_a = MagicMock(return_value={"RootA"})
+    validator_b = MagicMock(return_value={"RootB"})
+    manager.set_revalidator("conduit-a", validator_a)
+    manager.set_revalidator("conduit-b", validator_b)
+
+    manager.revalidate_dirty_roots("conduit-a")
+
+    validator_a.assert_called_once()
+    validator_b.assert_not_called()
+    assert not manager.is_root_dirty("conduit-a", "RootA")
+    assert manager.is_root_dirty("conduit-b", "RootB")
+
 def test_revalidate_handles_cancel(manager):
     """
     Verify revalidation respects cancellation events.
