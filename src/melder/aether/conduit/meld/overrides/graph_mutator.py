@@ -36,6 +36,7 @@ class GraphMutator(Cleanable):
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
         self._blueprint: RootResolutionBlueprint = blueprint
+        self._blueprint.ensure_dag_index_built()
         self._engine: DagTargetingEngine = DagTargetingEngine(blueprint.dag_index)
 
     def cleanup(self) -> None:

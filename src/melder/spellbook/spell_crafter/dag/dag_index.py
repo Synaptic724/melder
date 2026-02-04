@@ -251,7 +251,12 @@ class DagIndex(Cleanable):
     targeting. It is intentionally dumb: no graph logic, no Melder awareness.
     """
     __melder_internal__ = _mrg.sentinel
-    __slots__ = Cleanable.__slots__ + ["_path_registry", "_by_exact_path_id", "_by_name"]
+    __slots__ = Cleanable.__slots__ + [
+        "_path_registry",
+        "_by_exact_path_id",
+        "_by_name",
+        "_built",
+    ]
 
     def __init__(self, path_registry: Optional[PathRegistry] = None) -> None:
         super().__init__()
@@ -260,6 +265,7 @@ class DagIndex(Cleanable):
         )
         self._by_exact_path_id: Dict[int, List[SocketRef]] = {}
         self._by_name: Dict[str, List[SocketRef]] = {}
+        self._built: bool = False
 
 
     def cleanup(self) -> None:
@@ -277,6 +283,7 @@ class DagIndex(Cleanable):
         self._by_exact_path_id = None
         self._by_name.clear()
         self._by_name = None
+        self._built = None
 
     @property
     def path_registry(self) -> PathRegistry:
@@ -285,6 +292,42 @@ class DagIndex(Cleanable):
         """
         self.check_cleaned()
         return self._path_registry
+
+    @property
+    def is_built(self) -> bool:
+        """
+        Return True when the index maps have been populated.
+        """
+        self.check_cleaned()
+        return bool(self._built)
+
+    def rebuild(self, sockets: Optional[Iterable[SocketRef]]) -> None:
+        """
+        Rebuild index maps from the provided socket refs.
+
+        Contract:
+            - Clears any existing index buckets before rebuilding.
+            - Marks the index as built after completion.
+        """
+        self.check_cleaned()
+        self._by_exact_path_id.clear()
+        self._by_name.clear()
+        if sockets is not None:
+            for socket in sockets:
+                path_id = socket.param_path_id
+                sockets_by_path_id = self._by_exact_path_id.get(path_id)
+                if sockets_by_path_id is None:
+                    self._by_exact_path_id[path_id] = [socket]
+                else:
+                    sockets_by_path_id.append(socket)
+
+                param_name = socket.param_name
+                sockets_by_name = self._by_name.get(param_name)
+                if sockets_by_name is None:
+                    self._by_name[param_name] = [socket]
+                else:
+                    sockets_by_name.append(socket)
+        self._built = True
 
     def add_socket(self, socket: SocketRef) -> None:
         """
@@ -303,6 +346,7 @@ class DagIndex(Cleanable):
             self._by_name[param_name] = [socket]
         else:
             sockets_by_name.append(socket)
+        self._built = True
 
     def get_by_exact_path(self, path: Sequence[str]) -> List[SocketRef]:
         """

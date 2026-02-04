@@ -1117,6 +1117,8 @@ class OccurrencePlanBuilder(object):
         if not mutation_override:
             return []
 
+        self._blueprint.ensure_dag_index_built()
+
         if not isinstance(mutation_override, dict):
             raise MeldExecutionError(
                 spell_id=self._root_spell.spell_index.current,

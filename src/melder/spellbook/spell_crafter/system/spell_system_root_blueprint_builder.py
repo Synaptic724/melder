@@ -233,11 +233,11 @@ class SpellSystemRootBlueprintBuilder:
             topologies: Dict[str, SpellLocalTopology],
     ) -> None:
         """
-        Overlay SocketRefs and build a deep DagIndex for the blueprint.
+        Overlay SocketRefs and prepare the PathRegistry for the blueprint.
 
         Contract:
             - PathIds are extended via the blueprint PathRegistry.
-            - SocketRefs are indexed by PathId and param name.
+            - DagIndex maps are built lazily when overrides are requested.
         """
         queue: Deque[Tuple[str, int]] = deque()
 
@@ -245,7 +245,6 @@ class SpellSystemRootBlueprintBuilder:
         blueprint.replace_dag_index(DagIndex())
         blueprint.check_cleaned()
         socket_refs = blueprint._socket_refs
-        add_socket = blueprint._dag_index.add_socket
         path_registry = blueprint.path_registry
         path_registry.check_cleaned()
         root_path_id = path_registry.root_path_id
@@ -277,7 +276,6 @@ class SpellSystemRootBlueprintBuilder:
                     socket_kind=socket_desc.socket_kind,
                 )
                 socket_refs.append(socket_ref)
-                add_socket(socket_ref)
 
                 for target_id in socket_desc.target_spell_ids:
                     target_key = (target_id, socket_path_id)

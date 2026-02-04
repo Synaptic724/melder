@@ -1,3 +1,4 @@
+import threading
 from typing import Iterable, List, Optional, Sequence
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -36,6 +37,7 @@ class RootResolutionBlueprint(Cleanable):
         "_ordered_node_ids",
         "_socket_refs",
         "_dag_index",
+        "_dag_index_build_lock",
     ]
 
     def __init__(
@@ -66,6 +68,7 @@ class RootResolutionBlueprint(Cleanable):
 
         # Targeting index; always non-None for consumers.
         self._dag_index: DagIndex = dag_index if dag_index is not None else DagIndex()
+        self._dag_index_build_lock: threading.Lock = threading.Lock()
 
 
     # ------------------------------------------------------------------ #
@@ -93,6 +96,8 @@ class RootResolutionBlueprint(Cleanable):
         if self._dag_index is not None:
             self._dag_index.cleanup()
             self._dag_index = None
+        if self._dag_index_build_lock is not None:
+            self._dag_index_build_lock = None
 
         self._ordered_node_ids.clear()
         self._ordered_node_ids = None
@@ -155,6 +160,10 @@ class RootResolutionBlueprint(Cleanable):
     def dag_index(self) -> DagIndex:
         """
         Targeting index over `socket_refs` (by path and param name).
+
+        Note:
+            The index maps are built lazily. Call ensure_dag_index_built()
+            before using the index for targeting.
         """
         self.check_cleaned()
         return self._dag_index
@@ -182,7 +191,29 @@ class RootResolutionBlueprint(Cleanable):
         if socket is None:
             raise ValueError("socket must not be None.")
         self._socket_refs.append(socket)
-        self._dag_index.add_socket(socket)
+        if self._dag_index is not None and self._dag_index.is_built:
+            self._dag_index.add_socket(socket)
+
+    def ensure_dag_index_built(self) -> None:
+        """
+        Ensure the DagIndex maps are populated for override targeting.
+
+        Contract:
+            - Idempotent and thread-safe.
+            - Uses socket_refs as the source of truth.
+        """
+        self.check_cleaned()
+        if self._dag_index is None:
+            self._dag_index = DagIndex()
+        if self._dag_index.is_built:
+            return
+        if self._dag_index_build_lock is None:
+            self._dag_index_build_lock = threading.Lock()
+        with self._dag_index_build_lock:
+            if self._dag_index.is_built:
+                return
+            sockets = self._socket_refs or []
+            self._dag_index.rebuild(sockets)
 
     def replace_dag_index(self, index: DagIndex) -> None:
         """

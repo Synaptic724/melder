@@ -70,12 +70,32 @@ class SocketRefSanityStrategy(SpellSystemValidationStrategy):
 
             sockets = blueprint.socket_refs
             seen: Set[SocketRef] = set()
+            dag_index = blueprint.dag_index
+            path_registry = dag_index.path_registry
+
+            if not dag_index.is_built:
+                for ref in sockets:
+                    path_str = path_registry.format_path(ref.param_path_id)
+                    if ref in seen:
+                        diagnostics.append(
+                            SystemDiagnostic(
+                                code="socket_ref_duplicate",
+                                message=f"Duplicate SocketRef detected on root '{root_id}' for path '{path_str}'.",
+                                severity=SystemDiagnosticSeverity.ERROR,
+                                spell_id=ref.node_id,
+                                root_id=root_id,
+                                details={
+                                    "param_path": path_registry.materialize_path(ref.param_path_id),
+                                    "param_name": ref.param_name,
+                                },
+                            )
+                        )
+                    seen.add(ref)
+                continue
+
             index_by_path: Dict[int, Set[SocketRef]] = {}
             index_by_name: Dict[str, Set[SocketRef]] = {}
             indexed_sockets: Set[SocketRef] = set()
-
-            dag_index = blueprint.dag_index
-            path_registry = dag_index.path_registry
             for sockets_for_path in dag_index._by_exact_path_id.values():
                 for indexed in sockets_for_path:
                     indexed_sockets.add(indexed)
