@@ -970,6 +970,7 @@ def test_component_socket_ref_sanity_no_issues_for_valid_index() -> None:
     """
     strategy = SocketRefSanityStrategy()
     blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
+    blueprint.ensure_dag_index_built()
     socket = _make_socket_ref(
         node_id="root",
         name="service",
@@ -1004,6 +1005,7 @@ def test_component_socket_ref_sanity_reports_duplicate_socket_ref() -> None:
     """
     strategy = SocketRefSanityStrategy()
     blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
+    blueprint.ensure_dag_index_built()
     socket = _make_socket_ref(
         node_id="root",
         name="service",
@@ -1040,6 +1042,7 @@ def test_component_socket_ref_sanity_reports_missing_index_entries() -> None:
     strategy = SocketRefSanityStrategy()
     blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
     path_registry = blueprint.path_registry
+    blueprint.ensure_dag_index_built()
     socket = _make_socket_ref(
         node_id="root",
         name="service",
@@ -1048,6 +1051,7 @@ def test_component_socket_ref_sanity_reports_missing_index_entries() -> None:
     )
     blueprint.add_socket_ref(socket)
     blueprint.replace_dag_index(DagIndex(path_registry=path_registry))
+    blueprint.dag_index.rebuild([])
     diagnostics: list[SystemDiagnostic] = []
 
     strategy.run(
@@ -1112,6 +1116,7 @@ def test_component_socket_ref_sanity_scopes_diagnostics_to_root() -> None:
     strategy = SocketRefSanityStrategy()
     blueprint_a = _make_blueprint(root_id="root-a", edges={"root-a": {"dep"}})
     blueprint_b = _make_blueprint(root_id="root-b", edges={"root-b": {"dep"}})
+    blueprint_a.ensure_dag_index_built()
     socket = _make_socket_ref(
         node_id="root-a",
         name="service",

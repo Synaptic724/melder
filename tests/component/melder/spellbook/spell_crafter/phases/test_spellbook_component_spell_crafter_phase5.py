@@ -127,6 +127,7 @@ def test_component_phase5_blueprint_includes_deep_socket_paths() -> None:
         blueprint = crafter.root_blueprint_phase5
         assert blueprint is not None
         assert blueprint.root_spell_id == root_id
+        blueprint.ensure_dag_index_built()
 
         ordered = blueprint.ordered_node_ids
         assert ordered[-1] == root_id

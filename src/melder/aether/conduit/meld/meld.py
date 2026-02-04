@@ -176,11 +176,6 @@ class Meld(Cleanable, IMeld):
             # Clear creations reference
             self._creations = None
             self._conduit_id = None
-            if self._runtime is not None:
-                try:
-                    self._runtime.cleanup()
-                except Exception:
-                    pass
             self._runtime = None
             self._meld_hooks = None
             self._input_resolution_cache = None

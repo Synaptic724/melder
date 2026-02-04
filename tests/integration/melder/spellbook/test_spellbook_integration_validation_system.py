@@ -1770,6 +1770,7 @@ def test_spell_validation_phase6_reports_socket_ref_index_mismatch() -> None:
         assert root_blueprint is not None
         path_registry = root_blueprint.path_registry
         root_blueprint._dag_index = DagIndex(path_registry=path_registry)
+        root_blueprint._dag_index.rebuild([])
 
         consumer_spell.run_phase_system_validation("cid")
 

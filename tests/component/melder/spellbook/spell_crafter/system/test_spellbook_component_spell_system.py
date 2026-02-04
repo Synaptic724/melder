@@ -291,6 +291,7 @@ def test_component_spell_system_builds_root_blueprint_from_snapshot() -> None:
 
         blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
         blueprint = blueprints[consumer_id]
+        blueprint.ensure_dag_index_built()
 
         assert set(blueprint.dag.nodes) == {consumer_id, service_id}
         ordered = blueprint.ordered_node_ids

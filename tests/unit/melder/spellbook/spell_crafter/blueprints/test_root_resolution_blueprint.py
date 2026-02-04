@@ -86,6 +86,7 @@ def test_properties_return_copies_and_metadata():
 def test_add_socket_ref_indexes_dag_index():
     index = DagIndex()
     bp = _make_blueprint(dag_index=index)
+    bp.ensure_dag_index_built()
     ref = SocketRef(
         "root",
         "param",
@@ -175,6 +176,7 @@ def test_replace_dag_index_then_add_socket_ref_uses_new_index():
     bp = _make_blueprint()
     new_index = DagIndex()
     bp.replace_dag_index(new_index)
+    bp.ensure_dag_index_built()
     ref = SocketRef(
         "root",
         "p",

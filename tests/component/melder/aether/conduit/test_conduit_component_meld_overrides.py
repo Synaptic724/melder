@@ -653,6 +653,7 @@ def test_component_meld_root_blueprint_paths_two_node_graph() -> None:
     assert crafter is not None
     blueprint = crafter.root_blueprint_phase5
     assert blueprint is not None
+    blueprint.ensure_dag_index_built()
 
     ordered_ids = blueprint.ordered_node_ids
     assert repo_id in ordered_ids
@@ -709,6 +710,7 @@ def test_component_meld_root_blueprint_paths_shared_dependency() -> None:
     assert crafter is not None
     blueprint = crafter.root_blueprint_phase5
     assert blueprint is not None
+    blueprint.ensure_dag_index_built()
 
     ordered_ids = blueprint.ordered_node_ids
     assert ordered_ids[-1] == root_id

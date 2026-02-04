@@ -321,6 +321,7 @@ def _make_blueprint_with_sockets(
         ordered_node_ids=ordered_node_ids,
         path_registry=path_registry,
     )
+    blueprint.ensure_dag_index_built()
     for socket in sockets:
         blueprint.add_socket_ref(socket)
     return blueprint

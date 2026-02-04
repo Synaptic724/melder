@@ -274,6 +274,7 @@ def test_component_snapshot_topologies_feed_blueprint_builder() -> None:
         blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)[
             root_id
         ]
+        blueprint.ensure_dag_index_built()
         path_registry = blueprint.path_registry
         assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {("dep",)}
         assert blueprint.dag_index.get_by_exact_path(("dep",)) != []

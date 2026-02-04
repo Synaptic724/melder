@@ -163,6 +163,7 @@ def _build_blueprint():
     snapshot = SpellSystemAdjacencyBuilder.build(states)
     blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
     blueprint = blueprints[root_id]
+    blueprint.ensure_dag_index_built()
 
     return blueprint, {
         "root": root_id,

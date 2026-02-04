@@ -92,6 +92,7 @@ def test_component_root_blueprint_builder_traverses_state_topologies() -> None:
         snapshot = SpellSystemAdjacencyBuilder.build(states)
         blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
         blueprint = blueprints[root_id]
+        blueprint.ensure_dag_index_built()
         path_registry = blueprint.path_registry
         assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {
             ("mid",),
@@ -152,6 +153,7 @@ def test_component_root_blueprint_builder_skips_missing_topology() -> None:
         blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)[
             root_id
         ]
+        blueprint.ensure_dag_index_built()
         path_registry = blueprint.path_registry
         assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {("mid",)}
         assert blueprint.dag_index.get_by_exact_path(("mid", "leaf")) == []
@@ -275,6 +277,7 @@ def test_component_root_blueprint_builder_records_empty_target_sockets() -> None
         blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)[
             root_id
         ]
+        blueprint.ensure_dag_index_built()
         path_registry = blueprint.path_registry
         assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {("config",)}
         assert blueprint.dag_index.get_by_exact_path(("config",)) != []

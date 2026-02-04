@@ -119,6 +119,7 @@ def test_overlay_sockets_and_index_builds_paths():
     )
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": root_top, "child": child_top})
     blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
+    blueprint.ensure_dag_index_built()
 
     sockets = blueprint.socket_refs
     path_registry = blueprint.path_registry
@@ -175,6 +176,7 @@ def test_overlay_walks_branching_paths():
     )
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
     blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
+    blueprint.ensure_dag_index_built()
     assert {s.param_name for s in blueprint.socket_refs} == {"a", "b"}
     by_name_a = blueprint.dag_index.get_by_name("a")
     by_name_b = blueprint.dag_index.get_by_name("b")
@@ -222,6 +224,7 @@ def test_overlay_skips_missing_child_topology():
     )
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": root_top})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
+    bp.ensure_dag_index_built()
     assert {s.param_name for s in bp.socket_refs} == {"child"}
     assert bp.dag_index.get_by_exact_path(("child",))[0].node_id == "root"
 

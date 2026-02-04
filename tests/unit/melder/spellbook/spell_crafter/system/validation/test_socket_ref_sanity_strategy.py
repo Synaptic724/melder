@@ -225,6 +225,7 @@ def _make_blueprint(
             dag=dag,
             dag_index=dag_index,
         )
+        blueprint.ensure_dag_index_built()
         for ref in socket_refs or ():
             blueprint.add_socket_ref(ref)
         return blueprint
@@ -412,6 +413,7 @@ def test_missing_in_index_emits_path_and_name_diagnostics() -> None:
         socket_refs=(ref,),
         path_registry=path_registry,
     )
+    blueprint.dag_index.rebuild([])
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
         index=_index("a"),
@@ -669,6 +671,7 @@ def test_diagnostics_list_reused_appends_entries() -> None:
         socket_refs=(ref,),
         path_registry=path_registry,
     )
+    blueprint.dag_index.rebuild([])
     existing = [SystemDiagnostic("pre", "keep")]
     SocketRefSanityStrategy().run(
         index=_index("a"),
@@ -751,6 +754,8 @@ def test_cancel_event_checked_between_roots() -> None:
         "r1": _make_blueprint(root_id="r1", socket_refs=(ref_a,), path_registry=path_registry_a),
         "r2": _make_blueprint(root_id="r2", socket_refs=(ref_b,), path_registry=path_registry_b),
     }
+    blueprints["r1"].dag_index.rebuild([])
+    blueprints["r2"].dag_index.rebuild([])
     diags: list[SystemDiagnostic] = []
     with pytest.raises(RuntimeError, match="cancelled"):
         SocketRefSanityStrategy().run(
@@ -795,6 +800,8 @@ def test_missing_refs_across_multiple_roots_include_root_id() -> None:
         "r1": _make_blueprint(root_id="r1", socket_refs=(ref_a,), path_registry=path_registry_a),
         "r2": _make_blueprint(root_id="r2", socket_refs=(ref_b,), path_registry=path_registry_b),
     }
+    blueprints["r1"].dag_index.rebuild([])
+    blueprints["r2"].dag_index.rebuild([])
     diags: list[SystemDiagnostic] = []
     SocketRefSanityStrategy().run(
         index=_index("a", "b"),
