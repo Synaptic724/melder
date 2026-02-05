@@ -1346,10 +1346,6 @@ class Meld(Cleanable, IMeld):
             cache_key: Optional[tuple],
             spell: ISpell,
     ) -> None:
-        if cache_key is None:
-            return
-        if self._input_resolution_cache is None:
-            return
         self._input_resolution_cache[cache_key] = spell
 
 
@@ -1358,8 +1354,6 @@ class Meld(Cleanable, IMeld):
             lookup_key: tuple[str, str],
             spell: ISpell,
     ) -> None:
-        if self._spell_lookup_cache is None:
-            return
         self._spell_lookup_cache[lookup_key] = spell
 
 
@@ -1368,8 +1362,6 @@ class Meld(Cleanable, IMeld):
             spell_id: str,
             spell: ISpell,
     ) -> None:
-        if self._spell_id_cache is None:
-            return
         self._spell_id_cache[spell_id] = spell
 
 
@@ -1378,10 +1370,6 @@ class Meld(Cleanable, IMeld):
             cache_key: Optional[tuple],
             lookup_key: tuple[str, str],
     ) -> None:
-        if cache_key is None:
-            return
-        if self._lookup_key_cache is None:
-            return
         self._lookup_key_cache[cache_key] = lookup_key
 
     def _cache_singleton_hit(
@@ -1389,8 +1377,6 @@ class Meld(Cleanable, IMeld):
             spell: ISpell,
             instance: Any,
     ) -> None:
-        if self._singleton_hit_cache is None:
-            return
         if len(self._singleton_hit_cache) >= self._max_singleton_cache_size:
             self._evict_random_cache_entry(self._singleton_hit_cache)
         self._singleton_hit_cache[spell.spell_id] = instance
@@ -1405,8 +1391,6 @@ class Meld(Cleanable, IMeld):
             This intentionally avoids random eviction + list(cache.keys()) which is O(n)
             and causes jitter in microbenchmarks.
         """
-        if not cache:
-            return
         cache.pop(next(iter(cache)), None)
 
     def _get_cached_singleton(
@@ -1421,12 +1405,11 @@ class Meld(Cleanable, IMeld):
             return None
         if creations is None:
             return cached
-        with creations._lock:
-            instance = self._get_existing_creation_from_creations(
-                spell=spell,
-                creations=creations,
-                spellspace=spellspace,
-            )
+        instance = self._get_existing_creation_from_creations(
+            spell=spell,
+            creations=creations,
+            spellspace=spellspace,
+        )
         if instance is None:
             self._singleton_hit_cache.pop(spell_id, None)
             return None
@@ -1468,17 +1451,24 @@ class Meld(Cleanable, IMeld):
         """
         creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
+        spellspace = None
+
+        if overrides is None and existence in (
+                Existence.unique,
+                Existence.unique_per_conduit,
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        ):
+            cached = self._get_cached_singleton(
+                spell=spell,
+                creations=creations,
+                spellspace=spellspace,
+            )
+            if cached is not None:
+                return cached, False
+
         is_existing_creation = spell.is_existing_creation
         has_disposal_methods = spell.has_disposal_methods
-        spellspace = None
-        if creations is None and existence in (
-                Existence.unique_per_conduit,
-                Existence.unique_per_spell_space,
-                Existence.many,
-        ):
-            raise RuntimeError(
-                "[MELD] Caller creations are required for per-conduit existences."
-            )
         instance: Any = None
         created = False
 
@@ -1544,20 +1534,6 @@ class Meld(Cleanable, IMeld):
             ):
                 self._cache_singleton_hit(spell, instance)
             return instance, created
-
-        if overrides is None and existence in (
-                Existence.unique,
-                Existence.unique_per_conduit,
-                Existence.unique_per_conduit_cluster,
-                Existence.unique_per_conduit_lineage,
-        ):
-            cached = self._get_cached_singleton(
-                spell=spell,
-                creations=creations,
-                spellspace=spellspace,
-            )
-            if cached is not None:
-                return cached, False
 
         with spell._lock:
             if creations is not None:
@@ -1875,16 +1851,10 @@ class Meld(Cleanable, IMeld):
         if plan is None or plan.fast_transient_plan is None:
             return False
 
-        step_count = spell.execution_plan_step_count
-        if step_count is None:
-            step_count = len(plan.steps)
-
-        max_depth = spell.execution_plan_max_occurrence_depth
-        if max_depth is None:
-            max_depth = 0
-
-        # Favor the fast shortcut for small/shallow graphs where overhead dominates.
-        return step_count <= 16 and max_depth <= 6
+        # A fast transient plan only exists when *all* steps are transient, callable,
+        # registration-free, and CALLN-free. When it exists, it's safe and should be
+        # preferred over the heavier engine path regardless of size/depth.
+        return True
 
 
 # ----------------------------------------------------------------------
