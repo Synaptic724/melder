@@ -1350,8 +1350,6 @@ class Meld(Cleanable, IMeld):
             return
         if self._input_resolution_cache is None:
             return
-        if len(self._input_resolution_cache) >= self._max_resolution_cache_size:
-            self._evict_random_cache_entry(self._input_resolution_cache)
         self._input_resolution_cache[cache_key] = spell
 
 
@@ -1362,8 +1360,6 @@ class Meld(Cleanable, IMeld):
     ) -> None:
         if self._spell_lookup_cache is None:
             return
-        if len(self._spell_lookup_cache) >= self._max_resolution_cache_size:
-            self._evict_random_cache_entry(self._spell_lookup_cache)
         self._spell_lookup_cache[lookup_key] = spell
 
 
@@ -1374,8 +1370,6 @@ class Meld(Cleanable, IMeld):
     ) -> None:
         if self._spell_id_cache is None:
             return
-        if len(self._spell_id_cache) >= self._max_resolution_cache_size:
-            self._evict_random_cache_entry(self._spell_id_cache)
         self._spell_id_cache[spell_id] = spell
 
 
@@ -1388,8 +1382,6 @@ class Meld(Cleanable, IMeld):
             return
         if self._lookup_key_cache is None:
             return
-        if len(self._lookup_key_cache) >= self._max_resolution_cache_size:
-            self._evict_random_cache_entry(self._lookup_key_cache)
         self._lookup_key_cache[cache_key] = lookup_key
 
     def _cache_singleton_hit(
