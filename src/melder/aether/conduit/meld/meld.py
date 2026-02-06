@@ -854,6 +854,62 @@ class Meld(Cleanable, IMeld):
         )
 
 
+    def _validate_meld_inputs(
+            self,
+            *,
+            spell_name: Optional[str],
+            spell: Optional[object],
+            spellframe: Optional[object],
+            binding_name: Optional[str],
+    ) -> None:
+        """
+        Internal
+
+        Validate meld identity inputs when no cache hit is available.
+
+        Contract:
+            - Raises ValueError when no identity inputs are supplied.
+            - Raises TypeError when spell_name or binding_name are provided with non-string types.
+            - Logs errors through the Spellbook logger before raising.
+
+        Args:
+            spell_name: Optional logical spell name.
+            spell: Optional spell identifier (string spell_id or object).
+            spellframe: Optional spellframe/protocol identifier.
+            binding_name: Optional binding name for lookup discrimination.
+
+        Raises:
+            ValueError: When all identity inputs are None.
+            TypeError: When spell_name or binding_name are provided but not strings.
+        """
+        if spell_name is None and spell is None and spellframe is None:
+            self._spellbook._logger.error(
+                "Conduit.meld requires at least one of spell_name, spell, or spellframe",
+                "meld",
+            )
+            raise ValueError(
+                "[CONDUIT] meld(...) requires at least one of "
+                "`spell_name`, `spell`, or `spellframe`."
+            )
+
+        if spell_name is not None and not isinstance(spell_name, str):
+            self._spellbook._logger.error("spell_name must be a string when provided", "meld")
+            raise TypeError(
+                "[CONDUIT] 'spell_name' must be a string when "
+                "provided to Conduit.meld()."
+            )
+
+        if binding_name is not None and not isinstance(binding_name, str):
+            self._spellbook._logger.error(
+                "binding_name must be a string identifier when provided",
+                "meld",
+            )
+            raise TypeError(
+                "[CONDUIT] 'binding_name' must be a string identifier when "
+                "provided to Conduit.meld()."
+            )
+
+
 
     # ----------------------------------------------------------------------
     # Resolution helpers
@@ -968,6 +1024,13 @@ class Meld(Cleanable, IMeld):
                 resolved = self._resolve_spell_by_lookup_key(cached_lookup_key)
                 self._cache_input_resolution(cache_key, resolved)
                 return resolved
+
+        self._validate_meld_inputs(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
 
         # 1) string spell → treated as spell_id (SHA)
         if isinstance(spell, str):
@@ -1341,11 +1404,28 @@ class Meld(Cleanable, IMeld):
                 "Shared instances cannot be overridden after creation."
             ),
         )
+
     def _cache_input_resolution(
             self,
             cache_key: Optional[tuple],
             spell: ISpell,
     ) -> None:
+        """
+        Internal
+
+        Cache the resolved spell for a normalized input key.
+
+        Contract:
+            - Best-effort cache only; may overwrite prior entries.
+            - Accepts None cache keys when no stable input key is available.
+
+        Args:
+            cache_key: Normalized input cache key (may be None).
+            spell: Resolved spell to store.
+
+        Returns:
+            None.
+        """
         self._input_resolution_cache[cache_key] = spell
 
 
@@ -1354,6 +1434,21 @@ class Meld(Cleanable, IMeld):
             lookup_key: tuple[str, str],
             spell: ISpell,
     ) -> None:
+        """
+        Internal
+
+        Cache a resolved spell for a logical lookup key.
+
+        Contract:
+            - Best-effort cache only; may overwrite prior entries.
+
+        Args:
+            lookup_key: (frame_key, binding_name) identity tuple.
+            spell: Resolved spell to store.
+
+        Returns:
+            None.
+        """
         self._spell_lookup_cache[lookup_key] = spell
 
 
@@ -1362,6 +1457,21 @@ class Meld(Cleanable, IMeld):
             spell_id: str,
             spell: ISpell,
     ) -> None:
+        """
+        Internal
+
+        Cache a resolved spell by its canonical spell_id.
+
+        Contract:
+            - Best-effort cache only; may overwrite prior entries.
+
+        Args:
+            spell_id: Canonical spell id (SHA256 fingerprint).
+            spell: Resolved spell to store.
+
+        Returns:
+            None.
+        """
         self._spell_id_cache[spell_id] = spell
 
 
@@ -1370,6 +1480,22 @@ class Meld(Cleanable, IMeld):
             cache_key: Optional[tuple],
             lookup_key: tuple[str, str],
     ) -> None:
+        """
+        Internal
+
+        Cache the logical lookup key for a normalized input key.
+
+        Contract:
+            - Best-effort cache only; may overwrite prior entries.
+            - Accepts None cache keys when no stable input key is available.
+
+        Args:
+            cache_key: Normalized input cache key (may be None).
+            lookup_key: (frame_key, binding_name) identity tuple.
+
+        Returns:
+            None.
+        """
         self._lookup_key_cache[cache_key] = lookup_key
 
     def _cache_singleton_hit(
@@ -1377,6 +1503,23 @@ class Meld(Cleanable, IMeld):
             spell: ISpell,
             instance: Any,
     ) -> None:
+        """
+        Internal
+
+        Cache a recent singleton hit for fast reuse.
+
+        Contract:
+            - Evicts a single entry when the cache is full.
+            - Keys by spell_id and stores the resolved instance.
+            - Best-effort cache only; entries may be invalidated later.
+
+        Args:
+            spell: Spell whose singleton instance was reused.
+            instance: Resolved instance to cache.
+
+        Returns:
+            None.
+        """
         if len(self._singleton_hit_cache) >= self._max_singleton_cache_size:
             self._evict_random_cache_entry(self._singleton_hit_cache)
         self._singleton_hit_cache[spell.spell_id] = instance
@@ -1399,6 +1542,25 @@ class Meld(Cleanable, IMeld):
             creations: Any,
             spellspace: Optional[Any],
     ) -> Optional[Any]:
+        """
+        Internal
+
+        Attempt a fast-path singleton reuse from the hit cache.
+
+        Contract:
+            - Returns None on cache miss or stale entry.
+            - When a creations container is provided, validates the cached
+              instance against the authoritative creations map.
+            - If the cached entry is stale, it is evicted.
+
+        Args:
+            spell: Spell whose singleton instance is requested.
+            creations: Creations container for authoritative validation.
+            spellspace: Optional spellspace used for spellspace-scoped lookup.
+
+        Returns:
+            Optional[Any]: Cached instance when valid, otherwise None.
+        """
         spell_id = spell.spell_id
         cached = self._singleton_hit_cache.get(spell_id)
         if cached is None:
@@ -1453,12 +1615,10 @@ class Meld(Cleanable, IMeld):
         existence: Existence = spell.existence
         spellspace = None
 
-        if overrides is None and existence in (
-                Existence.unique,
-                Existence.unique_per_conduit,
-                Existence.unique_per_conduit_cluster,
-                Existence.unique_per_conduit_lineage,
-        ):
+        if not overrides and existence != Existence.many:
+            if existence is Existence.unique_per_spell_space:
+                if creations is not None:
+                    spellspace = self._get_active_spellspace_for_creations(creations)
             cached = self._get_cached_singleton(
                 spell=spell,
                 creations=creations,

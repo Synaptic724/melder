@@ -3,7 +3,7 @@ import time
 from contextvars import ContextVar
 from contextlib import contextmanager
 from types import ModuleType
-from typing import Optional, Type, Any, Tuple, Callable, Iterable, Dict
+from typing import Optional, Type, Any, Tuple, Callable, Iterable, Dict, Union
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -38,6 +38,11 @@ class Conduit(Cleanable, IConduit):
 
     It can spawn lesser Conduits, link to other Conduits if dynamic mode is enabled,
     and manage the lifecycle of services registered inside itself.
+
+    Meld gating:
+        Each conduit owns a MeldGate that can block or deny new meld calls.
+        The gate tracks active melds via ticket registration so the system
+        can drain in-flight work before shutdown or dynamic reconfiguration.
     """
     _aether = Aether()
     __melder_internal__ = _mrg.sentinel
@@ -2247,9 +2252,16 @@ class Conduit(Cleanable, IConduit):
 
         Resolution, reuse, and lifecycle behavior are delegated to
         the underlying ``Meld`` instance.
-        If this Conduit's MeldGate is disabled, this call blocks until meld
-        execution is re-enabled. The MeldGateController can disable all
-        registered gates in a lineage.
+
+        In dynamic mode, this method uses the Conduit's MeldGate to control
+        meld entry and track active meld tickets. In automatic mode, meld
+        bypasses gate checks for a minimal hot path.
+
+        Gate/ticketing behavior (dynamic mode only):
+            - If the gate is terminally closed, raises immediately.
+            - If the gate is disabled, blocks until re-enabled, then re-checks closure.
+            - Registers a meld ticket for the duration of the call so the gate
+              can track active work and drain safely during shutdown.
 
         Args:
             spell_name:
@@ -2297,6 +2309,72 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
 
+        if not self.__dynamic_environment__:
+            return self._meld_without_gate(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                spell_override=spell_override,
+            )
+
+        return self._meld_with_gate(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            spell_override=spell_override,
+        )
+
+    def _meld_without_gate(
+            self,
+            spell_name: Optional[str] = None,
+            *,
+            spell: Optional[object] = None,
+            spellframe: Optional[object] = None,
+            binding_name: Optional[str] = None,
+            spell_override: Optional[Union[dict, list, tuple]] = None,
+    ) -> Optional[Any]:
+        """
+        Internal
+
+        Resolve a meld call without gate checks or ticketing.
+
+        Purpose:
+            Provide the minimal hot path for automatic (non-dynamic) mode.
+        """
+        self._fire_conduit_hooks("on_meld_pre_resolve", self)
+
+        result = self._meld.meld(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            spell_override=spell_override,
+        )
+
+        self._fire_conduit_hooks("on_meld_post_resolve", self)
+
+        return result
+
+    def _meld_with_gate(
+            self,
+            spell_name: Optional[str] = None,
+            *,
+            spell: Optional[object] = None,
+            spellframe: Optional[object] = None,
+            binding_name: Optional[str] = None,
+            spell_override: Optional[Union[dict, list, tuple]] = None,
+    ) -> Optional[Any]:
+        """
+        Internal
+
+        Resolve a meld call with gate checks and ticketing.
+
+        Purpose:
+            Enforce dynamic-mode gating and track active melds so the
+            lineage can be paused or drained safely.
+        """
         if self._meld_gate.is_closed():
             raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
 
@@ -2306,34 +2384,8 @@ class Conduit(Cleanable, IConduit):
                 raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
 
         try:
+            # Track active melds for shutdown/drain semantics.
             self._meld_gate.register_ticket()
-            if spell_name is None and spell is None and spellframe is None:
-                self._logger.error(
-                    "Conduit.meld requires at least one of spell_name, spell, or spellframe",
-                    "meld",
-                )
-                raise ValueError(
-                    "[CONDUIT] meld(...) requires at least one of "
-                    "`spell_name`, `spell`, or `spellframe`."
-                )
-
-            if spell_name is not None and not isinstance(spell_name, str):
-                self._logger.error("spell_name must be a string when provided", "meld")
-                raise TypeError(
-                    "[CONDUIT] 'spell_name' must be a string when "
-                    "provided to Conduit.meld()."
-                )
-
-            if binding_name is not None and not isinstance(binding_name, str):
-                self._logger.error("binding_name must be a string identifier when provided", "meld")
-                raise TypeError(
-                    "[CONDUIT] 'binding_name' must be a string identifier when "
-                    "provided to Conduit.meld()."
-                )
-
-            if self._meld is None:
-                self._logger.error("Meld instance is not available", "meld")
-                raise RuntimeError("[CONDUIT] Meld instance is not available.")
 
             self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
@@ -3633,11 +3685,7 @@ class Conduit(Cleanable, IConduit):
             *conduits:
                 One or more Conduit instances passed directly to each hook.
         """
-        hooks_by_name = self._conduit_hooks
-        if not hooks_by_name:
-            return
-
-        hook_list = hooks_by_name.get(hook_name)
+        hook_list = self._conduit_hooks.get(hook_name)
         if not hook_list:
             return
 
