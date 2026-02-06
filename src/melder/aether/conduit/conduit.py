@@ -917,36 +917,33 @@ class Conduit(Cleanable, IConduit):
         if self._local_conduit_hooks is None:
             self._local_conduit_hooks = {}
 
-    def _merge_conduit_hooks(self, hook_map: dict[str, list[Any]] | None, hooks: dict[str, Any]) -> None:
+    def _merge_conduit_hooks(self, hook_map: dict[str, list[Any]], hooks: dict[str, Any]) -> None:
         """
         Internal
 
-        Merge hook values into the provided hook map with Configuration-style validation.
-        """
-        if hook_map is None:
-            raise RuntimeError("Conduit hook map is not initialized.")
+        Merge hook values into the provided hook map.
 
+        Contract:
+            - Hook names must be in Configuration._ALLOWED_HOOKS.
+            - Hook values must be a callable or a list/tuple of callables.
+        """
         allowed = self._configuration._ALLOWED_HOOKS
         for name, value in hooks.items():
             if name not in allowed:
                 raise ValueError(f"Unknown hook name: {name!r}")
-            if value is None:
-                continue
             if callable(value):
                 hook_map.setdefault(name, []).append(value)
                 continue
-            try:
-                iterator = iter(value)
-            except TypeError:
+            if not isinstance(value, (list, tuple)):
                 raise TypeError(
-                    f"Value for hook '{name}' must be a callable or an iterable of callables."
+                    f"Value for hook '{name}' must be a callable or a list/tuple of callables."
                 )
-            for fn in iterator:
+            for fn in value:
                 if not callable(fn):
                     raise TypeError(
                         f"All entries for hook '{name}' must be callable."
                     )
-                hook_map.setdefault(name, []).append(fn)
+            hook_map.setdefault(name, []).extend(value)
 
     def _register_conduit_hooks_on_upgrade(
             self,
