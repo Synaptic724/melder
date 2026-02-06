@@ -402,11 +402,12 @@ def test_register_conduit_hooks_local_creates_local_map_and_wires_meld(
     conduit_normal: Conduit,
 ) -> None:
     """
-    Verify local hook registration creates a detached map and wires Meld.
+    Verify local hook registration stores hooks in a conduit-local overlay.
 
     Contract:
-        - create_local_hooks stores hooks on the conduit only.
-        - Meld shares the same local hook map.
+        - create_local_hooks stores hooks in _local_conduit_hooks.
+        - Shared hook map remains unchanged.
+        - Meld receives the composed effective map.
         - Configuration hook registry is not modified.
     """
     def hook(conduit: Conduit) -> None:
@@ -421,8 +422,11 @@ def test_register_conduit_hooks_local_creates_local_map_and_wires_meld(
     )
 
     assert conduit_normal._conduit_hooks is not None
-    assert conduit_normal._conduit_hooks["on_conduit_cleanup_start"][0] is hook
-    assert conduit_normal._meld._meld_hooks is conduit_normal._conduit_hooks
+    assert "on_conduit_cleanup_start" not in conduit_normal._conduit_hooks
+    assert conduit_normal._local_conduit_hooks is not None
+    assert conduit_normal._local_conduit_hooks["on_conduit_cleanup_start"][0] is hook
+    assert conduit_normal._meld._meld_hooks is not conduit_normal._conduit_hooks
+    assert conduit_normal._meld._meld_hooks["on_conduit_cleanup_start"][0] is hook
 
     spellbook_id = conduit_normal._spellbook._id
     config_hooks = conduit_normal._configuration.get_hooks(spellbook_id)
@@ -467,6 +471,8 @@ def test_register_conduit_hooks_local_does_not_propagate_to_lesser(
             create_local_hooks=True,
         )
 
+        assert normal._local_conduit_hooks is not None
+        assert normal._local_conduit_hooks["on_conduit_cleanup_start"][0] is hook
         assert lesser._conduit_hooks is not None
         assert "on_conduit_cleanup_start" not in lesser._conduit_hooks
     finally:
@@ -539,17 +545,18 @@ def test_register_conduit_hooks_shared_wires_meld_map(
     assert conduit_dynamic_normal._meld._meld_hooks is conduit_dynamic_normal._conduit_hooks
 
 
-def test_register_conduit_hooks_local_detaches_from_shared_map(
+def test_register_conduit_hooks_local_preserves_shared_map(
     configuration_automatic: Configuration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> None:
     """
-    Verify local hook registration detaches from shared configuration hooks.
+    Verify local hook registration preserves shared configuration hooks.
 
     Contract:
-        - Conduit switches to a local copy when create_local_hooks is True.
-        - Configuration hook map retains only the original hooks.
+        - Conduit keeps the shared hook map reference.
+        - Local hooks are stored separately and appended after shared hooks.
+        - Configuration hook map retains only shared hooks.
     """
     configuration_automatic.add_hook(
         spellbook_stub._id,
@@ -577,10 +584,14 @@ def test_register_conduit_hooks_local_detaches_from_shared_map(
             create_local_hooks=True,
         )
 
-        assert conduit._conduit_hooks is not shared_hooks
-        assert conduit._conduit_hooks["on_conduit_cleanup_start"][-1] is local_hook
+        assert conduit._conduit_hooks is shared_hooks
+        assert conduit._local_conduit_hooks is not None
+        assert conduit._local_conduit_hooks["on_conduit_cleanup_start"][-1] is local_hook
         assert shared_hooks["on_conduit_cleanup_start"][-1] is not local_hook
         assert len(shared_hooks["on_conduit_cleanup_start"]) == 1
+        assert conduit._meld._meld_hooks is not None
+        assert conduit._meld._meld_hooks["on_conduit_cleanup_start"][0] is shared_hooks["on_conduit_cleanup_start"][0]
+        assert conduit._meld._meld_hooks["on_conduit_cleanup_start"][-1] is local_hook
     finally:
         conduit.cleanup()
 

@@ -7,6 +7,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -50,6 +51,22 @@ def _make_spellbook() -> Spellbook:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     return spellbook
+
+
+def _make_dynamic_spellbook() -> Spellbook:
+    """
+    Purpose:
+        Provide a Spellbook configured for dynamic-mode component meld gating tests.
+    Contract:
+        - system_state is set to dynamic before Spellbook initialization.
+        - phase_scheduler_workers_per_spellbook is set to 1.
+    Returns:
+        Spellbook: A configured Spellbook instance.
+    """
+    configuration = Configuration()
+    configuration.dynamic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    return Spellbook(configuration=configuration)
 
 
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
@@ -186,9 +203,7 @@ def test_component_conduit_meld_gate_blocks_until_enabled() -> None:
     Raises:
         AssertionError: If meld does not block or does not resume after enable.
     """
-    spellbook = _make_spellbook()
-    config = spellbook.get_configuration()
-    config.set_property("system_state", "dynamic")
+    spellbook = _make_dynamic_spellbook()
     spell_id = spellbook.bind(
         spell=BasicService,
         existence=Existence.unique,

@@ -156,6 +156,9 @@ class Conduit(Cleanable, IConduit):
         # Populated from Configuration using the Spellbook's ID.
         # Shape: { hook_name: [callables...] }
         self._conduit_hooks: dict[str, list[Any]] | None = None
+        # Local hook overlay for this conduit only.
+        # Shape: { hook_name: [callables...] }
+        self._local_conduit_hooks: dict[str, list[Any]] | None = None
 
         self._configure_conduit_state()
 
@@ -192,11 +195,11 @@ class Conduit(Cleanable, IConduit):
             if self._cleaned:
                 return
             self._fire_conduit_hooks("on_conduit_cleanup_start", self)
-            cleanup_complete_hooks: list[Callable[..., Any]] | None = None
-            if self._conduit_hooks is not None:
-                hook_list = self._conduit_hooks.get("on_conduit_cleanup_complete")
-                if hook_list:
-                    cleanup_complete_hooks = list(hook_list)
+            cleanup_complete_hooks = self._collect_conduit_hook_chain(
+                "on_conduit_cleanup_complete"
+            )
+            if not cleanup_complete_hooks:
+                cleanup_complete_hooks = None
             self._cleaned = True
             if self._conduit_state == ConduitState.lesser:
                 self._cleanup_lesser_conduit()
@@ -218,6 +221,7 @@ class Conduit(Cleanable, IConduit):
                             exc_info=True,
                         )
             self._conduit_hooks = None
+            self._local_conduit_hooks = None
 
         # Logger last
         if self._logger is not None:
@@ -620,8 +624,7 @@ class Conduit(Cleanable, IConduit):
         """
         Internal
 
-        Attach any configured system hooks that were registered under this
-        Conduit's Spellbook into the Conduit instance.
+        Attach shared lineage hooks for this Conduit's Spellbook.
 
         This is the "ID swap" boundary:
 
@@ -636,31 +639,11 @@ class Conduit(Cleanable, IConduit):
 
         Rules:
             - All conduits attach to the same shared hook map for the Spellbook.
-            - If the Spellbook has no `id`, we log and bail.
-            - If the Configuration does not expose `get_hooks(spellbook_id)`,
-              we treat that as "no hooks registered" and bail quietly.
+            - Uses direct owned attributes (no defensive fallback path).
+            - Wires Meld with the effective composed hook map.
         """
-
-        # Spellbook must expose an `id` (ISpellbook contract).
-        try:
-            spellbook_id = self._spellbook._id
-        except AttributeError:
-            return
-
-        # Configuration may or may not support the hook registry yet.
-        try:
-            hook_map = self._configuration.get_hooks(spellbook_id)
-        except AttributeError:
-            return
-
-        # At this point we conceptually "swap IDs": hooks registered under the
-        # Spellbook's ID become owned by this Conduit instance.
-        self._conduit_hooks = hook_map
-        try:
-            if self._meld is not None:
-                self._meld.set_meld_hooks(self._conduit_hooks)
-        except Exception:
-            pass
+        self._conduit_hooks = self._configuration.get_hooks(self._spellbook._id)
+        self._meld.set_meld_hooks(self._compose_meld_hook_map())
 
 
     #region Context Management
@@ -817,10 +800,9 @@ class Conduit(Cleanable, IConduit):
 
         if create_local_hooks:
             self._ensure_local_conduit_hooks()
-            self._merge_conduit_hooks(self._conduit_hooks, hooks)
+            self._merge_conduit_hooks(self._local_conduit_hooks, hooks)
             if self._meld is not None:
-                self._meld.set_meld_hooks(self._conduit_hooks, create_local_hooks=True)
-                self._conduit_hooks = self._meld._meld_hooks
+                self._meld.set_meld_hooks(self._compose_meld_hook_map())
             return
 
         self._register_conduit_hooks_on_upgrade(hooks)
@@ -926,17 +908,14 @@ class Conduit(Cleanable, IConduit):
         """
         Internal
 
-        Ensure the conduit has a local hook map that is detached from any
-        shared Configuration hook registry.
-        """
-        if self._conduit_hooks is None:
-            self._conduit_hooks = {}
-            return
+        Ensure the conduit has a local hook map for conduit-only overlays.
 
-        local_hooks: dict[str, list[Any]] = {}
-        for name, hook_list in self._conduit_hooks.items():
-            local_hooks[name] = list(hook_list)
-        self._conduit_hooks = local_hooks
+        Contract:
+            - Local hooks are stored separately from shared lineage hooks.
+            - Shared hook references remain intact.
+        """
+        if self._local_conduit_hooks is None:
+            self._local_conduit_hooks = {}
 
     def _merge_conduit_hooks(self, hook_map: dict[str, list[Any]] | None, hooks: dict[str, Any]) -> None:
         """
@@ -947,12 +926,9 @@ class Conduit(Cleanable, IConduit):
         if hook_map is None:
             raise RuntimeError("Conduit hook map is not initialized.")
 
-        try:
-            allowed = self._configuration._ALLOWED_HOOKS
-        except AttributeError:
-            allowed = None
+        allowed = self._configuration._ALLOWED_HOOKS
         for name, value in hooks.items():
-            if allowed is not None and name not in allowed:
+            if name not in allowed:
                 raise ValueError(f"Unknown hook name: {name!r}")
             if value is None:
                 continue
@@ -1008,18 +984,69 @@ class Conduit(Cleanable, IConduit):
             )
 
         # 1) Push into Configuration using the Spellbook owner id.
-        try:
-            spellbook_id = self._spellbook._id
-        except AttributeError as exc:
-            raise RuntimeError("Spellbook id unavailable for hook registration.") from exc
-        if not spellbook_id:
-            raise RuntimeError("Spellbook id unavailable for hook registration.")
+        spellbook_id = self._spellbook._id
         self._configuration.add_hooks(spellbook_id, **hooks)
 
         # 2) Ensure local references point at the shared hook map.
         self._conduit_hooks = self._configuration.get_hooks(spellbook_id)
         if self._meld is not None:
-            self._meld.set_meld_hooks(self._conduit_hooks)
+            self._meld.set_meld_hooks(self._compose_meld_hook_map())
+
+    def _compose_meld_hook_map(self) -> dict[str, list[Any]]:
+        """
+        Internal
+
+        Compose the effective meld hook map from shared and local conduit hooks.
+
+        Contract:
+            - Shared hooks are ordered before local hooks.
+            - Returns shared hooks by reference when no local overlay exists.
+            - Returns a detached merged dictionary when local hooks exist.
+            - Empty maps result in an empty dictionary.
+        """
+        if self._local_conduit_hooks is None or not self._local_conduit_hooks:
+            if self._conduit_hooks is None:
+                return {}
+            return self._conduit_hooks
+
+        merged_hooks: dict[str, list[Any]] = {}
+        shared_hooks = self._conduit_hooks or {}
+        local_hooks = self._local_conduit_hooks
+        for name, hook_list in shared_hooks.items():
+            if hook_list:
+                merged_hooks[name] = list(hook_list)
+
+        for name, hook_list in local_hooks.items():
+            if not hook_list:
+                continue
+            merged_hooks.setdefault(name, []).extend(hook_list)
+
+        return merged_hooks
+
+    def _collect_conduit_hook_chain(self, hook_name: str) -> list[Callable[..., Any]]:
+        """
+        Internal
+
+        Collect the effective hook sequence for a hook name.
+
+        Contract:
+            - Shared lineage hooks are collected first.
+            - Local conduit hooks are collected second.
+            - Returned list is detached from internal maps.
+        """
+        hook_chain: list[Callable[..., Any]] = []
+
+        if self._conduit_hooks is not None:
+            shared_hooks = self._conduit_hooks.get(hook_name)
+            if shared_hooks:
+                hook_chain.extend(list(shared_hooks))
+
+        if self._local_conduit_hooks is not None:
+            local_hooks = self._local_conduit_hooks.get(hook_name)
+            if local_hooks:
+                hook_chain.extend(list(local_hooks))
+
+        return hook_chain
 
     def _set_meld_gate_controller_for_lineage(
             self,
@@ -3664,6 +3691,7 @@ class Conduit(Cleanable, IConduit):
         :meth:`_initialize_conduit_hooks`. The contract is intentionally
         narrow and stable:
 
+            - Shared lineage hooks run before local conduit hooks.
             - All hooks are plain callables.
             - They are invoked as: hook(*conduits)
             - Each element in ``conduits`` MUST be a Conduit instance.
@@ -3685,11 +3713,11 @@ class Conduit(Cleanable, IConduit):
             *conduits:
                 One or more Conduit instances passed directly to each hook.
         """
-        hook_list = self._conduit_hooks.get(hook_name)
-        if not hook_list:
+        hook_chain = self._collect_conduit_hook_chain(hook_name)
+        if not hook_chain:
             return
 
-        for hook in list(hook_list):
+        for hook in hook_chain:
             try:
                 hook(*conduits)
             except Exception as e:
