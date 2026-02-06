@@ -69,7 +69,7 @@ def test_meld_gate_controller_disable_all(
         lesser.cleanup()
 
 
-def test_meld_gate_ticket_tracking_success(conduit_normal: Conduit) -> None:
+def test_meld_gate_ticket_tracking_success(conduit_dynamic_normal: Conduit) -> None:
     """
     Verify meld ticket tracking clears after successful meld calls.
 
@@ -77,23 +77,23 @@ def test_meld_gate_ticket_tracking_success(conduit_normal: Conduit) -> None:
         - A meld call registers and unregisters a ticket.
         - active_ticket_count returns to zero after completion.
     """
-    conduit_normal._meld.meld = MagicMock(return_value="ok")
-    result = conduit_normal.meld(spell="spell-id")
+    conduit_dynamic_normal._meld.meld = MagicMock(return_value="ok")
+    result = conduit_dynamic_normal.meld(spell="spell-id")
     assert result == "ok"
-    assert conduit_normal._meld_gate.active_ticket_count() == 0
+    assert conduit_dynamic_normal._meld_gate.active_ticket_count() == 0
 
 
-def test_meld_gate_ticket_tracking_exception(conduit_normal: Conduit) -> None:
+def test_meld_gate_ticket_tracking_exception(conduit_dynamic_normal: Conduit) -> None:
     """
     Verify meld ticket tracking clears after exceptions.
 
     Contract:
         - active_ticket_count returns to zero after a failing meld call.
     """
-    conduit_normal._meld.meld = MagicMock(side_effect=RuntimeError("boom"))
+    conduit_dynamic_normal._meld.meld = MagicMock(side_effect=RuntimeError("boom"))
     with pytest.raises(RuntimeError, match="boom"):
-        conduit_normal.meld(spell="spell-id")
-    assert conduit_normal._meld_gate.active_ticket_count() == 0
+        conduit_dynamic_normal.meld(spell="spell-id")
+    assert conduit_dynamic_normal._meld_gate.active_ticket_count() == 0
 
 
 def test_meld_gate_controller_active_thread_counts(
@@ -121,7 +121,7 @@ def test_meld_gate_controller_active_thread_counts(
         lesser.cleanup()
 
 
-def test_meld_gate_controller_close_and_wait(conduit_normal: Conduit) -> None:
+def test_meld_gate_controller_close_and_wait(conduit_dynamic_normal: Conduit) -> None:
     """
     Verify close_and_wait_until_free blocks until active tickets drain.
 
@@ -129,18 +129,18 @@ def test_meld_gate_controller_close_and_wait(conduit_normal: Conduit) -> None:
         - Closing a gate waits until its tickets are released.
         - Subsequent meld calls raise when the gate is closed.
     """
-    controller = conduit_normal._meld_gate_controller
+    controller = conduit_dynamic_normal._meld_gate_controller
     assert controller is not None
 
     ticket_registered = threading.Event()
     allow_release = threading.Event()
 
     def _ticket_worker() -> None:
-        conduit_normal._meld_gate.register_ticket()
+        conduit_dynamic_normal._meld_gate.register_ticket()
         ticket_registered.set()
         # Hold the ticket until the main thread has initiated close_and_wait_until_free.
         allow_release.wait(timeout=5)
-        conduit_normal._meld_gate.unregister_ticket()
+        conduit_dynamic_normal._meld_gate.unregister_ticket()
 
     t = threading.Thread(target=_ticket_worker)
     t.start()
@@ -158,13 +158,13 @@ def test_meld_gate_controller_close_and_wait(conduit_normal: Conduit) -> None:
     releaser = threading.Thread(target=_release_later)
     releaser.start()
 
-    controller.close_and_wait_until_free(conduit_normal._id, timeout=5.0, interval=0.01)
+    controller.close_and_wait_until_free(conduit_dynamic_normal._id, timeout=5.0, interval=0.01)
 
     releaser.join(timeout=1)
     t.join(timeout=1)
     assert not t.is_alive()
 
     # Verify subsequent meld calls raise when the gate is closed.
-    conduit_normal._meld.meld = MagicMock(return_value="ok")
+    conduit_dynamic_normal._meld.meld = MagicMock(return_value="ok")
     with pytest.raises(RuntimeError, match="MeldGate is closed"):
-        conduit_normal.meld(spell="spell-id")
+        conduit_dynamic_normal.meld(spell="spell-id")

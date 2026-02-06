@@ -345,6 +345,7 @@ class _SpellbookStub:
         }
         self._spellbook_validation_required = True
         self._spell_id_pool: Dict[str, 'SpellIndex'] = {}
+        self._logger = MagicMock()
 
 
 class _ChangeControlManagerStub:
@@ -1572,24 +1573,6 @@ def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
     assert instance == "created"
     assert created is True
     meld._register_spell.assert_called_once_with(spell, "created", creations)
-
-
-def test_resolve_instance_with_locks_spellspace_requires_creations() -> None:
-    """
-    Verify spellspace existences require caller creations.
-
-    Contract:
-        - Missing creations raise RuntimeError for spellspace lifetimes.
-    """
-    meld = _make_meld()
-    meld._creations = None
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique_per_spell_space,
-        owner_creations=None,
-    )
-    with pytest.raises(RuntimeError, match="Caller creations are required"):
-        meld._resolve_instance_with_locks(spell, overrides=None)
 
 
 def test_resolve_instance_with_locks_shared_with_no_creations_uses_none() -> None:

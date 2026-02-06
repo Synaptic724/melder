@@ -187,12 +187,14 @@ def test_component_conduit_meld_gate_blocks_until_enabled() -> None:
         AssertionError: If meld does not block or does not resume after enable.
     """
     spellbook = _make_spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("system_state", "dynamic")
     spell_id = spellbook.bind(
         spell=BasicService,
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root", automatic=False)
     try:
         conduit.disable_meld()
         started = threading.Event()

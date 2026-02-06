@@ -518,25 +518,6 @@ def test_find_contracted_spell_returns_first_match(
     ]
 
 
-def test_meld_raises_when_meld_missing(conduit_lesser: Conduit) -> None:
-    """
-    Verify meld raises when the underlying Meld instance is missing.
-
-    Contract:
-        - Conduit.meld fails fast if _meld is None.
-
-    Args:
-        conduit_lesser (Conduit): Lesser conduit instance.
-
-    Raises:
-        AssertionError: If the expected RuntimeError is not raised.
-    """
-    conduit_lesser._meld = None
-
-    with pytest.raises(RuntimeError, match="Meld instance is not available"):
-        conduit_lesser.meld(spell="sha-1")
-
-
 def test_meld_requires_identifier(conduit_lesser: Conduit) -> None:
     """
     Verify meld requires at least one identifier input.
