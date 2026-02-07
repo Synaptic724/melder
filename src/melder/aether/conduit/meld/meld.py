@@ -509,13 +509,9 @@ class Meld(Cleanable, IMeld):
         if resolution validity is UNKNOWN or GATED.
         """
         spell_system_states = spell._spell_system_states
-        if spell_system_states is None:
-            return
-
         conduit_id = self._get_resolution_conduit_id()
         if not conduit_id:
             return
-
         resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
         resolution_validity = self._get_resolution_validity(spell, resolution_state)
 
@@ -545,7 +541,6 @@ class Meld(Cleanable, IMeld):
                     return
 
             raise SpellbookValidationError([spell])
-
         raise SpellbookValidationError([spell])
 
     def _check_contracts_and_force_revalidation(self, spell: ISpell) -> None:

@@ -695,11 +695,10 @@ class MeldRuntime:
             return
 
         if (
-                spell_id not in self._transient_asset_pool
-                and len(self._transient_asset_pool) >= self._max_transient_asset_pool_size
+            spell_id not in self._transient_asset_pool
+            and len(self._transient_asset_pool) >= self._max_transient_asset_pool_size
         ):
-            if self._transient_asset_pool:
-                self._transient_asset_pool.pop(next(iter(self._transient_asset_pool)), None)
+            self._transient_asset_pool.pop(next(iter(self._transient_asset_pool)), None)
 
         pool = self._transient_asset_pool.get(spell_id)
         if pool is None:
@@ -724,8 +723,7 @@ class MeldRuntime:
                 spell_id not in self._shared_asset_pool
                 and len(self._shared_asset_pool) >= self._max_shared_asset_pool_size
         ):
-            if self._shared_asset_pool:
-                self._shared_asset_pool.pop(next(iter(self._shared_asset_pool)), None)
+            self._shared_asset_pool.pop(next(iter(self._shared_asset_pool)), None)
 
         pool = self._shared_asset_pool.get(spell_id)
         if pool is None:
