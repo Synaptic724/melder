@@ -1,4 +1,5 @@
 import inspect
+from collections import deque
 from threading import RLock
 from typing import Optional, Dict, Any, Callable, List, Tuple
 
@@ -112,11 +113,11 @@ class Meld(Cleanable, IMeld):
         # Conduit-local instantiation manager.
         self._creations = creations
 
-        # Front-door cache for singleton instance hits.
+        # Front-door resolution caches and pooled runtime contexts.
         self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], ISpell] = {}
-        self._singleton_hit_cache: Dict[str, Any] = {}
+        self._context_pool: deque[MeldContext] = deque()
         self._max_resolution_cache_size: int = 2048
-        self._max_singleton_cache_size: int = 4096
+        self._max_context_pool_size: int = 64
 
         # DAG-based runtime that will actually execute the DI graph for
         # factory-style spells (class / method / lambda).
@@ -166,15 +167,23 @@ class Meld(Cleanable, IMeld):
             self._lookup_contracted_spells = None
             self._spellbook = None
 
+            context_pool = self._context_pool
+            while context_pool:
+                context = context_pool.popleft()
+                try:
+                    context.cleanup()
+                except Exception:
+                    pass
+
             # Clear creations reference
             self._creations = None
             self._conduit_id = None
             self._runtime = None
             self._meld_hooks = None
             self._input_resolution_cache = None
-            self._singleton_hit_cache = None
+            self._context_pool = None
             self._max_resolution_cache_size = None
-            self._max_singleton_cache_size = None
+            self._max_context_pool_size = None
 
 
     # region Context Manager
@@ -937,7 +946,7 @@ class Meld(Cleanable, IMeld):
         """
         Internal
 
-        Create a per-call :class:`MeldContext` for a single meld operation.
+        Acquire a pooled :class:`MeldContext` for one meld operation.
 
         The context binds together:
             - The root spell to be constructed.
@@ -946,7 +955,7 @@ class Meld(Cleanable, IMeld):
             - Any normalized per-call overrides (constructor/factory args).
 
         This object is passed into the `MeldRuntime` / `MeldEngine` stack and
-        is cleaned up immediately after the engine finishes.
+        returned to the context pool after execution completes.
 
         Args:
             spell:
@@ -961,16 +970,52 @@ class Meld(Cleanable, IMeld):
 
         Returns:
             MeldContext:
-                A freshly constructed context for this meld invocation.
+                A pooled context reset for this meld invocation.
         """
-        # Positional construction keeps us insulated from minor signature changes
-        # in MeldContext as long as (root_spell, creations, overrides) stay first.
+        context_pool = self._context_pool
+        if context_pool:
+            context = context_pool.popleft()
+            context.reset(
+                root_spell=spell,
+                overrides=overrides,
+                caller_creations=self._creations,
+                caller_creations_lock_held=caller_creations_lock_held,
+            )
+            return context
+
         return MeldContext(
             root_spell=spell,
             overrides=overrides,
             caller_creations=self._creations,
             caller_creations_lock_held=caller_creations_lock_held,
         )
+
+    def _release_meld_context(self, context: MeldContext) -> None:
+        """
+        Internal
+
+        Reset a runtime context and return it to the local deque pool.
+
+        Contract:
+            - Clears all context references before reuse.
+            - Keeps at most `_max_context_pool_size` entries.
+            - Silently drops contexts that fail cleanup.
+
+        Args:
+            context:
+                Context instance that has finished runtime execution.
+
+        Returns:
+            None.
+        """
+        try:
+            context.cleanup()
+        except Exception:
+            return
+
+        context_pool = self._context_pool
+        if len(context_pool) < self._max_context_pool_size:
+            context_pool.appendleft(context)
 
 
     def _resolve_spell(
@@ -1378,92 +1423,6 @@ class Meld(Cleanable, IMeld):
             ),
         )
 
-    def _cache_singleton_hit(
-            self,
-            spell: ISpell,
-            instance: Any,
-    ) -> None:
-        """
-        Internal
-
-        Cache a recent singleton hit for fast reuse.
-
-        Contract:
-            - Evicts a single entry when the cache is full.
-            - Keys by spell_id and stores the resolved instance.
-            - Best-effort cache only; entries may be invalidated later.
-
-        Args:
-            spell: Spell whose singleton instance was reused.
-            instance: Resolved instance to cache.
-
-        Returns:
-            None.
-        """
-        singleton_hit_cache = self._singleton_hit_cache
-        if len(singleton_hit_cache) >= self._max_singleton_cache_size:
-            (singleton_hit_cache.pop(next(iter(singleton_hit_cache)), None))
-        singleton_hit_cache[spell.spell_id] = instance
-
-    def _get_cached_non_spellspace_singleton(
-            self,
-            *,
-            spell_id: str,
-            creations: Any,
-    ) -> Optional[Any]:
-        """
-        Internal
-
-        Attempt fast-path reuse for non-spellspace singleton lifetimes.
-
-        Contract:
-            - Cache hits are validated against the authoritative creations map.
-            - Stale cache entries are evicted.
-            - Spellspace lifetimes are not handled here.
-        """
-        cached = self._singleton_hit_cache.get(spell_id)
-        if cached is None:
-            return None
-
-        instance = self._get_existing_creation_from_creations(
-            spell_id=spell_id,
-            creations=creations,
-        )
-        if instance is None:
-            self._singleton_hit_cache.pop(spell_id, None)
-            return None
-        return instance
-
-    def _get_cached_spellspace_singleton(
-            self,
-            *,
-            spell_id: str,
-            creations: Any,
-            spellspace: Any,
-    ) -> Optional[Any]:
-        """
-        Internal
-
-        Attempt fast-path reuse for spellspace-scoped singleton lifetimes.
-
-        Contract:
-            - Cache hits are validated against the spellspace bucket.
-            - Stale cache entries are evicted.
-        """
-        cached = self._singleton_hit_cache.get(spell_id)
-        if cached is None:
-            return None
-
-        instance = self._get_spellspace_existing_creation_from_creations(
-            spell_id=spell_id,
-            creations=creations,
-            spellspace=spellspace,
-        )
-        if instance is None:
-            self._singleton_hit_cache.pop(spell_id, None)
-            return None
-        return instance
-
     def _resolver(
             self,
             spell: ISpell,
@@ -1522,20 +1481,22 @@ class Meld(Cleanable, IMeld):
         Resolve an Existence.unique_per_spell_space instance.
 
         Contract:
-            - Uses spellspace-aware singleton cache reuse when overrides are absent.
-            - Runs check -> construct -> register under the creations lock.
+            - Runs lockless check, then locked re-check -> construct -> register.
             - Uses spellspace-aware creations lookup for reuse checks.
             - Rejects overrides when reusing an existing spellspace instance.
             - Registers existing-object spells into spellspace creations on first create.
         """
-        if not overrides:
-            cached = self._get_cached_spellspace_singleton(
-                spell_id=spell_id,
-                creations=creations,
-                spellspace=spellspace,
+        instance = self._get_spellspace_existing_creation_from_creations(
+            spell_id=spell_id,
+            creations=creations,
+            spellspace=spellspace,
+        )
+        if instance is not None:
+            self._raise_override_on_existing_instance(
+                spell=spell,
+                overrides=overrides,
             )
-            if cached is not None:
-                return cached, False
+            return instance, False
 
         with creations._lock:
             instance = self._get_spellspace_existing_creation_from_creations(
@@ -1557,16 +1518,12 @@ class Meld(Cleanable, IMeld):
                         has_disposal_methods=spell.has_disposal_methods,
                         disposal_methods=spell.disposal_method_names,
                     )
-                if overrides is None:
-                    self._cache_singleton_hit(spell, instance)
                 return instance, True
 
             self._raise_override_on_existing_instance(
                 spell=spell,
                 overrides=overrides,
             )
-            if overrides is None:
-                self._cache_singleton_hit(spell, instance)
             return instance, False
 
     def _resolve_instance_with_locks(
@@ -1589,6 +1546,7 @@ class Meld(Cleanable, IMeld):
               check -> construct -> register.
             - Shared existences hold the spell lock across the same flow and
               use the creations lock only for map access.
+            - Non-`many` existences use lockless check followed by locked re-check.
             - Existence.many always constructs and registers without reuse.
             - Overrides targeting existing instances raise MeldExecutionError.
 
@@ -1611,14 +1569,6 @@ class Meld(Cleanable, IMeld):
                 If overrides are supplied for a spell instance that already
                 exists under a shared Existence mode.
         """
-        if not overrides and existence != Existence.many:
-            cached = self._get_cached_non_spellspace_singleton(
-                spell_id=spell_id,
-                creations=creations,
-            )
-            if cached is not None:
-                return cached, False
-
         instance: Any = None
         created = False
 
@@ -1640,6 +1590,17 @@ class Meld(Cleanable, IMeld):
             return instance, True
 
         if existence is Existence.unique_per_conduit:
+            instance = self._get_existing_creation_from_creations(
+                spell_id=spell_id,
+                creations=creations,
+            )
+            if instance is not None:
+                self._raise_override_on_existing_instance(
+                    spell=spell,
+                    overrides=overrides,
+                )
+                return instance, False
+
             with creations._lock:
                 instance = self._get_existing_creation_from_creations(
                     spell_id=spell_id,
@@ -1663,9 +1624,18 @@ class Meld(Cleanable, IMeld):
                     self._raise_override_on_existing_instance(
                         spell=spell,
                         overrides=overrides)
-            if overrides is None:
-                self._cache_singleton_hit(spell, instance)
             return instance, created
+
+        instance = self._get_existing_creation_from_creations(
+            spell_id=spell_id,
+            creations=creations,
+        )
+        if instance is not None:
+            self._raise_override_on_existing_instance(
+                spell=spell,
+                overrides=overrides,
+            )
+            return instance, False
 
         with spell._lock:
             with creations._lock:
@@ -1689,29 +1659,11 @@ class Meld(Cleanable, IMeld):
                             disposal_methods=spell.disposal_method_names,
                         )
                 created = True
-                if (
-                    overrides is None
-                    and existence in (
-                        Existence.unique,
-                        Existence.unique_per_conduit_cluster,
-                        Existence.unique_per_conduit_lineage,
-                    )
-                ):
-                    self._cache_singleton_hit(spell, instance)
             else:
                 self._raise_override_on_existing_instance(
                     spell=spell,
                     overrides=overrides,
                 )
-                if (
-                    overrides is None
-                    and existence in (
-                        Existence.unique,
-                        Existence.unique_per_conduit_cluster,
-                        Existence.unique_per_conduit_lineage,
-                    )
-                ):
-                    self._cache_singleton_hit(spell, instance)
 
         return instance, created
 
@@ -1879,12 +1831,7 @@ class Meld(Cleanable, IMeld):
             try:
                 return self._runtime.execute(context)
             finally:
-                # Make sure we always tear down the context, even if the runtime
-                # raises a MeldExecutionError or another exception.
-                try:
-                    context.cleanup()
-                except Exception:
-                    pass
+                self._release_meld_context(context)
 
         # 2) Anything else is currently unsupported.
         raise RuntimeError(f"[MELD] Unsupported SpellType encountered: {spell.spell_type}")

@@ -8,7 +8,8 @@ class MeldContext(Cleanable):
     """
     Per-meld-call orchestration context for the Meld runtime.
 
-    This object is created for **each individual `meld(...)` call** and
+    This object is created and reused across `meld(...)` calls via the
+    Meld-local context pool and
     captures everything the runtime/engine need to execute that call:
 
         * The **root spell** being activated.
@@ -16,13 +17,12 @@ class MeldContext(Cleanable):
         * The **caller creations container** for per-conduit existences.
         * Whether the caller creations lock is already held for this call.
         * Optional **per-call overrides** (from `spell_override`).
-        * Optional **logger** (wrapped as a `SafeLogger`).
         * Optional **conduit identity** and **aetheric frame** metadata.
 
     Design goals
     ------------
 
-    * **Per-call only** – instances are never reused across meld calls.
+    * **Pooled reuse** - instances are reset and reused across calls.
     * **No global state** – everything needed for this execution is
       passed in at construction time.
     * **Deterministic cleanup** – references are dropped on `cleanup()`
@@ -32,15 +32,15 @@ class MeldContext(Cleanable):
     -----------------
 
     1. `Meld.meld(...)` decides a new root instance is required.
-    2. `Meld` creates a `MeldContext` with:
+    2. `Meld` acquires or creates a `MeldContext` with:
            - `root_spell`
            - caller creations (current Conduit scope)
            - owner creations (spell owner Conduit scope)
            - Normalized overrides map
-           - (optionally) logger, conduit metadata
+           - conduit metadata
     3. `MeldRuntime.execute(context)` is called.
-    4. After execution returns, `Meld` / `MeldRuntime` call
-       `context.cleanup()`.
+    4. After execution returns, `Meld` calls `context.cleanup()` and
+       returns the context to the local pool.
 
     This class does **not** perform any DI or DAG work itself – it is
     purely a container for per-call configuration and wiring.
@@ -91,8 +91,6 @@ class MeldContext(Cleanable):
                 Optional per-call override mapping (keyword overrides or
                 "__args__" positional overrides). When None, no override
                 container is allocated for this context.
-            logger:
-                Optional logger object; normalized to SafeLogger when provided.
             caller_creations:
                 Optional creations container representing the current Conduit
                 scope that initiated the meld call.
@@ -136,10 +134,10 @@ class MeldContext(Cleanable):
         Deterministically clear all references held by this context.
 
         This is called by the runtime once a meld call has completed
-        (successfully or with an error). It:
+        (successfully or with an error), and also before returning the
+        context to Meld's pool. It:
 
-        * Drops references to the spell, creations, overrides, logger,
-          and metadata.
+        * Drops references to the spell, creations, overrides, and metadata.
         * Marks this object as cleaned via `Cleanable`.
         """
         if self._cleaned:
@@ -172,7 +170,7 @@ class MeldContext(Cleanable):
             - root_spell must not be None.
             - overrides are copied into a mutable mapping when provided.
             - caller_creations defaults to the owner creations when not provided.
-            - marks the context as active for the next execution.
+            - marks the context as active for pooled execution reuse.
         """
         if root_spell is None:
             raise ValueError("root_spell cannot be None.")
