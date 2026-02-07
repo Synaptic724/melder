@@ -1136,7 +1136,10 @@ class MeldEngine(Cleanable):
                 spell = fast_spells[step_index]
                 call_target = fast_call_targets[step_index]
                 existing_object = fast_existing_objects[step_index]
-                is_existing_creation = fast_is_existing_creation[step_index]
+                is_existing_creation = (
+                    existence is Existence.unique
+                    and fast_is_existing_creation[step_index]
+                )
                 is_callable = fast_is_callable[step_index]
                 call_mode = fast_call_modes[step_index]
                 single_dep_index = fast_single_dep_indices[step_index]
@@ -1368,7 +1371,10 @@ class MeldEngine(Cleanable):
             spell = fast_spells[step_index]
             call_target = fast_call_targets[step_index]
             existing_object = fast_existing_objects[step_index]
-            is_existing_creation = fast_is_existing_creation[step_index]
+            is_existing_creation = (
+                existence is Existence.unique
+                and fast_is_existing_creation[step_index]
+            )
             is_callable = fast_is_callable[step_index]
             call_mode = fast_call_modes[step_index]
             single_dep_index = fast_single_dep_indices[step_index]
@@ -1619,7 +1625,7 @@ class MeldEngine(Cleanable):
             MeldExecutionError: If positional override payloads are invalid or
                 spell invocation fails.
         """
-        if spell.is_existing_creation:
+        if spell.existence is Existence.unique and spell.is_existing_creation:
             return spell.user_created_object
 
         if not (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell):
@@ -1663,7 +1669,7 @@ class MeldEngine(Cleanable):
         Raises:
             MeldExecutionError: If spell invocation fails.
         """
-        if spell.is_existing_creation:
+        if spell.existence is Existence.unique and spell.is_existing_creation:
             return spell.user_created_object
 
         if not (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell):

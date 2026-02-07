@@ -56,6 +56,7 @@ class Conduit(Cleanable, IConduit):
             name: Optional[str] = None,
             logger: Any | None = None,
             conduit_id: Optional[str] = None,
+            root_conduit_id: Optional[str] = None,
             meld_gate: MeldGate | None = None,
             meld_gate_controller: MeldGateController | None = None,
     ):
@@ -84,6 +85,8 @@ class Conduit(Cleanable, IConduit):
             conduit_id (str | None, optional):
                 Optional explicit conduit identifier. When None, an ID is generated
                 via IDBuilder.create_id().
+            root_conduit_id (str | None, optional):
+                Root conduit id for this lineage. Required for lesser conduits.
             meld_gate (MeldGate | None, optional):
                 Optional MeldGate to register for this conduit. When None,
                 a new gate is created via the MeldGateController.
@@ -93,9 +96,11 @@ class Conduit(Cleanable, IConduit):
 
         Raises:
             TypeError:
-                If configuration is not an IConfiguration or conduit_id is not a string.
+                If configuration is not an IConfiguration, conduit_id is not a string,
+                or root_conduit_id is not a string.
             ValueError:
-                If conduit_id is provided but empty.
+                If conduit_id is provided but empty, or root_conduit_id is invalid
+                for the requested conduit_state.
         """
         super().__init__()
         # General Init
@@ -127,6 +132,12 @@ class Conduit(Cleanable, IConduit):
             self.__dynamic_environment__ = not automatic
 
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
+
+        if conduit_state is ConduitState.lesser:
+            self._root_conduit_id: str = root_conduit_id
+        else:
+            self._root_conduit_id: str = self._id
+
         self._creations: Creations = self._creations_configuration(configuration)
         self._meld_gate_controller: MeldGateController | None = meld_gate_controller
         self._owns_meld_gate_controller: bool = False
@@ -145,6 +156,7 @@ class Conduit(Cleanable, IConduit):
             creations=self._creations,
             spellbook=self._spellbook,
             conduit_id=self._id,
+            resolution_conduit_id=self._root_conduit_id,
         )
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
             f"_spellspace_stack_{self._id}", default=[]
@@ -284,6 +296,7 @@ class Conduit(Cleanable, IConduit):
         self._spellspace_registry = None
         self._spellbook = None
         self._configuration = None
+        self._root_conduit_id = None
 
 
     def _cleanup_normal_conduit(self):
@@ -371,6 +384,7 @@ class Conduit(Cleanable, IConduit):
         self._spellspace_stack = None
         self._spellspace_registry = None
         self._aetheric_frame = None
+        self._root_conduit_id = None
 
     def _cleanup_spellspaces(self) -> None:
         """
@@ -1148,6 +1162,7 @@ class Conduit(Cleanable, IConduit):
 
                 # Step 1: Change state + optional name
                 self._conduit_state = ConduitState.normal
+                self._root_conduit_id = self._id
                 self._name = name
 
                 # Step 1.1: Attach any Spellbook-level hooks now that we're normal.
@@ -1161,6 +1176,7 @@ class Conduit(Cleanable, IConduit):
                 # Step 2.1: Ensure Meld uses the same creations manager.
                 if self._meld is not None:
                     self._meld._creations = self._creations
+                    self._meld._resolution_conduit_id = self._root_conduit_id
 
                 # Step 3: Reconfigure the conduit ward
                 self._conduit_ward._convert_to_normal_conduit()
@@ -1283,6 +1299,18 @@ class Conduit(Cleanable, IConduit):
         self.check_cleaned()
 
         with self._lock:
+            if self._conduit_state == ConduitState.normal:
+                root_conduit = self
+            else:
+                if self._conduit_ward is None:
+                    raise RuntimeError("Root conduit is not set for this lineage.")
+                root_conduit = self._conduit_ward.root_conduit
+            if root_conduit is None:
+                raise RuntimeError("Root conduit is not set for this lineage.")
+            if root_conduit._conduit_state != ConduitState.normal:
+                raise RuntimeError("Root conduit must be a normal conduit.")
+            root_conduit_id = root_conduit._id
+
             # 1) Pre-create hook on the parent, if any.
             self._fire_conduit_hooks(
                 "on_conduit_pre_created",
@@ -1299,23 +1327,13 @@ class Conduit(Cleanable, IConduit):
                 automatic=self._automatic,
                 logger=logger,
                 meld_gate_controller=self._meld_gate_controller,
+                root_conduit_id=root_conduit_id,
             )
-            # Provide root-scope creations for delegation of frame-level singletons.
-            if self._conduit_state == ConduitState.normal:
-                root_conduit = self
-            else:
-                if self._conduit_ward is None:
-                    raise RuntimeError("Root conduit is not set for this lineage.")
-                root_conduit = self._conduit_ward.root_conduit
-            if root_conduit is None:
-                raise RuntimeError("Root conduit is not set for this lineage.")
-            if root_conduit._conduit_state != ConduitState.normal:
-                raise RuntimeError("Root conduit must be a normal conduit.")
-            root_creations = root_conduit._creations
-            if not isinstance(root_creations, Creations):
-                raise RuntimeError("Root conduit creations manager is invalid.")
             if new_conduit._conduit_ward is not None:
                 new_conduit._conduit_ward._root_conduit = root_conduit
+            new_conduit._root_conduit_id = root_conduit_id
+            if new_conduit._meld is not None:
+                new_conduit._meld._resolution_conduit_id = root_conduit_id
 
             # Fire activation hook with the new conduit instance.
             self._fire_conduit_hooks(

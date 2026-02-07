@@ -21,7 +21,6 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpac
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 # Creations types
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
@@ -71,6 +70,7 @@ class Meld(Cleanable, IMeld):
             creations: ICreations,
             spellbook: ISpellbook,
             conduit_id: Optional[str] = None,
+            resolution_conduit_id: Optional[str] = None,
     ) -> None:
         """
         Initialize the Meld component with references to the component store,
@@ -85,14 +85,19 @@ class Meld(Cleanable, IMeld):
                 maps to perform fast, consistent lookups.
             conduit_id:
                 Optional identifier for the owning conduit. When supplied,
-                this is used as the default resolution scope for per-conduit
-                validity checks.
+                this tracks the owning conduit identity.
+            resolution_conduit_id:
+                Optional identifier used for per-conduit resolution/change-control
+                state lookups. For lesser conduits this should be the root conduit id.
         """
         super().__init__()
 
         self._lock = RLock()
         self._cleaned: bool = False
         self._conduit_id: Optional[str] = conduit_id
+        self._resolution_conduit_id: Optional[str] = (
+            resolution_conduit_id if resolution_conduit_id is not None else conduit_id
+        )
         self._spellbook: ISpellbook = spellbook
 
         # Spellbook references (used for resolution)
@@ -178,6 +183,7 @@ class Meld(Cleanable, IMeld):
             # Clear creations reference
             self._creations = None
             self._conduit_id = None
+            self._resolution_conduit_id = None
             self._runtime = None
             self._meld_hooks = None
             self._input_resolution_cache = None
@@ -484,7 +490,7 @@ class Meld(Cleanable, IMeld):
             spellbook = spell._spellbook
             frame_name = spellbook._aetheric_frame
             ccm = spellbook._aether._get_change_control_manager(frame_name)
-            conduit_id = self._get_resolution_conduit_id()
+            conduit_id = self._resolution_conduit_id
             if ccm is not None and conduit_id and ccm.is_root_dirty(conduit_id, spell.spell_index.current):
                 raise MeldExecutionError(spell_id=spell.spell_index.current, spell_name=spell.spell_name, message=f"Root '{spell.spell_index.current}' is dirty under change-control; revalidation required.")
         except MeldExecutionError:
@@ -528,7 +534,7 @@ class Meld(Cleanable, IMeld):
         cleaned validity states are hard blocks.
         """
         spell_system_states = spell._spell_system_states
-        conduit_id = self._get_resolution_conduit_id()
+        conduit_id = self._resolution_conduit_id
         if not conduit_id:
             return
         resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
@@ -696,7 +702,7 @@ class Meld(Cleanable, IMeld):
             spell: Spell to mark for resolution revalidation.
         """
         spell_system_states = spell._spell_system_states
-        conduit_id = self._get_resolution_conduit_id()
+        conduit_id = self._resolution_conduit_id
         if not conduit_id:
             return
 
@@ -724,29 +730,6 @@ class Meld(Cleanable, IMeld):
                 SpellValidity.gated,
                 change_reason=SpellStateChangeReason.contract_unvalidated,
             )
-
-    def _get_resolution_conduit_id(self) -> Optional[str]:
-        """
-        Resolve the conduit id used for per-conduit resolution validity.
-
-        For normal conduits, this is the conduit's own id. For lesser conduits,
-        this uses the root conduit id when available.
-        """
-        if self._creations is None:
-            return self._conduit_id
-
-        conduit = self._creations._conduit
-        if conduit is None:
-            return self._conduit_id
-
-        if conduit._conduit_state is ConduitState.lesser:
-            ward = conduit._conduit_ward
-            if ward is not None:
-                root = ward.root_conduit
-                if root is not None:
-                    return root._id
-
-        return conduit._id
 
     def _get_resolution_validity(
             self,
@@ -981,14 +964,17 @@ class Meld(Cleanable, IMeld):
                 caller_creations=self._creations,
                 caller_creations_lock_held=caller_creations_lock_held,
             )
+            context._conduit_id = self._resolution_conduit_id
             return context
 
-        return MeldContext(
+        context = MeldContext(
             root_spell=spell,
             overrides=overrides,
             caller_creations=self._creations,
             caller_creations_lock_held=caller_creations_lock_held,
         )
+        context._conduit_id = self._resolution_conduit_id
+        return context
 
     def _release_meld_context(self, context: MeldContext) -> None:
         """
@@ -1435,13 +1421,13 @@ class Meld(Cleanable, IMeld):
 
         Contract:
             - Selects the preferred creations container for the spell existence.
+            - Handles existing-creation spells only for Existence.unique by
+              returning the bound instance directly.
             - Routes Existence.unique_per_spell_space to a dedicated spellspace flow.
             - Routes all non-spellspace existences to the general lock flow.
         """
         spell_id: str = spell.spell_id
         existence: Existence = spell.existence
-        is_existing_creation: bool = spell.is_existing_creation
-        has_disposal_methods: bool = spell.has_disposal_methods
         creations = self._select_creations_for_spell(spell, existence)
 
         if existence is Existence.unique_per_spell_space:
@@ -1449,28 +1435,25 @@ class Meld(Cleanable, IMeld):
             return self._resolve_spellspace_instance(
                 spell=spell,
                 spell_id=spell_id,
-                is_existing_creation=is_existing_creation,
                 creations=creations,
                 spellspace=spellspace,
                 overrides=overrides,
             )
 
+
         return self._resolve_instance_with_locks(
-            spell=spell,
-            spell_id=spell_id,
-            existence=existence,
-            is_existing_creation=is_existing_creation,
-            has_disposal_methods=has_disposal_methods,
-            creations=creations,
-            overrides=overrides,
-        )
+                spell=spell,
+                spell_id=spell_id,
+                existence=existence,
+                creations=creations,
+                overrides=overrides,
+            )
 
     def _resolve_spellspace_instance(
             self,
             *,
             spell: ISpell,
             spell_id: str,
-            is_existing_creation: bool,
             creations: Any,
             spellspace: Any,
             overrides: Optional[dict[str, Any]] = None,
@@ -1481,10 +1464,9 @@ class Meld(Cleanable, IMeld):
         Resolve an Existence.unique_per_spell_space instance.
 
         Contract:
-            - Runs lockless check, then locked re-check -> construct -> register.
+            - Runs lockless check, then locked re-check -> construct.
             - Uses spellspace-aware creations lookup for reuse checks.
             - Rejects overrides when reusing an existing spellspace instance.
-            - Registers existing-object spells into spellspace creations on first create.
         """
         instance = self._get_spellspace_existing_creation_from_creations(
             spell_id=spell_id,
@@ -1510,14 +1492,6 @@ class Meld(Cleanable, IMeld):
                     overrides,
                     caller_creations_lock_held=True,
                 )
-                if is_existing_creation:
-                    creations.register_spellspace_creation(
-                        spellspace.id,
-                        spell_id,
-                        instance,
-                        has_disposal_methods=spell.has_disposal_methods,
-                        disposal_methods=spell.disposal_method_names,
-                    )
                 return instance, True
 
             self._raise_override_on_existing_instance(
@@ -1531,8 +1505,6 @@ class Meld(Cleanable, IMeld):
             spell: ISpell,
             spell_id: str,
             existence: Existence,
-            is_existing_creation: bool,
-            has_disposal_methods: bool,
             creations: Any,
             overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
@@ -1543,11 +1515,11 @@ class Meld(Cleanable, IMeld):
 
         Contract:
             - Per-conduit existences hold the caller creations lock across
-              check -> construct -> register.
+              check -> construct.
             - Shared existences hold the spell lock across the same flow and
               use the creations lock only for map access.
             - Non-`many` existences use lockless check followed by locked re-check.
-            - Existence.many always constructs and registers without reuse.
+            - Existence.many always constructs without reuse.
             - Overrides targeting existing instances raise MeldExecutionError.
 
         Args:
@@ -1563,7 +1535,7 @@ class Meld(Cleanable, IMeld):
         Returns:
             tuple[Any, bool]:
                 (instance, created) where created is True only when this call
-                constructs and registers a new instance.
+                constructs a new instance.
         Raises:
             MeldExecutionError:
                 If overrides are supplied for a spell instance that already
@@ -1578,15 +1550,6 @@ class Meld(Cleanable, IMeld):
                 overrides,
                 caller_creations_lock_held=False,
             )
-            if not has_disposal_methods:
-                return instance, True
-            if is_existing_creation:
-                creations.add_many_creations(
-                    spell_id,
-                    instance,
-                    has_disposal_methods=has_disposal_methods,
-                    disposal_methods=spell.disposal_method_names,
-                )
             return instance, True
 
         if existence is Existence.unique_per_conduit:
@@ -1612,19 +1575,25 @@ class Meld(Cleanable, IMeld):
                         overrides,
                         caller_creations_lock_held=True,
                     )
-                    if is_existing_creation:
-                        creations.add_creation(
-                            spell_id,
-                            instance,
-                            has_disposal_methods=has_disposal_methods,
-                            disposal_methods=spell.disposal_method_names,
-                        )
                     created = True
                 else:
                     self._raise_override_on_existing_instance(
                         spell=spell,
                         overrides=overrides)
             return instance, created
+
+        if spell.is_existing_creation:
+            self._raise_override_on_existing_instance(
+                spell=spell,
+                overrides=overrides,
+            )
+            instance = spell.user_created_object
+            if instance is None:
+                raise RuntimeError(
+                    "[MELD] EXISTING_CREATION spell has no `user_created_object` "
+                    f"(spell_id={spell.spell_id})."
+                )
+            return instance, False
 
         instance = self._get_existing_creation_from_creations(
             spell_id=spell_id,
@@ -1650,14 +1619,6 @@ class Meld(Cleanable, IMeld):
                     overrides,
                     caller_creations_lock_held=False,
                 )
-                if is_existing_creation:
-                    with creations._lock:
-                        creations.add_creation(
-                            spell_id,
-                            instance,
-                            has_disposal_methods=has_disposal_methods,
-                            disposal_methods=spell.disposal_method_names,
-                        )
                 created = True
             else:
                 self._raise_override_on_existing_instance(
@@ -1739,10 +1700,6 @@ class Meld(Cleanable, IMeld):
 
         Behaviour:
 
-            * EXISTING_CREATION*:
-                  Returns the pre-created object stored on the spell and relies
-                  on `_register_spell` to cache it into the creations manager.
-
             * Class / method / lambda spells:
                   Delegate to the DAG-based `MeldRuntime` / `MeldEngine` stack
                   using a per-call `MeldContext` seeded with `overrides`.
@@ -1766,75 +1723,58 @@ class Meld(Cleanable, IMeld):
 
         Raises:
             RuntimeError:
-                - If the spell is an existing-creation spell with no backing
-                  `user_created_object`.
                 - If the meld runtime is not configured.
                 - If the SpellType is unsupported.
             MeldExecutionError:
                 Propagated from `MeldRuntime.execute` if DI or construction fails.
         """
-        # 1) Existing Creation: the instance already exists on the spell and
-        #    must never be constructed via the runtime.
-        if spell.is_existing_creation:
-            instance = spell.user_created_object
-            if instance is None:
-                raise RuntimeError(
-                    "[MELD] EXISTING_CREATION spell has no `user_created_object` "
-                    f"(spell_id={spell.spell_id})."
-                )
-            return instance
-
-        if spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell:
-            if (
-                    overrides is None
-                    and not spell.has_mutation_override
-                    and self._should_use_fast_transient_shortcut(spell)
-            ):
-                return self._runtime.execute_fast_transient(
-                    spell=spell,
-                    conduit_id=self._get_resolution_conduit_id(),
-                )
-
-            if (
-                    spell.existence is Existence.many
-                    and overrides is None
-                    and not spell.has_mutation_override
-            ):
-                return self._runtime.execute_transient_pooled(
-                    spell=spell,
-                    overrides=None,
-                    caller_creations=self._creations,
-                    caller_creations_lock_held=caller_creations_lock_held,
-                    conduit_id=self._get_resolution_conduit_id(),
-                )
-
-            if (
-                    spell.existence is not Existence.many
-                    and overrides is None
-                    and not spell.has_mutation_override
-                    and spell.execution_plan_preferred_route
-                    and spell.execution_plan_preferred_route.startswith("FAST_TRANSIENT")
-            ):
-                return self._runtime.execute_shared_pooled(
-                    spell=spell,
-                    overrides=None,
-                    caller_creations=self._creations,
-                    caller_creations_lock_held=caller_creations_lock_held,
-                    conduit_id=self._get_resolution_conduit_id(),
-                )
-
-            context = self._create_meld_context(
-                spell,
-                overrides,
-                caller_creations_lock_held=caller_creations_lock_held,
+        if (
+                overrides is None
+                and not spell.has_mutation_override
+                and self._should_use_fast_transient_shortcut(spell)
+        ):
+            return self._runtime.execute_fast_transient(
+                spell=spell,
+                conduit_id=self._resolution_conduit_id,
             )
-            try:
-                return self._runtime.execute(context)
-            finally:
-                self._release_meld_context(context)
 
-        # 2) Anything else is currently unsupported.
-        raise RuntimeError(f"[MELD] Unsupported SpellType encountered: {spell.spell_type}")
+        if (
+                spell.existence is Existence.many
+                and overrides is None
+                and not spell.has_mutation_override
+        ):
+            return self._runtime.execute_transient_pooled(
+                spell=spell,
+                overrides=None,
+                caller_creations=self._creations,
+                caller_creations_lock_held=caller_creations_lock_held,
+                conduit_id=self._resolution_conduit_id,
+            )
+
+        if (
+                spell.existence is not Existence.many
+                and overrides is None
+                and not spell.has_mutation_override
+                and spell.execution_plan_preferred_route
+                and spell.execution_plan_preferred_route.startswith("FAST_TRANSIENT")
+        ):
+            return self._runtime.execute_shared_pooled(
+                spell=spell,
+                overrides=None,
+                caller_creations=self._creations,
+                caller_creations_lock_held=caller_creations_lock_held,
+                conduit_id=self._resolution_conduit_id,
+            )
+
+        context = self._create_meld_context(
+            spell,
+            overrides,
+            caller_creations_lock_held=caller_creations_lock_held,
+        )
+        try:
+            return self._runtime.execute(context)
+        finally:
+            self._release_meld_context(context)
 
     def _should_use_fast_transient_shortcut(self, spell: ISpell) -> bool:
         """
