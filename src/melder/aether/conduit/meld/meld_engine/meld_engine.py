@@ -1019,6 +1019,8 @@ class MeldEngine(Cleanable):
                             target_kind = fast_creations_target_kinds[step_index]
                             if target_kind == ExecutionPlanTargetKind.CALLER:
                                 creations = self._context.caller_creations
+                            elif target_kind == ExecutionPlanTargetKind.SPELLSPACE:
+                                creations = self._context.caller_creations
                             else:
                                 owner_creations = spell._owner_creations
                                 if owner_creations is None:
@@ -1240,6 +1242,8 @@ class MeldEngine(Cleanable):
                     if fast_must_register[step_index]:
                         target_kind = fast_creations_target_kinds[step_index]
                         if target_kind == ExecutionPlanTargetKind.CALLER:
+                            creations = self._context.caller_creations
+                        elif target_kind == ExecutionPlanTargetKind.SPELLSPACE:
                             creations = self._context.caller_creations
                         else:
                             owner_creations = spell._owner_creations
@@ -1466,6 +1470,8 @@ class MeldEngine(Cleanable):
                 if fast_must_register[step_index]:
                     target_kind = fast_creations_target_kinds[step_index]
                     if target_kind == ExecutionPlanTargetKind.CALLER:
+                        creations = self._context.caller_creations
+                    elif target_kind == ExecutionPlanTargetKind.SPELLSPACE:
                         creations = self._context.caller_creations
                     else:
                         owner_creations = spell._owner_creations
@@ -2031,4 +2037,3 @@ class MeldEngine(Cleanable):
                     )
                     return
             return
-
