@@ -4,6 +4,7 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from melder.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from tests.mocks.spellbook.core_classes import BasicService
 
 
@@ -140,7 +141,7 @@ def _assert_owner_metadata(spell: object, conduit: _ConduitStub) -> None:
 def test_component_spellbook_define_conduit_into_spells_stamps_ownership_and_registers_existing() -> None:
     """
     Purpose:
-        Validate _define_conduit_into_spells stamps ownership and registers existing objects.
+        Validate SpellbookCreationSystem.define_conduit_into_spells stamps ownership and registers existing objects.
     Contract:
         - All local spells receive conduit ownership metadata.
         - Existing-object spells are registered into conduit creations.
@@ -166,7 +167,7 @@ def test_component_spellbook_define_conduit_into_spells_stamps_ownership_and_reg
         )
 
         conduit = _ConduitStub(conduit_id="owner-id", name="owner-name")
-        spellbook._define_conduit_into_spells(conduit)
+        SpellbookCreationSystem.define_conduit_into_spells(spellbook, conduit)
 
         class_spell = _get_spell_by_version_id(spellbook, class_spell_id)
         existing_spell = _get_spell_by_version_id(spellbook, existing_spell_id)
@@ -211,7 +212,7 @@ def test_component_spellbook_define_conduit_into_spells_continues_on_register_er
             name="owner-name",
             raise_on_register=True,
         )
-        spellbook._define_conduit_into_spells(conduit)
+        SpellbookCreationSystem.define_conduit_into_spells(spellbook, conduit)
 
         existing_spell = _get_spell_by_version_id(spellbook, existing_spell_id)
         assert existing_spell is not None
@@ -311,3 +312,6 @@ def test_component_spellbook_check_all_spells_passes_when_aether_reports_unique(
         spellbook._check_all_spells()
     finally:
         spellbook.cleanup()
+
+
+

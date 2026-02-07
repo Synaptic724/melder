@@ -6,6 +6,7 @@ from typing import MutableMapping, Optional, cast
 
 import pytest
 
+import melder.spellbook.spellbook as spellbook_module
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -13,6 +14,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from melder.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 
 
@@ -783,7 +785,30 @@ def patch_phase_scheduler(monkeypatch):
         None.
     """
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", DummyPhaseScheduler)
+    monkeypatch.setattr("melder.spellbook.spellbook_creation_system.PhaseScheduler", DummyPhaseScheduler)
     yield
+
+
+def _run_resolution_phases(sb: Spellbook, conduit_id: str):
+    """
+    Purpose:
+        Execute Spellbook resolution phases through the extracted creation system.
+    Contract:
+        Passes the currently patched Spellbook PhaseScheduler class into
+        SpellbookCreationSystem for deterministic unit-test behavior.
+    Args:
+        sb: Spellbook under test.
+        conduit_id: Conduit scope identifier.
+    Returns:
+        dict: Phase result mapping from SpellbookCreationSystem.
+    Raises:
+        Exception: Propagates phase pipeline failures.
+    """
+    return SpellbookCreationSystem.run_resolution_phases(
+        sb,
+        conduit_id,
+        phase_scheduler_cls=spellbook_module.PhaseScheduler,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -1176,7 +1201,7 @@ def test_check_system_state_allows_default_in_automatic():
     Purpose:
         Ensure default policy is rejected when automatic flag is False.
     Contract:
-        _check_system_state raises for default policy in automatic state when not allowed.
+        SpellbookCreationSystem.check_system_state raises for default policy in automatic state when not allowed.
     Returns:
         None.
     Raises:
@@ -1185,7 +1210,7 @@ def test_check_system_state_allows_default_in_automatic():
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
     with pytest.raises(RuntimeError):
-        sb._check_system_state(Policies.default, automatic=False)
+        SpellbookCreationSystem.check_system_state(sb, Policies.default, automatic=False)
 
 
 def test_check_system_state_dynamic_in_automatic_raises():
@@ -1193,7 +1218,7 @@ def test_check_system_state_dynamic_in_automatic_raises():
     Purpose:
         Verify dynamic policy is rejected in automatic mode when not allowed.
     Contract:
-        _check_system_state raises when automatic is False and policy is dynamic,
+        SpellbookCreationSystem.check_system_state raises when automatic is False and policy is dynamic,
         and the error message includes policy and system_state context.
     Returns:
         None.
@@ -1203,7 +1228,7 @@ def test_check_system_state_dynamic_in_automatic_raises():
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
     with pytest.raises(RuntimeError) as excinfo:
-        sb._check_system_state(Policies.whitelist_all, automatic=False)
+        SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, automatic=False)
     message = str(excinfo.value)
     assert "policy=Policies.whitelist_all" in message
     assert "automatic=False" in message
@@ -1215,7 +1240,7 @@ def test_check_system_state_dynamic_allowed_when_automatic_flag_true():
     Purpose:
         Confirm automatic flag does not override rejection for dynamic policy.
     Contract:
-        _check_system_state raises even when automatic is True for dynamic policies,
+        SpellbookCreationSystem.check_system_state raises even when automatic is True for dynamic policies,
         and the error message includes policy and allowed-policy context.
     Returns:
         None.
@@ -1225,7 +1250,7 @@ def test_check_system_state_dynamic_allowed_when_automatic_flag_true():
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
     with pytest.raises(RuntimeError) as excinfo:
-        sb._check_system_state(Policies.whitelist_all, automatic=True)
+        SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, automatic=True)
     message = str(excinfo.value)
     assert "policy=Policies.whitelist_all" in message
     assert "allowed=default" in message
@@ -1236,7 +1261,7 @@ def test_define_conduit_stamps_owner_and_primes_existing():
     Purpose:
         Verify conduit ownership and existing creations are registered.
     Contract:
-        _define_conduit_into_spells sets owner info and registers existing objects.
+        SpellbookCreationSystem.define_conduit_into_spells sets owner info and registers existing objects.
     Returns:
         None.
     Raises:
@@ -1252,7 +1277,7 @@ def test_define_conduit_stamps_owner_and_primes_existing():
     spell_normal.spell_index = idx_normal
     sb._spells = {idx_existing: spell_existing, idx_normal: spell_normal}
     sb._logger = DummySafeLogger()
-    sb._define_conduit_into_spells(conduit)
+    SpellbookCreationSystem.define_conduit_into_spells(sb, conduit)
     assert spell_existing._owner[0] == conduit._id
     assert conduit.registered[0][1] == "obj"
 
@@ -1262,7 +1287,7 @@ def test_define_conduit_handles_errors():
     Purpose:
         Ensure errors defining conduit ownership are swallowed.
     Contract:
-        _define_conduit_into_spells continues despite spell errors.
+        SpellbookCreationSystem.define_conduit_into_spells continues despite spell errors.
     Returns:
         None.
     Raises:
@@ -1290,7 +1315,7 @@ def test_define_conduit_handles_errors():
     bad_spell._add_owned_conduit = boom
     sb._spells = {DummySpellIndex(): bad_spell}
     sb._logger = DummySafeLogger()
-    sb._define_conduit_into_spells(DummyConduit())
+    SpellbookCreationSystem.define_conduit_into_spells(sb, DummyConduit())
     # Should not raise
 
 
@@ -1309,16 +1334,16 @@ def test_phase_factories_build_units_and_label():
     spell = DummySpell(spell_id="x")
     sb._spells = {DummySpellIndex(): spell}
     scheduler = DummyPhaseScheduler(sb, None)
-    req_units = sb._phase_requirements_factory(scheduler)
-    sym_units = sb._phase_symbolic_graph_factory(scheduler)
-    loc_units = sb._phase_local_frame_factory(scheduler)
-    val_units = sb._phase_validation_factory(scheduler)
-    root_units = sb._phase_root_blueprints_factory(scheduler, "cid")
-    occ_units = sb._phase_occurrence_plan_factory(scheduler, "cid")
-    inj_units = sb._phase_injection_plan_factory(scheduler, "cid")
-    patch_units = sb._phase_patch_maps_factory(scheduler, "cid")
-    sys_units = sb._phase_system_validation_factory(scheduler, "cid")
-    change_units = sb._phase_change_control_factory(scheduler, "cid")
+    req_units = SpellbookCreationSystem.phase_requirements_factory(sb, scheduler)
+    sym_units = SpellbookCreationSystem.phase_symbolic_graph_factory(sb, scheduler)
+    loc_units = SpellbookCreationSystem.phase_local_frame_factory(sb, scheduler)
+    val_units = SpellbookCreationSystem.phase_validation_factory(sb, scheduler)
+    root_units = SpellbookCreationSystem.phase_root_blueprints_factory(sb, scheduler, "cid")
+    occ_units = SpellbookCreationSystem.phase_occurrence_plan_factory(sb, scheduler, "cid")
+    inj_units = SpellbookCreationSystem.phase_injection_plan_factory(sb, scheduler, "cid")
+    patch_units = SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, "cid")
+    sys_units = SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, "cid")
+    change_units = SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, "cid")
     assert req_units[0]["label"] == "requirements:x"
     assert sym_units[0]["label"] == "symbolic_graph:x"
     assert loc_units[0]["label"] == "local_frame:x"
@@ -1336,7 +1361,7 @@ def test_phase_factories_guard_cleaned():
     Purpose:
         Ensure phase factories reject cleaned Spellbook instances.
     Contract:
-        _phase_requirements_factory raises RuntimeError when cleaned.
+        SpellbookCreationSystem.phase_requirements_factory raises RuntimeError when cleaned.
     Returns:
         None.
     Raises:
@@ -1346,7 +1371,7 @@ def test_phase_factories_guard_cleaned():
     sb._cleaned = True
     scheduler = DummyPhaseScheduler(sb, None)
     with pytest.raises(RuntimeError):
-        sb._phase_requirements_factory(scheduler)
+        SpellbookCreationSystem.phase_requirements_factory(sb, scheduler)
 
 
 def test_run_resolution_phases_success(monkeypatch):
@@ -1354,7 +1379,7 @@ def test_run_resolution_phases_success(monkeypatch):
     Purpose:
         Verify resolution phases run and return expected keys.
     Contract:
-        _run_resolution_phases returns all phase results and sets validator.
+        SpellbookCreationSystem.run_resolution_phases returns all phase results and sets validator.
     Args:
         monkeypatch: Pytest fixture for patching dependencies.
     Returns:
@@ -1366,7 +1391,7 @@ def test_run_resolution_phases_success(monkeypatch):
     spell = DummySpell()
     sb._spells = {DummySpellIndex(): spell}
     sb._logger = DummySafeLogger()
-    results = sb._run_resolution_phases("cid")
+    results = _run_resolution_phases(sb, "cid")
     assert set(results.keys()) == {
         "requirements",
         "symbolic_graph",
@@ -1388,7 +1413,7 @@ def test_run_resolution_phases_broken_spell_raises(monkeypatch):
     Purpose:
         Ensure broken spells cause validation errors.
     Contract:
-        _run_resolution_phases raises SpellbookValidationError for broken spells.
+        SpellbookCreationSystem.run_resolution_phases raises SpellbookValidationError for broken spells.
     Args:
         monkeypatch: Pytest fixture for patching dependencies.
     Returns:
@@ -1420,7 +1445,7 @@ def test_run_resolution_phases_broken_spell_raises(monkeypatch):
     sb._spells = {DummySpellIndex(): BrokenSpell()}
     sb._logger = DummySafeLogger()
     with pytest.raises(SpellbookValidationError):
-        sb._run_resolution_phases("cid")
+        _run_resolution_phases(sb, "cid")
 
 
 def test_run_resolution_phases_spell_status_error_treated_as_broken():
@@ -1428,7 +1453,7 @@ def test_run_resolution_phases_spell_status_error_treated_as_broken():
     Purpose:
         Verify errors while checking spell status are treated as broken.
     Contract:
-        _run_resolution_phases raises SpellbookValidationError on status errors.
+        SpellbookCreationSystem.run_resolution_phases raises SpellbookValidationError on status errors.
     Returns:
         None.
     Raises:
@@ -1458,7 +1483,7 @@ def test_run_resolution_phases_spell_status_error_treated_as_broken():
     sb._spells = {DummySpellIndex(): ErrorSpell()}
     sb._logger = DummySafeLogger()
     with pytest.raises(SpellbookValidationError):
-        sb._run_resolution_phases("cid")
+        _run_resolution_phases(sb, "cid")
 
 
 def test_run_resolution_phases_cleans_scheduler_on_exception(monkeypatch):
@@ -1466,7 +1491,7 @@ def test_run_resolution_phases_cleans_scheduler_on_exception(monkeypatch):
     Purpose:
         Ensure scheduler cleanup occurs when phase execution fails.
     Contract:
-        _run_resolution_phases raises and cleanup is still invoked.
+        SpellbookCreationSystem.run_resolution_phases raises and cleanup is still invoked.
     Args:
         monkeypatch: Pytest fixture for patching PhaseScheduler.
     Returns:
@@ -1498,7 +1523,7 @@ def test_run_resolution_phases_cleans_scheduler_on_exception(monkeypatch):
 
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", BoomScheduler)
     with pytest.raises(RuntimeError):
-        sb._run_resolution_phases("cid")
+        _run_resolution_phases(sb, "cid")
 
 
 def test_get_conjure_hook_map_no_config_returns_none():
@@ -1506,7 +1531,7 @@ def test_get_conjure_hook_map_no_config_returns_none():
     Purpose:
         Ensure hook map returns None when configuration is missing.
     Contract:
-        _get_conjure_hook_map returns None without a configuration.
+        SpellbookCreationSystem.get_conjure_hook_map returns None without a configuration.
     Returns:
         None.
     Raises:
@@ -1515,7 +1540,7 @@ def test_get_conjure_hook_map_no_config_returns_none():
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._configuration = None
-    assert sb._get_conjure_hook_map() is None
+    assert SpellbookCreationSystem.get_conjure_hook_map(sb) is None
 
 
 def test_get_conjure_hook_map_config_without_get_hooks_returns_none():
@@ -1523,7 +1548,7 @@ def test_get_conjure_hook_map_config_without_get_hooks_returns_none():
     Purpose:
         Verify hook lookup returns None for configurations without hooks.
     Contract:
-        _get_conjure_hook_map returns None when get_hooks is missing or empty.
+        SpellbookCreationSystem.get_conjure_hook_map returns None when get_hooks is missing or empty.
     Returns:
         None.
     Raises:
@@ -1552,7 +1577,7 @@ def test_get_conjure_hook_map_config_without_get_hooks_returns_none():
     sb = Spellbook(configuration=DummyConfig())
     sb._configuration = BadConfig()
     sb._logger = DummySafeLogger()
-    assert sb._get_conjure_hook_map() is None
+    assert SpellbookCreationSystem.get_conjure_hook_map(sb) is None
 
 
 def test_get_conjure_hook_map_empty_returns_none():
@@ -1560,7 +1585,7 @@ def test_get_conjure_hook_map_empty_returns_none():
     Purpose:
         Ensure empty hook maps are treated as absent.
     Contract:
-        _get_conjure_hook_map returns None when hook map is empty.
+        SpellbookCreationSystem.get_conjure_hook_map returns None when hook map is empty.
     Returns:
         None.
     Raises:
@@ -1569,7 +1594,7 @@ def test_get_conjure_hook_map_empty_returns_none():
     cfg = DummyConfig(hooks={})
     sb = Spellbook(configuration=cfg)
     sb._logger = DummySafeLogger()
-    assert sb._get_conjure_hook_map() is None
+    assert SpellbookCreationSystem.get_conjure_hook_map(sb) is None
 
 
 def test_get_conjure_hook_map_returns_map():
@@ -1577,7 +1602,7 @@ def test_get_conjure_hook_map_returns_map():
     Purpose:
         Verify configured hooks are returned to the caller.
     Contract:
-        _get_conjure_hook_map returns the stored hooks mapping.
+        SpellbookCreationSystem.get_conjure_hook_map returns the stored hooks mapping.
     Returns:
         None.
     Raises:
@@ -1587,7 +1612,7 @@ def test_get_conjure_hook_map_returns_map():
     cfg = DummyConfig(hooks=hooks)
     sb = Spellbook(configuration=cfg)
     sb._logger = DummySafeLogger()
-    assert sb._get_conjure_hook_map() == hooks
+    assert SpellbookCreationSystem.get_conjure_hook_map(sb) == hooks
 
 
 def test_fire_conjure_hooks_executes_and_swallows_errors():
@@ -1631,7 +1656,7 @@ def test_fire_conjure_hooks_executes_and_swallows_errors():
         """
         raise RuntimeError("boom")
 
-    sb._fire_conjure_hooks({"h": [ok, boom, ok]}, "h", "arg")
+    SpellbookCreationSystem.fire_conjure_hooks(sb, {"h": [ok, boom, ok]}, "h", "arg")
     assert called == [("ok", "arg"), ("ok", "arg")]
 
 
@@ -1802,7 +1827,7 @@ def test_run_resolution_phases_scheduler_cleanup_failure_logged(monkeypatch):
     Purpose:
         Ensure scheduler cleanup failures are swallowed and logged.
     Contract:
-        _run_resolution_phases completes even if scheduler.cleanup fails.
+        SpellbookCreationSystem.run_resolution_phases completes even if scheduler.cleanup fails.
     Args:
         monkeypatch: Pytest fixture for patching PhaseScheduler.
     Returns:
@@ -1832,7 +1857,7 @@ def test_run_resolution_phases_scheduler_cleanup_failure_logged(monkeypatch):
 
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", CleanupBoomScheduler)
     sb._logger = DummySafeLogger()
-    results = sb._run_resolution_phases("cid")
+    results = _run_resolution_phases(sb, "cid")
     assert "requirements" in results
 
 
@@ -1857,7 +1882,7 @@ def test_check_system_state_matrix(policy, automatic, expect_raises):
     Purpose:
         Validate policy/state combinations against automatic mode rules.
     Contract:
-        _check_system_state raises only when expect_raises is True.
+        SpellbookCreationSystem.check_system_state raises only when expect_raises is True.
     Args:
         policy: Policy value under test.
         automatic: Whether automatic mode is enabled.
@@ -1871,9 +1896,9 @@ def test_check_system_state_matrix(policy, automatic, expect_raises):
     sb._logger = DummySafeLogger()
     if expect_raises:
         with pytest.raises(RuntimeError):
-            sb._check_system_state(policy, automatic=automatic)
+            SpellbookCreationSystem.check_system_state(sb, policy, automatic=automatic)
     else:
-        sb._check_system_state(policy, automatic=automatic)
+        SpellbookCreationSystem.check_system_state(sb, policy, automatic=automatic)
 
 
 @pytest.mark.parametrize(
@@ -1951,7 +1976,7 @@ def test_fire_conjure_hooks_noop_variants(hook_map, hook_name, expected_calls):
     Purpose:
         Ensure no-op hook combinations produce no calls.
     Contract:
-        _fire_conjure_hooks leaves the call log unchanged in no-op cases.
+        SpellbookCreationSystem.fire_conjure_hooks leaves the call log unchanged in no-op cases.
     Args:
         hook_map: Hook mapping to test.
         hook_name: Hook name requested.
@@ -1981,7 +2006,7 @@ def test_fire_conjure_hooks_noop_variants(hook_map, hook_name, expected_calls):
     if hook_map and "h" in hook_map and hook_map["h"]:
         hook_map = {"h": [wrapper]}
 
-    sb._fire_conjure_hooks(hook_map, hook_name, "x")
+    SpellbookCreationSystem.fire_conjure_hooks(sb, hook_map, hook_name, "x")
     assert called == expected_calls
 
 
@@ -1998,7 +2023,7 @@ def test_get_conjure_hook_map_variants(hooks, expected_none):
     Purpose:
         Validate hook map return behavior for different configurations.
     Contract:
-        _get_conjure_hook_map returns None or the hooks mapping as expected.
+        SpellbookCreationSystem.get_conjure_hook_map returns None or the hooks mapping as expected.
     Args:
         hooks: Hook mapping configured on the DummyConfig.
         expected_none: Whether None is expected.
@@ -2010,7 +2035,7 @@ def test_get_conjure_hook_map_variants(hooks, expected_none):
     cfg = DummyConfig(hooks=hooks)
     sb = Spellbook(configuration=cfg)
     sb._logger = DummySafeLogger()
-    result = sb._get_conjure_hook_map()
+    result = SpellbookCreationSystem.get_conjure_hook_map(sb)
     if expected_none:
         assert result is None
     else:
@@ -2026,7 +2051,7 @@ def test_define_conduit_handles_multiple_objects(existing_object):
     Purpose:
         Ensure conduit definition handles various existing object types.
     Contract:
-        _define_conduit_into_spells sets owner metadata for the spell.
+        SpellbookCreationSystem.define_conduit_into_spells sets owner metadata for the spell.
     Args:
         existing_object: Existing object bound to the spell.
     Returns:
@@ -2039,7 +2064,7 @@ def test_define_conduit_handles_multiple_objects(existing_object):
     spell = DummySpell(existing_object=existing_object)
     sb._spells = {DummySpellIndex(): spell}
     sb._logger = DummySafeLogger()
-    sb._define_conduit_into_spells(conduit)
+    SpellbookCreationSystem.define_conduit_into_spells(sb, conduit)
     assert conduit._id in spell._owner
 
 
@@ -2076,16 +2101,16 @@ def test_phase_factories_return_empty_when_no_spells():
     sb = Spellbook()
     sb._spells = {}
     scheduler = DummyPhaseScheduler(sb, None)
-    assert sb._phase_requirements_factory(scheduler) == []
-    assert sb._phase_symbolic_graph_factory(scheduler) == []
-    assert sb._phase_local_frame_factory(scheduler) == []
-    assert sb._phase_validation_factory(scheduler) == []
-    assert sb._phase_root_blueprints_factory(scheduler, "cid") == []
-    assert sb._phase_occurrence_plan_factory(scheduler, "cid") == []
-    assert sb._phase_injection_plan_factory(scheduler, "cid") == []
-    assert sb._phase_patch_maps_factory(scheduler, "cid") == []
-    assert sb._phase_system_validation_factory(scheduler, "cid") == []
-    assert sb._phase_change_control_factory(scheduler, "cid") == []
+    assert SpellbookCreationSystem.phase_requirements_factory(sb, scheduler) == []
+    assert SpellbookCreationSystem.phase_symbolic_graph_factory(sb, scheduler) == []
+    assert SpellbookCreationSystem.phase_local_frame_factory(sb, scheduler) == []
+    assert SpellbookCreationSystem.phase_validation_factory(sb, scheduler) == []
+    assert SpellbookCreationSystem.phase_root_blueprints_factory(sb, scheduler, "cid") == []
+    assert SpellbookCreationSystem.phase_occurrence_plan_factory(sb, scheduler, "cid") == []
+    assert SpellbookCreationSystem.phase_injection_plan_factory(sb, scheduler, "cid") == []
+    assert SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, "cid") == []
+    assert SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, "cid") == []
+    assert SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, "cid") == []
 
 
 def test_run_resolution_phases_with_multiple_spells():
@@ -2093,7 +2118,7 @@ def test_run_resolution_phases_with_multiple_spells():
     Purpose:
         Verify resolution phases run with multiple spells present.
     Contract:
-        _run_resolution_phases returns all expected phase keys.
+        SpellbookCreationSystem.run_resolution_phases returns all expected phase keys.
     Returns:
         None.
     Raises:
@@ -2104,7 +2129,7 @@ def test_run_resolution_phases_with_multiple_spells():
     spell2 = DummySpell(spell_id="b")
     sb._spells = {DummySpellIndex(sid="a"): spell1, DummySpellIndex(sid="b"): spell2}
     sb._logger = DummySafeLogger()
-    results = sb._run_resolution_phases("cid")
+    results = _run_resolution_phases(sb, "cid")
     assert set(results.keys()) == {
         "requirements",
         "symbolic_graph",
@@ -2345,7 +2370,7 @@ def test_fire_conjure_hooks_executes_all_and_swallows_errors():
     Purpose:
         Verify hook execution continues after errors.
     Contract:
-        _fire_conjure_hooks executes all hooks and ignores failures.
+        SpellbookCreationSystem.fire_conjure_hooks executes all hooks and ignores failures.
     Returns:
         None.
     Raises:
@@ -2381,7 +2406,7 @@ def test_fire_conjure_hooks_executes_all_and_swallows_errors():
         """
         raise RuntimeError("boom")
 
-    sb._fire_conjure_hooks({"h": [ok, boom, ok]}, "h", "val")
+    SpellbookCreationSystem.fire_conjure_hooks(sb, {"h": [ok, boom, ok]}, "h", "val")
     assert calls == [("ok", "val"), ("ok", "val")]
 
 
@@ -2390,7 +2415,7 @@ def test_get_conjure_hook_map_handles_exception():
     Purpose:
         Ensure exceptions during hook lookup are swallowed.
     Contract:
-        _get_conjure_hook_map returns None when get_hooks raises.
+        SpellbookCreationSystem.get_conjure_hook_map returns None when get_hooks raises.
     Returns:
         None.
     Raises:
@@ -2435,7 +2460,7 @@ def test_get_conjure_hook_map_handles_exception():
 
     sb = Spellbook(configuration=RaisingConfig())
     sb._logger = DummySafeLogger()
-    assert sb._get_conjure_hook_map() is None
+    assert SpellbookCreationSystem.get_conjure_hook_map(sb) is None
 
 
 def test_upgrade_aether_logger_ignores_factory_errors(monkeypatch):
@@ -2620,7 +2645,7 @@ def test_run_resolution_phases_cleans_scheduler_even_on_error(monkeypatch):
     Purpose:
         Ensure scheduler cleanup runs even when phases fail.
     Contract:
-        _run_resolution_phases raises and still cleans the scheduler.
+        SpellbookCreationSystem.run_resolution_phases raises and still cleans the scheduler.
     Args:
         monkeypatch: Pytest fixture for patching PhaseScheduler.
     Returns:
@@ -2652,7 +2677,7 @@ def test_run_resolution_phases_cleans_scheduler_even_on_error(monkeypatch):
     sb._logger = DummySafeLogger()
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", lambda *a, **k: sched)
     with pytest.raises(RuntimeError):
-        sb._run_resolution_phases("cid")
+        _run_resolution_phases(sb, "cid")
     assert sched.cleaned is True
 
 
@@ -2717,16 +2742,16 @@ def test_phase_factories_metadata_contains_spell_id():
     sb._spells = {DummySpellIndex(sid="abc"): spell}
     scheduler = DummyPhaseScheduler(sb, None)
     for units in (
-        sb._phase_requirements_factory(scheduler),
-        sb._phase_symbolic_graph_factory(scheduler),
-        sb._phase_local_frame_factory(scheduler),
-        sb._phase_validation_factory(scheduler),
-        sb._phase_root_blueprints_factory(scheduler, "cid"),
-        sb._phase_occurrence_plan_factory(scheduler, "cid"),
-        sb._phase_injection_plan_factory(scheduler, "cid"),
-        sb._phase_patch_maps_factory(scheduler, "cid"),
-        sb._phase_system_validation_factory(scheduler, "cid"),
-        sb._phase_change_control_factory(scheduler, "cid"),
+        SpellbookCreationSystem.phase_requirements_factory(sb, scheduler),
+        SpellbookCreationSystem.phase_symbolic_graph_factory(sb, scheduler),
+        SpellbookCreationSystem.phase_local_frame_factory(sb, scheduler),
+        SpellbookCreationSystem.phase_validation_factory(sb, scheduler),
+        SpellbookCreationSystem.phase_root_blueprints_factory(sb, scheduler, "cid"),
+        SpellbookCreationSystem.phase_occurrence_plan_factory(sb, scheduler, "cid"),
+        SpellbookCreationSystem.phase_injection_plan_factory(sb, scheduler, "cid"),
+        SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, "cid"),
+        SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, "cid"),
+        SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, "cid"),
     ):
         assert units[0]["metadata"]["spell_id"] == "abc"
 
@@ -2893,7 +2918,7 @@ def test_fire_conjure_hooks_passes_args_and_kwargs():
     Purpose:
         Verify hook invocation passes positional and keyword arguments.
     Contract:
-        _fire_conjure_hooks passes provided args to the hook.
+        SpellbookCreationSystem.fire_conjure_hooks passes provided args to the hook.
     Returns:
         None.
     Raises:
@@ -2917,7 +2942,7 @@ def test_fire_conjure_hooks_passes_args_and_kwargs():
         """
         captured.append((a, b))
 
-    sb._fire_conjure_hooks({"h": [hook]}, "h", "x")
+    SpellbookCreationSystem.fire_conjure_hooks(sb, {"h": [hook]}, "h", "x")
     assert captured == [("x", None)]
 
 
@@ -2926,7 +2951,7 @@ def test_define_conduit_handles_missing_owner_method():
     Purpose:
         Ensure conduit definition tolerates owner hook failures.
     Contract:
-        _define_conduit_into_spells invokes the hook and swallows errors.
+        SpellbookCreationSystem.define_conduit_into_spells invokes the hook and swallows errors.
     Returns:
         None.
     Raises:
@@ -2959,7 +2984,7 @@ def test_define_conduit_handles_missing_owner_method():
     spell.calls = 0
     sb._spells = {DummySpellIndex(): spell}
     sb._logger = DummySafeLogger()
-    sb._define_conduit_into_spells(DummyConduit())
+    SpellbookCreationSystem.define_conduit_into_spells(sb, DummyConduit())
     assert spell.calls == 1
 
 
@@ -2998,7 +3023,7 @@ def test_phase_factories_return_distinct_labels_per_spell():
     s2 = DummySpell(spell_id="b")
     sb._spells = {DummySpellIndex(sid="a"): s1, DummySpellIndex(sid="b"): s2}
     scheduler = DummyPhaseScheduler(sb, None)
-    req_units = sb._phase_requirements_factory(scheduler)
+    req_units = SpellbookCreationSystem.phase_requirements_factory(sb, scheduler)
     assert {u["label"] for u in req_units} == {"requirements:a", "requirements:b"}
 
 
@@ -3488,7 +3513,7 @@ def test_run_resolution_phases_cleans_scheduler_on_success(monkeypatch):
     Purpose:
         Verify scheduler cleanup occurs on successful phase execution.
     Contract:
-        _run_resolution_phases cleans the scheduler after completion.
+        SpellbookCreationSystem.run_resolution_phases cleans the scheduler after completion.
     Args:
         monkeypatch: Pytest fixture for patching PhaseScheduler.
     Returns:
@@ -3508,7 +3533,7 @@ def test_run_resolution_phases_cleans_scheduler_on_success(monkeypatch):
         schedulers.append(sched)
         return sched
     monkeypatch.setattr(spellbook_module, "PhaseScheduler", _make_scheduler)
-    results = sb._run_resolution_phases("cid")
+    results = _run_resolution_phases(sb, "cid")
     assert "requirements" in results
     assert schedulers
     assert all(sched.cleaned is True for sched in schedulers)
@@ -3656,7 +3681,7 @@ def test_run_resolution_phases_propagates_phase_exception(monkeypatch):
     Purpose:
         Ensure phase execution errors propagate to the caller.
     Contract:
-        _run_resolution_phases raises when a phase raises.
+        SpellbookCreationSystem.run_resolution_phases raises when a phase raises.
     Args:
         monkeypatch: Pytest fixture for patching PhaseScheduler.
     Returns:
@@ -3714,7 +3739,7 @@ def test_run_resolution_phases_propagates_phase_exception(monkeypatch):
     sb._logger = DummySafeLogger()
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", ExecScheduler)
     with pytest.raises(RuntimeError):
-        sb._run_resolution_phases("cid")
+        _run_resolution_phases(sb, "cid")
 
 
 def test_conjure_sets_conduit_and_marks_conjured(monkeypatch):
@@ -3922,3 +3947,8 @@ def test_refresh_local_spell_versions_thread_safe():
         t.join()
 
     assert sb._spell_versions == {"v1", "v2"}
+
+
+
+
+
