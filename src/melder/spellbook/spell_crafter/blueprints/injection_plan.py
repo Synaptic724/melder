@@ -267,9 +267,20 @@ def build_kwargs_from_injection_spec(
     spell_id, _ = occurrence
     contract_payload = injection_spec.contract_payload
     positional_override = None
-    if contract_payload is not None:
-        if injection_spec.uses_positional_override and "__args__" in contract_payload:
-            positional_override = contract_payload.pop("__args__")
+    if (
+            contract_payload is not None
+            and injection_spec.uses_positional_override
+            and "__args__" in contract_payload
+    ):
+        raw_args = contract_payload["__args__"]
+        if not isinstance(raw_args, (list, tuple)):
+            raise MeldExecutionError(
+                spell_id=spell_id,
+                spell_name=spell_id,
+                node_id=spell_id,
+                message="Contract payload __args__ must be a list or tuple.",
+            )
+        positional_override = tuple(raw_args)
 
     kwargs: Dict[str, Any] = {}
     for param_name, param_source in injection_spec.param_sources.items():
@@ -294,6 +305,8 @@ def build_kwargs_from_injection_spec(
 
     if contract_payload:
         for param_name, value in contract_payload.items():
+            if param_name == "__args__" and injection_spec.uses_positional_override:
+                continue
             if param_name in override_values:
                 continue
             kwargs[param_name] = value
@@ -459,6 +472,25 @@ class InjectionPlanBuilder(object):
         "_occurrence_plan",
     ]
 
+    @staticmethod
+    def _clone_contract_payload(
+            payload: Optional[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Clone contract payloads for plan-local ownership.
+
+        Contract:
+            - Returns None when payload is None.
+            - Returns a shallow dict copy otherwise.
+            - Normalizes __args__ list payloads to tuples.
+        """
+        if payload is None:
+            return None
+        cloned_payload = dict(payload)
+        if "__args__" in cloned_payload and isinstance(cloned_payload["__args__"], list):
+            cloned_payload["__args__"] = tuple(cloned_payload["__args__"])
+        return cloned_payload
+
     def __init__(
             self,
             *,
@@ -512,7 +544,7 @@ class InjectionPlanBuilder(object):
                     occurrence = canonical_occurrence
                     dependencies = plan.occurrence_graph[occurrence]
                     contract_payload = plan.contract_overrides_by_occurrence.get(occurrence)
-                    normalized_contract_payload = contract_payload
+                    normalized_contract_payload = self._clone_contract_payload(contract_payload)
                     param_sources: Dict[str, ParamSource] = {}
                     allow_list_aggregation = False
                     uses_positional_override = False
@@ -567,7 +599,7 @@ class InjectionPlanBuilder(object):
                 occurrence = (spell_id, instance_key[1])
                 dependencies = plan.occurrence_graph[occurrence]
                 contract_payload = plan.contract_overrides_by_occurrence.get(occurrence)
-                normalized_contract_payload = contract_payload
+                normalized_contract_payload = self._clone_contract_payload(contract_payload)
                 param_sources: Dict[str, ParamSource] = {}
                 allow_list_aggregation = False
                 uses_positional_override = False

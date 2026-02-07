@@ -1,3 +1,4 @@
+import heapq
 from threading import RLock
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 from melder.spellbook.spell_crafter.dag.dag_node import DagNode
@@ -228,6 +229,7 @@ class DirectedAcyclicWorkGraph(Cleanable):
         Returns a topologically sorted list of nodes.
 
         - Nodes with no dependencies appear first.
+        - Nodes with equal dependency state are ordered by node id.
         - An exception is raised if a cycle is detected.
 
         This method is side-effect free and does not mutate the DAG structure.
@@ -239,20 +241,23 @@ class DirectedAcyclicWorkGraph(Cleanable):
                 node: len(node.dependencies) for node in self._nodes.values()
             }
 
-            # Start with all nodes that have no dependencies
-            queue: List[DagNode] = [n for n, deg in indegree.items() if deg == 0]
+            # Start with all nodes that have no dependencies, ordered by id.
+            queue: List[Tuple[str, DagNode]] = [
+                (node.id, node)
+                for node, degree in indegree.items()
+                if degree == 0
+            ]
+            heapq.heapify(queue)
             ordered: List[DagNode] = []
 
-            idx = 0
-            while idx < len(queue):
-                node = queue[idx]
-                idx += 1
+            while queue:
+                _, node = heapq.heappop(queue)
                 ordered.append(node)
 
-                for dependent in node.dependents:
+                for dependent in sorted(node.dependents, key=lambda item: item.id):
                     indegree[dependent] -= 1
                     if indegree[dependent] == 0:
-                        queue.append(dependent)
+                        heapq.heappush(queue, (dependent.id, dependent))
 
             if len(ordered) != len(self._nodes):
                 # Cycle detected or inconsistent dependency bookkeeping

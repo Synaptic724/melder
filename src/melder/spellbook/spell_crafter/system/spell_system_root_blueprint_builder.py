@@ -62,7 +62,7 @@ class SpellSystemRootBlueprintBuilder:
 
         result: Dict[str, RootResolutionBlueprint] = {}
 
-        for root_spell_id in root_ids:
+        for root_spell_id in sorted(root_ids):
             dag, ordered_ids = self._build_single_root_dag(
                 root_spell_id=root_spell_id,
                 dependencies=dependencies,
@@ -106,6 +106,8 @@ class SpellSystemRootBlueprintBuilder:
             - The resulting DAG includes all nodes reachable from root_spell_id.
             - SocketRefs and DagIndex are overlaid from snapshot topologies.
             - Does not mutate the snapshot.
+            - Produces deterministic node/edge insertion order for equivalent
+              dependency graphs.
 
         Args:
             root_spell_id:
@@ -194,7 +196,8 @@ class SpellSystemRootBlueprintBuilder:
             direct_deps = dependencies.get(current_id)
             if not direct_deps:
                 continue
-            for dep_id in direct_deps:
+            # Reverse sort for LIFO stack so pop-order remains ascending.
+            for dep_id in sorted(direct_deps, reverse=True):
                 if allowed_spell_ids is not None and dep_id not in allowed_spell_ids:
                     continue
                 if dep_id not in reachable_ids:
@@ -206,7 +209,8 @@ class SpellSystemRootBlueprintBuilder:
         dag = DirectedAcyclicWorkGraph()
         # Purely structural: payload is None. Payloads at this level
         # would couple the blueprint too tightly to runtime objects.
-        dag.add_nodes_bulk(reachable_ids)
+        ordered_reachable_ids = sorted(reachable_ids)
+        dag.add_nodes_bulk(ordered_reachable_ids)
 
         # ------------------------------------------------------------------
         # 3. Add provider -> dependent edges within the reachable subgraph.
@@ -214,8 +218,8 @@ class SpellSystemRootBlueprintBuilder:
         dag.add_dependencies_bulk(
             (
                 (provider_id, consumer_id, None, None)
-                for consumer_id in reachable_ids
-                for provider_id in (dependencies.get(consumer_id) or ())
+                for consumer_id in ordered_reachable_ids
+                for provider_id in sorted(dependencies.get(consumer_id) or ())
                 if provider_id in reachable_ids
             )
         )

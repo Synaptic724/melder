@@ -25,8 +25,10 @@ def compile_phase12_no_overrides_executor(
         - Returns None when no steps are present for this variant.
         - Uses a transient unrolled executor when the IR carries a compatible
           transient-only plan.
-        - Falls back to a step-plan executor that applies plan-time creation
-          reuse and registration rules directly.
+        - Falls back to a step-plan executor only when transient unrolling is
+          not applicable for this plan.
+        - Raises when transient codegen source compilation or namespace wiring
+          fails for an otherwise compatible transient plan.
 
     Args:
         codegen_ir:
@@ -41,6 +43,7 @@ def compile_phase12_no_overrides_executor(
             If codegen_ir is None.
         RuntimeError:
             If the root instance key cannot be resolved from the IR payload.
+            If transient codegen source compilation or executor lookup fails.
     """
     if codegen_ir is None:
         raise ValueError("codegen_ir must not be None.")
@@ -71,11 +74,16 @@ def compile_phase12_no_overrides_executor(
                     namespace,
                     local_namespace,
                 )
-            except Exception:
-                local_namespace = {}
+            except Exception as exc:
+                raise RuntimeError(
+                    "Phase 12 no-overrides transient executor code generation failed."
+                ) from exc
             executor = local_namespace.get("_phase12_executor")
             if callable(executor):
                 return executor
+            raise RuntimeError(
+                "Phase 12 no-overrides transient executor source did not define a callable _phase12_executor."
+            )
 
     return _build_step_plan_executor(
         steps=steps,

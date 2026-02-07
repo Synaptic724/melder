@@ -147,6 +147,7 @@ def test_multiple_roots_returned():
     snapshot = _snapshot(deps, roots={"r1", "r2"})
     result = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
     assert set(result) == {"r1", "r2"}
+    assert list(result.keys()) == ["r1", "r2"]
 
 
 def test_overlay_sockets_and_index_rejects_none():
@@ -202,8 +203,7 @@ def test_build_single_root_dag_validates_inputs():
 def test_build_single_root_dag_topology_order_stable():
     deps = {"root": {"b", "a"}, "a": set(), "b": set()}
     dag, ordered = SpellSystemRootBlueprintBuilder()._build_single_root_dag("root", deps)
-    assert ordered[-1] == "root"
-    assert set(ordered) == {"root", "a", "b"}
+    assert ordered == ["a", "b", "root"]
 
 
 def test_build_root_blueprints_handles_unknown_root_id():

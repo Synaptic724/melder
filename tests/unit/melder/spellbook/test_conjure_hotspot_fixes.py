@@ -207,6 +207,31 @@ def test_occurrence_plan_execution_order_linear_chain() -> None:
     assert order == ["A", "B", "C"]
 
 
+def test_occurrence_plan_execution_order_uses_lexical_tie_break() -> None:
+    """
+    Purpose:
+        Ensure independent nodes use deterministic lexical ordering.
+    Contract:
+        - Unrelated zero-indegree nodes are ordered lexically.
+    Returns:
+        None.
+    """
+    path_registry = PathRegistry()
+    root_path_id = path_registry.root_path_id
+    occurrence_graph = {
+        ("root", root_path_id): {"left": [("b", root_path_id)], "right": [("a", root_path_id)]},
+        ("b", root_path_id): {},
+        ("a", root_path_id): {},
+    }
+
+    order = OccurrencePlanBuilder._build_execution_order(
+        occurrence_graph=occurrence_graph,
+        fallback_order=[],
+    )
+
+    assert order == ["a", "b", "root"]
+
+
 def test_dag_index_exact_path_lookup_accepts_list_and_tuple() -> None:
     """
     Purpose:

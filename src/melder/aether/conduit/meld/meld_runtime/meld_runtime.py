@@ -428,7 +428,8 @@ class MeldRuntime(Cleanable):
         Build a stable override-shape key for specialization cache lookup.
 
         Contract:
-            - Includes execution-plan identity to avoid stale-plan collisions.
+            - Includes deterministic execution-plan signature to avoid stale-plan
+              collisions without relying on object identity.
             - Includes deterministic socket-target tuples.
             - Includes root positional-argument arity when present.
         """
@@ -446,11 +447,115 @@ class MeldRuntime(Cleanable):
         positional_arity = -1
         if root_positional_override is not None:
             positional_arity = len(root_positional_override)
+        plan_signature = MeldRuntime._build_override_plan_signature(
+            execution_plan=execution_plan,
+        )
         return (
-            id(execution_plan),
+            plan_signature,
             tuple(socket_shape),
             positional_arity,
         )
+
+    @staticmethod
+    def _build_override_plan_signature(
+            *,
+            execution_plan: Any,
+    ) -> Tuple[Any, ...]:
+        """
+        Build a hashable deterministic signature for override execution plans.
+
+        Contract:
+            - Includes per-step semantics consumed by override execution routes.
+            - Excludes runtime object identity.
+            - Returns only hashable values suitable for cache keys.
+        """
+        if execution_plan is None:
+            raise ValueError("execution_plan must not be None.")
+
+        step_signatures: list[Tuple[Any, ...]] = []
+        for step in execution_plan.steps:
+            dependency_order = tuple(
+                (
+                    param_name,
+                    tuple(dependency_keys),
+                )
+                for param_name, dependency_keys in step.dependency_resolution_order
+            )
+            contract_payload_items: Tuple[Any, ...] = ()
+            if step.contract_payload:
+                contract_payload_items = tuple(
+                    sorted(
+                        (
+                            param_name,
+                            MeldRuntime._freeze_override_signature_value(value),
+                        )
+                        for param_name, value in step.contract_payload.items()
+                    )
+                )
+
+            step_signatures.append(
+                (
+                    step.instance_key,
+                    step.spell.spell_index.current,
+                    step.existence.name,
+                    step.creations_target_kind,
+                    step.shared_instance,
+                    dependency_order,
+                    step.override_match_prefix,
+                    step.override_match_prefix_len,
+                    tuple(step.override_keys),
+                    step.use_spell_lock_hint,
+                    step.must_register,
+                    step.uses_positional_override,
+                    MeldRuntime._freeze_override_signature_value(step.contract_positional_override),
+                    step.has_contract_payload,
+                    contract_payload_items,
+                )
+            )
+
+        return (
+            execution_plan.plan_variant,
+            execution_plan.root_spell_id,
+            tuple(step_signatures),
+        )
+
+    @staticmethod
+    def _freeze_override_signature_value(value: Any) -> Any:
+        """
+        Normalize arbitrary values into hashable deterministic cache-key form.
+
+        Contract:
+            - Dicts become sorted key/value tuples.
+            - Lists/tuples become tuples.
+            - Sets become repr-sorted tuples.
+            - Other values are returned as-is.
+        """
+        if isinstance(value, dict):
+            return tuple(
+                sorted(
+                    (
+                        key,
+                        MeldRuntime._freeze_override_signature_value(item),
+                    )
+                    for key, item in value.items()
+                )
+            )
+        if isinstance(value, (list, tuple)):
+            return tuple(
+                MeldRuntime._freeze_override_signature_value(item)
+                for item in value
+            )
+        if isinstance(value, set):
+            return tuple(
+                sorted(
+                    (
+                        MeldRuntime._freeze_override_signature_value(item)
+                        for item in value
+                    ),
+                    key=repr,
+                )
+            )
+        return value
 
     def _get_or_compile_override_executor(
             self,

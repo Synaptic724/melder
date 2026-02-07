@@ -27,7 +27,8 @@ def test_normalize_contract_override_payload_accepts_supported_types() -> None:
         consumer_spell_name="Consumer",
         param_name="service",
     )
-    assert normalized is payload
+    assert normalized == payload
+    assert normalized is not payload
 
     normalized = OccurrencePlanBuilder._normalize_contract_override_payload(
         payload=["alpha", "beta"],
@@ -35,7 +36,7 @@ def test_normalize_contract_override_payload_accepts_supported_types() -> None:
         consumer_spell_name="Consumer",
         param_name="service",
     )
-    assert normalized == {"__args__": ["alpha", "beta"]}
+    assert normalized == {"__args__": ("alpha", "beta")}
 
     normalized = OccurrencePlanBuilder._normalize_contract_override_payload(
         payload=("alpha",),
@@ -44,6 +45,14 @@ def test_normalize_contract_override_payload_accepts_supported_types() -> None:
         param_name="service",
     )
     assert normalized == {"__args__": ("alpha",)}
+
+    normalized = OccurrencePlanBuilder._normalize_contract_override_payload(
+        payload={"__args__": [1, 2], "flag": True},
+        consumer_spell_id="consumer",
+        consumer_spell_name="Consumer",
+        param_name="service",
+    )
+    assert normalized == {"__args__": (1, 2), "flag": True}
 
 
 def test_normalize_contract_override_payload_rejects_invalid_type() -> None:
@@ -168,3 +177,6 @@ def test_record_contract_override_stores_payload() -> None:
     )
     assert overrides_by_occurrence[occurrence] == payload
     assert overrides_by_spell_id["spell-1"] == [(occurrence, payload)]
+    assert overrides_by_occurrence[occurrence] is not payload
+    payload["marker"] = "changed"
+    assert overrides_by_occurrence[occurrence]["marker"] == "override"

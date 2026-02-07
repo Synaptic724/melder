@@ -1,5 +1,6 @@
 from collections import defaultdict, deque
 from dataclasses import dataclass
+import heapq
 import inspect
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
@@ -667,9 +668,9 @@ class OccurrencePlanBuilder(object):
 
         Contract:
             - Uses the occurrence graph to build a topological order.
-            - Preserves queue insertion order (no tie-break sorting).
+            - Uses spell-id lexical ordering as the deterministic tie-breaker.
             - If cycles are detected, returns fallback_order first, then remaining
-              nodes in set-iteration order.
+              nodes in lexical order.
 
         Args:
             occurrence_graph: Path-aware occurrence graph.
@@ -682,10 +683,12 @@ class OccurrencePlanBuilder(object):
         indegree: Dict[str, int] = defaultdict(int)
         nodes: Set[str] = set()
 
-        for occurrence, dependencies in occurrence_graph.items():
+        for occurrence in sorted(occurrence_graph.keys(), key=lambda key: (key[0], key[1])):
+            dependencies = occurrence_graph[occurrence]
             node_id = occurrence[0]
             nodes.add(node_id)
-            for dependency_list in dependencies.values():
+            for dependency_name in sorted(dependencies.keys()):
+                dependency_list = dependencies[dependency_name]
                 for dependency_occurrence in dependency_list:
                     dep_id = dependency_occurrence[0]
                     nodes.add(dep_id)
@@ -693,21 +696,20 @@ class OccurrencePlanBuilder(object):
                         edges[dep_id].add(node_id)
                         indegree[node_id] += 1
 
-        for node_id in nodes:
+        for node_id in sorted(nodes):
             indegree.setdefault(node_id, 0)
 
         queue = [node_id for node_id, degree in indegree.items() if degree == 0]
+        heapq.heapify(queue)
         order: List[str] = []
 
-        queue_idx = 0
-        while queue_idx < len(queue):
-            node_id = queue[queue_idx]
-            queue_idx += 1
+        while queue:
+            node_id = heapq.heappop(queue)
             order.append(node_id)
-            for child_id in edges.get(node_id, []):
+            for child_id in sorted(edges.get(node_id, [])):
                 indegree[child_id] -= 1
                 if indegree[child_id] == 0:
-                    queue.append(child_id)
+                    heapq.heappush(queue, child_id)
 
         if len(order) == len(nodes):
             return order
@@ -718,7 +720,7 @@ class OccurrencePlanBuilder(object):
             if node_id in nodes and node_id not in seen:
                 seen.add(node_id)
                 resolved.append(node_id)
-        for node_id in nodes:
+        for node_id in sorted(nodes):
             if node_id not in seen:
                 seen.add(node_id)
                 resolved.append(node_id)
@@ -1643,8 +1645,8 @@ class OccurrencePlanBuilder(object):
         Normalize a SpellContract override payload for plan storage.
 
         Contract:
-            - dict payloads are stored verbatim (no copy).
-            - list/tuple payloads become {"__args__": payload}.
+            - dict payloads are copied into a normalized map.
+            - list/tuple payloads become {"__args__": tuple(payload)}.
             - None payloads produce an empty override map.
 
         Args:
@@ -1663,9 +1665,23 @@ class OccurrencePlanBuilder(object):
         if payload is None:
             return {}
         if isinstance(payload, dict):
-            return payload
+            normalized_payload: Dict[str, Any] = {}
+            for key, value in payload.items():
+                if key == "__args__":
+                    if not isinstance(value, (list, tuple)):
+                        raise MeldExecutionError(
+                            spell_id=consumer_spell_id,
+                            spell_name=consumer_spell_name,
+                            node_id=consumer_spell_id,
+                            param_name=param_name,
+                            message="SpellContract __args__ override must be a list or tuple.",
+                        )
+                    normalized_payload[key] = tuple(value)
+                    continue
+                normalized_payload[key] = value
+            return normalized_payload
         if isinstance(payload, (list, tuple)):
-            return {"__args__": payload}
+            return {"__args__": tuple(payload)}
         raise MeldExecutionError(
             spell_id=consumer_spell_id,
             spell_name=consumer_spell_name,
@@ -1700,9 +1716,12 @@ class OccurrencePlanBuilder(object):
         Returns:
             None.
         """
-        overrides_by_occurrence[occurrence] = normalized_payload
+        stored_payload = dict(normalized_payload)
+        if "__args__" in stored_payload and isinstance(stored_payload["__args__"], list):
+            stored_payload["__args__"] = tuple(stored_payload["__args__"])
+        overrides_by_occurrence[occurrence] = stored_payload
         overrides_by_spell_id.setdefault(spell_id, []).append(
-            (occurrence, normalized_payload)
+            (occurrence, stored_payload)
         )
 
     @staticmethod

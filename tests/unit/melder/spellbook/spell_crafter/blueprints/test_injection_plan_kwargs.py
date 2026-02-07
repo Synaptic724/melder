@@ -8,6 +8,7 @@ from melder.spellbook.spell_crafter.blueprints.injection_plan import (
     ParamSource,
     build_kwargs_from_injection_spec,
 )
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
 def _make_spec(
@@ -169,9 +170,10 @@ def test_build_kwargs_from_injection_spec_positional_override() -> None:
         - __args__ is preserved when uses_positional_override is True.
     """
     instance_results = {("dep", None): "value"}
+    contract_payload = {"__args__": [1, 2]}
     spec = _make_spec(
         param_sources={"dep": ParamSource(kind="dependency", dependency_keys=[("dep", None)])},
-        contract_payload={"__args__": [1, 2]},
+        contract_payload=contract_payload,
         uses_positional_override=True,
     )
     kwargs = build_kwargs_from_injection_spec(
@@ -182,7 +184,8 @@ def test_build_kwargs_from_injection_spec_positional_override() -> None:
         override_values={},
     )
 
-    assert kwargs["__args__"] == [1, 2]
+    assert kwargs["__args__"] == (1, 2)
+    assert contract_payload["__args__"] == [1, 2]
 
 
 def test_build_kwargs_from_injection_spec_retains_args_when_disabled() -> None:
@@ -207,6 +210,29 @@ def test_build_kwargs_from_injection_spec_retains_args_when_disabled() -> None:
     )
 
     assert kwargs["__args__"] == [1, 2]
+
+
+def test_build_kwargs_from_injection_spec_rejects_invalid_positional_override() -> None:
+    """
+    Purpose:
+        Ensure invalid __args__ contract payloads fail fast when positional mode is enabled.
+    Contract:
+        - Non-list/tuple __args__ raises MeldExecutionError.
+    """
+    instance_results = {("dep", None): "value"}
+    spec = _make_spec(
+        param_sources={"dep": ParamSource(kind="dependency", dependency_keys=[("dep", None)])},
+        contract_payload={"__args__": "bad"},
+        uses_positional_override=True,
+    )
+    with pytest.raises(MeldExecutionError, match="Contract payload __args__ must be a list or tuple"):
+        build_kwargs_from_injection_spec(
+            instance_key=("root", None),
+            occurrence=("root", 0),
+            injection_spec=spec,
+            instance_results=instance_results,
+            override_values={},
+        )
 
 
 def test_build_kwargs_from_injection_spec_override_keeps_contract_payload() -> None:

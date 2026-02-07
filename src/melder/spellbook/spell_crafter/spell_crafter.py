@@ -3104,7 +3104,8 @@ class SpellCrafter(Cleanable):
                 Visibility-gap diagnostics; empty when scope is fully visible.
         """
         self.check_cleaned()
-        root_id = next(iter(root_ids), self._spell.spell_index.current)
+        ordered_root_ids = sorted(root_ids)
+        root_id = ordered_root_ids[0] if ordered_root_ids else self._spell.spell_index.current
         diagnostics: List[SystemDiagnostic] = []
         seen: Set[Tuple[str, str, str]] = set()
         for spell_id in scoped_spell_ids:
