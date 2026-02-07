@@ -50,7 +50,7 @@ class RiskManager(Cleanable):
         Track per-conduit risk based on spell validity. If any risky spell
         exists for a conduit, the owning Spellbook is flagged as requiring
         validation. Risk is defined as any validity that would trigger
-        revalidation in Meld (unknown/gated/invalid/disabled).
+        revalidation in Meld (unknown/gated/invalid/disabled/cleaned).
 
     Contract:
         - Structural and resolution risk are tracked independently.
@@ -374,12 +374,17 @@ class RiskManager(Cleanable):
         Args:
             spell: Spell instance to inspect.
         Returns:
-            Optional[SpellValidity]: Structural validity or unknown when unavailable.
+            Optional[SpellValidity]:
+                Structural validity when available, SpellValidity.cleaned when the
+                spell is cleaned, or SpellValidity.unknown when no lineage state
+                is available.
         """
         if spell._cleaned:
+            return SpellValidity.cleaned
+        state = spell.system_state
+        if state is None:
             return SpellValidity.unknown
-        else:
-            return spell.spell_index.validity
+        return state.validity
 
     def _get_resolution_validity(self, conduit_id: str, spell: ISpell) -> Optional[SpellValidity]:
         """

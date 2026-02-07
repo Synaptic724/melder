@@ -683,63 +683,57 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         current_spell_id: Optional[str] = None
         owner_spellbook_id: Optional[str] = None
         dependencies: Set[str] = set()
-
-        try:
-            with self._lock:
-                removed_state = self._states_by_index_id.pop(index_id, None)
-                if removed_state is None:
-                    # Still clear the spell-id index if it points to this lineage.
-                    current_spell_id = spell_index.current
-                    if current_spell_id and self._states_by_spell_id.get(current_spell_id) is not None:
-                        self._states_by_spell_id.pop(current_spell_id, None)
-                    self._dirty_lineages.discard(index_id)
-                    return None
-
-                try:
-                    current_spell_id = removed_state.current_spell_id
-                except Exception:
-                    current_spell_id = spell_index.current
-
-                if current_spell_id and self._states_by_spell_id.get(current_spell_id) is removed_state:
+        risk_manager = None
+        with self._lock:
+            removed_state = self._states_by_index_id.pop(index_id, None)
+            if removed_state is None:
+                # Still clear the spell-id index if it points to this lineage.
+                current_spell_id = spell_index.current
+                if current_spell_id and self._states_by_spell_id.get(current_spell_id) is not None:
                     self._states_by_spell_id.pop(current_spell_id, None)
-
                 self._dirty_lineages.discard(index_id)
+                return None
 
-                if self._local_topologies is not None and current_spell_id:
-                    self._local_topologies.pop(current_spell_id, None)
+            current_spell_id = removed_state.current_spell_id
 
-                if self._lineage_owner_spellbook_id is not None:
-                    owner_spellbook_id = self._lineage_owner_spellbook_id.pop(index_id, None)
+            if current_spell_id and self._states_by_spell_id.get(current_spell_id) is removed_state:
+                self._states_by_spell_id.pop(current_spell_id, None)
 
-                if owner_spellbook_id is not None:
-                    self._remove_lineage_from_collection_index(owner_spellbook_id, index_id)
-                    self._remove_lineage_from_contract_index(owner_spellbook_id, index_id)
-                    if self._collection_frames_by_lineage is not None:
-                        self._collection_frames_by_lineage.pop(index_id, None)
+            self._dirty_lineages.discard(index_id)
 
-                try:
-                    dependencies = removed_state.direct_dependencies
-                except Exception:
-                    dependencies = set()
+            if self._local_topologies is not None and current_spell_id:
+                self._local_topologies.pop(current_spell_id, None)
 
-                # Detach reverse edges from dependencies that still exist.
-                for dep_id in dependencies:
-                    dep_state = None
-                    if self._states_by_spell_id is not None:
-                        dep_state = self._states_by_spell_id.get(dep_id)
-                    if dep_state is None and self._states_by_index_id is not None:
-                        dep_state = self._states_by_index_id.get(dep_id)
-                    if dep_state is not None:
-                        dep_state.remove_dependent(index_id)
+            if self._lineage_owner_spellbook_id is not None:
+                owner_spellbook_id = self._lineage_owner_spellbook_id.pop(index_id, None)
 
-            self._risk_manager.on_structural_validity_change(
+            if owner_spellbook_id is not None:
+                self._remove_lineage_from_collection_index(owner_spellbook_id, index_id)
+                self._remove_lineage_from_contract_index(owner_spellbook_id, index_id)
+                if self._collection_frames_by_lineage is not None:
+                    self._collection_frames_by_lineage.pop(index_id, None)
+
+            dependencies = removed_state.direct_dependencies
+
+            # Detach reverse edges from dependencies that still exist.
+            for dep_id in dependencies:
+                dep_state = None
+                if self._states_by_spell_id is not None:
+                    dep_state = self._states_by_spell_id.get(dep_id)
+                if dep_state is None and self._states_by_index_id is not None:
+                    dep_state = self._states_by_index_id.get(dep_id)
+                if dep_state is not None:
+                    dep_state.remove_dependent(index_id)
+
+            risk_manager = self._risk_manager
+
+        if risk_manager is not None:
+            risk_manager.on_structural_validity_change(
                 index_id,
                 SpellValidity.cleaned,
             )
-            removed_state.cleanup()
-            return removed_state
-        except Exception:
-            return None
+        removed_state.cleanup()
+        return removed_state
 
 
     def set_risk_manager(self, risk_manager: Optional[object]) -> None:

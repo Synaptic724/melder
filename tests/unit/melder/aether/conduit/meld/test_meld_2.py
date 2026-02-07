@@ -102,6 +102,17 @@ class _SpellStub:
         self._hooks_enabled: bool = False
         self.spell_type = "stub"
         self._lock = RLock()
+        self._cleaned = False
+
+    def check_cleaned(self) -> None:
+        """
+        Verify the stub spell has not been cleaned.
+
+        Raises:
+            RuntimeError: When the stub is flagged as cleaned.
+        """
+        if self._cleaned:
+            raise RuntimeError("Spell has been cleaned.")
 
 
 class _SpellbookStub:

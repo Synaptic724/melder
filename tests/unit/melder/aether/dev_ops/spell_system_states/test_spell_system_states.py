@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -86,12 +86,17 @@ def test_register_validation(states_manager, mock_spell):
 # 2.5. Unregistration
 # ----------------------------------------------------------------------
 
-def test_unregister_lineage_triggers_risk_manager(states_manager, mock_spell_index, mock_spell):
+def test_unregister_lineage_triggers_risk_manager(
+    states_manager: SpellSystemStates,
+    mock_spell_index: ISpellIndex,
+    mock_spell: ISpell,
+) -> None:
     """
     Verify unregister_lineage notifies RiskManager.
 
     Contract:
-    - RiskManager.on_structural_validity_change is called with SpellValidity.cleaned.
+    - register_lineage notifies with SpellValidity.gated.
+    - unregister_lineage notifies with SpellValidity.cleaned.
     """
     risk_manager = MagicMock()
     states_manager.set_risk_manager(risk_manager)
@@ -99,10 +104,10 @@ def test_unregister_lineage_triggers_risk_manager(states_manager, mock_spell_ind
     states_manager.register_lineage(mock_spell_index, mock_spell)
     states_manager.unregister_lineage(mock_spell_index)
 
-    risk_manager.on_structural_validity_change.assert_called_once_with(
-        "idx-1",
-        SpellValidity.cleaned,
-    )
+    calls = risk_manager.on_structural_validity_change.call_args_list
+    assert calls[0] == call("idx-1", SpellValidity.gated)
+    assert calls[-1] == call("idx-1", SpellValidity.cleaned)
+    assert len(calls) == 2
 
 # ----------------------------------------------------------------------
 # 3. Dependency Wiring

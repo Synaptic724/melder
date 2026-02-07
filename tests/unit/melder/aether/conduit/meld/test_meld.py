@@ -234,6 +234,7 @@ class _SpellStub:
             existence: Existence scope for the spell.
             system_state: Optional system state for validity gating.
             spell_system_states: Optional system state registry for resolution gating.
+                When None, a default stub registry is created.
             spellbook: Optional spellbook stub for resolution phase execution.
             is_broken: Whether the spell is broken.
             is_existing_creation: Whether the spell is an existing-creation spell.
@@ -260,6 +261,8 @@ class _SpellStub:
         if system_state is _DEFAULT_SYSTEM_STATE:
             system_state = _SystemStateStub(validity=SpellValidity.valid)
         self.system_state = system_state
+        if spell_system_states is None:
+            spell_system_states = _SpellSystemStatesStub(_ResolutionStateStub())
         self._spell_system_states = spell_system_states
         self._spellbook = spellbook
         self._crafter = None
@@ -288,6 +291,7 @@ class _SpellStub:
         self.run_structural_phases_calls = 0
         self._validity_after_run = validity_after_run
         self._broken_after_run = broken_after_run
+        self._cleaned = False
 
     def run_all_phases(self) -> None:
         """
@@ -308,6 +312,16 @@ class _SpellStub:
             self.system_state.validity = self._validity_after_run
         if self._broken_after_run is not None:
             self.is_broken = self._broken_after_run
+
+    def check_cleaned(self) -> None:
+        """
+        Verify the stub spell has not been cleaned.
+
+        Raises:
+            RuntimeError: When the stub is flagged as cleaned.
+        """
+        if self._cleaned:
+            raise RuntimeError("Spell has been cleaned.")
 
 
 class _SpellbookStub:
@@ -1553,7 +1567,11 @@ def test_resolve_instance_with_locks_many_constructs_and_returns_created() -> No
     meld._register_spell = MagicMock()
     meld._get_existing_creation = MagicMock(return_value="reuse")
 
-    instance, created = meld._resolve_instance_with_locks(spell, overrides=None)
+    instance, created = meld._resolve_instance_with_locks(
+        spell,
+        creations,
+        overrides=None,
+    )
 
     assert instance == "created"
     assert created is True
@@ -1584,7 +1602,11 @@ def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
     meld._meld_by_spell_type = MagicMock(return_value="created")
     meld._register_spell = MagicMock()
 
-    instance, created = meld._resolve_instance_with_locks(spell, overrides=None)
+    instance, created = meld._resolve_instance_with_locks(
+        spell,
+        creations,
+        overrides=None,
+    )
 
     assert instance == "created"
     assert created is True
@@ -1611,7 +1633,11 @@ def test_resolve_instance_with_locks_shared_with_no_creations_uses_none() -> Non
     meld._meld_by_spell_type = MagicMock(return_value="created")
     meld._register_spell = MagicMock()
 
-    instance, created = meld._resolve_instance_with_locks(spell, overrides=None)
+    instance, created = meld._resolve_instance_with_locks(
+        spell,
+        None,
+        overrides=None,
+    )
 
     assert instance == "created"
     assert created is True
