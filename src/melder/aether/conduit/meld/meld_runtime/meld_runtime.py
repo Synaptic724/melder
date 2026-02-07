@@ -1,95 +1,58 @@
 from collections import deque
-import random
-from typing import Any, Deque, Dict, Optional
-# Melder Imports
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.meld_context.meld_context import MeldContext
-from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
-from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpell
-from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
-    ResolutionFrame,
-)
-from melder.spellbook.existence.existence import Existence
-from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
-    RootResolutionBlueprint,
-)
 from melder.spellbook.spell_crafter.blueprints.patch_maps import (
-    apply_phase10_mutation_overrides,
     apply_phase10_override_payload,
 )
-from melder.spellbook.spell_crafter.blueprints.execution_plan import (
-    ExecutionPlan,
-    ExecutionPlanCallMode,
-    ExecutionPlanVariant,
+from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
+    compile_phase12_overrides_executor,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import ISpell
 
 
-class MeldRuntime:
+class MeldRuntime(Cleanable):
     """
-    Orchestration façade for meld execution.
+    Execute meld calls through compiled Phase 12 codegen artifacts.
 
-    `MeldRuntime` sits between the Conduit-level `Meld` façade and the
-    low-level `MeldEngine`. It owns **no spell-specific state** and can
-    be:
+    Purpose:
+        Provide the execution boundary between `Meld` and spell-scoped Phase 12
+        executors compiled by SpellCrafter, without invoking MeldEngine.
 
-        * Constructed per-Conduit, or
-        * Shared across multiple conduits (if desired later).
-
-    Responsibilities
-    ----------------
-
-    * Perform **pre-flight checks** on the root spell:
-
-        - Must not be broken (`spell.is_broken`).
-        - Should be validated (`spell.validated`).
-        - May have a dependency graph / resolution frame attached.
-
-    * Create a **ResolutionFrame** per execution, initialized with
-      per-call overrides from `MeldContext`.
-
-    * Construct and invoke a **MeldEngine** to actually create the
-      instance.
-
-    * Ensure deterministic cleanup of the engine and frame after
-      execution.
-
-    This class deliberately does **not** know anything about Creations
-    or Existence semantics; those remain in `Meld`. The runtime only
-    focuses on "given this spell and this context, build me the object".
+    Contract:
+        - Executes no-overrides calls through `phase12_no_overrides_executor`.
+        - Executes override calls through specialization executors compiled from
+          the Phase 11 override plan.
+        - Keeps override specialization caches bounded per spell.
+        - Mutation overrides are not supported on this runtime path.
+        - Enforces spell validity/change-control invariants before execution.
+        - Raises deterministic `MeldExecutionError` when runtime prerequisites
+          are not satisfied.
     """
     __melder_internal__ = _mrg.sentinel
-
-    # ------------------------------------------------------------------ #
-    # Core API
-    # ------------------------------------------------------------------ #
     __slots__ = (
-        "_transient_asset_pool",
-        "_max_transient_asset_pool_size",
-        "_shared_asset_pool",
-        "_max_shared_asset_pool_size",
-        "_fast_transient_codegen_cache",
-        "_max_fast_transient_codegen_cache_size",
-        "_fast_transient_codegen_micro_max_steps",
-        "_fast_transient_codegen_tiny_max_steps",
-        "_fast_transient_codegen_small_max_steps",
-        "_fast_transient_codegen_small_max_depth",
+        "_override_specialization_cache",
+        "_override_specialization_order",
+        "_max_override_specializations_per_spell",
     )
 
     def __init__(self) -> None:
-        self._transient_asset_pool: Dict[str, Deque[tuple[MeldEngine, ResolutionFrame, MeldContext]]] = {}
-        self._max_transient_asset_pool_size: int = 128
-        self._shared_asset_pool: Dict[str, Deque[tuple[MeldEngine, ResolutionFrame, MeldContext]]] = {}
-        self._max_shared_asset_pool_size: int = 128
-        self._fast_transient_codegen_cache: Dict[tuple[str, int], Any] = {}
-        self._max_fast_transient_codegen_cache_size: int = 128
-        self._fast_transient_codegen_micro_max_steps: int = 8
-        self._fast_transient_codegen_tiny_max_steps: int = 32
-        self._fast_transient_codegen_small_max_steps: int = 128
-        self._fast_transient_codegen_small_max_depth: int = 9
+        """
+        Initialize a codegen-only meld runtime.
+
+        Contract:
+            - Runtime holds no engine or frame pools.
+            - Runtime owns a bounded per-spell override specialization cache.
+            - All per-call state is supplied through MeldContext.
+        """
+        super().__init__()
+        self._override_specialization_cache: Dict[str, Dict[Tuple[Any, ...], Callable[..., Any]]] = {}
+        self._override_specialization_order: Dict[str, deque[Tuple[Any, ...]]] = {}
+        self._max_override_specializations_per_spell: int = 64
 
     def execute_fast_transient(
             self,
@@ -98,17 +61,35 @@ class MeldRuntime:
             conduit_id: Optional[str],
     ) -> Any:
         """
-        Execute a fast transient-only plan using the codegen executor.
+        Execute a transient no-overrides spell through Phase 12 executor.
 
         Contract:
-            - Only valid when no overrides or mutations apply.
-            - Requires a Phase 11 no-overrides plan with a transient fast plan.
-            - Performs the same spell invariant checks as execute().
+            - Enforces spell invariants before execution.
+            - Requires a compiled Phase 12 executor.
+            - Does not accept overrides or mutations.
         """
-        return self.codegen_fast_transient(
-            spell=spell,
-            conduit_id=conduit_id,
-        )
+        self._enforce_spell_invariants(spell, conduit_id)
+        if spell.has_mutation_override:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Mutation overrides are not supported on the Phase 12 "
+                    "no-overrides runtime path."
+                ),
+            )
+        executor = self._require_phase12_executor(spell)
+        try:
+            return executor(None)
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Phase 12 transient executor failed.",
+                inner=exc,
+            ) from exc
 
     def codegen_fast_transient(
             self,
@@ -117,1664 +98,418 @@ class MeldRuntime:
             conduit_id: Optional[str],
     ) -> Any:
         """
-        Execute a codegen-compiled fast transient-only plan.
+        Execute fast transient through the same Phase 12 runtime path.
 
         Contract:
-            - Only valid when no overrides or mutations apply.
-            - Requires a Phase 11 no-overrides plan with a transient fast plan.
-            - Performs the same spell invariant checks as execute().
-            - Falls back to the loop-based implementation if codegen fails.
+            - Delegates directly to `execute_fast_transient`.
         """
-        execution_plan, transient_plan = self._resolve_fast_transient_plan(
+        return self.execute_fast_transient(
             spell=spell,
             conduit_id=conduit_id,
         )
-        solo_result = self._try_execute_fast_transient_solo(
-            execution_plan=execution_plan,
-            transient_plan=transient_plan,
-        )
-        if solo_result is not None:
-            return solo_result
-        variant = self._select_codegen_fast_transient_variant(
-            spell=spell,
-            transient_plan=transient_plan,
-        )
-        if variant is None:
-            return self._execute_fast_transient_loop(
-                execution_plan=execution_plan,
-                transient_plan=transient_plan,
-            )
-        if variant == "micro":
-            executor = self._get_codegen_fast_transient_executor_micro(
-                execution_plan=execution_plan,
-                transient_plan=transient_plan,
-            )
-        elif variant == "tiny":
-            executor = self._get_codegen_fast_transient_executor_tiny(
-                execution_plan=execution_plan,
-                transient_plan=transient_plan,
-            )
-        elif variant == "small":
-            executor = self._get_codegen_fast_transient_executor_small(
-                execution_plan=execution_plan,
-                transient_plan=transient_plan,
-            )
-        else:
-            executor = self._get_codegen_fast_transient_executor_large(
-                execution_plan=execution_plan,
-                transient_plan=transient_plan,
-            )
-        if executor is None:
-            return self._execute_fast_transient_loop(
-                execution_plan=execution_plan,
-                transient_plan=transient_plan,
-            )
-        return executor()
 
-    def _select_codegen_fast_transient_variant(
-            self,
-            *,
-            spell: ISpell,
-            transient_plan: tuple,
-    ) -> Optional[str]:
+    def execute(self, context: MeldContext) -> Any:
         """
-        Select the codegen variant based on execution plan metrics.
-        """
-        step_count = spell.execution_plan_step_count
-        if step_count is None:
-            step_count = transient_plan[0]
-        max_depth = spell.execution_plan_max_occurrence_depth
-        if max_depth is None:
-            return None
-        if (
-                step_count <= self._fast_transient_codegen_small_max_steps
-                and max_depth <= self._fast_transient_codegen_small_max_depth
-        ):
-            if step_count <= self._fast_transient_codegen_micro_max_steps:
-                return "micro"
-            if step_count < self._fast_transient_codegen_tiny_max_steps:
-                return "tiny"
-            return "small"
-        return "large"
-
-    def _try_execute_fast_transient_solo(
-            self,
-            *,
-            execution_plan: ExecutionPlan,
-            transient_plan: tuple,
-    ) -> Optional[Any]:
-        """
-        Execute a zero-dependency (solo) fast transient plan directly.
-
-        Returns None if the plan is not a solo CALL0 root.
-        """
-        (
-            transient_step_count,
-            transient_root_index,
-            transient_targets,
-            transient_call_modes,
-            *_,
-        ) = transient_plan
-
-        if transient_step_count != 1:
-            return None
-        if transient_root_index != 0:
-            return None
-        if transient_call_modes[0] != ExecutionPlanCallMode.CALL0:
-            return None
-
-        call_target = transient_targets[0]
-        try:
-            return call_target()
-        except Exception as exc:
-            step_spell = execution_plan.steps[0].spell
-            raise MeldExecutionError(
-                spell_id=step_spell.spell_index.current,
-                spell_name=step_spell.spell_name,
-                message=f"Error invoking spell '{step_spell.spell_name}'.",
-                inner=exc,
-            ) from exc
-
-    def _get_codegen_fast_transient_executor_micro(
-            self,
-            *,
-            execution_plan: ExecutionPlan,
-            transient_plan: tuple,
-    ) -> Optional[Any]:
-        """
-        Build or reuse a micro-DAG optimized codegen executor.
+        Execute one meld call through the appropriate Phase 12 executor route.
 
         Contract:
-            - Returns a callable that executes the plan and returns the root instance.
-            - Returns None if codegen is not possible.
+            - `context` must contain a non-None root spell.
+            - No-overrides calls use the precompiled no-overrides executor.
+            - Override calls use spell-scoped specialization executors.
+            - Mutation overrides are rejected.
+            - Raises MeldExecutionError when required Phase 11/12 artifacts are
+              missing.
+            - Returns the constructed root instance.
         """
-        (
-            transient_step_count,
-            transient_root_index,
-            transient_targets,
-            transient_call_modes,
-            transient_dep1,
-            transient_dep2a,
-            transient_dep2b,
-            transient_dep3a,
-            transient_dep3b,
-            transient_dep3c,
-            transient_dep4a,
-            transient_dep4b,
-            transient_dep4c,
-            transient_dep4d,
-            transient_dep5a,
-            transient_dep5b,
-            transient_dep5c,
-            transient_dep5d,
-            transient_dep5e,
-            transient_dep6a,
-            transient_dep6b,
-            transient_dep6c,
-            transient_dep6d,
-            transient_dep6e,
-            transient_dep6f,
-            transient_dep7a,
-            transient_dep7b,
-            transient_dep7c,
-            transient_dep7d,
-            transient_dep7e,
-            transient_dep7f,
-            transient_dep7g,
-            transient_dep8a,
-            transient_dep8b,
-            transient_dep8c,
-            transient_dep8d,
-            transient_dep8e,
-            transient_dep8f,
-            transient_dep8g,
-            transient_dep8h,
-        ) = transient_plan
-
-        for call_mode in transient_call_modes:
-            if call_mode == ExecutionPlanCallMode.CALLN:
-                return None
-
-        steps = execution_plan.steps
-        root_spell_id = execution_plan.root_spell_id or ""
-        cache_key = (root_spell_id, id(transient_plan), "micro")
-        cached = self._fast_transient_codegen_cache.get(cache_key)
-        if cached is not None:
-            return cached
-
-        lines = [
-            "def _codegen_executor(",
-            "        *,",
-            "        transient_targets=transient_targets,",
-            "        steps=steps,",
-            "    ):",
-        ]
-
-        for step_index in range(transient_step_count):
-            lines.append(f"    t{step_index} = transient_targets[{step_index}]")
-
-        lines.append("    __step_index = 0")
-        lines.append("    try:")
-
-        for step_index in range(transient_step_count):
-            call_mode = transient_call_modes[step_index]
-            if call_mode == ExecutionPlanCallMode.CALL0:
-                call_expr = f"t{step_index}()"
-            elif call_mode == ExecutionPlanCallMode.CALL1:
-                dep1 = transient_dep1[step_index]
-                call_expr = f"t{step_index}(v{dep1})"
-            elif call_mode == ExecutionPlanCallMode.CALL2:
-                dep_a = transient_dep2a[step_index]
-                dep_b = transient_dep2b[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b})"
-            elif call_mode == ExecutionPlanCallMode.CALL3:
-                dep_a = transient_dep3a[step_index]
-                dep_b = transient_dep3b[step_index]
-                dep_c = transient_dep3c[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c})"
-            elif call_mode == ExecutionPlanCallMode.CALL4:
-                dep_a = transient_dep4a[step_index]
-                dep_b = transient_dep4b[step_index]
-                dep_c = transient_dep4c[step_index]
-                dep_d = transient_dep4d[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d})"
-            elif call_mode == ExecutionPlanCallMode.CALL5:
-                dep_a = transient_dep5a[step_index]
-                dep_b = transient_dep5b[step_index]
-                dep_c = transient_dep5c[step_index]
-                dep_d = transient_dep5d[step_index]
-                dep_e = transient_dep5e[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e})"
-            elif call_mode == ExecutionPlanCallMode.CALL6:
-                dep_a = transient_dep6a[step_index]
-                dep_b = transient_dep6b[step_index]
-                dep_c = transient_dep6c[step_index]
-                dep_d = transient_dep6d[step_index]
-                dep_e = transient_dep6e[step_index]
-                dep_f = transient_dep6f[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f})"
-            elif call_mode == ExecutionPlanCallMode.CALL7:
-                dep_a = transient_dep7a[step_index]
-                dep_b = transient_dep7b[step_index]
-                dep_c = transient_dep7c[step_index]
-                dep_d = transient_dep7d[step_index]
-                dep_e = transient_dep7e[step_index]
-                dep_f = transient_dep7f[step_index]
-                dep_g = transient_dep7g[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g})"
-            elif call_mode == ExecutionPlanCallMode.CALL8:
-                dep_a = transient_dep8a[step_index]
-                dep_b = transient_dep8b[step_index]
-                dep_c = transient_dep8c[step_index]
-                dep_d = transient_dep8d[step_index]
-                dep_e = transient_dep8e[step_index]
-                dep_f = transient_dep8f[step_index]
-                dep_g = transient_dep8g[step_index]
-                dep_h = transient_dep8h[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g}, v{dep_h})"
-            else:
-                return None
-
-            lines.append(f"        __step_index = {step_index}")
-            lines.append(f"        v{step_index} = {call_expr}")
-
-        lines.append("    except Exception as exc:")
-        lines.append("        step_spell = steps[__step_index].spell")
-        lines.append("        raise MeldExecutionError(")
-        lines.append("            spell_id=step_spell.spell_index.current,")
-        lines.append("            spell_name=step_spell.spell_name,")
-        lines.append("            message=f\"Error invoking spell '{step_spell.spell_name}'.\",")
-        lines.append("            inner=exc,")
-        lines.append("        ) from exc")
-        lines.append(f"    return v{transient_root_index}")
-
-        source = "\n".join(lines)
-        namespace = {
-            "MeldExecutionError": MeldExecutionError,
-            "transient_targets": transient_targets,
-            "steps": steps,
-        }
-        local_namespace: Dict[str, Any] = {}
-        try:
-            exec(
-                compile(source, "<melder_codegen_fast_transient_micro>", "exec"),
-                namespace,
-                local_namespace,
-            )
-        except Exception:
-            return None
-
-        executor = local_namespace.get("_codegen_executor")
-        if executor is None:
-            return None
-
-        if (
-                cache_key not in self._fast_transient_codegen_cache
-                and len(self._fast_transient_codegen_cache) >= self._max_fast_transient_codegen_cache_size
-        ):
-            self._fast_transient_codegen_cache.pop(
-                next(iter(self._fast_transient_codegen_cache)),
-                None,
-            )
-        self._fast_transient_codegen_cache[cache_key] = executor
-        return executor
-
-    def _get_codegen_fast_transient_executor_tiny(
-            self,
-            *,
-            execution_plan: ExecutionPlan,
-            transient_plan: tuple,
-    ) -> Optional[Any]:
-        """
-        Build or reuse a tiny-DAG optimized codegen executor.
-
-        Contract:
-            - Returns a callable that executes the plan and returns the root instance.
-            - Returns None if codegen is not possible.
-        """
-        (
-            transient_step_count,
-            transient_root_index,
-            transient_targets,
-            transient_call_modes,
-            transient_dep1,
-            transient_dep2a,
-            transient_dep2b,
-            transient_dep3a,
-            transient_dep3b,
-            transient_dep3c,
-            transient_dep4a,
-            transient_dep4b,
-            transient_dep4c,
-            transient_dep4d,
-            transient_dep5a,
-            transient_dep5b,
-            transient_dep5c,
-            transient_dep5d,
-            transient_dep5e,
-            transient_dep6a,
-            transient_dep6b,
-            transient_dep6c,
-            transient_dep6d,
-            transient_dep6e,
-            transient_dep6f,
-            transient_dep7a,
-            transient_dep7b,
-            transient_dep7c,
-            transient_dep7d,
-            transient_dep7e,
-            transient_dep7f,
-            transient_dep7g,
-            transient_dep8a,
-            transient_dep8b,
-            transient_dep8c,
-            transient_dep8d,
-            transient_dep8e,
-            transient_dep8f,
-            transient_dep8g,
-            transient_dep8h,
-        ) = transient_plan
-
-        for call_mode in transient_call_modes:
-            if call_mode == ExecutionPlanCallMode.CALLN:
-                return None
-
-        steps = execution_plan.steps
-        root_spell_id = execution_plan.root_spell_id or ""
-        cache_key = (root_spell_id, id(transient_plan), "tiny")
-        cached = self._fast_transient_codegen_cache.get(cache_key)
-        if cached is not None:
-            return cached
-
-        lines = [
-            "def _codegen_executor(",
-            "        *,",
-            "        transient_root_index=transient_root_index,",
-            "        transient_targets=transient_targets,",
-            "        transient_dep1=transient_dep1,",
-            "        transient_dep2a=transient_dep2a,",
-            "        transient_dep2b=transient_dep2b,",
-            "        transient_dep3a=transient_dep3a,",
-            "        transient_dep3b=transient_dep3b,",
-            "        transient_dep3c=transient_dep3c,",
-            "        transient_dep4a=transient_dep4a,",
-            "        transient_dep4b=transient_dep4b,",
-            "        transient_dep4c=transient_dep4c,",
-            "        transient_dep4d=transient_dep4d,",
-            "        transient_dep5a=transient_dep5a,",
-            "        transient_dep5b=transient_dep5b,",
-            "        transient_dep5c=transient_dep5c,",
-            "        transient_dep5d=transient_dep5d,",
-            "        transient_dep5e=transient_dep5e,",
-            "        transient_dep6a=transient_dep6a,",
-            "        transient_dep6b=transient_dep6b,",
-            "        transient_dep6c=transient_dep6c,",
-            "        transient_dep6d=transient_dep6d,",
-            "        transient_dep6e=transient_dep6e,",
-            "        transient_dep6f=transient_dep6f,",
-            "        transient_dep7a=transient_dep7a,",
-            "        transient_dep7b=transient_dep7b,",
-            "        transient_dep7c=transient_dep7c,",
-            "        transient_dep7d=transient_dep7d,",
-            "        transient_dep7e=transient_dep7e,",
-            "        transient_dep7f=transient_dep7f,",
-            "        transient_dep7g=transient_dep7g,",
-            "        transient_dep8a=transient_dep8a,",
-            "        transient_dep8b=transient_dep8b,",
-            "        transient_dep8c=transient_dep8c,",
-            "        transient_dep8d=transient_dep8d,",
-            "        transient_dep8e=transient_dep8e,",
-            "        transient_dep8f=transient_dep8f,",
-            "        transient_dep8g=transient_dep8g,",
-            "        transient_dep8h=transient_dep8h,",
-            "        steps=steps,",
-            "    ):",
-        ]
-
-        for step_index in range(transient_step_count):
-            lines.append(f"    t{step_index} = transient_targets[{step_index}]")
-
-        lines.append("    __step_index = 0")
-        lines.append("    try:")
-
-        for step_index in range(transient_step_count):
-            call_mode = transient_call_modes[step_index]
-            if call_mode == ExecutionPlanCallMode.CALL0:
-                call_expr = f"t{step_index}()"
-            elif call_mode == ExecutionPlanCallMode.CALL1:
-                dep1 = transient_dep1[step_index]
-                call_expr = f"t{step_index}(v{dep1})"
-            elif call_mode == ExecutionPlanCallMode.CALL2:
-                dep_a = transient_dep2a[step_index]
-                dep_b = transient_dep2b[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b})"
-            elif call_mode == ExecutionPlanCallMode.CALL3:
-                dep_a = transient_dep3a[step_index]
-                dep_b = transient_dep3b[step_index]
-                dep_c = transient_dep3c[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c})"
-            elif call_mode == ExecutionPlanCallMode.CALL4:
-                dep_a = transient_dep4a[step_index]
-                dep_b = transient_dep4b[step_index]
-                dep_c = transient_dep4c[step_index]
-                dep_d = transient_dep4d[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d})"
-            elif call_mode == ExecutionPlanCallMode.CALL5:
-                dep_a = transient_dep5a[step_index]
-                dep_b = transient_dep5b[step_index]
-                dep_c = transient_dep5c[step_index]
-                dep_d = transient_dep5d[step_index]
-                dep_e = transient_dep5e[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e})"
-            elif call_mode == ExecutionPlanCallMode.CALL6:
-                dep_a = transient_dep6a[step_index]
-                dep_b = transient_dep6b[step_index]
-                dep_c = transient_dep6c[step_index]
-                dep_d = transient_dep6d[step_index]
-                dep_e = transient_dep6e[step_index]
-                dep_f = transient_dep6f[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f})"
-            elif call_mode == ExecutionPlanCallMode.CALL7:
-                dep_a = transient_dep7a[step_index]
-                dep_b = transient_dep7b[step_index]
-                dep_c = transient_dep7c[step_index]
-                dep_d = transient_dep7d[step_index]
-                dep_e = transient_dep7e[step_index]
-                dep_f = transient_dep7f[step_index]
-                dep_g = transient_dep7g[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g})"
-            elif call_mode == ExecutionPlanCallMode.CALL8:
-                dep_a = transient_dep8a[step_index]
-                dep_b = transient_dep8b[step_index]
-                dep_c = transient_dep8c[step_index]
-                dep_d = transient_dep8d[step_index]
-                dep_e = transient_dep8e[step_index]
-                dep_f = transient_dep8f[step_index]
-                dep_g = transient_dep8g[step_index]
-                dep_h = transient_dep8h[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g}, v{dep_h})"
-            else:
-                return None
-
-            lines.append(f"        __step_index = {step_index}")
-            lines.append(f"        v{step_index} = {call_expr}")
-
-        lines.append("    except Exception as exc:")
-        lines.append("        step_spell = steps[__step_index].spell")
-        lines.append("        raise MeldExecutionError(")
-        lines.append("            spell_id=step_spell.spell_index.current,")
-        lines.append("            spell_name=step_spell.spell_name,")
-        lines.append("            message=f\"Error invoking spell '{step_spell.spell_name}'.\",")
-        lines.append("            inner=exc,")
-        lines.append("        ) from exc")
-        lines.append(f"    return v{transient_root_index}")
-
-        source = "\n".join(lines)
-        namespace = {
-            "MeldExecutionError": MeldExecutionError,
-            "transient_root_index": transient_root_index,
-            "transient_targets": transient_targets,
-            "transient_dep1": transient_dep1,
-            "transient_dep2a": transient_dep2a,
-            "transient_dep2b": transient_dep2b,
-            "transient_dep3a": transient_dep3a,
-            "transient_dep3b": transient_dep3b,
-            "transient_dep3c": transient_dep3c,
-            "transient_dep4a": transient_dep4a,
-            "transient_dep4b": transient_dep4b,
-            "transient_dep4c": transient_dep4c,
-            "transient_dep4d": transient_dep4d,
-            "transient_dep5a": transient_dep5a,
-            "transient_dep5b": transient_dep5b,
-            "transient_dep5c": transient_dep5c,
-            "transient_dep5d": transient_dep5d,
-            "transient_dep5e": transient_dep5e,
-            "transient_dep6a": transient_dep6a,
-            "transient_dep6b": transient_dep6b,
-            "transient_dep6c": transient_dep6c,
-            "transient_dep6d": transient_dep6d,
-            "transient_dep6e": transient_dep6e,
-            "transient_dep6f": transient_dep6f,
-            "transient_dep7a": transient_dep7a,
-            "transient_dep7b": transient_dep7b,
-            "transient_dep7c": transient_dep7c,
-            "transient_dep7d": transient_dep7d,
-            "transient_dep7e": transient_dep7e,
-            "transient_dep7f": transient_dep7f,
-            "transient_dep7g": transient_dep7g,
-            "transient_dep8a": transient_dep8a,
-            "transient_dep8b": transient_dep8b,
-            "transient_dep8c": transient_dep8c,
-            "transient_dep8d": transient_dep8d,
-            "transient_dep8e": transient_dep8e,
-            "transient_dep8f": transient_dep8f,
-            "transient_dep8g": transient_dep8g,
-            "transient_dep8h": transient_dep8h,
-            "steps": steps,
-        }
-        local_namespace: Dict[str, Any] = {}
-        try:
-            exec(
-                compile(source, "<melder_codegen_fast_transient_tiny>", "exec"),
-                namespace,
-                local_namespace,
-            )
-        except Exception:
-            return None
-
-        executor = local_namespace.get("_codegen_executor")
-        if executor is None:
-            return None
-
-        if (
-                cache_key not in self._fast_transient_codegen_cache
-                and len(self._fast_transient_codegen_cache) >= self._max_fast_transient_codegen_cache_size
-        ):
-            self._fast_transient_codegen_cache.pop(
-                next(iter(self._fast_transient_codegen_cache)),
-                None,
-            )
-        self._fast_transient_codegen_cache[cache_key] = executor
-        return executor
-
-    def _resolve_fast_transient_plan(
-            self,
-            *,
-            spell: ISpell,
-            conduit_id: Optional[str],
-    ) -> tuple[ExecutionPlan, tuple]:
-        """
-        Resolve and validate the fast transient plan for a spell.
-
-        Returns:
-            Tuple of (execution_plan, transient_plan).
-        """
+        if context is None:
+            raise ValueError("context must not be None.")
+        spell = context.root_spell
         if spell is None:
-            raise ValueError("spell must not be None.")
+            raise ValueError("context.root_spell must not be None.")
 
-        self._enforce_spell_invariants(spell, conduit_id)
+        self._enforce_spell_invariants(spell, context.conduit_id)
 
+        if spell.has_mutation_override:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Mutation overrides are not supported on the Phase 12 "
+                    "no-overrides runtime path."
+                ),
+            )
+
+        if context.overrides:
+            return self._execute_with_overrides(
+                context=context,
+                spell=spell,
+            )
+        return self._execute_no_overrides(
+            context=context,
+            spell=spell,
+        )
+
+    def cleanup(self) -> None:
+        """
+        Deterministically tear down runtime-owned caches.
+
+        Contract:
+            - Idempotent.
+            - Clears all spell-scoped override specialization entries.
+        """
+        if self._cleaned:
+            return
+        for cache in self._override_specialization_cache.values():
+            cache.clear()
+        for order in self._override_specialization_order.values():
+            order.clear()
+        self._override_specialization_cache.clear()
+        self._override_specialization_order.clear()
+        self._override_specialization_cache = None
+        self._override_specialization_order = None
+        self._max_override_specializations_per_spell = None
+        self._cleaned = True
+
+    @staticmethod
+    def _require_phase12_executor(spell: ISpell) -> Callable[[Any], Any]:
+        """
+        Require and return the compiled Phase 12 no-overrides executor.
+
+        Contract:
+            - Raises MeldExecutionError when SpellCrafter artifacts are absent.
+            - Raises MeldExecutionError when no Phase 12 executor is compiled.
+        """
         crafter = spell._crafter
         if crafter is None:
             raise MeldExecutionError(
                 spell_id=spell.spell_index.current,
                 spell_name=spell.spell_name,
-                message="Missing SpellCrafter artifacts for fast transient execution.",
+                message="Missing SpellCrafter artifacts for Phase 12 execution.",
             )
-        execution_plan = crafter.execution_plan_phase11_no_overrides
+        executor = crafter.phase12_no_overrides_executor
+        if executor is None:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Missing Phase 12 no-overrides executor for this spell. "
+                    "Run conjure resolution phases before melding."
+                ),
+            )
+        return executor
+
+    def _execute_no_overrides(
+            self,
+            *,
+            context: MeldContext,
+            spell: ISpell,
+    ) -> Any:
+        """
+        Execute a no-overrides meld call through the compiled Phase 12 executor.
+
+        Contract:
+            - Requires `phase12_no_overrides_executor`.
+            - Wraps unexpected executor exceptions in MeldExecutionError.
+        """
+        executor = self._require_phase12_executor(spell)
+        try:
+            result = executor(context)
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Phase 12 no-overrides executor failed.",
+                inner=exc,
+            ) from exc
+        self._raise_on_missing_factory_result(
+            spell=spell,
+            result=result,
+            message=(
+                "Phase 12 no-overrides executor returned None for a "
+                "factory-style spell."
+            ),
+        )
+        return result
+
+    def _execute_with_overrides(
+            self,
+            *,
+            context: MeldContext,
+            spell: ISpell,
+    ) -> Any:
+        """
+        Execute an override-bearing meld call through specialization routing.
+
+        Contract:
+            - Applies Phase 10 override patch maps to normalize TargetSpec keys.
+            - Selects/compiles a spell-scoped specialization by override shape.
+            - Never falls back to engine execution.
+        """
+        crafter = spell._crafter
+        if crafter is None:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Missing SpellCrafter artifacts for Phase 12 override execution.",
+            )
+
+        override_patch_map = crafter.override_patch_map_phase10
+        if override_patch_map is None:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Phase 10 override patch map is required for override "
+                    "specialization execution."
+                ),
+            )
+
+        execution_plan = crafter.execution_plan_phase11_overrides
         if execution_plan is None:
             raise MeldExecutionError(
                 spell_id=spell.spell_index.current,
                 spell_name=spell.spell_name,
-                message="Missing Phase 11 execution plan for fast transient execution.",
-            )
-        transient_plan = execution_plan.fast_transient_plan
-        if transient_plan is None:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message="Fast transient plan is unavailable for this spell.",
-            )
-        return execution_plan, transient_plan
-
-    def _execute_fast_transient_loop(
-            self,
-            *,
-            execution_plan: ExecutionPlan,
-            transient_plan: tuple,
-    ) -> Any:
-        """
-        Execute a fast transient plan using the loop-based implementation.
-        """
-        (
-            transient_step_count,
-            transient_root_index,
-            transient_targets,
-            transient_call_modes,
-            transient_dep1,
-            transient_dep2a,
-            transient_dep2b,
-            transient_dep3a,
-            transient_dep3b,
-            transient_dep3c,
-            transient_dep4a,
-            transient_dep4b,
-            transient_dep4c,
-            transient_dep4d,
-            transient_dep5a,
-            transient_dep5b,
-            transient_dep5c,
-            transient_dep5d,
-            transient_dep5e,
-            transient_dep6a,
-            transient_dep6b,
-            transient_dep6c,
-            transient_dep6d,
-            transient_dep6e,
-            transient_dep6f,
-            transient_dep7a,
-            transient_dep7b,
-            transient_dep7c,
-            transient_dep7d,
-            transient_dep7e,
-            transient_dep7f,
-            transient_dep7g,
-            transient_dep8a,
-            transient_dep8b,
-            transient_dep8c,
-            transient_dep8d,
-            transient_dep8e,
-            transient_dep8f,
-            transient_dep8g,
-            transient_dep8h,
-        ) = transient_plan
-
-        transient_values: list[Any] = [None] * transient_step_count
-        steps = execution_plan.steps
-        for step_index in range(transient_step_count):
-            call_target = transient_targets[step_index]
-            call_mode = transient_call_modes[step_index]
-            try:
-                if call_mode == ExecutionPlanCallMode.CALL0:
-                    instance = call_target()
-                elif call_mode == ExecutionPlanCallMode.CALL1:
-                    instance = call_target(transient_values[transient_dep1[step_index]])
-                elif call_mode == ExecutionPlanCallMode.CALL2:
-                    instance = call_target(
-                        transient_values[transient_dep2a[step_index]],
-                        transient_values[transient_dep2b[step_index]],
-                    )
-                elif call_mode == ExecutionPlanCallMode.CALL3:
-                    instance = call_target(
-                        transient_values[transient_dep3a[step_index]],
-                        transient_values[transient_dep3b[step_index]],
-                        transient_values[transient_dep3c[step_index]],
-                    )
-                elif call_mode == ExecutionPlanCallMode.CALL4:
-                    instance = call_target(
-                        transient_values[transient_dep4a[step_index]],
-                        transient_values[transient_dep4b[step_index]],
-                        transient_values[transient_dep4c[step_index]],
-                        transient_values[transient_dep4d[step_index]],
-                    )
-                elif call_mode == ExecutionPlanCallMode.CALL5:
-                    instance = call_target(
-                        transient_values[transient_dep5a[step_index]],
-                        transient_values[transient_dep5b[step_index]],
-                        transient_values[transient_dep5c[step_index]],
-                        transient_values[transient_dep5d[step_index]],
-                        transient_values[transient_dep5e[step_index]],
-                    )
-                elif call_mode == ExecutionPlanCallMode.CALL6:
-                    instance = call_target(
-                        transient_values[transient_dep6a[step_index]],
-                        transient_values[transient_dep6b[step_index]],
-                        transient_values[transient_dep6c[step_index]],
-                        transient_values[transient_dep6d[step_index]],
-                        transient_values[transient_dep6e[step_index]],
-                        transient_values[transient_dep6f[step_index]],
-                    )
-                elif call_mode == ExecutionPlanCallMode.CALL7:
-                    instance = call_target(
-                        transient_values[transient_dep7a[step_index]],
-                        transient_values[transient_dep7b[step_index]],
-                        transient_values[transient_dep7c[step_index]],
-                        transient_values[transient_dep7d[step_index]],
-                        transient_values[transient_dep7e[step_index]],
-                        transient_values[transient_dep7f[step_index]],
-                        transient_values[transient_dep7g[step_index]],
-                    )
-                elif call_mode == ExecutionPlanCallMode.CALL8:
-                    instance = call_target(
-                        transient_values[transient_dep8a[step_index]],
-                        transient_values[transient_dep8b[step_index]],
-                        transient_values[transient_dep8c[step_index]],
-                        transient_values[transient_dep8d[step_index]],
-                        transient_values[transient_dep8e[step_index]],
-                        transient_values[transient_dep8f[step_index]],
-                        transient_values[transient_dep8g[step_index]],
-                        transient_values[transient_dep8h[step_index]],
-                    )
-                else:
-                    raise RuntimeError("Unsupported transient call mode.")
-            except Exception as exc:
-                step_spell = steps[step_index].spell
-                raise MeldExecutionError(
-                    spell_id=step_spell.spell_index.current,
-                    spell_name=step_spell.spell_name,
-                    message=f"Error invoking spell '{step_spell.spell_name}'.",
-                    inner=exc,
-                ) from exc
-            transient_values[step_index] = instance
-
-        return transient_values[transient_root_index]
-
-    def _get_codegen_fast_transient_executor_small(
-            self,
-            *,
-            execution_plan: ExecutionPlan,
-            transient_plan: tuple,
-    ) -> Optional[Any]:
-        """
-        Build or reuse a small-DAG optimized codegen executor.
-
-        Contract:
-            - Returns a callable that executes the plan and returns the root instance.
-            - Returns None if codegen is not possible.
-        """
-        (
-            transient_step_count,
-            transient_root_index,
-            transient_targets,
-            transient_call_modes,
-            transient_dep1,
-            transient_dep2a,
-            transient_dep2b,
-            transient_dep3a,
-            transient_dep3b,
-            transient_dep3c,
-            transient_dep4a,
-            transient_dep4b,
-            transient_dep4c,
-            transient_dep4d,
-            transient_dep5a,
-            transient_dep5b,
-            transient_dep5c,
-            transient_dep5d,
-            transient_dep5e,
-            transient_dep6a,
-            transient_dep6b,
-            transient_dep6c,
-            transient_dep6d,
-            transient_dep6e,
-            transient_dep6f,
-            transient_dep7a,
-            transient_dep7b,
-            transient_dep7c,
-            transient_dep7d,
-            transient_dep7e,
-            transient_dep7f,
-            transient_dep7g,
-            transient_dep8a,
-            transient_dep8b,
-            transient_dep8c,
-            transient_dep8d,
-            transient_dep8e,
-            transient_dep8f,
-            transient_dep8g,
-            transient_dep8h,
-        ) = transient_plan
-
-        for call_mode in transient_call_modes:
-            if call_mode == ExecutionPlanCallMode.CALLN:
-                return None
-
-        steps = execution_plan.steps
-        root_spell_id = execution_plan.root_spell_id or ""
-        cache_key = (root_spell_id, id(transient_plan), "small")
-        cached = self._fast_transient_codegen_cache.get(cache_key)
-        if cached is not None:
-            return cached
-
-        lines = [
-            "def _codegen_executor(",
-            "        *,",
-            "        transient_root_index=transient_root_index,",
-            "        transient_targets=transient_targets,",
-            "        transient_dep1=transient_dep1,",
-            "        transient_dep2a=transient_dep2a,",
-            "        transient_dep2b=transient_dep2b,",
-            "        transient_dep3a=transient_dep3a,",
-            "        transient_dep3b=transient_dep3b,",
-            "        transient_dep3c=transient_dep3c,",
-            "        transient_dep4a=transient_dep4a,",
-            "        transient_dep4b=transient_dep4b,",
-            "        transient_dep4c=transient_dep4c,",
-            "        transient_dep4d=transient_dep4d,",
-            "        transient_dep5a=transient_dep5a,",
-            "        transient_dep5b=transient_dep5b,",
-            "        transient_dep5c=transient_dep5c,",
-            "        transient_dep5d=transient_dep5d,",
-            "        transient_dep5e=transient_dep5e,",
-            "        transient_dep6a=transient_dep6a,",
-            "        transient_dep6b=transient_dep6b,",
-            "        transient_dep6c=transient_dep6c,",
-            "        transient_dep6d=transient_dep6d,",
-            "        transient_dep6e=transient_dep6e,",
-            "        transient_dep6f=transient_dep6f,",
-            "        transient_dep7a=transient_dep7a,",
-            "        transient_dep7b=transient_dep7b,",
-            "        transient_dep7c=transient_dep7c,",
-            "        transient_dep7d=transient_dep7d,",
-            "        transient_dep7e=transient_dep7e,",
-            "        transient_dep7f=transient_dep7f,",
-            "        transient_dep7g=transient_dep7g,",
-            "        transient_dep8a=transient_dep8a,",
-            "        transient_dep8b=transient_dep8b,",
-            "        transient_dep8c=transient_dep8c,",
-            "        transient_dep8d=transient_dep8d,",
-            "        transient_dep8e=transient_dep8e,",
-            "        transient_dep8f=transient_dep8f,",
-            "        transient_dep8g=transient_dep8g,",
-            "        transient_dep8h=transient_dep8h,",
-            "        steps=steps,",
-            "    ):",
-        ]
-
-        for step_index in range(transient_step_count):
-            lines.append(f"    t{step_index} = transient_targets[{step_index}]")
-
-        lines.append("    __step_index = 0")
-        lines.append("    try:")
-
-        for step_index in range(transient_step_count):
-            call_mode = transient_call_modes[step_index]
-            if call_mode == ExecutionPlanCallMode.CALL0:
-                call_expr = f"t{step_index}()"
-            elif call_mode == ExecutionPlanCallMode.CALL1:
-                dep1 = transient_dep1[step_index]
-                call_expr = f"t{step_index}(v{dep1})"
-            elif call_mode == ExecutionPlanCallMode.CALL2:
-                dep_a = transient_dep2a[step_index]
-                dep_b = transient_dep2b[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b})"
-            elif call_mode == ExecutionPlanCallMode.CALL3:
-                dep_a = transient_dep3a[step_index]
-                dep_b = transient_dep3b[step_index]
-                dep_c = transient_dep3c[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c})"
-            elif call_mode == ExecutionPlanCallMode.CALL4:
-                dep_a = transient_dep4a[step_index]
-                dep_b = transient_dep4b[step_index]
-                dep_c = transient_dep4c[step_index]
-                dep_d = transient_dep4d[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d})"
-            elif call_mode == ExecutionPlanCallMode.CALL5:
-                dep_a = transient_dep5a[step_index]
-                dep_b = transient_dep5b[step_index]
-                dep_c = transient_dep5c[step_index]
-                dep_d = transient_dep5d[step_index]
-                dep_e = transient_dep5e[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e})"
-            elif call_mode == ExecutionPlanCallMode.CALL6:
-                dep_a = transient_dep6a[step_index]
-                dep_b = transient_dep6b[step_index]
-                dep_c = transient_dep6c[step_index]
-                dep_d = transient_dep6d[step_index]
-                dep_e = transient_dep6e[step_index]
-                dep_f = transient_dep6f[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f})"
-            elif call_mode == ExecutionPlanCallMode.CALL7:
-                dep_a = transient_dep7a[step_index]
-                dep_b = transient_dep7b[step_index]
-                dep_c = transient_dep7c[step_index]
-                dep_d = transient_dep7d[step_index]
-                dep_e = transient_dep7e[step_index]
-                dep_f = transient_dep7f[step_index]
-                dep_g = transient_dep7g[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g})"
-            elif call_mode == ExecutionPlanCallMode.CALL8:
-                dep_a = transient_dep8a[step_index]
-                dep_b = transient_dep8b[step_index]
-                dep_c = transient_dep8c[step_index]
-                dep_d = transient_dep8d[step_index]
-                dep_e = transient_dep8e[step_index]
-                dep_f = transient_dep8f[step_index]
-                dep_g = transient_dep8g[step_index]
-                dep_h = transient_dep8h[step_index]
-                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g}, v{dep_h})"
-            else:
-                return None
-
-            lines.append(f"        __step_index = {step_index}")
-            lines.append(f"        v{step_index} = {call_expr}")
-
-        lines.append("    except Exception as exc:")
-        lines.append("        step_spell = steps[__step_index].spell")
-        lines.append("        raise MeldExecutionError(")
-        lines.append("            spell_id=step_spell.spell_index.current,")
-        lines.append("            spell_name=step_spell.spell_name,")
-        lines.append("            message=f\"Error invoking spell '{step_spell.spell_name}'.\",")
-        lines.append("            inner=exc,")
-        lines.append("        ) from exc")
-        lines.append(f"    return v{transient_root_index}")
-
-        source = "\n".join(lines)
-        namespace = {
-            "MeldExecutionError": MeldExecutionError,
-            "transient_root_index": transient_root_index,
-            "transient_targets": transient_targets,
-            "transient_dep1": transient_dep1,
-            "transient_dep2a": transient_dep2a,
-            "transient_dep2b": transient_dep2b,
-            "transient_dep3a": transient_dep3a,
-            "transient_dep3b": transient_dep3b,
-            "transient_dep3c": transient_dep3c,
-            "transient_dep4a": transient_dep4a,
-            "transient_dep4b": transient_dep4b,
-            "transient_dep4c": transient_dep4c,
-            "transient_dep4d": transient_dep4d,
-            "transient_dep5a": transient_dep5a,
-            "transient_dep5b": transient_dep5b,
-            "transient_dep5c": transient_dep5c,
-            "transient_dep5d": transient_dep5d,
-            "transient_dep5e": transient_dep5e,
-            "transient_dep6a": transient_dep6a,
-            "transient_dep6b": transient_dep6b,
-            "transient_dep6c": transient_dep6c,
-            "transient_dep6d": transient_dep6d,
-            "transient_dep6e": transient_dep6e,
-            "transient_dep6f": transient_dep6f,
-            "transient_dep7a": transient_dep7a,
-            "transient_dep7b": transient_dep7b,
-            "transient_dep7c": transient_dep7c,
-            "transient_dep7d": transient_dep7d,
-            "transient_dep7e": transient_dep7e,
-            "transient_dep7f": transient_dep7f,
-            "transient_dep7g": transient_dep7g,
-            "transient_dep8a": transient_dep8a,
-            "transient_dep8b": transient_dep8b,
-            "transient_dep8c": transient_dep8c,
-            "transient_dep8d": transient_dep8d,
-            "transient_dep8e": transient_dep8e,
-            "transient_dep8f": transient_dep8f,
-            "transient_dep8g": transient_dep8g,
-            "transient_dep8h": transient_dep8h,
-            "steps": steps,
-        }
-        local_namespace: Dict[str, Any] = {}
-        try:
-            exec(
-                compile(source, "<melder_codegen_fast_transient_small>", "exec"),
-                namespace,
-                local_namespace,
-            )
-        except Exception:
-            return None
-
-        executor = local_namespace.get("_codegen_executor")
-        if executor is None:
-            return None
-
-        if (
-                cache_key not in self._fast_transient_codegen_cache
-                and len(self._fast_transient_codegen_cache) >= self._max_fast_transient_codegen_cache_size
-        ):
-            self._fast_transient_codegen_cache.pop(
-                next(iter(self._fast_transient_codegen_cache)),
-                None,
-            )
-        self._fast_transient_codegen_cache[cache_key] = executor
-        return executor
-
-    def _get_codegen_fast_transient_executor_large(
-            self,
-            *,
-            execution_plan: ExecutionPlan,
-            transient_plan: tuple,
-    ) -> Optional[Any]:
-        """
-        Build or reuse a codegen executor for a fast transient plan.
-
-        Contract:
-            - Returns a callable that executes the plan and returns the root instance.
-            - Returns None if codegen is not possible.
-        """
-        (
-            transient_step_count,
-            transient_root_index,
-            transient_targets,
-            transient_call_modes,
-            transient_dep1,
-            transient_dep2a,
-            transient_dep2b,
-            transient_dep3a,
-            transient_dep3b,
-            transient_dep3c,
-            transient_dep4a,
-            transient_dep4b,
-            transient_dep4c,
-            transient_dep4d,
-            transient_dep5a,
-            transient_dep5b,
-            transient_dep5c,
-            transient_dep5d,
-            transient_dep5e,
-            transient_dep6a,
-            transient_dep6b,
-            transient_dep6c,
-            transient_dep6d,
-            transient_dep6e,
-            transient_dep6f,
-            transient_dep7a,
-            transient_dep7b,
-            transient_dep7c,
-            transient_dep7d,
-            transient_dep7e,
-            transient_dep7f,
-            transient_dep7g,
-            transient_dep8a,
-            transient_dep8b,
-            transient_dep8c,
-            transient_dep8d,
-            transient_dep8e,
-            transient_dep8f,
-            transient_dep8g,
-            transient_dep8h,
-        ) = transient_plan
-
-        for call_mode in transient_call_modes:
-            if call_mode == ExecutionPlanCallMode.CALLN:
-                return None
-
-        steps = execution_plan.steps
-        root_spell_id = execution_plan.root_spell_id or ""
-        cache_key = (root_spell_id, id(transient_plan), "large")
-        cached = self._fast_transient_codegen_cache.get(cache_key)
-        if cached is not None:
-            return cached
-
-        lines = [
-            "def _codegen_executor(",
-            "        *,",
-            "        transient_step_count=transient_step_count,",
-            "        transient_root_index=transient_root_index,",
-            "        transient_targets=transient_targets,",
-            "        transient_dep1=transient_dep1,",
-            "        transient_dep2a=transient_dep2a,",
-            "        transient_dep2b=transient_dep2b,",
-            "        transient_dep3a=transient_dep3a,",
-            "        transient_dep3b=transient_dep3b,",
-            "        transient_dep3c=transient_dep3c,",
-            "        transient_dep4a=transient_dep4a,",
-            "        transient_dep4b=transient_dep4b,",
-            "        transient_dep4c=transient_dep4c,",
-            "        transient_dep4d=transient_dep4d,",
-            "        transient_dep5a=transient_dep5a,",
-            "        transient_dep5b=transient_dep5b,",
-            "        transient_dep5c=transient_dep5c,",
-            "        transient_dep5d=transient_dep5d,",
-            "        transient_dep5e=transient_dep5e,",
-            "        transient_dep6a=transient_dep6a,",
-            "        transient_dep6b=transient_dep6b,",
-            "        transient_dep6c=transient_dep6c,",
-            "        transient_dep6d=transient_dep6d,",
-            "        transient_dep6e=transient_dep6e,",
-            "        transient_dep6f=transient_dep6f,",
-            "        transient_dep7a=transient_dep7a,",
-            "        transient_dep7b=transient_dep7b,",
-            "        transient_dep7c=transient_dep7c,",
-            "        transient_dep7d=transient_dep7d,",
-            "        transient_dep7e=transient_dep7e,",
-            "        transient_dep7f=transient_dep7f,",
-            "        transient_dep7g=transient_dep7g,",
-            "        transient_dep8a=transient_dep8a,",
-            "        transient_dep8b=transient_dep8b,",
-            "        transient_dep8c=transient_dep8c,",
-            "        transient_dep8d=transient_dep8d,",
-            "        transient_dep8e=transient_dep8e,",
-            "        transient_dep8f=transient_dep8f,",
-            "        transient_dep8g=transient_dep8g,",
-            "        transient_dep8h=transient_dep8h,",
-            "        steps=steps,",
-            "    ):",
-            "    transient_values = [None] * transient_step_count",
-            "    __step_index = -1",
-            "    try:",
-        ]
-
-        for step_index in range(transient_step_count):
-            call_mode = transient_call_modes[step_index]
-            if call_mode == ExecutionPlanCallMode.CALL0:
-                call_expr = f"transient_targets[{step_index}]()"
-            elif call_mode == ExecutionPlanCallMode.CALL1:
-                call_expr = (
-                    f"transient_targets[{step_index}]("
-                    f"transient_values[transient_dep1[{step_index}]]"
-                    f")"
-                )
-            elif call_mode == ExecutionPlanCallMode.CALL2:
-                call_expr = (
-                    f"transient_targets[{step_index}]("
-                    f"transient_values[transient_dep2a[{step_index}]], "
-                    f"transient_values[transient_dep2b[{step_index}]]"
-                    f")"
-                )
-            elif call_mode == ExecutionPlanCallMode.CALL3:
-                call_expr = (
-                    f"transient_targets[{step_index}]("
-                    f"transient_values[transient_dep3a[{step_index}]], "
-                    f"transient_values[transient_dep3b[{step_index}]], "
-                    f"transient_values[transient_dep3c[{step_index}]]"
-                    f")"
-                )
-            elif call_mode == ExecutionPlanCallMode.CALL4:
-                call_expr = (
-                    f"transient_targets[{step_index}]("
-                    f"transient_values[transient_dep4a[{step_index}]], "
-                    f"transient_values[transient_dep4b[{step_index}]], "
-                    f"transient_values[transient_dep4c[{step_index}]], "
-                    f"transient_values[transient_dep4d[{step_index}]]"
-                    f")"
-                )
-            elif call_mode == ExecutionPlanCallMode.CALL5:
-                call_expr = (
-                    f"transient_targets[{step_index}]("
-                    f"transient_values[transient_dep5a[{step_index}]], "
-                    f"transient_values[transient_dep5b[{step_index}]], "
-                    f"transient_values[transient_dep5c[{step_index}]], "
-                    f"transient_values[transient_dep5d[{step_index}]], "
-                    f"transient_values[transient_dep5e[{step_index}]]"
-                    f")"
-                )
-            elif call_mode == ExecutionPlanCallMode.CALL6:
-                call_expr = (
-                    f"transient_targets[{step_index}]("
-                    f"transient_values[transient_dep6a[{step_index}]], "
-                    f"transient_values[transient_dep6b[{step_index}]], "
-                    f"transient_values[transient_dep6c[{step_index}]], "
-                    f"transient_values[transient_dep6d[{step_index}]], "
-                    f"transient_values[transient_dep6e[{step_index}]], "
-                    f"transient_values[transient_dep6f[{step_index}]]"
-                    f")"
-                )
-            elif call_mode == ExecutionPlanCallMode.CALL7:
-                call_expr = (
-                    f"transient_targets[{step_index}]("
-                    f"transient_values[transient_dep7a[{step_index}]], "
-                    f"transient_values[transient_dep7b[{step_index}]], "
-                    f"transient_values[transient_dep7c[{step_index}]], "
-                    f"transient_values[transient_dep7d[{step_index}]], "
-                    f"transient_values[transient_dep7e[{step_index}]], "
-                    f"transient_values[transient_dep7f[{step_index}]], "
-                    f"transient_values[transient_dep7g[{step_index}]]"
-                    f")"
-                )
-            elif call_mode == ExecutionPlanCallMode.CALL8:
-                call_expr = (
-                    f"transient_targets[{step_index}]("
-                    f"transient_values[transient_dep8a[{step_index}]], "
-                    f"transient_values[transient_dep8b[{step_index}]], "
-                    f"transient_values[transient_dep8c[{step_index}]], "
-                    f"transient_values[transient_dep8d[{step_index}]], "
-                    f"transient_values[transient_dep8e[{step_index}]], "
-                    f"transient_values[transient_dep8f[{step_index}]], "
-                    f"transient_values[transient_dep8g[{step_index}]], "
-                    f"transient_values[transient_dep8h[{step_index}]]"
-                    f")"
-                )
-            else:
-                return None
-
-            lines.append(f"        __step_index = {step_index}")
-            lines.append(f"        transient_values[{step_index}] = {call_expr}")
-
-        lines.append("    except Exception as exc:")
-        lines.append("        step_spell = steps[__step_index].spell")
-        lines.append("        raise MeldExecutionError(")
-        lines.append("            spell_id=step_spell.spell_index.current,")
-        lines.append("            spell_name=step_spell.spell_name,")
-        lines.append("            message=f\"Error invoking spell '{step_spell.spell_name}'.\",")
-        lines.append("            inner=exc,")
-        lines.append("        ) from exc")
-        lines.append("    return transient_values[transient_root_index]")
-        source = "\n".join(lines)
-        namespace = {
-            "MeldExecutionError": MeldExecutionError,
-            "transient_step_count": transient_step_count,
-            "transient_root_index": transient_root_index,
-            "transient_targets": transient_targets,
-            "transient_dep1": transient_dep1,
-            "transient_dep2a": transient_dep2a,
-            "transient_dep2b": transient_dep2b,
-            "transient_dep3a": transient_dep3a,
-            "transient_dep3b": transient_dep3b,
-            "transient_dep3c": transient_dep3c,
-            "transient_dep4a": transient_dep4a,
-            "transient_dep4b": transient_dep4b,
-            "transient_dep4c": transient_dep4c,
-            "transient_dep4d": transient_dep4d,
-            "transient_dep5a": transient_dep5a,
-            "transient_dep5b": transient_dep5b,
-            "transient_dep5c": transient_dep5c,
-            "transient_dep5d": transient_dep5d,
-            "transient_dep5e": transient_dep5e,
-            "transient_dep6a": transient_dep6a,
-            "transient_dep6b": transient_dep6b,
-            "transient_dep6c": transient_dep6c,
-            "transient_dep6d": transient_dep6d,
-            "transient_dep6e": transient_dep6e,
-            "transient_dep6f": transient_dep6f,
-            "transient_dep7a": transient_dep7a,
-            "transient_dep7b": transient_dep7b,
-            "transient_dep7c": transient_dep7c,
-            "transient_dep7d": transient_dep7d,
-            "transient_dep7e": transient_dep7e,
-            "transient_dep7f": transient_dep7f,
-            "transient_dep7g": transient_dep7g,
-            "transient_dep8a": transient_dep8a,
-            "transient_dep8b": transient_dep8b,
-            "transient_dep8c": transient_dep8c,
-            "transient_dep8d": transient_dep8d,
-            "transient_dep8e": transient_dep8e,
-            "transient_dep8f": transient_dep8f,
-            "transient_dep8g": transient_dep8g,
-            "transient_dep8h": transient_dep8h,
-            "steps": steps,
-        }
-        local_namespace: Dict[str, Any] = {}
-        try:
-            exec(
-                compile(source, "<melder_codegen_fast_transient>", "exec"),
-                namespace,
-                local_namespace,
-            )
-        except Exception:
-            return None
-
-        executor = local_namespace.get("_codegen_executor")
-        if executor is None:
-            return None
-
-        if (
-                cache_key not in self._fast_transient_codegen_cache
-                and len(self._fast_transient_codegen_cache) >= self._max_fast_transient_codegen_cache_size
-        ):
-            self._fast_transient_codegen_cache.pop(
-                next(iter(self._fast_transient_codegen_cache)),
-                None,
-            )
-        self._fast_transient_codegen_cache[cache_key] = executor
-        return executor
-
-    def execute_transient_pooled(
-            self,
-            *,
-            spell: ISpell,
-            overrides: Optional[Dict[str, Any]],
-            caller_creations: Any,
-            caller_creations_lock_held: bool,
-            conduit_id: Optional[str],
-    ) -> Any:
-        """
-        Execute a transient meld call using pooled runtime assets.
-
-        Contract:
-            - Only valid for Existence.many spells.
-            - Returns pooled assets to the cache after execution.
-        """
-        if spell is None:
-            raise ValueError("spell must not be None.")
-        if spell.existence is not Existence.many:
-            raise ValueError("Transient pooling is only valid for Existence.many.")
-
-        self._enforce_spell_invariants(spell, conduit_id)
-
-        crafter = spell._crafter
-        if crafter is None or crafter.execution_plan_phase11_no_overrides is None:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message="Missing Phase 11 execution plan for transient pooled execution.",
-            )
-        execution_plan = crafter.execution_plan_phase11_no_overrides
-        frame_required = execution_plan.fast_transient_plan is None
-
-        pooled = self._borrow_transient_assets(spell.spell_id)
-        if pooled is None:
-            context = MeldContext(
-                root_spell=spell,
-                overrides=overrides,
-                caller_creations=caller_creations,
-                caller_creations_lock_held=caller_creations_lock_held,
-            )
-            frame = ResolutionFrame(overrides=overrides) if frame_required else ResolutionFrame()
-            engine = MeldEngine(
-                context=context,
-                root_spell=spell,
-                dag=spell.dependency_graph,
-                resolution_frame=spell.resolution_frame,
-                requirements=spell.requirements,
-                frame=frame if frame_required else None,
-                blueprint=crafter.root_blueprint_phase5,
-                override_map=None,
-                spell_lookup=spell._spellbook._spell_id_pool,
-                system_states=spell._spell_system_states,
-            )
-        else:
-            engine, frame, context = pooled
-            context.reset(
-                root_spell=spell,
-                overrides=overrides,
-                caller_creations=caller_creations,
-                caller_creations_lock_held=caller_creations_lock_held,
-            )
-            frame.reset(overrides if frame_required else None)
-            engine.reset(
-                context=context,
-                root_spell=spell,
-                dag=spell.dependency_graph,
-                resolution_frame=spell.resolution_frame,
-                requirements=spell.requirements,
-                frame=frame if frame_required else None,
-                blueprint=crafter.root_blueprint_phase5,
-                override_map=None,
-                spell_lookup=spell._spellbook._spell_id_pool,
-                system_states=spell._spell_system_states,
-            )
-
-        result = None
-        try:
-            result = engine.run_execution_plan_no_overrides(execution_plan)
-        finally:
-            try:
-                engine.cleanup()
-            except Exception:
-                pass
-            try:
-                context.cleanup()
-            except Exception:
-                pass
-            try:
-                frame.cleanup()
-            except Exception:
-                pass
-            self._return_transient_assets(spell.spell_id, engine, frame, context)
-
-        if (
-                result is None
-                and (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell)
-        ):
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
                 message=(
-                    "MeldEngine returned None for a factory-style spell. "
-                    "This usually indicates a bug in the DI pipeline or the "
-                    "spell's constructor."
+                    "Phase 11 override execution plan is required for override "
+                    "specialization execution."
                 ),
             )
 
-        return result
-
-    def execute_shared_pooled(
-            self,
-            *,
-            spell: ISpell,
-            overrides: Optional[Dict[str, Any]],
-            caller_creations: Any,
-            caller_creations_lock_held: bool,
-            conduit_id: Optional[str],
-    ) -> Any:
-        """
-        Execute a shared/unique meld call using pooled runtime assets.
-
-        Contract:
-            - Only valid when overrides and mutations are absent.
-            - Uses the Phase 11 no-overrides execution plan.
-        """
-        if spell is None:
-            raise ValueError("spell must not be None.")
-
-        self._enforce_spell_invariants(spell, conduit_id)
-
-        crafter = spell._crafter
-        if crafter is None or crafter.execution_plan_phase11_no_overrides is None:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message="Missing Phase 11 execution plan for shared pooled execution.",
-            )
-        execution_plan = crafter.execution_plan_phase11_no_overrides
-
-        pooled = self._borrow_shared_assets(spell.spell_id)
-        if pooled is None:
-            context = MeldContext(
-                root_spell=spell,
-                overrides=overrides,
-                caller_creations=caller_creations,
-                caller_creations_lock_held=caller_creations_lock_held,
-            )
-            frame = ResolutionFrame(overrides=overrides)
-            engine = MeldEngine(
-                context=context,
-                root_spell=spell,
-                dag=spell.dependency_graph,
-                resolution_frame=spell.resolution_frame,
-                requirements=spell.requirements,
-                frame=frame,
-                blueprint=crafter.root_blueprint_phase5,
-                override_map=None,
-                spell_lookup=spell._spellbook._spell_id_pool,
-                system_states=spell._spell_system_states,
-            )
-        else:
-            engine, frame, context = pooled
-            context.reset(
-                root_spell=spell,
-                overrides=overrides,
-                caller_creations=caller_creations,
-                caller_creations_lock_held=caller_creations_lock_held,
-            )
-            frame.reset(overrides)
-            engine.reset(
-                context=context,
-                root_spell=spell,
-                dag=spell.dependency_graph,
-                resolution_frame=spell.resolution_frame,
-                requirements=spell.requirements,
-                frame=frame,
-                blueprint=crafter.root_blueprint_phase5,
-                override_map=None,
-                spell_lookup=spell._spellbook._spell_id_pool,
-                system_states=spell._spell_system_states,
-            )
-
-        result = None
-        try:
-            result = engine.run_execution_plan_no_overrides(execution_plan)
-        finally:
-            try:
-                engine.cleanup()
-            except Exception:
-                pass
-            try:
-                context.cleanup()
-            except Exception:
-                pass
-            try:
-                frame.cleanup()
-            except Exception:
-                pass
-            self._return_shared_assets(spell.spell_id, engine, frame, context)
-
-        if (
-                result is None
-                and (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell)
-        ):
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message=(
-                    "MeldEngine returned None for a factory-style spell. "
-                    "This usually indicates a bug in the DI pipeline or the "
-                    "spell's constructor."
-                ),
-            )
-
-        return result
-
-    def execute(self, context: "MeldContext") -> Any:
-        """
-        Execute a single meld call described by `context`.
-
-        This method is the **primary entrypoint** that `Meld` should
-        call when it needs to construct a new root instance.
-
-        Flow:
-            1. Validate the runtime and context.
-            2. Perform basic spell invariants:
-                 - not broken
-                 - validated
-            3. Snapshot build-time artifacts from the spell:
-                 - dependency graph
-                 - requirements
-                 - resolution frame (if any)
-            4. Create a `ResolutionFrame` initialized with the normalized
-               overrides from the context when overrides or mutations apply.
-            5. Instantiate `MeldEngine` and execute the Phase 11 execution plan.
-               When no overrides or mutations are present, uses the no-overrides
-               execution path and skips override preprocessing.
-            6. Clean up engine and frame.
-            7. Sanity-check the result for factory-style spells.
-
-        Returns:
-            The constructed root instance.
-
-        Raises:
-            MeldExecutionError:
-                If the spell is broken or has not been validated, or if
-                the engine fails with a DI-related error, or if a
-                factory-style spell yields no instance.
-            ValueError:
-                If the context is None or missing a root spell.
-        """
-        spell: ISpell = context.root_spell
-        self._enforce_spell_invariants(spell, context.conduit_id)
-
-        # Snapshot build-time artifacts. These may be None depending on
-        # how far the SpellCrafter pipeline has run; the engine can decide
-        # how much it needs for the current MVP.
-        dag = spell.dependency_graph
-        requirements = spell.requirements
-        resolution_frame = spell.resolution_frame
-        crafter = spell._crafter
-        root_blueprint = crafter.root_blueprint_phase5
-        override_patch_map = crafter.override_patch_map_phase10
-        mutation_patch_map = crafter.mutation_patch_map_phase10
-        execution_plan_no_overrides = crafter.execution_plan_phase11_no_overrides
-        execution_plan_overrides = crafter.execution_plan_phase11_overrides
-        execution_plan_overrides_with_mutations = crafter.execution_plan_phase11_overrides_with_mutations
-        mutation_override_payload = spell.mutation_override
         override_payload = context.overrides
-        has_override_payload = bool(override_payload)
-        has_mutation_overrides = bool(mutation_override_payload)
-        has_overrides_or_mutations = has_override_payload or has_mutation_overrides
-
-
-        # Apply mutation overrides (graph-level) and spell overrides (value-level)
-        # if we have a deep blueprint. Fallback to simple overrides otherwise.
-        execution_blueprint = root_blueprint
-        override_map: Optional[Dict[SocketRef, Any]] = None
-        if root_blueprint is not None and has_overrides_or_mutations:
-            try:
-                if has_mutation_overrides:
-                    execution_blueprint = apply_phase10_mutation_overrides(
-                        blueprint=root_blueprint,
-                        mutation_patch_map=mutation_patch_map,
-                        mutation_override=mutation_override_payload,
-                    )
-
-                if has_override_payload:
-                    override_map = apply_phase10_override_payload(
-                        override_patch_map=override_patch_map,
-                        override_payload=override_payload,
-                    )
-            except Exception as exc:
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message=f"Failed to apply overrides for root '{spell.spell_name}': {exc}",
-                    inner=exc,
-                ) from exc
-
-        if has_overrides_or_mutations:
-            execution_plan_to_run, _ = self._select_execution_plan_phase11(
-                execution_plan_no_overrides=execution_plan_no_overrides,
-                execution_plan_overrides=execution_plan_overrides,
-                execution_plan_overrides_with_mutations=execution_plan_overrides_with_mutations,
-                override_payload=override_payload,
-                override_map=override_map,
-                mutation_override_payload=mutation_override_payload,
-            )
-        else:
-            execution_plan_to_run = execution_plan_no_overrides
-
-        # Per-execution ResolutionFrame seeded with per-call overrides.
-        frame_overrides: Optional[Dict[str, Any]] = None
-        if override_payload or override_map:
-            frame_overrides = self._build_frame_overrides(
-                context_overrides=override_payload,
-                override_map=override_map,
-                root_spell_id=spell.spell_index.current,
-                path_registry=execution_blueprint.path_registry if execution_blueprint else None,
+        if override_payload is None:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Override execution route requires context overrides.",
             )
 
-        frame: Optional[ResolutionFrame] = None
-        if has_overrides_or_mutations:
-            frame = ResolutionFrame(overrides=frame_overrides)
-        else:
-            if (
-                    execution_plan_to_run is None
-                    or execution_plan_to_run.fast_plan is None
-            ):
-                frame = ResolutionFrame(overrides=frame_overrides)
-        engine = MeldEngine(
-            context=context,
-            root_spell=spell,
-            dag=dag,
-            resolution_frame=resolution_frame,
-            requirements=requirements,
-            frame=frame,
-            blueprint=execution_blueprint,
+        target_payload, root_positional_override = self._split_override_payload(
+            spell=spell,
+            override_payload=override_payload,
+        )
+        try:
+            override_map = apply_phase10_override_payload(
+                override_patch_map=override_patch_map,
+                override_payload=target_payload,
+            )
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Failed to apply overrides through the Phase 10 "
+                    "override patch map."
+                ),
+                inner=exc,
+            ) from exc
+
+        override_targets_by_spell_id = self._collect_override_targets(
             override_map=override_map,
-            spell_lookup=spell._spellbook._spell_id_pool,
-            system_states=spell._spell_system_states,
+        )
+        shape_key = self._build_override_shape_key(
+            execution_plan=execution_plan,
+            override_targets_by_spell_id=override_targets_by_spell_id,
+            root_positional_override=root_positional_override,
+        )
+        root_blueprint = crafter.root_blueprint_phase5
+        path_registry = root_blueprint.path_registry if root_blueprint is not None else None
+        any_overrides_present = bool(override_payload)
+        executor = self._get_or_compile_override_executor(
+            spell=spell,
+            shape_key=shape_key,
+            execution_plan=execution_plan,
+            override_targets_by_spell_id=override_targets_by_spell_id,
+            any_overrides_present=any_overrides_present,
+            path_registry=path_registry,
         )
 
-        result = None
         try:
-            if has_overrides_or_mutations:
-                override_targets_by_spell_id = (
-                    self._collect_override_targets(override_map)
-                    if override_map
-                    else {}
-                )
-                any_overrides_present = self._detect_any_overrides(
-                    override_payload=override_payload,
-                    override_map=override_map,
-                    contract_overrides_by_spell_id={},
-                )
-                result = engine.run_execution_plan(
-                    execution_plan_to_run,
-                    override_targets_by_spell_id=override_targets_by_spell_id,
-                    any_overrides_present=any_overrides_present,
-                )
+            result = executor(
+                context,
+                override_map,
+                root_positional_override,
+            )
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Phase 12 override specialization executor failed.",
+                inner=exc,
+            ) from exc
+
+        self._raise_on_missing_factory_result(
+            spell=spell,
+            result=result,
+            message=(
+                "Phase 12 override specialization executor returned None for a "
+                "factory-style spell."
+            ),
+        )
+        return result
+
+    @staticmethod
+    def _split_override_payload(
+            *,
+            spell: ISpell,
+            override_payload: Dict[str, Any],
+    ) -> Tuple[Dict[str, Any], Optional[Sequence[Any]]]:
+        """
+        Split root positional overrides from TargetSpec override payloads.
+
+        Contract:
+            - Removes `__args__` from the payload passed into patch-map apply.
+            - Validates that `__args__` is list/tuple when provided.
+        """
+        raw_args = override_payload.get("__args__")
+        if raw_args is None:
+            return override_payload, None
+        if not isinstance(raw_args, (list, tuple)):
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="__args__ override must be a list or tuple.",
+            )
+        normalized_payload: Dict[str, Any] = {}
+        for key, value in override_payload.items():
+            if key == "__args__":
+                continue
+            normalized_payload[key] = value
+        return normalized_payload, tuple(raw_args)
+
+    @staticmethod
+    def _collect_override_targets(
+            *,
+            override_map: Dict[Any, Any],
+    ) -> Dict[str, Tuple[Any, ...]]:
+        """
+        Group override socket refs by spell id with deterministic ordering.
+
+        Contract:
+            - Output ordering is deterministic for stable shape keying.
+            - Socket refs are grouped by `socket_ref.node_id`.
+        """
+        by_spell_id: Dict[str, list[Any]] = {}
+        for socket_ref in override_map.keys():
+            spell_id = socket_ref.node_id
+            bucket = by_spell_id.get(spell_id)
+            if bucket is None:
+                by_spell_id[spell_id] = [socket_ref]
             else:
-                result = engine.run_execution_plan_no_overrides(
-                    execution_plan_to_run,
+                bucket.append(socket_ref)
+
+        ordered: Dict[str, Tuple[Any, ...]] = {}
+        for spell_id in sorted(by_spell_id.keys()):
+            refs = by_spell_id[spell_id]
+            refs.sort(
+                key=lambda ref: (
+                    ref.node_id,
+                    ref.param_path_id,
+                    ref.param_name,
+                    ref.socket_kind.value,
+                ),
+            )
+            ordered[spell_id] = tuple(refs)
+        return ordered
+
+    @staticmethod
+    def _build_override_shape_key(
+            *,
+            execution_plan: Any,
+            override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+            root_positional_override: Optional[Sequence[Any]],
+    ) -> Tuple[Any, ...]:
+        """
+        Build a stable override-shape key for specialization cache lookup.
+
+        Contract:
+            - Includes execution-plan identity to avoid stale-plan collisions.
+            - Includes deterministic socket-target tuples.
+            - Includes root positional-argument arity when present.
+        """
+        socket_shape: list[Tuple[Any, ...]] = []
+        for spell_id in sorted(override_targets_by_spell_id.keys()):
+            for socket_ref in override_targets_by_spell_id[spell_id]:
+                socket_shape.append(
+                    (
+                        socket_ref.node_id,
+                        socket_ref.param_path_id,
+                        socket_ref.param_name,
+                        socket_ref.socket_kind.value,
+                    )
                 )
-        finally:
-            # Always tear down engine + frame to avoid leaks.
-            try:
-                engine.cleanup()
-            except Exception:
-                pass
+        positional_arity = -1
+        if root_positional_override is not None:
+            positional_arity = len(root_positional_override)
+        return (
+            id(execution_plan),
+            tuple(socket_shape),
+            positional_arity,
+        )
 
-            if frame is not None:
-                try:
-                    frame.cleanup()
-                except Exception:
-                    pass
+    def _get_or_compile_override_executor(
+            self,
+            *,
+            spell: ISpell,
+            shape_key: Tuple[Any, ...],
+            execution_plan: Any,
+            override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+            any_overrides_present: bool,
+            path_registry: Optional[Any],
+    ) -> Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]:
+        """
+        Resolve a cached override specialization executor or compile on miss.
 
-        # ------------------------------------------------------------------
-        # Sanity check: factory-style spells must produce an instance.
-        #
-        # For EXISTING_CREATION spells, reuse is handled earlier in Meld
-        # (via _get_existing_creation). For class/method/lambda spells,
-        # a `None` result usually indicates a bug in the engine or the
-        # callable, so we surface it as a deterministic MeldExecutionError.
-        # ------------------------------------------------------------------
+        Contract:
+            - Cache entries are bounded by `_max_override_specializations_per_spell`.
+            - Eviction order is deterministic FIFO per spell id.
+        """
+        spell_id = spell.spell_id
+        cache = self._override_specialization_cache.get(spell_id)
+        order = self._override_specialization_order.get(spell_id)
+        if cache is None:
+            cache = {}
+            order = deque()
+            self._override_specialization_cache[spell_id] = cache
+            self._override_specialization_order[spell_id] = order
+
+        cached = cache.get(shape_key)
+        if cached is not None:
+            return cached
+
+        compiled = compile_phase12_overrides_executor(
+            execution_plan=execution_plan,
+            override_targets_by_spell_id=override_targets_by_spell_id,
+            any_overrides_present=any_overrides_present,
+            path_registry=path_registry,
+        )
+        if shape_key not in cache:
+            if len(order) >= self._max_override_specializations_per_spell:
+                evicted = order.popleft()
+                cache.pop(evicted, None)
+            cache[shape_key] = compiled
+            order.append(shape_key)
+        return compiled
+
+    @staticmethod
+    def _raise_on_missing_factory_result(
+            *,
+            spell: ISpell,
+            result: Any,
+            message: str,
+    ) -> None:
+        """
+        Raise when factory-style spells produce no runtime result.
+
+        Contract:
+            - Applies only to class/method/lambda spells.
+            - Returns silently for non-factory spell types.
+        """
         if (
                 result is None
                 and (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell)
@@ -1782,275 +517,76 @@ class MeldRuntime:
             raise MeldExecutionError(
                 spell_id=spell.spell_index.current,
                 spell_name=spell.spell_name,
-                message=(
-                    "MeldEngine returned None for a factory-style spell. "
-                    "This usually indicates a bug in the DI pipeline or the "
-                    "spell's constructor."
-                ),
+                message=message,
             )
 
-        return result
-
-    def _borrow_transient_assets(
-            self,
-            spell_id: str,
-    ) -> Optional[tuple[MeldEngine, ResolutionFrame, MeldContext]]:
-        """
-        Borrow a pooled transient asset tuple for a given spell id.
-        """
-        if not spell_id:
-            return None
-        pool = self._transient_asset_pool.get(spell_id)
-        if not pool:
-            return None
-        try:
-            return pool.pop()
-        except IndexError:
-            return None
-
-    def _borrow_shared_assets(
-            self,
-            spell_id: str,
-    ) -> Optional[tuple[MeldEngine, ResolutionFrame, MeldContext]]:
-        """
-        Borrow a pooled shared asset tuple for a given spell id.
-        """
-        if not spell_id:
-            return None
-        pool = self._shared_asset_pool.get(spell_id)
-        if not pool:
-            return None
-        try:
-            return pool.pop()
-        except IndexError:
-            return None
-
-    def _return_transient_assets(
-            self,
-            spell_id: str,
-            engine: MeldEngine,
-            frame: ResolutionFrame,
-            context: MeldContext,
-    ) -> None:
-        """
-        Return a pooled transient asset tuple for a given spell id.
-        """
-        if not spell_id:
-            return
-
-        if (
-            spell_id not in self._transient_asset_pool
-            and len(self._transient_asset_pool) >= self._max_transient_asset_pool_size
-        ):
-            self._transient_asset_pool.pop(next(iter(self._transient_asset_pool)), None)
-
-        pool = self._transient_asset_pool.get(spell_id)
-        if pool is None:
-            pool = deque()
-            self._transient_asset_pool[spell_id] = pool
-        pool.append((engine, frame, context))
-
-    def _return_shared_assets(
-            self,
-            spell_id: str,
-            engine: MeldEngine,
-            frame: ResolutionFrame,
-            context: MeldContext,
-    ) -> None:
-        """
-        Return a pooled shared asset tuple for a given spell id.
-        """
-        if not spell_id:
-            return
-
-        if (
-                spell_id not in self._shared_asset_pool
-                and len(self._shared_asset_pool) >= self._max_shared_asset_pool_size
-        ):
-            self._shared_asset_pool.pop(next(iter(self._shared_asset_pool)), None)
-
-        pool = self._shared_asset_pool.get(spell_id)
-        if pool is None:
-            pool = deque()
-            self._shared_asset_pool[spell_id] = pool
-        pool.append((engine, frame, context))
-
-    def cleanup(self) -> None:
-        """
-        Clear pooled transient assets held by this runtime.
-        """
-        self._transient_asset_pool.clear()
-        self._shared_asset_pool.clear()
-        self._fast_transient_codegen_cache.clear()
-
-    # ------------------------------------------------------------------ #
-    # Internal helpers                                                   #
-    # ------------------------------------------------------------------ #
-    def _select_execution_plan_phase11(
-            self,
-            *,
-            execution_plan_no_overrides: Optional[ExecutionPlan],
-            execution_plan_overrides: Optional[ExecutionPlan],
-            execution_plan_overrides_with_mutations: Optional[ExecutionPlan],
-            override_payload: Optional[Dict[str, Any]],
-            override_map: Optional[Dict[SocketRef, Any]],
-            mutation_override_payload: Optional[Dict[str, Any]],
-    ) -> tuple[Optional[ExecutionPlan], Optional[str]]:
-        """
-        Select the Phase 11 execution plan variant for the current meld call.
-        """
-        has_override_payload = bool(override_payload) or bool(override_map)
-        has_mutation_overrides = bool(mutation_override_payload)
-
-        if has_mutation_overrides:
-            return (
-                execution_plan_overrides_with_mutations,
-                ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
-            )
-        if has_override_payload:
-            return (
-                execution_plan_overrides,
-                ExecutionPlanVariant.OVERRIDES,
-            )
-        return (
-            execution_plan_no_overrides,
-            ExecutionPlanVariant.NO_OVERRIDES_FAST,
-        )
-
+    @staticmethod
     def _enforce_spell_invariants(
-            self,
             spell: ISpell,
             conduit_id: Optional[str],
     ) -> None:
         """
-        Validate spell invariants and change-control gates before execution.
+        Validate spell validity and change-control gating before execution.
+
+        Contract:
+            - Blocks invalid/gated/disabled lineages.
+            - Blocks dirty roots under ChangeControlManager.
+            - Blocks broken or unvalidated spells.
         """
-        if spell._spellbook._spellbook_validation_required:
-            if spell.system_state is not None:
-                validity = spell.system_state.validity
-                if validity in (
-                        SpellValidity.invalid,
-                        SpellValidity.gated,
-                        SpellValidity.disabled,
-                ):
-                    raise MeldExecutionError(
-                        spell_id=spell.spell_index.current,
-                        spell_name=spell.spell_name,
-                        message=(
-                            "Cannot execute meld runtime for a spell whose lineage is "
-                            f"{validity.name}."
-                        ),
-                    )
+        if not spell._spellbook._spellbook_validation_required:
+            return
 
-            # Change-control dirty-root gating
-            try:
-                spellbook = spell._spellbook
-                aether = spellbook._aether
-                manager = aether._get_change_control_manager(spell.aetheric_frame)
-                if manager is not None and conduit_id and manager.is_root_dirty(conduit_id, spell.spell_index.current):
-                    raise MeldExecutionError(
-                        spell_id=spell.spell_index.current,
-                        spell_name=spell.spell_name,
-                        message=(
-                            "Cannot execute meld runtime while the root is marked dirty. "
-                            "Revalidation is required."
-                        ),
-                    )
-            except MeldExecutionError:
-                raise
-            except Exception:
-                # Change-control is optional; if unavailable we proceed.
-                pass
-
-            # --- Invariants from the SpellCrafter / validation pipeline ----
-            if spell.is_broken:
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message="Cannot execute meld runtime for a broken spell.",
-                )
-
-            if not spell.validated:
+        state = spell.system_state
+        if state is not None:
+            validity = state.validity
+            if validity in (
+                    SpellValidity.invalid,
+                    SpellValidity.gated,
+                    SpellValidity.disabled,
+            ):
                 raise MeldExecutionError(
                     spell_id=spell.spell_index.current,
                     spell_name=spell.spell_name,
                     message=(
-                        "Spell has not been validated. Run the SpellCrafter "
-                        "phases before attempting to meld this spell."
+                        "Cannot execute meld runtime for a spell whose lineage is "
+                        f"{validity.name}."
                     ),
                 )
 
-    @staticmethod
-    def _collect_override_targets(
-            override_map: Optional[Dict[SocketRef, Any]],
-    ) -> Dict[str, list[SocketRef]]:
-        """
-        Group override targets by spell id for fast-path validation.
+        try:
+            spellbook = spell._spellbook
+            aether = spellbook._aether
+            manager = aether._get_change_control_manager(spell.aetheric_frame)
+            if manager is not None and conduit_id and manager.is_root_dirty(
+                    conduit_id,
+                    spell.spell_index.current,
+            ):
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Cannot execute meld runtime while the root is marked dirty. "
+                        "Revalidation is required."
+                    ),
+                )
+        except MeldExecutionError:
+            raise
+        except Exception:
+            pass
 
-        Contract:
-            - Keys are spell version ids.
-            - Values are the SocketRef entries targeted by overrides.
-        """
-        if not override_map:
-            return {}
-        targets: Dict[str, list[SocketRef]] = {}
-        for socket_ref in override_map:
-            targets.setdefault(socket_ref.node_id, []).append(socket_ref)
-        return targets
+        if spell.is_broken:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Cannot execute meld runtime for a broken spell.",
+            )
 
-    @staticmethod
-    def _detect_any_overrides(
-            *,
-            override_payload: Optional[Dict[str, Any]],
-            override_map: Optional[Dict[SocketRef, Any]],
-            contract_overrides_by_spell_id: Dict[str, Any],
-    ) -> bool:
-        """
-        Determine whether any overrides apply to the current meld call.
-
-        Contract:
-            - Returns True when socket overrides, root overrides, or contract overrides are present.
-            - Treats empty dictionaries as no overrides.
-        """
-        if override_map:
-            return True
-        if contract_overrides_by_spell_id:
-            return True
-        return bool(override_payload)
-
-    def _build_frame_overrides(
-            self,
-            *,
-            context_overrides,
-            override_map,
-            root_spell_id: str,
-            path_registry: Optional[PathRegistry],
-    ):
-        """
-        Merge plain context overrides with socket-level override_map.
-
-        For the current MVP engine (single-node), we fold any SocketRef
-        that targets the root node and has a single-segment path into
-        keyword overrides.
-        """
-        merged = {}
-        # Preserve positional args if supplied.
-        if isinstance(context_overrides, dict):
-            if "__args__" in context_overrides:
-                merged["__args__"] = list(context_overrides["__args__"])
-            # Also keep any direct kw overrides.
-            for k, v in context_overrides.items():
-                if k == "__args__":
-                    continue
-                merged[k] = v
-
-        if override_map:
-            if path_registry is None:
-                raise RuntimeError("PathRegistry is required to interpret override paths.")
-            for socket_ref, value in override_map.items():
-                if (
-                        socket_ref.node_id == root_spell_id
-                        and path_registry.depth(socket_ref.param_path_id) == 1
-                ):
-                    merged[socket_ref.param_name] = value
-        return merged
+        if not spell.validated:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Spell has not been validated. Run the SpellCrafter phases "
+                    "before attempting to meld this spell."
+                ),
+            )

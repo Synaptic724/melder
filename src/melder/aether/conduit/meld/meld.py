@@ -937,7 +937,7 @@ class Meld(Cleanable, IMeld):
             - The owner Conduit's creations manager (from the spell).
             - Any normalized per-call overrides (constructor/factory args).
 
-        This object is passed into the `MeldRuntime` / `MeldEngine` stack and
+        This object is passed into the `MeldRuntime` Phase 12 stack and
         returned to the context pool after execution completes.
 
         Args:
@@ -1697,8 +1697,8 @@ class Meld(Cleanable, IMeld):
         Behaviour:
 
             * Class / method / lambda spells:
-                  Delegate to the DAG-based `MeldRuntime` / `MeldEngine` stack
-                  using a per-call `MeldContext` seeded with `overrides`.
+                  Delegate to the Phase 12 codegen runtime using a per-call
+                  `MeldContext` seeded with `overrides`.
 
             * Anything else:
                   Raises a `RuntimeError` indicating an unsupported SpellType.
@@ -1734,34 +1734,6 @@ class Meld(Cleanable, IMeld):
                 conduit_id=self._resolution_conduit_id,
             )
 
-        if (
-                spell.existence is Existence.many
-                and overrides is None
-                and not spell.has_mutation_override
-        ):
-            return self._runtime.execute_transient_pooled(
-                spell=spell,
-                overrides=None,
-                caller_creations=self._creations,
-                caller_creations_lock_held=caller_creations_lock_held,
-                conduit_id=self._resolution_conduit_id,
-            )
-
-        if (
-                spell.existence is not Existence.many
-                and overrides is None
-                and not spell.has_mutation_override
-                and spell.execution_plan_preferred_route
-                and spell.execution_plan_preferred_route.startswith("FAST_TRANSIENT")
-        ):
-            return self._runtime.execute_shared_pooled(
-                spell=spell,
-                overrides=None,
-                caller_creations=self._creations,
-                caller_creations_lock_held=caller_creations_lock_held,
-                conduit_id=self._resolution_conduit_id,
-            )
-
         context = self._create_meld_context(
             spell,
             overrides,
@@ -1791,6 +1763,6 @@ class Meld(Cleanable, IMeld):
             return False
 
         # A fast transient plan only exists when *all* steps are transient, callable,
-        # registration-free, and CALLN-free. When it exists, it's safe and should be
-        # preferred over the heavier engine path regardless of size/depth.
+        # registration-free, and CALLN-free. When it exists, it is safe to route
+        # through the direct Phase 12 fast transient executor.
         return True

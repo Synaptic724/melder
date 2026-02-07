@@ -353,8 +353,8 @@ class OccurrencePlanBuilder(object):
     """
     Internal
 
-    Phase 8 compiler that mirrors the runtime occurrence planning logic from
-    MeldEngine and produces an OccurrencePlan artifact.
+    Phase 8 compiler that mirrors runtime occurrence planning logic and
+    produces an OccurrencePlan artifact.
 
     Purpose:
         Convert a RootResolutionBlueprint and spell metadata into a reusable
@@ -414,7 +414,7 @@ class OccurrencePlanBuilder(object):
         Build and return the OccurrencePlan for the configured root blueprint.
 
         Contract:
-            - Mirrors MeldEngine occurrence planning behavior.
+            - Mirrors runtime occurrence planning behavior.
             - Compiles SpellContract override payloads for resolved dependencies.
             - Raises MeldExecutionError when dependency spells cannot be resolved
               in automatic mode.

@@ -1,9 +1,10 @@
 import threading
 import time
+import hashlib
 import inspect
 import typing
 import types
-from typing import Any, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin
+from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -64,6 +65,9 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlanBuilder,
     ExecutionPlanCallMode,
     ExecutionPlanVariant,
+)
+from melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor import (
+    compile_phase12_no_overrides_executor,
 )
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.system_diagnostic import (
@@ -189,6 +193,9 @@ class SpellCrafter(Cleanable):
         "_execution_plan_phase11",
         "_execution_plan_phase11_no_overrides",
         "_execution_plan_phase11_overrides",
+        "_phase12_no_overrides_executor",
+        "_phase12_no_overrides_executor_signature",
+        "_codegen_ir",
         "_spell_system_index_phase5",
         "_is_broken",
         "_entire_dag_blueprint_phase5",
@@ -232,6 +239,9 @@ class SpellCrafter(Cleanable):
         self._execution_plan_phase11: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_overrides: Optional[ExecutionPlan] = None
+        self._phase12_no_overrides_executor: Optional[Callable[[Any], Any]] = None
+        self._phase12_no_overrides_executor_signature: Optional[str] = None
+        self._codegen_ir: Optional[Dict[str, Any]] = None
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._entire_dag_blueprint_phase5 : Optional[Dict[str, RootResolutionBlueprint]] = None
         self._is_broken: bool = False
@@ -329,6 +339,9 @@ class SpellCrafter(Cleanable):
             self._execution_plan_phase11 = None
             self._execution_plan_phase11_no_overrides = None
             self._execution_plan_phase11_overrides = None
+            self._phase12_no_overrides_executor = None
+            self._phase12_no_overrides_executor_signature = None
+            self._codegen_ir = None
             self._spell_system_index_phase5 = None
             self._entire_dag_blueprint_phase5 = None
             self._validated_phase4 = False
@@ -489,6 +502,44 @@ class SpellCrafter(Cleanable):
         return self._execution_plan_phase11
 
     @property
+    def phase12_no_overrides_executor(self) -> Optional[Callable[[Any], Any]]:
+        """
+        Phase 12 compiled no-overrides executor for this spell.
+
+        Purpose:
+            Expose the spell-scoped compiled executor built from Phase 11
+            semantics so meld runtime can dispatch directly without rebuilding
+            transient codegen structures.
+        Contract:
+            - Returns None when the spell has no transient-only fast path.
+            - Callable returns the constructed root instance for this spell.
+        Returns:
+            Optional[Callable[[Any], Any]]:
+                Compiled no-overrides executor that accepts an optional
+                meld context, or None when unavailable.
+        """
+        self.check_cleaned()
+        return self._phase12_no_overrides_executor
+
+    @property
+    def codegen_ir(self) -> Optional[Dict[str, Any]]:
+        """
+        Spell-scoped Codegen IR harvested from phases 2-11.
+
+        Purpose:
+            Provide a single spell-local payload that Phase 12 compilation can
+            consume without re-deriving phase semantics at runtime.
+        Contract:
+            - Returns None until at least one phase export has populated IR.
+            - Returned mapping is owned by this crafter and treated as read-only.
+        Returns:
+            Optional[Dict[str, Any]]:
+                Current IR payload for this spell, or None.
+        """
+        self.check_cleaned()
+        return self._codegen_ir
+
+    @property
     def spell_system_index_phase5(self) -> Optional[SpellSystemIndex]:
         """Frame-level index built during Phase 5."""
         self.check_cleaned()
@@ -589,6 +640,7 @@ class SpellCrafter(Cleanable):
         self._symbolic_graph = None
         self._validation_result_phase4 = None
         self._validation_result_phase6 = None
+        self._capture_phase2_5_codegen_ir()
 
     def set_root_blueprint_phase5(self, blueprint: RootResolutionBlueprint) -> None:
         """
@@ -598,6 +650,8 @@ class SpellCrafter(Cleanable):
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
         self._root_blueprint_phase5 = blueprint
+        self._capture_phase2_5_codegen_ir()
+        self._reset_phase8_11_codegen_ir()
 
     def set_spell_system_index_phase5(self, index: SpellSystemIndex) -> None:
         """Set the Phase-5 spell system index for this spell."""
@@ -605,6 +659,8 @@ class SpellCrafter(Cleanable):
         if index is None:
             raise ValueError("index must not be None.")
         self._spell_system_index_phase5 = index
+        self._capture_phase2_5_codegen_ir()
+        self._reset_phase8_11_codegen_ir()
 
     def clear_phase5_artifacts(self) -> None:
         """
@@ -660,6 +716,434 @@ class SpellCrafter(Cleanable):
                 pass
         self._execution_plan_phase11_overrides = None
         self._spell_system_index_phase5 = None
+        self._reset_phase8_11_codegen_ir()
+        self._capture_phase2_5_codegen_ir()
+
+    def _ensure_codegen_ir(self) -> Dict[str, Any]:
+        """
+        Ensure spell-scoped Codegen IR storage is initialized.
+
+        Purpose:
+            Centralize IR allocation so phase exporters can write into one
+            stable payload owned by this crafter.
+        Contract:
+            - Initializes exactly once per crafter lifecycle.
+            - Returns the owned mapping by reference.
+        Returns:
+            Dict[str, Any]:
+                Mutable IR mapping for this spell.
+        """
+        if self._codegen_ir is None:
+            self._codegen_ir = {
+                "spell_id": self._spell.spell_index.current,
+                "lineage_id": self._spell.spell_index.id,
+                "phase2_5": {},
+                "phase8_11": {},
+                "signatures": {},
+            }
+        return self._codegen_ir
+
+    @staticmethod
+    def _hash_codegen_signature(*parts: Any) -> str:
+        """
+        Build a deterministic signature from primitive IR parts.
+
+        Purpose:
+            Produce stable fingerprints for phase-exported IR slices so Phase 12
+            compilation can skip unchanged payloads.
+        Contract:
+            - Signature is deterministic for equal ordered inputs.
+            - Does not depend on process-randomized object identity.
+        Args:
+            *parts:
+                Ordered primitive payload parts.
+        Returns:
+            str:
+                SHA256 hex digest for the supplied parts.
+        """
+        digest = hashlib.sha256()
+        for part in parts:
+            digest.update(repr(part).encode("utf-8"))
+            digest.update(b"|")
+        return digest.hexdigest()
+
+    def _capture_phase2_5_codegen_ir(self) -> None:
+        """
+        Export phases 2-5 artifacts into the spell-scoped Codegen IR payload.
+
+        Purpose:
+            Persist normalized structural metadata used by downstream Phase 12
+            planning without re-reading mutable phase objects at runtime.
+        Contract:
+            - Safe to call repeatedly; latest phase artifacts overwrite prior IR.
+            - Captures deterministic, order-stable tuples for signatures.
+            - Updates `signatures.phase2_5` on each export.
+        Returns:
+            None.
+        """
+        symbolic_dependencies: Tuple[Tuple[Any, ...], ...] = ()
+        if self._symbolic_graph is not None:
+            symbolic_dependencies = tuple(
+                (
+                    dependency.param_name,
+                    dependency.position,
+                    dependency.di_shape.name,
+                    dependency.is_optional,
+                    dependency.is_collection,
+                    dependency.contract_key,
+                    dependency.contract_late_binding,
+                )
+                for dependency in self._symbolic_graph.dependencies
+            )
+
+        local_ordered_node_ids: Tuple[str, ...] = ()
+        if self._resolution_frame is not None:
+            local_ordered_node_ids = tuple(self._resolution_frame.ordered_node_ids)
+
+        dependency_ids: Tuple[str, ...] = ()
+        if self._spell.dependencies:
+            dependency_ids = tuple(self._spell.dependencies)
+
+        phase4_issue_codes: Tuple[str, ...] = ()
+        if self._validation_result_phase4 is not None:
+            phase4_issue_codes = tuple(
+                issue.code
+                for issue in self._validation_result_phase4.issues
+            )
+
+        phase5_root_spell_id: Optional[str] = None
+        phase5_root_ordered_node_ids: Tuple[str, ...] = ()
+        phase5_socket_ref_count = 0
+        if self._root_blueprint_phase5 is not None:
+            phase5_root_spell_id = self._root_blueprint_phase5.root_spell_id
+            phase5_root_ordered_node_ids = tuple(self._root_blueprint_phase5.ordered_node_ids)
+            phase5_socket_ref_count = len(self._root_blueprint_phase5.socket_refs)
+
+        phase5_index_spell_ids: Tuple[str, ...] = ()
+        if self._spell_system_index_phase5 is not None:
+            phase5_index_spell_ids = tuple(sorted(self._spell_system_index_phase5.nodes.keys()))
+
+        phase2_5_signature = self._hash_codegen_signature(
+            symbolic_dependencies,
+            local_ordered_node_ids,
+            dependency_ids,
+            self._validated_phase4,
+            self._is_broken,
+            phase4_issue_codes,
+            phase5_root_spell_id,
+            phase5_root_ordered_node_ids,
+            phase5_socket_ref_count,
+            phase5_index_spell_ids,
+        )
+
+        phase2_5_payload = {
+            "symbolic_dependencies": symbolic_dependencies,
+            "local_ordered_node_ids": local_ordered_node_ids,
+            "dependency_ids": dependency_ids,
+            "phase4_validated": self._validated_phase4,
+            "phase4_is_broken": self._is_broken,
+            "phase4_issue_codes": phase4_issue_codes,
+            "phase5_root_spell_id": phase5_root_spell_id,
+            "phase5_root_ordered_node_ids": phase5_root_ordered_node_ids,
+            "phase5_socket_ref_count": phase5_socket_ref_count,
+            "phase5_index_spell_ids": phase5_index_spell_ids,
+            "signature": phase2_5_signature,
+        }
+
+        ir_payload = self._ensure_codegen_ir()
+        ir_payload["phase2_5"] = phase2_5_payload
+        ir_payload["signatures"]["phase2_5"] = phase2_5_signature
+
+    def _build_fast_transient_signature(
+            self,
+            transient_plan: Optional[Tuple[Any, ...]],
+    ) -> Optional[str]:
+        """
+        Build a deterministic signature for a Phase 11 fast transient plan.
+
+        Purpose:
+            Fingerprint transient plan structure without including call-target
+            object identities, which are process-local and nondeterministic.
+        Contract:
+            - Returns None when no transient plan exists.
+            - Signature includes step counts, call modes, and dependency index
+              arrays used by no-overrides execution.
+        Args:
+            transient_plan:
+                Phase 11 transient tuple payload.
+        Returns:
+            Optional[str]:
+                Deterministic transient signature, or None.
+        """
+        if transient_plan is None:
+            return None
+        return self._hash_codegen_signature(
+            transient_plan[0],
+            transient_plan[1],
+            tuple(transient_plan[3]),
+            tuple(transient_plan[4]),
+            tuple(transient_plan[5]),
+            tuple(transient_plan[6]),
+            tuple(transient_plan[7]),
+            tuple(transient_plan[8]),
+            tuple(transient_plan[9]),
+            tuple(transient_plan[10]),
+            tuple(transient_plan[11]),
+            tuple(transient_plan[12]),
+            tuple(transient_plan[13]),
+            tuple(transient_plan[14]),
+            tuple(transient_plan[15]),
+            tuple(transient_plan[16]),
+            tuple(transient_plan[17]),
+            tuple(transient_plan[18]),
+            tuple(transient_plan[19]),
+            tuple(transient_plan[20]),
+            tuple(transient_plan[21]),
+            tuple(transient_plan[22]),
+            tuple(transient_plan[23]),
+            tuple(transient_plan[24]),
+            tuple(transient_plan[25]),
+            tuple(transient_plan[26]),
+            tuple(transient_plan[27]),
+            tuple(transient_plan[28]),
+            tuple(transient_plan[29]),
+            tuple(transient_plan[30]),
+            tuple(transient_plan[31]),
+            tuple(transient_plan[32]),
+            tuple(transient_plan[33]),
+            tuple(transient_plan[34]),
+            tuple(transient_plan[35]),
+            tuple(transient_plan[36]),
+            tuple(transient_plan[37]),
+            tuple(transient_plan[38]),
+            tuple(transient_plan[39]),
+        )
+
+    def _build_phase11_variant_ir_payload(
+            self,
+            plan: Optional[ExecutionPlan],
+    ) -> Dict[str, Any]:
+        """
+        Export one Phase 11 execution-plan variant into IR fields.
+
+        Purpose:
+            Normalize plan metadata and signatures so Phase 12 and runtime
+            dispatch can consume a deterministic payload.
+        Contract:
+            - Returns a payload dictionary for any input; empty plan fields are
+              represented as None/empty tuples.
+            - Includes transient plan and steps for no-overrides compilation.
+        Args:
+            plan:
+                Execution plan variant to export.
+        Returns:
+            Dict[str, Any]:
+                Normalized Phase 11 variant payload.
+        """
+        if plan is None:
+            return {
+                "plan_variant": None,
+                "root_spell_id": None,
+                "step_count": 0,
+                "step_spell_ids": (),
+                "transient_signature": None,
+                "signature": None,
+                "transient_plan": None,
+                "steps": (),
+            }
+
+        step_spell_ids = tuple(
+            step.spell.spell_index.current
+            for step in plan.steps
+        )
+        transient_signature = self._build_fast_transient_signature(plan.fast_transient_plan)
+        signature = self._hash_codegen_signature(
+            plan.plan_variant,
+            plan.root_spell_id,
+            step_spell_ids,
+            transient_signature,
+        )
+        return {
+            "plan_variant": plan.plan_variant,
+            "root_spell_id": plan.root_spell_id,
+            "step_count": len(plan.steps),
+            "step_spell_ids": step_spell_ids,
+            "transient_signature": transient_signature,
+            "signature": signature,
+            "transient_plan": plan.fast_transient_plan,
+            "steps": tuple(plan.steps),
+        }
+
+    def _capture_phase8_11_codegen_ir(self) -> None:
+        """
+        Export phases 8-11 artifacts into the spell-scoped Codegen IR payload.
+
+        Purpose:
+            Publish normalized execution-planning metadata needed by Phase 12
+            compilation and runtime plan dispatch.
+        Contract:
+            - Safe to call repeatedly; latest phase artifacts overwrite prior IR.
+            - Updates `signatures.phase8_11` on each export.
+            - Keeps override/mutation variants distinct.
+        Returns:
+            None.
+        """
+        occurrence_execution_order: Tuple[str, ...] = ()
+        occurrence_root_instance_key: Optional[Tuple[str, Optional[int]]] = None
+        occurrence_shared_spell_ids: Tuple[str, ...] = ()
+        occurrence_contract_complete: Optional[bool] = None
+        if self._occurrence_plan_phase8 is not None:
+            occurrence_execution_order = tuple(self._occurrence_plan_phase8.execution_order)
+            occurrence_root_instance_key = self._occurrence_plan_phase8.root_instance_key
+            occurrence_shared_spell_ids = tuple(sorted(self._occurrence_plan_phase8.shared_spell_ids))
+            occurrence_contract_complete = self._occurrence_plan_phase8.contract_dependencies_complete
+
+        injection_instance_keys: Tuple[Tuple[str, Optional[int]], ...] = ()
+        if self._injection_plan_phase9 is not None:
+            injection_instance_keys = tuple(
+                sorted(
+                    self._injection_plan_phase9.instance_injections.keys(),
+                    key=lambda key: (key[0], -1 if key[1] is None else key[1]),
+                )
+            )
+
+        override_target_specs: Tuple[str, ...] = ()
+        if self._override_patch_map_phase10 is not None:
+            override_target_specs = tuple(sorted(self._override_patch_map_phase10._targets_by_spec.keys()))
+
+        mutation_target_specs: Tuple[str, ...] = ()
+        if self._mutation_patch_map_phase10 is not None:
+            mutation_target_specs = tuple(sorted(self._mutation_patch_map_phase10._targets_by_spec.keys()))
+
+        no_overrides_payload = self._build_phase11_variant_ir_payload(self._execution_plan_phase11_no_overrides)
+        overrides_payload = self._build_phase11_variant_ir_payload(self._execution_plan_phase11_overrides)
+        overrides_with_mutations_payload = self._build_phase11_variant_ir_payload(self._execution_plan_phase11)
+
+        phase8_11_signature = self._hash_codegen_signature(
+            occurrence_execution_order,
+            occurrence_root_instance_key,
+            occurrence_shared_spell_ids,
+            occurrence_contract_complete,
+            injection_instance_keys,
+            override_target_specs,
+            mutation_target_specs,
+            no_overrides_payload["signature"],
+            overrides_payload["signature"],
+            overrides_with_mutations_payload["signature"],
+        )
+
+        phase8_11_payload = {
+            "occurrence": {
+                "execution_order": occurrence_execution_order,
+                "root_instance_key": occurrence_root_instance_key,
+                "shared_spell_ids": occurrence_shared_spell_ids,
+                "contract_dependencies_complete": occurrence_contract_complete,
+            },
+            "injection": {
+                "instance_keys": injection_instance_keys,
+                "instance_key_count": len(injection_instance_keys),
+            },
+            "patch_maps": {
+                "override_target_specs": override_target_specs,
+                "mutation_target_specs": mutation_target_specs,
+            },
+            "execution": {
+                "no_overrides": no_overrides_payload,
+                "overrides": overrides_payload,
+                "overrides_with_mutations": overrides_with_mutations_payload,
+            },
+            "signature": phase8_11_signature,
+        }
+
+        ir_payload = self._ensure_codegen_ir()
+        ir_payload["phase8_11"] = phase8_11_payload
+        ir_payload["signatures"]["phase8_11"] = phase8_11_signature
+
+    def _compile_phase12_no_overrides_executor(self) -> None:
+        """
+        Compile and cache the spell-scoped Phase 12 no-overrides executor.
+
+        Purpose:
+            Consume exported Phase 11 IR and build the callable artifact used
+            by meld runtime no-overrides fast paths.
+        Contract:
+            - Reuses existing executor when IR signature is unchanged.
+            - Stores None when no compatible transient IR exists.
+            - Never mutates Phase 11 plans.
+        Returns:
+            None.
+        """
+        if self._codegen_ir is None:
+            self._phase12_no_overrides_executor = None
+            self._phase12_no_overrides_executor_signature = None
+            return
+
+        phase8_11 = self._codegen_ir["phase8_11"]
+        execution_payload = phase8_11.get("execution")
+        if not execution_payload:
+            self._phase12_no_overrides_executor = None
+            self._phase12_no_overrides_executor_signature = None
+            return
+
+        no_overrides_payload = execution_payload.get("no_overrides")
+        if not no_overrides_payload:
+            self._phase12_no_overrides_executor = None
+            self._phase12_no_overrides_executor_signature = None
+            return
+
+        payload_signature = no_overrides_payload["signature"]
+        if (
+                payload_signature == self._phase12_no_overrides_executor_signature
+                and self._phase12_no_overrides_executor is not None
+        ):
+            return
+
+        compiled_executor = compile_phase12_no_overrides_executor(
+            codegen_ir=no_overrides_payload,
+        )
+        if no_overrides_payload.get("step_count", 0) > 0 and compiled_executor is None:
+            raise RuntimeError(
+                "Phase 12 no-overrides executor compilation failed for a non-empty plan."
+            )
+        self._phase12_no_overrides_executor = compiled_executor
+        self._phase12_no_overrides_executor_signature = payload_signature
+
+    def _reset_phase2_5_codegen_ir(self) -> None:
+        """
+        Clear the phase2_5 segment from Codegen IR.
+
+        Purpose:
+            Keep IR aligned with lifecycle cleanup when structural artifacts are
+            discarded.
+        Contract:
+            - No-op when IR is not initialized.
+            - Preserves phase8_11 payloads and compiled executor artifacts.
+        Returns:
+            None.
+        """
+        if self._codegen_ir is None:
+            return
+        self._codegen_ir["phase2_5"] = {}
+        self._codegen_ir["signatures"].pop("phase2_5", None)
+
+    def _reset_phase8_11_codegen_ir(self) -> None:
+        """
+        Clear the phase8_11 segment from Codegen IR and Phase 12 artifacts.
+
+        Purpose:
+            Ensure runtime execution artifacts are invalidated whenever Phase 8+
+            plans are cleared.
+        Contract:
+            - No-op when IR is not initialized.
+            - Always clears compiled no-overrides executor cache.
+        Returns:
+            None.
+        """
+        if self._codegen_ir is not None:
+            self._codegen_ir["phase8_11"] = {}
+            self._codegen_ir["signatures"].pop("phase8_11", None)
+        self._phase12_no_overrides_executor = None
+        self._phase12_no_overrides_executor_signature = None
 
 
     def _notify_dependencies_updated(self, dependency_ids: List[str]) -> None:
@@ -1204,6 +1688,7 @@ class SpellCrafter(Cleanable):
             spell_version_id=version_id,
             dependencies=deps,
         )
+        self._capture_phase2_5_codegen_ir()
 
 
     # ------------------------------------------------------------------
@@ -1492,6 +1977,7 @@ class SpellCrafter(Cleanable):
         except AttributeError:
             # Test stubs may not implement the build-details hook.
             pass
+        self._capture_phase2_5_codegen_ir()
 
     # ------------------------------------------------------------------
     # Phase 4 - Validation
@@ -1595,6 +2081,7 @@ class SpellCrafter(Cleanable):
                             change_reason=SpellStateChangeReason.validation_passed,
                             flags_to_remove=[SpellState.contract_unvalidated],
                         )
+        self._capture_phase2_5_codegen_ir()
 
     # ------------------------------------------------------------------
     # Phase 5 - Build Deep Dag Structures
@@ -1694,6 +2181,8 @@ class SpellCrafter(Cleanable):
         # blueprints are attached directly to each SpellCrafter above.
         self._spell_system_index_phase5 = system_index
         self._entire_dag_blueprint_phase5 = root_blueprints
+        self._capture_phase2_5_codegen_ir()
+        self._reset_phase8_11_codegen_ir()
 
         # Rebuild component-of index and register a revalidation hook for dirty roots.
         frame_name = spellbook._aetheric_frame
@@ -1927,6 +2416,8 @@ class SpellCrafter(Cleanable):
 
         self._spell_system_index_phase5 = system_index
         self._entire_dag_blueprint_phase5 = local_root_blueprints
+        self._capture_phase2_5_codegen_ir()
+        self._reset_phase8_11_codegen_ir()
 
     def _filter_snapshot_to_visible_spells(
             self,
@@ -2064,6 +2555,7 @@ class SpellCrafter(Cleanable):
         # Hot-swap the plan without cleaning the previous object in-place.
         # Concurrent phase runners may still hold references to the prior plan.
         self._occurrence_plan_phase8 = plan
+        self._capture_phase8_11_codegen_ir()
 
 
     # ------------------------------------------------------------------
@@ -2129,6 +2621,7 @@ class SpellCrafter(Cleanable):
         # Hot-swap the plan without cleaning the previous object in-place.
         # Concurrent phase runners may still hold references to the prior plan.
         self._injection_plan_phase9 = plan
+        self._capture_phase8_11_codegen_ir()
 
 
     # ------------------------------------------------------------------
@@ -2197,6 +2690,7 @@ class SpellCrafter(Cleanable):
         # Concurrent runners may still be reading the prior maps.
         self._override_patch_map_phase10 = override_patch_map
         self._mutation_patch_map_phase10 = mutation_patch_map
+        self._capture_phase8_11_codegen_ir()
 
 
     # ------------------------------------------------------------------
@@ -2330,6 +2824,8 @@ class SpellCrafter(Cleanable):
         self._execution_plan_phase11_no_overrides = plan_no_overrides
         self._execution_plan_phase11_overrides = plan_overrides
         self._execution_plan_phase11 = plan_overrides_with_mutations
+        self._capture_phase8_11_codegen_ir()
+        self._compile_phase12_no_overrides_executor()
 
     def _build_execution_plan_variant(
             self,
@@ -2369,6 +2865,7 @@ class SpellCrafter(Cleanable):
         self._execution_plan_phase11 = None
         self._execution_plan_phase11_no_overrides = None
         self._execution_plan_phase11_overrides = None
+        self._reset_phase8_11_codegen_ir()
 
 
     # ------------------------------------------------------------------

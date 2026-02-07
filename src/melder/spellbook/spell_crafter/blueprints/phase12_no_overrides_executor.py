@@ -1,73 +1,537 @@
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
+from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.execution_plan import (
-    ExecutionPlan,
     ExecutionPlanCallMode,
+    ExecutionPlanTargetKind,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 
 def compile_phase12_no_overrides_executor(
         *,
-        execution_plan: ExecutionPlan,
-) -> Optional[Callable[[], Any]]:
+        codegen_ir: Dict[str, Any],
+) -> Optional[Callable[[Any], Any]]:
     """
-    Compile a spell-scoped Phase 12 no-overrides executor.
+    Compile a spell-scoped Phase 12 no-overrides executor from Codegen IR.
 
     Purpose:
-        Move fast transient codegen ownership from `MeldRuntime` to spell
-        compilation so runtime dispatch can execute a spell-local artifact.
+        Build the no-overrides execution callable consumed by MeldRuntime so
+        meld no longer depends on MeldEngine for no-overrides execution.
 
     Contract:
-        - Returns a callable only when `execution_plan.fast_transient_plan`
-          exists and all call modes are supported.
-        - Returns `None` when no transient plan exists or when the plan shape
-          cannot be code-generated.
-        - Compiled executor raises `MeldExecutionError` with step context when
-          a call target raises during execution.
+        - Returns a callable when the IR contains a no-overrides step plan.
+        - Returns None when no steps are present for this variant.
+        - Uses a transient unrolled executor when the IR carries a compatible
+          transient-only plan.
+        - Falls back to a step-plan executor that applies plan-time creation
+          reuse and registration rules directly.
 
     Args:
-        execution_plan:
-            Phase 11 no-overrides execution plan for one spell.
+        codegen_ir:
+            Phase 11 variant payload produced by SpellCrafter IR export.
 
     Returns:
-        Optional[Callable[[], Any]]:
-            The compiled zero-argument executor for the spell, or `None`
-            when compilation is not possible for this plan.
+        Optional[Callable[[Any], Any]]:
+            Compiled executor receiving an optional MeldContext.
 
     Raises:
         ValueError:
-            If `execution_plan` is `None`.
+            If codegen_ir is None.
+        RuntimeError:
+            If the root instance key cannot be resolved from the IR payload.
     """
-    if execution_plan is None:
-        raise ValueError("execution_plan must not be None.")
+    if codegen_ir is None:
+        raise ValueError("codegen_ir must not be None.")
 
-    transient_plan = execution_plan.fast_transient_plan
-    if transient_plan is None:
+    steps = codegen_ir.get("steps")
+    if not steps:
         return None
-
-    source = _build_phase12_executor_source(transient_plan=transient_plan)
-    if source is None:
-        return None
-
-    namespace = _build_executor_namespace(
-        execution_plan=execution_plan,
-        transient_plan=transient_plan,
+    root_spell_id = codegen_ir.get("root_spell_id")
+    root_instance_key = _resolve_root_instance_key(
+        steps=steps,
+        root_spell_id=root_spell_id,
     )
-    local_namespace: Dict[str, Any] = {}
-    try:
-        exec(
-            compile(source, "<melder_phase12_no_overrides_executor>", "exec"),
-            namespace,
-            local_namespace,
-        )
-    except Exception:
-        return None
+    if root_instance_key is None:
+        raise RuntimeError("Phase 12 IR is missing a resolvable root instance key.")
 
-    executor = local_namespace.get("_phase12_executor")
-    if not callable(executor):
+    transient_plan = codegen_ir.get("transient_plan")
+    if transient_plan is not None and _supports_transient_unrolled_plan(steps):
+        source = _build_phase12_executor_source(transient_plan=transient_plan)
+        if source is not None:
+            namespace = _build_executor_namespace(
+                transient_plan=transient_plan,
+                steps=steps,
+            )
+            local_namespace: Dict[str, Any] = {}
+            try:
+                exec(
+                    compile(source, "<melder_phase12_no_overrides_executor>", "exec"),
+                    namespace,
+                    local_namespace,
+                )
+            except Exception:
+                local_namespace = {}
+            executor = local_namespace.get("_phase12_executor")
+            if callable(executor):
+                return executor
+
+    return _build_step_plan_executor(
+        steps=steps,
+        root_instance_key=root_instance_key,
+    )
+
+
+def _resolve_root_instance_key(
+        *,
+        steps: Tuple[Any, ...],
+        root_spell_id: Optional[str],
+) -> Optional[Tuple[str, Optional[int]]]:
+    """
+    Resolve the root instance key from Phase 11 step metadata.
+
+    Contract:
+        - Prefers the canonical (spell_id, None) root key when present.
+        - Falls back to the first step whose spell_id matches root_spell_id.
+        - Returns None when no matching step exists.
+    """
+    if root_spell_id is None:
         return None
-    return executor
+    for plan_step in steps:
+        instance_key = plan_step.instance_key
+        if instance_key[0] == root_spell_id and instance_key[1] is None:
+            return instance_key
+    for plan_step in steps:
+        instance_key = plan_step.instance_key
+        if instance_key[0] == root_spell_id:
+            return instance_key
+    return None
+
+
+def _supports_transient_unrolled_plan(steps: Tuple[Any, ...]) -> bool:
+    """
+    Decide whether the transient unrolled executor can be used safely.
+
+    Contract:
+        - Returns True only for plans where every step is Existence.many and
+          no step requires registration.
+        - Returns False for any plan requiring creations context.
+    """
+    for plan_step in steps:
+        if plan_step.existence is not Existence.many:
+            return False
+        if plan_step.must_register:
+            return False
+    return True
+
+
+def _build_step_plan_executor(
+        *,
+        steps: Tuple[Any, ...],
+        root_instance_key: Tuple[str, Optional[int]],
+) -> Callable[[Any], Any]:
+    """
+    Build a Phase 12 executor for the general no-overrides step plan.
+
+    Contract:
+        - Executes steps in Phase 11 order.
+        - Applies plan-time reuse and registration rules for all existences.
+        - Returns the instance keyed by root_instance_key.
+        - Raises MeldExecutionError when dependency results are missing or
+          spell invocation fails.
+    """
+    def _phase12_executor(context: Any = None) -> Any:
+        instance_results: Dict[Tuple[str, Optional[int]], Any] = {}
+        for plan_step in steps:
+            spell = plan_step.spell
+            instance = _resolve_step_instance(
+                context=context,
+                plan_step=plan_step,
+                instance_results=instance_results,
+            )
+            instance_results[plan_step.instance_key] = instance
+        if root_instance_key not in instance_results:
+            raise MeldExecutionError(
+                spell_id=root_instance_key[0],
+                spell_name=root_instance_key[0],
+                message=f"Phase 12 root instance '{root_instance_key[0]}' is missing.",
+            )
+        return instance_results[root_instance_key]
+
+    return _phase12_executor
+
+
+def _resolve_step_instance(
+        *,
+        context: Any,
+        plan_step: Any,
+        instance_results: Dict[Tuple[str, Optional[int]], Any],
+) -> Any:
+    """
+    Resolve one plan step using the no-overrides execution contract.
+
+    Contract:
+        - Applies Existence.many construct-only flow.
+        - Applies per-conduit/per-spellspace lock + reuse for caller-scoped
+          existences.
+        - Applies shared existence spell-lock flow where required.
+        - Uses plan_step.must_register to decide registration.
+    """
+    spell = plan_step.spell
+    existence = plan_step.existence
+    creations = _select_creations_for_target_kind(
+        context=context,
+        plan_step=plan_step,
+        spell=spell,
+    )
+
+    def _construct() -> Any:
+        return _construct_spell_instance(
+            plan_step=plan_step,
+            instance_results=instance_results,
+        )
+
+    if existence is Existence.many:
+        instance = _construct()
+        if plan_step.must_register:
+            with creations._lock:
+                _register_spell_instance(
+                    spell=spell,
+                    instance=instance,
+                    creations=creations,
+                    existence=existence,
+                )
+        return instance
+
+    if existence in (
+            Existence.unique_per_conduit,
+            Existence.unique_per_spell_space,
+    ):
+        with creations._lock:
+            instance = _get_existing_creation(
+                spell=spell,
+                creations=creations,
+                existence=existence,
+            )
+            if instance is None:
+                instance = _construct()
+                _register_spell_instance(
+                    spell=spell,
+                    instance=instance,
+                    creations=creations,
+                    existence=existence,
+                )
+            return instance
+
+    use_spell_lock = plan_step.use_spell_lock_hint
+    if (
+            use_spell_lock
+            and context is not None
+            and context.caller_creations_lock_held
+            and creations is context.caller_creations
+    ):
+        use_spell_lock = False
+
+    if use_spell_lock:
+        with spell._lock:
+            with creations._lock:
+                instance = _get_existing_creation(
+                    spell=spell,
+                    creations=creations,
+                    existence=existence,
+                )
+            if instance is None:
+                instance = _construct()
+                with creations._lock:
+                    _register_spell_instance(
+                        spell=spell,
+                        instance=instance,
+                        creations=creations,
+                        existence=existence,
+                    )
+            return instance
+
+    with creations._lock:
+        instance = _get_existing_creation(
+            spell=spell,
+            creations=creations,
+            existence=existence,
+        )
+        if instance is None:
+            instance = _construct()
+            _register_spell_instance(
+                spell=spell,
+                instance=instance,
+                creations=creations,
+                existence=existence,
+            )
+        return instance
+
+
+def _select_creations_for_target_kind(
+        *,
+        context: Any,
+        plan_step: Any,
+        spell: Any,
+) -> Any:
+    """
+    Select the creations container from plan metadata.
+
+    Contract:
+        - CALLER and SPELLSPACE target caller_creations.
+        - OWNER targets spell owner creations, then context owner_creations.
+        - Requires context for CALLER/SPELLSPACE targets.
+    """
+    target_kind = plan_step.creations_target_kind
+    if target_kind in (
+            ExecutionPlanTargetKind.CALLER,
+            ExecutionPlanTargetKind.SPELLSPACE,
+    ):
+        if context is None:
+            raise RuntimeError(
+                "Phase 12 CALLER/SPELLSPACE execution requires a MeldContext."
+            )
+        return context.caller_creations
+
+    if target_kind == ExecutionPlanTargetKind.OWNER:
+        owner_creations = spell._owner_creations
+        if owner_creations is not None:
+            return owner_creations
+        if context is None:
+            raise RuntimeError(
+                "Phase 12 OWNER execution requires owner creations context."
+            )
+        return context.owner_creations
+
+    raise RuntimeError(
+        f"Unsupported creations target kind '{target_kind}' for spell '{spell.spell_id}'."
+    )
+
+
+def _construct_spell_instance(
+        *,
+        plan_step: Any,
+        instance_results: Dict[Tuple[str, Optional[int]], Any],
+) -> Any:
+    """
+    Construct one spell instance from dependency results and plan metadata.
+
+    Contract:
+        - Reads dependencies from prior step results using plan_step call recipe.
+        - Applies plan-time contract payload fields.
+        - Supports __args__ positional payloads when present.
+        - Raises MeldExecutionError when dependency results are missing or call
+          target invocation fails.
+    """
+    spell = plan_step.spell
+    kwargs = _build_kwargs_no_overrides(
+        plan_step=plan_step,
+        instance_results=instance_results,
+    )
+
+    if spell.existence is Existence.unique and spell.is_existing_creation:
+        instance = spell.user_created_object
+        if instance is None:
+            raise RuntimeError(
+                "[MELD] EXISTING_CREATION spell has no `user_created_object` "
+                f"(spell_id={spell.spell_id})."
+            )
+        return instance
+
+    if not (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell):
+        return spell.spell
+
+    call_kwargs = dict(kwargs)
+    raw_args = call_kwargs.pop("__args__", [])
+    if isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
+        args = list(raw_args)
+    else:
+        raise MeldExecutionError(
+            spell_id=spell.spell_index.current,
+            spell_name=spell.spell_name,
+            message="__args__ override must be a list or tuple.",
+        )
+
+    try:
+        return spell.spell(*args, **call_kwargs)
+    except Exception as exc:
+        raise MeldExecutionError(
+            spell_id=spell.spell_index.current,
+            spell_name=spell.spell_name,
+            message=f"Error invoking spell '{spell.spell_name}'.",
+            inner=exc,
+        ) from exc
+
+
+def _build_kwargs_no_overrides(
+        *,
+        plan_step: Any,
+        instance_results: Dict[Tuple[str, Optional[int]], Any],
+) -> Dict[str, Any]:
+    """
+    Build keyword arguments for one step without runtime override payloads.
+
+    Contract:
+        - Uses dependency_resolution_order produced by Phase 9.
+        - Single dependency maps to one value; multiple map to a list.
+        - Includes plan-time contract payload values.
+    """
+    spell = plan_step.spell
+    spell_id = spell.spell_index.current
+    kwargs: Dict[str, Any] = {}
+    for param_name, dependency_keys in plan_step.dependency_resolution_order:
+        values = []
+        for dependency_key in dependency_keys:
+            if dependency_key not in instance_results:
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell_id,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        f"Dependency '{dependency_key[0]}' missing while "
+                        f"building args for '{spell_id}'."
+                    ),
+                )
+            values.append(instance_results[dependency_key])
+        if not values:
+            continue
+        if len(values) == 1:
+            kwargs[param_name] = values[0]
+        else:
+            kwargs[param_name] = values
+
+    if plan_step.contract_positional_override is not None:
+        kwargs["__args__"] = plan_step.contract_positional_override
+
+    if plan_step.has_contract_payload:
+        contract_payload = plan_step.contract_payload
+        if contract_payload:
+            for param_name, value in contract_payload.items():
+                if param_name == "__args__" and plan_step.uses_positional_override:
+                    continue
+                kwargs[param_name] = value
+
+    return kwargs
+
+
+def _get_existing_creation(
+        *,
+        spell: Any,
+        creations: Any,
+        existence: Existence,
+) -> Optional[Any]:
+    """
+    Resolve an existing creation from the selected creations container.
+
+    Contract:
+        - Shared and per-conduit singleton scopes read from creations._creations.
+        - Spellspace scope reads from the active SpellSpace bucket.
+        - Existence.many always returns None.
+    """
+    if existence is Existence.many:
+        return None
+    spell_id = spell.spell_id
+    if existence in (
+            Existence.unique,
+            Existence.unique_per_conduit,
+            Existence.unique_per_conduit_cluster,
+            Existence.unique_per_conduit_lineage,
+    ):
+        creation = creations._creations.get(spell_id)
+        if creation is None:
+            return None
+        return creation.value
+
+    if existence is Existence.unique_per_spell_space:
+        spellspace = creations._conduit.get_active_spellspace()
+        if spellspace is None:
+            raise SpellSpaceScopeError(
+                "Existence.unique_per_spell_space requires an active SpellSpace. "
+                "Use 'with conduit.enter_spellspace()' when melding."
+            )
+        if spellspace.owner_conduit is not creations._conduit:
+            raise SpellSpaceScopeError(
+                "Active SpellSpace belongs to a different conduit."
+            )
+        creation = creations.get_spellspace_creation(spellspace.id, spell_id)
+        return creation.value if creation is not None else None
+
+    raise RuntimeError(
+        f"[MELD] Unsupported Existence '{existence}' for creation reuse "
+        f"(spell_id={spell_id})."
+    )
+
+
+def _register_spell_instance(
+        *,
+        spell: Any,
+        instance: Any,
+        creations: Any,
+        existence: Existence,
+) -> None:
+    """
+    Register a constructed instance into creations for no-overrides execution.
+
+    Contract:
+        - Shared/per-conduit singleton scopes use add_creation.
+        - many uses add_many_creations only when disposal methods exist.
+        - spellspace scope uses register_spellspace_creation for active spellspace.
+    """
+    spell_id = spell.spell_id
+    has_disposal_methods = spell.has_disposal_methods
+    disposal_methods = spell.disposal_method_names
+
+    if existence in (
+            Existence.unique,
+            Existence.unique_per_conduit,
+            Existence.unique_per_conduit_cluster,
+            Existence.unique_per_conduit_lineage,
+    ):
+        creations.add_creation(
+            spell_id,
+            instance,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
+        return
+
+    if existence is Existence.many:
+        if not has_disposal_methods:
+            return
+        creations.add_many_creations(
+            spell_id,
+            instance,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
+        return
+
+    if existence is Existence.unique_per_spell_space:
+        spellspace = creations._conduit.get_active_spellspace()
+        if spellspace is None:
+            raise SpellSpaceScopeError(
+                "Existence.unique_per_spell_space requires an active SpellSpace. "
+                "Use 'with conduit.enter_spellspace()' when melding."
+            )
+        if spellspace.owner_conduit is not creations._conduit:
+            raise SpellSpaceScopeError(
+                "Active SpellSpace belongs to a different conduit."
+            )
+        creations.register_spellspace_creation(
+            spellspace.id,
+            spell_id,
+            instance,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
+        return
+
+    raise RuntimeError(
+        f"[MELD] Unsupported Existence '{existence}' for registration "
+        f"(spell_id={spell_id})."
+    )
 
 
 def _build_phase12_executor_source(
@@ -75,20 +539,12 @@ def _build_phase12_executor_source(
         transient_plan: Tuple[Any, ...],
 ) -> Optional[str]:
     """
-    Build Python source for a phase12 no-overrides unrolled executor.
+    Build Python source for a transient-only unrolled Phase 12 executor.
 
     Contract:
-        - Generates one direct call statement per transient step.
-        - Returns `None` when any step uses `CALLN` or an unsupported mode.
-
-    Args:
-        transient_plan:
-            Tuple payload produced by `ExecutionPlan.fast_transient_plan`.
-
-    Returns:
-        Optional[str]:
-            Source code for `_phase12_executor`, or `None` when plan shape
-            is not supported.
+        - Emits one direct call statement per transient step.
+        - Returns None when any step uses CALLN or an unsupported call mode.
+        - Emits a context-accepting function signature for API consistency.
     """
     transient_step_count = transient_plan[0]
     transient_root_index = transient_plan[1]
@@ -132,6 +588,7 @@ def _build_phase12_executor_source(
 
     lines = [
         "def _phase12_executor(",
+        "        context=None,",
         "        *,",
         "        transient_root_index=transient_root_index,",
         "        transient_targets=transient_targets,",
@@ -285,23 +742,10 @@ def _build_unrolled_call_expression(
         transient_dep8h: list[int],
 ) -> Optional[str]:
     """
-    Build the direct call expression for one transient step.
+    Build a direct call expression for one transient step.
 
     Contract:
-        - Returns `None` for unsupported `call_mode` values.
-        - Produces expressions that reference prior `v{index}` values.
-
-    Args:
-        step_index:
-            Index of the step being emitted.
-        call_mode:
-            Execution plan call mode for this step.
-        transient_dep*:
-            Precomputed dependency index arrays from the transient plan.
-
-    Returns:
-        Optional[str]:
-            Unrolled call expression, or `None` when the mode is unsupported.
+        - Returns None for unsupported call modes.
     """
     if call_mode == ExecutionPlanCallMode.CALL0:
         return f"t{step_index}()"
@@ -368,25 +812,14 @@ def _build_unrolled_call_expression(
 
 def _build_executor_namespace(
         *,
-        execution_plan: ExecutionPlan,
         transient_plan: Tuple[Any, ...],
+        steps: Any,
 ) -> Dict[str, Any]:
     """
-    Build the globals namespace used for phase12 executor compilation.
+    Build the globals namespace for transient unrolled compilation.
 
     Contract:
-        - Exposes all transient arrays and the `steps` list as compile-time
-          defaults for `_phase12_executor`.
-
-    Args:
-        execution_plan:
-            Source plan that provides step metadata for error wrapping.
-        transient_plan:
-            Tuple payload from `ExecutionPlan.fast_transient_plan`.
-
-    Returns:
-        Dict[str, Any]:
-            Namespace dictionary passed to `exec`.
+        - Exposes transient arrays and steps as function defaults.
     """
     return {
         "MeldExecutionError": MeldExecutionError,
@@ -428,5 +861,5 @@ def _build_executor_namespace(
         "transient_dep8f": transient_plan[37],
         "transient_dep8g": transient_plan[38],
         "transient_dep8h": transient_plan[39],
-        "steps": execution_plan.steps,
+        "steps": steps,
     }

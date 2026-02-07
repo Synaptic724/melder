@@ -10,7 +10,7 @@ class MeldContext(Cleanable):
 
     This object is created and reused across `meld(...)` calls via the
     Meld-local context pool and
-    captures everything the runtime/engine need to execute that call:
+    captures everything the runtime needs to execute that call:
 
         * The **root spell** being activated.
         * The **owner creations container** for shared existences.
@@ -73,7 +73,7 @@ class MeldContext(Cleanable):
         Initialize a per-call context for Meld runtime execution.
 
         Purpose:
-            Capture all per-call data needed by the runtime/engine,
+            Capture all per-call data needed by the runtime,
             including the root spell, creations scopes, and overrides.
 
         Contract:
@@ -99,7 +99,7 @@ class MeldContext(Cleanable):
             caller_creations_lock_held:
                 True if the caller creations lock is already held by the
                 invoking thread for the duration of this context. This allows
-                the engine to avoid lock inversion when resolving shared
+                the runtime to avoid lock inversion when resolving shared
                 existences under a caller-scoped lock.
 
         Raises:
@@ -230,7 +230,7 @@ class MeldContext(Cleanable):
         The owner creations container for this meld call.
 
         This is typically a `Creations` or `LesserCreations` instance and
-        is treated as an opaque handle by the runtime/engine.
+        is treated as an opaque handle by the runtime.
 
         For per-conduit lifetimes, use :meth:`caller_creations` instead.
         """
@@ -263,7 +263,7 @@ class MeldContext(Cleanable):
         """
         Whether the caller creations lock is already held by the invoking thread.
 
-        This is used by the engine to avoid lock inversion when a caller-scoped
+        This is used by the runtime to avoid lock inversion when a caller-scoped
         lock wraps runtime execution and shared existences resolve against the
         same creations container.
         """
@@ -280,7 +280,7 @@ class MeldContext(Cleanable):
             * `{"__args__": [a0, a1, ...]}` – positional overrides.
             * A combination of both is allowed.
 
-        The runtime/engine read from this mapping but do not replace it
+        The runtime reads from this mapping but does not replace it
         wholesale; callers are free to mutate it if they need to.
 
         Returns:
