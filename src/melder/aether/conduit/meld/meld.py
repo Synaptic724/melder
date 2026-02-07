@@ -983,9 +983,9 @@ class Meld(Cleanable, IMeld):
         Reset a runtime context and return it to the local deque pool.
 
         Contract:
-            - Clears all context references before reuse.
+            - Clears per-call context references before reuse.
             - Keeps at most `_max_context_pool_size` entries.
-            - Silently drops contexts that fail cleanup.
+            - Silently drops contexts that fail pool reset.
 
         Args:
             context:
@@ -994,11 +994,7 @@ class Meld(Cleanable, IMeld):
         Returns:
             None.
         """
-        try:
-            context.cleanup()
-        except Exception:
-            return
-
+        context.reset()
         context_pool = self._context_pool
         if len(context_pool) < self._max_context_pool_size:
             context_pool.appendleft(context)

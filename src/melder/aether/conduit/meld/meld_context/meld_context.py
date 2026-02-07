@@ -39,8 +39,10 @@ class MeldContext(Cleanable):
            - Normalized overrides map
            - conduit metadata
     3. `MeldRuntime.execute(context)` is called.
-    4. After execution returns, `Meld` calls `context.cleanup()` and
-       returns the context to the local pool.
+    4. After execution returns, `Meld` calls `context.reset()`
+       and returns the context to the local pool.
+    5. When `Meld.cleanup()` runs, pooled contexts receive final
+       `context.cleanup()` teardown.
 
     This class does **not** perform any DI or DAG work itself – it is
     purely a container for per-call configuration and wiring.
@@ -133,9 +135,9 @@ class MeldContext(Cleanable):
         """
         Deterministically clear all references held by this context.
 
-        This is called by the runtime once a meld call has completed
-        (successfully or with an error), and also before returning the
-        context to Meld's pool. It:
+        This is called during final owner teardown (for example from
+        `Meld.cleanup()`) when this context should no longer be reused.
+        It:
 
         * Drops references to the spell, creations, overrides, and metadata.
         * Marks this object as cleaned via `Cleanable`.
@@ -158,24 +160,34 @@ class MeldContext(Cleanable):
     def reset(
             self,
             *,
-            root_spell: ISpell,
+            root_spell: Optional[ISpell] = None,
             overrides: Optional[Mapping[str, Any]] = None,
             caller_creations: Optional[Any] = None,
             caller_creations_lock_held: bool = False,
     ) -> None:
         """
-        Reset the context for reuse in another meld call.
+        Reset the context either for reuse preparation or pool-idle state.
 
         Contract:
-            - root_spell must not be None.
-            - overrides are copied into a mutable mapping when provided.
-            - caller_creations defaults to the owner creations when not provided.
-            - marks the context as active for pooled execution reuse.
+            - When `root_spell` is provided, prepares an active per-call context.
+            - When `root_spell` is None, clears per-call references for pooling.
+            - Marks the context as active (not cleaned) for pooled reuse.
         """
-        if root_spell is None:
-            raise ValueError("root_spell cannot be None.")
-
         self._cleaned = False
+        if root_spell is None:
+            self._root_spell = None
+            self._owner_creations = None
+            self._caller_creations = None
+            self._creations = None
+            self._caller_creations_lock_held = False
+            if self._overrides is not None:
+                self._overrides.clear()
+            self._overrides = None
+            self._conduit_id = None
+            self._conduit_name = None
+            self._aetheric_frame = None
+            return
+
         self._root_spell = root_spell
         self._owner_creations = root_spell._owner_creations
         self._caller_creations = (
