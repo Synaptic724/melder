@@ -1,5 +1,4 @@
 import inspect
-import random
 from threading import RLock
 from typing import Optional, Dict, Any, Callable, List, Tuple
 
@@ -21,7 +20,6 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpac
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 # Creations types
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.creations.creation import Creation
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
@@ -114,11 +112,8 @@ class Meld(Cleanable, IMeld):
         # Conduit-local instantiation manager.
         self._creations = creations
 
-        # Front-door caches (fast-path resolution + instance hits)
-        self._input_resolution_cache: Dict[tuple, ISpell] = {}
-        self._spell_lookup_cache: Dict[tuple[str, str], ISpell] = {}
-        self._spell_id_cache: Dict[str, ISpell] = {}
-        self._lookup_key_cache: Dict[tuple, tuple[str, str]] = {}
+        # Front-door cache for singleton instance hits.
+        self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], ISpell] = {}
         self._singleton_hit_cache: Dict[str, Any] = {}
         self._max_resolution_cache_size: int = 2048
         self._max_singleton_cache_size: int = 4096
@@ -177,9 +172,6 @@ class Meld(Cleanable, IMeld):
             self._runtime = None
             self._meld_hooks = None
             self._input_resolution_cache = None
-            self._spell_lookup_cache = None
-            self._spell_id_cache = None
-            self._lookup_key_cache = None
             self._singleton_hit_cache = None
             self._max_resolution_cache_size = None
             self._max_singleton_cache_size = None
@@ -284,16 +276,30 @@ class Meld(Cleanable, IMeld):
                 ID resolution, unsupported Creations manager, or attempting to
                 meld a broken spell).
         """
+
         # 1) Normalize per-call overrides into a stable dict shape.
         override_map = self._normalize_spell_override(spell_override)
 
         # 2) Resolve the spell object from the Spellbook / SpellIndex.
-        target_spell = self._resolve_spell(
-            spell=spell,
-            spell_name=spell_name,
-            spellframe=spellframe,
-            binding_name=binding_name,
-        )
+        input_resolution_cache = self._input_resolution_cache
+        cache_key = (spell_name, spell, spellframe, binding_name)
+        try:
+            target_spell = input_resolution_cache.get(cache_key)
+        except TypeError:
+            # Unhashable inputs (custom objects) fall back to identity-keying.
+            cache_key = (spell_name, id(spell), id(spellframe), binding_name)
+            target_spell = input_resolution_cache.get(cache_key)
+
+        if target_spell is None:
+            target_spell = self._resolve_spell(
+                spell=spell,
+                spell_name=spell_name,
+                spellframe=spellframe,
+                binding_name=binding_name,
+            )
+            if len(input_resolution_cache) >= self._max_resolution_cache_size:
+                input_resolution_cache.pop(next(iter(input_resolution_cache)), None)
+            input_resolution_cache[cache_key] = target_spell
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         if self._spellbook._spellbook_validation_required:
@@ -1017,16 +1023,6 @@ class Meld(Cleanable, IMeld):
                 a lookup key resolves to a SpellIndex that has no
                 corresponding spell object).
         """
-        cache_key = (spell, spell_name, spellframe, binding_name)
-        cached = self._input_resolution_cache.get(cache_key)
-        if cached is not None:
-            return cached
-        cached_lookup_key = self._lookup_key_cache.get(cache_key)
-        if cached_lookup_key is not None:
-            resolved = self._resolve_spell_by_lookup_key(cached_lookup_key)
-            self._cache_input_resolution(cache_key, resolved)
-            return resolved
-
         self._validate_meld_inputs(
             spell_name=spell_name,
             spell=spell,
@@ -1036,9 +1032,7 @@ class Meld(Cleanable, IMeld):
 
         # 1) string spell → treated as spell_id (SHA)
         if isinstance(spell, str):
-            resolved = self._resolve_spell_by_id(spell)
-            self._cache_input_resolution(cache_key, resolved)
-            return resolved
+            return self._resolve_spell_by_id(spell)
 
         # 2) Everything else → (frame_key, binding_key) path
 
@@ -1054,10 +1048,7 @@ class Meld(Cleanable, IMeld):
                 binding_name=binding_name,
             )
             lookup_key = (frame_key, bind_key)
-            resolved = self._resolve_spell_by_lookup_key(lookup_key)
-            self._cache_lookup_key(cache_key, lookup_key)
-            self._cache_input_resolution(cache_key, resolved)
-            return resolved
+            return self._resolve_spell_by_lookup_key(lookup_key)
         if spell_for_name is None and spell_name is not None:
             spell_for_name = spell_name
 
@@ -1069,8 +1060,6 @@ class Meld(Cleanable, IMeld):
 
         lookup_key = (frame_key, bind_key)
         resolved = self._resolve_spell_by_lookup_key(lookup_key)
-        self._cache_lookup_key(cache_key, lookup_key)
-        self._cache_input_resolution(cache_key, resolved)
         resolved.check_cleaned()
         return resolved
 
@@ -1098,28 +1087,19 @@ class Meld(Cleanable, IMeld):
                 If no spell with the given ``spell_id`` exists in either
                 the local or contracted spell maps.
         """
-        cached = self._spell_id_cache.get(spell_id)
-        if cached is not None:
-            return cached
-
         # Local spells
         pooled_spell = self._spell_id_pool.get(spell_id)
         if pooled_spell is not None:
-            self._cache_spell_id(spell_id, pooled_spell)
             return pooled_spell
 
         # Local spells
         if spell_id in self._spells_by_id:
-            resolved = self._spells_by_id[spell_id]
-            self._cache_spell_id(spell_id, resolved)
-            return resolved
+            return self._spells_by_id[spell_id]
 
         # Contracted spells (per-conduit maps)
         for spell_map in self._contracted_spells_by_id.values():
             if spell_id in spell_map:
-                resolved = spell_map[spell_id]
-                self._cache_spell_id(spell_id, resolved)
-                return resolved
+                return spell_map[spell_id]
 
         raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
 
@@ -1162,20 +1142,14 @@ class Meld(Cleanable, IMeld):
         """
         frame_key, bind_key = lookup_key
 
-        cached = self._spell_lookup_cache.get(lookup_key)
-        if cached is not None:
-            return cached
-
         # 1) Local lookup
         local_spell = self._resolve_local_by_lookup_key(lookup_key)
         if local_spell is not None:
-            self._cache_spell_lookup(lookup_key, local_spell)
             return local_spell
 
         # 2) Contracted lookup
         contracted_spell = self._resolve_contracted_by_lookup_key(lookup_key)
         if contracted_spell is not None:
-            self._cache_spell_lookup(lookup_key, contracted_spell)
             return contracted_spell
 
         # 3) Not found anywhere
@@ -1404,99 +1378,6 @@ class Meld(Cleanable, IMeld):
             ),
         )
 
-    def _cache_input_resolution(
-            self,
-            cache_key: Optional[tuple],
-            spell: ISpell,
-    ) -> None:
-        """
-        Internal
-
-        Cache the resolved spell for a normalized input key.
-
-        Contract:
-            - Best-effort cache only; may overwrite prior entries.
-            - Accepts None cache keys when no stable input key is available.
-
-        Args:
-            cache_key: Normalized input cache key (may be None).
-            spell: Resolved spell to store.
-
-        Returns:
-            None.
-        """
-        self._input_resolution_cache[cache_key] = spell
-
-
-    def _cache_spell_lookup(
-            self,
-            lookup_key: tuple[str, str],
-            spell: ISpell,
-    ) -> None:
-        """
-        Internal
-
-        Cache a resolved spell for a logical lookup key.
-
-        Contract:
-            - Best-effort cache only; may overwrite prior entries.
-
-        Args:
-            lookup_key: (frame_key, binding_name) identity tuple.
-            spell: Resolved spell to store.
-
-        Returns:
-            None.
-        """
-        self._spell_lookup_cache[lookup_key] = spell
-
-
-    def _cache_spell_id(
-            self,
-            spell_id: str,
-            spell: ISpell,
-    ) -> None:
-        """
-        Internal
-
-        Cache a resolved spell by its canonical spell_id.
-
-        Contract:
-            - Best-effort cache only; may overwrite prior entries.
-
-        Args:
-            spell_id: Canonical spell id (SHA256 fingerprint).
-            spell: Resolved spell to store.
-
-        Returns:
-            None.
-        """
-        self._spell_id_cache[spell_id] = spell
-
-
-    def _cache_lookup_key(
-            self,
-            cache_key: Optional[tuple],
-            lookup_key: tuple[str, str],
-    ) -> None:
-        """
-        Internal
-
-        Cache the logical lookup key for a normalized input key.
-
-        Contract:
-            - Best-effort cache only; may overwrite prior entries.
-            - Accepts None cache keys when no stable input key is available.
-
-        Args:
-            cache_key: Normalized input cache key (may be None).
-            lookup_key: (frame_key, binding_name) identity tuple.
-
-        Returns:
-            None.
-        """
-        self._lookup_key_cache[cache_key] = lookup_key
-
     def _cache_singleton_hit(
             self,
             spell: ISpell,
@@ -1519,21 +1400,10 @@ class Meld(Cleanable, IMeld):
         Returns:
             None.
         """
-        if len(self._singleton_hit_cache) >= self._max_singleton_cache_size:
-            self._evict_random_cache_entry(self._singleton_hit_cache)
-        self._singleton_hit_cache[spell.spell_id] = instance
-
-
-    @staticmethod
-    def _evict_random_cache_entry(cache: Dict[Any, Any]) -> None:
-        """
-        Evict exactly one entry in O(1) time.
-
-        NOTE:
-            This intentionally avoids random eviction + list(cache.keys()) which is O(n)
-            and causes jitter in microbenchmarks.
-        """
-        cache.pop(next(iter(cache)), None)
+        singleton_hit_cache = self._singleton_hit_cache
+        if len(singleton_hit_cache) >= self._max_singleton_cache_size:
+            (singleton_hit_cache.pop(next(iter(singleton_hit_cache)), None))
+        singleton_hit_cache[spell.spell_id] = instance
 
     def _get_cached_non_spellspace_singleton(
             self,
@@ -1653,8 +1523,10 @@ class Meld(Cleanable, IMeld):
 
         Contract:
             - Uses spellspace-aware singleton cache reuse when overrides are absent.
+            - Runs check -> construct -> register under the creations lock.
             - Uses spellspace-aware creations lookup for reuse checks.
-            - Delegates lock-protected create/register work to a dedicated helper.
+            - Rejects overrides when reusing an existing spellspace instance.
+            - Registers existing-object spells into spellspace creations on first create.
         """
         if not overrides:
             cached = self._get_cached_spellspace_singleton(
@@ -1665,36 +1537,6 @@ class Meld(Cleanable, IMeld):
             if cached is not None:
                 return cached, False
 
-        return self._resolve_spellspace_instance_with_creations_lock(
-            spell=spell,
-            spell_id=spell_id,
-            is_existing_creation=is_existing_creation,
-            creations=creations,
-            spellspace=spellspace,
-            overrides=overrides,
-        )
-
-    def _resolve_spellspace_instance_with_creations_lock(
-            self,
-            *,
-            spell: ISpell,
-            spell_id: str,
-            is_existing_creation: bool,
-            creations: Any,
-            spellspace: Any,
-            overrides: Optional[dict[str, Any]] = None,
-    ) -> tuple[Any, bool]:
-        """
-        Internal
-
-        Run spellspace reuse/create/register flow under the creations lock.
-
-        Contract:
-            - Holds creations lock across check -> construct -> register.
-            - Reuses existing spellspace instances when available.
-            - Rejects overrides when reusing an existing spellspace instance.
-            - Registers existing-object spells into spellspace creations on first create.
-        """
         with creations._lock:
             instance = self._get_spellspace_existing_creation_from_creations(
                 spell_id=spell_id,
@@ -1793,7 +1635,7 @@ class Meld(Cleanable, IMeld):
                     spell_id,
                     instance,
                     has_disposal_methods=has_disposal_methods,
-                    disposal_methods=has_disposal_methods,
+                    disposal_methods=spell.disposal_method_names,
                 )
             return instance, True
 
@@ -1820,12 +1662,8 @@ class Meld(Cleanable, IMeld):
                 else:
                     self._raise_override_on_existing_instance(
                         spell=spell,
-                        overrides=overrides,
-                    )
-            if (
-                    overrides is None
-                    and existence is Existence.unique_per_conduit
-            ):
+                        overrides=overrides)
+            if overrides is None:
                 self._cache_singleton_hit(spell, instance)
             return instance, created
 
