@@ -1357,14 +1357,13 @@ class Meld(Cleanable, IMeld):
         Returns:
             The selected creations container for the resolution route.
         """
-        owner_creations = spell._owner_creations
         if existence in (
                 Existence.unique_per_conduit,
                 Existence.many,
                 Existence.unique_per_spell_space,
         ):
             return self._creations
-        return owner_creations
+        return spell._owner_creations
 
     def _raise_override_on_existing_instance(
             self,
@@ -1839,7 +1838,7 @@ class Meld(Cleanable, IMeld):
 
         with spell._lock:
             with creations._lock:
-                instance = self._get_existing_creation(
+                instance = self._get_existing_creation_from_creations(
                     spell_id=spell_id,
                     existence=existence,
                     creations=creations,
@@ -1885,30 +1884,6 @@ class Meld(Cleanable, IMeld):
                     self._cache_singleton_hit(spell, instance)
 
         return instance, created
-
-    def _get_existing_creation(
-            self,
-            *,
-            spell_id: str,
-            existence: Existence,
-            creations: Any,
-    ) -> Optional[Any]:
-        """
-        Internal
-
-        Resolve a non-spellspace existing instance for a known creations container.
-
-        Contract:
-            - Existence.many never reuses instances.
-            - Spellspace lifetimes are handled by spellspace-only helpers.
-        """
-        if existence is Existence.many:
-            return None
-        return self._get_existing_creation_from_creations(
-            spell_id=spell_id,
-            existence=existence,
-            creations=creations,
-        )
 
     def _get_existing_creation_from_creations(
             self,
@@ -1970,17 +1945,8 @@ class Meld(Cleanable, IMeld):
             - `spellspace` must be the validated active spellspace for `creations`.
             - Returns None when no spellspace instance exists for the spell id.
         """
-        if isinstance(creations, Creations):
-            creation = creations.get_spellspace_creation(spellspace.id, spell_id)
-            return creation.value if creation is not None else None
-
-        if isinstance(creations, LesserCreations):
-            creation = creations.get_spellspace_creation(spellspace.id, spell_id)
-            return creation.value if creation is not None else None
-
-        raise RuntimeError(
-            f"[MELD] Unsupported creations manager type: {type(creations).__name__}"
-        )
+        creation = creations.get_spellspace_creation(spellspace.id, spell_id)
+        return creation.value if creation is not None else None
 
     def _get_active_spellspace_for_creations(
             self,

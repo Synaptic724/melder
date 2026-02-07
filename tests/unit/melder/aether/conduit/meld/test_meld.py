@@ -1172,7 +1172,7 @@ def test_gated_validation_required_blocks_dirty_root() -> None:
         meld._gated_validation_required(spell)
 
 
-def test_get_existing_creation_unique_returns_instance() -> None:
+def test_get_existing_creation_from_creations_unique_returns_instance() -> None:
     """
     Verify unique existence returns the cached creation.
 
@@ -1180,27 +1180,40 @@ def test_get_existing_creation_unique_returns_instance() -> None:
         - Creations.unique returns the stored instance.
     """
     creations, _ = _make_creations()
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique,
+        owner_creations=creations,
+    )
     instance = object()
     creations.add_unique(spell.spell_id, instance)
     meld = _make_meld(creations=creations)
 
-    assert meld._get_existing_creation(spell) is instance
+    assert meld._get_existing_creation_from_creations(
+        spell_id=spell.spell_id,
+        existence=spell.existence,
+        creations=creations,
+    ) is instance
 
 
-def test_get_existing_creation_many_returns_none() -> None:
+def test_get_existing_creation_from_creations_many_raises() -> None:
     """
-    Verify many existence never reuses instances.
+    Verify many existence is rejected by the map-only lookup helper.
 
     Contract:
-        - Existence.many always returns None.
+        - Existence.many is unsupported for _get_existing_creation_from_creations.
     """
     creations, _ = _make_creations()
     spell = _SpellStub(spell_id="spell-1", existence=Existence.many)
     creations.add_many(spell.spell_id, object())
     meld = _make_meld(creations=creations)
 
-    assert meld._get_existing_creation(spell) is None
+    with pytest.raises(RuntimeError, match="Unsupported non-spellspace Existence"):
+        meld._get_existing_creation_from_creations(
+            spell_id=spell.spell_id,
+            existence=spell.existence,
+            creations=creations,
+        )
 
 
 def test_get_existing_creation_spellspace_requires_active_spellspace() -> None:
@@ -1211,19 +1224,18 @@ def test_get_existing_creation_spellspace_requires_active_spellspace() -> None:
         - Missing spellspace raises SpellSpaceScopeError.
     """
     creations, _ = _make_creations()
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_spell_space)
     meld = _make_meld(creations=creations)
 
     with pytest.raises(SpellSpaceScopeError, match="active SpellSpace"):
-        meld._get_existing_creation(spell)
+        meld._get_active_spellspace_for_creations(creations)
 
 
-def test_get_existing_creation_spellspace_owner_mismatch_raises() -> None:
+def test_get_existing_creation_spellspace_owner_mismatch_allowed() -> None:
     """
-    Verify spellspace owner mismatch raises a scope error.
+    Verify active spellspace lookup does not reject owner mismatches.
 
     Contract:
-        - Active spellspace must belong to the same conduit.
+        - Active spellspace lookup returns the configured spellspace object.
     """
     creations, conduit = _make_creations()
     other_conduit = _ConduitStub(
@@ -1234,11 +1246,9 @@ def test_get_existing_creation_spellspace_owner_mismatch_raises() -> None:
         spellspace_id="space-1",
         owner_conduit=other_conduit,
     )
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_spell_space)
     meld = _make_meld(creations=creations)
 
-    with pytest.raises(SpellSpaceScopeError, match="belongs to a different conduit"):
-        meld._get_existing_creation(spell)
+    assert meld._get_active_spellspace_for_creations(creations) is conduit._active_spellspace
 
 
 def test_get_existing_creation_spellspace_returns_instance() -> None:
@@ -1258,7 +1268,11 @@ def test_get_existing_creation_spellspace_returns_instance() -> None:
     creations.register_spellspace_creation("space-1", spell.spell_id, instance)
     meld = _make_meld(creations=creations)
 
-    assert meld._get_existing_creation(spell) is instance
+    assert meld._get_spellspace_existing_creation_from_creations(
+        spell_id=spell.spell_id,
+        creations=creations,
+        spellspace=conduit._active_spellspace,
+    ) is instance
 
 
 def test_meld_reuses_existing_instance_without_activation_hooks() -> None:
@@ -1270,7 +1284,8 @@ def test_meld_reuses_existing_instance_without_activation_hooks() -> None:
         - activation hooks do not execute when reusing.
         - meld_by_spell_type and register_spell are not called.
     """
-    meld = _make_meld()
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
     events: list[str] = []
 
     def pre_hook() -> None:
@@ -1291,14 +1306,14 @@ def test_meld_reuses_existing_instance_without_activation_hooks() -> None:
         """
         events.append("activation")
 
-    spell = _SpellStub(spell_id="spell-1")
+    spell = _SpellStub(spell_id="spell-1", owner_creations=creations)
     spell._pre_hooks = [pre_hook]
     spell._post_hooks = [post_hook]
     spell._activation_hooks = [activation_hook]
     spell._hooks_enabled = True
 
     meld._resolve_spell = MagicMock(return_value=spell)
-    meld._get_existing_creation = MagicMock(return_value="reuse")
+    creations.add_unique(spell.spell_id, "reuse")
     meld._meld_by_spell_type = MagicMock()
     meld._register_spell = MagicMock()
 
@@ -1317,7 +1332,8 @@ def test_meld_creates_instance_and_runs_activation_hooks() -> None:
         - activation hooks receive the created instance.
         - pre and post hooks still execute.
     """
-    meld = _make_meld()
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
     events: list[str] = []
 
     def pre_hook() -> None:
@@ -1338,14 +1354,13 @@ def test_meld_creates_instance_and_runs_activation_hooks() -> None:
         """
         events.append(f"activation:{instance}")
 
-    spell = _SpellStub(spell_id="spell-1")
+    spell = _SpellStub(spell_id="spell-1", owner_creations=creations)
     spell._pre_hooks = [pre_hook]
     spell._post_hooks = [post_hook]
     spell._activation_hooks = [activation_hook]
     spell._hooks_enabled = True
 
     meld._resolve_spell = MagicMock(return_value=spell)
-    meld._get_existing_creation = MagicMock(return_value=None)
     meld._meld_by_spell_type = MagicMock(return_value="created")
     meld._register_spell = MagicMock()
 
@@ -1374,7 +1389,6 @@ def test_meld_unique_per_conduit_holds_creations_lock_during_construct() -> None
     spell._lock = _TrackingLock()
     meld = _make_meld(creations=creations)
     meld._resolve_spell = MagicMock(return_value=spell)
-    meld._get_existing_creation = MagicMock(return_value=None)
 
     def _construct(
         _spell: _SpellStub,
@@ -1404,11 +1418,14 @@ def test_meld_shared_unique_holds_spell_lock_during_construct() -> None:
     creations_lock = _TrackingLock()
     creations._lock = creations_lock
     spell_lock = _TrackingLock()
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique,
+        owner_creations=creations,
+    )
     spell._lock = spell_lock
     meld = _make_meld(creations=creations)
     meld._resolve_spell = MagicMock(return_value=spell)
-    meld._get_existing_creation = MagicMock(return_value=None)
 
     def _construct(
         _spell: _SpellStub,
@@ -1441,7 +1458,10 @@ def test_meld_by_spell_type_existing_creation_returns_object() -> None:
         is_existing_creation=True,
         user_created_object=instance,
     )
-    assert meld._meld_by_spell_type(spell, overrides=None) is instance
+    assert meld._meld_by_spell_type(
+        spell,
+        overrides=None,
+    ) is instance
 
 
 def test_meld_by_spell_type_existing_creation_requires_object() -> None:
@@ -1458,7 +1478,10 @@ def test_meld_by_spell_type_existing_creation_requires_object() -> None:
         user_created_object=None,
     )
     with pytest.raises(RuntimeError, match="EXISTING_CREATION spell has no"):
-        meld._meld_by_spell_type(spell, overrides=None)
+        meld._meld_by_spell_type(
+            spell,
+            overrides=None,
+        )
 
 
 def test_meld_by_spell_type_runtime_executes_and_cleans_context() -> None:
@@ -1476,7 +1499,10 @@ def test_meld_by_spell_type_runtime_executes_and_cleans_context() -> None:
     meld._runtime.execute = MagicMock(return_value="result")
     spell = _SpellStub(spell_id="spell-1", is_class_spell=True)
 
-    assert meld._meld_by_spell_type(spell, overrides={"x": 1}) == "result"
+    assert meld._meld_by_spell_type(
+        spell,
+        overrides={"x": 1},
+    ) == "result"
     meld._runtime.execute.assert_called_once_with(context)
     assert context.cleaned is True
 
@@ -1491,7 +1517,10 @@ def test_meld_by_spell_type_unsupported_type_raises() -> None:
     meld = _make_meld()
     spell = _SpellStub(spell_id="spell-1", spell_type="unknown")
     with pytest.raises(RuntimeError, match="Unsupported SpellType"):
-        meld._meld_by_spell_type(spell, overrides=None)
+        meld._meld_by_spell_type(
+            spell,
+            overrides=None,
+        )
 
 
 def test_select_creations_for_spell_many_prefers_caller() -> None:
@@ -1509,15 +1538,15 @@ def test_select_creations_for_spell_many_prefers_caller() -> None:
         existence=Existence.many,
         owner_creations=owner_creations,
     )
-    assert meld._select_creations_for_spell(spell) is caller_creations
+    assert meld._select_creations_for_spell(spell, spell.existence) is caller_creations
 
 
-def test_select_creations_for_spell_many_falls_back_to_owner() -> None:
+def test_select_creations_for_spell_many_does_not_fall_back_to_owner() -> None:
     """
-    Verify Existence.many falls back to owner creations when caller is missing.
+    Verify Existence.many keeps caller routing even when caller is missing.
 
     Contract:
-        - per-conduit lifetimes use owner creations when caller creations are None.
+        - per-conduit lifetimes do not use owner creations as fallback.
     """
     owner_creations = object()
     meld = _make_meld()
@@ -1527,7 +1556,7 @@ def test_select_creations_for_spell_many_falls_back_to_owner() -> None:
         existence=Existence.many,
         owner_creations=owner_creations,
     )
-    assert meld._select_creations_for_spell(spell) is owner_creations
+    assert meld._select_creations_for_spell(spell, spell.existence) is None
 
 
 def test_select_creations_for_spell_spellspace_prefers_caller() -> None:
@@ -1545,15 +1574,15 @@ def test_select_creations_for_spell_spellspace_prefers_caller() -> None:
         existence=Existence.unique_per_spell_space,
         owner_creations=owner_creations,
     )
-    assert meld._select_creations_for_spell(spell) is caller_creations
+    assert meld._select_creations_for_spell(spell, spell.existence) is caller_creations
 
 
-def test_select_creations_for_spell_spellspace_falls_back_to_owner() -> None:
+def test_select_creations_for_spell_spellspace_does_not_fall_back_to_owner() -> None:
     """
-    Verify Existence.unique_per_spell_space falls back to owner creations.
+    Verify Existence.unique_per_spell_space keeps caller routing when caller is missing.
 
     Contract:
-        - spellspace lifetimes use owner creations when caller is None.
+        - spellspace lifetimes do not use owner creations as fallback.
     """
     owner_creations = object()
     meld = _make_meld()
@@ -1563,7 +1592,7 @@ def test_select_creations_for_spell_spellspace_falls_back_to_owner() -> None:
         existence=Existence.unique_per_spell_space,
         owner_creations=owner_creations,
     )
-    assert meld._select_creations_for_spell(spell) is owner_creations
+    assert meld._select_creations_for_spell(spell, spell.existence) is None
 
 
 def test_resolve_instance_with_locks_many_constructs_and_returns_created() -> None:
@@ -1580,11 +1609,13 @@ def test_resolve_instance_with_locks_many_constructs_and_returns_created() -> No
     spell = _SpellStub(spell_id="spell-1", existence=Existence.many)
     meld._meld_by_spell_type = MagicMock(return_value="created")
     meld._register_spell = MagicMock()
-    meld._get_existing_creation = MagicMock(return_value="reuse")
-
     instance, created = meld._resolve_instance_with_locks(
-        spell,
-        creations,
+        spell=spell,
+        spell_id=spell.spell_id,
+        existence=spell.existence,
+        is_existing_creation=spell.is_existing_creation,
+        has_disposal_methods=spell.has_disposal_methods,
+        creations=creations,
         overrides=None,
     )
 
@@ -1596,7 +1627,6 @@ def test_resolve_instance_with_locks_many_constructs_and_returns_created() -> No
         caller_creations_lock_held=False,
     )
     meld._register_spell.assert_not_called()
-    meld._get_existing_creation.assert_not_called()
 
 
 def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
@@ -1618,23 +1648,31 @@ def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
     meld._register_spell = MagicMock()
 
     instance, created = meld._resolve_instance_with_locks(
-        spell,
-        creations,
+        spell=spell,
+        spell_id=spell.spell_id,
+        existence=spell.existence,
+        is_existing_creation=spell.is_existing_creation,
+        has_disposal_methods=spell.has_disposal_methods,
+        creations=creations,
         overrides=None,
     )
 
     assert instance == "created"
     assert created is True
-    meld._register_spell.assert_called_once_with(spell, "created", creations)
+    meld._register_spell.assert_called_once_with(
+        spell,
+        spell_id=spell.spell_id,
+        instance="created",
+        creations=creations,
+    )
 
 
-def test_resolve_instance_with_locks_shared_with_no_creations_uses_none() -> None:
+def test_resolve_instance_with_locks_shared_with_no_creations_raises() -> None:
     """
-    Verify shared lifetimes can proceed without creations references.
+    Verify shared lifetimes require an explicit creations reference.
 
     Contract:
-        - _get_existing_creation is called with creations=None.
-        - Instance construction proceeds when no cached instance is found.
+        - Missing creations raises during lock acquisition.
     """
     meld = _make_meld()
     meld._creations = None
@@ -1644,20 +1682,19 @@ def test_resolve_instance_with_locks_shared_with_no_creations_uses_none() -> Non
         owner_creations=None,
         is_class_spell=True,
     )
-    meld._get_existing_creation = MagicMock(return_value=None)
     meld._meld_by_spell_type = MagicMock(return_value="created")
     meld._register_spell = MagicMock()
 
-    instance, created = meld._resolve_instance_with_locks(
-        spell,
-        None,
-        overrides=None,
-    )
-
-    assert instance == "created"
-    assert created is True
-    meld._get_existing_creation.assert_called_once_with(spell, None)
-    meld._meld_by_spell_type.assert_called_once()
+    with pytest.raises(AttributeError, match="_lock"):
+        meld._resolve_instance_with_locks(
+            spell=spell,
+            spell_id=spell.spell_id,
+            existence=spell.existence,
+            is_existing_creation=spell.is_existing_creation,
+            has_disposal_methods=spell.has_disposal_methods,
+            creations=None,
+            overrides=None,
+        )
 
 
 def test_ensure_lineage_resolvable_raises_for_invalid_state() -> None:
