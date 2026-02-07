@@ -90,17 +90,18 @@ def test_nested_lesser_conduits_share_root_creations(
     Verify nested lesser conduits inherit the root scope lineage.
 
     Contract:
-        - Both lesser conduits reference the root creations.
+        - Lesser conduits retain Creations managers and root lineage metadata.
         - Both lesser wards point back to the root conduit.
     """
     first = conduit_normal.create_lesser_conduit()
     second = first.create_lesser_conduit()
     try:
-        assert isinstance(first._creations, LesserCreations)
-        assert isinstance(second._creations, LesserCreations)
-        assert first._creations._parent_creations is conduit_normal._creations
-        assert second._creations._parent_creations is conduit_normal._creations
-        assert second._parent_creations is conduit_normal._creations
+        assert isinstance(first._creations, Creations)
+        assert isinstance(second._creations, Creations)
+        assert first._root_conduit_id == conduit_normal._id
+        assert second._root_conduit_id == conduit_normal._id
+        assert first._meld._resolution_conduit_id == conduit_normal._id
+        assert second._meld._resolution_conduit_id == conduit_normal._id
         assert first._conduit_ward.root_conduit is conduit_normal
         assert second._conduit_ward.root_conduit is conduit_normal
     finally:
@@ -319,7 +320,7 @@ def test_upgrade_to_normal_transitions_and_registers(
 
     Contract:
         - Conduit becomes normal and receives the provided name.
-        - Creations transfer is performed.
+        - Existing Creations manager is preserved and re-wired into Meld.
         - Ward conversion and spellbook reset are invoked.
         - Aether registration and cloud registration occur for named conduits.
 
@@ -330,12 +331,7 @@ def test_upgrade_to_normal_transitions_and_registers(
     Raises:
         AssertionError: If the upgrade workflow is incomplete.
     """
-    old_creations = MagicMock()
-    old_creations.transfer_data_and_clear.return_value = {
-        "unique_per_scope": {},
-        "many": {},
-    }
-    conduit_dynamic_lesser._creations = old_creations
+    old_creations = conduit_dynamic_lesser._creations
     conduit_dynamic_lesser._conduit_ward = MagicMock()
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
 
@@ -343,10 +339,11 @@ def test_upgrade_to_normal_transitions_and_registers(
 
     assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
     assert conduit_dynamic_lesser._name == "alpha"
-    old_creations.transfer_data_and_clear.assert_called_once_with()
+    assert conduit_dynamic_lesser._creations is old_creations
+    assert conduit_dynamic_lesser._meld._creations is old_creations
+    assert conduit_dynamic_lesser._meld._resolution_conduit_id == conduit_dynamic_lesser._id
     conduit_dynamic_lesser._conduit_ward._convert_to_normal_conduit.assert_called_once_with()
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook.assert_called_once_with()
-    assert isinstance(conduit_dynamic_lesser._creations, Creations)
     aether_stub._add_conduit.assert_called_once_with(conduit_dynamic_lesser, "default")
     aether_stub._register_conduit_cloud.assert_called_once_with(conduit_dynamic_lesser, "default")
 
@@ -368,11 +365,7 @@ def test_upgrade_to_normal_registers_hooks(
     Raises:
         AssertionError: If hooks are not registered.
     """
-    conduit_dynamic_lesser._creations = MagicMock()
-    conduit_dynamic_lesser._creations.transfer_data_and_clear.return_value = {
-        "unique_per_scope": {},
-        "many": {},
-    }
+    old_creations = conduit_dynamic_lesser._creations
     conduit_dynamic_lesser._conduit_ward = MagicMock()
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
 
@@ -393,6 +386,7 @@ def test_upgrade_to_normal_registers_hooks(
         hooks={"on_conduit_post_link": hook},
     )
 
+    assert conduit_dynamic_lesser._creations is old_creations
     assert conduit_dynamic_lesser._conduit_hooks is not None
     assert conduit_dynamic_lesser._conduit_hooks["on_conduit_post_link"][0] is hook
 

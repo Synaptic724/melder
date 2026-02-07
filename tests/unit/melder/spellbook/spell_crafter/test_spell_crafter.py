@@ -50,6 +50,9 @@ class _CleanableStub(Cleanable):
         super().__init__()
         self.cleanup_calls = 0
         self._raise_on_cleanup = raise_on_cleanup
+        # Some SpellCrafter paths now read these attributes during IR capture.
+        self.issues: list[object] = []
+        self.nodes: dict[str, object] = {}
 
     def cleanup(self) -> None:
         """
@@ -561,6 +564,7 @@ class _SpellStub:
         self._owner_conduit_id = owner_conduit_id
         self._crafter = None
         self.is_existing_creation = False
+        self.dependencies: list[str] = []
         if include_dependency_graph:
             self.dependency_graph = dependency_graph
 
@@ -957,6 +961,8 @@ class _RootBlueprintStub:
             None.
         """
         self.root_spell_id = root_spell_id
+        self.ordered_node_ids: list[str] = []
+        self.socket_refs: list[object] = []
         self.cleanup_calls = 0
         self._raise_on_cleanup = raise_on_cleanup
 
@@ -3302,7 +3308,7 @@ def test_run_phase_validation_skips_when_cached() -> None:
     """
     crafter, _, validator = _build_spell_and_crafter()
     crafter._validated_phase4 = True
-    crafter._validation_result_phase4 = object()
+    crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
 
     crafter.run_phase_validation(cancel_event=None)
 
@@ -3341,7 +3347,7 @@ def test_run_phase_root_blueprints_requires_phase4(
 
     crafter._validated_phase4 = False
     if has_result:
-        crafter._validation_result_phase4 = object()
+        crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
 
     snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids=set())
     _AdjacencyBuilderStub.next_snapshot = snapshot
@@ -3386,7 +3392,7 @@ def test_run_phase_root_blueprints_builds_index_and_attaches(
     )
     crafter, spell, _ = _build_spell_and_crafter(spell_system_states=states)
     crafter._validated_phase4 = True
-    crafter._validation_result_phase4 = object()
+    crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
 
     snapshot = _AdjacencySnapshotStub(
         dependencies={"root": {"dep"}, "dep": set()},
@@ -3445,7 +3451,7 @@ def test_run_phase_root_blueprints_attaches_fallback_blueprint(
     )
     crafter, _, _ = _build_spell_and_crafter(spell_system_states=states)
     crafter._validated_phase4 = True
-    crafter._validation_result_phase4 = object()
+    crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
 
     snapshot = _AdjacencySnapshotStub(dependencies={}, root_spell_ids={"missing"})
     _AdjacencyBuilderStub.next_snapshot = snapshot
@@ -3492,7 +3498,7 @@ def test_run_phase_root_blueprints_change_control_wires_revalidator(
         aether=aether,
     )
     crafter._validated_phase4 = True
-    crafter._validation_result_phase4 = object()
+    crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
 
     snapshot = _AdjacencySnapshotStub(dependencies={}, root_spell_ids=set())
     blueprints = {"root": _RootBlueprintStub("root")}
@@ -3551,7 +3557,7 @@ def test_run_phase_root_blueprints_filters_component_of_to_owned_roots(
         aether=aether,
     )
     crafter._validated_phase4 = True
-    crafter._validation_result_phase4 = object()
+    crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
 
     contracted_spell = _SpellStub(
         spell_id="contracted",
@@ -3615,7 +3621,7 @@ def test_run_phase_root_blueprints_revalidator_runs_dirty_roots(
         aether=aether,
     )
     crafter._validated_phase4 = True
-    crafter._validation_result_phase4 = object()
+    crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
 
     snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids={"root"})
     blueprints = {"root": _RootBlueprintStub("root")}
@@ -3702,7 +3708,7 @@ def test_run_phase_root_blueprints_swallow_change_control_errors(
         aether=aether,
     )
     crafter._validated_phase4 = True
-    crafter._validation_result_phase4 = object()
+    crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
 
     snapshot = _AdjacencySnapshotStub(dependencies={"root": set()}, root_spell_ids=set())
     _AdjacencyBuilderStub.next_snapshot = snapshot
@@ -3806,10 +3812,10 @@ def test_run_phase_system_validation_collects_phase4_and_broken(
     crafter._spell_system_index_phase5 = spell_crafter_module.SpellSystemIndex()
 
     other_crafter, other_spell, _ = _build_spell_and_crafter(spell_id="other")
-    other_crafter._validation_result_phase4 = object()
+    other_crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
     other_crafter._is_broken = True
 
-    crafter._validation_result_phase4 = object()
+    crafter._validation_result_phase4 = _ValidationResultStub(has_errors=False)
     crafter._is_broken = False
 
     _set_spell_id_pool(spell._spellbook, [spell, other_spell])
@@ -4174,3 +4180,4 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     crafter.run_all_phases("cid", cancel_event=cancel)
 
     assert received == [cancel] * 11
+

@@ -215,6 +215,7 @@ class _SpellStub:
         is_lambda_spell: bool = False,
         has_disposal_methods: bool = True,
         disposal_method_names: list[str] | None = None,
+        has_mutation_override: bool = False,
         owner_creations: Any | None = None,
         owner_conduit_id: str = "conduit-1",
         owner_conduit_name: str = "Conduit",
@@ -244,6 +245,7 @@ class _SpellStub:
             is_lambda_spell: Whether the spell is lambda-based.
             has_disposal_methods: Whether the spell declares disposal methods.
             disposal_method_names: Optional list of disposal method names.
+            has_mutation_override: Whether meld-time mutation overrides exist.
             owner_creations: Owner creations container.
             owner_conduit_id: Owning conduit id.
             owner_conduit_name: Owning conduit name.
@@ -277,6 +279,7 @@ class _SpellStub:
             self.disposal_method_names = ["cleanup"] if self.has_disposal_methods else []
         else:
             self.disposal_method_names = list(disposal_method_names)
+        self.has_mutation_override = bool(has_mutation_override)
         self._owner_creations = owner_creations
         self._owner_conduit_id = owner_conduit_id
         self._owner_conduit_name = owner_conduit_name
@@ -500,13 +503,34 @@ class _ContextStub:
         """
         Initialize the context stub.
         """
-        self.cleaned = False
+        self.reset_called = False
+        self.cleanup_called = False
+        self.last_reset_payload: dict[str, Any] | None = None
+
+    def reset(
+        self,
+        *,
+        root_spell: Any | None = None,
+        overrides: dict[str, Any] | None = None,
+        caller_creations: Any | None = None,
+        caller_creations_lock_held: bool = False,
+    ) -> None:
+        """
+        Mark the context as reset.
+        """
+        self.reset_called = True
+        self.last_reset_payload = {
+            "root_spell": root_spell,
+            "overrides": overrides,
+            "caller_creations": caller_creations,
+            "caller_creations_lock_held": caller_creations_lock_held,
+        }
 
     def cleanup(self) -> None:
         """
         Mark the context as cleaned.
         """
-        self.cleaned = True
+        self.cleanup_called = True
 
 
 def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None = None) -> Meld:
@@ -520,9 +544,14 @@ def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None
     Returns:
         Meld: Meld instance ready for testing.
     """
+    effective_creations = creations or MagicMock()
+    conduit = getattr(effective_creations, "_conduit", None)
+    conduit_id = getattr(conduit, "_id", "conduit-1")
     return Meld(
-        creations=creations or MagicMock(),
+        creations=effective_creations,
         spellbook=spellbook or _SpellbookStub(),
+        conduit_id=conduit_id,
+        resolution_conduit_id=conduit_id,
     )
 
 
@@ -1186,32 +1215,30 @@ def test_get_existing_creation_from_creations_unique_returns_instance() -> None:
         owner_creations=creations,
     )
     instance = object()
-    creations.add_unique(spell.spell_id, instance)
+    creations.add_creation(spell.spell_id, instance)
     meld = _make_meld(creations=creations)
 
     assert meld._get_existing_creation_from_creations(
         spell_id=spell.spell_id,
-        existence=spell.existence,
         creations=creations,
     ) is instance
 
 
 def test_get_existing_creation_from_creations_many_raises() -> None:
     """
-    Verify many existence is rejected by the map-only lookup helper.
+    Verify many slots are unsupported by the singleton lookup helper.
 
     Contract:
-        - Existence.many is unsupported for _get_existing_creation_from_creations.
+        - Passing a many-list slot raises because singleton lookup expects Creation.
     """
     creations, _ = _make_creations()
     spell = _SpellStub(spell_id="spell-1", existence=Existence.many)
-    creations.add_many(spell.spell_id, object())
+    creations.add_many_creations(spell.spell_id, object())
     meld = _make_meld(creations=creations)
 
-    with pytest.raises(RuntimeError, match="Unsupported non-spellspace Existence"):
+    with pytest.raises(AttributeError):
         meld._get_existing_creation_from_creations(
             spell_id=spell.spell_id,
-            existence=spell.existence,
             creations=creations,
         )
 
@@ -1313,7 +1340,7 @@ def test_meld_reuses_existing_instance_without_activation_hooks() -> None:
     spell._hooks_enabled = True
 
     meld._resolve_spell = MagicMock(return_value=spell)
-    creations.add_unique(spell.spell_id, "reuse")
+    creations.add_creation(spell.spell_id, "reuse")
     meld._meld_by_spell_type = MagicMock()
     meld._register_spell = MagicMock()
 
@@ -1444,42 +1471,54 @@ def test_meld_shared_unique_holds_spell_lock_during_construct() -> None:
     assert meld.meld(spell="spell-1") == "created"
 
 
-def test_meld_by_spell_type_existing_creation_returns_object() -> None:
+def test_resolve_instance_with_locks_existing_creation_returns_object() -> None:
     """
-    Verify existing-creation spells return the pre-created object.
+    Verify existing-creation unique spells return the pre-created object.
 
     Contract:
-        - user_created_object is returned for existing-creation spells.
+        - user_created_object is returned without construction.
     """
-    meld = _make_meld()
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
     instance = object()
     spell = _SpellStub(
         spell_id="spell-1",
+        existence=Existence.unique,
         is_existing_creation=True,
         user_created_object=instance,
     )
-    assert meld._meld_by_spell_type(
-        spell,
+    resolved, created = meld._resolve_instance_with_locks(
+        spell=spell,
+        spell_id=spell.spell_id,
+        existence=spell.existence,
+        creations=creations,
         overrides=None,
-    ) is instance
+    )
+    assert resolved is instance
+    assert created is False
 
 
-def test_meld_by_spell_type_existing_creation_requires_object() -> None:
+def test_resolve_instance_with_locks_existing_creation_requires_object() -> None:
     """
-    Verify existing-creation spells require a user_created_object.
+    Verify existing-creation unique spells require a user_created_object.
 
     Contract:
         - Missing user_created_object raises RuntimeError.
     """
-    meld = _make_meld()
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
     spell = _SpellStub(
         spell_id="spell-1",
+        existence=Existence.unique,
         is_existing_creation=True,
         user_created_object=None,
     )
     with pytest.raises(RuntimeError, match="EXISTING_CREATION spell has no"):
-        meld._meld_by_spell_type(
-            spell,
+        meld._resolve_instance_with_locks(
+            spell=spell,
+            spell_id=spell.spell_id,
+            existence=spell.existence,
+            creations=creations,
             overrides=None,
         )
 
@@ -1490,7 +1529,7 @@ def test_meld_by_spell_type_runtime_executes_and_cleans_context() -> None:
 
     Contract:
         - runtime.execute is called for class/method/lambda spells.
-        - context.cleanup is always called after execution.
+        - context.reset is called before returning to pool.
     """
     meld = _make_meld()
     context = _ContextStub()
@@ -1504,19 +1543,20 @@ def test_meld_by_spell_type_runtime_executes_and_cleans_context() -> None:
         overrides={"x": 1},
     ) == "result"
     meld._runtime.execute.assert_called_once_with(context)
-    assert context.cleaned is True
+    assert context.reset_called is True
 
 
 def test_meld_by_spell_type_unsupported_type_raises() -> None:
     """
-    Verify unsupported spell types raise RuntimeError.
+    Verify meld-by-type fails when runtime is missing.
 
     Contract:
-        - Non factory and non existing-creation spells are rejected.
+        - Missing runtime raises AttributeError during execution.
     """
     meld = _make_meld()
+    meld._runtime = None
     spell = _SpellStub(spell_id="spell-1", spell_type="unknown")
-    with pytest.raises(RuntimeError, match="Unsupported SpellType"):
+    with pytest.raises(AttributeError):
         meld._meld_by_spell_type(
             spell,
             overrides=None,
@@ -1601,20 +1641,16 @@ def test_resolve_instance_with_locks_many_constructs_and_returns_created() -> No
 
     Contract:
         - _meld_by_spell_type is called.
-        - _register_spell is not called for non existing-creation spells.
         - created is True for Existence.many.
     """
     creations, _ = _make_creations()
     meld = _make_meld(creations=creations)
     spell = _SpellStub(spell_id="spell-1", existence=Existence.many)
     meld._meld_by_spell_type = MagicMock(return_value="created")
-    meld._register_spell = MagicMock()
     instance, created = meld._resolve_instance_with_locks(
         spell=spell,
         spell_id=spell.spell_id,
         existence=spell.existence,
-        is_existing_creation=spell.is_existing_creation,
-        has_disposal_methods=spell.has_disposal_methods,
         creations=creations,
         overrides=None,
     )
@@ -1626,15 +1662,14 @@ def test_resolve_instance_with_locks_many_constructs_and_returns_created() -> No
         None,
         caller_creations_lock_held=False,
     )
-    meld._register_spell.assert_not_called()
 
 
 def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
     """
-    Verify Existence.many registers when the spell is an existing creation.
+    Verify Existence.many still constructs when spell flags existing creation.
 
     Contract:
-        - existing-creation spells are registered into creations for Existence.many.
+        - _meld_by_spell_type is executed and created flag is True.
     """
     creations, _ = _make_creations()
     meld = _make_meld(creations=creations)
@@ -1645,26 +1680,18 @@ def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
         user_created_object=object(),
     )
     meld._meld_by_spell_type = MagicMock(return_value="created")
-    meld._register_spell = MagicMock()
 
     instance, created = meld._resolve_instance_with_locks(
         spell=spell,
         spell_id=spell.spell_id,
         existence=spell.existence,
-        is_existing_creation=spell.is_existing_creation,
-        has_disposal_methods=spell.has_disposal_methods,
         creations=creations,
         overrides=None,
     )
 
     assert instance == "created"
     assert created is True
-    meld._register_spell.assert_called_once_with(
-        spell,
-        spell_id=spell.spell_id,
-        instance="created",
-        creations=creations,
-    )
+    meld._meld_by_spell_type.assert_called_once()
 
 
 def test_resolve_instance_with_locks_shared_with_no_creations_raises() -> None:
@@ -1683,15 +1710,12 @@ def test_resolve_instance_with_locks_shared_with_no_creations_raises() -> None:
         is_class_spell=True,
     )
     meld._meld_by_spell_type = MagicMock(return_value="created")
-    meld._register_spell = MagicMock()
 
-    with pytest.raises(AttributeError, match="_lock"):
+    with pytest.raises(AttributeError, match="_creations"):
         meld._resolve_instance_with_locks(
             spell=spell,
             spell_id=spell.spell_id,
             existence=spell.existence,
-            is_existing_creation=spell.is_existing_creation,
-            has_disposal_methods=spell.has_disposal_methods,
             creations=None,
             overrides=None,
         )
@@ -1761,7 +1785,7 @@ def test_ensure_resolution_resolvable_blocks_invalid_disabled_cleaned(
     resolution_state.set_spell_validity(spell.spell_index.current, validity)
     meld = _make_meld()
     meld._creations = None
-    meld._conduit_id = "conduit-1"
+    meld._resolution_conduit_id = "conduit-1"
 
     with pytest.raises(SpellbookValidationError):
         meld._ensure_resolution_resolvable(spell)

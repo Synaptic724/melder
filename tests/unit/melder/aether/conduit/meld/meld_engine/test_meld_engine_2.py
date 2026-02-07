@@ -1,6 +1,7 @@
 """Additional contract tests for meld runtime/planning helpers."""
 from types import SimpleNamespace
 from typing import Any, Iterable
+from unittest.mock import MagicMock
 import pytest
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -54,35 +55,100 @@ def _make_spell(
     )
 
 
-def test_detect_any_overrides_true_with_override_map() -> None:
+def test_execute_routes_to_overrides_when_payload_present(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
-    Verify override detection returns True for socket overrides.
+    Verify execute routes to override execution when overrides are provided.
     """
-    path_registry = PathRegistry()
-    override_map = {
-        _make_socket_ref(
-            node_id="node",
-            param_name="x",
-            param_path=("x",),
-            path_registry=path_registry,
-        ): 1
-    }
-    assert MeldRuntime._detect_any_overrides(
-        override_payload=None,
-        override_map=override_map,
-        contract_overrides_by_spell_id={},
-    ) is True
+    runtime = MeldRuntime()
+    monkeypatch.setattr(
+        MeldRuntime,
+        "_enforce_spell_invariants",
+        staticmethod(lambda spell, conduit_id: None),
+    )
+    calls: list[str] = []
+
+    def _execute_no_overrides(*, context: Any, spell: Any) -> str:
+        calls.append("no")
+        return "no-overrides"
+
+    def _execute_with_overrides(*, context: Any, spell: Any) -> str:
+        calls.append("with")
+        return "with-overrides"
+
+    monkeypatch.setattr(
+        MeldRuntime,
+        "_execute_no_overrides",
+        staticmethod(_execute_no_overrides),
+    )
+    monkeypatch.setattr(
+        MeldRuntime,
+        "_execute_with_overrides",
+        staticmethod(_execute_with_overrides),
+    )
+
+    spell = SimpleNamespace(
+        has_mutation_override=False,
+        spell_index=SpellIndex("root"),
+        spell_name="root",
+    )
+    context = SimpleNamespace(
+        root_spell=spell,
+        conduit_id="conduit-1",
+        overrides={"x": 1},
+    )
+
+    assert runtime.execute(context) == "with-overrides"
+    assert calls == ["with"]
 
 
-def test_detect_any_overrides_false_with_empty_inputs() -> None:
+def test_execute_routes_to_no_overrides_when_payload_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
-    Verify override detection returns False with no overrides.
+    Verify execute routes to no-overrides execution when overrides are empty.
     """
-    assert MeldRuntime._detect_any_overrides(
-        override_payload=None,
-        override_map={},
-        contract_overrides_by_spell_id={},
-    ) is False
+    runtime = MeldRuntime()
+    monkeypatch.setattr(
+        MeldRuntime,
+        "_enforce_spell_invariants",
+        staticmethod(lambda spell, conduit_id: None),
+    )
+    calls: list[str] = []
+
+    def _execute_no_overrides(*, context: Any, spell: Any) -> str:
+        calls.append("no")
+        return "no-overrides"
+
+    def _execute_with_overrides(*, context: Any, spell: Any) -> str:
+        calls.append("with")
+        return "with-overrides"
+
+    monkeypatch.setattr(
+        MeldRuntime,
+        "_execute_no_overrides",
+        staticmethod(_execute_no_overrides),
+    )
+    monkeypatch.setattr(
+        MeldRuntime,
+        "_execute_with_overrides",
+        staticmethod(_execute_with_overrides),
+    )
+
+    spell = SimpleNamespace(
+        has_mutation_override=False,
+        spell_index=SpellIndex("root"),
+        spell_name="root",
+    )
+    context = SimpleNamespace(
+        root_spell=spell,
+        conduit_id="conduit-1",
+        overrides=None,
+    )
+
+    assert runtime.execute(context) == "no-overrides"
+    assert calls == ["no"]
 
 
 def test_collect_override_targets_groups_by_spell_id() -> None:
@@ -104,7 +170,7 @@ def test_collect_override_targets_groups_by_spell_id() -> None:
             path_registry=path_registry,
         ): "b",
     }
-    grouped = MeldRuntime._collect_override_targets(override_map)
+    grouped = MeldRuntime._collect_override_targets(override_map=override_map)
     assert set(grouped.keys()) == {"node-a", "node-b"}
     assert len(grouped["node-a"]) == 1
     assert len(grouped["node-b"]) == 1
@@ -163,12 +229,12 @@ def test_select_canonical_occurrence_returns_first() -> None:
     assert OccurrencePlanBuilder._select_canonical_occurrence(occurrences) == occurrences[0]
 
 
-def test_build_instance_override_map_shared_applies_all_params() -> None:
+def test_build_override_shape_key_tracks_socket_targets() -> None:
     """
-    Verify shared override selection ignores param paths.
+    Verify override shape key changes with socket target shape.
     """
     path_registry = PathRegistry()
-    override_map = {
+    override_map_a = {
         _make_socket_ref(
             node_id="node",
             param_name="x",
@@ -182,23 +248,35 @@ def test_build_instance_override_map_shared_applies_all_params() -> None:
             path_registry=path_registry,
         ): "right",
     }
-    engine = object.__new__(MeldEngine)
-    engine._override_map = override_map
-    engine._blueprint = SimpleNamespace(path_registry=path_registry)
-    override_targets = list(override_map.keys())
-    match_prefix = path_registry.extend_path(path_registry.root_path_id, "left")
-    overrides = engine._build_instance_override_map(
-        override_targets=override_targets,
-        shared=True,
-        match_prefix=match_prefix,
-        match_prefix_len=path_registry.depth(match_prefix),
+    override_map_b = {
+        _make_socket_ref(
+            node_id="node",
+            param_name="x",
+            param_path=("left", "x"),
+            path_registry=path_registry,
+        ): "left",
+    }
+
+    grouped_a = MeldRuntime._collect_override_targets(override_map=override_map_a)
+    grouped_b = MeldRuntime._collect_override_targets(override_map=override_map_b)
+    execution_plan = object()
+
+    key_a = MeldRuntime._build_override_shape_key(
+        execution_plan=execution_plan,
+        override_targets_by_spell_id=grouped_a,
+        root_positional_override=None,
     )
-    assert overrides == {"x": "left", "y": "right"}
+    key_b = MeldRuntime._build_override_shape_key(
+        execution_plan=execution_plan,
+        override_targets_by_spell_id=grouped_b,
+        root_positional_override=None,
+    )
+    assert key_a != key_b
 
 
-def test_build_instance_override_map_path_matches_prefix() -> None:
+def test_build_override_shape_key_tracks_positional_arity() -> None:
     """
-    Verify per-path override selection matches occurrence prefixes.
+    Verify override shape key includes root positional override arity.
     """
     path_registry = PathRegistry()
     override_map = {
@@ -215,15 +293,17 @@ def test_build_instance_override_map_path_matches_prefix() -> None:
             path_registry=path_registry,
         ): "skip",
     }
-    engine = object.__new__(MeldEngine)
-    engine._override_map = override_map
-    engine._blueprint = SimpleNamespace(path_registry=path_registry)
-    override_targets = list(override_map.keys())
-    match_prefix = path_registry.extend_path(path_registry.root_path_id, "left")
-    overrides = engine._build_instance_override_map(
-        override_targets=override_targets,
-        shared=False,
-        match_prefix=match_prefix,
-        match_prefix_len=path_registry.depth(match_prefix),
+    grouped = MeldRuntime._collect_override_targets(override_map=override_map)
+    execution_plan = object()
+
+    no_args_key = MeldRuntime._build_override_shape_key(
+        execution_plan=execution_plan,
+        override_targets_by_spell_id=grouped,
+        root_positional_override=None,
     )
-    assert overrides == {"x": "match"}
+    two_args_key = MeldRuntime._build_override_shape_key(
+        execution_plan=execution_plan,
+        override_targets_by_spell_id=grouped,
+        root_positional_override=("a", "b"),
+    )
+    assert no_args_key != two_args_key

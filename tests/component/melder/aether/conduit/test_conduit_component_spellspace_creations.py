@@ -91,7 +91,7 @@ def test_component_conduit_registers_existing_object_after_conjure() -> None:
     Purpose:
         Validate existing-object binds are registered into Creations post-conjure.
     Contract:
-        - Binding an instance after conjure registers it under unique creations.
+        - Binding an instance after conjure registers it in shared creations.
     Returns:
         None.
     Raises:
@@ -119,7 +119,7 @@ def test_component_conduit_registers_existing_object_after_conjure() -> None:
         )
         spellbook.end_binding_transaction()
         creations = conduit._creations
-        creation = creations._unique.get(existing_id)
+        creation = creations._creations.get(existing_id)
         assert creation is not None
         assert creation.value is existing
     finally:
@@ -234,7 +234,7 @@ def test_component_creations_extract_restore_unique_per_conduit_reuses_instance(
     Purpose:
         Validate unique-per-conduit creations extract and restore via Meld.
     Contract:
-        - extract_spell_creations removes the unique_per_scope entry.
+        - extract_spell_creations removes the shared unique entry.
         - restore_spell_creations rehydrates and enables reuse.
     Returns:
         None.
@@ -254,8 +254,8 @@ def test_component_creations_extract_restore_unique_per_conduit_reuses_instance(
         snapshot = creations.extract_spell_creations(spell_id)
         assert len(snapshot) == 1
         entry = snapshot[0]
-        assert entry["scope"] == "unique_per_scope"
-        assert creations._unique_per_scope.get(spell_id) is None
+        assert entry["scope"] == "unique"
+        assert creations._creations.get(spell_id) is None
         creations.restore_spell_creations(spell_id, snapshot)
         restored = conduit.meld(spell=spell_id)
         assert restored is instance

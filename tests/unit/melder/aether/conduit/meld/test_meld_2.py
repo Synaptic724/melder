@@ -59,6 +59,7 @@ class _SpellStub:
         is_lambda_spell: bool = False,
         has_disposal_methods: bool = True,
         disposal_method_names: list[str] | None = None,
+        has_mutation_override: bool = False,
     ) -> None:
         """
         Initialize the stub with the attributes Meld expects.
@@ -79,6 +80,7 @@ class _SpellStub:
             is_lambda_spell: True for lambda-based spells.
             has_disposal_methods: Whether the spell declares disposal methods.
             disposal_method_names: Optional list of disposal method names.
+            has_mutation_override: Whether mutation overrides are present.
         """
         self.spell_id = spell_id
         self.spell_name = spell_name
@@ -94,6 +96,7 @@ class _SpellStub:
         self.is_class_spell = is_class_spell
         self.is_method_spell = is_method_spell
         self.is_lambda_spell = is_lambda_spell
+        self.has_mutation_override = bool(has_mutation_override)
         self.has_disposal_methods = bool(has_disposal_methods)
         if disposal_method_names is None:
             self.disposal_method_names = ["cleanup"] if self.has_disposal_methods else []
@@ -186,9 +189,14 @@ def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None
     Returns:
         Meld: The constructed Meld instance.
     """
+    effective_creations = creations or MagicMock()
+    conduit = getattr(effective_creations, "_conduit", None)
+    conduit_id = getattr(conduit, "_id", "conduit-1")
     return Meld(
-        creations=creations or MagicMock(),
+        creations=effective_creations,
         spellbook=spellbook or _SpellbookStub(),
+        conduit_id=conduit_id,
+        resolution_conduit_id=conduit_id,
     )
 
 
@@ -555,43 +563,18 @@ def test_raise_override_on_existing_instance_raises() -> None:
         meld._raise_override_on_existing_instance(spell=spell, overrides={"x": 1})
 
 
-def test_register_to_lesser_creations_rejects_unique_even_with_parent() -> None:
+def test_legacy_registration_helpers_removed_from_meld() -> None:
     """
-    Verify unique registration in LesserCreations is rejected even with a parent.
+    Verify legacy registration helpers are removed from Meld.
 
     Contract:
-        - non-spellspace unique lifetimes are unsupported in LesserCreations.
+        - Registration now flows through runtime/creations paths, not private helper methods.
     """
-    parent = _make_creations()
-    lesser = _make_lesser_creations(parent=parent)
-    meld = _make_meld(creations=lesser)
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique)
-    with pytest.raises(RuntimeError, match="Unsupported non-spellspace Existence"):
-        meld._register_to_lesser_creations(
-            spell,
-            spell_id=spell.spell_id,
-            instance=object(),
-            creations=lesser,
-        )
-
-
-def test_register_to_lesser_creations_raises_without_parent() -> None:
-    """
-    Verify unsupported registrations raise when no parent exists.
-
-    Contract:
-        - shared existences without parent creations raise RuntimeError.
-    """
-    lesser = _make_lesser_creations(parent=None)
-    meld = _make_meld(creations=lesser)
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique)
-    with pytest.raises(RuntimeError, match="Unsupported non-spellspace Existence"):
-        meld._register_to_lesser_creations(
-            spell,
-            spell_id=spell.spell_id,
-            instance=object(),
-            creations=lesser,
-        )
+    meld = _make_meld(creations=_make_creations())
+    assert not hasattr(meld, "_register_to_creations")
+    assert not hasattr(meld, "_register_spellspace_to_creations")
+    assert not hasattr(meld, "_register_to_lesser_creations")
+    assert not hasattr(meld, "_register_spellspace_to_lesser_creations")
 
 
 def test_meld_by_spell_type_runtime_missing_raises() -> None:
@@ -614,27 +597,24 @@ def test_meld_by_spell_type_runtime_missing_raises() -> None:
         )
 
 
-def test_register_spellspace_to_creations_registers_instance() -> None:
+def test_register_spellspace_creation_registers_instance() -> None:
     """
     Verify spellspace registration stores the instance in the spellspace bucket.
 
     Contract:
-        - Existence.unique_per_spell_space registers to the active spellspace.
+        - Creations.register_spellspace_creation stores and returns the instance.
     """
     creations = _make_creations()
     conduit = creations._conduit
     spellspace = SimpleNamespace(id="space-1", owner_conduit=conduit)
     conduit._active_spellspace = spellspace
-    meld = _make_meld(creations=creations)
     spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_spell_space)
     instance = object()
 
-    meld._register_spellspace_to_creations(
-        spell=spell,
+    creations.register_spellspace_creation(
+        spellspace_id=spellspace.id,
         spell_id=spell.spell_id,
-        instance=instance,
-        creations=creations,
-        spellspace=spellspace,
+        item=instance,
     )
 
     stored = creations.get_spellspace_creation("space-1", spell.spell_id)
@@ -642,73 +622,52 @@ def test_register_spellspace_to_creations_registers_instance() -> None:
     assert stored.value is instance
 
 
-def test_register_to_creations_many_skips_without_disposal_methods() -> None:
+def test_add_many_creations_records_instance_without_disposal() -> None:
     """
-    Verify Existence.many registration is skipped when no disposal methods exist.
+    Verify many creations are recorded even when disposal methods are absent.
 
     Contract:
-        - Many existence does not register into Creations when disposal is not required.
+        - add_many_creations appends to list slots in the shared creations map.
     """
     creations = _make_creations()
-    meld = _make_meld(creations=creations)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.many,
+    spell_id = "spell-1"
+    creations.add_many_creations(
+        key=spell_id,
+        item=object(),
         has_disposal_methods=False,
-        disposal_method_names=[],
-    )
-    meld._register_to_creations(
-        spell,
-        spell_id=spell.spell_id,
-        instance=object(),
-        creations=creations,
+        disposal_methods=[],
     )
 
-    assert "spell-1" not in creations._many
+    assert spell_id in creations._creations
+    assert isinstance(creations._creations[spell_id], list)
+    assert len(creations._creations[spell_id]) == 1
 
 
-def test_register_to_lesser_creations_many_skips_without_disposal_methods() -> None:
+def test_get_existing_creation_from_creations_ignores_spellspace_slots() -> None:
     """
-    Verify LesserCreations skip many registration when disposal is not required.
+    Verify singleton lookup helper does not read spellspace-only entries.
 
     Contract:
-        - Many existence does not register into LesserCreations when disposal is not required.
-    """
-    lesser = _make_lesser_creations()
-    meld = _make_meld(creations=lesser)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.many,
-        has_disposal_methods=False,
-        disposal_method_names=[],
-    )
-    meld._register_to_lesser_creations(
-        spell,
-        spell_id=spell.spell_id,
-        instance=object(),
-        creations=lesser,
-    )
-
-    assert "spell-1" not in lesser._many
-
-
-def test_register_to_creations_spellspace_rejected_as_non_spellspace() -> None:
-    """
-    Verify non-spellspace registration rejects spellspace existence.
-
-    Contract:
-        - Existence.unique_per_spell_space is rejected in non-spellspace registration.
+        - _get_existing_creation_from_creations returns None when only spellspace data exists.
     """
     creations = _make_creations()
-    meld = _make_meld(creations=creations)
+    conduit = creations._conduit
+    spellspace = SimpleNamespace(id="space-1", owner_conduit=conduit)
+    conduit._active_spellspace = spellspace
     spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_spell_space)
-    with pytest.raises(RuntimeError, match="Unsupported non-spellspace Existence"):
-        meld._register_to_creations(
-            spell,
+    creations.register_spellspace_creation(
+        spellspace_id=spellspace.id,
+        spell_id=spell.spell_id,
+        item=object(),
+    )
+    meld = _make_meld(creations=creations)
+    assert (
+        meld._get_existing_creation_from_creations(
             spell_id=spell.spell_id,
-            instance=object(),
             creations=creations,
         )
+        is None
+    )
 
 
 def test_get_active_spellspace_for_creations_owner_mismatch_allowed() -> None:
@@ -726,50 +685,22 @@ def test_get_active_spellspace_for_creations_owner_mismatch_allowed() -> None:
     assert meld._get_active_spellspace_for_creations(creations) is conduit._active_spellspace
 
 
-def test_register_to_creations_unsupported_existence_raises() -> None:
+def test_register_to_creations_helper_is_removed() -> None:
     """
-    Verify unsupported existence modes raise RuntimeError.
+    Verify legacy non-spellspace registration helper no longer exists.
 
     Contract:
-        - Unknown existence values are rejected for Creations registration.
+        - Meld does not expose _register_to_creations.
     """
-    creations = _make_creations()
-    meld = _make_meld(creations=creations)
-    spell = _SpellStub(spell_id="spell-1")
-    spell.existence = object()
-    with pytest.raises(RuntimeError, match="Unsupported non-spellspace Existence"):
-        meld._register_to_creations(
-            spell,
-            spell_id=spell.spell_id,
-            instance=object(),
-            creations=creations,
-        )
+    meld = _make_meld(creations=_make_creations())
+    assert not hasattr(meld, "_register_to_creations")
 
 
-def test_register_spellspace_to_lesser_creations_registers_instance() -> None:
+def test_lesser_creations_type_removed_in_codegen_branch() -> None:
     """
-    Verify spellspace registration works for LesserCreations with a parent.
+    Verify LesserCreations is removed from the current codegen branch.
 
     Contract:
-        - Existence.unique_per_spell_space registers to the lesser creations bucket.
+        - Import fallback resolves to None.
     """
-    parent = _make_creations()
-    lesser = _make_lesser_creations(parent=parent)
-    conduit = lesser._conduit
-    spellspace = SimpleNamespace(id="space-1", owner_conduit=conduit)
-    conduit._active_spellspace = spellspace
-    meld = _make_meld(creations=lesser)
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_spell_space)
-    instance = object()
-
-    meld._register_spellspace_to_lesser_creations(
-        spell=spell,
-        spell_id=spell.spell_id,
-        instance=instance,
-        creations=lesser,
-        spellspace=spellspace,
-    )
-
-    stored = lesser.get_spellspace_creation("space-1", spell.spell_id)
-    assert stored is not None
-    assert stored.value is instance
+    assert LesserCreations is None

@@ -258,7 +258,7 @@ def test_component_conduit_meld_many_registers_multiple_creations() -> None:
         Validate Existence.many melds are tracked in Creations.
     Contract:
         - Each meld call produces a distinct instance.
-        - Creations._many stores all instances for the spell_id.
+        - Creations._creations stores all many instances for the spell_id.
     Returns:
         None.
     Raises:
@@ -277,7 +277,7 @@ def test_component_conduit_meld_many_registers_multiple_creations() -> None:
         instance_b = conduit.meld(spell=spell_id)
 
         assert instance_a is not instance_b
-        bucket = creations._many.get(spell_id)
+        bucket = creations._creations.get(spell_id)
         assert bucket is not None
         assert [creation.value for creation in bucket] == [instance_a, instance_b]
     finally:
@@ -289,7 +289,7 @@ def test_component_conduit_meld_unique_per_conduit_lineage_registers_in_lineage_
     Purpose:
         Validate unique_per_conduit_lineage melds register in lineage storage.
     Contract:
-        - Creations._unique_per_lineage stores the created instance.
+        - Creations._creations stores the created instance under spell_id.
     Returns:
         None.
     Raises:
@@ -305,7 +305,7 @@ def test_component_conduit_meld_unique_per_conduit_lineage_registers_in_lineage_
     try:
         creations = conduit._creations
         instance = conduit.meld(spell=spell_id)
-        entry = creations._unique_per_lineage.get(spell_id)
+        entry = creations._creations.get(spell_id)
         assert entry is not None
         assert entry.value is instance
     finally:
@@ -317,7 +317,7 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
     Purpose:
         Validate unique_per_conduit_cluster melds register in cluster storage.
     Contract:
-        - Creations._unique_per_cluster stores the created instance.
+        - Creations._creations stores the created instance under spell_id.
     Returns:
         None.
     Raises:
@@ -333,7 +333,7 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
     try:
         creations = conduit._creations
         instance = conduit.meld(spell=spell_id)
-        entry = creations._unique_per_cluster.get(spell_id)
+        entry = creations._creations.get(spell_id)
         assert entry is not None
         assert entry.value is instance
     finally:
@@ -415,7 +415,7 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
         many_instance_after = lesser.meld(spell=many_id)
         assert many_instance_after is not many_instance
 
-        bucket = lesser._creations._many.get(many_id)
+        bucket = lesser._creations._creations.get(many_id)
         assert bucket is not None
         values = [creation.value for creation in bucket]
         assert many_instance in values

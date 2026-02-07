@@ -196,26 +196,26 @@ def test_add_spells_to_aether_raises_when_aether_none(
         conduit.cleanup()
 
 
-def test_creations_configuration_returns_lesser_creations(
+def test_creations_configuration_returns_creations_for_lesser(
     conduit_lesser: Conduit,
     configuration_automatic: Configuration,
 ) -> None:
     """
-    Verify _creations_configuration returns LesserCreations for lesser conduits.
+    Verify _creations_configuration returns Creations for lesser conduits.
 
     Contract:
-        - Lesser conduits receive LesserCreations instances.
+        - Lesser conduits receive Creations instances.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
         configuration_automatic (Configuration): Automatic configuration defaults.
 
     Raises:
-        AssertionError: If the returned type is not LesserCreations.
+        AssertionError: If the returned type is not Creations.
     """
     creations = conduit_lesser._creations_configuration(configuration_automatic)
     try:
-        assert isinstance(creations, LesserCreations)
+        assert isinstance(creations, Creations)
     finally:
         creations.cleanup()
 

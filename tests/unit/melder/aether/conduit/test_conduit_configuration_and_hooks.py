@@ -769,7 +769,7 @@ def test_register_to_creations_adds_unique_spell(
     Verify _register_to_creations registers unique existing-object spells.
 
     Contract:
-        - Existence.unique spells are registered via add_unique.
+        - Existence.unique spells are registered via add_creation.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
@@ -782,12 +782,12 @@ def test_register_to_creations_adds_unique_spell(
     spell.spell_id = "spell-1"
     spell.has_disposal_methods = True
     spell.disposal_method_names = ["cleanup"]
-    conduit_normal._creations.add_unique = MagicMock()
+    conduit_normal._creations.add_creation = MagicMock()
     instance = object()
 
     conduit_normal._register_to_creations(spell, instance)
 
-    conduit_normal._creations.add_unique.assert_called_once_with(
+    conduit_normal._creations.add_creation.assert_called_once_with(
         "spell-1",
         instance,
         has_disposal_methods=True,
@@ -818,27 +818,30 @@ def test_register_to_creations_rejects_non_unique_spells(
         conduit_normal._register_to_creations(spell, object())
 
 
-def test_register_to_creations_rejects_lesser_conduits(
+def test_register_to_creations_accepts_lesser_conduits(
     conduit_lesser: Conduit,
 ) -> None:
     """
-    Verify _register_to_creations rejects lesser conduits.
+    Verify _register_to_creations accepts lesser conduits with Creations.
 
     Contract:
-        - Only normal conduits expose Creations registration.
+        - Lesser conduits also register through Creations.add_creation.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
 
     Raises:
-        AssertionError: If lesser conduits can register creations.
+        AssertionError: If lesser conduits fail to register creations.
     """
     spell = MagicMock()
     spell.existence = Existence.unique
     spell.spell_id = "spell-1"
+    spell.has_disposal_methods = False
+    spell.disposal_method_names = []
+    conduit_lesser._creations.add_creation = MagicMock()
 
-    with pytest.raises(RuntimeError, match="only be called on normal Creations"):
-        conduit_lesser._register_to_creations(spell, object())
+    conduit_lesser._register_to_creations(spell, object())
+    conduit_lesser._creations.add_creation.assert_called_once()
 
 
 def test_cleanup_normal_unregisters_from_aether_and_removes_spells(
