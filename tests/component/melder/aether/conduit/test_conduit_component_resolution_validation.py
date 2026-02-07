@@ -12,7 +12,9 @@ from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import (
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
 from melder.spellbook.spellbook import Spellbook
+from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.deep_layers import Depth3Root
 from tests.mocks.spellbook.deep_layers import get_depth_3_classes
@@ -101,6 +103,43 @@ def _diagnostic_codes(state: ConduitResolutionState | None) -> set[str]:
     if state is None:
         return set()
     return {diag.code for diag in state.list_diagnostics()}
+
+
+def _wrap_phase_counter(
+    monkeypatch: pytest.MonkeyPatch,
+    counters: dict[str, int],
+    method_name: str,
+    counter_key: str,
+) -> None:
+    """
+    Purpose:
+        Wrap a SpellCrafter phase method and count invocations.
+    Contract:
+        - Increments counters[counter_key] once per invocation.
+        - Delegates to the original method to preserve behavior.
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        counters: Mutable phase-counter mapping.
+        method_name: SpellCrafter method name to wrap.
+        counter_key: Counter key to increment.
+    Returns:
+        None.
+    """
+    original = getattr(SpellCrafter, method_name)
+
+    def _wrapped(self: SpellCrafter, *args, **kwargs):
+        """
+        Purpose:
+            Count invocation and delegate to original method.
+        Contract:
+            - Preserves original return value and behavior.
+        Returns:
+            Any: Original method return.
+        """
+        counters[counter_key] += 1
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(SpellCrafter, method_name, _wrapped)
 
 
 def test_component_conduit_validate_resolution_reports_missing_dependencies() -> None:
@@ -376,3 +415,88 @@ def test_component_conduit_validate_resolution_raises_when_cleaned() -> None:
 
     with pytest.raises(RuntimeError):
         conduit.validate_resolution()
+
+
+def test_component_meld_revalidation_uses_local_phase_lane(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify component-level meld revalidation routes through local phases 5/6/7.
+    Contract:
+        - Conjure uses frame-wide 5/6/7 once.
+        - Post-conjure bind + meld executes local 5/6/7 exactly once.
+        - Frame-wide 5/6/7 are not reinvoked during the meld revalidation pass.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If meld revalidation does not use local phase routing.
+    """
+    configuration = _make_dynamic_configuration()
+    spellbook = Spellbook(configuration=configuration)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    counters = {
+        "root_blueprints": 0,
+        "system_validation": 0,
+        "change_control": 0,
+        "root_blueprints_local": 0,
+        "system_validation_local": 0,
+        "change_control_local": 0,
+    }
+    _wrap_phase_counter(monkeypatch, counters, "run_phase_root_blueprints", "root_blueprints")
+    _wrap_phase_counter(monkeypatch, counters, "run_phase_system_validation", "system_validation")
+    _wrap_phase_counter(monkeypatch, counters, "run_phase_change_control", "change_control")
+    _wrap_phase_counter(
+        monkeypatch,
+        counters,
+        "run_phase_root_blueprints_local",
+        "root_blueprints_local",
+    )
+    _wrap_phase_counter(
+        monkeypatch,
+        counters,
+        "run_phase_system_validation_local",
+        "system_validation_local",
+    )
+    _wrap_phase_counter(
+        monkeypatch,
+        counters,
+        "run_phase_change_control_local",
+        "change_control_local",
+    )
+
+    conduit = spellbook.conjure(automatic=False, name="root")
+    try:
+        assert counters["root_blueprints"] == 1
+        assert counters["system_validation"] == 1
+        assert counters["change_control"] == 1
+
+        counters["root_blueprints"] = 0
+        counters["system_validation"] = 0
+        counters["change_control"] = 0
+        counters["root_blueprints_local"] = 0
+        counters["system_validation_local"] = 0
+        counters["change_control_local"] = 0
+
+        with spellbook.binding_transaction():
+            spell_id = spellbook.bind(
+                spell=BasicConfig,
+                existence=Existence.unique,
+                permissions="create",
+            )
+
+        instance = conduit.meld(spell=spell_id)
+        assert instance is not None
+        assert counters["root_blueprints"] == 0
+        assert counters["system_validation"] == 0
+        assert counters["change_control"] == 0
+        assert counters["root_blueprints_local"] == 1
+        assert counters["system_validation_local"] == 1
+        assert counters["change_control_local"] == 1
+    finally:
+        conduit.cleanup()

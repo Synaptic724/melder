@@ -656,6 +656,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         Remove a lineage and its indices from this registry.
 
         Behaviour:
+        - Compute impact closure before removing the lineage, so dependents
+          are marked as gated/dirty for revalidation.
         - Remove the lineage entry from `_states_by_index_id`.
         - Remove the current spell id entry from `_states_by_spell_id`.
         - Remove the lineage from `_dirty_lineages`.
@@ -685,6 +687,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         dependencies: Set[str] = set()
         risk_manager = None
         with self._lock:
+            if self._states_by_index_id is not None and index_id in self._states_by_index_id:
+                self.compute_impact_closure([index_id])
             removed_state = self._states_by_index_id.pop(index_id, None)
             if removed_state is None:
                 # Still clear the spell-id index if it points to this lineage.

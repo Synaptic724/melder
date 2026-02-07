@@ -374,6 +374,20 @@ class _SpellbookStub:
         self._spell_id_pool: Dict[str, 'SpellIndex'] = {}
         self._logger = MagicMock()
 
+    def _run_resolution_phases_for_target_spell(
+        self,
+        conduit_id: str,
+        target_spell: Any,
+    ) -> None:
+        """
+        Local resolution-phase hook used by Meld tests.
+
+        Contract:
+            - Default stub behavior is a no-op.
+            - Tests may replace this method with a MagicMock side effect.
+        """
+        return None
+
 
 class _ChangeControlManagerStub:
     """
@@ -1044,14 +1058,15 @@ def test_ensure_lineage_resolvable_contract_forces_revalidation() -> None:
     creations, _ = _make_creations(conduit_id="conduit-1")
     meld = _make_meld(creations=creations, spellbook=spellbook)
 
-    def _run_resolution(conduit_id: str) -> None:
+    def _run_resolution(conduit_id: str, target_spell: _SpellStub) -> None:
+        assert target_spell is spell
         resolution_state.set_spell_validity(spell.spell_index.current, SpellValidity.valid)
 
-    spellbook._run_resolution_phases_for_conduit = MagicMock(side_effect=_run_resolution)
+    spellbook._run_resolution_phases_for_target_spell = MagicMock(side_effect=_run_resolution)
 
     meld._ensure_lineage_resolvable(spell)
 
-    spellbook._run_resolution_phases_for_conduit.assert_called_once()
+    spellbook._run_resolution_phases_for_target_spell.assert_called_once_with("conduit-1", spell)
     assert any(call[1] is SpellValidity.gated for call in resolution_state.spell_set_calls)
 
 

@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from melder.aether.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
     ChangeControlConflictManager,
@@ -1255,6 +1255,74 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             dirty_spells.clear()
             dirty_roots.clear()
             self._monitor_active_by_conduit[conduit_id] = False
+
+    def upsert_component_of(
+            self,
+            conduit_id: str,
+            root_blueprints: Dict[str, RootResolutionBlueprint],
+    ) -> None:
+        """
+        Upsert component-of mappings for specific roots without full rebuild.
+
+        Purpose:
+            Refresh component-of ownership for a subset of roots while
+            preserving mappings for unrelated roots on the same conduit.
+        Contract:
+            - Does not clear unrelated conduit mappings.
+            - Replaces existing mappings for the supplied root ids.
+            - Removes stale root memberships for those root ids.
+            - Clears supplied roots from dirty-root tracking.
+        Args:
+            conduit_id:
+                Conduit identifier whose component-of map should be updated.
+            root_blueprints:
+                Mapping of root spell_id to root resolution blueprint.
+        Returns:
+            None.
+        Raises:
+            ValueError:
+                If conduit_id is empty or root_blueprints is None.
+            RuntimeError:
+                If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while mutating mappings.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        if root_blueprints is None:
+            raise ValueError("root_blueprints must not be None.")
+
+        root_ids = root_blueprints.keys()
+        if not root_ids:
+            return
+
+        with self._lock:
+            component_of = self._component_of_by_conduit.get(conduit_id)
+            if component_of is None:
+                component_of = {}
+                self._component_of_by_conduit[conduit_id] = component_of
+
+            # Drop stale memberships for roots being upserted.
+            empty_node_ids: List[str] = []
+            for node_id, owners in component_of.items():
+                owners.difference_update(root_ids)
+                if not owners:
+                    empty_node_ids.append(node_id)
+            for node_id in empty_node_ids:
+                component_of.pop(node_id, None)
+
+            # Apply fresh memberships for the provided roots.
+            for root_id, blueprint in root_blueprints.items():
+                dag = blueprint.dag
+                for node_id in dag.nodes.keys():
+                    component_of.setdefault(node_id, set()).add(root_id)
+                component_of.setdefault(root_id, set()).add(root_id)
+
+            dirty_roots = self._dirty_roots_by_conduit.setdefault(conduit_id, set())
+            dirty_roots.difference_update(root_ids)
+            if not dirty_roots:
+                self._monitor_active_by_conduit[conduit_id] = False
 
     def notify_spell_changed(self, spell_id: str) -> None:
         """

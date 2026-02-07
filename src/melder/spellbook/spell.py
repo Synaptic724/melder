@@ -862,6 +862,33 @@ class Spell(Cleanable, ISpell):
         crafter = self._ensure_crafter()
         crafter.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
 
+    def run_phase_root_blueprints_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 5 local - target spell closure blueprint construction (facade).
+
+        Delegates to the SpellCrafter to build local Phase 5 artifacts for the
+        target spell and its dependency closure.
+
+        Contract:
+            - Requires Phase 4 to have completed successfully.
+            - Scope is limited to this spell plus transitive dependencies.
+            - Does not execute later phases.
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_root_blueprints_local(conduit_id, cancel_event=cancel_event)
+
     def run_phase_occurrence_plan(
             self,
             conduit_id: str,
@@ -979,6 +1006,33 @@ class Spell(Cleanable, ISpell):
         crafter = self._ensure_crafter()
         crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
 
+    def run_phase_system_validation_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 6 local - scoped system validation (facade).
+
+        Delegates to the SpellCrafter to validate only the local Phase 5 scope
+        for this spell.
+
+        Contract:
+            - Requires local Phase 5 artifacts.
+            - Updates per-conduit resolution validity for scoped ids only.
+            - Does not execute later phases.
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_system_validation_local(conduit_id, cancel_event=cancel_event)
+
     def run_phase_change_control(
             self,
             conduit_id: str,
@@ -1006,6 +1060,32 @@ class Spell(Cleanable, ISpell):
         self.check_cleaned()
         crafter = self._ensure_crafter()
         crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
+
+    def run_phase_change_control_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 7 local - scoped change-control wiring (facade).
+
+        Delegates to the SpellCrafter to refresh change-control mappings only
+        for locally revalidated roots.
+
+        Contract:
+            - Requires local Phase 5 artifacts.
+            - Preserves component-of mappings for unrelated roots.
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        crafter.run_phase_change_control_local(conduit_id, cancel_event=cancel_event)
 
     def run_structural_phases(
             self,

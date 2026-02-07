@@ -66,6 +66,10 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlanVariant,
 )
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
+from melder.spellbook.spell_crafter.system.system_diagnostic import (
+    SystemDiagnostic,
+    SystemDiagnosticSeverity,
+)
 from melder.spellbook.spell_crafter.system.spell_system_validation_state import SpellSystemValidationState
 from melder.spellbook.spell_crafter.system.spell_system_validation_system import SpellSystemValidationSystem
 from melder.spellbook.spell_crafter.system.validation.cycle_detection_strategy import CycleDetectionStrategy
@@ -1719,6 +1723,211 @@ class SpellCrafter(Cleanable):
 
         change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
 
+    def _collect_local_scope_spell_ids(
+            self,
+            *,
+            root_spell_id: str,
+            snapshot: SpellSystemAdjacencySnapshot,
+    ) -> Set[str]:
+        """
+        Collect dependency-closure spell ids for local Phase 5-7 execution.
+
+        Purpose:
+            Limit local resolution phases to the target spell and all spells it
+            depends on directly or transitively.
+        Contract:
+            - Traverses dependency edges from root to leaves.
+            - Returns only ids present in the provided snapshot.
+            - Never mutates the snapshot.
+        Args:
+            root_spell_id:
+                Target spell id whose dependency closure should be resolved.
+            snapshot:
+                Visibility-filtered adjacency snapshot.
+        Returns:
+            Set[str]:
+                Target spell id plus dependency closure.
+        """
+        self.check_cleaned()
+        if root_spell_id not in snapshot.all_spell_ids:
+            return set()
+
+        scoped_spell_ids: Set[str] = set()
+        pending: List[str] = [root_spell_id]
+
+        while pending:
+            spell_id = pending.pop()
+            if spell_id in scoped_spell_ids:
+                continue
+            if spell_id not in snapshot.all_spell_ids:
+                continue
+            scoped_spell_ids.add(spell_id)
+            for dependency_id in snapshot.dependencies.get(spell_id, ()):
+                if dependency_id not in scoped_spell_ids:
+                    pending.append(dependency_id)
+
+        return scoped_spell_ids
+
+    def _build_system_index_for_snapshot(
+            self,
+            *,
+            snapshot: SpellSystemAdjacencySnapshot,
+            spell_lookup: Dict[str, ISpell],
+    ) -> SpellSystemIndex:
+        """
+        Build a SpellSystemIndex for a pre-filtered adjacency snapshot.
+
+        Purpose:
+            Share index construction between frame-wide and local Phase 5 paths.
+        Contract:
+            - Requires every snapshot spell id to be present in spell_lookup.
+            - Resolves lineage ids from SpellSystemStates.
+            - Does not mutate snapshot or spell_lookup.
+        Args:
+            snapshot:
+                Snapshot to materialize into an index.
+            spell_lookup:
+                Visible spell_id -> spell map.
+        Returns:
+            SpellSystemIndex:
+                Index populated for all snapshot spell ids.
+        """
+        self.check_cleaned()
+        system_index = SpellSystemIndex()
+        for spell_id, deps in snapshot.dependencies.items():
+            state = self._spell_system_states.get_by_spell_id(spell_id)
+            lineage_id = state.spell_index_id
+            spell_instance = spell_lookup[spell_id]
+
+            node = SpellSystemNode(
+                spell_id=spell_id,
+                lineage_id=lineage_id,
+                dependencies=deps,
+                existence=spell_instance.existence,
+                spell_type=spell_instance.spell_type,
+                conduit_id=spell_instance._owner_conduit_id,
+                ward_id=None,
+                is_root=spell_id in snapshot.root_spell_ids,
+            )
+            system_index.upsert_node(node)
+
+        return system_index
+
+    def _attach_phase5_artifacts_for_snapshot(
+            self,
+            *,
+            snapshot: SpellSystemAdjacencySnapshot,
+            root_blueprints: Dict[str, RootResolutionBlueprint],
+            system_index: SpellSystemIndex,
+            spell_lookup: Dict[str, ISpell],
+            root_builder: SpellSystemRootBlueprintBuilder,
+    ) -> None:
+        """
+        Attach Phase 5 artifacts to all spells participating in a snapshot.
+
+        Purpose:
+            Ensure scoped spells have consistent Phase 5 artifacts before
+            Phase 6-11 are executed.
+        Contract:
+            - Updates only spells included in snapshot.all_spell_ids.
+            - Existing-creation spells get index only and skip blueprints.
+            - Builds fallback per-spell blueprint when not present as a root.
+        Args:
+            snapshot:
+                Scoped adjacency snapshot.
+            root_blueprints:
+                Root blueprint map produced for this snapshot.
+            system_index:
+                System index for this snapshot.
+            spell_lookup:
+                Visible spell_id -> spell map.
+            root_builder:
+                Builder used for per-spell fallback blueprints.
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        for spell_id in snapshot.all_spell_ids:
+            spell_instance = spell_lookup[spell_id]
+            crafter_for_spell = spell_instance._ensure_crafter()
+            crafter_for_spell.set_spell_system_index_phase5(system_index)
+
+            if spell_instance.is_existing_creation:
+                continue
+
+            blueprint = root_blueprints.get(spell_id)
+            if blueprint is None:
+                blueprint = root_builder.build_blueprint_for_spell_id(
+                    root_spell_id=spell_id,
+                    snapshot=snapshot,
+                )
+            crafter_for_spell.set_root_blueprint_phase5(blueprint)
+
+    def run_phase_root_blueprints_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 5 local entrypoint.
+
+        Purpose:
+            Build Phase 5 artifacts for only the target spell and its
+            transitive dependency closure so meld-triggered revalidation
+            does not recompile unrelated spells.
+        Contract:
+            - Uses the same builders and invariants as frame-wide Phase 5.
+            - Scope is limited to target spell dependency closure.
+            - Attaches index/blueprints only to scoped spells.
+            - Updates this crafter's Phase 5 caches with local artifacts.
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation handle.
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        target_spell_id = self._spell.spell_index.current
+
+        adjacency_builder = SpellSystemAdjacencyBuilder()
+        snapshot = adjacency_builder.build(self._spell_system_states)
+
+        spellbook = self._spell._spellbook
+        spell_lookup = spellbook._spell_id_pool
+        visible_spell_ids = spell_lookup.keys()
+        visible_snapshot = self._filter_snapshot_to_visible_spells(
+            snapshot=snapshot,
+            visible_spell_ids=visible_spell_ids,
+        )
+
+        scoped_spell_ids = self._collect_local_scope_spell_ids(
+            root_spell_id=target_spell_id,
+            snapshot=visible_snapshot,
+        )
+        scoped_snapshot = self._filter_snapshot_to_visible_spells(
+            snapshot=visible_snapshot,
+            visible_spell_ids=scoped_spell_ids,
+        )
+
+        root_builder = SpellSystemRootBlueprintBuilder()
+        local_root_blueprints = root_builder.build_root_blueprints(scoped_snapshot)
+        system_index = self._build_system_index_for_snapshot(
+            snapshot=scoped_snapshot,
+            spell_lookup=spell_lookup,
+        )
+        self._attach_phase5_artifacts_for_snapshot(
+            snapshot=scoped_snapshot,
+            root_blueprints=local_root_blueprints,
+            system_index=system_index,
+            spell_lookup=spell_lookup,
+            root_builder=root_builder,
+        )
+
+        self._spell_system_index_phase5 = system_index
+        self._entire_dag_blueprint_phase5 = local_root_blueprints
+
     def _filter_snapshot_to_visible_spells(
             self,
             *,
@@ -1852,12 +2061,8 @@ class SpellCrafter(Cleanable):
         )
         plan = builder.build()
 
-        if self._occurrence_plan_phase8 is not None:
-            try:
-                self._occurrence_plan_phase8.cleanup()
-            except Exception:
-                pass
-
+        # Hot-swap the plan without cleaning the previous object in-place.
+        # Concurrent phase runners may still hold references to the prior plan.
         self._occurrence_plan_phase8 = plan
 
 
@@ -1908,23 +2113,21 @@ class SpellCrafter(Cleanable):
             - Not thread-safe; expected to run under spellbook phase scheduling.
 
         Lifecycle:
-            - Cleans and replaces any prior InjectionPlan for this spell.
+            - Replaces any prior InjectionPlan reference for this spell.
+            - Prior plan objects are cleaned during SpellCrafter teardown.
         """
         self.check_cleaned()
         if self._spell.is_existing_creation:
             return
 
+        occurrence_plan = self._occurrence_plan_phase8
         builder = InjectionPlanBuilder(
-            occurrence_plan=self._occurrence_plan_phase8,
+            occurrence_plan=occurrence_plan,
         )
         plan = builder.build()
 
-        if self._injection_plan_phase9 is not None:
-            try:
-                self._injection_plan_phase9.cleanup()
-            except Exception:
-                pass
-
+        # Hot-swap the plan without cleaning the previous object in-place.
+        # Concurrent phase runners may still hold references to the prior plan.
         self._injection_plan_phase9 = plan
 
 
@@ -1975,7 +2178,8 @@ class SpellCrafter(Cleanable):
             - Not thread-safe; expected to run under spellbook phase scheduling.
 
         Lifecycle:
-            - Cleans and replaces any prior patch maps for this spell.
+            - Replaces any prior patch map references for this spell.
+            - Prior map objects are cleaned during SpellCrafter teardown.
         """
         self.check_cleaned()
         if self._spell.is_existing_creation:
@@ -1989,17 +2193,8 @@ class SpellCrafter(Cleanable):
         override_patch_map = builder.build_override_patch_map()
         mutation_patch_map = builder.build_mutation_patch_map()
 
-        if self._override_patch_map_phase10 is not None:
-            try:
-                self._override_patch_map_phase10.cleanup()
-            except Exception:
-                pass
-        if self._mutation_patch_map_phase10 is not None:
-            try:
-                self._mutation_patch_map_phase10.cleanup()
-            except Exception:
-                pass
-
+        # Hot-swap patch maps without cleaning previous objects in-place.
+        # Concurrent runners may still be reading the prior maps.
         self._override_patch_map_phase10 = override_patch_map
         self._mutation_patch_map_phase10 = mutation_patch_map
 
@@ -2095,7 +2290,7 @@ class SpellCrafter(Cleanable):
         Contract:
             - Requires Phase 8 artifacts to be available.
             - Uses Phase 9 injection plan when available.
-            - Replaces any existing ExecutionPlan for this spell.
+            - Replaces existing ExecutionPlan references for this spell.
             - Uses the Spellbook-managed spell_id_pool (spell_id -> ISpell) as the
               spell lookup map without rebuilding it per phase.
         """
@@ -2103,31 +2298,35 @@ class SpellCrafter(Cleanable):
         if self._spell.is_existing_creation:
             return
 
+        occurrence_plan = self._occurrence_plan_phase8
+        injection_plan = self._injection_plan_phase9
+
         plan_no_overrides = self._build_execution_plan_variant(
-            occurrence_plan=self._occurrence_plan_phase8,
-            injection_plan=self._injection_plan_phase9,
+            occurrence_plan=occurrence_plan,
+            injection_plan=injection_plan,
             spell_lookup=self._spell._spellbook._spell_id_pool,
             plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
         )
         plan_overrides = self._build_execution_plan_variant(
-            occurrence_plan=self._occurrence_plan_phase8,
-            injection_plan=self._injection_plan_phase9,
+            occurrence_plan=occurrence_plan,
+            injection_plan=injection_plan,
             spell_lookup=self._spell._spellbook._spell_id_pool,
             plan_variant=ExecutionPlanVariant.OVERRIDES,
         )
         plan_overrides_with_mutations = self._build_execution_plan_variant(
-            occurrence_plan=self._occurrence_plan_phase8,
-            injection_plan=self._injection_plan_phase9,
+            occurrence_plan=occurrence_plan,
+            injection_plan=injection_plan,
             spell_lookup=self._spell._spellbook._spell_id_pool,
             plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
         )
 
         self._cache_execution_plan_metrics(
-            occurrence_plan=self._occurrence_plan_phase8,
+            occurrence_plan=occurrence_plan,
             plan=plan_no_overrides,
         )
 
-        self._cleanup_execution_plans_phase11()
+        # Hot-swap execution plans without cleaning previous plan objects
+        # in-place; concurrent meld calls may still be executing old plans.
         self._execution_plan_phase11_no_overrides = plan_no_overrides
         self._execution_plan_phase11_overrides = plan_overrides
         self._execution_plan_phase11 = plan_overrides_with_mutations
@@ -2252,6 +2451,254 @@ class SpellCrafter(Cleanable):
             crafter._validation_result_phase6 = validation_state
             crafter._validated_phase6 = True
 
+    def run_phase_system_validation_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 6 local entrypoint.
+
+        Purpose:
+            Validate only the locally scoped Phase 5 graph produced by
+            ``run_phase_root_blueprints_local``.
+        Contract:
+            - Uses the same strategy set as frame-wide Phase 6.
+            - Records per-conduit validity only for scoped spell/root ids.
+            - Publishes Phase 6 validation state to scoped spell crafters only.
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        spellbook = self._spell._spellbook
+        spell_lookup_pool = spellbook._spell_id_pool
+        index = self._spell_system_index_phase5
+        blueprints = self._entire_dag_blueprint_phase5
+        if index is None or blueprints is None:
+            raise RuntimeError("Phase 6 local requires Phase 5 local artifacts.")
+
+        phase4_results: Dict[str, Any] = {}
+        broken_spell_ids: Set[str] = set()
+        scoped_spell_lookup: Dict[str, ISpell] = {}
+
+        for spell_id in index.nodes.keys():
+            spell_instance = spell_lookup_pool[spell_id]
+            scoped_spell_lookup[spell_id] = spell_instance
+            crafter = spell_instance._crafter
+            phase4_results[spell_id] = crafter._validation_result_phase4
+            if crafter._is_broken:
+                broken_spell_ids.add(spell_id)
+
+        visibility_gap_diagnostics = self._collect_local_visibility_gap_diagnostics(
+            scoped_spell_ids=index.nodes.keys(),
+            spell_lookup=spell_lookup_pool,
+            root_ids=blueprints.keys(),
+        )
+        visibility_gap_diagnostics.extend(
+            self._collect_local_blueprint_visibility_gap_diagnostics(
+                blueprints=blueprints,
+                spell_lookup=spell_lookup_pool,
+            )
+        )
+        if visibility_gap_diagnostics:
+            self._spell_system_states.bulk_set_conduit_spell_validity(
+                conduit_id,
+                {spell_id: SpellValidity.invalid for spell_id in index.nodes.keys()},
+                change_reason=SpellStateChangeReason.validation_failed,
+            )
+            self._spell_system_states.bulk_set_conduit_root_validity(
+                conduit_id,
+                {root_id: SpellValidity.invalid for root_id in blueprints.keys()},
+                change_reason=SpellStateChangeReason.validation_failed,
+            )
+            self._spell_system_states.record_conduit_diagnostics(
+                conduit_id,
+                visibility_gap_diagnostics,
+            )
+            validation_state = SpellSystemValidationState(
+                is_valid=False,
+                errors=visibility_gap_diagnostics,
+                warnings=[],
+                nodes=index.nodes,
+            )
+            self._validation_result_phase6 = validation_state
+            self._validated_phase6 = True
+            for spell_instance in scoped_spell_lookup.values():
+                crafter = spell_instance._ensure_crafter()
+                crafter._validation_result_phase6 = validation_state
+                crafter._validated_phase6 = True
+            return
+
+        strategies = [
+            CycleDetectionStrategy(),
+            BrokenSpellInDagStrategy(),
+            GraphConsistencyStrategy(),
+            MissingPhase4Strategy(),
+            RootReachabilityStrategy(),
+            RootCoverageStrategy(),
+            IndexDependencySanityStrategy(),
+            VisibilityGapStrategy(),
+            TopologyDependencyMismatchStrategy(),
+            IdentityMixingStrategy(),
+            ContractedVersionDriftStrategy(),
+            LineageAlignmentStrategy(),
+            IndexCoverageStrategy(),
+            LineageVersionConflictStrategy(),
+            RootLineageConflictStrategy(),
+            OwnershipConsistencyStrategy(),
+            DependencyTypeSanityStrategy(),
+            ScopeOrderingStrategy(),
+            ContractGraphCycleStrategy(),
+            RootScaleLimitStrategy(),
+            RootViabilityStrategy(),
+            SocketRefSanityStrategy(),
+        ]
+
+        validator = SpellSystemValidationSystem(strategies=strategies)
+        validation_state = validator.validate(
+            index=index,
+            blueprints=blueprints,
+            phase4_results=phase4_results,
+            broken_spell_ids=broken_spell_ids,
+            spell_system_states=self._spell_system_states,
+            conduit_id=conduit_id,
+            spell_lookup=scoped_spell_lookup,
+            cancel_event=cancel_event,
+        )
+
+        self._validation_result_phase6 = validation_state
+        self._validated_phase6 = True
+        for spell_instance in scoped_spell_lookup.values():
+            crafter = spell_instance._ensure_crafter()
+            crafter._validation_result_phase6 = validation_state
+            crafter._validated_phase6 = True
+
+    def _collect_local_visibility_gap_diagnostics(
+            self,
+            *,
+            scoped_spell_ids: Collection[str],
+            spell_lookup: Dict[str, ISpell],
+            root_ids: Collection[str],
+    ) -> List[SystemDiagnostic]:
+        """
+        Collect visibility-gap diagnostics for local Phase 6 validation.
+
+        Purpose:
+            Detect unresolved dependency spell ids in local topologies before
+            Phase 8 compilation attempts to construct occurrence plans.
+        Contract:
+            - Emits one ERROR diagnostic per unique missing dependency edge.
+            - Uses local topology target_spell_ids as the source of truth.
+            - Never mutates SpellSystemStates or spell objects.
+        Args:
+            scoped_spell_ids:
+                Spell ids participating in local validation scope.
+            spell_lookup:
+                Visible spell_id -> spell map for the current Spellbook.
+            root_ids:
+                Root ids for the local validation scope.
+        Returns:
+            List[SystemDiagnostic]:
+                Visibility-gap diagnostics; empty when scope is fully visible.
+        """
+        self.check_cleaned()
+        root_id = next(iter(root_ids), self._spell.spell_index.current)
+        diagnostics: List[SystemDiagnostic] = []
+        seen: Set[Tuple[str, str, str]] = set()
+        for spell_id in scoped_spell_ids:
+            topology = self._spell_system_states.get_local_topology_by_id(spell_id)
+            if topology is None:
+                continue
+            for socket in topology.iter_sockets():
+                for dependency_id in socket.target_spell_ids:
+                    if dependency_id in spell_lookup:
+                        continue
+                    signature = (spell_id, socket.param_name, dependency_id)
+                    if signature in seen:
+                        continue
+                    seen.add(signature)
+                    diagnostics.append(
+                        SystemDiagnostic(
+                            code="visibility_gap_dependency_filtered",
+                            message=(
+                                f"Spell '{spell_id}' parameter '{socket.param_name}' "
+                                f"depends on '{dependency_id}', but that dependency is "
+                                "not visible to this Spellbook."
+                            ),
+                            severity=SystemDiagnosticSeverity.ERROR,
+                            spell_id=spell_id,
+                            root_id=root_id,
+                            source="LocalVisibilityGapGuard",
+                            details={
+                                "spell_id": spell_id,
+                                "param_name": socket.param_name,
+                                "missing_dependency_id": dependency_id,
+                            },
+                        )
+                    )
+        return diagnostics
+
+    def _collect_local_blueprint_visibility_gap_diagnostics(
+            self,
+            *,
+            blueprints: Dict[str, RootResolutionBlueprint],
+            spell_lookup: Dict[str, ISpell],
+    ) -> List[SystemDiagnostic]:
+        """
+        Collect visibility-gap diagnostics from local Phase 5 root blueprints.
+
+        Purpose:
+            Catch hidden dependency nodes that are present in blueprint DAGs but
+            not visible in this Spellbook's spell pool.
+        Contract:
+            - Emits one ERROR diagnostic per unique (root_id, missing_spell_id).
+            - Never mutates blueprint or spell pool artifacts.
+        Args:
+            blueprints:
+                Local root blueprints produced by Phase 5 local.
+            spell_lookup:
+                Visible spell_id -> spell map for the current Spellbook.
+        Returns:
+            List[SystemDiagnostic]:
+                Visibility-gap diagnostics derived from blueprint DAG contents.
+        """
+        self.check_cleaned()
+        diagnostics: List[SystemDiagnostic] = []
+        seen: Set[Tuple[str, str]] = set()
+        for root_id, blueprint in blueprints.items():
+            dag = blueprint.dag
+            for dependency_id in dag.nodes.keys():
+                if dependency_id in spell_lookup:
+                    continue
+                signature = (root_id, dependency_id)
+                if signature in seen:
+                    continue
+                seen.add(signature)
+                diagnostics.append(
+                    SystemDiagnostic(
+                        code="visibility_gap_dependency_filtered",
+                        message=(
+                            f"Root '{root_id}' references dependency "
+                            f"'{dependency_id}', but that dependency is not "
+                            "visible to this Spellbook."
+                        ),
+                        severity=SystemDiagnosticSeverity.ERROR,
+                        spell_id=dependency_id,
+                        root_id=root_id,
+                        source="LocalVisibilityGapGuard",
+                        details={
+                            "root_id": root_id,
+                            "missing_dependency_id": dependency_id,
+                        },
+                    )
+                )
+        return diagnostics
+
 
     # ------------------------------------------------------------------
     # Phase 7 - Change-control / Component-of Index
@@ -2273,6 +2720,31 @@ class SpellCrafter(Cleanable):
         self.check_cleaned()
         self._ensure_change_control_ready(conduit_id)
 
+    def run_phase_change_control_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 7 local entrypoint.
+
+        Purpose:
+            Refresh change-control wiring only for locally revalidated roots.
+        Contract:
+            - Upserts component-of mappings for local root blueprints.
+            - Preserves mappings for unrelated roots on the conduit.
+            - Registers a revalidator when missing.
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal (unused).
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._ensure_change_control_ready_local(conduit_id)
+
     def _ensure_change_control_ready(self, conduit_id: str) -> None:
         """
         Internal helper to (re)wire change-control after Phase 5 artifacts exist.
@@ -2282,6 +2754,36 @@ class SpellCrafter(Cleanable):
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
         owned_root_blueprints = self._filter_root_blueprints_to_owned(self._entire_dag_blueprint_phase5)
         change_control_manager.rebuild_component_of(conduit_id, owned_root_blueprints)
+        if conduit_id not in change_control_manager._revalidate_fn_by_conduit:
+            def _revalidate_dirty_roots(
+                    dirty_roots: Set[str],
+                    cancel_event: Optional[CancellationEvent],
+            ) -> Set[str]:
+                validated_roots: Set[str] = set()
+                for root_id in dirty_roots:
+                    spell_instance = spellbook._spell_id_pool[root_id]
+                    crafter = spell_instance._crafter
+                    crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
+                    validated_roots.add(root_id)
+
+                return validated_roots
+
+            change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
+
+    def _ensure_change_control_ready_local(self, conduit_id: str) -> None:
+        """
+        Internal helper to upsert local change-control wiring after local Phase 5.
+
+        Contract:
+            - Requires local Phase 5 root blueprints on this crafter.
+            - Uses component-of upsert semantics to preserve unrelated roots.
+            - Registers the same revalidator contract as frame-wide wiring.
+        """
+        spellbook = self._spell._spellbook
+        frame_name = spellbook._aetheric_frame
+        change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
+        owned_root_blueprints = self._filter_root_blueprints_to_owned(self._entire_dag_blueprint_phase5)
+        change_control_manager.upsert_component_of(conduit_id, owned_root_blueprints)
         if conduit_id not in change_control_manager._revalidate_fn_by_conduit:
             def _revalidate_dirty_roots(
                     dirty_roots: Set[str],

@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
-from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple
+from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection
 import threading
 import time
 # Melder Imports
@@ -13,8 +13,13 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.bind.scan import Scan
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
+from melder.spellbook.spell_crafter.system.system_diagnostic import (
+    SystemDiagnostic,
+    SystemDiagnosticSeverity,
+)
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import ClassBindingProfile
 from melder.spellbook.spellbinder import SpellBinder
+from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -38,6 +43,8 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
@@ -3620,16 +3627,317 @@ class Spellbook(Cleanable, ISpellbook):
                     "_run_resolution_phases_for_conduit",
                     exc_info=True,
                 )
+
+    def _run_resolution_phases_for_target_spell(
+            self,
+            conduit_id: str,
+            target_spell: ISpell,
+    ) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Internal
+
+        Orchestrate local conduit-scoped phases for one target spell.
+
+        Order:
+            - Phase 5 local (root blueprints for target closure)
+            - Phase 6 local (system validation for local scope)
+            - Phase 7 local (change-control upsert for local roots)
+            - Phase 8-11 for the target spell only
+
+        Purpose:
+            Allow meld-triggered revalidation to compile only the target lane
+            while retaining full spellbook-wide phases for conjure/global flows.
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            target_spell:
+                Spell being resolved by meld.
+        Returns:
+            Dict[str, Sequence[UnitOfWork]]:
+                Mapping of phase name -> sequence of `UnitOfWork` instances.
+        Raises:
+            ValueError:
+                If conduit_id is empty or target_spell is None.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        if target_spell is None:
+            raise ValueError("target_spell must not be None.")
+
+        results: Dict[str, Sequence[IUnitOfWork]] = {}
+        target_spell_id = target_spell.spell_id
+
+        scheduler = PhaseScheduler(
+            spellbook=self,
+            configuration=self._configuration,
+        )
+        try:
+            scheduler.register_phase(
+                "root_blueprints_local",
+                lambda: [
+                    scheduler.create_unit_of_work(
+                        func=target_spell.run_phase_root_blueprints_local,
+                        args=(conduit_id, scheduler.cancel_event,),
+                        label=f"root_blueprints_local:{target_spell_id}",
+                        metadata={
+                            "phase": "root_blueprints_local",
+                            "spell_id": target_spell_id,
+                            "scope": "local",
+                        },
+                    )
+                ],
+            )
+            scheduler.register_phase(
+                "system_validation_local",
+                lambda: [
+                    scheduler.create_unit_of_work(
+                        func=target_spell.run_phase_system_validation_local,
+                        args=(conduit_id, scheduler.cancel_event,),
+                        label=f"system_validation_local:{target_spell_id}",
+                        metadata={
+                            "phase": "system_validation_local",
+                            "spell_id": target_spell_id,
+                            "scope": "local",
+                        },
+                    )
+                ],
+            )
+            scheduler.register_phase(
+                "change_control_local",
+                lambda: [
+                    scheduler.create_unit_of_work(
+                        func=target_spell.run_phase_change_control_local,
+                        args=(conduit_id, scheduler.cancel_event,),
+                        label=f"change_control_local:{target_spell_id}",
+                        metadata={
+                            "phase": "change_control_local",
+                            "spell_id": target_spell_id,
+                            "scope": "local",
+                        },
+                    )
+                ],
+            )
+
+            results.update(scheduler.run_all_phases())
+        finally:
+            try:
+                scheduler.cleanup()
+            except Exception:
+                self._logger.error(
+                    "PhaseScheduler.cleanup() raised during _run_resolution_phases_for_target_spell",
+                    "_run_resolution_phases_for_target_spell",
+                    exc_info=True,
+                )
+
+        resolution_state = None
+        if self._spell_system_states is not None:
+            resolution_state = self._spell_system_states.get_conduit_resolution_state(conduit_id)
+        if resolution_state is not None and resolution_state.has_errors():
+            self._cleanup_phase_artifacts_after_resolution(spell_ids={target_spell_id})
+            return results
+
+        scheduler = PhaseScheduler(
+            spellbook=self,
+            configuration=self._configuration,
+        )
+        target_crafter = target_spell._ensure_crafter()
+        scoped_spell_ids = {target_spell_id}
+        target_index = target_crafter.spell_system_index_phase5
+        if target_index is not None and target_index.nodes is not None:
+            scoped_spell_ids.update(target_index.nodes.keys())
+        root_blueprints = target_crafter._entire_dag_blueprint_phase5
+        if root_blueprints is None:
+            scoped_root_ids: Collection[str] = (target_spell_id,)
+        else:
+            scoped_root_ids = root_blueprints.keys()
+        try:
+            scheduler.register_phase(
+                "occurrence_plan_local",
+                lambda: [
+                    scheduler.create_unit_of_work(
+                        func=target_spell.run_phase_occurrence_plan,
+                        args=(conduit_id, scheduler.cancel_event,),
+                        label=f"occurrence_plan_local:{target_spell_id}",
+                        metadata={
+                            "phase": "occurrence_plan_local",
+                            "spell_id": target_spell_id,
+                            "scope": "local",
+                        },
+                    )
+                ],
+            )
+            scheduler.register_phase(
+                "injection_plan_local",
+                lambda: [
+                    scheduler.create_unit_of_work(
+                        func=target_spell.run_phase_injection_plan,
+                        args=(conduit_id, scheduler.cancel_event,),
+                        label=f"injection_plan_local:{target_spell_id}",
+                        metadata={
+                            "phase": "injection_plan_local",
+                            "spell_id": target_spell_id,
+                            "scope": "local",
+                        },
+                    )
+                ],
+            )
+            scheduler.register_phase(
+                "patch_maps_local",
+                lambda: [
+                    scheduler.create_unit_of_work(
+                        func=target_spell.run_phase_patch_maps,
+                        args=(conduit_id, scheduler.cancel_event,),
+                        label=f"patch_maps_local:{target_spell_id}",
+                        metadata={
+                            "phase": "patch_maps_local",
+                            "spell_id": target_spell_id,
+                            "scope": "local",
+                        },
+                    )
+                ],
+            )
+            scheduler.register_phase(
+                "execution_plan_local",
+                lambda: [
+                    scheduler.create_unit_of_work(
+                        func=target_spell.run_phase_execution_plan,
+                        args=(conduit_id, scheduler.cancel_event,),
+                        label=f"execution_plan_local:{target_spell_id}",
+                        metadata={
+                            "phase": "execution_plan_local",
+                            "spell_id": target_spell_id,
+                            "scope": "local",
+                        },
+                    )
+                ],
+            )
+
+            try:
+                results.update(scheduler.run_all_phases())
+            except PhaseExecutionError as exc:
+                missing_dependency_ids: List[str] = []
+                for error in exc.errors:
+                    if not isinstance(error, KeyError):
+                        continue
+                    if not error.args:
+                        continue
+                    missing_dependency_ids.append(str(error.args[0]))
+                if not missing_dependency_ids:
+                    raise
+
+                self._record_local_resolution_visibility_failure(
+                    conduit_id=conduit_id,
+                    scoped_spell_ids=scoped_spell_ids,
+                    scoped_root_ids=scoped_root_ids,
+                    missing_dependency_ids=missing_dependency_ids,
+                )
+                self._cleanup_phase_artifacts_after_resolution(spell_ids=scoped_spell_ids)
+                return results
+            self._cleanup_phase_artifacts_after_resolution(spell_ids=scoped_spell_ids)
+            return results
+        finally:
+            try:
+                scheduler.cleanup()
+            except Exception:
+                self._logger.error(
+                    "PhaseScheduler.cleanup() raised during _run_resolution_phases_for_target_spell",
+                    "_run_resolution_phases_for_target_spell",
+                    exc_info=True,
+                )
+
+    def _record_local_resolution_visibility_failure(
+            self,
+            *,
+            conduit_id: str,
+            scoped_spell_ids: Collection[str],
+            scoped_root_ids: Collection[str],
+            missing_dependency_ids: Collection[str],
+    ) -> None:
+        """
+        Record local resolution visibility failures as conduit diagnostics.
+
+        Purpose:
+            Convert local phase compilation key-miss errors into deterministic
+            per-conduit validation failures so meld returns SpellbookValidationError
+            rather than leaking low-level PhaseExecutionError.
+        Contract:
+            - Marks scoped spell/root resolution validity as INVALID.
+            - Records ERROR diagnostics for each missing dependency id.
+            - Does not mutate structural SpellSystemState validity.
+        Args:
+            conduit_id:
+                Conduit identifier whose resolution state should be updated.
+            scoped_spell_ids:
+                Spell ids participating in local revalidation scope.
+            scoped_root_ids:
+                Root ids participating in local revalidation scope.
+            missing_dependency_ids:
+                Dependency ids that were referenced but not visible.
+        Returns:
+            None.
+        """
+        diagnostics: List[SystemDiagnostic] = []
+        seen_missing_ids: Set[str] = set()
+        for missing_dependency_id in missing_dependency_ids:
+            if missing_dependency_id in seen_missing_ids:
+                continue
+            seen_missing_ids.add(missing_dependency_id)
+            diagnostics.append(
+                SystemDiagnostic(
+                    code="visibility_gap_dependency_filtered",
+                    message=(
+                        f"Local resolution referenced dependency "
+                        f"'{missing_dependency_id}', but it is not visible "
+                        "to this Spellbook."
+                    ),
+                    severity=SystemDiagnosticSeverity.ERROR,
+                    spell_id=missing_dependency_id,
+                    root_id=None,
+                    source="LocalResolutionPhaseGuard",
+                    details={
+                        "missing_dependency_id": missing_dependency_id,
+                    },
+                )
+            )
+
+        self._spell_system_states.bulk_set_conduit_spell_validity(
+            conduit_id,
+            {spell_id: SpellValidity.invalid for spell_id in scoped_spell_ids},
+            change_reason=SpellStateChangeReason.validation_failed,
+        )
+        self._spell_system_states.bulk_set_conduit_root_validity(
+            conduit_id,
+            {root_id: SpellValidity.invalid for root_id in scoped_root_ids},
+            change_reason=SpellStateChangeReason.validation_failed,
+        )
+        self._spell_system_states.record_conduit_diagnostics(conduit_id, diagnostics)
     #endregion
 
-    def _cleanup_phase_artifacts_after_resolution(self) -> None:
+    def _cleanup_phase_artifacts_after_resolution(
+            self,
+            spell_ids: Optional[Collection[str]] = None,
+    ) -> None:
         """
         Internal
 
         Clean per-spell phase artifacts after conduit-scoped phases complete.
         """
         self.check_cleaned()
-        for spell in self._spells.values():
+        if spell_ids is None:
+            for spell in self._spells.values():
+                try:
+                    spell.crafter.cleanup_phase_artifacts()
+                except Exception:
+                    # Cleanup should not disrupt conjure/resolve flows.
+                    pass
+            return
+
+        for spell_id in spell_ids:
+            spell = self._spell_id_pool.get(spell_id)
+            if spell is None:
+                continue
             try:
                 spell.crafter.cleanup_phase_artifacts()
             except Exception:

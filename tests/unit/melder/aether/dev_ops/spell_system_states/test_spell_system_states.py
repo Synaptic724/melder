@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock, call
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.interfaces.interfaces import ISpellIndex, ISpell
@@ -108,6 +109,32 @@ def test_unregister_lineage_triggers_risk_manager(
     assert calls[0] == call("idx-1", SpellValidity.gated)
     assert calls[-1] == call("idx-1", SpellValidity.cleaned)
     assert len(calls) == 2
+
+def test_unregister_lineage_marks_dependents_gated(
+    states_manager: SpellSystemStates,
+    mock_spell: ISpell,
+) -> None:
+    """
+    Verify unregister_lineage gates dependent lineages.
+
+    Contract:
+    - Direct dependents are marked gated/dirty when a lineage is unregistered.
+    - Impacted dependents receive the impacted_by_dependency flag.
+    """
+    idx_a = MagicMock(spec=ISpellIndex, id="idx-a", current="spell-a")
+    idx_b = MagicMock(spec=ISpellIndex, id="idx-b", current="spell-b")
+
+    states_manager.register_lineage(idx_a, mock_spell)
+    states_manager.register_lineage(idx_b, mock_spell)
+    states_manager.update_dependencies(idx_b, ["spell-a"])
+    states_manager.consume_dirty_lineages()
+
+    states_manager.unregister_lineage(idx_a)
+
+    state_b = states_manager.get_by_index_id("idx-b")
+    assert state_b.validity is SpellValidity.gated
+    assert SpellState.impacted_by_dependency in state_b.flags
+    assert "idx-b" in states_manager.consume_dirty_lineages()
 
 # ----------------------------------------------------------------------
 # 3. Dependency Wiring

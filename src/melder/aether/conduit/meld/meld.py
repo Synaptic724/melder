@@ -414,7 +414,7 @@ class Meld(Cleanable, IMeld):
             -> raise SpellbookValidationError immediately.
         - If per-conduit resolution validity is UNKNOWN or GATED:
             -> run conduit-scoped phases (5-7) via
-               `spell._spellbook._run_resolution_phases_for_conduit(conduit_id)`.
+               `spell._spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)`.
               Then:
                 * if resolution validity is INVALID/DISABLED -> raise
                   SpellbookValidationError.
@@ -547,7 +547,7 @@ class Meld(Cleanable, IMeld):
                 spellbook = spell._spellbook
                 if spellbook is None:
                     raise SpellbookValidationError([spell])
-                spellbook._run_resolution_phases_for_conduit(conduit_id)
+                spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
 
                 resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
                 resolution_validity = self._get_resolution_validity(spell, resolution_state)

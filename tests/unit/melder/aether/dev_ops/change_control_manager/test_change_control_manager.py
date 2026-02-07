@@ -166,6 +166,60 @@ def test_rebuild_clears_previous_state(manager):
     assert not manager.is_root_dirty(CONDUIT_ID, "OldRoot")
     assert not manager._dirty_spells_by_conduit[CONDUIT_ID]
 
+def test_upsert_component_of_preserves_unrelated_roots(manager):
+    """
+    Verify upsert refreshes selected roots without clearing unrelated mappings.
+
+    Contract:
+    - Upsert only replaces mappings for supplied roots.
+    - Unrelated roots remain tracked.
+    - Replaced roots stop tracking removed nodes and track new nodes.
+    """
+    bp_a = MagicMock(spec=RootResolutionBlueprint)
+    bp_a.dag.nodes.keys.return_value = ["A", "B"]
+    bp_c = MagicMock(spec=RootResolutionBlueprint)
+    bp_c.dag.nodes.keys.return_value = ["C"]
+    manager.rebuild_component_of(CONDUIT_ID, {"RootA": bp_a, "RootC": bp_c})
+
+    bp_a_new = MagicMock(spec=RootResolutionBlueprint)
+    bp_a_new.dag.nodes.keys.return_value = ["A", "D"]
+    manager.upsert_component_of(CONDUIT_ID, {"RootA": bp_a_new})
+
+    manager.notify_spell_changed("B")
+    assert not manager.is_root_dirty(CONDUIT_ID, "RootA")
+
+    manager.notify_spell_changed("D")
+    assert manager.is_root_dirty(CONDUIT_ID, "RootA")
+
+    manager.notify_spell_changed("C")
+    assert manager.is_root_dirty(CONDUIT_ID, "RootC")
+
+def test_upsert_component_of_clears_dirty_roots_for_updated_scope(manager):
+    """
+    Verify upsert clears dirty flags for roots that were refreshed.
+
+    Contract:
+    - Dirty state for supplied roots is cleared.
+    - Dirty state for other roots remains unchanged.
+    """
+    bp_a = MagicMock(spec=RootResolutionBlueprint)
+    bp_a.dag.nodes.keys.return_value = ["A"]
+    bp_c = MagicMock(spec=RootResolutionBlueprint)
+    bp_c.dag.nodes.keys.return_value = ["C"]
+    manager.rebuild_component_of(CONDUIT_ID, {"RootA": bp_a, "RootC": bp_c})
+
+    manager.notify_spell_changed("A")
+    manager.notify_spell_changed("C")
+    assert manager.is_root_dirty(CONDUIT_ID, "RootA")
+    assert manager.is_root_dirty(CONDUIT_ID, "RootC")
+
+    bp_a_new = MagicMock(spec=RootResolutionBlueprint)
+    bp_a_new.dag.nodes.keys.return_value = ["A"]
+    manager.upsert_component_of(CONDUIT_ID, {"RootA": bp_a_new})
+
+    assert not manager.is_root_dirty(CONDUIT_ID, "RootA")
+    assert manager.is_root_dirty(CONDUIT_ID, "RootC")
+
 def test_notify_activates_monitor(manager):
     """
     Verify `notify_spell_changed` activates the monitoring state.
