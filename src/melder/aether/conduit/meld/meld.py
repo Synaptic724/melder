@@ -2226,17 +2226,13 @@ class Meld(Cleanable, IMeld):
         has_disposal_methods: bool = spell.has_disposal_methods
         disposal_methods: list[str] = spell.disposal_method_names
 
-        if existence is Existence.unique:
-            creations.add_unique(
-                spell_id,
-                instance,
-                has_disposal_methods=has_disposal_methods,
-                disposal_methods=disposal_methods,
-            )
-            return
-
-        if existence is Existence.unique_per_conduit:
-            creations.add_unique_per_scope(
+        if existence in (
+                Existence.unique,
+                Existence.unique_per_conduit,
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        ):
+            creations.add_creation(
                 spell_id,
                 instance,
                 has_disposal_methods=has_disposal_methods,
@@ -2247,25 +2243,7 @@ class Meld(Cleanable, IMeld):
         if existence is Existence.many:
             if not has_disposal_methods:
                 return
-            creations.add_many(
-                spell_id,
-                instance,
-                has_disposal_methods=has_disposal_methods,
-                disposal_methods=disposal_methods,
-            )
-            return
-
-        if existence is Existence.unique_per_conduit_cluster:
-            creations.add_unique_per_cluster(
-                spell_id,
-                instance,
-                has_disposal_methods=has_disposal_methods,
-                disposal_methods=disposal_methods,
-            )
-            return
-
-        if existence is Existence.unique_per_conduit_lineage:
-            creations.add_unique_per_lineage(
+            creations.add_many_creations(
                 spell_id,
                 instance,
                 has_disposal_methods=has_disposal_methods,

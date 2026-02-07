@@ -24,11 +24,24 @@ class Creations(Cleanable, ICreations):
     __melder_internal__ = _mrg.sentinel
     def __init__(self, conduit: IConduit):
         """
-        Initialize a new Creations manager.
+        Purpose:
+            Initialize the normal-conduit creations registry.
+
+        Contract:
+            - Owns one shared creations map for non-spellspace and spellspace entries.
+            - Owns one global disposal stack and per-spellspace disposal stacks.
+            - Rejects initialization for non-normal conduit state.
 
         Args:
-        The internal dictionaries hold references to the objects created by the conduit,
-        indexed by the spell's unique ID (`str`).
+            conduit:
+                Conduit that owns this Creations manager.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If conduit state is missing or not normal.
         """
         super().__init__()
         self._conduit: IConduit = conduit
@@ -46,31 +59,32 @@ class Creations(Cleanable, ICreations):
         self._log_sysgroups = ["conduit"]
         self._logger = conduit._logger
         self._disposal_stack: deque = deque()
-
-        # Internal storage for created objects by lifecycle scope
-        self._unique: Dict[str, Creation] = {}
-        self._unique_per_scope: Dict[str, Creation] = {}
-        self._many: Dict[str, List[Creation]] = {}
-        self._unique_per_lineage: Dict[str, Creation] = {}
-        self._unique_per_cluster: Dict[str, Creation] = {}
-        self._spellspace_instances: Dict[str, Dict[str, Creation]] = {}
         self._spellspace_disposal_stacks: Dict[str, deque] = {}
+
+        # Single shared storage for all lifecycle scopes and spellspace buckets.
+        # Non-spellspace entries are keyed by spell_id.
+        # Spellspace entries are keyed by spellspace_id and hold nested buckets.
+        self._creations: Dict[str, Any] = {}
 
 
     #region Destructor
     def cleanup(self) -> None:
         """
-        Cleans the creations manager, disposing of all managed objects across all existence types.
+        Purpose:
+            Dispose all tracked creations and teardown owned references.
 
-        Once cleaned, no further modifications are allowed. If any disposal method fails,
-        an `ExceptionGroup` containing all errors is raised.
+        Contract:
+            - Idempotent.
+            - Drains global disposal stack first, then spellspace disposal stacks.
+            - Clears all internal containers and nulls owned references.
+            - Raises aggregated disposal failures after teardown.
 
-        Disposal ordering:
-            - Uses a LIFO disposal stack populated at creation time.
-            - Per-scope buckets are cleared after the stack is drained.
+        Returns:
+            None.
 
         Raises:
-            ExceptionGroup: Contains a list of all exceptions encountered during cleanup.
+            ExceptionGroup:
+                If one or more disposal operations fail.
         """
         if self._cleaned:
             return
@@ -93,20 +107,10 @@ class Creations(Cleanable, ICreations):
                 errors.append(e)
 
             # Null internal refs last
-            self._unique.clear()
-            self._unique_per_scope.clear()
-            self._many.clear()
-            self._unique_per_lineage.clear()
-            self._unique_per_cluster.clear()
-            self._spellspace_instances.clear()
+            self._creations.clear()
             self._spellspace_disposal_stacks.clear()
             self._disposal_stack.clear()
-            self._unique = None
-            self._unique_per_scope = None
-            self._many = None
-            self._unique_per_lineage = None
-            self._unique_per_cluster = None
-            self._spellspace_instances = None
+            self._creations = None
             self._spellspace_disposal_stacks = None
             self._conduit = None
             self._disposal_stack = None
@@ -131,21 +135,27 @@ class Creations(Cleanable, ICreations):
 
     def _cleanup_spellspace_instances(self) -> List[Exception]:
         """
-        Internal
+        Purpose:
+            Dispose all spellspace-scoped entries.
 
-        Disposes of all objects registered under the spellspace scope buckets.
+        Contract:
+            - Drains each spellspace disposal stack before clearing bucket entries.
+            - Clears spellspace stacks after bucket teardown.
 
         Returns:
-            List[Exception]: List of any cleanup errors encountered.
+            List[Exception]:
+                Collected disposal errors.
         """
         errors: List[Exception] = []
-        for spellspace_id, bucket in self._spellspace_instances.items():
+        for spellspace_id, bucket in list(self._creations.items()):
+            if not isinstance(bucket, dict):
+                continue
             errors.extend(self._drain_spellspace_disposal_stack(spellspace_id))
             for item in bucket.values():
-                if item is not None:
+                if not item.has_disposal_methods:
                     item.cleanup()
             bucket.clear()
-        self._spellspace_instances.clear()
+            del self._creations[spellspace_id]
         self._spellspace_disposal_stacks.clear()
         return errors
 
@@ -169,13 +179,12 @@ class Creations(Cleanable, ICreations):
           - Cleanup semantics are entirely defined by the configured method list.
 
         Args:
-            item: The object instance to dispose.
+            creation:
+                Creation wrapper whose value may expose a configured disposal method.
 
         Returns:
             Optional[Exception]: RuntimeError if a chosen cleanup method raised; otherwise None.
         """
-        if creation is None:
-            return None
         item = creation.value
         if item is None:
             return None
@@ -205,8 +214,6 @@ class Creations(Cleanable, ICreations):
 
         Push a Creation onto the disposal stack when it declares disposal methods.
         """
-        if creation is None:
-            return
         if creation.has_disposal_methods:
             self._disposal_stack.appendleft(creation)
 
@@ -216,8 +223,6 @@ class Creations(Cleanable, ICreations):
 
         Push a Creation onto a spellspace-local disposal stack when it declares disposal methods.
         """
-        if creation is None:
-            return
         if creation.has_disposal_methods:
             stack = self._spellspace_disposal_stacks.setdefault(spellspace_id, deque())
             stack.appendleft(creation)
@@ -228,8 +233,6 @@ class Creations(Cleanable, ICreations):
 
         Remove a Creation from the disposal stack if present.
         """
-        if creation is None:
-            return
         if not creation.has_disposal_methods:
             return
         if not self._disposal_stack:
@@ -245,8 +248,6 @@ class Creations(Cleanable, ICreations):
 
         Remove a Creation from a spellspace-local disposal stack if present.
         """
-        if creation is None:
-            return
         if not creation.has_disposal_methods:
             return
         stack = self._spellspace_disposal_stacks.get(spellspace_id)
@@ -266,8 +267,6 @@ class Creations(Cleanable, ICreations):
         errors: List[Exception] = []
         while self._disposal_stack:
             creation = self._disposal_stack.popleft()
-            if creation is None:
-                continue
             maybe_error = self._attempt_cleanup(creation)
             if maybe_error:
                 errors.append(maybe_error)
@@ -286,8 +285,6 @@ class Creations(Cleanable, ICreations):
             return errors
         while stack:
             creation = stack.popleft()
-            if creation is None:
-                continue
             maybe_error = self._attempt_cleanup(creation)
             if maybe_error:
                 errors.append(maybe_error)
@@ -296,211 +293,111 @@ class Creations(Cleanable, ICreations):
 
 
     #endregion Destructor
-
-    def _upgrade_from_lesser_conduit(self, **kwargs) -> None:
+    def add_creation(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool = False,
+            disposal_methods: Optional[List[str]] = None,
+    ) -> None:
         """
-        Internal
+        Purpose:
+            Register one non-spellspace singleton creation for a spell id.
 
-        Transfers creations data from a `LesserCreations` instance during a conduit upgrade.
+        Contract:
+            - Inserts one `Creation` under `key` in the shared creations map.
+            - Rejects duplicate keys regardless of singleton lifetime kind.
+            - Pushes to the disposal stack only when disposal methods are declared.
 
         Args:
-            **kwargs: Dictionary containing creation scopes (e.g., `unique_per_scope`, `many`)
-                and an optional `disposal_stack` deque transferred from LesserCreations.
+            key:
+                Spell id used as the singleton slot key.
+            item:
+                Resolved instance to wrap and register.
+            has_disposal_methods:
+                True when this spell declared disposal methods.
+            disposal_methods:
+                Ordered disposal method names for the creation.
+
+        Returns:
+            None.
 
         Raises:
-            RuntimeError: If the `Creations` manager already contains objects before transfer.
+            RuntimeError:
+                If the Creations manager is already cleaned.
+            ValueError:
+                If `key` already exists in the shared creations map.
         """
-        if not len(self._unique_per_scope) == 0 and not len(self._many) == 0:
+        self.check_cleaned()
+        if key in self._creations:
             self._logger.error(
-                "_upgrade_from_lesser_conduit: target already has objects",
-                method_name="_upgrade_from_lesser_conduit", mask=True,
-                owner_id=self._id, owner_display=self._display_name,
-                groups=self._log_groups, system_groups=self._log_sysgroups,
+                f"add_creation: duplicate key={key}",
+                method_name="add_creation",
+                mask=True,
+                owner_id=self._id,
+                owner_display=self._display_name,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
             )
-            raise RuntimeError("Objects already exist in conduit, cannot transfer data.")
-
-        self._unique_per_scope = kwargs.get("unique_per_scope")
-        self._many = kwargs.get("many")
-        disposal_stack = kwargs.get("disposal_stack")
-        if disposal_stack is not None:
-            self._disposal_stack = disposal_stack
-
-
-    def add_unique(
-            self,
-            key: str,
-            item: object,
-            *,
-            has_disposal_methods: bool = False,
-            disposal_methods: list[str] | None = None,
-    ) -> None:
-        """
-        Adds a singleton object instance to the `unique` scope.
-
-        Args:
-            key (UUID): Unique identifier (Spell ID).
-            item (object): Object instance to manage.
-            has_disposal_methods: True when the spell declares disposal methods.
-            disposal_methods: Ordered list of disposal method names for this creation.
-
-        Raises:
-            RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique` scope.
-        """
-        self.check_cleaned()
-        if key in self._unique:
-            self._logger.error(f"add_unique: duplicate key={key}", method_name="add_unique", mask=True,
-                               owner_id=self._id, owner_display=self._display_name,
-                               groups=self._log_groups, system_groups=self._log_sysgroups)
-            raise ValueError(f"Key {key} already exists in unique objects.")
+            raise ValueError(f"Key {key} already exists in creations.")
         creation = Creation(
             item,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
         )
-        self._unique[key] = creation
+        self._creations[key] = creation
         if has_disposal_methods:
             self._push_disposal_creation(creation)
 
-    def add_unique_per_lineage(
+    def add_many_creations(
             self,
             key: str,
             item: object,
             *,
             has_disposal_methods: bool = False,
-            disposal_methods: list[str] | None = None,
+            disposal_methods: Optional[List[str]] = None,
     ) -> None:
         """
-        Adds a singleton object instance to the `unique_per_lineage` scope.
+        Purpose:
+            Register one creation into the many-creations list for a spell id.
+
+        Contract:
+            - Creates the `many` list for `key` when absent.
+            - Appends one `Creation` entry to that list.
+            - Rejects key collisions with non-list slots.
+            - Pushes to the disposal stack only when disposal methods are declared.
 
         Args:
-            key (str): Unique identifier (Spell ID).
-            item (object): Object instance to manage.
-            has_disposal_methods: True when the spell declares disposal methods.
-            disposal_methods: Ordered list of disposal method names for this creation.
+            key:
+                Spell id used as the many-creation slot key.
+            item:
+                Resolved instance to wrap and append.
+            has_disposal_methods:
+                True when this spell declared disposal methods.
+            disposal_methods:
+                Ordered disposal method names for the creation.
+
+        Returns:
+            None.
 
         Raises:
-            RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique_per_lineage` scope.
+            RuntimeError:
+                If the Creations manager is already cleaned.
+            ValueError:
+                If `key` already exists in the shared map with a non-list value.
         """
         self.check_cleaned()
-        if key in self._unique_per_lineage:
-            self._logger.error(f"add_unique_per_lineage: duplicate key={key}", method_name="add_unique_per_lineage", mask=True,
-                               owner_id=self._id, owner_display=self._display_name,
-                               groups=self._log_groups, system_groups=self._log_sysgroups)
-            raise ValueError(f"Key {key} already exists in unique-per-lineage objects.")
+        if key not in self._creations:
+            self._creations[key] = []
+        elif not isinstance(self._creations[key], list):
+            raise ValueError(f"Key {key} already exists in creations with non-many scope.")
         creation = Creation(
             item,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
         )
-        self._unique_per_lineage[key] = creation
-        if has_disposal_methods:
-            self._push_disposal_creation(creation)
-
-    def add_unique_per_cluster(
-            self,
-            key: str,
-            item: object,
-            *,
-            has_disposal_methods: bool = False,
-            disposal_methods: list[str] | None = None,
-    ) -> None:
-        """
-        Adds a singleton object instance to the `unique_per_cluster` scope.
-
-        Args:
-            key (UUID): Unique identifier (Spell ID).
-            item (object): Object instance to manage.
-            has_disposal_methods: True when the spell declares disposal methods.
-            disposal_methods: Ordered list of disposal method names for this creation.
-
-        Raises:
-            RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique_per_cluster` scope.
-        """
-        self.check_cleaned()
-        if key in self._unique_per_cluster:
-            self._logger.error(f"add_unique_per_cluster: duplicate key={key}", method_name="add_unique_per_cluster", mask=True,
-                               owner_id=self._id, owner_display=self._display_name,
-                               groups=self._log_groups, system_groups=self._log_sysgroups)
-            raise ValueError(f"Key {key} already exists in unique-per-cluster objects.")
-        creation = Creation(
-            item,
-            has_disposal_methods=has_disposal_methods,
-            disposal_methods=disposal_methods,
-        )
-        self._unique_per_cluster[key] = creation
-        if has_disposal_methods:
-            self._push_disposal_creation(creation)
-
-    def add_unique_per_scope(
-            self,
-            key: str,
-            item: object,
-            *,
-            has_disposal_methods: bool = False,
-            disposal_methods: list[str] | None = None,
-    ) -> None:
-        """
-        Adds a singleton object instance to the `unique_per_scope` scope.
-
-        Args:
-            key (str): Unique identifier (Spell ID).
-            item (object): Object instance to manage.
-            has_disposal_methods: True when the spell declares disposal methods.
-            disposal_methods: Ordered list of disposal method names for this creation.
-
-        Raises:
-            RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique_per_scope` scope.
-        """
-        self.check_cleaned()
-        if key in self._unique_per_scope:
-            self._logger.error(f"add_unique_per_scope: duplicate key={key}", method_name="add_unique_per_scope", mask=True,
-                               owner_id=self._id, owner_display=self._display_name,
-                               groups=self._log_groups, system_groups=self._log_sysgroups)
-            raise ValueError(f"Key {key} already exists in unique-per-scope objects.")
-        creation = Creation(
-            item,
-            has_disposal_methods=has_disposal_methods,
-            disposal_methods=disposal_methods,
-        )
-        self._unique_per_scope[key] = creation
-        if has_disposal_methods:
-            self._push_disposal_creation(creation)
-
-    def add_many(
-            self,
-            key: str,
-            item: object,
-            *,
-            has_disposal_methods: bool = False,
-            disposal_methods: list[str] | None = None,
-    ) -> None:
-        """
-        Adds an object instance to a multi-instance collection under the `many` scope.
-
-        If the collection for the given key does not exist, it is created.
-
-        Args:
-            key (UUID): Collection identifier (Spell ID).
-            item (object): Object instance to add.
-            has_disposal_methods: True when the spell declares disposal methods.
-            disposal_methods: Ordered list of disposal method names for this creation.
-
-        Raises:
-            RuntimeError: If the Creations manager is cleaned.
-        """
-        self.check_cleaned()
-        if key not in self._many:
-            self._many[key] = []
-        creation = Creation(
-            item,
-            has_disposal_methods=has_disposal_methods,
-            disposal_methods=disposal_methods,
-        )
-        self._many[key].append(creation)
+        self._creations[key].append(creation)
         if has_disposal_methods:
             self._push_disposal_creation(creation)
 
@@ -509,85 +406,112 @@ class Creations(Cleanable, ICreations):
     # ------------------------------------------------------------------
     def extract_spell_creations(self, spell_id: str) -> List[Dict[str, Any]]:
         """
-        Remove and return all creations associated with a spell_id across all scopes.
+        Purpose:
+            Remove and return all creations for one spell id from shared and spellspace scopes.
+
+        Contract:
+            - Removes at most one non-spellspace slot for the spell id.
+            - Removes any spellspace entries for the spell id across all spellspace buckets.
+            - Updates disposal stacks to match extracted entries.
+
+        Args:
+            spell_id:
+                Spell identifier whose creations should be extracted.
 
         Returns:
-            List[Dict[str, Any]]: Entries of the form:
-                {"scope": str, "creation": Creation, "spellspace_id": Optional[str]}
+            List[Dict[str, Any]]:
+                Serialized creation entries suitable for `restore_spell_creations`.
         """
         self.check_cleaned()
         extracted: List[Dict[str, Any]] = []
         with self._lock:
-            # Singletons
-            for scope_name, bucket in (
-                ("unique", self._unique),
-                ("unique_per_scope", self._unique_per_scope),
-                ("unique_per_lineage", self._unique_per_lineage),
-                ("unique_per_cluster", self._unique_per_cluster),
-            ):
-                if spell_id in bucket:
-                    creation = bucket.pop(spell_id)
-                    self._remove_disposal_creation(creation)
-                    extracted.append({"scope": scope_name, "creation": creation})
-
-            # Many (list)
-            if spell_id in self._many:
-                creations = self._many.pop(spell_id)
+            # Root scope entry (singleton or many list).
+            value = self._creations.get(spell_id)
+            if isinstance(value, Creation):
+                creation = self._creations.pop(spell_id)
+                self._remove_disposal_creation(creation)
+                extracted.append({"scope": "unique", "creation": creation})
+            elif isinstance(value, list):
+                creations = self._creations.pop(spell_id)
                 for creation in creations:
                     self._remove_disposal_creation(creation)
                     extracted.append({"scope": "many", "creation": creation})
 
-            # Spellspace buckets
-            for spellspace_id, bucket in list(self._spellspace_instances.items()):
+            # Spellspace buckets (nested dict entries in same shared store).
+            for spellspace_id, bucket in list(self._creations.items()):
+                if not isinstance(bucket, dict):
+                    continue
                 if spell_id in bucket:
                     creation = bucket.pop(spell_id)
                     self._remove_spellspace_disposal_creation(spellspace_id, creation)
-                    extracted.append({
-                        "scope": "spellspace",
-                        "spellspace_id": spellspace_id,
-                        "creation": creation,
-                    })
+                    extracted.append(
+                        {
+                            "scope": "spellspace",
+                            "spellspace_id": spellspace_id,
+                            "creation": creation,
+                        }
+                    )
                     if not bucket:
-                        del self._spellspace_instances[spellspace_id]
+                        del self._creations[spellspace_id]
                         self._spellspace_disposal_stacks.pop(spellspace_id, None)
 
         return extracted
 
     def restore_spell_creations(self, spell_id: str, creations: List[Dict[str, Any]]) -> None:
         """
-        Restore creations previously extracted via extract_spell_creations.
+        Purpose:
+            Restore creations previously extracted for a spell id.
+
+        Contract:
+            - Restores non-spellspace and spellspace entries into the shared creations map.
+            - Rebuilds disposal stacks for restored entries.
+            - Raises when target slots do not match expected container type.
+
+        Args:
+            spell_id:
+                Spell identifier whose creations are being restored.
+            creations:
+                Entries produced by `extract_spell_creations`.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If a `many` entry targets a non-list slot or a spellspace entry
+                targets a non-dict slot.
         """
-        if not creations:
-            return
         self.check_cleaned()
         with self._lock:
             for entry in creations:
-                scope = entry.get("scope")
-                creation: Creation = entry.get("creation")
-                if creation is None or scope is None:
-                    continue
-                if scope == "unique":
-                    self._unique[spell_id] = creation
-                    self._push_disposal_creation(creation)
-                elif scope == "unique_per_scope":
-                    self._unique_per_scope[spell_id] = creation
-                    self._push_disposal_creation(creation)
-                elif scope == "unique_per_lineage":
-                    self._unique_per_lineage[spell_id] = creation
-                    self._push_disposal_creation(creation)
-                elif scope == "unique_per_cluster":
-                    self._unique_per_cluster[spell_id] = creation
+                scope = entry["scope"]
+                creation: Creation = entry["creation"]
+                if scope in (
+                        "unique",
+                        "unique_per_scope",
+                        "unique_per_lineage",
+                        "unique_per_cluster",
+                ):
+                    self._creations[spell_id] = creation
                     self._push_disposal_creation(creation)
                 elif scope == "many":
-                    if spell_id not in self._many:
-                        self._many[spell_id] = []
-                    self._many[spell_id].append(creation)
+                    if spell_id not in self._creations:
+                        self._creations[spell_id] = []
+                    many_list = self._creations[spell_id]
+                    if not isinstance(many_list, list):
+                        raise RuntimeError(
+                            f"Cannot restore many creations for spell '{spell_id}' into non-list slot."
+                        )
+                    many_list.append(creation)
                     self._push_disposal_creation(creation)
                 elif scope == "spellspace":
-                    spellspace_id = entry.get("spellspace_id")
-                    if spellspace_id is None:
-                        continue
-                    bucket = self._spellspace_instances.setdefault(spellspace_id, {})
+                    spellspace_id = entry["spellspace_id"]
+                    bucket = self._creations.setdefault(spellspace_id, {})
+                    if not isinstance(bucket, dict):
+                        raise RuntimeError(
+                            f"Cannot restore spellspace creation for spellspace '{spellspace_id}' "
+                            "into non-dict slot."
+                        )
                     bucket[spell_id] = creation
                     self._push_spellspace_disposal_creation(spellspace_id, creation)
 
@@ -597,11 +521,26 @@ class Creations(Cleanable, ICreations):
 
     def get_spellspace_creation(self, spellspace_id: str, spell_id: str) -> Optional[Creation]:
         """
-        Retrieve a creation from a specific spellspace bucket.
+        Purpose:
+            Return one spellspace-scoped creation by spellspace id and spell id.
+
+        Contract:
+            - Returns None when no spellspace bucket exists for `spellspace_id`.
+            - Returns None when `spell_id` is absent in the bucket.
+
+        Args:
+            spellspace_id:
+                Spellspace bucket key.
+            spell_id:
+                Spell identifier within the spellspace bucket.
+
+        Returns:
+            Optional[Creation]:
+                Matching creation wrapper, or None when missing.
         """
         self.check_cleaned()
-        bucket = self._spellspace_instances.get(spellspace_id)
-        if bucket is None:
+        bucket = self._creations.get(spellspace_id)
+        if not isinstance(bucket, dict):
             return None
         return bucket.get(spell_id)
 
@@ -612,10 +551,17 @@ class Creations(Cleanable, ICreations):
             item: object,
             *,
             has_disposal_methods: bool = False,
-            disposal_methods: list[str] | None = None,
+            disposal_methods: Optional[List[str]] = None,
     ) -> None:
         """
-        Register a creation under a specific spellspace bucket.
+        Purpose:
+            Register one creation into a spellspace bucket.
+
+        Contract:
+            - Creates the spellspace bucket when it does not exist.
+            - Rejects duplicate spell ids inside the target bucket.
+            - Rejects bucket key collisions with non-dict slots.
+            - Registers disposal metadata for spellspace teardown.
 
         Args:
             spellspace_id: SpellSpace bucket identifier.
@@ -623,11 +569,19 @@ class Creations(Cleanable, ICreations):
             item: Object instance to register.
             has_disposal_methods: True when the spell declares disposal methods.
             disposal_methods: Ordered list of disposal method names for this creation.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the spellspace slot collides with a non-dict slot or the spell id
+                already exists in the spellspace bucket.
         """
         self.check_cleaned()
-        if spellspace_id not in self._spellspace_instances:
-            self._spellspace_instances[spellspace_id] = {}
-        bucket = self._spellspace_instances[spellspace_id]
+        bucket = self._creations.setdefault(spellspace_id, {})
+        if not isinstance(bucket, dict):
+            raise ValueError(f"Key {spellspace_id} already exists in creations with non-spellspace scope.")
         if spell_id in bucket:
             raise ValueError(f"Key {spell_id} already exists in spellspace '{spellspace_id}'.")
         creation = Creation(
@@ -640,19 +594,36 @@ class Creations(Cleanable, ICreations):
 
     def clear_spellspace_instances(self, spellspace_id: str) -> None:
         """
-        Dispose and clear all creations for a specific spellspace.
+        Purpose:
+            Dispose and remove all entries for one spellspace bucket.
+
+        Contract:
+            - Drains the spellspace disposal stack before clearing non-disposable entries.
+            - Removes the spellspace bucket and its disposal stack.
+            - No-ops when the spellspace bucket is absent.
+
+        Args:
+            spellspace_id:
+                Spellspace bucket identifier.
+
+        Returns:
+            None.
+
+        Raises:
+            ExceptionGroup:
+                If one or more disposal operations fail.
         """
         self.check_cleaned()
-        bucket = self._spellspace_instances.get(spellspace_id)
-        if bucket is None:
+        bucket = self._creations.get(spellspace_id)
+        if not isinstance(bucket, dict):
             return
         errors: List[Exception] = []
         errors.extend(self._drain_spellspace_disposal_stack(spellspace_id))
         for item in bucket.values():
-            if item is not None:
+            if not item.has_disposal_methods:
                 item.cleanup()
         bucket.clear()
-        del self._spellspace_instances[spellspace_id]
+        del self._creations[spellspace_id]
         self._spellspace_disposal_stacks.pop(spellspace_id, None)
         if errors:
             raise ExceptionGroup("Errors occurred during spellspace cleanup", errors)

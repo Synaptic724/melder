@@ -1909,16 +1909,13 @@ class MeldEngine(Cleanable):
             return None
 
         if isinstance(creations, Creations):
-            if existence is Existence.unique:
-                creations.add_unique(
-                    spell_id,
-                    instance,
-                    has_disposal_methods=has_disposal_methods,
-                    disposal_methods=disposal_methods,
-                )
-                return
-            if existence is Existence.unique_per_conduit:
-                creations.add_unique_per_scope(
+            if existence in (
+                    Existence.unique,
+                    Existence.unique_per_conduit,
+                    Existence.unique_per_conduit_cluster,
+                    Existence.unique_per_conduit_lineage,
+            ):
+                creations.add_creation(
                     spell_id,
                     instance,
                     has_disposal_methods=has_disposal_methods,
@@ -1928,23 +1925,7 @@ class MeldEngine(Cleanable):
             if existence is Existence.many:
                 if not has_disposal_methods:
                     return
-                creations.add_many(
-                    spell_id,
-                    instance,
-                    has_disposal_methods=has_disposal_methods,
-                    disposal_methods=disposal_methods,
-                )
-                return
-            if existence is Existence.unique_per_conduit_cluster:
-                creations.add_unique_per_cluster(
-                    spell_id,
-                    instance,
-                    has_disposal_methods=has_disposal_methods,
-                    disposal_methods=disposal_methods,
-                )
-                return
-            if existence is Existence.unique_per_conduit_lineage:
-                creations.add_unique_per_lineage(
+                creations.add_many_creations(
                     spell_id,
                     instance,
                     has_disposal_methods=has_disposal_methods,
@@ -1993,24 +1974,12 @@ class MeldEngine(Cleanable):
                 return
             parent_creations = creations._parent_creations
             if isinstance(parent_creations, Creations):
-                if existence is Existence.unique:
-                    parent_creations.add_unique(
-                        spell_id,
-                        instance,
-                        has_disposal_methods=has_disposal_methods,
-                        disposal_methods=disposal_methods,
-                    )
-                    return
-                if existence is Existence.unique_per_conduit_cluster:
-                    parent_creations.add_unique_per_cluster(
-                        spell_id,
-                        instance,
-                        has_disposal_methods=has_disposal_methods,
-                        disposal_methods=disposal_methods,
-                    )
-                    return
-                if existence is Existence.unique_per_conduit_lineage:
-                    parent_creations.add_unique_per_lineage(
+                if existence in (
+                        Existence.unique,
+                        Existence.unique_per_conduit_cluster,
+                        Existence.unique_per_conduit_lineage,
+                ):
+                    parent_creations.add_creation(
                         spell_id,
                         instance,
                         has_disposal_methods=has_disposal_methods,
