@@ -1,4 +1,4 @@
-from contextlib import contextmanager
+﻿from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
 from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection
 import threading
@@ -11,16 +11,10 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
 )
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.bind.scan import Scan
+from melder.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
-from melder.spellbook.spell_crafter.system.system_diagnostic import (
-    SystemDiagnostic,
-    SystemDiagnosticSeverity,
-)
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import ClassBindingProfile
 from melder.spellbook.spellbinder import SpellBinder
-from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
-from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import (
@@ -35,16 +29,12 @@ from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
 from melder.spellbook.existence.existence import Existence
-from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
@@ -53,20 +43,20 @@ class Spellbook(Cleanable, ISpellbook):
     """
     Public API
 
-    🧙 The **Spellbook** is the central authority for all spell definitions, bindings, and conduit conjurations.
+    ?? The **Spellbook** is the central authority for all spell definitions, bindings, and conduit conjurations.
 
     It acts as a high-level composition container and registry. All spells added to a Spellbook must be
     uniquely identifiable and comply with the Aetheric access rules and configuration state.
 
      -------------------------------------------------------------------------------
-     ⚠️  WARNING: DO NOT USE `aetheric_frame` UNLESS YOU UNDERSTAND THE IMPLICATIONS!
-     ⚠️  IMPORTANT: AETHER FRAMES
+     ??  WARNING: DO NOT USE `aetheric_frame` UNLESS YOU UNDERSTAND THE IMPLICATIONS!
+     ??  IMPORTANT: AETHER FRAMES
 
      The `aetheric_frame` parameter allows multiple Spellbooks to share the same
      configuration and spell visibility. This feature supports system-wide coordination,
      contract binding, and cross-agent sharing of spells.
 
-     🧠 **Do not use `aetheric_frame` unless you have read the documentation** and
+     ?? **Do not use `aetheric_frame` unless you have read the documentation** and
      understand the implications of shared scope, mutation locking, and distributed
      spell ownership.
 
@@ -947,7 +937,7 @@ class Spellbook(Cleanable, ISpellbook):
         Public API
 
         Returns a per-conduit read-only view of all **borrowed** spells.
-        Each conduit ID maps to its own immutable SpellIndex→Spell map.
+        Each conduit ID maps to its own immutable SpellIndex?Spell map.
 
         Returns:
             Mapping[str, Mapping[SpellIndex, ISpell]]:
@@ -1312,7 +1302,7 @@ class Spellbook(Cleanable, ISpellbook):
             Optional[ISpell]: The resolved spell, or None if not found.
         """
 
-        # Pull the map of SpellIndex → ISpell for this conduit
+        # Pull the map of SpellIndex ? ISpell for this conduit
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
@@ -1449,7 +1439,7 @@ class Spellbook(Cleanable, ISpellbook):
 
             spell.spell_index._attach_contracted(self, conduit_id, spell)
 
-            # Main maps: SpellIndex → ISpell and key → SpellIndex
+            # Main maps: SpellIndex ? ISpell and key ? SpellIndex
             spell_map[spell.spell_index] = spell
             lookup_map[spell_key] = spell.spell_index
 
@@ -2393,8 +2383,8 @@ class Spellbook(Cleanable, ISpellbook):
         staged request metadata with the normalized binding keys for the spells
         registered in that transaction.
 
-        ──────────────────────────────────────────────
-        🧠 Binding Overview:
+        ----------------------------------------------
+        ?? Binding Overview:
             - Profiles the spell via reflection.
             - Computes a unique SHA256 `spell_id`.
             - Stores the spell into the internal spell registry.
@@ -2402,8 +2392,8 @@ class Spellbook(Cleanable, ISpellbook):
             - Applies lifecycle and permission policies.
             - Optionally attaches lifecycle hooks.
 
-        ──────────────────────────────────────────────
-        🛡️ Permissions (access control to other conduits):
+        ----------------------------------------------
+        ??? Permissions (access control to other conduits):
             - `"read"`:
                 Allows other conduits to *use* the spell but not create new instances.
                 Useful for shared utilities or resources.
@@ -2415,20 +2405,20 @@ class Spellbook(Cleanable, ISpellbook):
                 Completely blocks access to the spell from other conduits.
                 Only the owning conduit can use or instantiate it.
 
-        🔄 Existence (spell lifecycle):
+        ?? Existence (spell lifecycle):
             Determines how the spell instance is managed (singleton, transient, etc.).
             Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
 
-        📦 Spellframe (optional):
+        ?? Spellframe (optional):
             Logical namespace or grouping label.
             Often corresponds to a shared interface, protocol, or feature group.
 
-        🔑 Binding Name (optional):
+        ?? Binding Name (optional):
             Secondary key used to distinguish different versions or roles of the same type.
             Useful when multiple spells are bound under the same interface.
 
-        ──────────────────────────────────────────────
-        🪝 Lifecycle Hooks (optional `**kwargs`):
+        ----------------------------------------------
+        ?? Lifecycle Hooks (optional `**kwargs`):
 
             - `pre_hooks`: List[Callable]
                 Executed *before* the spell is constructed or cast.
@@ -2442,9 +2432,9 @@ class Spellbook(Cleanable, ISpellbook):
                 Executed *after* the spell has been cast. Often used for initialization,
                 analytics, or final injection steps.
 
-            ⚠️ All hooks must be callables.
+            ?? All hooks must be callables.
 
-        ──────────────────────────────────────────────
+        ----------------------------------------------
         Args:
             spell (Any): The class, function, or object to bind into the spellbook.
             existence (Existence): The lifecycle scope for this spell.
@@ -2972,7 +2962,8 @@ class Spellbook(Cleanable, ISpellbook):
         Hook integration
         ----------------
         If the active Configuration has Conduit lifecycle hooks registered under this
-        Spellbook's ID, they are fetched via ``_get_conjure_hook_map()`` and invoked
+        Spellbook's ID, they are fetched via
+        ``SpellbookCreationSystem.get_conjure_hook_map()`` and invoked
         in the following order:
 
             1. "on_conduit_pre_created()"
@@ -2985,7 +2976,8 @@ class Spellbook(Cleanable, ISpellbook):
 
             3. "on_conduit_post_created(conduit)"
                    Fired after the Conduit has been integrated into all local
-                   spells via ``_define_conduit_into_spells``.
+                   spells via
+                   ``SpellbookCreationSystem.define_conduit_into_spells``.
 
         For conjured (root) conduits, these hooks receive:
 
@@ -3015,233 +3007,26 @@ class Spellbook(Cleanable, ISpellbook):
                     f"conduit_name={conduit_name})"
                 )
 
-            # Ensure configuration is validated, frozen, and bound to Aether
-            if not self.is_configuration_locked():
-                self._validate_and_freeze_configuration()
-                self._bind_configuration_to_aether()
-
-            # Run structural phases (1-4) before resolution phases.
-            self._run_structural_phases()
-
-            # Define disposal metadata before Phase 5-11 planning so execution
-            # plans can decide when registration is required.
-            self._define_disposal_metadata_on_spells()
-
-            # Create a unique ID for this Conduit for per-conduit resolution phases.
-            conduit_id = IDBuilder.create_id()
-
-            # Run conduit-scoped resolution phases (5-11) after structural validation.
-            self._run_resolution_phases_for_conduit(conduit_id)
-
-            # Validate policy vs system_state and local spell registry
-            self._check_system_state(policy, automatic)
-            policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
-            self._check_all_spells()
-
-            # Pull the hook map once for this conjuration.
-            hook_map = self._get_conjure_hook_map()
-
-            # 1) PRE: before Conduit exists — NO conduit instance passed here.
-            self._fire_conjure_hooks(
-                hook_map,
-                "on_conduit_pre_created",
-            )
-
-            # 2) Construct the Conduit.
-            conduit = Conduit(
+            spellbook_creation_system = SpellbookCreationSystem(
                 spellbook=self,
-                name=name,
-                conduit_state=ConduitState.normal,
-                configuration=self._configuration,
-                aetheric_frame=self._aetheric_frame,
-                policy=policy_enum,
+                policy=policy,
                 automatic=automatic,
-                logger=conduit_logger,
-                conduit_id=conduit_id,
+                name=name,
+                conduit_logger=conduit_logger,
+                conduit_cls=Conduit,
+                phase_scheduler_cls=PhaseScheduler,
             )
-
-            # Mark this Spellbook as having conjured its single conduit
-            self._conjured = True
-            self._conduit = conduit
-            self._binding_transaction_active = False
-            if self._pending_binding_frame_keys is not None:
-                self._pending_binding_frame_keys.clear()
-
-            # 3) ACTIVATED: conduit exists but is not yet wired into spells.
-            self._fire_conjure_hooks(
-                hook_map,
-                "on_conduit_activated",
-                conduit,
-            )
-
-            # Wire conduit ownership metadata into all local spells.
-            self._define_conduit_into_spells(conduit)
-            self._register_conduit_with_risk_manager(conduit)
-
-            # 4) POST: final notification after Spellbook-side init is complete.
-            self._fire_conjure_hooks(
-                hook_map,
-                "on_conduit_post_created",
-                conduit,
-            )
-
-            return conduit
-
-
-
-
-    def _check_system_state(self, policy: str, automatic: bool) -> None:
-        """
-        Internal
-
-        Checks if the requested policy is compatible with the current `system_state` configuration.
-
-        Purpose:
-            Enforce the contract between conduit policies and the configured
-            system state before conjure proceeds.
-        Contract:
-            - Automatic mode only allows the default policy.
-            - Dynamic policies require a dynamic system_state.
-            - Raises with policy, automatic, and system_state context for diagnosis.
-        Args:
-            policy (str): The policy requested for the new Conduit.
-            automatic (bool): Whether to operate in automatic (non-dynamic) mode.
-
-        Raises:
-            RuntimeError: If a dynamic-only policy is requested while `automatic` is True or `system_state` is automatic.
-        """
-        policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
-        system_state = self._configuration.get_property("system_state")
-
-        # Automatic mode: only default policy is allowed
-        if automatic:
-            if policy_enum != Policies.default:
-                self._logger.error(
-                    "Dynamic-only policy requested while automatic=True "
-                    f"(policy={policy_enum}, system_state={system_state}).",
-                    "_check_system_state",
-                    exc_info=True,
-                )
-                raise RuntimeError(
-                    "Dynamic-only policies are not allowed when automatic mode is requested. "
-                    f"(policy={policy_enum}, automatic={automatic}, "
-                    f"system_state={system_state}, allowed=default)"
-                )
-            return
-
-        # Dynamic requested: ensure system_state supports it
-        if system_state == SystemState.automatic:
-            self._logger.error(
-                "Dynamic policy requested while system_state is automatic "
-                f"(policy={policy_enum}, automatic={automatic}, "
-                f"system_state={system_state}).",
-                "_check_system_state",
-                exc_info=True,
-            )
-            raise RuntimeError(
-                "Cannot use dynamic policies in automatic system_state. "
-                f"(policy={policy_enum}, automatic={automatic}, system_state={system_state}). "
-                "Set system_state to 'dynamic' in the configuration or set automatic=True."
-            )
-
-    def _define_disposal_metadata_on_spells(self) -> None:
-        """
-        Internal
-
-        Precompute disposal metadata for all local spells using the frozen configuration.
-
-        Purpose:
-            Record which configured disposal method names exist on each spell,
-            so later runtime paths can skip per-instance inspection.
-        Contract:
-            - Uses configuration "disposal_method_names" as the target list.
-            - For class-bound spells (ClassBindingProfile), records the subset of
-              target method names that exist on the class.
-            - For non-class spells or missing profiles, records an empty list.
-            - Updates Spell.disposal_method_names and Spell.has_disposal_methods.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If no configuration instance is available.
-        Threading:
-            - Caller owns the Spellbook lock; this method does not lock.
-        """
-        if self._configuration is None:
-            raise RuntimeError("No configuration available to derive disposal metadata.")
-
-        target_methods = list(
-            self._configuration.get_property("disposal_method_names") if self._configuration else []
-        )
-        if len(target_methods) == 0:
-            return
-
-        for spell in self._spells.values():
-            matched: list[str] = []
-            profile = spell.profile
-            if isinstance(profile, ClassBindingProfile):
-                method_names = set(profile.method_names)
-                for method_name in target_methods:
-                    if method_name in method_names:
-                        matched.append(method_name)
-            spell.disposal_method_names = matched
-            spell.has_disposal_methods = bool(matched)
-
-    def _define_conduit_into_spells(self, conduit: Conduit) -> None:
-        """
-        Internal
-
-        Defines the newly created Conduit's ownership metadata into all locally
-        bound spells and eagerly registers any **existing-object** spells into
-        the Conduit's Creations manager as unique instances.
-
-        Behavior
-        --------
-        For every local spell:
-
-          1. Stamp ownership metadata:
-               - spell._owner_conduit_id
-               - spell._owner_conduit_name
-               - spell._owner_creations  (points at conduit._creations)
-               - spell.spell_index owner conduit id
-
-          2. If the spell represents an existing object
-             (``spell.user_created_object is not None``):
-
-               - Treat it as an already-constructed singleton instance.
-               - Register it immediately into the Conduit's Creations via
-                 ``conduit._register_to_creations(spell, spell.user_created_object)``.
-
-        This means that by the time the Conduit starts resolving spells,
-        all existing-object spells are already present in the Creations store
-        under their normal singleton semantics.
-        """
-
-        with self._lock:
-            for spell in self._spells.values():
+            try:
+                return spellbook_creation_system.conjure()
+            finally:
                 try:
-                    # 1) Stamp conduit ownership metadata on every spell
-                    spell._add_owned_conduit(conduit._id, conduit._name, conduit._creations)
-                    spell.spell_index._set_owner_conduit_id(conduit._id)
-
-                    # 2) If this spell wraps an existing object, eagerly register it.
-                    if spell.user_created_object is not None:
-                        try:
-                            conduit._register_to_creations(spell, spell.user_created_object)
-                        except Exception as reg_err:
-                            self._logger.error(
-                                f"Failed to register existing creation for spell_id={spell.spell_id}: {reg_err}",
-                                "_define_conduit_into_spells",
-                                exc_info=True,
-                            )
-
+                    spellbook_creation_system.cleanup()
                 except Exception as e:
                     self._logger.error(
-                        f"Failed to define conduit into spell: {e}",
-                        "_define_conduit_into_spells",
+                        f"SpellbookCreationSystem cleanup failed: {e}",
+                        "conjure",
                         exc_info=True,
                     )
-
-
 
     def _set_policy_state(self, policy: Policies) -> None:
         """
@@ -3264,50 +3049,69 @@ class Spellbook(Cleanable, ISpellbook):
                 self._block_all_spells = False
                 self._whitelist_all_spells = False
 
-#endregion Conduit API
+    def _check_system_state(self, policy: Any, automatic: bool) -> None:
+        """
+        Internal
 
-#region Hook Management
+        Purpose:
+            Validate policy compatibility with the current Spellbook system state.
+        Contract:
+            - Delegates validation rules to `SpellbookCreationSystem`.
+            - Preserves historical private Spellbook method surface used by tests.
+        Args:
+            policy: Policy value accepted by `Policies` conversion logic.
+            automatic: Automatic-mode request flag.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: If policy/system-state rules are violated.
+            ValueError: If policy cannot be converted to `Policies`.
+        """
+        SpellbookCreationSystem.check_system_state(
+            spellbook=self,
+            policy=policy,
+            automatic=automatic,
+        )
+
+    def _define_conduit_into_spells(self, conduit: Conduit) -> None:
+        """
+        Internal
+
+        Purpose:
+            Stamp conduit ownership metadata into all local spells.
+        Contract:
+            - Delegates ownership stamping and existing-object registration.
+            - Preserves private Spellbook compatibility wrapper for tests.
+        Args:
+            conduit: Conduit owning the local spells.
+        Returns:
+            None.
+        Raises:
+            None.
+        """
+        SpellbookCreationSystem.define_conduit_into_spells(
+            spellbook=self,
+            conduit=conduit,
+        )
+
     def _get_conjure_hook_map(self) -> Optional[Mapping[str, List[Callable]]]:
         """
         Internal
 
-        Fetch the Conduit lifecycle hook map for this Spellbook from the
-        active Configuration, if the Configuration supports hook
-        registration.
-
-        Hooks are registered under this Spellbook's ID, and the map is
-        shaped as:
-
-            {
-                "on_conduit_pre_created":   [callable, ...],
-                "on_conduit_activated":     [callable, ...],
-                "on_conduit_post_created":  [callable, ...],
-                ...
-            }
-
+        Purpose:
+            Resolve conjure lifecycle hooks for this Spellbook id.
+        Contract:
+            - Delegates retrieval and normalization behavior.
+            - Preserves private Spellbook compatibility wrapper for tests.
+        Args:
+            None.
         Returns:
             Optional[Mapping[str, List[Callable]]]:
-                The hook map if available and non-empty, otherwise None.
+                Hook map or None when unavailable.
+        Raises:
+            None.
         """
-        if self._configuration is None:
-            return None
-
-        try:
-            hook_map = self._configuration.get_hooks(self._id)
-        except AttributeError:
-            return None
-        except Exception as e:
-            self._logger.error(
-                f"_get_conjure_hook_map failed: {e}",
-                "_get_conjure_hook_map",
-                exc_info=True,
-            )
-            return None
-
-        if not hook_map:
-            return None
-
-        return hook_map
+        return SpellbookCreationSystem.get_conjure_hook_map(self)
 
     def _fire_conjure_hooks(
             self,
@@ -3318,767 +3122,124 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Execute all hooks registered under ``hook_name`` from the provided
-        hook map. This is the Spellbook-side counterpart to Conduit's
-        ``_fire_conduit_hooks``, but it is used only for the conjure
-        lifecycle.
-
+        Purpose:
+            Execute conjure lifecycle hooks for one hook name.
         Contract:
-
-            - If ``hook_map`` is None or empty, this no-ops.
-            - If ``hook_name`` is not present, this no-ops.
-            - Each hook is invoked as: ``hook(*args)``.
-            - Exceptions are logged and suppressed so hooks cannot break
-              core conjuration behavior.
-
-        For root conjuration, we follow this calling convention:
-
-            - Pre  : _fire_conjure_hooks(hooks, "on_conduit_pre_created")
-                     (no Conduit instance yet; hooks must not assume one)
-
-            - Act  : _fire_conjure_hooks(hooks, "on_conduit_activated", conduit)
-
-            - Post : _fire_conjure_hooks(hooks, "on_conduit_post_created", conduit)
+            - Delegates ordered execution and error swallowing behavior.
+            - Preserves private Spellbook compatibility wrapper for tests.
+        Args:
+            hook_map: Hook map resolved for this Spellbook.
+            hook_name: Hook event name to execute.
+            *args: Positional args passed to each hook.
+        Returns:
+            None.
+        Raises:
+            None.
         """
-        if not hook_map:
-            return
+        SpellbookCreationSystem.fire_conjure_hooks(
+            self,
+            hook_map,
+            hook_name,
+            *args,
+        )
 
-        hooks = hook_map.get(hook_name)
-        if not hooks:
-            return
-
-        for hook in list(hooks):
-            try:
-                hook(*args)
-            except Exception as e:
-                self._logger.error(
-                    f"Error while executing conjure hook '{hook_name}': {e}",
-                    "_fire_conjure_hooks",
-                    exc_info=True,
-                )
-
-#endregion Hook Management
-#region Resolution Phases
+#endregion Conduit API
+    #region Resolution Phases
     def _run_resolution_phases(self, conduit_id: str) -> Dict[str, Sequence[IUnitOfWork]]:
         """
         Internal
 
-        Convenience wrapper that runs structural phases (1-4) followed by
-        conduit-scoped resolution phases (5-10).
-
-        This is primarily a compatibility shim for callers that still expect
-        a single orchestration method.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-        Returns:
-            Dict[str, Sequence[UnitOfWork]]:
-                Mapping of phase name -> sequence of `UnitOfWork` instances.
-        Raises:
-            ValueError:
-                If conduit_id is empty.
-            SpellbookValidationError:
-                If structural validation finds broken spells.
-        """
-        self.check_cleaned()
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
-        results: Dict[str, Sequence[IUnitOfWork]] = {}
-        results.update(self._run_structural_phases())
-        results.update(self._run_resolution_phases_for_conduit(conduit_id))
-        return results
-
-    def _run_structural_phases(self) -> Dict[str, Sequence[IUnitOfWork]]:
-        """
-        Internal
-
-        Orchestrate Phases 1-4 (requirements, symbolic graph, local frame, validation).
-
-        This method performs a hard validation barrier after Phase 4 and raises
-        :class:`SpellbookValidationError` if any spell is broken.
-        """
-        self.check_cleaned()
-
-        scheduler = PhaseScheduler(
-            spellbook=self,
-            configuration=self._configuration,
-        )
-
-        try:
-            scheduler.register_phase(
-                "requirements",
-                lambda: self._phase_requirements_factory(scheduler),
-            )
-            scheduler.register_phase(
-                "symbolic_graph",
-                lambda: self._phase_symbolic_graph_factory(scheduler),
-            )
-            scheduler.register_phase(
-                "local_frame",
-                lambda: self._phase_local_frame_factory(scheduler),
-            )
-            scheduler.register_phase(
-                "validation",
-                lambda: self._phase_validation_factory(scheduler),
-            )
-
-            results = scheduler.run_all_phases()
-
-            broken_spells: list[ISpell] = []
-            for spell in self._spells.values():
-                try:
-                    if spell.is_broken:
-                        broken_spells.append(spell)
-                except Exception:
-                    broken_spells.append(spell)
-
-            if broken_spells:
-                broken_spell_ids = [spell.spell_id for spell in broken_spells]
-                broken_spell_names = [spell.spell_name for spell in broken_spells]
-                self._logger.error(
-                    "Spellbook structural pipeline completed with broken spells; "
-                    f"raising SpellbookValidationError. "
-                    f"broken_spell_ids={broken_spell_ids}, "
-                    f"broken_spell_names={broken_spell_names}",
-                    "_run_structural_phases",
-                )
-                raise SpellbookValidationError(broken_spells)
-
-            return results
-        finally:
-            try:
-                scheduler.cleanup()
-            except Exception:
-                self._logger.error(
-                    "PhaseScheduler.cleanup() raised during _run_structural_phases",
-                    "_run_structural_phases",
-                    exc_info=True,
-                )
-
-    def _run_post_conjure_structural_phases(self, spells: Sequence[ISpell]) -> None:
-        """
-        Internal
-
-        Run Phases 1-4 for newly bound spells after conjure.
-
-        Args:
-            spells: Newly bound spells that require structural phases.
-        Returns:
-            None.
-        Raises:
-            SpellbookValidationError: If any of the new spells validate as broken.
-            Exception: Propagates structural phase errors.
-        """
-        self.check_cleaned()
-        if not spells:
-            return
-
-        cancel_signal = CancellationEventSignal()
-        cancel_event = cancel_signal.event
-        try:
-            for spell in spells:
-                spell.run_structural_phases(cancel_event=cancel_event)
-
-            broken_spells: list[ISpell] = []
-            for spell in spells:
-                try:
-                    if spell.is_broken:
-                        broken_spells.append(spell)
-                except Exception:
-                    broken_spells.append(spell)
-
-            if broken_spells:
-                broken_spell_ids = [spell.spell_id for spell in broken_spells]
-                broken_spell_names = [spell.spell_name for spell in broken_spells]
-                self._logger.error(
-                    "Post-conjure structural pipeline completed with broken spells; "
-                    f"raising SpellbookValidationError. "
-                    f"broken_spell_ids={broken_spell_ids}, "
-                    f"broken_spell_names={broken_spell_names}",
-                    "_run_post_conjure_structural_phases",
-                )
-                raise SpellbookValidationError(broken_spells)
-        except Exception as exc:
-            try:
-                cancel_signal.cancel()
-            except Exception:
-                pass
-            self._logger.error(
-                f"Post-conjure structural phase execution failed: {exc}",
-                "_run_post_conjure_structural_phases",
-                exc_info=True,
-            )
-            raise
-        finally:
-            try:
-                cancel_signal.cleanup()
-            except Exception:
-                self._logger.error(
-                    "CancellationEventSignal.cleanup() raised during post-conjure structural phases",
-                    "_run_post_conjure_structural_phases",
-                    exc_info=True,
-                )
-
-    def _run_resolution_phases_for_conduit(
-            self,
-            conduit_id: str,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
-        """
-        Internal
-
-        Orchestrate conduit-scoped Phases 5-11.
-
-        Order:
-            - Phase 5 (root blueprints)
-            - Phase 6 (system validation)
-            - Phase 7 (change control)
-            - Phase 8-11 (occurrence/injection/patch/execution plans)
-
-        Phase 8-11 are skipped when Phase 6 reports validation errors for the
-        conduit. Existing-creation spells bypass Phase 8-11 compilation.
-        This must run after structural phases complete.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-        Returns:
-            Dict[str, Sequence[UnitOfWork]]:
-                Mapping of phase name -> sequence of `UnitOfWork` instances.
-        Raises:
-            ValueError:
-                If conduit_id is empty.
-        Notes:
-            After Phase 11 completes, per-spell phase artifacts are cleaned.
-        """
-        self.check_cleaned()
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
-
-        results: Dict[str, Sequence[IUnitOfWork]] = {}
-
-        scheduler = PhaseScheduler(
-            spellbook=self,
-            configuration=self._configuration,
-        )
-        try:
-            scheduler.register_phase(
-                "root_blueprints",
-                lambda: self._phase_root_blueprints_factory(scheduler, conduit_id),
-            )
-            scheduler.register_phase(
-                "system_validation",
-                lambda: self._phase_system_validation_factory(scheduler, conduit_id),
-            )
-            scheduler.register_phase(
-                "change_control",
-                lambda: self._phase_change_control_factory(scheduler, conduit_id),
-            )
-
-            results.update(scheduler.run_all_phases())
-        finally:
-            try:
-                scheduler.cleanup()
-            except Exception:
-                self._logger.error(
-                    "PhaseScheduler.cleanup() raised during _run_resolution_phases_for_conduit",
-                    "_run_resolution_phases_for_conduit",
-                    exc_info=True,
-                )
-
-        resolution_state = None
-        if self._spell_system_states is not None:
-            resolution_state = self._spell_system_states.get_conduit_resolution_state(conduit_id)
-        if resolution_state is not None and resolution_state.has_errors():
-            self._cleanup_phase_artifacts_after_resolution()
-            return results
-
-        scheduler = PhaseScheduler(
-            spellbook=self,
-            configuration=self._configuration,
-        )
-        try:
-            scheduler.register_phase(
-                "occurrence_plan",
-                lambda: self._phase_occurrence_plan_factory(scheduler, conduit_id),
-            )
-            scheduler.register_phase(
-                "injection_plan",
-                lambda: self._phase_injection_plan_factory(scheduler, conduit_id),
-            )
-            scheduler.register_phase(
-                "patch_maps",
-                lambda: self._phase_patch_maps_factory(scheduler, conduit_id),
-            )
-            scheduler.register_phase(
-                "execution_plan",
-                lambda: self._phase_execution_plan_factory(scheduler, conduit_id),
-            )
-
-            results.update(scheduler.run_all_phases())
-            self._cleanup_phase_artifacts_after_resolution()
-            return results
-        finally:
-            try:
-                scheduler.cleanup()
-            except Exception:
-                self._logger.error(
-                    "PhaseScheduler.cleanup() raised during _run_resolution_phases_for_conduit",
-                    "_run_resolution_phases_for_conduit",
-                    exc_info=True,
-                )
-
-    def _run_resolution_phases_for_target_spell(
-            self,
-            conduit_id: str,
-            target_spell: ISpell,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
-        """
-        Internal
-
-        Orchestrate local conduit-scoped phases for one target spell.
-
-        Order:
-            - Phase 5 local (root blueprints for target closure)
-            - Phase 6 local (system validation for local scope)
-            - Phase 7 local (change-control upsert for local roots)
-            - Phase 8-11 for the target spell only
-
         Purpose:
-            Allow meld-triggered revalidation to compile only the target lane
-            while retaining full spellbook-wide phases for conjure/global flows.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            target_spell:
-                Spell being resolved by meld.
-        Returns:
-            Dict[str, Sequence[UnitOfWork]]:
-                Mapping of phase name -> sequence of `UnitOfWork` instances.
-        Raises:
-            ValueError:
-                If conduit_id is empty or target_spell is None.
-        """
-        self.check_cleaned()
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
-        if target_spell is None:
-            raise ValueError("target_spell must not be None.")
-
-        results: Dict[str, Sequence[IUnitOfWork]] = {}
-        target_spell_id = target_spell.spell_id
-
-        scheduler = PhaseScheduler(
-            spellbook=self,
-            configuration=self._configuration,
-        )
-        try:
-            scheduler.register_phase(
-                "root_blueprints_local",
-                lambda: [
-                    scheduler.create_unit_of_work(
-                        func=target_spell.run_phase_root_blueprints_local,
-                        args=(conduit_id, scheduler.cancel_event,),
-                        label=f"root_blueprints_local:{target_spell_id}",
-                        metadata={
-                            "phase": "root_blueprints_local",
-                            "spell_id": target_spell_id,
-                            "scope": "local",
-                        },
-                    )
-                ],
-            )
-            scheduler.register_phase(
-                "system_validation_local",
-                lambda: [
-                    scheduler.create_unit_of_work(
-                        func=target_spell.run_phase_system_validation_local,
-                        args=(conduit_id, scheduler.cancel_event,),
-                        label=f"system_validation_local:{target_spell_id}",
-                        metadata={
-                            "phase": "system_validation_local",
-                            "spell_id": target_spell_id,
-                            "scope": "local",
-                        },
-                    )
-                ],
-            )
-            scheduler.register_phase(
-                "change_control_local",
-                lambda: [
-                    scheduler.create_unit_of_work(
-                        func=target_spell.run_phase_change_control_local,
-                        args=(conduit_id, scheduler.cancel_event,),
-                        label=f"change_control_local:{target_spell_id}",
-                        metadata={
-                            "phase": "change_control_local",
-                            "spell_id": target_spell_id,
-                            "scope": "local",
-                        },
-                    )
-                ],
-            )
-
-            results.update(scheduler.run_all_phases())
-        finally:
-            try:
-                scheduler.cleanup()
-            except Exception:
-                self._logger.error(
-                    "PhaseScheduler.cleanup() raised during _run_resolution_phases_for_target_spell",
-                    "_run_resolution_phases_for_target_spell",
-                    exc_info=True,
-                )
-
-        resolution_state = None
-        if self._spell_system_states is not None:
-            resolution_state = self._spell_system_states.get_conduit_resolution_state(conduit_id)
-        if resolution_state is not None and resolution_state.has_errors():
-            self._cleanup_phase_artifacts_after_resolution(spell_ids={target_spell_id})
-            return results
-
-        scheduler = PhaseScheduler(
-            spellbook=self,
-            configuration=self._configuration,
-        )
-        target_crafter = target_spell._ensure_crafter()
-        scoped_spell_ids = {target_spell_id}
-        target_index = target_crafter.spell_system_index_phase5
-        if target_index is not None and target_index.nodes is not None:
-            scoped_spell_ids.update(target_index.nodes.keys())
-        root_blueprints = target_crafter._entire_dag_blueprint_phase5
-        if root_blueprints is None:
-            scoped_root_ids: Collection[str] = (target_spell_id,)
-        else:
-            scoped_root_ids = root_blueprints.keys()
-        try:
-            scheduler.register_phase(
-                "occurrence_plan_local",
-                lambda: [
-                    scheduler.create_unit_of_work(
-                        func=target_spell.run_phase_occurrence_plan,
-                        args=(conduit_id, scheduler.cancel_event,),
-                        label=f"occurrence_plan_local:{target_spell_id}",
-                        metadata={
-                            "phase": "occurrence_plan_local",
-                            "spell_id": target_spell_id,
-                            "scope": "local",
-                        },
-                    )
-                ],
-            )
-            scheduler.register_phase(
-                "injection_plan_local",
-                lambda: [
-                    scheduler.create_unit_of_work(
-                        func=target_spell.run_phase_injection_plan,
-                        args=(conduit_id, scheduler.cancel_event,),
-                        label=f"injection_plan_local:{target_spell_id}",
-                        metadata={
-                            "phase": "injection_plan_local",
-                            "spell_id": target_spell_id,
-                            "scope": "local",
-                        },
-                    )
-                ],
-            )
-            scheduler.register_phase(
-                "patch_maps_local",
-                lambda: [
-                    scheduler.create_unit_of_work(
-                        func=target_spell.run_phase_patch_maps,
-                        args=(conduit_id, scheduler.cancel_event,),
-                        label=f"patch_maps_local:{target_spell_id}",
-                        metadata={
-                            "phase": "patch_maps_local",
-                            "spell_id": target_spell_id,
-                            "scope": "local",
-                        },
-                    )
-                ],
-            )
-            scheduler.register_phase(
-                "execution_plan_local",
-                lambda: [
-                    scheduler.create_unit_of_work(
-                        func=target_spell.run_phase_execution_plan,
-                        args=(conduit_id, scheduler.cancel_event,),
-                        label=f"execution_plan_local:{target_spell_id}",
-                        metadata={
-                            "phase": "execution_plan_local",
-                            "spell_id": target_spell_id,
-                            "scope": "local",
-                        },
-                    )
-                ],
-            )
-
-            try:
-                results.update(scheduler.run_all_phases())
-            except PhaseExecutionError as exc:
-                missing_dependency_ids: List[str] = []
-                for error in exc.errors:
-                    if not isinstance(error, KeyError):
-                        continue
-                    if not error.args:
-                        continue
-                    missing_dependency_ids.append(str(error.args[0]))
-                if not missing_dependency_ids:
-                    raise
-
-                self._record_local_resolution_visibility_failure(
-                    conduit_id=conduit_id,
-                    scoped_spell_ids=scoped_spell_ids,
-                    scoped_root_ids=scoped_root_ids,
-                    missing_dependency_ids=missing_dependency_ids,
-                )
-                self._cleanup_phase_artifacts_after_resolution(spell_ids=scoped_spell_ids)
-                return results
-            self._cleanup_phase_artifacts_after_resolution(spell_ids=scoped_spell_ids)
-            return results
-        finally:
-            try:
-                scheduler.cleanup()
-            except Exception:
-                self._logger.error(
-                    "PhaseScheduler.cleanup() raised during _run_resolution_phases_for_target_spell",
-                    "_run_resolution_phases_for_target_spell",
-                    exc_info=True,
-                )
-
-    def _record_local_resolution_visibility_failure(
-            self,
-            *,
-            conduit_id: str,
-            scoped_spell_ids: Collection[str],
-            scoped_root_ids: Collection[str],
-            missing_dependency_ids: Collection[str],
-    ) -> None:
-        """
-        Record local resolution visibility failures as conduit diagnostics.
-
-        Purpose:
-            Convert local phase compilation key-miss errors into deterministic
-            per-conduit validation failures so meld returns SpellbookValidationError
-            rather than leaking low-level PhaseExecutionError.
+            Run full structural-plus-resolution pipeline for one conduit scope.
         Contract:
-            - Marks scoped spell/root resolution validity as INVALID.
-            - Records ERROR diagnostics for each missing dependency id.
-            - Does not mutate structural SpellSystemState validity.
+            - Delegates orchestration to `SpellbookCreationSystem`.
+            - Uses Spellbook's `PhaseScheduler` symbol to preserve patch points.
         Args:
-            conduit_id:
-                Conduit identifier whose resolution state should be updated.
-            scoped_spell_ids:
-                Spell ids participating in local revalidation scope.
-            scoped_root_ids:
-                Root ids participating in local revalidation scope.
-            missing_dependency_ids:
-                Dependency ids that were referenced but not visible.
+            conduit_id: Conduit id for phase resolution scope.
         Returns:
-            None.
+            Dict[str, Sequence[IUnitOfWork]]: Combined phase execution mapping.
+        Raises:
+            ValueError: If conduit_id is empty.
+            SpellbookValidationError: If structural validation reports broken spells.
+            Exception: Propagates scheduler and phase execution failures.
         """
-        diagnostics: List[SystemDiagnostic] = []
-        seen_missing_ids: Set[str] = set()
-        for missing_dependency_id in missing_dependency_ids:
-            if missing_dependency_id in seen_missing_ids:
-                continue
-            seen_missing_ids.add(missing_dependency_id)
-            diagnostics.append(
-                SystemDiagnostic(
-                    code="visibility_gap_dependency_filtered",
-                    message=(
-                        f"Local resolution referenced dependency "
-                        f"'{missing_dependency_id}', but it is not visible "
-                        "to this Spellbook."
-                    ),
-                    severity=SystemDiagnosticSeverity.ERROR,
-                    spell_id=missing_dependency_id,
-                    root_id=None,
-                    source="LocalResolutionPhaseGuard",
-                    details={
-                        "missing_dependency_id": missing_dependency_id,
-                    },
-                )
-            )
-
-        self._spell_system_states.bulk_set_conduit_spell_validity(
-            conduit_id,
-            {spell_id: SpellValidity.invalid for spell_id in scoped_spell_ids},
-            change_reason=SpellStateChangeReason.validation_failed,
+        return SpellbookCreationSystem.run_resolution_phases(
+            spellbook=self,
+            conduit_id=conduit_id,
+            phase_scheduler_cls=PhaseScheduler,
         )
-        self._spell_system_states.bulk_set_conduit_root_validity(
-            conduit_id,
-            {root_id: SpellValidity.invalid for root_id in scoped_root_ids},
-            change_reason=SpellStateChangeReason.validation_failed,
-        )
-        self._spell_system_states.record_conduit_diagnostics(conduit_id, diagnostics)
-    #endregion
-
-    def _cleanup_phase_artifacts_after_resolution(
-            self,
-            spell_ids: Optional[Collection[str]] = None,
-    ) -> None:
-        """
-        Internal
-
-        Clean per-spell phase artifacts after conduit-scoped phases complete.
-        """
-        self.check_cleaned()
-        if spell_ids is None:
-            for spell in self._spells.values():
-                try:
-                    spell.crafter.cleanup_phase_artifacts()
-                except Exception:
-                    # Cleanup should not disrupt conjure/resolve flows.
-                    pass
-            return
-
-        for spell_id in spell_ids:
-            spell = self._spell_id_pool.get(spell_id)
-            if spell is None:
-                continue
-            try:
-                spell.crafter.cleanup_phase_artifacts()
-            except Exception:
-                # Cleanup should not disrupt conjure/resolve flows.
-                pass
 
     def _phase_requirements_factory(self, scheduler: PhaseScheduler) -> Sequence[IUnitOfWork]:
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **requirements** phase.
-
-        Each local spell gets one unit of work that is responsible for:
-            * Performing static requirement checks.
-            * Registering dependency edges.
-            * Emitting any metadata needed by later phases.
-
-        The underlying spell method is expected to be:
-
-            ``spell.run_phase_requirements(cancel_event: CancellationEvent) -> Any``
-
-        where the spell cooperatively honours the shared CancellationEvent
-        attached via the scheduler.
+        Purpose:
+            Build phase-1 requirements units for local spells.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+        Returns:
+            Sequence[IUnitOfWork]: Requirements phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        units: List[IUnitOfWork] = []
-
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_requirements,
-                    args=(scheduler.cancel_event,),
-                    label=f"requirements:{spell.spell_id}",
-                    metadata={
-                        "phase": "requirements",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-
-        return units
+        return SpellbookCreationSystem.phase_requirements_factory(self, scheduler)
 
     def _phase_symbolic_graph_factory(self, scheduler: PhaseScheduler) -> Sequence[IUnitOfWork]:
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **symbolic_graph** phase.
-
-        Each spell contributes its own symbolic graph representation – a
-        spell-local structural view that captures parameters, dependencies,
-        and internal resolution semantics without yet forming a global DAG.
-
-        Expected spell surface:
-
-            ``spell.run_phase_symbolic_graph(cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-2 symbolic-graph units for local spells.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+        Returns:
+            Sequence[IUnitOfWork]: Symbolic-graph phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        units: List[IUnitOfWork] = []
-
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_symbolic_graph,
-                    args=(scheduler.cancel_event,),
-                    label=f"symbolic_graph:{spell.spell_id}",
-                    metadata={
-                        "phase": "symbolic_graph",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-
-        return units
+        return SpellbookCreationSystem.phase_symbolic_graph_factory(self, scheduler)
 
     def _phase_local_frame_factory(self, scheduler: PhaseScheduler) -> Sequence[IUnitOfWork]:
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **local_frame** phase.
-
-        This phase is responsible for constructing per-spell execution frames
-        (resolution frames, local DAG fragments, etc.) that can later be
-        combined into deeper, cross-spell structures.
-
-        Expected spell surface:
-
-            ``spell.run_phase_local_frame(cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-3 local-frame units for local spells.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+        Returns:
+            Sequence[IUnitOfWork]: Local-frame phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        units: List[IUnitOfWork] = []
-
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_local_frame,
-                    args=(scheduler.cancel_event,),
-                    label=f"local_frame:{spell.spell_id}",
-                    metadata={
-                        "phase": "local_frame",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-
-        return units
+        return SpellbookCreationSystem.phase_local_frame_factory(self, scheduler)
 
     def _phase_validation_factory(self, scheduler: PhaseScheduler) -> Sequence[IUnitOfWork]:
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **validation** phase.
-
-        This is the final Spell-level validation pass that runs after
-        requirements, symbolic graphs, and local frames have been built.
-
-        Typical responsibilities:
-            * Cross-check that required dependencies were satisfied.
-            * Ensure frames/graphs are internally consistent.
-            * Surface any final Spell-level errors before conjuration.
-
-        Expected spell surface:
-
-            ``spell.run_phase_validation(cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-4 validation units for local spells.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+        Returns:
+            Sequence[IUnitOfWork]: Validation phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        units: List[IUnitOfWork] = []
-
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_validation,
-                    args=(scheduler.cancel_event,),
-                    label=f"validation:{spell.spell_id}",
-                    metadata={
-                        "phase": "validation",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-
-        return units
+        return SpellbookCreationSystem.phase_validation_factory(self, scheduler)
 
     def _phase_root_blueprints_factory(
             self,
@@ -4088,33 +3249,24 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **root_blueprints** phase.
-
-        This phase is frame-level and must run after Phase 4. We schedule
-        a single unit of work that runs on one spell's crafter and
-        distributes frame-level artifacts to all spells.
-
-        Expected spell surface:
-
-            ``spell.run_phase_root_blueprints(conduit_id, cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-5 root-blueprint units for one conduit scope.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+            conduit_id: Conduit id used for phase scope.
+        Returns:
+            Sequence[IUnitOfWork]: Root-blueprints phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        if not self._spells:
-            return []
-
-        lead_spell = next(iter(self._spells.values()))
-        return [
-            scheduler.create_unit_of_work(
-                func=lead_spell.run_phase_root_blueprints,
-                args=(conduit_id, scheduler.cancel_event,),
-                label=f"root_blueprints:{lead_spell.spell_id}",
-                metadata={
-                    "phase": "root_blueprints",
-                    "spell_id": lead_spell.spell_id,
-                    "scope": "frame",
-                },
-            )
-        ]
+        return SpellbookCreationSystem.phase_root_blueprints_factory(
+            self,
+            scheduler,
+            conduit_id,
+        )
 
     def _phase_occurrence_plan_factory(
             self,
@@ -4124,34 +3276,24 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **occurrence_plan** phase.
-
-        This phase compiles OccurrencePlan artifacts for spells with attached
-        Phase 5 blueprints. Existing-creation spells are treated as a no-op by
-        the underlying SpellCrafter.
-
-        Expected spell surface:
-
-            ``spell.run_phase_occurrence_plan(conduit_id, cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-8 occurrence-plan units for one conduit scope.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+            conduit_id: Conduit id used for phase scope.
+        Returns:
+            Sequence[IUnitOfWork]: Occurrence-plan phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        if not self._spells:
-            return []
-
-        units: List[IUnitOfWork] = []
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_occurrence_plan,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"occurrence_plan:{spell.spell_id}",
-                    metadata={
-                        "phase": "occurrence_plan",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem.phase_occurrence_plan_factory(
+            self,
+            scheduler,
+            conduit_id,
+        )
 
     def _phase_injection_plan_factory(
             self,
@@ -4161,34 +3303,24 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **injection_plan** phase.
-
-        This phase compiles InjectionPlan artifacts from Phase 8 occurrence
-        plans for spells with attached blueprints. Existing-creation spells are
-        treated as a no-op by the underlying SpellCrafter.
-
-        Expected spell surface:
-
-            ``spell.run_phase_injection_plan(conduit_id, cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-9 injection-plan units for one conduit scope.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+            conduit_id: Conduit id used for phase scope.
+        Returns:
+            Sequence[IUnitOfWork]: Injection-plan phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        if not self._spells:
-            return []
-
-        units: List[IUnitOfWork] = []
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_injection_plan,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"injection_plan:{spell.spell_id}",
-                    metadata={
-                        "phase": "injection_plan",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem.phase_injection_plan_factory(
+            self,
+            scheduler,
+            conduit_id,
+        )
 
     def _phase_patch_maps_factory(
             self,
@@ -4198,34 +3330,24 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **patch_maps** phase.
-
-        This phase compiles patch maps for overrides based on Phase 5
-        blueprints. Existing-creation spells are treated as a no-op by the
-        underlying SpellCrafter.
-
-        Expected spell surface:
-
-            ``spell.run_phase_patch_maps(conduit_id, cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-10 patch-map units for one conduit scope.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+            conduit_id: Conduit id used for phase scope.
+        Returns:
+            Sequence[IUnitOfWork]: Patch-map phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        if not self._spells:
-            return []
-
-        units: List[IUnitOfWork] = []
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_patch_maps,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"patch_maps:{spell.spell_id}",
-                    metadata={
-                        "phase": "patch_maps",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem.phase_patch_maps_factory(
+            self,
+            scheduler,
+            conduit_id,
+        )
 
     def _phase_execution_plan_factory(
             self,
@@ -4235,34 +3357,24 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **execution_plan** phase.
-
-        This phase compiles execution plans for spells based on Phase 8
-        occurrence plans and Phase 9 injection plans. Existing-creation spells
-        are treated as a no-op by the underlying SpellCrafter.
-
-        Expected spell surface:
-
-            ``spell.run_phase_execution_plan(conduit_id, cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-11 execution-plan units for one conduit scope.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper for compatibility.
+        Args:
+            scheduler: Scheduler creating units of work.
+            conduit_id: Conduit id used for phase scope.
+        Returns:
+            Sequence[IUnitOfWork]: Execution-plan phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        if not self._spells:
-            return []
-
-        units: List[IUnitOfWork] = []
-        for spell in self._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_execution_plan,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"execution_plan:{spell.spell_id}",
-                    metadata={
-                        "phase": "execution_plan",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem.phase_execution_plan_factory(
+            self,
+            scheduler,
+            conduit_id,
+        )
 
     def _phase_system_validation_factory(
             self,
@@ -4272,34 +3384,24 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **system_validation** phase.
-
-        This phase validates the system-level DAG for the frame and runs
-        after Phase 5 artifacts have been constructed. We schedule a single
-        unit of work that runs on one spell's crafter and propagates the
-        validation state across all spells.
-
-        Expected spell surface:
-
-            ``spell.run_phase_system_validation(conduit_id, cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-6 system-validation units for one conduit scope.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+            conduit_id: Conduit id used for phase scope.
+        Returns:
+            Sequence[IUnitOfWork]: System-validation phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        if not self._spells:
-            return []
-
-        lead_spell = next(iter(self._spells.values()))
-        return [
-            scheduler.create_unit_of_work(
-                func=lead_spell.run_phase_system_validation,
-                args=(conduit_id, scheduler.cancel_event,),
-                label=f"system_validation:{lead_spell.spell_id}",
-                metadata={
-                    "phase": "system_validation",
-                    "spell_id": lead_spell.spell_id,
-                    "scope": "frame",
-                },
-            )
-        ]
+        return SpellbookCreationSystem.phase_system_validation_factory(
+            self,
+            scheduler,
+            conduit_id,
+        )
 
     def _phase_change_control_factory(
             self,
@@ -4309,35 +3411,136 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Build :class:`UnitOfWork` instances for the **change_control** phase.
-
-        This phase wires change-control hooks and component-of indices for
-        the frame once Phase 5 artifacts exist. We schedule a single unit
-        of work that runs on one spell's crafter.
-
-        Expected spell surface:
-
-            ``spell.run_phase_change_control(conduit_id, cancel_event: CancellationEvent) -> Any``
+        Purpose:
+            Build phase-7 change-control units for one conduit scope.
+        Contract:
+            - Delegates unit construction behavior to `SpellbookCreationSystem`.
+            - Preserves private Spellbook factory wrapper used by tests.
+        Args:
+            scheduler: Scheduler creating units of work.
+            conduit_id: Conduit id used for phase scope.
+        Returns:
+            Sequence[IUnitOfWork]: Change-control phase units.
+        Raises:
+            RuntimeError: If this Spellbook has already been cleaned.
         """
-        self.check_cleaned()
-        if not self._spells:
-            return []
+        return SpellbookCreationSystem.phase_change_control_factory(
+            self,
+            scheduler,
+            conduit_id,
+        )
 
-        lead_spell = next(iter(self._spells.values()))
-        return [
-            scheduler.create_unit_of_work(
-                func=lead_spell.run_phase_change_control,
-                args=(conduit_id, scheduler.cancel_event,),
-                label=f"change_control:{lead_spell.spell_id}",
-                metadata={
-                    "phase": "change_control",
-                    "spell_id": lead_spell.spell_id,
-                    "scope": "frame",
-                },
-            )
-        ]
+    def _run_structural_phases(self) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Internal
+
+        Purpose:
+            Execute structural phases (1-4) for this Spellbook.
+        Contract:
+            - Delegates structural orchestration to `SpellbookCreationSystem`.
+            - Uses Spellbook's `PhaseScheduler` symbol to preserve patch points.
+            - Does not mutate registry membership; updates phase artifacts only.
+        Threading:
+            Caller must hold the Spellbook lock for deterministic conjure ordering.
+        Returns:
+            Dict[str, Sequence[IUnitOfWork]]: Phase execution result mapping.
+        Raises:
+            SpellbookValidationError: If structural validation marks any spell broken.
+            Exception: Propagates scheduler/phase execution failures.
+        """
+        return SpellbookCreationSystem.run_structural_phases(
+            spellbook=self,
+            phase_scheduler_cls=PhaseScheduler,
+        )
+
+    def _run_post_conjure_structural_phases(self, spells: Sequence[ISpell]) -> None:
+        """
+        Internal
+
+        Purpose:
+            Execute structural phases for spells bound after conduit conjure.
+        Contract:
+            - Delegates execution to `SpellbookCreationSystem`.
+            - Applies only to the provided spell sequence.
+            - Leaves already-conjured conduit state intact.
+        Threading:
+            Caller must hold the Spellbook lock while mutating bound spell state.
+        Args:
+            spells: Newly bound spells requiring structural validation.
+        Returns:
+            None.
+        Raises:
+            SpellbookValidationError: If any provided spell validates as broken.
+            Exception: Propagates phase execution failures.
+        """
+        SpellbookCreationSystem.run_post_conjure_structural_phases(
+            spellbook=self,
+            spells=spells,
+        )
+
+    def _run_resolution_phases_for_conduit(
+            self,
+            conduit_id: str,
+    ) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Internal
+
+        Purpose:
+            Execute conduit-scoped resolution phases (5-11) for one conduit id.
+        Contract:
+            - Delegates orchestration to `SpellbookCreationSystem`.
+            - Uses Spellbook's `PhaseScheduler` symbol to preserve patch points.
+            - Cleans temporary phase artifacts before returning.
+        Threading:
+            Caller must hold the Spellbook lock for consistent conduit scope state.
+        Args:
+            conduit_id: Conduit id for resolution scope.
+        Returns:
+            Dict[str, Sequence[IUnitOfWork]]: Phase execution result mapping.
+        Raises:
+            ValueError: If conduit_id is empty.
+            Exception: Propagates phase execution failures.
+        """
+        return SpellbookCreationSystem.run_resolution_phases_for_conduit(
+            spellbook=self,
+            conduit_id=conduit_id,
+            phase_scheduler_cls=PhaseScheduler,
+        )
+
+    def _run_resolution_phases_for_target_spell(
+            self,
+            conduit_id: str,
+            target_spell: ISpell,
+    ) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Internal
+
+        Purpose:
+            Execute local resolution phases for one target spell in a conduit scope.
+        Contract:
+            - Delegates orchestration to `SpellbookCreationSystem`.
+            - Uses Spellbook's `PhaseScheduler` symbol to preserve patch points.
+            - Restricts cleanup and diagnostics to target-local scope.
+        Threading:
+            Caller must hold the Spellbook lock for deterministic target revalidation.
+        Args:
+            conduit_id: Conduit id for resolution scope.
+            target_spell: Spell being resolved locally.
+        Returns:
+            Dict[str, Sequence[IUnitOfWork]]: Phase execution result mapping.
+        Raises:
+            ValueError: If conduit_id is empty or target_spell is None.
+            PhaseExecutionError: On non-visibility execution failures.
+        """
+        return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+            spellbook=self,
+            conduit_id=conduit_id,
+            target_spell=target_spell,
+            phase_scheduler_cls=PhaseScheduler,
+        )
+
+    #endregion
 #endregion
 
-#endregion Resolution Phases
-#endregion
+
 
