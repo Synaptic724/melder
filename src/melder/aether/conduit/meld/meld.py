@@ -1336,7 +1336,7 @@ class Meld(Cleanable, IMeld):
     # ----------------------------------------------------------------------
     # Existing creation reuse
     # ----------------------------------------------------------------------
-    def _select_creations_for_spell(self, spell: ISpell) -> Any:
+    def _select_creations_for_spell(self, spell: ISpell, existence: Existence) -> Any:
         """
         Internal
 
@@ -1353,21 +1353,13 @@ class Meld(Cleanable, IMeld):
         Returns:
             The selected creations container, or None if neither is available.
         """
-        existence: Existence = spell.existence
-        owner_creations = spell._owner_creations
-
         if existence in (
                 Existence.unique_per_conduit,
                 Existence.many,
                 Existence.unique_per_spell_space,
         ):
-            if self._creations is not None:
-                return self._creations
-            return owner_creations
-
-        if owner_creations is not None:
-            return owner_creations
-        return self._creations
+            return self._creations
+        return spell._owner_creations
 
     def _raise_override_on_existing_instance(
             self,
@@ -1601,13 +1593,15 @@ class Meld(Cleanable, IMeld):
             - Handles instance reuse according to Existence modes.
             - Raises MeldExecutionError when overrides are supplied for existing shared instances.
         """
-        creations = self._select_creations_for_spell(spell)
-        return self._resolve_instance_with_locks(spell, creations, overrides)
+        existence: Existence = spell.existence
+        creations = self._select_creations_for_spell(spell, existence)
+        return self._resolve_instance_with_locks(spell, existence, creations, overrides)
 
 
     def  _resolve_instance_with_locks(
             self,
             spell: ISpell,
+            existence: Existence,
             creations: Any,
             overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
@@ -1639,7 +1633,6 @@ class Meld(Cleanable, IMeld):
                 If overrides are supplied for a spell instance that already
                 exists under a shared Existence mode.
         """
-        existence: Existence = spell.existence
         spellspace = None
 
         if not overrides and existence != Existence.many:
@@ -1802,7 +1795,7 @@ class Meld(Cleanable, IMeld):
             return None
 
         if creations is None:
-            creations = self._select_creations_for_spell(spell)
+            creations = self._select_creations_for_spell(spell, existence)
 
         if creations is None:
             return None
@@ -2078,7 +2071,7 @@ class Meld(Cleanable, IMeld):
                 type itself is unsupported.
         """
         if creations is None:
-            creations = self._select_creations_for_spell(spell)
+            creations = self._select_creations_for_spell(spell, spell.existence)
 
         # --- Dispatch based on Creations Manager Type ---
 
