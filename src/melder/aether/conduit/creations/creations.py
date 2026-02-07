@@ -388,18 +388,14 @@ class Creations(Cleanable, ICreations):
                 If `key` already exists in the shared map with a non-list value.
         """
         self.check_cleaned()
-        if key not in self._creations:
-            self._creations[key] = []
-        elif not isinstance(self._creations[key], list):
-            raise ValueError(f"Key {key} already exists in creations with non-many scope.")
+        many_list = self._creations.setdefault(key, [])
         creation = Creation(
             item,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
         )
-        self._creations[key].append(creation)
-        if has_disposal_methods:
-            self._push_disposal_creation(creation)
+        many_list.append(creation)
+        self._push_disposal_creation(creation)
 
     # ------------------------------------------------------------------
     # Extraction / restoration helpers (for transfers)

@@ -83,11 +83,7 @@ class ICreations(ICleanable, Protocol):
     # Attributes
     # -----------------
     _lock: RLock
-    _unique: 'Dict[str, object]'
-    _unique_per_scope: 'Dict[str, object]'
-    _many: 'Dict[str, List[object]]'
-    _unique_per_lineage: 'Dict[str, object]'
-    _unique_per_cluster: 'Dict[str, object]'
+    _creations: 'Dict[str, object]'
     _id: str
 
     # -----------------
@@ -189,7 +185,7 @@ class ICreations(ICleanable, Protocol):
         """
         ...
 
-    def add_unique(
+    def add_creation(
             self,
             key: str,
             item: object,
@@ -198,7 +194,7 @@ class ICreations(ICleanable, Protocol):
             disposal_methods: Optional[List[str]] = None,
     ) -> None:
         """
-        Adds a singleton object instance to the `unique` scope.
+        Register one non-spellspace singleton creation.
 
         Args:
             key (str): Unique identifier (Spell ID).
@@ -208,11 +204,11 @@ class ICreations(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique` scope.
+            ValueError: If the key already exists in creations.
         """
         ...
 
-    def add_unique_per_lineage(
+    def add_many_creations(
             self,
             key: str,
             item: object,
@@ -221,78 +217,7 @@ class ICreations(ICleanable, Protocol):
             disposal_methods: Optional[List[str]] = None,
     ) -> None:
         """
-        Adds a singleton object instance to the `unique_per_lineage` scope.
-
-        Args:
-            key (str): Unique identifier (Spell ID).
-            item (object): Object instance to manage.
-            has_disposal_methods: True when the spell declares disposal methods.
-            disposal_methods: Ordered list of disposal method names for this creation.
-
-        Raises:
-            RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique_per_lineage` scope.
-        """
-        ...
-
-    def add_unique_per_cluster(
-            self,
-            key: str,
-            item: object,
-            *,
-            has_disposal_methods: bool = False,
-            disposal_methods: Optional[List[str]] = None,
-    ) -> None:
-        """
-        Adds a singleton object instance to the `unique_per_cluster` scope.
-
-        Args:
-            key (str): Unique identifier (Spell ID).
-            item (object): Object instance to manage.
-            has_disposal_methods: True when the spell declares disposal methods.
-            disposal_methods: Ordered list of disposal method names for this creation.
-
-        Raises:
-            RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique_per_cluster` scope.
-        """
-        ...
-
-    def add_unique_per_scope(
-            self,
-            key: str,
-            item: object,
-            *,
-            has_disposal_methods: bool = False,
-            disposal_methods: Optional[List[str]] = None,
-    ) -> None:
-        """
-        Adds a singleton object instance to the `unique_per_scope` scope.
-
-        Args:
-            key (str): Unique identifier (Spell ID).
-            item (object): Object instance to manage.
-            has_disposal_methods: True when the spell declares disposal methods.
-            disposal_methods: Ordered list of disposal method names for this creation.
-
-        Raises:
-            RuntimeError: If the Creations manager is cleaned.
-            ValueError: If the key already exists in the `unique_per_scope` scope.
-        """
-        ...
-
-    def add_many(
-            self,
-            key: str,
-            item: object,
-            *,
-            has_disposal_methods: bool = False,
-            disposal_methods: Optional[List[str]] = None,
-    ) -> None:
-        """
-        Adds an object instance to a multi-instance collection under the `many` scope.
-
-        If the collection for the given key does not exist, it is created.
+        Register one creation in the many-creations collection for the key.
 
         Args:
             key (str): Collection identifier (Spell ID).

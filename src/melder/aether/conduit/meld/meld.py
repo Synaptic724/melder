@@ -12,7 +12,6 @@ from melder.utilities.interfaces.interfaces import (
     ISpellbook,
     ISpell,
     IMeld,
-    ILesserCreations,
     ICreations, ISpellIndex,
 )
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
@@ -22,7 +21,7 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpac
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 # Creations types
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.creations.lesser_creations import LesserCreations
+from melder.aether.conduit.creations.creation import Creation
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
@@ -70,7 +69,7 @@ class Meld(Cleanable, IMeld):
     __melder_internal__ = _mrg.sentinel
     def __init__(
             self,
-            creations: ILesserCreations | ICreations,
+            creations: ICreations,
             spellbook: ISpellbook,
             conduit_id: Optional[str] = None,
     ) -> None:
@@ -80,8 +79,7 @@ class Meld(Cleanable, IMeld):
 
         Args:
             creations:
-                The local component instance manager (either `Creations` for a
-                full Conduit or `LesserCreations` for a LesserConduit).
+                The conduit-local component instance manager (`Creations`).
             spellbook:
                 The registry of all known spell configurations. Meld keeps
                 direct references to internal spell, lookup, and spell_id
@@ -113,7 +111,7 @@ class Meld(Cleanable, IMeld):
         )
 
 
-        # Conduit-local instantiation manager (Creations or LesserCreations)
+        # Conduit-local instantiation manager.
         self._creations = creations
 
         # Front-door caches (fast-path resolution + instance hits)
@@ -1560,7 +1558,6 @@ class Meld(Cleanable, IMeld):
 
         instance = self._get_existing_creation_from_creations(
             spell_id=spell_id,
-            existence=existence,
             creations=creations,
         )
         if instance is None:
@@ -1712,12 +1709,12 @@ class Meld(Cleanable, IMeld):
                     caller_creations_lock_held=True,
                 )
                 if is_existing_creation:
-                    self._register_spellspace(
-                        spell,
-                        spell_id=spell_id,
-                        instance=instance,
-                        creations=creations,
-                        spellspace=spellspace,
+                    creations.register_spellspace_creation(
+                        spellspace.id,
+                        spell_id,
+                        instance,
+                        has_disposal_methods=spell.has_disposal_methods,
+                        disposal_methods=spell.disposal_method_names,
                     )
                 if overrides is None:
                     self._cache_singleton_hit(spell, instance)
@@ -1794,20 +1791,18 @@ class Meld(Cleanable, IMeld):
             if not has_disposal_methods:
                 return instance, True
             if is_existing_creation:
-                with creations._lock:
-                    self._register_spell(
-                        spell,
-                        spell_id=spell_id,
-                        instance=instance,
-                        creations=creations,
-                    )
+                creations.add_many_creations(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=has_disposal_methods,
+                )
             return instance, True
 
         if existence is Existence.unique_per_conduit:
             with creations._lock:
                 instance = self._get_existing_creation_from_creations(
                     spell_id=spell_id,
-                    existence=existence,
                     creations=creations,
                 )
                 if instance is None:
@@ -1817,11 +1812,11 @@ class Meld(Cleanable, IMeld):
                         caller_creations_lock_held=True,
                     )
                     if is_existing_creation:
-                        self._register_spell(
-                            spell,
-                            spell_id=spell_id,
-                            instance=instance,
-                            creations=creations,
+                        creations.add_creation(
+                            spell_id,
+                            instance,
+                            has_disposal_methods=has_disposal_methods,
+                            disposal_methods=spell.disposal_method_names,
                         )
                     created = True
                 else:
@@ -1840,7 +1835,6 @@ class Meld(Cleanable, IMeld):
             with creations._lock:
                 instance = self._get_existing_creation_from_creations(
                     spell_id=spell_id,
-                    existence=existence,
                     creations=creations,
                 )
 
@@ -1852,20 +1846,20 @@ class Meld(Cleanable, IMeld):
                 )
                 if is_existing_creation:
                     with creations._lock:
-                        self._register_spell(
-                            spell,
-                            spell_id=spell_id,
-                            instance=instance,
-                            creations=creations,
+                        creations.add_creation(
+                            spell_id,
+                            instance,
+                            has_disposal_methods=has_disposal_methods,
+                            disposal_methods=spell.disposal_method_names,
                         )
                 created = True
                 if (
-                        overrides is None
-                        and existence in (
-                            Existence.unique,
-                            Existence.unique_per_conduit_cluster,
-                            Existence.unique_per_conduit_lineage,
-                        )
+                    overrides is None
+                    and existence in (
+                        Existence.unique,
+                        Existence.unique_per_conduit_cluster,
+                        Existence.unique_per_conduit_lineage,
+                    )
                 ):
                     self._cache_singleton_hit(spell, instance)
             else:
@@ -1874,12 +1868,12 @@ class Meld(Cleanable, IMeld):
                     overrides=overrides,
                 )
                 if (
-                        overrides is None
-                        and existence in (
-                            Existence.unique,
-                            Existence.unique_per_conduit_cluster,
-                            Existence.unique_per_conduit_lineage,
-                        )
+                    overrides is None
+                    and existence in (
+                        Existence.unique,
+                        Existence.unique_per_conduit_cluster,
+                        Existence.unique_per_conduit_lineage,
+                    )
                 ):
                     self._cache_singleton_hit(spell, instance)
 
@@ -1889,7 +1883,6 @@ class Meld(Cleanable, IMeld):
             self,
             *,
             spell_id: str,
-            existence: Existence,
             creations: Any,
     ) -> Optional[Any]:
         """
@@ -1901,33 +1894,10 @@ class Meld(Cleanable, IMeld):
             - Existence.unique_per_spell_space is not handled here.
             - Raises when routing/existence contracts are violated.
         """
-        if isinstance(creations, Creations):
-            creation_map = {
-                Existence.unique: creations._unique,
-                Existence.unique_per_conduit: creations._unique_per_scope,
-                Existence.unique_per_conduit_cluster: creations._unique_per_cluster,
-                Existence.unique_per_conduit_lineage: creations._unique_per_lineage,
-            }.get(existence)
-            if creation_map is None:
-                raise RuntimeError(
-                    f"[MELD] Unsupported non-spellspace Existence '{existence}' "
-                    f"for Creations (spell_id={spell_id})."
-                )
-            creation = creation_map.get(spell_id)
-            return creation.value if creation is not None else None
-
-        if isinstance(creations, LesserCreations):
-            if existence is Existence.unique_per_conduit:
-                creation = creations._unique_per_scope.get(spell_id)
-                return creation.value if creation is not None else None
-            raise RuntimeError(
-                f"[MELD] Unsupported non-spellspace Existence '{existence}' "
-                f"for LesserCreations (spell_id={spell_id})."
-            )
-
-        raise RuntimeError(
-            f"[MELD] Unsupported creations manager type: {type(creations).__name__}"
-        )
+        creation = creations._creations.get(spell_id)
+        if creation is None:
+            return None
+        return creation.value
 
     def _get_spellspace_existing_creation_from_creations(
             self,
@@ -2105,247 +2075,3 @@ class Meld(Cleanable, IMeld):
         # registration-free, and CALLN-free. When it exists, it's safe and should be
         # preferred over the heavier engine path regardless of size/depth.
         return True
-
-
-# ----------------------------------------------------------------------
-# Registration Helpers (New Structure)
-# ----------------------------------------------------------------------
-    def _register_spell(
-            self,
-            spell: ISpell,
-            *,
-            spell_id: str,
-            instance: Any,
-            creations: Any,
-    ) -> None:
-        """
-        Register a newly obtained non-spellspace component instance.
-
-        This method acts as a dispatcher, calling the correct helper based on the
-        type of the Conduit's creations manager (`Creations` vs `LesserCreations`).
-
-        Args:
-            spell (ISpell): The resolved Spell configuration object.
-            instance (Any): The newly created component instance.
-            spell_id (str): Spell id for diagnostics and registration keys.
-            creations (Any): Selected creations container for this resolution route.
-
-        Returns:
-            None.
-
-        Raises:
-            RuntimeError: Propagated from helpers, or raised if the creations manager
-                type itself is unsupported.
-        """
-        if isinstance(creations, Creations):
-            self._register_to_creations(
-                spell=spell,
-                spell_id=spell_id,
-                instance=instance,
-                creations=creations,
-            )
-            return
-
-        if isinstance(creations, LesserCreations):
-            self._register_to_lesser_creations(
-                spell=spell,
-                spell_id=spell_id,
-                instance=instance,
-                creations=creations,
-            )
-            return
-
-        raise RuntimeError(
-            f"[MELD] Unsupported creations manager type: {type(creations).__name__}"
-        )
-
-    def _register_spellspace(
-            self,
-            spell: ISpell,
-            *,
-            spell_id: str,
-            instance: Any,
-            creations: Any,
-            spellspace: Any,
-    ) -> None:
-        """
-        Register a newly obtained spellspace-scoped component instance.
-
-        Contract:
-            - Only spellspace registration is performed in this helper.
-            - No owner/caller fallback routing is performed.
-        """
-        if isinstance(creations, Creations):
-            self._register_spellspace_to_creations(
-                spell=spell,
-                spell_id=spell_id,
-                instance=instance,
-                creations=creations,
-                spellspace=spellspace,
-            )
-            return
-
-        if isinstance(creations, LesserCreations):
-            self._register_spellspace_to_lesser_creations(
-                spell=spell,
-                spell_id=spell_id,
-                instance=instance,
-                creations=creations,
-                spellspace=spellspace,
-            )
-            return
-
-        raise RuntimeError(
-            f"[MELD] Unsupported creations manager type: {type(creations).__name__}"
-        )
-
-    def _register_to_creations(
-            self,
-            spell: ISpell,
-            spell_id: str,
-            instance: Any,
-            creations: ICreations,
-    ) -> None:
-        """
-        Handle non-spellspace registration for the full Creations manager.
-
-        It registers the new instance for unique, per-conduit, many, cluster,
-        and lineage lifetimes.
-
-        Args:
-            spell (ISpell): The resolved Spell configuration object.
-            instance (Any): The newly created component instance.
-            creations (ICreations): Target creations container for registration.
-        Returns:
-            None.
-
-        Raises:
-            RuntimeError: If an unsupported non-spellspace Existence mode is encountered.
-        """
-        existence: Existence = spell.existence
-        has_disposal_methods: bool = spell.has_disposal_methods
-        disposal_methods: list[str] = spell.disposal_method_names
-
-        if existence in (
-                Existence.unique,
-                Existence.unique_per_conduit,
-                Existence.unique_per_conduit_cluster,
-                Existence.unique_per_conduit_lineage,
-        ):
-            creations.add_creation(
-                spell_id,
-                instance,
-                has_disposal_methods=has_disposal_methods,
-                disposal_methods=disposal_methods,
-            )
-            return
-
-        if existence is Existence.many:
-            if not has_disposal_methods:
-                return
-            creations.add_many_creations(
-                spell_id,
-                instance,
-                has_disposal_methods=has_disposal_methods,
-                disposal_methods=disposal_methods,
-            )
-            return
-
-        raise RuntimeError(
-            f"[MELD] Unsupported non-spellspace Existence '{existence}' "
-            f"for Creations (spell_id={spell_id})."
-        )
-
-
-    def _register_to_lesser_creations(
-            self,
-            spell: ISpell,
-            spell_id: str,
-            instance: Any,
-            creations: ILesserCreations,
-    ) -> None:
-        """
-        Handle non-spellspace registration for LesserCreations.
-
-        This manager only supports a limited set of existence modes:
-        `unique_per_conduit` and `many`.
-
-        Args:
-            spell (ISpell): The resolved Spell configuration object.
-            instance (Any): The newly created component instance.
-            creations (ILesserCreations): Target creations container for registration.
-        Returns:
-            None.
-
-        Raises:
-            RuntimeError: If an Existence mode other than `unique_per_conduit` or
-                          `many` is attempted in a LesserConduit context.
-        """
-        existence: Existence = spell.existence
-        has_disposal_methods: bool = spell.has_disposal_methods
-        disposal_methods: list[str] = spell.disposal_method_names
-
-        if existence is Existence.unique_per_conduit:
-            creations.add_unique_per_scope(
-                spell_id,
-                instance,
-                has_disposal_methods=has_disposal_methods,
-                disposal_methods=disposal_methods,
-            )
-            return
-
-        if existence is Existence.many:
-            if not has_disposal_methods:
-                return
-            creations.add_many(
-                spell_id,
-                instance,
-                has_disposal_methods=has_disposal_methods,
-                disposal_methods=disposal_methods,
-            )
-            return
-
-        raise RuntimeError(
-            f"[MELD] Unsupported non-spellspace Existence '{existence}' "
-            f"for LesserCreations (spell_id={spell_id})."
-        )
-
-    def _register_spellspace_to_creations(
-            self,
-            spell: ISpell,
-            *,
-            spell_id: str,
-            instance: Any,
-            creations: ICreations,
-            spellspace: Any,
-    ) -> None:
-        """
-        Register a spellspace-scoped instance into a Creations container.
-        """
-        creations.register_spellspace_creation(
-            spellspace.id,
-            spell_id,
-            instance,
-            has_disposal_methods=spell.has_disposal_methods,
-            disposal_methods=spell.disposal_method_names,
-        )
-
-    def _register_spellspace_to_lesser_creations(
-            self,
-            spell: ISpell,
-            *,
-            spell_id: str,
-            instance: Any,
-            creations: ILesserCreations,
-            spellspace: Any,
-    ) -> None:
-        """
-        Register a spellspace-scoped instance into a LesserCreations container.
-        """
-        creations.register_spellspace_creation(
-            spellspace.id,
-            spell_id,
-            instance,
-            has_disposal_methods=spell.has_disposal_methods,
-            disposal_methods=spell.disposal_method_names,
-        )

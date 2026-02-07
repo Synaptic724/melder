@@ -20,7 +20,7 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
 from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.creations.lesser_creations import LesserCreations
+from melder.aether.conduit.creations.creation import Creation
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 _OccurrenceKey = tuple[str, int]
@@ -1797,89 +1797,76 @@ class MeldEngine(Cleanable):
     def _get_existing_creation(
             self,
             spell: ISpell,
-            creations: Any | None,
+            creations: Any,
             existence: Existence,
     ) -> Optional[Any]:
         """
-        Attempt reuse from creations manager based on Existence.
+        Attempt reuse from a Creations manager based on Existence.
 
         Args:
             spell: Spell being resolved.
-            creations: Creations container to query (may be None).
+            creations: Creations container to query.
             existence: Precomputed existence policy for the spell.
+
+        Returns:
+            Optional[Any]:
+                Existing instance for singleton existences, or None when absent.
+
+        Raises:
+            RuntimeError:
+                If creations type is unsupported, existence is unsupported, or
+                a singleton slot contains a non-`Creation` value.
         """
         # many never reuses
         if existence is Existence.many:
             return None
-        if creations is None:
-            return None
         spell_id: str = spell.spell_id
 
-        if isinstance(creations, Creations):
-            if existence is Existence.unique:
-                found = creations._unique.get(spell_id)
-                return found.value if found is not None else None
-            if existence is Existence.unique_per_conduit:
-                found = creations._unique_per_scope.get(spell_id)
-                return found.value if found is not None else None
-            if existence is Existence.unique_per_conduit_cluster:
-                found = creations._unique_per_cluster.get(spell_id)
-                return found.value if found is not None else None
-            if existence is Existence.unique_per_conduit_lineage:
-                found = creations._unique_per_lineage.get(spell_id)
-                return found.value if found is not None else None
-            if existence is Existence.unique_per_spell_space:
-                spellspace = creations._conduit.get_active_spellspace()
-                if spellspace is None:
-                    raise SpellSpaceScopeError(
-                        "Existence.unique_per_spell_space requires an active SpellSpace. "
-                        "Use 'with conduit.enter_spellspace()' when melding."
-                    )
-                if spellspace.owner_conduit is not creations._conduit:
-                    raise SpellSpaceScopeError(
-                        "Active SpellSpace belongs to a different conduit."
-                    )
-                found = creations.get_spellspace_creation(spellspace.id, spell_id)
-                return found.value if found is not None else None
-            return None
+        if not isinstance(creations, Creations):
+            raise RuntimeError(
+                f"[MELD] Unsupported creations manager type: {type(creations).__name__}"
+            )
 
-        if isinstance(creations, LesserCreations):
-            if existence is Existence.unique_per_conduit:
-                found = creations._unique_per_scope.get(spell_id)
-                return found.value if found is not None else None
-            parent_creations = creations._parent_creations
-            if isinstance(parent_creations, Creations):
-                if existence is Existence.unique:
-                    found = parent_creations._unique.get(spell_id)
-                    return found.value if found is not None else None
-                if existence is Existence.unique_per_conduit_cluster:
-                    found = parent_creations._unique_per_cluster.get(spell_id)
-                    return found.value if found is not None else None
-                if existence is Existence.unique_per_conduit_lineage:
-                    found = parent_creations._unique_per_lineage.get(spell_id)
-                    return found.value if found is not None else None
-                if existence is Existence.unique_per_spell_space:
-                    spellspace = creations._conduit.get_active_spellspace()
-                    if spellspace is None:
-                        raise SpellSpaceScopeError(
-                            "Existence.unique_per_spell_space requires an active SpellSpace. "
-                            "Use 'with conduit.enter_spellspace()' when melding."
-                        )
-                    if spellspace.owner_conduit is not creations._conduit:
-                        raise SpellSpaceScopeError(
-                            "Active SpellSpace belongs to a different conduit."
-                        )
-                    found = creations.get_spellspace_creation(spellspace.id, spell_id)
-                    return found.value if found is not None else None
-            return None
+        if existence in (
+                Existence.unique,
+                Existence.unique_per_conduit,
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        ):
+            found = creations._creations.get(spell_id)
+            if found is None:
+                return None
+            if not isinstance(found, Creation):
+                raise RuntimeError(
+                    f"[MELD] Expected singleton Creation at spell_id='{spell_id}', "
+                    f"found {type(found).__name__}."
+                )
+            return found.value
 
-        return None
+        if existence is Existence.unique_per_spell_space:
+            spellspace = creations._conduit.get_active_spellspace()
+            if spellspace is None:
+                raise SpellSpaceScopeError(
+                    "Existence.unique_per_spell_space requires an active SpellSpace. "
+                    "Use 'with conduit.enter_spellspace()' when melding."
+                )
+            if spellspace.owner_conduit is not creations._conduit:
+                raise SpellSpaceScopeError(
+                    "Active SpellSpace belongs to a different conduit."
+                )
+            found = creations.get_spellspace_creation(spellspace.id, spell_id)
+            return found.value if found is not None else None
+
+        raise RuntimeError(
+            f"[MELD] Unsupported Existence '{existence}' for creation reuse "
+            f"(spell_id={spell_id})."
+        )
 
     def _register_spell(
             self,
             spell: ISpell,
             instance: Any,
-            creations: Any | None,
+            creations: Any,
             existence: Existence,
     ) -> None:
         """
@@ -1888,7 +1875,6 @@ class MeldEngine(Cleanable):
         Contract:
             - Per-conduit lifetimes register against the caller creations container.
             - Shared lifetimes register against the owner creations container.
-            - Unknown creations containers are treated as no-ops.
             - Existence.many registration is skipped when the spell declares
               no disposal methods.
 
@@ -1905,104 +1891,54 @@ class MeldEngine(Cleanable):
         has_disposal_methods: bool = spell.has_disposal_methods
         disposal_methods: list[str] = spell.disposal_method_names
 
-        if creations is None:
-            return None
+        if not isinstance(creations, Creations):
+            raise RuntimeError(
+                f"[MELD] Unsupported creations manager type: {type(creations).__name__}"
+            )
 
-        if isinstance(creations, Creations):
-            if existence in (
-                    Existence.unique,
-                    Existence.unique_per_conduit,
-                    Existence.unique_per_conduit_cluster,
-                    Existence.unique_per_conduit_lineage,
-            ):
-                creations.add_creation(
-                    spell_id,
-                    instance,
-                    has_disposal_methods=has_disposal_methods,
-                    disposal_methods=disposal_methods,
-                )
-                return
-            if existence is Existence.many:
-                if not has_disposal_methods:
-                    return
-                creations.add_many_creations(
-                    spell_id,
-                    instance,
-                    has_disposal_methods=has_disposal_methods,
-                    disposal_methods=disposal_methods,
-                )
-                return
-            if existence is Existence.unique_per_spell_space:
-                spellspace = creations._conduit.get_active_spellspace()
-                if spellspace is None:
-                    raise SpellSpaceScopeError(
-                        "Existence.unique_per_spell_space requires an active SpellSpace. "
-                        "Use 'with conduit.enter_spellspace()' when melding."
-                    )
-                if spellspace.owner_conduit is not creations._conduit:
-                    raise SpellSpaceScopeError(
-                        "Active SpellSpace belongs to a different conduit."
-                    )
-                creations.register_spellspace_creation(
-                    spellspace.id,
-                    spell_id,
-                    instance,
-                    has_disposal_methods=has_disposal_methods,
-                    disposal_methods=disposal_methods,
-                )
-                return
+        if existence in (
+                Existence.unique,
+                Existence.unique_per_conduit,
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        ):
+            creations.add_creation(
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
-
-        if isinstance(creations, LesserCreations):
-            if existence is Existence.unique_per_conduit:
-                creations.add_unique_per_scope(
-                    spell_id,
-                    instance,
-                    has_disposal_methods=has_disposal_methods,
-                    disposal_methods=disposal_methods,
-                )
+        if existence is Existence.many:
+            if not has_disposal_methods:
                 return
-            if existence is Existence.many:
-                if not has_disposal_methods:
-                    return
-                creations.add_many(
-                    spell_id,
-                    instance,
-                    has_disposal_methods=has_disposal_methods,
-                    disposal_methods=disposal_methods,
-                )
-                return
-            parent_creations = creations._parent_creations
-            if isinstance(parent_creations, Creations):
-                if existence in (
-                        Existence.unique,
-                        Existence.unique_per_conduit_cluster,
-                        Existence.unique_per_conduit_lineage,
-                ):
-                    parent_creations.add_creation(
-                        spell_id,
-                        instance,
-                        has_disposal_methods=has_disposal_methods,
-                        disposal_methods=disposal_methods,
-                    )
-                    return
-                if existence is Existence.unique_per_spell_space:
-                    spellspace = creations._conduit.get_active_spellspace()
-                    if spellspace is None:
-                        raise SpellSpaceScopeError(
-                            "Existence.unique_per_spell_space requires an active SpellSpace. "
-                            "Use 'with conduit.enter_spellspace()' when melding."
-                        )
-                    if spellspace.owner_conduit is not creations._conduit:
-                        raise SpellSpaceScopeError(
-                            "Active SpellSpace belongs to a different conduit."
-                        )
-                    creations.register_spellspace_creation(
-                        spellspace.id,
-                        spell_id,
-                        instance,
-                        has_disposal_methods=has_disposal_methods,
-                        disposal_methods=disposal_methods,
-                    )
-                    return
+            creations.add_many_creations(
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
             return
+        if existence is Existence.unique_per_spell_space:
+            spellspace = creations._conduit.get_active_spellspace()
+            if spellspace is None:
+                raise SpellSpaceScopeError(
+                    "Existence.unique_per_spell_space requires an active SpellSpace. "
+                    "Use 'with conduit.enter_spellspace()' when melding."
+                )
+            if spellspace.owner_conduit is not creations._conduit:
+                raise SpellSpaceScopeError(
+                    "Active SpellSpace belongs to a different conduit."
+                )
+            creations.register_spellspace_creation(
+                spellspace.id,
+                spell_id,
+                instance,
+                has_disposal_methods=has_disposal_methods,
+                disposal_methods=disposal_methods,
+            )
+            return
+        raise RuntimeError(
+            f"[MELD] Unsupported Existence '{existence}' for registration "
+            f"(spell_id={spell_id})."
+        )
