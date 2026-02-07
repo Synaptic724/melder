@@ -6,6 +6,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.helpers.general_helpers import SpellInputUtils
+from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
 
@@ -73,6 +74,7 @@ class _SpellSystemStatesStub:
         Capture lineage registrations for Spellbook bind operations.
     Contract:
         - register_lineage records SpellIndex and Spell instances in order.
+        - unregister_lineage records SpellIndex removals during cleanup.
     """
     def __init__(self) -> None:
         """
@@ -80,10 +82,12 @@ class _SpellSystemStatesStub:
             Initialize an empty registry of lineage registrations.
         Contract:
             - registered_lineages starts empty.
+            - unregistered_lineages starts empty.
         Returns:
             None.
         """
         self.registered_lineages: list[tuple[object, object]] = []
+        self.unregistered_lineages: list[object] = []
 
     def register_lineage(self, spell_index: object, spell: object) -> None:
         """
@@ -98,6 +102,19 @@ class _SpellSystemStatesStub:
             None.
         """
         self.registered_lineages.append((spell_index, spell))
+
+    def unregister_lineage(self, spell_index: object) -> None:
+        """
+        Purpose:
+            Record a lineage unregistration from Spellbook.cleanup.
+        Contract:
+            - Appends spell_index to unregistered_lineages.
+        Args:
+            spell_index: SpellIndex removed from system-state tracking.
+        Returns:
+            None.
+        """
+        self.unregistered_lineages.append(spell_index)
 
 
 class _ConduitStub:
@@ -562,6 +579,41 @@ def test_component_spellbook_bind_updates_spell_versions_cache() -> None:
         assert spell_id in spellbook._spell_versions
     finally:
         spellbook.cleanup()
+
+
+def test_component_spellbook_cleanup_unregisters_lineages() -> None:
+    """
+    Purpose:
+        Validate Spellbook.cleanup unregisters local lineages from SpellSystemStates.
+    Contract:
+        - unregister_lineage is called once per local SpellIndex.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If unregister_lineage is missing or incomplete.
+    """
+    spellbook = _make_spellbook()
+    states = _SpellSystemStatesStub()
+    spellbook._spell_system_states = states
+
+    try:
+        spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spellbook.bind(
+            spell=BasicConfig,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        expected = [index for index, _spell in states.registered_lineages]
+    finally:
+        spellbook.cleanup()
+
+    for spell_index in expected:
+        assert spell_index in states.unregistered_lineages
+    assert len(states.unregistered_lineages) == len(expected)
 
 
 def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:

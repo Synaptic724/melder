@@ -332,11 +332,31 @@ class Spellbook(Cleanable, ISpellbook):
 
 
     def _cleanup_spells(self) -> None:
+        """
+        Internal
+
+        Cleanup local spell objects and unregister their lineages.
+
+        Contract:
+            - Unregisters each local SpellIndex lineage from SpellSystemStates.
+            - Cleans Spell and SpellIndex instances (best-effort).
+            - Logs cleanup errors and continues.
+
+        Returns:
+            None.
+        """
         if self._spells is None:
             return
 
-        items = list(self._spells.items())
-        for spell_index, spell in items:
+        for spell_index, spell in self._spells.items():
+            try:
+                self._spell_system_states.unregister_lineage(spell_index)
+            except Exception as e:
+                self._logger.error(
+                    f"Error unregistering spell lineage '{spell_index}': {e}",
+                    "_cleanup_spells",
+                    exc_info=True,
+                )
             try:
                 spell.cleanup()
             except Exception as e:

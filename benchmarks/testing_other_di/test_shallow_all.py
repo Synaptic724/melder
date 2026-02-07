@@ -579,7 +579,7 @@ def _selected_graphs() -> list[_GraphSpec]:
 
 
 def _selected_libs() -> tuple[str, ...]:
-    supported = ("dependency-injector", "lagom", "injector", "dishka", "melder")
+    supported = ("dependency-injector", "dishka", "melder")
     raw = _env_str("DI_LIBS", ",".join(supported))
     want = tuple(_parse_csv(raw))
     for lib in want:

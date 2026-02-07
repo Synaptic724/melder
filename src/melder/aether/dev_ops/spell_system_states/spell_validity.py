@@ -28,6 +28,9 @@ class SpellValidity(Enum):
         - disabled:
             Explicitly turned off by policy. Hard "do not resolve" regardless of
             other flags.
+        - cleaned:
+            Lineage state has been removed during Spellbook cleanup. Hard
+            "do not resolve" until re-registered and validated.
     """
     __melder_internal__ = _mrg.sentinel
     unknown = auto()
@@ -35,3 +38,4 @@ class SpellValidity(Enum):
     gated = auto()
     invalid = auto()
     disabled = auto()
+    cleaned = auto()

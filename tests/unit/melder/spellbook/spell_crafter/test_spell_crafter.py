@@ -401,6 +401,7 @@ class _SpellSystemStatesStub:
         self._local_topologies: dict[str, object] = {}
         self.update_calls: list[tuple[object, list[str]]] = []
         self.topology_calls: list[tuple[object, object]] = []
+        self.unregistered_lineages: list[object] = []
 
     def update_dependencies(self, spell_index: object, dependency_ids: list[str]) -> None:
         """
@@ -442,6 +443,19 @@ class _SpellSystemStatesStub:
             list[_SpellSystemStateStub]: State snapshot list.
         """
         return list(self._states)
+
+    def unregister_lineage(self, spell_index: object) -> None:
+        """
+        Purpose:
+            Record a lineage unregistration from Spellbook.cleanup.
+        Contract:
+            - Appends spell_index to unregistered_lineages.
+        Args:
+            spell_index: SpellIndex removed from system-state tracking.
+        Returns:
+            None.
+        """
+        self.unregistered_lineages.append(spell_index)
 
     def get_by_spell_id(self, spell_id: str) -> _SpellSystemStateStub | None:
         """

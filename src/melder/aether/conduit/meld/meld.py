@@ -334,7 +334,7 @@ class Meld(Cleanable, IMeld):
             KeyError: If the spell cannot be resolved.
             RuntimeError: For unexpected internal state issues.
         """
-        instance, created = self._resolve_instance_with_locks(
+        instance, created = self._resolver(
             target_spell,
             override_map,
         )
@@ -369,10 +369,11 @@ class Meld(Cleanable, IMeld):
         self._execute_hooks(target_spell._pre_hooks, "pre_cast")
         self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
-        instance, created = self._resolve_instance_with_locks(
+        instance, created = self._resolver(
             target_spell,
             override_map,
         )
+
         if created:
             # Activation hooks fire only when the instance is newly created.
             self._execute_activation_hooks(target_spell._activation_hooks, instance)
@@ -458,7 +459,7 @@ class Meld(Cleanable, IMeld):
         - SpellValidity.valid   -> False  (safe to resolve as-is).
         - SpellValidity.unknown -> True   (first-pass revalidation needed).
         - SpellValidity.gated   -> True   (structural / contract / mutation gate).
-        - SpellValidity.invalid / disabled -> raise SpellbookValidationError.
+        - SpellValidity.invalid / disabled / cleaned -> raise SpellbookValidationError.
         - Dirty root under change-control -> raise MeldExecutionError.
 
         This method does **not** run validation; it only answers:
@@ -487,8 +488,12 @@ class Meld(Cleanable, IMeld):
         if validity is SpellValidity.unknown or validity is SpellValidity.gated:
             return True
 
-        # invalid / disabled → hard block, no attempt to resolve
-        if validity is SpellValidity.invalid or validity is SpellValidity.disabled:
+        # invalid / disabled / cleaned → hard block, no attempt to resolve
+        if (
+                validity is SpellValidity.invalid
+                or validity is SpellValidity.disabled
+                or validity is SpellValidity.cleaned
+        ):
             if state is not None and SpellState.transfer_in_progress in state.flags:
                 raise SpellbookValidationError([spell])
             raise SpellbookValidationError([spell])
@@ -506,7 +511,8 @@ class Meld(Cleanable, IMeld):
 
         This method checks the ConduitResolutionState for the active conduit
         (or root conduit for lesser conduits) and runs conduit-scoped phases
-        if resolution validity is UNKNOWN or GATED.
+        if resolution validity is UNKNOWN or GATED. Invalid, disabled, or
+        cleaned validity states are hard blocks.
         """
         spell_system_states = spell._spell_system_states
         conduit_id = self._get_resolution_conduit_id()
@@ -518,7 +524,11 @@ class Meld(Cleanable, IMeld):
         if resolution_validity is SpellValidity.valid:
             return
 
-        if resolution_validity is SpellValidity.invalid or resolution_validity is SpellValidity.disabled:
+        if (
+                resolution_validity is SpellValidity.invalid
+                or resolution_validity is SpellValidity.disabled
+                or resolution_validity is SpellValidity.cleaned
+        ):
             raise SpellbookValidationError([spell])
 
         if resolution_validity is SpellValidity.unknown or resolution_validity is SpellValidity.gated:
@@ -527,7 +537,11 @@ class Meld(Cleanable, IMeld):
                 resolution_validity = self._get_resolution_validity(spell, resolution_state)
                 if resolution_validity is SpellValidity.valid:
                     return
-                if resolution_validity is SpellValidity.invalid or resolution_validity is SpellValidity.disabled:
+                if (
+                        resolution_validity is SpellValidity.invalid
+                        or resolution_validity is SpellValidity.disabled
+                        or resolution_validity is SpellValidity.cleaned
+                ):
                     raise SpellbookValidationError([spell])
 
                 spellbook = spell._spellbook
@@ -1005,20 +1019,15 @@ class Meld(Cleanable, IMeld):
                 a lookup key resolves to a SpellIndex that has no
                 corresponding spell object).
         """
-        cache_key = None
-        try:
-            cache_key = (spell, spell_name, spellframe, binding_name)
-        except TypeError:
-            cache_key = None
-        if cache_key is not None:
-            cached = self._input_resolution_cache.get(cache_key)
-            if cached is not None:
-                return cached
-            cached_lookup_key = self._lookup_key_cache.get(cache_key)
-            if cached_lookup_key is not None:
-                resolved = self._resolve_spell_by_lookup_key(cached_lookup_key)
-                self._cache_input_resolution(cache_key, resolved)
-                return resolved
+        cache_key = (spell, spell_name, spellframe, binding_name)
+        cached = self._input_resolution_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        cached_lookup_key = self._lookup_key_cache.get(cache_key)
+        if cached_lookup_key is not None:
+            resolved = self._resolve_spell_by_lookup_key(cached_lookup_key)
+            self._cache_input_resolution(cache_key, resolved)
+            return resolved
 
         self._validate_meld_inputs(
             spell_name=spell_name,
@@ -1064,6 +1073,7 @@ class Meld(Cleanable, IMeld):
         resolved = self._resolve_spell_by_lookup_key(lookup_key)
         self._cache_lookup_key(cache_key, lookup_key)
         self._cache_input_resolution(cache_key, resolved)
+        resolved.check_cleaned()
         return resolved
 
     def _resolve_spell_by_id(self, spell_id: str) -> ISpell:
@@ -1572,10 +1582,33 @@ class Meld(Cleanable, IMeld):
             return None
         return instance
 
+    def _resolver(
+        self,
+        spell: ISpell,
+    overrides: Optional[dict[str, Any]] = None,
+    ) -> tuple[Any, bool]:
+        """
+        Internal
+
+        Main resolver entry point that enforces locking rules and instance reuse.
+
+        This method orchestrates the resolution flow for a single spell instance,
+        applying the appropriate locking strategy based on the spell's Existence
+        mode and ensuring that overrides are handled correctly.
+
+        Contract:
+            - Enforces per-existence locking rules as documented in the method.
+            - Handles instance reuse according to Existence modes.
+            - Raises MeldExecutionError when overrides are supplied for existing shared instances.
+        """
+        creations = self._select_creations_for_spell(spell)
+        return self._resolve_instance_with_locks(spell, creations, overrides)
+
 
     def  _resolve_instance_with_locks(
             self,
             spell: ISpell,
+            creations: Any,
             overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
@@ -1606,7 +1639,6 @@ class Meld(Cleanable, IMeld):
                 If overrides are supplied for a spell instance that already
                 exists under a shared Existence mode.
         """
-        creations = self._select_creations_for_spell(spell)
         existence: Existence = spell.existence
         spellspace = None
 

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.interfaces.interfaces import ISpellIndex, ISpell
 
 # ----------------------------------------------------------------------
@@ -80,6 +81,28 @@ def test_register_lineage_updates_existing(states_manager, mock_spell_index, moc
 def test_register_validation(states_manager, mock_spell):
     with pytest.raises(ValueError):
         states_manager.register_lineage(None, mock_spell)
+
+# ----------------------------------------------------------------------
+# 2.5. Unregistration
+# ----------------------------------------------------------------------
+
+def test_unregister_lineage_triggers_risk_manager(states_manager, mock_spell_index, mock_spell):
+    """
+    Verify unregister_lineage notifies RiskManager.
+
+    Contract:
+    - RiskManager.on_structural_validity_change is called with SpellValidity.cleaned.
+    """
+    risk_manager = MagicMock()
+    states_manager.set_risk_manager(risk_manager)
+
+    states_manager.register_lineage(mock_spell_index, mock_spell)
+    states_manager.unregister_lineage(mock_spell_index)
+
+    risk_manager.on_structural_validity_change.assert_called_once_with(
+        "idx-1",
+        SpellValidity.cleaned,
+    )
 
 # ----------------------------------------------------------------------
 # 3. Dependency Wiring

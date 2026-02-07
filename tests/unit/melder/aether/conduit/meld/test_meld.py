@@ -132,6 +132,19 @@ class _SpellSystemStatesStub:
         """
         return self._resolution_state
 
+    def unregister_lineage(self, spell_index: object) -> None:
+        """
+        Purpose:
+            Provide a cleanup-compatible no-op for Spellbook cleanup.
+        Contract:
+            - Does not raise.
+        Args:
+            spell_index: SpellIndex to unregister (unused).
+        Returns:
+            None.
+        """
+        return None
+
 
 class _TrackingLock:
     """
@@ -1070,15 +1083,18 @@ def test_gated_validation_required_returns_true_for_unknown_or_gated(
     assert meld._gated_validation_required(spell) is True
 
 
-@pytest.mark.parametrize("validity", [SpellValidity.invalid, SpellValidity.disabled])
-def test_gated_validation_required_raises_for_invalid_or_disabled(
+@pytest.mark.parametrize(
+    "validity",
+    [SpellValidity.invalid, SpellValidity.disabled, SpellValidity.cleaned],
+)
+def test_gated_validation_required_raises_for_invalid_or_disabled_or_cleaned(
     validity: SpellValidity,
 ) -> None:
     """
-    Verify invalid/disabled lineages are blocked.
+    Verify invalid/disabled/cleaned lineages are blocked.
 
     Contract:
-        - invalid/disabled validity raises SpellbookValidationError.
+        - invalid/disabled/cleaned validity raises SpellbookValidationError.
     """
     meld = _make_meld()
     state = _SystemStateStub(validity=validity)
@@ -1629,6 +1645,48 @@ def test_ensure_lineage_resolvable_raises_for_disabled_state() -> None:
     spell = _SpellStub(spell_id="spell-1", system_state=state)
     with pytest.raises(SpellbookValidationError):
         meld._ensure_lineage_resolvable(spell)
+
+
+def test_ensure_lineage_resolvable_raises_for_cleaned_state() -> None:
+    """
+    Verify cleaned lineage validity raises SpellbookValidationError.
+
+    Contract:
+        - Cleaned validity raises without attempting revalidation.
+    """
+    meld = _make_meld()
+    state = _SystemStateStub(validity=SpellValidity.cleaned)
+    spell = _SpellStub(spell_id="spell-1", system_state=state)
+    with pytest.raises(SpellbookValidationError):
+        meld._ensure_lineage_resolvable(spell)
+
+
+@pytest.mark.parametrize(
+    "validity",
+    [SpellValidity.invalid, SpellValidity.disabled, SpellValidity.cleaned],
+)
+def test_ensure_resolution_resolvable_blocks_invalid_disabled_cleaned(
+    validity: SpellValidity,
+) -> None:
+    """
+    Verify resolution validity blocks invalid/disabled/cleaned spells.
+
+    Contract:
+        - Resolution validity in {invalid, disabled, cleaned} raises.
+    """
+    resolution_state = _ResolutionStateStub()
+    spell_system_states = _SpellSystemStatesStub(resolution_state)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spell_system_states=spell_system_states,
+    )
+    resolution_state.set_spell_validity(spell.spell_index.current, validity)
+    meld = _make_meld()
+    meld._creations = None
+    meld._conduit_id = "conduit-1"
+
+    with pytest.raises(SpellbookValidationError):
+        meld._ensure_resolution_resolvable(spell)
 
 
 def test_gated_validation_required_unknown_without_dirty_raises() -> None:

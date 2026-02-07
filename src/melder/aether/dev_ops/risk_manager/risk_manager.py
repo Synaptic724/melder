@@ -8,6 +8,20 @@ from melder.utilities.interfaces.interfaces import ISpell, ISpellbook, ISpellSys
 
 
 class _ConduitRiskState:
+    """
+    Internal per-conduit risk snapshot.
+
+    Purpose:
+        Store the spellbook handle and sets used to track which lineages
+        and spell ids are currently considered risky for a conduit.
+
+    Contract:
+        - `spellbook` is a live Spellbook reference for validation flag updates.
+        - `lineages` contains lineage ids registered for this conduit.
+        - `risky_structural` tracks lineage ids with non-valid structural state.
+        - `risky_resolution` tracks spell ids (or lineage keys) with non-valid
+          resolution state.
+    """
     __slots__ = [
         "spellbook",
         "lineages",
@@ -16,6 +30,12 @@ class _ConduitRiskState:
     ]
 
     def __init__(self, spellbook: ISpellbook) -> None:
+        """
+        Initialize a conduit risk bucket.
+
+        Args:
+            spellbook: Owning Spellbook used to toggle validation-required state.
+        """
         self.spellbook: ISpellbook = spellbook
         self.lineages: Set[str] = set()
         self.risky_structural: Set[str] = set()
@@ -31,6 +51,19 @@ class RiskManager(Cleanable):
         exists for a conduit, the owning Spellbook is flagged as requiring
         validation. Risk is defined as any validity that would trigger
         revalidation in Meld (unknown/gated/invalid/disabled).
+
+    Contract:
+        - Structural and resolution risk are tracked independently.
+        - Any non-valid validity marks the conduit as requiring validation.
+        - Risk is recalculated incrementally per lineage change.
+
+    Threading:
+        - Internal state is guarded by an RLock.
+        - Callers may invoke methods concurrently across conduits.
+
+    Lifecycle:
+        - Owned by DevOpsManager and cleaned during DevOpsManager.cleanup().
+        - After cleanup, public methods raise via check_cleaned().
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -41,6 +74,16 @@ class RiskManager(Cleanable):
     ]
 
     def __init__(self, spell_system_states: ISpellSystemStates) -> None:
+        """
+        Initialize the RiskManager.
+
+        Args:
+            spell_system_states:
+                SpellSystemStates registry used to resolve lineage ids and
+                per-conduit resolution validity.
+        Raises:
+            ValueError: If spell_system_states is None.
+        """
         super().__init__()
         if spell_system_states is None:
             raise ValueError("spell_system_states cannot be None")
@@ -50,6 +93,14 @@ class RiskManager(Cleanable):
         self._lineage_conduits: Dict[str, Set[str]] = {}
 
     def cleanup(self) -> None:
+        """
+        Cleanup the RiskManager and drop all tracking state.
+
+        Contract:
+            - Idempotent and lock-guarded.
+            - Clears conduit and lineage indexes.
+            - Drops the SpellSystemStates reference.
+        """
         if self._cleaned:
             return
         with self._lock:
@@ -66,6 +117,17 @@ class RiskManager(Cleanable):
     def register_conduit(self, conduit_id: str, spellbook: ISpellbook) -> None:
         """
         Register a conduit with its Spellbook and initialize risk state.
+
+        Contract:
+            - Replaces any existing conduit risk state.
+            - Registers all spells currently visible in the Spellbook.
+            - Refreshes the spellbook validation-required flag at the end.
+
+        Args:
+            conduit_id: Conduit identifier to track.
+            spellbook: Spellbook whose spells should be registered.
+        Raises:
+            RuntimeError: If this RiskManager has been cleaned.
         """
         self.check_cleaned()
         if not conduit_id or spellbook is None:
@@ -75,6 +137,7 @@ class RiskManager(Cleanable):
             state = _ConduitRiskState(spellbook)
             self._conduit_states[conduit_id] = state
 
+        # Register all known spells so initial risk is accurate.
         for spell in self._iter_spellbook_spells(spellbook):
             self.register_spell(conduit_id, spell)
 
@@ -83,6 +146,16 @@ class RiskManager(Cleanable):
     def unregister_conduit(self, conduit_id: str) -> None:
         """
         Remove conduit tracking and clear lineage mappings.
+
+        Contract:
+            - Removes the conduit risk bucket.
+            - Removes conduit membership from all lineage indexes.
+            - Does not modify SpellSystemStates.
+
+        Args:
+            conduit_id: Conduit identifier to remove.
+        Raises:
+            RuntimeError: If this RiskManager has been cleaned.
         """
         self.check_cleaned()
         if not conduit_id:
@@ -104,6 +177,17 @@ class RiskManager(Cleanable):
     def register_spell(self, conduit_id: str, spell: ISpell) -> None:
         """
         Register a spell into a conduit's risk tracking.
+
+        Contract:
+            - Adds the spell lineage to the conduit risk state.
+            - Updates structural and resolution risk for the spell.
+            - Refreshes the spellbook validation-required flag.
+
+        Args:
+            conduit_id: Conduit identifier to update.
+            spell: Spell instance to register.
+        Raises:
+            RuntimeError: If this RiskManager has been cleaned.
         """
         self.check_cleaned()
         if not conduit_id or spell is None:
@@ -135,6 +219,17 @@ class RiskManager(Cleanable):
     def unregister_spell(self, conduit_id: str, spell: ISpell) -> None:
         """
         Remove a spell from a conduit's risk tracking.
+
+        Contract:
+            - Removes the spell lineage from the conduit risk state.
+            - Clears risk markers for this lineage.
+            - Refreshes the spellbook validation-required flag.
+
+        Args:
+            conduit_id: Conduit identifier to update.
+            spell: Spell instance to unregister.
+        Raises:
+            RuntimeError: If this RiskManager has been cleaned.
         """
         self.check_cleaned()
         if not conduit_id or spell is None:
@@ -162,6 +257,16 @@ class RiskManager(Cleanable):
     def on_structural_validity_change(self, lineage_id: str, validity: Optional[SpellValidity]) -> None:
         """
         Update risk when structural validity changes for a lineage.
+
+        Contract:
+            - Updates all conduits currently referencing the lineage.
+            - Refreshes validation-required flags per conduit.
+
+        Args:
+            lineage_id: Lineage identifier whose structural validity changed.
+            validity: New structural validity (None treated as risky).
+        Raises:
+            RuntimeError: If this RiskManager has been cleaned.
         """
         self.check_cleaned()
         if not lineage_id:
@@ -180,6 +285,17 @@ class RiskManager(Cleanable):
     ) -> None:
         """
         Update risk when per-conduit resolution validity changes.
+
+        Contract:
+            - Tracks risk for a spell id within the conduit.
+            - Refreshes the conduit spellbook validation-required flag.
+
+        Args:
+            conduit_id: Conduit identifier whose resolution validity changed.
+            spell_id: Versioned spell id for the resolution update.
+            validity: New resolution validity (None treated as risky).
+        Raises:
+            RuntimeError: If this RiskManager has been cleaned.
         """
         self.check_cleaned()
         if not conduit_id or not spell_id:
@@ -193,6 +309,19 @@ class RiskManager(Cleanable):
     # Internal helpers                                                   #
     # ------------------------------------------------------------------ #
     def _iter_spellbook_spells(self, spellbook: ISpellbook) -> List[ISpell]:
+        """
+        Internal
+
+        Collect all spells visible to a Spellbook.
+
+        Contract:
+            - Returns local and contracted spells when available.
+            - Returns an empty list if maps are unavailable.
+
+        Notes:
+            A list is built to avoid iteration hazards if Spellbook maps
+            are mutated during registration.
+        """
         spells: List[ISpell] = []
         try:
             if spellbook._spells is not None:
@@ -205,53 +334,74 @@ class RiskManager(Cleanable):
         return spells
 
     def _resolve_lineage_id(self, spell: ISpell) -> Optional[str]:
-        try:
-            spell_index = spell.spell_index
-        except Exception:
-            return None
-        if spell_index is None:
-            return None
-        return spell_index.id
+        """
+        Internal
 
+        Resolve a lineage id for a spell, if present.
+
+        Args:
+            spell: Spell instance to inspect.
+        Returns:
+            Optional[str]: Lineage id or None if unavailable.
+        """
+        if spell._cleaned:
+            return None
+        else:
+            return spell.spell_index.id
     def _resolve_lineage_id_from_spell_id(self, spell_id: str) -> Optional[str]:
+        """
+        Internal
+
+        Resolve a lineage id using a spell version id.
+
+        Args:
+            spell_id: Versioned spell id.
+        Returns:
+            Optional[str]: Lineage id or None if unavailable.
+        """
         states = self._spell_system_states
-        if states is None:
-            return None
-        try:
-            state = states.get_by_spell_id(spell_id)
-        except Exception:
-            return None
+        state = states.get_by_spell_id(spell_id)
         if state is None:
             return None
         return state.spell_index_id
 
     def _get_structural_validity(self, spell: ISpell) -> Optional[SpellValidity]:
-        try:
-            state = spell.system_state
-        except Exception:
+        """
+        Internal
+
+        Retrieve structural validity for a spell.
+
+        Args:
+            spell: Spell instance to inspect.
+        Returns:
+            Optional[SpellValidity]: Structural validity or unknown when unavailable.
+        """
+        if spell._cleaned:
             return SpellValidity.unknown
-        if state is None:
-            return SpellValidity.unknown
-        return state.validity
+        else:
+            return spell.spell_index.validity
 
     def _get_resolution_validity(self, conduit_id: str, spell: ISpell) -> Optional[SpellValidity]:
-        states = self._spell_system_states
-        if states is None:
-            return SpellValidity.unknown
-        try:
-            resolution_state = states.get_conduit_resolution_state(conduit_id)
-        except Exception:
-            return SpellValidity.unknown
+        """
+        Internal
+
+        Retrieve per-conduit resolution validity for a spell.
+
+        Args:
+            conduit_id: Conduit identifier for resolution state lookup.
+            spell: Spell instance to inspect.
+        Returns:
+            Optional[SpellValidity]: Resolution validity or unknown when unavailable.
+        """
+        resolution_state = self._spell_system_states.get_conduit_resolution_state(conduit_id)
+
         if resolution_state is None:
             return SpellValidity.unknown
-        try:
-            spell_id = spell.spell_index.current
-        except Exception:
+        if spell._cleaned:
             return SpellValidity.unknown
-        try:
-            return resolution_state.get_spell_validity(spell_id)
-        except Exception:
-            return SpellValidity.unknown
+
+        return resolution_state.get_spell_validity(spell.spell_index.current)
+
 
     def _update_structural_risk(
             self,
@@ -259,6 +409,16 @@ class RiskManager(Cleanable):
             lineage_id: str,
             validity: Optional[SpellValidity],
     ) -> None:
+        """
+        Internal
+
+        Update structural risk tracking for a lineage within a conduit.
+
+        Args:
+            conduit_id: Conduit identifier to update.
+            lineage_id: Lineage identifier to mark risky or safe.
+            validity: Structural validity (None treated as risky).
+        """
         with self._lock:
             state = self._conduit_states.get(conduit_id)
             if state is None:
@@ -274,6 +434,16 @@ class RiskManager(Cleanable):
             lineage_key: str,
             validity: Optional[SpellValidity],
     ) -> None:
+        """
+        Internal
+
+        Update resolution risk tracking for a lineage or spell id within a conduit.
+
+        Args:
+            conduit_id: Conduit identifier to update.
+            lineage_key: Lineage id or spell id key for tracking.
+            validity: Resolution validity (None treated as risky).
+        """
         with self._lock:
             state = self._conduit_states.get(conduit_id)
             if state is None:
@@ -284,6 +454,15 @@ class RiskManager(Cleanable):
                 state.risky_resolution.discard(lineage_key)
 
     def _refresh_spellbook_flag(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Update the Spellbook validation-required flag for a conduit.
+
+        Contract:
+            - Required is True when any structural or resolution risk exists.
+            - Safe to call even if the spellbook has been cleaned.
+        """
         with self._lock:
             state = self._conduit_states.get(conduit_id)
             if state is None or state.spellbook is None:
@@ -297,6 +476,16 @@ class RiskManager(Cleanable):
 
     @staticmethod
     def _is_risky(validity: Optional[SpellValidity]) -> bool:
+        """
+        Internal
+
+        Normalize risk checks for validity enums.
+
+        Args:
+            validity: SpellValidity or None.
+        Returns:
+            bool: True when validity is None or not SpellValidity.valid.
+        """
         if validity is None:
             return True
         return validity is not SpellValidity.valid

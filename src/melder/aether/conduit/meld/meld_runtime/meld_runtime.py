@@ -71,6 +71,12 @@ class MeldRuntime:
         "_max_transient_asset_pool_size",
         "_shared_asset_pool",
         "_max_shared_asset_pool_size",
+        "_fast_transient_codegen_cache",
+        "_max_fast_transient_codegen_cache_size",
+        "_fast_transient_codegen_micro_max_steps",
+        "_fast_transient_codegen_tiny_max_steps",
+        "_fast_transient_codegen_small_max_steps",
+        "_fast_transient_codegen_small_max_depth",
     )
 
     def __init__(self) -> None:
@@ -78,6 +84,12 @@ class MeldRuntime:
         self._max_transient_asset_pool_size: int = 128
         self._shared_asset_pool: Dict[str, Deque[tuple[MeldEngine, ResolutionFrame, MeldContext]]] = {}
         self._max_shared_asset_pool_size: int = 128
+        self._fast_transient_codegen_cache: Dict[tuple[str, int], Any] = {}
+        self._max_fast_transient_codegen_cache_size: int = 128
+        self._fast_transient_codegen_micro_max_steps: int = 8
+        self._fast_transient_codegen_tiny_max_steps: int = 32
+        self._fast_transient_codegen_small_max_steps: int = 128
+        self._fast_transient_codegen_small_max_depth: int = 9
 
     def execute_fast_transient(
             self,
@@ -86,12 +98,596 @@ class MeldRuntime:
             conduit_id: Optional[str],
     ) -> Any:
         """
-        Execute a fast transient-only plan without constructing a MeldEngine.
+        Execute a fast transient-only plan using the codegen executor.
 
         Contract:
             - Only valid when no overrides or mutations apply.
             - Requires a Phase 11 no-overrides plan with a transient fast plan.
             - Performs the same spell invariant checks as execute().
+        """
+        return self.codegen_fast_transient(
+            spell=spell,
+            conduit_id=conduit_id,
+        )
+
+    def codegen_fast_transient(
+            self,
+            *,
+            spell: ISpell,
+            conduit_id: Optional[str],
+    ) -> Any:
+        """
+        Execute a codegen-compiled fast transient-only plan.
+
+        Contract:
+            - Only valid when no overrides or mutations apply.
+            - Requires a Phase 11 no-overrides plan with a transient fast plan.
+            - Performs the same spell invariant checks as execute().
+            - Falls back to the loop-based implementation if codegen fails.
+        """
+        execution_plan, transient_plan = self._resolve_fast_transient_plan(
+            spell=spell,
+            conduit_id=conduit_id,
+        )
+        solo_result = self._try_execute_fast_transient_solo(
+            execution_plan=execution_plan,
+            transient_plan=transient_plan,
+        )
+        if solo_result is not None:
+            return solo_result
+        variant = self._select_codegen_fast_transient_variant(
+            spell=spell,
+            transient_plan=transient_plan,
+        )
+        if variant is None:
+            return self._execute_fast_transient_loop(
+                execution_plan=execution_plan,
+                transient_plan=transient_plan,
+            )
+        if variant == "micro":
+            executor = self._get_codegen_fast_transient_executor_micro(
+                execution_plan=execution_plan,
+                transient_plan=transient_plan,
+            )
+        elif variant == "tiny":
+            executor = self._get_codegen_fast_transient_executor_tiny(
+                execution_plan=execution_plan,
+                transient_plan=transient_plan,
+            )
+        elif variant == "small":
+            executor = self._get_codegen_fast_transient_executor_small(
+                execution_plan=execution_plan,
+                transient_plan=transient_plan,
+            )
+        else:
+            executor = self._get_codegen_fast_transient_executor_large(
+                execution_plan=execution_plan,
+                transient_plan=transient_plan,
+            )
+        if executor is None:
+            return self._execute_fast_transient_loop(
+                execution_plan=execution_plan,
+                transient_plan=transient_plan,
+            )
+        return executor()
+
+    def _select_codegen_fast_transient_variant(
+            self,
+            *,
+            spell: ISpell,
+            transient_plan: tuple,
+    ) -> Optional[str]:
+        """
+        Select the codegen variant based on execution plan metrics.
+        """
+        step_count = spell.execution_plan_step_count
+        if step_count is None:
+            step_count = transient_plan[0]
+        max_depth = spell.execution_plan_max_occurrence_depth
+        if max_depth is None:
+            return None
+        if (
+                step_count <= self._fast_transient_codegen_small_max_steps
+                and max_depth <= self._fast_transient_codegen_small_max_depth
+        ):
+            if step_count <= self._fast_transient_codegen_micro_max_steps:
+                return "micro"
+            if step_count < self._fast_transient_codegen_tiny_max_steps:
+                return "tiny"
+            return "small"
+        return "large"
+
+    def _try_execute_fast_transient_solo(
+            self,
+            *,
+            execution_plan: ExecutionPlan,
+            transient_plan: tuple,
+    ) -> Optional[Any]:
+        """
+        Execute a zero-dependency (solo) fast transient plan directly.
+
+        Returns None if the plan is not a solo CALL0 root.
+        """
+        (
+            transient_step_count,
+            transient_root_index,
+            transient_targets,
+            transient_call_modes,
+            *_,
+        ) = transient_plan
+
+        if transient_step_count != 1:
+            return None
+        if transient_root_index != 0:
+            return None
+        if transient_call_modes[0] != ExecutionPlanCallMode.CALL0:
+            return None
+
+        call_target = transient_targets[0]
+        try:
+            return call_target()
+        except Exception as exc:
+            step_spell = execution_plan.steps[0].spell
+            raise MeldExecutionError(
+                spell_id=step_spell.spell_index.current,
+                spell_name=step_spell.spell_name,
+                message=f"Error invoking spell '{step_spell.spell_name}'.",
+                inner=exc,
+            ) from exc
+
+    def _get_codegen_fast_transient_executor_micro(
+            self,
+            *,
+            execution_plan: ExecutionPlan,
+            transient_plan: tuple,
+    ) -> Optional[Any]:
+        """
+        Build or reuse a micro-DAG optimized codegen executor.
+
+        Contract:
+            - Returns a callable that executes the plan and returns the root instance.
+            - Returns None if codegen is not possible.
+        """
+        (
+            transient_step_count,
+            transient_root_index,
+            transient_targets,
+            transient_call_modes,
+            transient_dep1,
+            transient_dep2a,
+            transient_dep2b,
+            transient_dep3a,
+            transient_dep3b,
+            transient_dep3c,
+            transient_dep4a,
+            transient_dep4b,
+            transient_dep4c,
+            transient_dep4d,
+            transient_dep5a,
+            transient_dep5b,
+            transient_dep5c,
+            transient_dep5d,
+            transient_dep5e,
+            transient_dep6a,
+            transient_dep6b,
+            transient_dep6c,
+            transient_dep6d,
+            transient_dep6e,
+            transient_dep6f,
+            transient_dep7a,
+            transient_dep7b,
+            transient_dep7c,
+            transient_dep7d,
+            transient_dep7e,
+            transient_dep7f,
+            transient_dep7g,
+            transient_dep8a,
+            transient_dep8b,
+            transient_dep8c,
+            transient_dep8d,
+            transient_dep8e,
+            transient_dep8f,
+            transient_dep8g,
+            transient_dep8h,
+        ) = transient_plan
+
+        for call_mode in transient_call_modes:
+            if call_mode == ExecutionPlanCallMode.CALLN:
+                return None
+
+        steps = execution_plan.steps
+        root_spell_id = execution_plan.root_spell_id or ""
+        cache_key = (root_spell_id, id(transient_plan), "micro")
+        cached = self._fast_transient_codegen_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        lines = [
+            "def _codegen_executor(",
+            "        *,",
+            "        transient_targets=transient_targets,",
+            "        steps=steps,",
+            "    ):",
+        ]
+
+        for step_index in range(transient_step_count):
+            lines.append(f"    t{step_index} = transient_targets[{step_index}]")
+
+        lines.append("    __step_index = 0")
+        lines.append("    try:")
+
+        for step_index in range(transient_step_count):
+            call_mode = transient_call_modes[step_index]
+            if call_mode == ExecutionPlanCallMode.CALL0:
+                call_expr = f"t{step_index}()"
+            elif call_mode == ExecutionPlanCallMode.CALL1:
+                dep1 = transient_dep1[step_index]
+                call_expr = f"t{step_index}(v{dep1})"
+            elif call_mode == ExecutionPlanCallMode.CALL2:
+                dep_a = transient_dep2a[step_index]
+                dep_b = transient_dep2b[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b})"
+            elif call_mode == ExecutionPlanCallMode.CALL3:
+                dep_a = transient_dep3a[step_index]
+                dep_b = transient_dep3b[step_index]
+                dep_c = transient_dep3c[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c})"
+            elif call_mode == ExecutionPlanCallMode.CALL4:
+                dep_a = transient_dep4a[step_index]
+                dep_b = transient_dep4b[step_index]
+                dep_c = transient_dep4c[step_index]
+                dep_d = transient_dep4d[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d})"
+            elif call_mode == ExecutionPlanCallMode.CALL5:
+                dep_a = transient_dep5a[step_index]
+                dep_b = transient_dep5b[step_index]
+                dep_c = transient_dep5c[step_index]
+                dep_d = transient_dep5d[step_index]
+                dep_e = transient_dep5e[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e})"
+            elif call_mode == ExecutionPlanCallMode.CALL6:
+                dep_a = transient_dep6a[step_index]
+                dep_b = transient_dep6b[step_index]
+                dep_c = transient_dep6c[step_index]
+                dep_d = transient_dep6d[step_index]
+                dep_e = transient_dep6e[step_index]
+                dep_f = transient_dep6f[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f})"
+            elif call_mode == ExecutionPlanCallMode.CALL7:
+                dep_a = transient_dep7a[step_index]
+                dep_b = transient_dep7b[step_index]
+                dep_c = transient_dep7c[step_index]
+                dep_d = transient_dep7d[step_index]
+                dep_e = transient_dep7e[step_index]
+                dep_f = transient_dep7f[step_index]
+                dep_g = transient_dep7g[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g})"
+            elif call_mode == ExecutionPlanCallMode.CALL8:
+                dep_a = transient_dep8a[step_index]
+                dep_b = transient_dep8b[step_index]
+                dep_c = transient_dep8c[step_index]
+                dep_d = transient_dep8d[step_index]
+                dep_e = transient_dep8e[step_index]
+                dep_f = transient_dep8f[step_index]
+                dep_g = transient_dep8g[step_index]
+                dep_h = transient_dep8h[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g}, v{dep_h})"
+            else:
+                return None
+
+            lines.append(f"        __step_index = {step_index}")
+            lines.append(f"        v{step_index} = {call_expr}")
+
+        lines.append("    except Exception as exc:")
+        lines.append("        step_spell = steps[__step_index].spell")
+        lines.append("        raise MeldExecutionError(")
+        lines.append("            spell_id=step_spell.spell_index.current,")
+        lines.append("            spell_name=step_spell.spell_name,")
+        lines.append("            message=f\"Error invoking spell '{step_spell.spell_name}'.\",")
+        lines.append("            inner=exc,")
+        lines.append("        ) from exc")
+        lines.append(f"    return v{transient_root_index}")
+
+        source = "\n".join(lines)
+        namespace = {
+            "MeldExecutionError": MeldExecutionError,
+            "transient_targets": transient_targets,
+            "steps": steps,
+        }
+        local_namespace: Dict[str, Any] = {}
+        try:
+            exec(
+                compile(source, "<melder_codegen_fast_transient_micro>", "exec"),
+                namespace,
+                local_namespace,
+            )
+        except Exception:
+            return None
+
+        executor = local_namespace.get("_codegen_executor")
+        if executor is None:
+            return None
+
+        if (
+                cache_key not in self._fast_transient_codegen_cache
+                and len(self._fast_transient_codegen_cache) >= self._max_fast_transient_codegen_cache_size
+        ):
+            self._fast_transient_codegen_cache.pop(
+                next(iter(self._fast_transient_codegen_cache)),
+                None,
+            )
+        self._fast_transient_codegen_cache[cache_key] = executor
+        return executor
+
+    def _get_codegen_fast_transient_executor_tiny(
+            self,
+            *,
+            execution_plan: ExecutionPlan,
+            transient_plan: tuple,
+    ) -> Optional[Any]:
+        """
+        Build or reuse a tiny-DAG optimized codegen executor.
+
+        Contract:
+            - Returns a callable that executes the plan and returns the root instance.
+            - Returns None if codegen is not possible.
+        """
+        (
+            transient_step_count,
+            transient_root_index,
+            transient_targets,
+            transient_call_modes,
+            transient_dep1,
+            transient_dep2a,
+            transient_dep2b,
+            transient_dep3a,
+            transient_dep3b,
+            transient_dep3c,
+            transient_dep4a,
+            transient_dep4b,
+            transient_dep4c,
+            transient_dep4d,
+            transient_dep5a,
+            transient_dep5b,
+            transient_dep5c,
+            transient_dep5d,
+            transient_dep5e,
+            transient_dep6a,
+            transient_dep6b,
+            transient_dep6c,
+            transient_dep6d,
+            transient_dep6e,
+            transient_dep6f,
+            transient_dep7a,
+            transient_dep7b,
+            transient_dep7c,
+            transient_dep7d,
+            transient_dep7e,
+            transient_dep7f,
+            transient_dep7g,
+            transient_dep8a,
+            transient_dep8b,
+            transient_dep8c,
+            transient_dep8d,
+            transient_dep8e,
+            transient_dep8f,
+            transient_dep8g,
+            transient_dep8h,
+        ) = transient_plan
+
+        for call_mode in transient_call_modes:
+            if call_mode == ExecutionPlanCallMode.CALLN:
+                return None
+
+        steps = execution_plan.steps
+        root_spell_id = execution_plan.root_spell_id or ""
+        cache_key = (root_spell_id, id(transient_plan), "tiny")
+        cached = self._fast_transient_codegen_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        lines = [
+            "def _codegen_executor(",
+            "        *,",
+            "        transient_root_index=transient_root_index,",
+            "        transient_targets=transient_targets,",
+            "        transient_dep1=transient_dep1,",
+            "        transient_dep2a=transient_dep2a,",
+            "        transient_dep2b=transient_dep2b,",
+            "        transient_dep3a=transient_dep3a,",
+            "        transient_dep3b=transient_dep3b,",
+            "        transient_dep3c=transient_dep3c,",
+            "        transient_dep4a=transient_dep4a,",
+            "        transient_dep4b=transient_dep4b,",
+            "        transient_dep4c=transient_dep4c,",
+            "        transient_dep4d=transient_dep4d,",
+            "        transient_dep5a=transient_dep5a,",
+            "        transient_dep5b=transient_dep5b,",
+            "        transient_dep5c=transient_dep5c,",
+            "        transient_dep5d=transient_dep5d,",
+            "        transient_dep5e=transient_dep5e,",
+            "        transient_dep6a=transient_dep6a,",
+            "        transient_dep6b=transient_dep6b,",
+            "        transient_dep6c=transient_dep6c,",
+            "        transient_dep6d=transient_dep6d,",
+            "        transient_dep6e=transient_dep6e,",
+            "        transient_dep6f=transient_dep6f,",
+            "        transient_dep7a=transient_dep7a,",
+            "        transient_dep7b=transient_dep7b,",
+            "        transient_dep7c=transient_dep7c,",
+            "        transient_dep7d=transient_dep7d,",
+            "        transient_dep7e=transient_dep7e,",
+            "        transient_dep7f=transient_dep7f,",
+            "        transient_dep7g=transient_dep7g,",
+            "        transient_dep8a=transient_dep8a,",
+            "        transient_dep8b=transient_dep8b,",
+            "        transient_dep8c=transient_dep8c,",
+            "        transient_dep8d=transient_dep8d,",
+            "        transient_dep8e=transient_dep8e,",
+            "        transient_dep8f=transient_dep8f,",
+            "        transient_dep8g=transient_dep8g,",
+            "        transient_dep8h=transient_dep8h,",
+            "        steps=steps,",
+            "    ):",
+        ]
+
+        for step_index in range(transient_step_count):
+            lines.append(f"    t{step_index} = transient_targets[{step_index}]")
+
+        lines.append("    __step_index = 0")
+        lines.append("    try:")
+
+        for step_index in range(transient_step_count):
+            call_mode = transient_call_modes[step_index]
+            if call_mode == ExecutionPlanCallMode.CALL0:
+                call_expr = f"t{step_index}()"
+            elif call_mode == ExecutionPlanCallMode.CALL1:
+                dep1 = transient_dep1[step_index]
+                call_expr = f"t{step_index}(v{dep1})"
+            elif call_mode == ExecutionPlanCallMode.CALL2:
+                dep_a = transient_dep2a[step_index]
+                dep_b = transient_dep2b[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b})"
+            elif call_mode == ExecutionPlanCallMode.CALL3:
+                dep_a = transient_dep3a[step_index]
+                dep_b = transient_dep3b[step_index]
+                dep_c = transient_dep3c[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c})"
+            elif call_mode == ExecutionPlanCallMode.CALL4:
+                dep_a = transient_dep4a[step_index]
+                dep_b = transient_dep4b[step_index]
+                dep_c = transient_dep4c[step_index]
+                dep_d = transient_dep4d[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d})"
+            elif call_mode == ExecutionPlanCallMode.CALL5:
+                dep_a = transient_dep5a[step_index]
+                dep_b = transient_dep5b[step_index]
+                dep_c = transient_dep5c[step_index]
+                dep_d = transient_dep5d[step_index]
+                dep_e = transient_dep5e[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e})"
+            elif call_mode == ExecutionPlanCallMode.CALL6:
+                dep_a = transient_dep6a[step_index]
+                dep_b = transient_dep6b[step_index]
+                dep_c = transient_dep6c[step_index]
+                dep_d = transient_dep6d[step_index]
+                dep_e = transient_dep6e[step_index]
+                dep_f = transient_dep6f[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f})"
+            elif call_mode == ExecutionPlanCallMode.CALL7:
+                dep_a = transient_dep7a[step_index]
+                dep_b = transient_dep7b[step_index]
+                dep_c = transient_dep7c[step_index]
+                dep_d = transient_dep7d[step_index]
+                dep_e = transient_dep7e[step_index]
+                dep_f = transient_dep7f[step_index]
+                dep_g = transient_dep7g[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g})"
+            elif call_mode == ExecutionPlanCallMode.CALL8:
+                dep_a = transient_dep8a[step_index]
+                dep_b = transient_dep8b[step_index]
+                dep_c = transient_dep8c[step_index]
+                dep_d = transient_dep8d[step_index]
+                dep_e = transient_dep8e[step_index]
+                dep_f = transient_dep8f[step_index]
+                dep_g = transient_dep8g[step_index]
+                dep_h = transient_dep8h[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g}, v{dep_h})"
+            else:
+                return None
+
+            lines.append(f"        __step_index = {step_index}")
+            lines.append(f"        v{step_index} = {call_expr}")
+
+        lines.append("    except Exception as exc:")
+        lines.append("        step_spell = steps[__step_index].spell")
+        lines.append("        raise MeldExecutionError(")
+        lines.append("            spell_id=step_spell.spell_index.current,")
+        lines.append("            spell_name=step_spell.spell_name,")
+        lines.append("            message=f\"Error invoking spell '{step_spell.spell_name}'.\",")
+        lines.append("            inner=exc,")
+        lines.append("        ) from exc")
+        lines.append(f"    return v{transient_root_index}")
+
+        source = "\n".join(lines)
+        namespace = {
+            "MeldExecutionError": MeldExecutionError,
+            "transient_root_index": transient_root_index,
+            "transient_targets": transient_targets,
+            "transient_dep1": transient_dep1,
+            "transient_dep2a": transient_dep2a,
+            "transient_dep2b": transient_dep2b,
+            "transient_dep3a": transient_dep3a,
+            "transient_dep3b": transient_dep3b,
+            "transient_dep3c": transient_dep3c,
+            "transient_dep4a": transient_dep4a,
+            "transient_dep4b": transient_dep4b,
+            "transient_dep4c": transient_dep4c,
+            "transient_dep4d": transient_dep4d,
+            "transient_dep5a": transient_dep5a,
+            "transient_dep5b": transient_dep5b,
+            "transient_dep5c": transient_dep5c,
+            "transient_dep5d": transient_dep5d,
+            "transient_dep5e": transient_dep5e,
+            "transient_dep6a": transient_dep6a,
+            "transient_dep6b": transient_dep6b,
+            "transient_dep6c": transient_dep6c,
+            "transient_dep6d": transient_dep6d,
+            "transient_dep6e": transient_dep6e,
+            "transient_dep6f": transient_dep6f,
+            "transient_dep7a": transient_dep7a,
+            "transient_dep7b": transient_dep7b,
+            "transient_dep7c": transient_dep7c,
+            "transient_dep7d": transient_dep7d,
+            "transient_dep7e": transient_dep7e,
+            "transient_dep7f": transient_dep7f,
+            "transient_dep7g": transient_dep7g,
+            "transient_dep8a": transient_dep8a,
+            "transient_dep8b": transient_dep8b,
+            "transient_dep8c": transient_dep8c,
+            "transient_dep8d": transient_dep8d,
+            "transient_dep8e": transient_dep8e,
+            "transient_dep8f": transient_dep8f,
+            "transient_dep8g": transient_dep8g,
+            "transient_dep8h": transient_dep8h,
+            "steps": steps,
+        }
+        local_namespace: Dict[str, Any] = {}
+        try:
+            exec(
+                compile(source, "<melder_codegen_fast_transient_tiny>", "exec"),
+                namespace,
+                local_namespace,
+            )
+        except Exception:
+            return None
+
+        executor = local_namespace.get("_codegen_executor")
+        if executor is None:
+            return None
+
+        if (
+                cache_key not in self._fast_transient_codegen_cache
+                and len(self._fast_transient_codegen_cache) >= self._max_fast_transient_codegen_cache_size
+        ):
+            self._fast_transient_codegen_cache.pop(
+                next(iter(self._fast_transient_codegen_cache)),
+                None,
+            )
+        self._fast_transient_codegen_cache[cache_key] = executor
+        return executor
+
+    def _resolve_fast_transient_plan(
+            self,
+            *,
+            spell: ISpell,
+            conduit_id: Optional[str],
+    ) -> tuple[ExecutionPlan, tuple]:
+        """
+        Resolve and validate the fast transient plan for a spell.
+
+        Returns:
+            Tuple of (execution_plan, transient_plan).
         """
         if spell is None:
             raise ValueError("spell must not be None.")
@@ -119,7 +715,17 @@ class MeldRuntime:
                 spell_name=spell.spell_name,
                 message="Fast transient plan is unavailable for this spell.",
             )
+        return execution_plan, transient_plan
 
+    def _execute_fast_transient_loop(
+            self,
+            *,
+            execution_plan: ExecutionPlan,
+            transient_plan: tuple,
+    ) -> Any:
+        """
+        Execute a fast transient plan using the loop-based implementation.
+        """
         (
             transient_step_count,
             transient_root_index,
@@ -242,6 +848,544 @@ class MeldRuntime:
             transient_values[step_index] = instance
 
         return transient_values[transient_root_index]
+
+    def _get_codegen_fast_transient_executor_small(
+            self,
+            *,
+            execution_plan: ExecutionPlan,
+            transient_plan: tuple,
+    ) -> Optional[Any]:
+        """
+        Build or reuse a small-DAG optimized codegen executor.
+
+        Contract:
+            - Returns a callable that executes the plan and returns the root instance.
+            - Returns None if codegen is not possible.
+        """
+        (
+            transient_step_count,
+            transient_root_index,
+            transient_targets,
+            transient_call_modes,
+            transient_dep1,
+            transient_dep2a,
+            transient_dep2b,
+            transient_dep3a,
+            transient_dep3b,
+            transient_dep3c,
+            transient_dep4a,
+            transient_dep4b,
+            transient_dep4c,
+            transient_dep4d,
+            transient_dep5a,
+            transient_dep5b,
+            transient_dep5c,
+            transient_dep5d,
+            transient_dep5e,
+            transient_dep6a,
+            transient_dep6b,
+            transient_dep6c,
+            transient_dep6d,
+            transient_dep6e,
+            transient_dep6f,
+            transient_dep7a,
+            transient_dep7b,
+            transient_dep7c,
+            transient_dep7d,
+            transient_dep7e,
+            transient_dep7f,
+            transient_dep7g,
+            transient_dep8a,
+            transient_dep8b,
+            transient_dep8c,
+            transient_dep8d,
+            transient_dep8e,
+            transient_dep8f,
+            transient_dep8g,
+            transient_dep8h,
+        ) = transient_plan
+
+        for call_mode in transient_call_modes:
+            if call_mode == ExecutionPlanCallMode.CALLN:
+                return None
+
+        steps = execution_plan.steps
+        root_spell_id = execution_plan.root_spell_id or ""
+        cache_key = (root_spell_id, id(transient_plan), "small")
+        cached = self._fast_transient_codegen_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        lines = [
+            "def _codegen_executor(",
+            "        *,",
+            "        transient_root_index=transient_root_index,",
+            "        transient_targets=transient_targets,",
+            "        transient_dep1=transient_dep1,",
+            "        transient_dep2a=transient_dep2a,",
+            "        transient_dep2b=transient_dep2b,",
+            "        transient_dep3a=transient_dep3a,",
+            "        transient_dep3b=transient_dep3b,",
+            "        transient_dep3c=transient_dep3c,",
+            "        transient_dep4a=transient_dep4a,",
+            "        transient_dep4b=transient_dep4b,",
+            "        transient_dep4c=transient_dep4c,",
+            "        transient_dep4d=transient_dep4d,",
+            "        transient_dep5a=transient_dep5a,",
+            "        transient_dep5b=transient_dep5b,",
+            "        transient_dep5c=transient_dep5c,",
+            "        transient_dep5d=transient_dep5d,",
+            "        transient_dep5e=transient_dep5e,",
+            "        transient_dep6a=transient_dep6a,",
+            "        transient_dep6b=transient_dep6b,",
+            "        transient_dep6c=transient_dep6c,",
+            "        transient_dep6d=transient_dep6d,",
+            "        transient_dep6e=transient_dep6e,",
+            "        transient_dep6f=transient_dep6f,",
+            "        transient_dep7a=transient_dep7a,",
+            "        transient_dep7b=transient_dep7b,",
+            "        transient_dep7c=transient_dep7c,",
+            "        transient_dep7d=transient_dep7d,",
+            "        transient_dep7e=transient_dep7e,",
+            "        transient_dep7f=transient_dep7f,",
+            "        transient_dep7g=transient_dep7g,",
+            "        transient_dep8a=transient_dep8a,",
+            "        transient_dep8b=transient_dep8b,",
+            "        transient_dep8c=transient_dep8c,",
+            "        transient_dep8d=transient_dep8d,",
+            "        transient_dep8e=transient_dep8e,",
+            "        transient_dep8f=transient_dep8f,",
+            "        transient_dep8g=transient_dep8g,",
+            "        transient_dep8h=transient_dep8h,",
+            "        steps=steps,",
+            "    ):",
+        ]
+
+        for step_index in range(transient_step_count):
+            lines.append(f"    t{step_index} = transient_targets[{step_index}]")
+
+        lines.append("    __step_index = 0")
+        lines.append("    try:")
+
+        for step_index in range(transient_step_count):
+            call_mode = transient_call_modes[step_index]
+            if call_mode == ExecutionPlanCallMode.CALL0:
+                call_expr = f"t{step_index}()"
+            elif call_mode == ExecutionPlanCallMode.CALL1:
+                dep1 = transient_dep1[step_index]
+                call_expr = f"t{step_index}(v{dep1})"
+            elif call_mode == ExecutionPlanCallMode.CALL2:
+                dep_a = transient_dep2a[step_index]
+                dep_b = transient_dep2b[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b})"
+            elif call_mode == ExecutionPlanCallMode.CALL3:
+                dep_a = transient_dep3a[step_index]
+                dep_b = transient_dep3b[step_index]
+                dep_c = transient_dep3c[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c})"
+            elif call_mode == ExecutionPlanCallMode.CALL4:
+                dep_a = transient_dep4a[step_index]
+                dep_b = transient_dep4b[step_index]
+                dep_c = transient_dep4c[step_index]
+                dep_d = transient_dep4d[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d})"
+            elif call_mode == ExecutionPlanCallMode.CALL5:
+                dep_a = transient_dep5a[step_index]
+                dep_b = transient_dep5b[step_index]
+                dep_c = transient_dep5c[step_index]
+                dep_d = transient_dep5d[step_index]
+                dep_e = transient_dep5e[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e})"
+            elif call_mode == ExecutionPlanCallMode.CALL6:
+                dep_a = transient_dep6a[step_index]
+                dep_b = transient_dep6b[step_index]
+                dep_c = transient_dep6c[step_index]
+                dep_d = transient_dep6d[step_index]
+                dep_e = transient_dep6e[step_index]
+                dep_f = transient_dep6f[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f})"
+            elif call_mode == ExecutionPlanCallMode.CALL7:
+                dep_a = transient_dep7a[step_index]
+                dep_b = transient_dep7b[step_index]
+                dep_c = transient_dep7c[step_index]
+                dep_d = transient_dep7d[step_index]
+                dep_e = transient_dep7e[step_index]
+                dep_f = transient_dep7f[step_index]
+                dep_g = transient_dep7g[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g})"
+            elif call_mode == ExecutionPlanCallMode.CALL8:
+                dep_a = transient_dep8a[step_index]
+                dep_b = transient_dep8b[step_index]
+                dep_c = transient_dep8c[step_index]
+                dep_d = transient_dep8d[step_index]
+                dep_e = transient_dep8e[step_index]
+                dep_f = transient_dep8f[step_index]
+                dep_g = transient_dep8g[step_index]
+                dep_h = transient_dep8h[step_index]
+                call_expr = f"t{step_index}(v{dep_a}, v{dep_b}, v{dep_c}, v{dep_d}, v{dep_e}, v{dep_f}, v{dep_g}, v{dep_h})"
+            else:
+                return None
+
+            lines.append(f"        __step_index = {step_index}")
+            lines.append(f"        v{step_index} = {call_expr}")
+
+        lines.append("    except Exception as exc:")
+        lines.append("        step_spell = steps[__step_index].spell")
+        lines.append("        raise MeldExecutionError(")
+        lines.append("            spell_id=step_spell.spell_index.current,")
+        lines.append("            spell_name=step_spell.spell_name,")
+        lines.append("            message=f\"Error invoking spell '{step_spell.spell_name}'.\",")
+        lines.append("            inner=exc,")
+        lines.append("        ) from exc")
+        lines.append(f"    return v{transient_root_index}")
+
+        source = "\n".join(lines)
+        namespace = {
+            "MeldExecutionError": MeldExecutionError,
+            "transient_root_index": transient_root_index,
+            "transient_targets": transient_targets,
+            "transient_dep1": transient_dep1,
+            "transient_dep2a": transient_dep2a,
+            "transient_dep2b": transient_dep2b,
+            "transient_dep3a": transient_dep3a,
+            "transient_dep3b": transient_dep3b,
+            "transient_dep3c": transient_dep3c,
+            "transient_dep4a": transient_dep4a,
+            "transient_dep4b": transient_dep4b,
+            "transient_dep4c": transient_dep4c,
+            "transient_dep4d": transient_dep4d,
+            "transient_dep5a": transient_dep5a,
+            "transient_dep5b": transient_dep5b,
+            "transient_dep5c": transient_dep5c,
+            "transient_dep5d": transient_dep5d,
+            "transient_dep5e": transient_dep5e,
+            "transient_dep6a": transient_dep6a,
+            "transient_dep6b": transient_dep6b,
+            "transient_dep6c": transient_dep6c,
+            "transient_dep6d": transient_dep6d,
+            "transient_dep6e": transient_dep6e,
+            "transient_dep6f": transient_dep6f,
+            "transient_dep7a": transient_dep7a,
+            "transient_dep7b": transient_dep7b,
+            "transient_dep7c": transient_dep7c,
+            "transient_dep7d": transient_dep7d,
+            "transient_dep7e": transient_dep7e,
+            "transient_dep7f": transient_dep7f,
+            "transient_dep7g": transient_dep7g,
+            "transient_dep8a": transient_dep8a,
+            "transient_dep8b": transient_dep8b,
+            "transient_dep8c": transient_dep8c,
+            "transient_dep8d": transient_dep8d,
+            "transient_dep8e": transient_dep8e,
+            "transient_dep8f": transient_dep8f,
+            "transient_dep8g": transient_dep8g,
+            "transient_dep8h": transient_dep8h,
+            "steps": steps,
+        }
+        local_namespace: Dict[str, Any] = {}
+        try:
+            exec(
+                compile(source, "<melder_codegen_fast_transient_small>", "exec"),
+                namespace,
+                local_namespace,
+            )
+        except Exception:
+            return None
+
+        executor = local_namespace.get("_codegen_executor")
+        if executor is None:
+            return None
+
+        if (
+                cache_key not in self._fast_transient_codegen_cache
+                and len(self._fast_transient_codegen_cache) >= self._max_fast_transient_codegen_cache_size
+        ):
+            self._fast_transient_codegen_cache.pop(
+                next(iter(self._fast_transient_codegen_cache)),
+                None,
+            )
+        self._fast_transient_codegen_cache[cache_key] = executor
+        return executor
+
+    def _get_codegen_fast_transient_executor_large(
+            self,
+            *,
+            execution_plan: ExecutionPlan,
+            transient_plan: tuple,
+    ) -> Optional[Any]:
+        """
+        Build or reuse a codegen executor for a fast transient plan.
+
+        Contract:
+            - Returns a callable that executes the plan and returns the root instance.
+            - Returns None if codegen is not possible.
+        """
+        (
+            transient_step_count,
+            transient_root_index,
+            transient_targets,
+            transient_call_modes,
+            transient_dep1,
+            transient_dep2a,
+            transient_dep2b,
+            transient_dep3a,
+            transient_dep3b,
+            transient_dep3c,
+            transient_dep4a,
+            transient_dep4b,
+            transient_dep4c,
+            transient_dep4d,
+            transient_dep5a,
+            transient_dep5b,
+            transient_dep5c,
+            transient_dep5d,
+            transient_dep5e,
+            transient_dep6a,
+            transient_dep6b,
+            transient_dep6c,
+            transient_dep6d,
+            transient_dep6e,
+            transient_dep6f,
+            transient_dep7a,
+            transient_dep7b,
+            transient_dep7c,
+            transient_dep7d,
+            transient_dep7e,
+            transient_dep7f,
+            transient_dep7g,
+            transient_dep8a,
+            transient_dep8b,
+            transient_dep8c,
+            transient_dep8d,
+            transient_dep8e,
+            transient_dep8f,
+            transient_dep8g,
+            transient_dep8h,
+        ) = transient_plan
+
+        for call_mode in transient_call_modes:
+            if call_mode == ExecutionPlanCallMode.CALLN:
+                return None
+
+        steps = execution_plan.steps
+        root_spell_id = execution_plan.root_spell_id or ""
+        cache_key = (root_spell_id, id(transient_plan), "large")
+        cached = self._fast_transient_codegen_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        lines = [
+            "def _codegen_executor(",
+            "        *,",
+            "        transient_step_count=transient_step_count,",
+            "        transient_root_index=transient_root_index,",
+            "        transient_targets=transient_targets,",
+            "        transient_dep1=transient_dep1,",
+            "        transient_dep2a=transient_dep2a,",
+            "        transient_dep2b=transient_dep2b,",
+            "        transient_dep3a=transient_dep3a,",
+            "        transient_dep3b=transient_dep3b,",
+            "        transient_dep3c=transient_dep3c,",
+            "        transient_dep4a=transient_dep4a,",
+            "        transient_dep4b=transient_dep4b,",
+            "        transient_dep4c=transient_dep4c,",
+            "        transient_dep4d=transient_dep4d,",
+            "        transient_dep5a=transient_dep5a,",
+            "        transient_dep5b=transient_dep5b,",
+            "        transient_dep5c=transient_dep5c,",
+            "        transient_dep5d=transient_dep5d,",
+            "        transient_dep5e=transient_dep5e,",
+            "        transient_dep6a=transient_dep6a,",
+            "        transient_dep6b=transient_dep6b,",
+            "        transient_dep6c=transient_dep6c,",
+            "        transient_dep6d=transient_dep6d,",
+            "        transient_dep6e=transient_dep6e,",
+            "        transient_dep6f=transient_dep6f,",
+            "        transient_dep7a=transient_dep7a,",
+            "        transient_dep7b=transient_dep7b,",
+            "        transient_dep7c=transient_dep7c,",
+            "        transient_dep7d=transient_dep7d,",
+            "        transient_dep7e=transient_dep7e,",
+            "        transient_dep7f=transient_dep7f,",
+            "        transient_dep7g=transient_dep7g,",
+            "        transient_dep8a=transient_dep8a,",
+            "        transient_dep8b=transient_dep8b,",
+            "        transient_dep8c=transient_dep8c,",
+            "        transient_dep8d=transient_dep8d,",
+            "        transient_dep8e=transient_dep8e,",
+            "        transient_dep8f=transient_dep8f,",
+            "        transient_dep8g=transient_dep8g,",
+            "        transient_dep8h=transient_dep8h,",
+            "        steps=steps,",
+            "    ):",
+            "    transient_values = [None] * transient_step_count",
+            "    __step_index = -1",
+            "    try:",
+        ]
+
+        for step_index in range(transient_step_count):
+            call_mode = transient_call_modes[step_index]
+            if call_mode == ExecutionPlanCallMode.CALL0:
+                call_expr = f"transient_targets[{step_index}]()"
+            elif call_mode == ExecutionPlanCallMode.CALL1:
+                call_expr = (
+                    f"transient_targets[{step_index}]("
+                    f"transient_values[transient_dep1[{step_index}]]"
+                    f")"
+                )
+            elif call_mode == ExecutionPlanCallMode.CALL2:
+                call_expr = (
+                    f"transient_targets[{step_index}]("
+                    f"transient_values[transient_dep2a[{step_index}]], "
+                    f"transient_values[transient_dep2b[{step_index}]]"
+                    f")"
+                )
+            elif call_mode == ExecutionPlanCallMode.CALL3:
+                call_expr = (
+                    f"transient_targets[{step_index}]("
+                    f"transient_values[transient_dep3a[{step_index}]], "
+                    f"transient_values[transient_dep3b[{step_index}]], "
+                    f"transient_values[transient_dep3c[{step_index}]]"
+                    f")"
+                )
+            elif call_mode == ExecutionPlanCallMode.CALL4:
+                call_expr = (
+                    f"transient_targets[{step_index}]("
+                    f"transient_values[transient_dep4a[{step_index}]], "
+                    f"transient_values[transient_dep4b[{step_index}]], "
+                    f"transient_values[transient_dep4c[{step_index}]], "
+                    f"transient_values[transient_dep4d[{step_index}]]"
+                    f")"
+                )
+            elif call_mode == ExecutionPlanCallMode.CALL5:
+                call_expr = (
+                    f"transient_targets[{step_index}]("
+                    f"transient_values[transient_dep5a[{step_index}]], "
+                    f"transient_values[transient_dep5b[{step_index}]], "
+                    f"transient_values[transient_dep5c[{step_index}]], "
+                    f"transient_values[transient_dep5d[{step_index}]], "
+                    f"transient_values[transient_dep5e[{step_index}]]"
+                    f")"
+                )
+            elif call_mode == ExecutionPlanCallMode.CALL6:
+                call_expr = (
+                    f"transient_targets[{step_index}]("
+                    f"transient_values[transient_dep6a[{step_index}]], "
+                    f"transient_values[transient_dep6b[{step_index}]], "
+                    f"transient_values[transient_dep6c[{step_index}]], "
+                    f"transient_values[transient_dep6d[{step_index}]], "
+                    f"transient_values[transient_dep6e[{step_index}]], "
+                    f"transient_values[transient_dep6f[{step_index}]]"
+                    f")"
+                )
+            elif call_mode == ExecutionPlanCallMode.CALL7:
+                call_expr = (
+                    f"transient_targets[{step_index}]("
+                    f"transient_values[transient_dep7a[{step_index}]], "
+                    f"transient_values[transient_dep7b[{step_index}]], "
+                    f"transient_values[transient_dep7c[{step_index}]], "
+                    f"transient_values[transient_dep7d[{step_index}]], "
+                    f"transient_values[transient_dep7e[{step_index}]], "
+                    f"transient_values[transient_dep7f[{step_index}]], "
+                    f"transient_values[transient_dep7g[{step_index}]]"
+                    f")"
+                )
+            elif call_mode == ExecutionPlanCallMode.CALL8:
+                call_expr = (
+                    f"transient_targets[{step_index}]("
+                    f"transient_values[transient_dep8a[{step_index}]], "
+                    f"transient_values[transient_dep8b[{step_index}]], "
+                    f"transient_values[transient_dep8c[{step_index}]], "
+                    f"transient_values[transient_dep8d[{step_index}]], "
+                    f"transient_values[transient_dep8e[{step_index}]], "
+                    f"transient_values[transient_dep8f[{step_index}]], "
+                    f"transient_values[transient_dep8g[{step_index}]], "
+                    f"transient_values[transient_dep8h[{step_index}]]"
+                    f")"
+                )
+            else:
+                return None
+
+            lines.append(f"        __step_index = {step_index}")
+            lines.append(f"        transient_values[{step_index}] = {call_expr}")
+
+        lines.append("    except Exception as exc:")
+        lines.append("        step_spell = steps[__step_index].spell")
+        lines.append("        raise MeldExecutionError(")
+        lines.append("            spell_id=step_spell.spell_index.current,")
+        lines.append("            spell_name=step_spell.spell_name,")
+        lines.append("            message=f\"Error invoking spell '{step_spell.spell_name}'.\",")
+        lines.append("            inner=exc,")
+        lines.append("        ) from exc")
+        lines.append("    return transient_values[transient_root_index]")
+        source = "\n".join(lines)
+        namespace = {
+            "MeldExecutionError": MeldExecutionError,
+            "transient_step_count": transient_step_count,
+            "transient_root_index": transient_root_index,
+            "transient_targets": transient_targets,
+            "transient_dep1": transient_dep1,
+            "transient_dep2a": transient_dep2a,
+            "transient_dep2b": transient_dep2b,
+            "transient_dep3a": transient_dep3a,
+            "transient_dep3b": transient_dep3b,
+            "transient_dep3c": transient_dep3c,
+            "transient_dep4a": transient_dep4a,
+            "transient_dep4b": transient_dep4b,
+            "transient_dep4c": transient_dep4c,
+            "transient_dep4d": transient_dep4d,
+            "transient_dep5a": transient_dep5a,
+            "transient_dep5b": transient_dep5b,
+            "transient_dep5c": transient_dep5c,
+            "transient_dep5d": transient_dep5d,
+            "transient_dep5e": transient_dep5e,
+            "transient_dep6a": transient_dep6a,
+            "transient_dep6b": transient_dep6b,
+            "transient_dep6c": transient_dep6c,
+            "transient_dep6d": transient_dep6d,
+            "transient_dep6e": transient_dep6e,
+            "transient_dep6f": transient_dep6f,
+            "transient_dep7a": transient_dep7a,
+            "transient_dep7b": transient_dep7b,
+            "transient_dep7c": transient_dep7c,
+            "transient_dep7d": transient_dep7d,
+            "transient_dep7e": transient_dep7e,
+            "transient_dep7f": transient_dep7f,
+            "transient_dep7g": transient_dep7g,
+            "transient_dep8a": transient_dep8a,
+            "transient_dep8b": transient_dep8b,
+            "transient_dep8c": transient_dep8c,
+            "transient_dep8d": transient_dep8d,
+            "transient_dep8e": transient_dep8e,
+            "transient_dep8f": transient_dep8f,
+            "transient_dep8g": transient_dep8g,
+            "transient_dep8h": transient_dep8h,
+            "steps": steps,
+        }
+        local_namespace: Dict[str, Any] = {}
+        try:
+            exec(
+                compile(source, "<melder_codegen_fast_transient>", "exec"),
+                namespace,
+                local_namespace,
+            )
+        except Exception:
+            return None
+
+        executor = local_namespace.get("_codegen_executor")
+        if executor is None:
+            return None
+
+        if (
+                cache_key not in self._fast_transient_codegen_cache
+                and len(self._fast_transient_codegen_cache) >= self._max_fast_transient_codegen_cache_size
+        ):
+            self._fast_transient_codegen_cache.pop(
+                next(iter(self._fast_transient_codegen_cache)),
+                None,
+            )
+        self._fast_transient_codegen_cache[cache_key] = executor
+        return executor
 
     def execute_transient_pooled(
             self,
@@ -737,6 +1881,7 @@ class MeldRuntime:
         """
         self._transient_asset_pool.clear()
         self._shared_asset_pool.clear()
+        self._fast_transient_codegen_cache.clear()
 
     # ------------------------------------------------------------------ #
     # Internal helpers                                                   #
