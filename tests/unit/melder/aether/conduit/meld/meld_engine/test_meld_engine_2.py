@@ -1,10 +1,7 @@
 """Additional contract tests for meld runtime/planning helpers."""
 from types import SimpleNamespace
 from typing import Any, Iterable
-
 import pytest
-
-from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence

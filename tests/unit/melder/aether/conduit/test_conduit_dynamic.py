@@ -5,7 +5,6 @@ import pytest
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.creations.lesser_creations import LesserCreations
 
 
 def test_create_lesser_conduit_fires_hooks_and_links(

@@ -7,8 +7,6 @@ import pytest
 
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.creations.lesser_creations import LesserCreations
-from melder.aether.conduit.meld.meld_engine.meld_engine import MeldEngine
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.configuration.system_state import SystemState
@@ -46,6 +44,11 @@ from melder.utilities.custom_exceptions.operation_cancelled_error import (
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEventSignal,
+)
+
+pytest.skip(
+    "Legacy MeldEngine test module is obsolete after codegen-only runtime cutover.",
+    allow_module_level=True,
 )
 
 

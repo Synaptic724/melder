@@ -9,7 +9,6 @@ from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.conduit_ward.contract.contract import Contract
 from melder.aether.conduit.conduit_ward.contract.details import Detail
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit_cloud import ConduitCloud

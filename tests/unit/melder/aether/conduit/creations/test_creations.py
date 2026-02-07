@@ -23,8 +23,6 @@ import pytest
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.creations.creation import Creation
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.creations.lesser_creations import LesserCreations
-
 
 class DummyLogger:
     """Minimal logger stub capturing calls for assertions.

@@ -6,7 +6,6 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.configuration.configuration import Configuration
 

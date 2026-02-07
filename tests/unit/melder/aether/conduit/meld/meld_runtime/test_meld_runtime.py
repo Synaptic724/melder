@@ -1,7 +1,8 @@
-"""Contract tests for MeldRuntime execution orchestration."""
+"""Codegen-only contract tests for MeldRuntime."""
+
+from collections import deque
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -9,1036 +10,345 @@ import melder.aether.conduit.meld.meld_runtime.meld_runtime as runtime_module
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
-_DEFAULT_SPELLBOOK = object()
 
-
-class _SystemStateStub:
-    """
-    Minimal system-state stub exposing a validity attribute.
-    """
+class _SystemState:
+    """Expose validity for runtime gate checks."""
 
     def __init__(self, validity: SpellValidity) -> None:
-        """
-        Initialize the stub with a specific validity value.
-
-        Args:
-            validity: The SpellValidity to expose.
-        """
         self.validity = validity
 
 
-class _ChangeControlManagerStub:
-    """
-    Minimal change-control manager stub for dirty-root checks.
-    """
+class _CCManager:
+    """Expose deterministic dirty-root checks."""
 
-    def __init__(self, *, is_dirty: bool, raise_on_call: bool = False) -> None:
-        """
-        Initialize with a fixed dirty flag and optional error behavior.
-
-        Args:
-            is_dirty: Whether the root should be reported as dirty.
-            raise_on_call: Whether is_root_dirty should raise.
-        """
-        self._is_dirty = is_dirty
+    def __init__(self, *, dirty: bool, raise_on_call: bool = False) -> None:
+        self._dirty = dirty
         self._raise_on_call = raise_on_call
 
     def is_root_dirty(self, conduit_id: str, root_id: str) -> bool:
-        """
-        Return whether the root is dirty or raise if configured.
-
-        Args:
-            conduit_id: Conduit id scope for the check.
-            root_id: Root id being queried.
-        """
         if self._raise_on_call:
-            raise RuntimeError("change-control failure")
-        return self._is_dirty
+            raise RuntimeError("cc-fail")
+        return self._dirty
 
 
-class _AetherStub:
-    """
-    Minimal aether stub exposing change-control manager lookup.
-    """
+class _Aether:
+    """Expose change-control manager lookup."""
 
-    def __init__(self, manager: Any, *, raise_on_call: bool = False) -> None:
-        """
-        Initialize with a manager to return or a failure mode.
-
-        Args:
-            manager: Change-control manager stub to return.
-            raise_on_call: Whether the lookup should raise.
-        """
+    def __init__(self, manager: Any, *, raise_lookup: bool = False) -> None:
         self._manager = manager
-        self._raise_on_call = raise_on_call
+        self._raise_lookup = raise_lookup
 
     def _get_change_control_manager(self, frame: str) -> Any:
-        """
-        Return the configured manager or raise if configured.
-        """
-        if self._raise_on_call:
-            raise RuntimeError("change-control lookup failed")
+        if self._raise_lookup:
+            raise RuntimeError("lookup-fail")
         return self._manager
 
 
-class _SpellbookStub:
-    """
-    Spellbook stub exposing spell registries and optional aether.
-    """
+class _Spellbook:
+    """Minimal spellbook fields used by runtime invariants."""
 
-    def __init__(
-        self,
-        *,
-        spells: Dict[SpellIndex, Any],
-        contracted_spells: Optional[Dict[str, Dict[SpellIndex, Any]]] = None,
-        aether: Any = None,
-    ) -> None:
-        """
-        Initialize the spellbook stub with registries and aether.
-
-        Args:
-            spells: Mapping of SpellIndex to spell instance.
-            contracted_spells: Optional lineage -> SpellIndex -> spell mapping.
-            aether: Optional aether stub.
-
-        Contract:
-            Populates the spell_id_pool from owned and contracted registries.
-        """
-        self._spells = spells
-        self._contracted_spells = contracted_spells or {}
+    def __init__(self, *, validation_required: bool = True, aether: Optional[Any] = None) -> None:
+        self._spellbook_validation_required = validation_required
         self._aether = aether
-        self._spellbook_validation_required = True
-        self._spell_id_pool = {}
-        for spell_index, spell in self._spells.items():
-            self._spell_id_pool[spell_index.current] = spell
-        for lineage_spells in self._contracted_spells.values():
-            for spell_index, spell in lineage_spells.items():
-                self._spell_id_pool[spell_index.current] = spell
 
 
-class _SpellStub:
-    """
-    Spell stub exposing the fields used by MeldRuntime.execute.
-    """
+class _SocketKind:
+    """Socket kind value holder for override map keys."""
+
+    def __init__(self, value: str) -> None:
+        self.value = value
+
+
+class _SocketRef:
+    """Hashable socket-ref key for override payload maps."""
+
+    def __init__(self, node_id: str, param_name: str, path_id: int, kind: str) -> None:
+        self.node_id = node_id
+        self.param_name = param_name
+        self.param_path_id = path_id
+        self.socket_kind = _SocketKind(kind)
+
+    def __hash__(self) -> int:
+        return hash((self.node_id, self.param_name, self.param_path_id, self.socket_kind.value))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, _SocketRef):
+            return False
+        return (
+            self.node_id == other.node_id
+            and self.param_name == other.param_name
+            and self.param_path_id == other.param_path_id
+            and self.socket_kind.value == other.socket_kind.value
+        )
+
+
+class _Spell:
+    """Spell stub matching runtime-owned contract fields."""
 
     def __init__(
-        self,
-        *,
-        spell_id: str,
-        spell_name: Optional[str] = None,
-        aetheric_frame: str = "default",
-        system_state: Any = None,
-        system_state_error: Optional[Exception] = None,
-        mutation_override: Any = None,
-        mutation_override_error: Optional[Exception] = None,
-        is_broken: bool = False,
-        validated: bool = True,
-        dependency_graph: Any = None,
-        requirements: Any = None,
-        resolution_frame: Any = None,
-        crafter: Any = None,
-        spellbook: Any = _DEFAULT_SPELLBOOK,
-        spell_system_states: Any = None,
-        is_class_spell: bool = True,
-        is_method_spell: bool = False,
-        is_lambda_spell: bool = False,
+            self,
+            *,
+            spell_id: str,
+            crafter: Optional[Any],
+            spellbook: Optional[Any] = None,
+            system_state: Optional[Any] = None,
+            has_mutation_override: bool = False,
+            is_broken: bool = False,
+            validated: bool = True,
+            is_class_spell: bool = True,
+            is_method_spell: bool = False,
+            is_lambda_spell: bool = False,
     ) -> None:
-        """
-        Initialize the spell stub with explicit runtime attributes.
-
-        Args:
-            spell_id: Spell version identifier.
-            spell_name: Optional human-readable name.
-            aetheric_frame: Frame name used for change-control lookup.
-            system_state: Optional system-state object.
-            system_state_error: Optional exception for system_state access.
-            mutation_override: Optional mutation override payload.
-            mutation_override_error: Optional exception for mutation_override access.
-            is_broken: Whether the spell is marked broken.
-            validated: Whether the spell has been validated.
-            dependency_graph: Optional DAG artifact.
-            requirements: Optional requirements artifact.
-            resolution_frame: Optional resolution frame artifact.
-            crafter: Optional crafter object with root blueprint.
-            spellbook: Optional spellbook stub for lookup building.
-            spell_system_states: Optional system states registry.
-            is_class_spell: Whether the spell is a class factory.
-            is_method_spell: Whether the spell is a method factory.
-            is_lambda_spell: Whether the spell is a lambda factory.
-        """
         self.spell_index = SpellIndex(spell_id)
-        self.spell_name = spell_name or spell_id
-        self.aetheric_frame = aetheric_frame
-        self._system_state = system_state
-        self._system_state_error = system_state_error
-        self._mutation_override = mutation_override
-        self._mutation_override_error = mutation_override_error
+        self.spell_id = spell_id
+        self.spell_name = spell_id
+        self.aetheric_frame = "default"
+        self._crafter = crafter
+        self.system_state = system_state
+        self.has_mutation_override = has_mutation_override
         self.is_broken = is_broken
         self.validated = validated
-        self.dependency_graph = dependency_graph
-        self.requirements = requirements
-        self.resolution_frame = resolution_frame
-        if crafter is None:
-            crafter = SimpleNamespace(
-                root_blueprint_phase5=None,
-                occurrence_plan_phase8=None,
-                injection_plan_phase9=None,
-                override_patch_map_phase10=None,
-                mutation_patch_map_phase10=None,
-                execution_plan_phase11_no_overrides=None,
-                execution_plan_phase11_overrides=None,
-                execution_plan_phase11_overrides_with_mutations=None,
-            )
-        self._crafter = crafter
-        if spellbook is _DEFAULT_SPELLBOOK:
-            spellbook = _SpellbookStub(spells={}, aether=None)
-        self._spellbook = spellbook
-        self._spell_system_states = spell_system_states
         self.is_class_spell = is_class_spell
         self.is_method_spell = is_method_spell
         self.is_lambda_spell = is_lambda_spell
-
-    @property
-    def system_state(self) -> Any:
-        """
-        Return the configured system state or raise if configured.
-        """
-        if self._system_state_error is not None:
-            raise self._system_state_error
-        return self._system_state
-
-    @property
-    def mutation_override(self) -> Any:
-        """
-        Return the configured mutation override or raise if configured.
-        """
-        if self._mutation_override_error is not None:
-            raise self._mutation_override_error
-        return self._mutation_override
+        self._spellbook = spellbook if spellbook is not None else _Spellbook()
 
 
-def _make_context(
-    spell: Any,
-    overrides: Any = None,
-    *,
-    conduit_id: Optional[str] = "conduit-1",
-    cancel_event: Any = None,
-) -> SimpleNamespace:
-    """
-    Build a minimal MeldContext-like stub.
-
-    Args:
-        spell: Root spell to expose via context.root_spell.
-        overrides: Optional overrides payload for the context.
-        conduit_id: Conduit id to expose for change-control checks.
-        cancel_event: Optional cancellation event for engine execution.
-
-    Returns:
-        SimpleNamespace: Context stub with root_spell and overrides.
-    """
+def _ctx(spell: Any, overrides: Optional[Any] = None, conduit_id: Optional[str] = "cid") -> Any:
+    """Build a minimal runtime context object."""
     return SimpleNamespace(
         root_spell=spell,
         overrides=overrides,
         conduit_id=conduit_id,
-        cancel_event=cancel_event,
+        caller_creations_lock_held=False,
+        caller_creations=None,
     )
 
 
-def _make_crafter(**overrides: Any) -> SimpleNamespace:
-    base = dict(
-        root_blueprint_phase5=None,
-        occurrence_plan_phase8=None,
-        injection_plan_phase9=None,
-        override_patch_map_phase10=None,
-        mutation_patch_map_phase10=None,
-        execution_plan_phase11_no_overrides=None,
-        execution_plan_phase11_overrides=None,
-        execution_plan_phase11_overrides_with_mutations=None,
+def _crafter(
+        *,
+        executor: Optional[Any] = None,
+        patch_map: Optional[Any] = None,
+        override_plan: Optional[Any] = None,
+        root_blueprint: Optional[Any] = None,
+) -> Any:
+    """Build a minimal SpellCrafter artifact container."""
+    return SimpleNamespace(
+        phase12_no_overrides_executor=executor,
+        override_patch_map_phase10=patch_map,
+        execution_plan_phase11_overrides=override_plan,
+        root_blueprint_phase5=root_blueprint,
     )
-    base.update(overrides)
-    return SimpleNamespace(**base)
-
-
-def _make_socket_ref(
-    node_id: str,
-    param_name: str,
-    param_path: tuple[str, ...],
-    *,
-    path_registry: PathRegistry,
-) -> SocketRef:
-    """
-    Build a SocketRef for override-map tests.
-
-    Args:
-        node_id: Spell id for the socket.
-        param_name: Constructor parameter name.
-        param_path: Param path tuple for targeting.
-
-    Returns:
-        SocketRef: Socket reference for override targeting.
-    """
-    path_id = path_registry.root_path_id
-    for segment in param_path:
-        path_id = path_registry.extend_path(path_id, segment)
-    return SocketRef(
-        node_id=node_id,
-        param_name=param_name,
-        param_path_id=path_id,
-        socket_kind=SocketKind.NORMAL,
-    )
-
-
-def _install_engine_mock(
-    monkeypatch: pytest.MonkeyPatch,
-    *,
-    run_result: Any = None,
-    run_error: Optional[Exception] = None,
-) -> tuple[MagicMock, MagicMock]:
-    """
-    Patch MeldEngine to a MagicMock instance with controlled behavior.
-
-    Args:
-        monkeypatch: pytest monkeypatch fixture.
-        run_result: Value to return from engine.run when no error is set.
-        run_error: Optional exception to raise from engine.run.
-
-    Returns:
-        Tuple[MagicMock, MagicMock]: (engine class mock, engine instance mock).
-    """
-    engine_instance = MagicMock()
-    if run_error is not None:
-        engine_instance.run_execution_plan.side_effect = run_error
-        engine_instance.run_execution_plan_no_overrides.side_effect = run_error
-    else:
-        engine_instance.run_execution_plan.return_value = run_result
-        engine_instance.run_execution_plan_no_overrides.return_value = run_result
-    engine_cls = MagicMock(return_value=engine_instance)
-    monkeypatch.setattr(runtime_module, "MeldEngine", engine_cls)
-    return engine_cls, engine_instance
-
-
-def _install_frame_mock(
-    monkeypatch: pytest.MonkeyPatch,
-) -> tuple[MagicMock, MagicMock]:
-    """
-    Patch ResolutionFrame to a MagicMock instance for override capture.
-
-    Args:
-        monkeypatch: pytest monkeypatch fixture.
-
-    Returns:
-        Tuple[MagicMock, MagicMock]: (frame class mock, frame instance mock).
-    """
-    frame_instance = MagicMock()
-    frame_cls = MagicMock(return_value=frame_instance)
-    monkeypatch.setattr(runtime_module, "ResolutionFrame", frame_cls)
-    return frame_cls, frame_instance
 
 
 def test_execute_rejects_none_context() -> None:
-    """
-    Verify execute rejects a None context.
-
-    Contract:
-        - context must not be None.
-    """
-    runtime = MeldRuntime()
-    with pytest.raises(AttributeError):
-        runtime.execute(None)
+    """`execute` raises ValueError when context is None."""
+    with pytest.raises(ValueError, match="context must not be None"):
+        MeldRuntime().execute(None)
 
 
 def test_execute_rejects_none_root_spell() -> None:
-    """
-    Verify execute rejects a context with no root spell.
+    """`execute` raises ValueError when root spell is missing."""
+    with pytest.raises(ValueError, match="root_spell must not be None"):
+        MeldRuntime().execute(_ctx(None))
 
-    Contract:
-        - context.root_spell must not be None.
-    """
-    runtime = MeldRuntime()
-    context = _make_context(spell=None)
-    with pytest.raises(AttributeError):
-        runtime.execute(context)
 
-@pytest.mark.parametrize(
-    "validity",
-    [SpellValidity.invalid, SpellValidity.gated, SpellValidity.disabled],
-)
-def test_execute_blocks_invalid_system_state(validity: SpellValidity) -> None:
-    """
-    Verify invalid/gated/disabled system states block execution.
-
-    Contract:
-        - invalid/gated/disabled validity raises MeldExecutionError.
-    """
-    runtime = MeldRuntime()
-    system_state = _SystemStateStub(validity)
-    spell = _SpellStub(spell_id="spell-1", system_state=system_state)
-    context = _make_context(spell=spell)
+@pytest.mark.parametrize("validity", [SpellValidity.invalid, SpellValidity.gated, SpellValidity.disabled])
+def test_execute_blocks_invalid_validity(validity: SpellValidity) -> None:
+    """Runtime blocks invalid/gated/disabled lineage validity states."""
+    spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "ok"), system_state=_SystemState(validity))
     with pytest.raises(MeldExecutionError, match=validity.name):
-        runtime.execute(context)
-
-
-def test_execute_propagates_system_state_access_errors(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify system_state access errors propagate.
-
-    Contract:
-        - exceptions reading system_state are not swallowed.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(
-        spell_id="spell-1",
-        system_state_error=RuntimeError("system-state failure"),
-    )
-    context = _make_context(spell=spell)
-    engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
-    with pytest.raises(RuntimeError, match="system-state failure"):
-        runtime.execute(context)
-    assert engine_cls.call_count == 0
-    assert engine_instance.run_execution_plan.call_count == 0
-    assert engine_instance.run_execution_plan_no_overrides.call_count == 0
+        MeldRuntime().execute(_ctx(spell))
 
 
 def test_execute_blocks_dirty_root() -> None:
-    """
-    Verify dirty-root gating blocks execution.
+    """Runtime blocks dirty-root execution via change-control manager."""
+    spellbook = _Spellbook(aether=_Aether(_CCManager(dirty=True)))
+    spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "ok"), spellbook=spellbook)
+    with pytest.raises(MeldExecutionError, match="marked dirty"):
+        MeldRuntime().execute(_ctx(spell))
 
-    Contract:
-        - dirty root raises MeldExecutionError.
-    """
+
+def test_execute_ignores_change_control_lookup_errors() -> None:
+    """Runtime continues when change-control lookup raises unexpectedly."""
+    calls = []
+
+    def _executor(context: Any) -> str:
+        calls.append(context)
+        return "ok"
+
+    spellbook = _Spellbook(aether=_Aether(None, raise_lookup=True))
+    spell = _Spell(spell_id="s1", crafter=_crafter(executor=_executor), spellbook=spellbook)
+    context = _ctx(spell)
+    assert MeldRuntime().execute(context) == "ok"
+    assert calls == [context]
+
+
+def test_execute_blocks_broken_and_unvalidated() -> None:
+    """Runtime blocks broken and unvalidated spells."""
     runtime = MeldRuntime()
-    manager = _ChangeControlManagerStub(is_dirty=True)
-    aether = _AetherStub(manager)
-    spellbook = _SpellbookStub(spells={}, aether=aether)
-    spell = _SpellStub(spell_id="spell-1", spellbook=spellbook)
-    context = _make_context(spell=spell)
-    with pytest.raises(MeldExecutionError, match="root is marked dirty"):
-        runtime.execute(context)
-
-
-def test_execute_omits_occurrence_plan_in_engine(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify execute does not pass the occurrence plan directly to the engine.
-
-    Contract:
-        - MeldEngine init args do not include occurrence_plan.
-    """
-    runtime = MeldRuntime()
-    occurrence_plan = MagicMock()
-    crafter = _make_crafter(occurrence_plan_phase8=occurrence_plan)
-    spell = _SpellStub(spell_id="spell-1", crafter=crafter)
-    context = _make_context(spell=spell)
-
-    engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
-    runtime.execute(context)
-
-    assert engine_instance.run_execution_plan_no_overrides.call_count == 1
-    assert "occurrence_plan" not in engine_cls.call_args[1]
-
-
-def test_execute_omits_occurrence_plan_with_mutation_override(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Verify mutation overrides still omit occurrence_plan in MeldEngine init.
-
-    Contract:
-        - occurrence_plan is not part of the MeldEngine call args.
-    """
-    runtime = MeldRuntime()
-    occurrence_plan = MagicMock()
-    crafter = _make_crafter(occurrence_plan_phase8=occurrence_plan)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        crafter=crafter,
-        mutation_override={"**service": "spell-2"},
-    )
-    context = _make_context(spell=spell)
-
-    engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
-    runtime.execute(context)
-
-    assert engine_instance.run_execution_plan.call_count == 1
-    assert "occurrence_plan" not in engine_cls.call_args[1]
-
-
-def test_execute_ignores_change_control_errors(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify change-control lookup errors are ignored.
-
-    Contract:
-        - errors in change-control lookup allow execution to proceed.
-    """
-    runtime = MeldRuntime()
-    aether = _AetherStub(manager=None, raise_on_call=True)
-    spellbook = _SpellbookStub(spells={}, aether=aether)
-    spell = _SpellStub(spell_id="spell-1", spellbook=spellbook)
-    context = _make_context(spell=spell)
-    engine_cls, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
-    assert runtime.execute(context) == "ok"
-    engine_cls.assert_called_once()
-    engine_instance.run_execution_plan_no_overrides.assert_called_once()
-
-
-def test_execute_blocks_broken_spell() -> None:
-    """
-    Verify broken spells are rejected.
-
-    Contract:
-        - is_broken True raises MeldExecutionError.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(spell_id="spell-1", is_broken=True)
-    context = _make_context(spell=spell)
     with pytest.raises(MeldExecutionError, match="broken spell"):
-        runtime.execute(context)
-
-
-def test_execute_blocks_unvalidated_spell() -> None:
-    """
-    Verify unvalidated spells are rejected.
-
-    Contract:
-        - validated False raises MeldExecutionError.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(spell_id="spell-1", validated=False)
-    context = _make_context(spell=spell)
+        runtime.execute(_ctx(_Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "ok"), is_broken=True)))
     with pytest.raises(MeldExecutionError, match="not been validated"):
-        runtime.execute(context)
+        runtime.execute(_ctx(_Spell(spell_id="s2", crafter=_crafter(executor=lambda c: "ok"), validated=False)))
 
 
-def test_execute_applies_patch_maps_for_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify blueprint overrides apply mutation and override patch maps.
-
-    Contract:
-        - Mutation patch map flow returns the execution blueprint.
-        - OverridePatchMap.apply returns the override_map.
-        - Engine receives the execution blueprint and override_map.
-    """
+def test_execute_no_overrides_dispatches_executor_and_wraps_errors() -> None:
+    """No-overrides path dispatches executor and wraps unexpected failures."""
     runtime = MeldRuntime()
-    path_registry = PathRegistry()
-    root_blueprint = SimpleNamespace(path_registry=path_registry)
-    mutated_blueprint = SimpleNamespace(path_registry=path_registry)
-    override_map = {
-        _make_socket_ref(
-            node_id="spell-1",
-            param_name="param",
-            param_path=("param",),
-            path_registry=path_registry,
-        ): "value"
-    }
-    override_patch_map = MagicMock()
-    override_patch_map.apply.return_value = override_map
-    mutation_patch_map = MagicMock()
-    occurrence_plan = MagicMock()
-    injection_plan = MagicMock()
-    crafter = _make_crafter(
-        root_blueprint_phase5=root_blueprint,
-        occurrence_plan_phase8=occurrence_plan,
-        injection_plan_phase9=injection_plan,
-        override_patch_map_phase10=override_patch_map,
-        mutation_patch_map_phase10=mutation_patch_map,
+    context_calls = []
+
+    def _ok(context: Any) -> str:
+        context_calls.append(context)
+        return "built"
+
+    spell = _Spell(spell_id="s1", crafter=_crafter(executor=_ok))
+    context = _ctx(spell)
+    assert runtime.execute(context) == "built"
+    assert context_calls == [context]
+
+    def _boom(context: Any) -> Any:
+        raise RuntimeError("boom")
+
+    spell_boom = _Spell(spell_id="s2", crafter=_crafter(executor=_boom))
+    with pytest.raises(MeldExecutionError) as exc:
+        runtime.execute(_ctx(spell_boom))
+    assert isinstance(exc.value.inner, RuntimeError)
+
+
+def test_execute_no_overrides_requires_crafter_and_executor() -> None:
+    """No-overrides path requires crafter and compiled phase12 executor."""
+    runtime = MeldRuntime()
+    with pytest.raises(MeldExecutionError, match="Missing SpellCrafter"):
+        runtime.execute(_ctx(_Spell(spell_id="s1", crafter=None)))
+    with pytest.raises(MeldExecutionError, match="Missing Phase 12 no-overrides executor"):
+        runtime.execute(_ctx(_Spell(spell_id="s2", crafter=_crafter(executor=None))))
+
+
+def test_execute_rejects_mutation_override() -> None:
+    """Mutation overrides are hard-failed on codegen runtime path."""
+    runtime = MeldRuntime()
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(executor=lambda c: "ok"),
+        has_mutation_override=True,
     )
-    spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override={"x": "y"})
-    context = _make_context(spell=spell, overrides={"param": "value"})
-
-    apply_mutation = MagicMock(return_value=mutated_blueprint)
-    apply_override = MagicMock(return_value=override_map)
-    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
-
-    engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
-    runtime.execute(context)
-
-    apply_mutation.assert_called_once_with(
-        blueprint=root_blueprint,
-        mutation_patch_map=mutation_patch_map,
-        mutation_override={"x": "y"},
-    )
-    apply_override.assert_called_once_with(
-        override_patch_map=override_patch_map,
-        override_payload=context.overrides,
-    )
-    assert engine_cls.call_args.kwargs["blueprint"] is mutated_blueprint
-    assert engine_cls.call_args.kwargs["override_map"] == override_map
+    with pytest.raises(MeldExecutionError, match="Mutation overrides are not supported"):
+        runtime.execute(_ctx(spell))
 
 
-def test_execute_wraps_override_application_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify override application errors are wrapped in MeldExecutionError.
-
-    Contract:
-        - failures applying overrides raise MeldExecutionError with inner.
-    """
+def test_execute_none_result_rules() -> None:
+    """Factory spells reject None; non-factory spells allow None."""
     runtime = MeldRuntime()
-    root_blueprint = SimpleNamespace(path_registry=PathRegistry())
-    override_patch_map = MagicMock()
-    override_patch_map.apply.side_effect = RuntimeError("override failure")
-    mutation_patch_map = MagicMock()
-    occurrence_plan = MagicMock()
-    injection_plan = MagicMock()
-    crafter = _make_crafter(
-        root_blueprint_phase5=root_blueprint,
-        occurrence_plan_phase8=occurrence_plan,
-        injection_plan_phase9=injection_plan,
-        override_patch_map_phase10=override_patch_map,
-        mutation_patch_map_phase10=mutation_patch_map,
-    )
-    spell = _SpellStub(spell_id="spell-1", crafter=crafter)
-    context = _make_context(spell=spell, overrides={"param": "value"})
-
-    apply_mutation = MagicMock(return_value=root_blueprint)
-    apply_override = MagicMock(side_effect=RuntimeError("override failure"))
-    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
-
-    with pytest.raises(MeldExecutionError) as exc_info:
-        runtime.execute(context)
-    assert isinstance(exc_info.value.inner, RuntimeError)
-
-
-def test_execute_uses_context_overrides_without_blueprint(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify context overrides are used when no blueprint exists.
-
-    Contract:
-        - ResolutionFrame receives merged overrides from context only.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(spell_id="spell-1")
-    context = _make_context(spell=spell, overrides={"__args__": (1, 2), "x": 3})
-    frame_cls, _ = _install_frame_mock(monkeypatch)
-    _install_engine_mock(monkeypatch, run_result="ok")
-    runtime.execute(context)
-    overrides = frame_cls.call_args.kwargs["overrides"]
-    assert overrides["__args__"] == [1, 2]
-    assert overrides["x"] == 3
-
-
-def test_build_frame_overrides_merges_context_and_override_map() -> None:
-    """
-    Verify _build_frame_overrides merges context overrides and override_map.
-
-    Contract:
-        - __args__ is copied to a new list.
-        - override_map values replace context values for the same param.
-    """
-    runtime = MeldRuntime()
-    args = [1, 2]
-    context_overrides = {"__args__": args, "x": "context"}
-    root_id = "spell-1"
-    path_registry = PathRegistry()
-    override_map = {
-        _make_socket_ref(root_id, "x", ("x",), path_registry=path_registry): "override",
-    }
-    merged = runtime._build_frame_overrides(
-        context_overrides=context_overrides,
-        override_map=override_map,
-        root_spell_id=root_id,
-        path_registry=path_registry,
-    )
-    assert merged["__args__"] == [1, 2]
-    assert merged["__args__"] is not args
-    assert merged["x"] == "override"
-
-
-def test_build_frame_overrides_ignores_non_dict_context_overrides() -> None:
-    """
-    Verify non-dict context overrides are ignored.
-
-    Contract:
-        - only override_map contributes when context_overrides is not a dict.
-    """
-    runtime = MeldRuntime()
-    root_id = "spell-1"
-    path_registry = PathRegistry()
-    override_map = {
-        _make_socket_ref(root_id, "x", ("x",), path_registry=path_registry): "override",
-    }
-    merged = runtime._build_frame_overrides(
-        context_overrides=["not", "a", "dict"],
-        override_map=override_map,
-        root_spell_id=root_id,
-        path_registry=path_registry,
-    )
-    assert merged == {"x": "override"}
-
-
-def test_build_frame_overrides_filters_non_root_or_deep_paths() -> None:
-    """
-    Verify _build_frame_overrides filters non-root or deep path overrides.
-
-    Contract:
-        - only root node overrides with single-segment paths are applied.
-    """
-    runtime = MeldRuntime()
-    root_id = "spell-1"
-    path_registry = PathRegistry()
-    override_map = {
-        _make_socket_ref(root_id, "x", ("x",), path_registry=path_registry): "root",
-        _make_socket_ref(root_id, "y", ("root", "y"), path_registry=path_registry): "deep",
-        _make_socket_ref("other", "z", ("z",), path_registry=path_registry): "other",
-    }
-    merged = runtime._build_frame_overrides(
-        context_overrides={},
-        override_map=override_map,
-        root_spell_id=root_id,
-        path_registry=path_registry,
-    )
-    assert merged == {"x": "root"}
-
-
-def test_execute_builds_spell_lookup_from_spellbook(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify spell lookup includes spellbook and contracted spells.
-
-    Contract:
-        - lookup includes all spell indices from both registries.
-    """
-    runtime = MeldRuntime()
-    spell_a = _SpellStub(spell_id="spell-a")
-    spell_b = _SpellStub(spell_id="spell-b")
-    spell_c = _SpellStub(spell_id="spell-c")
-    spellbook = _SpellbookStub(
-        spells={
-            spell_a.spell_index: spell_a,
-            spell_b.spell_index: spell_b,
-        },
-        contracted_spells={
-            "lineage-1": {spell_c.spell_index: spell_c},
-        },
-    )
-    spell = _SpellStub(spell_id="spell-1", spellbook=spellbook)
-    context = _make_context(spell=spell)
-    engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
-    runtime.execute(context)
-    lookup = engine_cls.call_args.kwargs["spell_lookup"]
-    assert lookup[spell_a.spell_index.current] is spell_a
-    assert lookup[spell_b.spell_index.current] is spell_b
-    assert lookup[spell_c.spell_index.current] is spell_c
-
-
-def test_execute_passes_system_states_to_engine(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify system states are passed to the engine.
-
-    Contract:
-        - engine receives spell._spell_system_states.
-    """
-    runtime = MeldRuntime()
-    system_states = object()
-    spell = _SpellStub(spell_id="spell-1", spell_system_states=system_states)
-    context = _make_context(spell=spell)
-    engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
-    runtime.execute(context)
-    assert engine_cls.call_args.kwargs["system_states"] is system_states
-
-
-def test_execute_cleans_engine_and_frame_on_success(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify engine and frame are cleaned on successful execution.
-
-    Contract:
-        - engine.cleanup and frame.cleanup are called in all cases.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(spell_id="spell-1")
-    context = _make_context(spell=spell)
-    _, engine_instance = _install_engine_mock(monkeypatch, run_result="ok")
-    _, frame_instance = _install_frame_mock(monkeypatch)
-    runtime.execute(context)
-    engine_instance.cleanup.assert_called_once()
-    frame_instance.cleanup.assert_called_once()
-
-
-def test_execute_cleans_engine_and_frame_on_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify engine and frame are cleaned when engine.run raises.
-
-    Contract:
-        - cleanup is called even when execution fails.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(spell_id="spell-1")
-    context = _make_context(spell=spell)
-    error = RuntimeError("engine failure")
-    _, engine_instance = _install_engine_mock(monkeypatch, run_error=error)
-    _, frame_instance = _install_frame_mock(monkeypatch)
-    with pytest.raises(RuntimeError, match="engine failure"):
-        runtime.execute(context)
-    engine_instance.cleanup.assert_called_once()
-    frame_instance.cleanup.assert_called_once()
-
-
-def test_execute_propagates_meld_execution_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify MeldExecutionError from the engine is propagated.
-
-    Contract:
-        - engine MeldExecutionError is not wrapped or suppressed.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(spell_id="spell-1")
-    context = _make_context(spell=spell)
-    error = MeldExecutionError(
-        spell_id="spell-1",
-        spell_name="spell-1",
-        message="engine failed",
-    )
-    _install_engine_mock(monkeypatch, run_error=error)
-    with pytest.raises(MeldExecutionError, match="engine failed"):
-        runtime.execute(context)
-
-
-def test_execute_factory_spell_none_result_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify factory-style spells cannot return None.
-
-    Contract:
-        - None result for factory spells raises MeldExecutionError.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(spell_id="spell-1", is_class_spell=True)
-    context = _make_context(spell=spell)
-    _install_engine_mock(monkeypatch, run_result=None)
     with pytest.raises(MeldExecutionError, match="returned None"):
-        runtime.execute(context)
-
-
-def test_execute_non_factory_none_result_allowed(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify non-factory spells may return None.
-
-    Contract:
-        - None result for non-factory spells is allowed.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(
-        spell_id="spell-1",
+        runtime.execute(_ctx(_Spell(spell_id="s1", crafter=_crafter(executor=lambda c: None), is_class_spell=True)))
+    non_factory = _Spell(
+        spell_id="s2",
+        crafter=_crafter(executor=lambda c: None),
         is_class_spell=False,
         is_method_spell=False,
         is_lambda_spell=False,
     )
-    context = _make_context(spell=spell)
-    _install_engine_mock(monkeypatch, run_result=None)
-    assert runtime.execute(context) is None
+    assert runtime.execute(_ctx(non_factory)) is None
 
 
-def test_execute_uses_mutation_override_payload(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify mutation_override payload is forwarded to patch map application.
-
-    Contract:
-        - mutation_override dict is forwarded to apply_phase10_mutation_overrides.
-    """
+def test_execute_with_overrides_requires_patch_map_and_plan() -> None:
+    """Override path requires phase10 patch-map and phase11 override plan artifacts."""
     runtime = MeldRuntime()
-    root_blueprint = object()
-    mutation_patch_map = MagicMock()
-    override_patch_map = MagicMock()
-    occurrence_plan = MagicMock()
-    injection_plan = MagicMock()
-    crafter = _make_crafter(
-        root_blueprint_phase5=root_blueprint,
-        occurrence_plan_phase8=occurrence_plan,
-        injection_plan_phase9=injection_plan,
-        mutation_patch_map_phase10=mutation_patch_map,
-        override_patch_map_phase10=override_patch_map,
-    )
-    payload = {"key": "value"}
-    spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override=payload)
-    context = _make_context(spell=spell)
+    no_patch = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "x", patch_map=None, override_plan=object()))
+    with pytest.raises(MeldExecutionError, match="Phase 10 override patch map"):
+        runtime.execute(_ctx(no_patch, overrides={"x": 1}))
 
-    apply_mutation = MagicMock(return_value=root_blueprint)
-    apply_override = MagicMock(return_value={})
-    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
-
-    _install_engine_mock(monkeypatch, run_result="ok")
-    runtime.execute(context)
-    apply_mutation.assert_called_once_with(
-        blueprint=root_blueprint,
-        mutation_patch_map=mutation_patch_map,
-        mutation_override=payload,
-    )
-    assert apply_override.call_count == 0
+    no_plan = _Spell(spell_id="s2", crafter=_crafter(executor=lambda c: "x", patch_map=object(), override_plan=None))
+    with pytest.raises(MeldExecutionError, match="Phase 11 override execution plan"):
+        runtime.execute(_ctx(no_plan, overrides={"x": 1}))
 
 
-def test_execute_defaults_mutation_override_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify mutation_override access errors fall back to empty payload.
-
-    Contract:
-        - mutation_override errors lead to an empty payload.
-    """
+def test_execute_with_overrides_applies_payload_and_uses_cached_specialization(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Override path applies payload, compiles specialization once per shape, and reuses cache."""
     runtime = MeldRuntime()
-    root_blueprint = object()
-    mutation_patch_map = MagicMock()
-    override_patch_map = MagicMock()
-    occurrence_plan = MagicMock()
-    injection_plan = MagicMock()
-    crafter = _make_crafter(
-        root_blueprint_phase5=root_blueprint,
-        occurrence_plan_phase8=occurrence_plan,
-        injection_plan_phase9=injection_plan,
-        mutation_patch_map_phase10=mutation_patch_map,
-        override_patch_map_phase10=override_patch_map,
-    )
-    spell = _SpellStub(
-        spell_id="spell-1",
-        crafter=crafter,
-        mutation_override_error=RuntimeError("mutation override failure"),
-    )
-    context = _make_context(spell=spell)
+    plan = object()
+    patch_map = object()
+    root_blueprint = SimpleNamespace(path_registry="registry")
+    spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "x", patch_map=patch_map, override_plan=plan, root_blueprint=root_blueprint))
+    socket_ref = _SocketRef("s1", "dep", 7, "normal")
+    override_map = {socket_ref: "value"}
 
-    apply_mutation = MagicMock(return_value=root_blueprint)
-    apply_override = MagicMock(return_value={})
-    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
+    apply_calls = []
+    compile_count = {"value": 0}
 
-    _install_engine_mock(monkeypatch, run_result="ok")
-    with pytest.raises(RuntimeError, match="mutation override failure"):
-        runtime.execute(context)
-    apply_mutation.assert_not_called()
-    assert apply_override.call_count == 0
+    def _apply_phase10_override_payload(*, override_patch_map: Any, override_payload: Dict[str, Any]) -> Dict[Any, Any]:
+        apply_calls.append((override_patch_map, dict(override_payload)))
+        return override_map
 
+    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
+        compile_count["value"] += 1
 
-def test_build_frame_overrides_ignores_non_root_override_map_entries() -> None:
-    """
-    Verify _build_frame_overrides ignores override_map entries for other nodes.
+        def _executor(context: Any, received_override_map: Dict[Any, Any], root_args: Any) -> str:
+            assert received_override_map is override_map
+            assert root_args == (1, 2)
+            return "ok"
 
-    Contract:
-        - only root spell overrides are applied to the frame.
-    """
-    runtime = MeldRuntime()
-    root_id = "spell-1"
-    path_registry = PathRegistry()
-    override_map = {
-        _make_socket_ref("other", "x", ("x",), path_registry=path_registry): "ignored",
-    }
-    merged = runtime._build_frame_overrides(
-        context_overrides={},
-        override_map=override_map,
-        root_spell_id=root_id,
-        path_registry=path_registry,
-    )
-    assert merged == {}
+        return _executor
 
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", _apply_phase10_override_payload)
+    monkeypatch.setattr(runtime_module, "compile_phase12_overrides_executor", _compile_phase12_overrides_executor)
 
-def test_build_frame_overrides_empty_inputs_return_empty() -> None:
-    """
-    Verify _build_frame_overrides returns empty when no inputs are provided.
-
-    Contract:
-        - empty context overrides and override_map yield an empty dict.
-    """
-    runtime = MeldRuntime()
-    merged = runtime._build_frame_overrides(
-        context_overrides=None,
-        override_map={},
-        root_spell_id="spell-1",
-        path_registry=PathRegistry(),
-    )
-    assert merged == {}
-
-
-def test_execute_wraps_mutation_patch_map_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify mutation patch map failures are wrapped in MeldExecutionError.
-
-    Contract:
-        - apply_phase10_mutation_overrides errors raise MeldExecutionError with inner.
-    """
-    runtime = MeldRuntime()
-    root_blueprint = object()
-    mutation_patch_map = MagicMock()
-    override_patch_map = MagicMock()
-    crafter = _make_crafter(
-        root_blueprint_phase5=root_blueprint,
-        mutation_patch_map_phase10=mutation_patch_map,
-        override_patch_map_phase10=override_patch_map,
-    )
-    spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override={"x": "y"})
-    context = _make_context(spell=spell, overrides={})
-
-    apply_mutation = MagicMock(side_effect=RuntimeError("mutator failure"))
-    apply_override = MagicMock(return_value={})
-    monkeypatch.setattr(runtime_module, "apply_phase10_mutation_overrides", apply_mutation)
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
-
-    with pytest.raises(MeldExecutionError) as exc_info:
-        runtime.execute(context)
-    assert isinstance(exc_info.value.inner, RuntimeError)
-
-
-def test_execute_uses_empty_lookup_for_empty_spellbook(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify execution proceeds when the spellbook has no spells.
-
-    Contract:
-        - Empty spellbook yields an empty spell_lookup.
-    """
-    runtime = MeldRuntime()
-    spell = _SpellStub(spell_id="spell-1")
-    context = _make_context(spell=spell)
-    engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
-
+    context = _ctx(spell, overrides={"__args__": [1, 2], "dep": "payload"})
     assert runtime.execute(context) == "ok"
-    lookup = engine_cls.call_args.kwargs["spell_lookup"]
-    assert lookup == {}
-
-def test_execute_blueprint_ignores_non_dict_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify non-dict overrides are ignored when a blueprint is present.
-
-    Contract:
-        - Non-dict overrides fall back to {} before OverridePatchMap.apply.
-        - Execution proceeds using the override_map produced by OverridePatchMap.
-    """
-    runtime = MeldRuntime()
-    path_registry = PathRegistry()
-    root_blueprint = SimpleNamespace(path_registry=path_registry)
-    mutated_blueprint = SimpleNamespace(path_registry=path_registry)
-    override_patch_map = MagicMock()
-    mutation_patch_map = MagicMock()
-    occurrence_plan = MagicMock()
-    injection_plan = MagicMock()
-    crafter = _make_crafter(
-        root_blueprint_phase5=root_blueprint,
-        occurrence_plan_phase8=occurrence_plan,
-        injection_plan_phase9=injection_plan,
-        override_patch_map_phase10=override_patch_map,
-        mutation_patch_map_phase10=mutation_patch_map,
-    )
-    spell = _SpellStub(spell_id="spell-1", crafter=crafter, mutation_override={})
-    context = _make_context(spell=spell, overrides=[])
-
-    apply_override = MagicMock(return_value={})
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", apply_override)
-
-    engine_cls, _ = _install_engine_mock(monkeypatch, run_result="ok")
     assert runtime.execute(context) == "ok"
-    assert apply_override.call_count == 0
-    assert engine_cls.call_args.kwargs["blueprint"] is root_blueprint
+    assert apply_calls == [(patch_map, {"dep": "payload"}), (patch_map, {"dep": "payload"})]
+    assert compile_count["value"] == 1
 
 
-def test_build_frame_overrides_rejects_non_iterable_args() -> None:
-    """
-    Verify non-iterable __args__ values raise TypeError.
-
-    Contract:
-        - __args__ must be iterable when provided.
-    """
+def test_execute_with_overrides_wraps_patch_or_executor_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Override path wraps patch-map and compiled-executor runtime errors."""
     runtime = MeldRuntime()
-    with pytest.raises(TypeError):
-        runtime._build_frame_overrides(
-            context_overrides={"__args__": 1},
-            override_map={},
-            root_spell_id="spell-1",
-            path_registry=PathRegistry(),
-        )
+    spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "x", patch_map=object(), override_plan=object()))
+
+    def _raise_apply(**kwargs: Any) -> Dict[Any, Any]:
+        raise RuntimeError("patch-fail")
+
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", _raise_apply)
+    with pytest.raises(MeldExecutionError) as exc:
+        runtime.execute(_ctx(spell, overrides={"x": 1}))
+    assert isinstance(exc.value.inner, RuntimeError)
+
+    socket_ref = _SocketRef("s1", "x", 1, "normal")
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", lambda **kwargs: {socket_ref: "v"})
+
+    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
+        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> Any:
+            raise RuntimeError("exec-fail")
+
+        return _executor
+
+    monkeypatch.setattr(runtime_module, "compile_phase12_overrides_executor", _compile_phase12_overrides_executor)
+    with pytest.raises(MeldExecutionError) as exc2:
+        runtime.execute(_ctx(spell, overrides={"x": 1}))
+    assert isinstance(exc2.value.inner, RuntimeError)
+
+
+def test_fast_transient_and_cleanup_contract() -> None:
+    """Fast transient executes phase12 executor with None context; cleanup clears cache state."""
+    runtime = MeldRuntime()
+    calls = []
+
+    def _executor(context: Any) -> str:
+        calls.append(context)
+        return "t"
+
+    spell = _Spell(spell_id="s1", crafter=_crafter(executor=_executor))
+    assert runtime.execute_fast_transient(spell=spell, conduit_id="cid") == "t"
+    assert runtime.codegen_fast_transient(spell=spell, conduit_id="cid") == "t"
+    assert calls == [None, None]
+
+    runtime._override_specialization_cache["s1"] = {("k",): lambda *args: None}
+    runtime._override_specialization_order["s1"] = deque([("k",)])
+    runtime.cleanup()
+    assert runtime._cleaned is True
+    assert runtime._override_specialization_cache is None
+    assert runtime._override_specialization_order is None
+    assert runtime._max_override_specializations_per_spell is None
