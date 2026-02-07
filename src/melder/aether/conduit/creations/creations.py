@@ -25,12 +25,11 @@ class Creations(Cleanable, ICreations):
     def __init__(self, conduit: IConduit):
         """
         Purpose:
-            Initialize the normal-conduit creations registry.
+            Initialize the conduit creations registry.
 
         Contract:
             - Owns one shared creations map for non-spellspace and spellspace entries.
             - Owns one global disposal stack and per-spellspace disposal stacks.
-            - Rejects initialization for non-normal conduit state.
 
         Args:
             conduit:
@@ -41,7 +40,7 @@ class Creations(Cleanable, ICreations):
 
         Raises:
             RuntimeError:
-                If conduit state is missing or not normal.
+                If conduit state is missing.
         """
         super().__init__()
         self._conduit: IConduit = conduit
@@ -49,8 +48,6 @@ class Creations(Cleanable, ICreations):
 
         if conduit._conduit_state is None:
             raise RuntimeError("Conduit state is not initialized.")
-        elif conduit._conduit_state.__str__() != "normal":
-            raise RuntimeError("Creations can only be initialized for normal conduits.")
         self._conduit_state = conduit._conduit_state
 
         self._lock = RLock()

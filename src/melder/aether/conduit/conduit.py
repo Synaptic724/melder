@@ -23,7 +23,6 @@ from melder.aether.conduit.meld.meld_gate import MeldGate
 from melder.aether.conduit.meld.meld_gate_controller import MeldGateController
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.creations.lesser_creations import LesserCreations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -128,7 +127,7 @@ class Conduit(Cleanable, IConduit):
             self.__dynamic_environment__ = not automatic
 
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
-        self._creations: Creations | LesserCreations = self._creations_configuration(configuration)
+        self._creations: Creations = self._creations_configuration(configuration)
         self._meld_gate_controller: MeldGateController | None = meld_gate_controller
         self._owns_meld_gate_controller: bool = False
         if self._meld_gate_controller is None:
@@ -579,7 +578,7 @@ class Conduit(Cleanable, IConduit):
         - These spells are treated as **singletons** for this Conduit and
           must use `Existence.unique`.
         - The instance is registered under `spell.spell_id` via
-          `Creations.add_unique(...)`.
+          `Creations.add_creation(...)`.
         - Disposal metadata from the spell is forwarded to the Creation wrapper.
 
         This is primarily used during the conjure flow when a Conduit is
@@ -588,11 +587,11 @@ class Conduit(Cleanable, IConduit):
         """
         if not isinstance(self._creations, Creations):
             self._logger.error(
-                "_register_to_creations called on non-normal creations",
+                "_register_to_creations called with non-Creations manager",
                 "_register_to_creations",
             )
             raise RuntimeError(
-                "_register_to_creations can only be called on normal Creations instances."
+                "_register_to_creations requires a Creations manager."
             )
 
         creations: Creations = self._creations
@@ -611,7 +610,7 @@ class Conduit(Cleanable, IConduit):
             )
 
         spell_id: str = spell.spell_id
-        creations.add_unique(
+        creations.add_creation(
             spell_id,
             instance,
             has_disposal_methods=spell.has_disposal_methods,
@@ -877,7 +876,7 @@ class Conduit(Cleanable, IConduit):
         Conduit._aether._remove_conduit(self, self._aetheric_frame)
 
 
-    def _creations_configuration(self, configuration: IConfiguration) -> Creations | LesserCreations:
+    def _creations_configuration(self, configuration: IConfiguration) -> Creations:
         """
         Internal
 
@@ -887,17 +886,12 @@ class Conduit(Cleanable, IConduit):
             configuration (IConfiguration): The locked system configuration.
 
         Returns:
-            Creations | LesserCreations: The appropriate creation manager based on conduit state.
+            Creations: The creation manager for this conduit.
 
         Raises:
             RuntimeError: If the Conduit state is unknown.
         """
-        if self._conduit_state == ConduitState.lesser:
-            return LesserCreations(
-                conduit=self,
-                parent_creations=getattr(self, "_parent_creations", None),
-            )
-        if self._conduit_state == ConduitState.normal:
+        if self._conduit_state in (ConduitState.lesser, ConduitState.normal):
             return Creations(conduit=self)
         self._logger.error("Unknown Conduit state", "_creations_configuration")
         raise RuntimeError("Conduit state is unknown")
@@ -1121,8 +1115,8 @@ class Conduit(Cleanable, IConduit):
                 Propagated from Configuration.add_hooks(...) if the hook set is invalid
                 (frozen configuration, unknown hook names, non-callables, etc.).
         Contract:
-            - Transfers existing lesser creations into a normal-creations manager.
-            - Rewires meld runtime to use the upgraded creations manager.
+            - Preserves the current creations manager during lesser -> normal upgrade.
+            - Rewires meld runtime to use the current creations manager.
             - Seeds per-conduit resolution state from the prior root conduit when available.
             - Replaces the lineage MeldGateController and per-conduit gates for this tree.
         """
@@ -1160,34 +1154,28 @@ class Conduit(Cleanable, IConduit):
                 # This *only* wires the map into _conduit_hooks; it does NOT fire hooks.
                 self._initialize_conduit_hooks()
 
-                # Step 2: Transfer creation data from LesserCreations
-                creations_data = self._creations.transfer_data_and_clear()
+                # Step 2: Keep the current creations object and sync state.
+                self._creations._conduit = self
+                self._creations._conduit_state = self._conduit_state
 
-                # Step 3: Create new Creations and inject data
-                new_creations = Creations(conduit=self)
-                new_creations._upgrade_from_lesser_conduit(**creations_data)
-
-                # Step 4: Replace the old creations
-                self._creations = new_creations
-
-                # Step 4.1: Ensure Meld uses the upgraded creations manager.
+                # Step 2.1: Ensure Meld uses the same creations manager.
                 if self._meld is not None:
-                    self._meld._creations = new_creations
+                    self._meld._creations = self._creations
 
-                # Step 5: Reconfigure the conduit ward
+                # Step 3: Reconfigure the conduit ward
                 self._conduit_ward._convert_to_normal_conduit()
 
-                # Step 5.5: Replace the meld gate for this upgraded lineage tree.
+                # Step 3.5: Replace the meld gate for this upgraded lineage tree.
                 if self._meld_gate_controller is not None:
                     self._meld_gate_controller.unregister_gate(self._id)
                 self._meld_gate_controller = MeldGateController()
                 self._owns_meld_gate_controller = True
                 self._set_meld_gate_controller_for_lineage(self._meld_gate_controller)
 
-                # Step 6: Reconfigure the spellbook
+                # Step 4: Reconfigure the spellbook
                 self._spellbook.create_new_preset_spellbook()
 
-                # Step 6.5: Seed resolution state from the former root conduit.
+                # Step 4.5: Seed resolution state from the former root conduit.
                 if (
                         spell_system_states is not None
                         and source_resolution_state is not None
@@ -1218,12 +1206,12 @@ class Conduit(Cleanable, IConduit):
                             exc_info=True,
                         )
 
-                # Step 7: Register as a full Conduit in Aether and Conduit Cloud
+                # Step 5: Register as a full Conduit in Aether and Conduit Cloud
                 Conduit._add_conduit_to_aether(self)
                 if self.__dynamic_environment__ and self._name is not None:
                     Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
 
-                # Step 8: If the caller supplied per-conduit hooks, register them now.
+                # Step 6: If the caller supplied per-conduit hooks, register them now.
                 if hooks:
                     self._register_conduit_hooks_on_upgrade(hooks)
 
@@ -1324,10 +1312,8 @@ class Conduit(Cleanable, IConduit):
             if root_conduit._conduit_state != ConduitState.normal:
                 raise RuntimeError("Root conduit must be a normal conduit.")
             root_creations = root_conduit._creations
-            if isinstance(root_creations, Creations):
-                new_conduit._parent_creations = root_creations
-                if isinstance(new_conduit._creations, LesserCreations):
-                    new_conduit._creations._parent_creations = root_creations
+            if not isinstance(root_creations, Creations):
+                raise RuntimeError("Root conduit creations manager is invalid.")
             if new_conduit._conduit_ward is not None:
                 new_conduit._conduit_ward._root_conduit = root_conduit
 

@@ -1539,7 +1539,6 @@ class Meld(Cleanable, IMeld):
             self,
             *,
             spell_id: str,
-            existence: Existence,
             creations: Any,
     ) -> Optional[Any]:
         """
@@ -1773,7 +1772,6 @@ class Meld(Cleanable, IMeld):
         if not overrides and existence != Existence.many:
             cached = self._get_cached_non_spellspace_singleton(
                 spell_id=spell_id,
-                existence=existence,
                 creations=creations,
             )
             if cached is not None:

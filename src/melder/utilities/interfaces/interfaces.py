@@ -3488,7 +3488,7 @@ class IConduit(ICleanable, Protocol):
     _logger: 'ISafeLogger'
 
     _conduit_state: 'ConduitState'
-    _creations: 'Creations | LesserCreations'
+    _creations: 'Creations'
     _spellbook: 'ISpellbook'
     _meld: 'Meld'
     _meld_gate: 'MeldGate'
@@ -3681,7 +3681,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def _creations_configuration(self, configuration: 'IConfiguration') -> 'Creations | LesserCreations':
+    def _creations_configuration(self, configuration: 'IConfiguration') -> 'Creations':
         """
         Internal
 
@@ -3691,7 +3691,7 @@ class IConduit(ICleanable, Protocol):
             configuration (IConfiguration): The locked system configuration.
 
         Returns:
-            Creations | LesserCreations: The appropriate creation manager based on conduit state.
+            Creations: The creation manager for this conduit.
 
         Raises:
             RuntimeError: If the Conduit state is unknown.
