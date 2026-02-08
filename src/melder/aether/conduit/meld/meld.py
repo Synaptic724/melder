@@ -120,6 +120,7 @@ class Meld(Cleanable, IMeld):
 
         # Front-door resolution caches and pooled runtime contexts.
         self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], ISpell] = {}
+        self._spell_id_resolution_cache: Dict[str, ISpell] = {}
         self._context_pool: deque[MeldContext] = deque()
         self._max_resolution_cache_size: int = 2048
         self._max_context_pool_size: int = 64
@@ -187,6 +188,7 @@ class Meld(Cleanable, IMeld):
             self._runtime = None
             self._meld_hooks = None
             self._input_resolution_cache = None
+            self._spell_id_resolution_cache = None
             self._context_pool = None
             self._max_resolution_cache_size = None
             self._max_context_pool_size = None
@@ -296,25 +298,44 @@ class Meld(Cleanable, IMeld):
         override_map = self._normalize_spell_override(spell_override)
 
         # 2) Resolve the spell object from the Spellbook / SpellIndex.
-        input_resolution_cache = self._input_resolution_cache
-        cache_key = (spell_name, spell, spellframe, binding_name)
-        try:
-            target_spell = input_resolution_cache.get(cache_key)
-        except TypeError:
-            # Unhashable inputs (custom objects) fall back to identity-keying.
-            cache_key = (spell_name, id(spell), id(spellframe), binding_name)
-            target_spell = input_resolution_cache.get(cache_key)
-
-        if target_spell is None:
-            target_spell = self._resolve_spell(
-                spell=spell,
+        target_spell: Optional[ISpell] = None
+        if isinstance(spell, str):
+            self._validate_meld_inputs(
                 spell_name=spell_name,
+                spell=spell,
                 spellframe=spellframe,
                 binding_name=binding_name,
             )
-            if len(input_resolution_cache) >= self._max_resolution_cache_size:
-                input_resolution_cache.pop(next(iter(input_resolution_cache)), None)
-            input_resolution_cache[cache_key] = target_spell
+            spell_id_resolution_cache = self._spell_id_resolution_cache
+            target_spell = spell_id_resolution_cache.get(spell)
+            if target_spell is None:
+                target_spell = self._resolve_spell_by_id(spell)
+                self._bounded_cache_insert(
+                    cache=spell_id_resolution_cache,
+                    key=spell,
+                    value=target_spell,
+                )
+        else:
+            input_resolution_cache = self._input_resolution_cache
+            cache_key = self._build_input_resolution_cache_key(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+            )
+            target_spell = input_resolution_cache.get(cache_key)
+            if target_spell is None:
+                target_spell = self._resolve_spell(
+                    spell=spell,
+                    spell_name=spell_name,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                )
+                self._bounded_cache_insert(
+                    cache=input_resolution_cache,
+                    key=cache_key,
+                    value=target_spell,
+                )
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         if self._spellbook._spellbook_validation_required:
@@ -330,6 +351,46 @@ class Meld(Cleanable, IMeld):
                 target_spell=target_spell,
                 override_map=override_map,
             )
+
+    @staticmethod
+    def _build_input_resolution_cache_key(
+            *,
+            spell_name: Optional[str],
+            spell: Optional[Any],
+            spellframe: Optional[Any],
+            binding_name: Optional[str],
+    ) -> tuple[Any, Any, Any, Any]:
+        """
+        Build a stable front-door resolution cache key for meld input tuples.
+
+        Contract:
+            - Uses direct object keys for hashable inputs.
+            - Falls back to object identity for unhashable spell/spellframe values.
+        """
+        cache_key = (spell_name, spell, spellframe, binding_name)
+        try:
+            hash(cache_key)
+        except TypeError:
+            return spell_name, id(spell), id(spellframe), binding_name
+        return cache_key
+
+    def _bounded_cache_insert(
+            self,
+            *,
+            cache: Dict[Any, ISpell],
+            key: Any,
+            value: ISpell,
+    ) -> None:
+        """
+        Insert one spell-resolution cache entry with deterministic oldest eviction.
+
+        Contract:
+            - Enforces `_max_resolution_cache_size` as a hard upper bound.
+            - Evicts one oldest key when the bound is reached.
+        """
+        if len(cache) >= self._max_resolution_cache_size:
+            cache.pop(next(iter(cache)), None)
+        cache[key] = value
 
     def _meld_without_hooks(
             self,

@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 import time
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -69,6 +69,50 @@ class BenchmarkRoot:
         self.right = right
 
 
+class BenchmarkOverrideRoot:
+    """
+    Purpose:
+        Provide a many-scoped root used for override specialization benchmarks.
+
+    Contract:
+        - Depends on `BenchmarkLeafA` so targeted override payloads exercise
+          SocketRef mapping and substitution.
+        - Used with `Existence.many` to avoid shared-instance override rejects.
+    """
+
+    def __init__(self, left: BenchmarkLeafA) -> None:
+        """
+        Initialize override benchmark root with one dependency.
+
+        Args:
+            left:
+                Resolved `BenchmarkLeafA` instance or override substitution value.
+        """
+        self.left = left
+
+
+class BenchmarkOverrideArgsRoot:
+    """
+    Purpose:
+        Provide a many-scoped root used for root-args override benchmarks.
+
+    Contract:
+        - Uses a plain positional constructor argument to benchmark
+          `__args__` override specialization.
+        - Used with `Existence.many` to avoid shared-instance override rejects.
+    """
+
+    def __init__(self, value: int) -> None:
+        """
+        Initialize override-args benchmark root.
+
+        Args:
+            value:
+                Positional value routed through `__args__` overrides.
+        """
+        self.value = value
+
+
 class BenchmarkSpellspaceLeaf:
     """
     Purpose:
@@ -110,11 +154,11 @@ class BenchmarkSpellspaceRoot:
 class CodegenBenchmarkSession:
     """
     Purpose:
-        Own one benchmark Spellbook/Conduit pair and expose warm/mixed callables.
+        Own one benchmark Spellbook/Conduit pair and expose route callables.
 
     Contract:
         - Manages setup and cleanup of runtime objects deterministically.
-        - Provides repeatable warm and mixed execute operations.
+        - Provides repeatable warm, spellspace, mixed, and override execute operations.
         - `cleanup` is idempotent.
     """
 
@@ -147,6 +191,16 @@ class CodegenBenchmarkSession:
         self._spellbook.bind(
             spell=BenchmarkLeafB,
             existence=Existence.unique,
+            permissions="create",
+        )
+        self._override_root_id = self._spellbook.bind(
+            spell=BenchmarkOverrideRoot,
+            existence=Existence.many,
+            permissions="create",
+        )
+        self._override_args_root_id = self._spellbook.bind(
+            spell=BenchmarkOverrideArgsRoot,
+            existence=Existence.many,
             permissions="create",
         )
         self._spellspace_root_id = self._spellbook.bind(
@@ -190,13 +244,53 @@ class CodegenBenchmarkSession:
         if (self._mixed_index % 2) == 0:
             self.resolve_root_once()
         else:
-            with self._conduit.enter_spellspace() as spellspace:
-                scoped = spellspace.meld(spell=self._spellspace_root_id)
-                if not isinstance(scoped, BenchmarkSpellspaceRoot):
-                    raise AssertionError(
-                        "Expected BenchmarkSpellspaceRoot from spellspace meld."
-                    )
+            self.resolve_spellspace_once()
         self._mixed_index += 1
+
+    def resolve_spellspace_once(self) -> None:
+        """
+        Resolve one spellspace-scoped root instance.
+
+        Contract:
+            - Enters an active spellspace scope for the call.
+            - Raises AssertionError if the returned type is unexpected.
+        """
+        with self._conduit.enter_spellspace() as spellspace:
+            scoped = spellspace.meld(spell=self._spellspace_root_id)
+            if not isinstance(scoped, BenchmarkSpellspaceRoot):
+                raise AssertionError(
+                    "Expected BenchmarkSpellspaceRoot from spellspace meld."
+                )
+
+    def resolve_override_root_args_once(self) -> None:
+        """
+        Resolve one override call using root positional payload only.
+
+        Contract:
+            - Routes through override specialization without Phase10 patch-map apply.
+            - Uses many-scoped root so repeated override calls remain valid.
+        """
+        overridden = self._conduit.meld(
+            spell=self._override_args_root_id,
+            spell_override=[7],
+        )
+        if not isinstance(overridden, BenchmarkOverrideArgsRoot):
+            raise AssertionError("Expected BenchmarkOverrideArgsRoot from __args__ override meld.")
+
+    def resolve_override_targeted_once(self) -> None:
+        """
+        Resolve one override call using targeted socket override payload.
+
+        Contract:
+            - Routes through TargetSpec -> SocketRef patch-map normalization.
+            - Uses many-scoped root so repeated override calls remain valid.
+        """
+        overridden = self._conduit.meld(
+            spell=self._override_root_id,
+            spell_override={"left": BenchmarkLeafA()},
+        )
+        if not isinstance(overridden, BenchmarkOverrideRoot):
+            raise AssertionError("Expected BenchmarkOverrideRoot from targeted override meld.")
 
     def cleanup(self) -> None:
         """
@@ -247,10 +341,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--warmup-count", type=int, default=1)
     parser.add_argument("--warm-to-cold-max-ratio", type=float, default=0.35)
     parser.add_argument("--mixed-to-cold-max-ratio", type=float, default=0.60)
+    parser.add_argument("--route-to-cold-max-ratio", type=float, default=0.80)
     parser.add_argument("--baseline-path", type=str, default="")
     parser.add_argument("--cold-max-regression-ratio", type=float, default=1.20)
     parser.add_argument("--warm-max-regression-ratio", type=float, default=1.20)
     parser.add_argument("--mixed-max-regression-ratio", type=float, default=1.20)
+    parser.add_argument("--route-max-regression-ratio", type=float, default=1.20)
     parser.add_argument(
         "--output-path",
         type=str,
@@ -340,6 +436,224 @@ def _extract_gate_report(payload: Dict[str, Any]) -> Dict[str, Any]:
     raise ValueError("Unable to extract gate report payload.")
 
 
+def _extract_route_matrix_report(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Extract optional route-matrix report section from a benchmark payload.
+
+    Contract:
+        - Returns route-matrix mapping when present and dict-shaped.
+        - Returns None when no route-matrix report is available.
+    """
+    nested = payload.get("route_matrix_report")
+    if isinstance(nested, dict):
+        return nested
+    return None
+
+
+def _sample_callable_ns(
+        *,
+        fn: Callable[[], Any],
+        sample_count: int,
+        warmup_count: int,
+) -> Tuple[int, ...]:
+    """
+    Collect nanosecond timing samples for one callable.
+
+    Contract:
+        - Executes warmup calls before timed samples.
+        - Uses `time.perf_counter_ns`.
+        - Returns immutable sample tuple.
+    """
+    if fn is None:
+        raise ValueError("fn must not be None.")
+    if sample_count < 1:
+        raise ValueError("sample_count must be >= 1.")
+    if warmup_count < 0:
+        raise ValueError("warmup_count must be >= 0.")
+
+    for _ in range(warmup_count):
+        fn()
+
+    samples = []
+    for _ in range(sample_count):
+        start_ns = time.perf_counter_ns()
+        fn()
+        end_ns = time.perf_counter_ns()
+        samples.append(end_ns - start_ns)
+    return tuple(samples)
+
+
+def _collect_route_matrix_samples(
+        *,
+        session: CodegenBenchmarkSession,
+        sample_count: int,
+        warmup_count: int,
+) -> Dict[str, Tuple[int, ...]]:
+    """
+    Collect per-route warm-path sample sets for optimization matrix reporting.
+
+    Contract:
+        - Includes root, spellspace, mixed, and two override routes.
+        - Uses identical sample/warmup counts per route.
+    """
+    return {
+        "warm_root_ns": _sample_callable_ns(
+            fn=session.resolve_root_once,
+            sample_count=sample_count,
+            warmup_count=warmup_count,
+        ),
+        "warm_spellspace_ns": _sample_callable_ns(
+            fn=session.resolve_spellspace_once,
+            sample_count=sample_count,
+            warmup_count=warmup_count,
+        ),
+        "warm_override_root_args_ns": _sample_callable_ns(
+            fn=session.resolve_override_root_args_once,
+            sample_count=sample_count,
+            warmup_count=warmup_count,
+        ),
+        "warm_override_targeted_ns": _sample_callable_ns(
+            fn=session.resolve_override_targeted_once,
+            sample_count=sample_count,
+            warmup_count=warmup_count,
+        ),
+        "warm_mixed_ns": _sample_callable_ns(
+            fn=session.resolve_mixed_once,
+            sample_count=sample_count,
+            warmup_count=warmup_count,
+        ),
+    }
+
+
+def _evaluate_route_matrix_report(
+        *,
+        route_samples_ns: Dict[str, Sequence[int]],
+        cold_compile_median_ns: int,
+        route_to_cold_max_ratio: float,
+) -> Dict[str, Any]:
+    """
+    Evaluate per-route medians against a shared cold-relative threshold.
+
+    Contract:
+        - Uses median sample values per route.
+        - Fails routes whose median/cold ratio exceeds configured threshold.
+    """
+    if cold_compile_median_ns < 1:
+        raise ValueError("cold_compile_median_ns must be >= 1.")
+    if route_to_cold_max_ratio <= 0:
+        raise ValueError("route_to_cold_max_ratio must be > 0.")
+
+    route_medians_ns: Dict[str, int] = {}
+    route_to_cold_ratios: Dict[str, float] = {}
+    failures = []
+    for route_name, samples in route_samples_ns.items():
+        normalized_samples = MeldRuntime._normalize_benchmark_samples(
+            name=route_name,
+            samples=samples,
+        )
+        median_ns = MeldRuntime._median_ns(normalized_samples)
+        ratio = median_ns / cold_compile_median_ns
+        route_medians_ns[route_name] = median_ns
+        route_to_cold_ratios[route_name] = ratio
+        if ratio > route_to_cold_max_ratio:
+            failures.append(
+                "{0} ratio {1:.4f} exceeded {2:.4f}".format(
+                    route_name,
+                    ratio,
+                    route_to_cold_max_ratio,
+                )
+            )
+
+    return {
+        "route_medians_ns": route_medians_ns,
+        "route_to_cold_ratios": route_to_cold_ratios,
+        "thresholds": {
+            "route_to_cold_max_ratio": route_to_cold_max_ratio,
+        },
+        "failures": tuple(failures),
+        "passed": len(failures) == 0,
+    }
+
+
+def _evaluate_route_matrix_baseline_deltas(
+        *,
+        current_route_report: Dict[str, Any],
+        baseline_route_report: Dict[str, Any],
+        route_max_regression_ratio: float,
+) -> Dict[str, Any]:
+    """
+    Compare per-route warm medians against baseline medians.
+
+    Contract:
+        - Requires identical route keys between current and baseline reports.
+        - Fails each route whose current/baseline ratio exceeds threshold.
+    """
+    if route_max_regression_ratio <= 0:
+        raise ValueError("route_max_regression_ratio must be > 0.")
+
+    current_medians = current_route_report.get("route_medians_ns")
+    baseline_medians = baseline_route_report.get("route_medians_ns")
+    if not isinstance(current_medians, dict):
+        raise ValueError("current_route_report.route_medians_ns must be a dict.")
+    if not isinstance(baseline_medians, dict):
+        raise ValueError("baseline_route_report.route_medians_ns must be a dict.")
+
+    current_route_names = tuple(sorted(current_medians.keys()))
+    baseline_route_names = tuple(sorted(baseline_medians.keys()))
+    if current_route_names != baseline_route_names:
+        raise ValueError("route matrix keys differ between current and baseline reports.")
+
+    ratios: Dict[str, float] = {}
+    deltas_ns: Dict[str, int] = {}
+    failures = []
+    for route_name in current_route_names:
+        current_value = current_medians[route_name]
+        baseline_value = baseline_medians[route_name]
+        if not isinstance(current_value, int):
+            raise ValueError(
+                "current_route_report.route_medians_ns[{0}] must be an int.".format(
+                    route_name
+                )
+            )
+        if not isinstance(baseline_value, int):
+            raise ValueError(
+                "baseline_route_report.route_medians_ns[{0}] must be an int.".format(
+                    route_name
+                )
+            )
+        if baseline_value < 1:
+            raise ValueError(
+                "baseline_route_report.route_medians_ns[{0}] must be >= 1.".format(
+                    route_name
+                )
+            )
+
+        ratio = current_value / baseline_value
+        delta = current_value - baseline_value
+        ratios[route_name] = ratio
+        deltas_ns["{0}_delta_ns".format(route_name)] = delta
+        if ratio > route_max_regression_ratio:
+            failures.append(
+                "{0} ratio {1:.4f} exceeded {2:.4f}".format(
+                    route_name,
+                    ratio,
+                    route_max_regression_ratio,
+                )
+            )
+
+    return {
+        "current_route_medians_ns": dict(current_medians),
+        "baseline_route_medians_ns": dict(baseline_medians),
+        "route_ratios": ratios,
+        "route_deltas_ns": deltas_ns,
+        "thresholds": {
+            "route_max_regression_ratio": route_max_regression_ratio,
+        },
+        "failures": tuple(failures),
+        "passed": len(failures) == 0,
+    }
+
+
 def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any]:
     """
     Execute benchmark sampling and optional baseline delta evaluation.
@@ -373,6 +687,16 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
             warm_to_cold_max_ratio=arguments.warm_to_cold_max_ratio,
             mixed_to_cold_max_ratio=arguments.mixed_to_cold_max_ratio,
         )
+        route_samples_ns = _collect_route_matrix_samples(
+            session=warm_session,
+            sample_count=arguments.sample_count,
+            warmup_count=arguments.warmup_count,
+        )
+        route_matrix_report = _evaluate_route_matrix_report(
+            route_samples_ns=route_samples_ns,
+            cold_compile_median_ns=gate_report["cold_compile_median_ns"],
+            route_to_cold_max_ratio=arguments.route_to_cold_max_ratio,
+        )
     finally:
         try:
             warm_session.cleanup()
@@ -380,12 +704,14 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
             _reset_aether_singleton_for_benchmark()
 
     report: Dict[str, Any] = {
-        "schema_version": "codegen_benchmark_report_v1",
+        "schema_version": "codegen_benchmark_report_v2",
         "generated_at_unix": time.time(),
         "sample_count": arguments.sample_count,
         "warmup_count": arguments.warmup_count,
         "samples_ns": samples,
         "gate_report": gate_report,
+        "route_samples_ns": route_samples_ns,
+        "route_matrix_report": route_matrix_report,
     }
 
     baseline_path = arguments.baseline_path.strip()
@@ -401,6 +727,15 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
         )
         report["baseline_path"] = baseline_path
         report["baseline_delta_report"] = baseline_delta_report
+        baseline_route_matrix_report = _extract_route_matrix_report(baseline_payload)
+        if baseline_route_matrix_report is not None:
+            report["route_matrix_baseline_delta_report"] = (
+                _evaluate_route_matrix_baseline_deltas(
+                    current_route_report=route_matrix_report,
+                    baseline_route_report=baseline_route_matrix_report,
+                    route_max_regression_ratio=arguments.route_max_regression_ratio,
+                )
+            )
 
     return report
 
@@ -440,11 +775,27 @@ def _compute_exit_code(
     if (not allow_gate_failure) and (not gate_report["passed"]):
         exit_code = 1
 
+    route_matrix_report = report.get("route_matrix_report")
+    if (
+            route_matrix_report is not None
+            and (not allow_gate_failure)
+            and (not route_matrix_report["passed"])
+    ):
+        exit_code = 1
+
     baseline_delta_report = report.get("baseline_delta_report")
     if (
             baseline_delta_report is not None
             and (not allow_baseline_regression)
             and (not baseline_delta_report["passed"])
+    ):
+        exit_code = 1
+
+    route_matrix_baseline_delta_report = report.get("route_matrix_baseline_delta_report")
+    if (
+            route_matrix_baseline_delta_report is not None
+            and (not allow_baseline_regression)
+            and (not route_matrix_baseline_delta_report["passed"])
     ):
         exit_code = 1
     return exit_code
@@ -482,6 +833,36 @@ def _print_summary(report: Dict[str, Any]) -> None:
                 ratios["warm_execute_ratio"],
                 ratios["mixed_execute_ratio"],
                 baseline_delta_report["passed"],
+            )
+        )
+    route_matrix_report = report.get("route_matrix_report")
+    if route_matrix_report is not None:
+        route_ratios = route_matrix_report["route_to_cold_ratios"]
+        print(
+            "[codegen-benchmark] route ratios: "
+            "warm_root={0:.4f}, spellspace={1:.4f}, "
+            "override_args={2:.4f}, override_targeted={3:.4f}, mixed={4:.4f}, passed={5}".format(
+                route_ratios["warm_root_ns"],
+                route_ratios["warm_spellspace_ns"],
+                route_ratios["warm_override_root_args_ns"],
+                route_ratios["warm_override_targeted_ns"],
+                route_ratios["warm_mixed_ns"],
+                route_matrix_report["passed"],
+            )
+        )
+    route_matrix_baseline_delta_report = report.get("route_matrix_baseline_delta_report")
+    if route_matrix_baseline_delta_report is not None:
+        route_delta_ratios = route_matrix_baseline_delta_report["route_ratios"]
+        print(
+            "[codegen-benchmark] route baseline ratios: "
+            "warm_root={0:.4f}, spellspace={1:.4f}, "
+            "override_args={2:.4f}, override_targeted={3:.4f}, mixed={4:.4f}, passed={5}".format(
+                route_delta_ratios["warm_root_ns"],
+                route_delta_ratios["warm_spellspace_ns"],
+                route_delta_ratios["warm_override_root_args_ns"],
+                route_delta_ratios["warm_override_targeted_ns"],
+                route_delta_ratios["warm_mixed_ns"],
+                route_matrix_baseline_delta_report["passed"],
             )
         )
 

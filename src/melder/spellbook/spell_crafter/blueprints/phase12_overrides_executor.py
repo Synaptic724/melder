@@ -2,10 +2,12 @@ from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spell_crafter.blueprints.execution_plan import (
+    ExecutionPlanTargetKind,
+)
 from melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor import (
     _get_existing_creation,
     _register_spell_instance,
-    _select_creations_for_target_kind,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
@@ -228,11 +230,19 @@ def _build_phase12_overrides_executor_namespace(
     return {
         "MeldExecutionError": MeldExecutionError,
         "Existence": Existence,
-        "_select_creations_for_target_kind": _select_creations_for_target_kind,
+        "ExecutionPlanTargetKind": ExecutionPlanTargetKind,
         "_construct_spell_instance_with_overrides": _construct_spell_instance_with_overrides,
         "_get_existing_creation": _get_existing_creation,
         "_register_spell_instance": _register_spell_instance,
         "_raise_override_on_existing_instance": _raise_override_on_existing_instance,
+        "step_creations_target_kinds": tuple(
+            plan_step.creations_target_kind
+            for plan_step in steps
+        ),
+        "step_is_root": tuple(
+            plan_step.spell.spell_index.current == root_spell_id
+            for plan_step in steps
+        ),
         "steps": steps,
         "step_override_targets": step_override_targets,
         "root_instance_key": root_instance_key,
@@ -266,12 +276,14 @@ def _build_phase12_overrides_executor_source(
         "        *,",
         "        steps=steps,",
         "        step_override_targets=step_override_targets,",
+        "        step_creations_target_kinds=step_creations_target_kinds,",
+        "        step_is_root=step_is_root,",
         "        root_instance_key=root_instance_key,",
         "        root_spell_id=root_spell_id,",
         "        path_registry=path_registry,",
         "        any_overrides_present=any_overrides_present,",
         "        Existence=Existence,",
-        "        _select_creations_for_target_kind=_select_creations_for_target_kind,",
+        "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
         "        _construct_spell_instance_with_overrides=_construct_spell_instance_with_overrides,",
         "        _get_existing_creation=_get_existing_creation,",
         "        _register_spell_instance=_register_spell_instance,",
@@ -318,15 +330,35 @@ def _append_overrides_step_source(
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = plan_step_{step_index}.spell",
         f"    existence_{step_index} = plan_step_{step_index}.existence",
+        f"    target_kind_{step_index} = step_creations_target_kinds[{step_index}]",
         (
-            f"    creations_{step_index} = _select_creations_for_target_kind("
-            f"context=context, "
-            f"plan_step=plan_step_{step_index}, "
-            f"spell=spell_{step_index})"
+            f"    if target_kind_{step_index} in ("
+            f"ExecutionPlanTargetKind.CALLER, ExecutionPlanTargetKind.SPELLSPACE):"
+        ),
+        "        if context is None:",
+        "            raise RuntimeError(",
+        "                \"Phase 12 CALLER/SPELLSPACE execution requires a MeldContext.\"",
+        "            )",
+        f"        creations_{step_index} = context.caller_creations",
+        f"    elif target_kind_{step_index} == ExecutionPlanTargetKind.OWNER:",
+        f"        owner_creations_{step_index} = spell_{step_index}._owner_creations",
+        f"        if owner_creations_{step_index} is not None:",
+        f"            creations_{step_index} = owner_creations_{step_index}",
+        "        elif context is None:",
+        "            raise RuntimeError(",
+        "                \"Phase 12 OWNER execution requires owner creations context.\"",
+        "            )",
+        "        else:",
+        f"            creations_{step_index} = context.owner_creations",
+        "    else:",
+        (
+            f"        raise RuntimeError("
+            f"f\"Unsupported creations target kind '{{target_kind_{step_index}}}' "
+            f"for spell '{{spell_{step_index}.spell_id}}'.\")"
         ),
         f"    override_targets_{step_index} = step_override_targets[{step_index}]",
         f"    has_targeted_overrides_{step_index} = bool(override_targets_{step_index})",
-        f"    is_root_step_{step_index} = spell_{step_index}.spell_index.current == root_spell_id",
+        f"    is_root_step_{step_index} = step_is_root[{step_index}]",
         f"    if existence_{step_index} is Existence.many:",
         (
             f"        instance_{step_index} = _construct_spell_instance_with_overrides("
@@ -352,24 +384,39 @@ def _append_overrides_step_source(
             f"    elif existence_{step_index} in ("
             f"Existence.unique_per_conduit, Existence.unique_per_spell_space):"
         ),
-        f"        with creations_{step_index}._lock:",
         (
-            f"            instance_{step_index} = _get_existing_creation("
+            f"        instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "
             f"creations=creations_{step_index}, "
             f"existence=existence_{step_index})"
         ),
-        f"            if instance_{step_index} is not None:",
+        f"        if instance_{step_index} is not None:",
         (
-            f"                _raise_override_on_existing_instance("
+            f"            _raise_override_on_existing_instance("
             f"spell=spell_{step_index}, "
             f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
             f"any_overrides_present=any_overrides_present, "
             f"root_spell_id=root_spell_id)"
         ),
-        "            else:",
+        "        else:",
+        f"            with creations_{step_index}._lock:",
         (
-            f"                instance_{step_index} = _construct_spell_instance_with_overrides("
+            f"                instance_{step_index} = _get_existing_creation("
+            f"spell=spell_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=existence_{step_index})"
+        ),
+        f"                if instance_{step_index} is not None:",
+        (
+            f"                    _raise_override_on_existing_instance("
+            f"spell=spell_{step_index}, "
+            f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
+            f"any_overrides_present=any_overrides_present, "
+            f"root_spell_id=root_spell_id)"
+        ),
+        "                else:",
+        (
+            f"                    instance_{step_index} = _construct_spell_instance_with_overrides("
             f"plan_step=plan_step_{step_index}, "
             f"instance_results=instance_results, "
             f"override_targets=override_targets_{step_index}, "
@@ -380,7 +427,7 @@ def _append_overrides_step_source(
             f"))"
         ),
         (
-            f"                _register_spell_instance("
+            f"                    _register_spell_instance("
             f"spell=spell_{step_index}, "
             f"instance=instance_{step_index}, "
             f"creations=creations_{step_index}, "

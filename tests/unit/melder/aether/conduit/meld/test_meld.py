@@ -635,7 +635,7 @@ def test_meld_uses_comprehensive_path_when_spell_hooks_enabled() -> None:
     spell = _SpellStub(spell_id="spell-1")
     spell._hooks_enabled = True
 
-    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
     meld._comprehensive_meld_with_hooks = MagicMock(return_value="result")
     meld._meld_without_hooks = MagicMock(return_value="without")
 
@@ -660,7 +660,7 @@ def test_meld_uses_comprehensive_path_when_meld_hooks_present() -> None:
     spell = _SpellStub(spell_id="spell-1")
     spell._hooks_enabled = False
 
-    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
     meld._comprehensive_meld_with_hooks = MagicMock(return_value="result")
     meld._meld_without_hooks = MagicMock(return_value="without")
 
@@ -685,7 +685,7 @@ def test_meld_uses_without_hooks_path_when_no_hooks() -> None:
     spell = _SpellStub(spell_id="spell-1")
     spell._hooks_enabled = False
 
-    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
     meld._comprehensive_meld_with_hooks = MagicMock(return_value="with")
     meld._meld_without_hooks = MagicMock(return_value="result")
 
@@ -1339,7 +1339,7 @@ def test_meld_reuses_existing_instance_without_activation_hooks() -> None:
     spell._activation_hooks = [activation_hook]
     spell._hooks_enabled = True
 
-    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
     creations.add_creation(spell.spell_id, "reuse")
     meld._meld_by_spell_type = MagicMock()
     meld._register_spell = MagicMock()
@@ -1387,7 +1387,7 @@ def test_meld_creates_instance_and_runs_activation_hooks() -> None:
     spell._activation_hooks = [activation_hook]
     spell._hooks_enabled = True
 
-    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
     meld._meld_by_spell_type = MagicMock(return_value="created")
     meld._register_spell = MagicMock()
 
@@ -1415,7 +1415,7 @@ def test_meld_unique_per_conduit_holds_creations_lock_during_construct() -> None
     spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_conduit)
     spell._lock = _TrackingLock()
     meld = _make_meld(creations=creations)
-    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
 
     def _construct(
         _spell: _SpellStub,
@@ -1452,7 +1452,7 @@ def test_meld_shared_unique_holds_spell_lock_during_construct() -> None:
     )
     spell._lock = spell_lock
     meld = _make_meld(creations=creations)
-    meld._resolve_spell = MagicMock(return_value=spell)
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
 
     def _construct(
         _spell: _SpellStub,

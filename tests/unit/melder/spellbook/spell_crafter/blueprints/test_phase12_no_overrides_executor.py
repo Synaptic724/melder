@@ -289,6 +289,27 @@ def test_compile_phase12_no_overrides_executor_supports_steps_rows_schema() -> N
     assert executor.__code__.co_filename == "<melder_phase12_no_overrides_step_executor>"
 
 
+def test_compile_phase12_no_overrides_executor_inlines_creations_target_routing() -> None:
+    """
+    Ensure emitted step executors route creations targets without helper dispatch.
+
+    Contract:
+        - Generated code does not reference `_select_creations_for_target_kind`.
+    """
+    codegen_ir = {
+        "steps_rows": (_make_step_row("root"),),
+        "root_spell_id": "root",
+        "transient_schema": None,
+    }
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir=codegen_ir,
+        spell_lookup={"root": _make_spell("root")},
+    )
+
+    assert "_select_creations_for_target_kind" not in executor.__code__.co_names
+
+
 def test_compile_phase12_no_overrides_executor_requires_spell_lookup_for_steps_rows() -> None:
     """
     Ensure schema-only step rows fail fast when spell lookup is missing.

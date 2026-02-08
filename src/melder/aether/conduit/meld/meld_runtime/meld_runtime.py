@@ -142,7 +142,9 @@ class MeldRuntime(Cleanable):
 
         self._enforce_spell_invariants(spell, context.conduit_id)
 
-        if context.overrides or spell.has_mutation_override:
+        overrides = context.overrides
+        has_mutation_override = spell.has_mutation_override
+        if overrides or has_mutation_override:
             return self._execute_with_overrides(
                 context=context,
                 spell=spell,
@@ -845,7 +847,16 @@ class MeldRuntime(Cleanable):
             - Socket refs are grouped by `socket_ref.node_id`.
         """
         by_spell_id: Dict[str, list[Any]] = {}
-        for socket_ref in override_map.keys():
+        ordered_refs = sorted(
+            override_map.keys(),
+            key=lambda ref: (
+                ref.node_id,
+                ref.param_path_id,
+                ref.param_name,
+                ref.socket_kind.value,
+            ),
+        )
+        for socket_ref in ordered_refs:
             spell_id = socket_ref.node_id
             bucket = by_spell_id.get(spell_id)
             if bucket is None:
@@ -853,19 +864,10 @@ class MeldRuntime(Cleanable):
             else:
                 bucket.append(socket_ref)
 
-        ordered: Dict[str, Tuple[Any, ...]] = {}
-        for spell_id in sorted(by_spell_id.keys()):
-            refs = by_spell_id[spell_id]
-            refs.sort(
-                key=lambda ref: (
-                    ref.node_id,
-                    ref.param_path_id,
-                    ref.param_name,
-                    ref.socket_kind.value,
-                ),
-            )
-            ordered[spell_id] = tuple(refs)
-        return ordered
+        return {
+            spell_id: tuple(refs)
+            for spell_id, refs in by_spell_id.items()
+        }
 
     @staticmethod
     def _build_override_shape_key(
@@ -1112,22 +1114,27 @@ class MeldRuntime(Cleanable):
         if cached is not None:
             return cached
 
-        l2_key, shape_signature = self._build_override_l2_key(
-            spell_id=spell_id,
-            shape_key=shape_key,
-        )
-        restored = self._load_override_executor_from_l2(
-            spell=spell,
-            l2_key=l2_key,
-            shape_signature=shape_signature,
-            execution_plan=execution_plan,
-            override_targets_by_spell_id=override_targets_by_spell_id,
-            any_overrides_present=any_overrides_present,
-            path_registry=path_registry,
-            plan_rows=plan_rows,
-            root_spell_id=root_spell_id,
-            spell_lookup=spell_lookup,
-        )
+        l2_enabled = self._override_specialization_l2_cache_dir is not None
+        l2_key: Optional[str] = None
+        shape_signature: Optional[str] = None
+        restored = None
+        if l2_enabled:
+            l2_key, shape_signature = self._build_override_l2_key(
+                spell_id=spell_id,
+                shape_key=shape_key,
+            )
+            restored = self._load_override_executor_from_l2(
+                spell=spell,
+                l2_key=l2_key,
+                shape_signature=shape_signature,
+                execution_plan=execution_plan,
+                override_targets_by_spell_id=override_targets_by_spell_id,
+                any_overrides_present=any_overrides_present,
+                path_registry=path_registry,
+                plan_rows=plan_rows,
+                root_spell_id=root_spell_id,
+                spell_lookup=spell_lookup,
+            )
         if restored is not None:
             compiled = restored
         else:
@@ -1154,7 +1161,7 @@ class MeldRuntime(Cleanable):
                 execution_plan=execution_plan,
                 plan_rows=plan_rows,
             )
-            if source is not None:
+            if source is not None and l2_enabled:
                 self._persist_override_executor_source_to_l2(
                     spell_id=spell_id,
                     l2_key=l2_key,

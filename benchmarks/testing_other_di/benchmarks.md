@@ -113,3 +113,26 @@
 | injector            |          0.321 |
 | dishka              |          0.018 |
 | **melder**          |      **8.014** |
+
+---
+
+## Codegen Delta Runner Matrix (2026-02-08)
+
+Use the repeatable runner to capture cold/warm gates plus route matrix samples:
+
+```bash
+python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --sample-count 9 --warmup-count 1
+```
+
+The report now includes:
+- `gate_report`:
+  cold compile vs warm/mixed ratios.
+- `route_matrix_report`:
+  per-route warm ratios vs cold for:
+  - `warm_root_ns`
+  - `warm_spellspace_ns`
+  - `warm_override_root_args_ns`
+  - `warm_override_targeted_ns`
+  - `warm_mixed_ns`
+- `route_matrix_baseline_delta_report` (when `--baseline-path` is provided):
+  per-route regression ratios against a baseline report.

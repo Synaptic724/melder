@@ -121,7 +121,7 @@ class MeldContext(Cleanable):
         self._caller_creations_lock_held: bool = bool(caller_creations_lock_held)
         # Normalized, per-call override map (None when no overrides are supplied).
         self._overrides: Optional[MutableMapping[str, Any]] = (
-            dict(overrides) if overrides is not None else None
+            self._normalize_overrides_mapping(overrides)
         )
         self._conduit_id: Optional[str] = self._root_spell._owner_conduit_id
         self._conduit_name: Optional[str] = self._root_spell._owner_conduit_name
@@ -130,6 +130,24 @@ class MeldContext(Cleanable):
     # ------------------------------------------------------------------ #
     # Cleanup
     # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _normalize_overrides_mapping(
+            overrides: Optional[Mapping[str, Any]],
+    ) -> Optional[MutableMapping[str, Any]]:
+        """
+        Normalize override payloads to a mutable mapping with minimal churn.
+
+        Contract:
+            - Returns None when no overrides are supplied.
+            - Reuses dictionary instances directly for hot-path context reuse.
+            - Materializes non-dict mappings into a new dictionary.
+        """
+        if overrides is None:
+            return None
+        if isinstance(overrides, dict):
+            return overrides
+        return dict(overrides)
 
     def cleanup(self) -> None:
         """
@@ -198,16 +216,9 @@ class MeldContext(Cleanable):
         self._creations = self._owner_creations
         self._caller_creations_lock_held = bool(caller_creations_lock_held)
 
-        if overrides is None:
-            if self._overrides is not None:
-                self._overrides.clear()
-            self._overrides = None
-        else:
-            if self._overrides is None:
-                self._overrides = dict(overrides)
-            else:
-                self._overrides.clear()
-                self._overrides.update(overrides)
+        if self._overrides is not None and self._overrides is not overrides:
+            self._overrides.clear()
+        self._overrides = self._normalize_overrides_mapping(overrides)
 
         self._conduit_id = root_spell._owner_conduit_id
         self._conduit_name = root_spell._owner_conduit_name

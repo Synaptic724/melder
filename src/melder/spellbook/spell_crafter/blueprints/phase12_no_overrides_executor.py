@@ -391,8 +391,9 @@ def _build_step_plan_executor_source(
         "        context=None,",
         "        *,",
         "        steps=steps,",
+        "        step_creations_target_kinds=step_creations_target_kinds,",
         "        root_instance_key=root_instance_key,",
-        "        _select_creations_for_target_kind=_select_creations_for_target_kind,",
+        "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
         "        _construct_spell_instance=_construct_spell_instance,",
         "        _get_existing_creation=_get_existing_creation,",
         "        _register_spell_instance=_register_spell_instance,",
@@ -434,11 +435,31 @@ def _append_step_resolution_source(
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = plan_step_{step_index}.spell",
+        f"    target_kind_{step_index} = step_creations_target_kinds[{step_index}]",
         (
-            f"    creations_{step_index} = _select_creations_for_target_kind("
-            f"context=context, "
-            f"plan_step=plan_step_{step_index}, "
-            f"spell=spell_{step_index})"
+            f"    if target_kind_{step_index} in ("
+            f"ExecutionPlanTargetKind.CALLER, ExecutionPlanTargetKind.SPELLSPACE):"
+        ),
+        "        if context is None:",
+        "            raise RuntimeError(",
+        "                \"Phase 12 CALLER/SPELLSPACE execution requires a MeldContext.\"",
+        "            )",
+        f"        creations_{step_index} = context.caller_creations",
+        f"    elif target_kind_{step_index} == ExecutionPlanTargetKind.OWNER:",
+        f"        owner_creations_{step_index} = spell_{step_index}._owner_creations",
+        f"        if owner_creations_{step_index} is not None:",
+        f"            creations_{step_index} = owner_creations_{step_index}",
+        "        elif context is None:",
+        "            raise RuntimeError(",
+        "                \"Phase 12 OWNER execution requires owner creations context.\"",
+        "            )",
+        "        else:",
+        f"            creations_{step_index} = context.owner_creations",
+        "    else:",
+        (
+            f"        raise RuntimeError("
+            f"f\"Unsupported creations target kind '{{target_kind_{step_index}}}' "
+            f"for spell '{{spell_{step_index}.spell_id}}'.\")"
         ),
     ])
 
@@ -468,21 +489,28 @@ def _append_step_resolution_source(
             Existence.unique_per_spell_space,
     ):
         lines.extend([
-            f"    with creations_{step_index}._lock:",
             (
-                f"        instance_{step_index} = _get_existing_creation("
+                f"    instance_{step_index} = _get_existing_creation("
                 f"spell=spell_{step_index}, "
                 f"creations=creations_{step_index}, "
                 f"existence=plan_step_{step_index}.existence)"
             ),
-            f"        if instance_{step_index} is None:",
+            f"    if instance_{step_index} is None:",
+            f"        with creations_{step_index}._lock:",
             (
-                f"            instance_{step_index} = _construct_spell_instance("
+                f"            instance_{step_index} = _get_existing_creation("
+                f"spell=spell_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=plan_step_{step_index}.existence)"
+            ),
+            f"            if instance_{step_index} is None:",
+            (
+                f"                instance_{step_index} = _construct_spell_instance("
                 f"plan_step=plan_step_{step_index}, "
                 f"instance_results=instance_results)"
             ),
             (
-                f"            _register_spell_instance("
+                f"                _register_spell_instance("
                 f"spell=spell_{step_index}, "
                 f"instance=instance_{step_index}, "
                 f"creations=creations_{step_index}, "
@@ -588,10 +616,14 @@ def _build_step_executor_namespace(
     """
     return {
         "MeldExecutionError": MeldExecutionError,
-        "_select_creations_for_target_kind": _select_creations_for_target_kind,
+        "ExecutionPlanTargetKind": ExecutionPlanTargetKind,
         "_construct_spell_instance": _construct_spell_instance,
         "_get_existing_creation": _get_existing_creation,
         "_register_spell_instance": _register_spell_instance,
+        "step_creations_target_kinds": tuple(
+            plan_step.creations_target_kind
+            for plan_step in steps
+        ),
         "steps": steps,
         "root_instance_key": root_instance_key,
     }

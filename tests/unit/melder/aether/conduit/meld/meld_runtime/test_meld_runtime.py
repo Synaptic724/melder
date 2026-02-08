@@ -800,6 +800,51 @@ def test_collect_override_targets_is_deterministic_for_equivalent_maps() -> None
     assert targets_a["s1"] == (socket_b, socket_a)
 
 
+def test_get_or_compile_override_executor_skips_l2_work_when_disabled(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """L1 miss path does not build/load L2 keys when L2 cache is disabled."""
+    runtime = MeldRuntime()
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(executor=lambda c: "x"),
+    )
+
+    def _unexpected_build_override_l2_key(**kwargs: Any) -> Any:
+        raise AssertionError("L2 key build should not run when L2 cache is disabled")
+
+    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
+        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
+            return "compiled"
+
+        return _executor
+
+    monkeypatch.setattr(
+        runtime_module.MeldRuntime,
+        "_build_override_l2_key",
+        staticmethod(_unexpected_build_override_l2_key),
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "compile_phase12_overrides_executor",
+        _compile_phase12_overrides_executor,
+    )
+
+    compiled = runtime._get_or_compile_override_executor(
+        spell=spell,
+        shape_key=("shape",),
+        execution_plan=None,
+        override_targets_by_spell_id={},
+        any_overrides_present=False,
+        path_registry=None,
+        plan_rows=({"spell_id": "s1"},),
+        root_spell_id="s1",
+        spell_lookup={"s1": spell},
+    )
+
+    assert callable(compiled)
+
+
 def test_execute_with_overrides_evicts_oldest_shape_when_cache_is_bounded(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
