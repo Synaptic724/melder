@@ -1,4 +1,4 @@
-from typing import Any, Mapping, MutableMapping, Optional
+from typing import Any, Optional
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell
@@ -17,7 +17,6 @@ class MeldContext(Cleanable):
         * The **caller creations container** for per-conduit existences.
         * Whether the caller creations lock is already held for this call.
         * Optional **per-call overrides** (from `spell_override`).
-        * Optional **conduit identity** and **aetheric frame** metadata.
 
     Design goals
     ------------
@@ -36,8 +35,7 @@ class MeldContext(Cleanable):
            - `root_spell`
            - caller creations (current Conduit scope)
            - owner creations (spell owner Conduit scope)
-           - Normalized overrides map
-           - conduit metadata
+           - Pre-normalized overrides map
     3. `MeldRuntime.execute(context)` is called.
     4. After execution returns, `Meld` calls `context.reset()`
        and returns the context to the local pool.
@@ -49,23 +47,18 @@ class MeldContext(Cleanable):
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_lock",
         "_root_spell",
-        "_creations",
         "_owner_creations",
         "_caller_creations",
         "_caller_creations_lock_held",
         "_overrides",
-        "_conduit_id",
-        "_conduit_name",
-        "_aetheric_frame",
     ]
 
     def __init__(
             self,
             *,
             root_spell: ISpell,
-            overrides: Optional[Mapping[str, Any]] = None,
+            overrides: Optional[dict[str, Any]] = None,
             caller_creations: Optional[Any] = None,
             caller_creations_lock_held: bool = False,
     ) -> None:
@@ -79,10 +72,11 @@ class MeldContext(Cleanable):
         Contract:
             - root_spell must not be None.
             - owner creations are sourced from root_spell._owner_creations.
-            - caller creations default to owner creations when not provided.
+            - caller creations are supplied by Meld for the active conduit scope.
             - caller_creations_lock_held indicates whether the caller creations
               lock is already held by the calling thread when the runtime runs.
-            - overrides are copied into a mutable mapping when provided.
+            - overrides are accepted by reference and assumed to already be
+              normalized by Meld entry helpers.
             - overrides are None when no overrides are supplied.
             - cleanup() must deterministically drop all references.
 
@@ -90,12 +84,12 @@ class MeldContext(Cleanable):
             root_spell:
                 The root ISpell being activated for this meld call.
             overrides:
-                Optional per-call override mapping (keyword overrides or
-                "__args__" positional overrides). When None, no override
-                container is allocated for this context.
+                Optional pre-normalized per-call override mapping (keyword
+                overrides and optional "__args__" payload). When None, no
+                override container is allocated for this context.
             caller_creations:
-                Optional creations container representing the current Conduit
-                scope that initiated the meld call.
+                Creations container representing the current Conduit scope that
+                initiated the meld call.
             caller_creations_lock_held:
                 True if the caller creations lock is already held by the
                 invoking thread for the duration of this context. This allows
@@ -106,46 +100,16 @@ class MeldContext(Cleanable):
             ValueError: If root_spell is None.
         """
         super().__init__()
-
-        if root_spell is None:
-            raise ValueError("root_spell cannot be None.")
-
         self._root_spell: ISpell = root_spell
         self._owner_creations: Any = self._root_spell._owner_creations
-        self._caller_creations: Any = (
-            caller_creations
-            if caller_creations is not None
-            else self._owner_creations
-        )
-        self._creations: Any = self._owner_creations
+        self._caller_creations: Any = caller_creations
         self._caller_creations_lock_held: bool = bool(caller_creations_lock_held)
-        # Normalized, per-call override map (None when no overrides are supplied).
-        self._overrides: Optional[MutableMapping[str, Any]] = (
-            self._normalize_overrides_mapping(overrides)
-        )
-        self._conduit_id: Optional[str] = self._root_spell._owner_conduit_id
-        self._conduit_name: Optional[str] = self._root_spell._owner_conduit_name
-        self._aetheric_frame: Optional[str] = self._root_spell.aetheric_frame
+        # Pre-normalized, per-call override map (None when no overrides are supplied).
+        self._overrides: Optional[dict[str, Any]] = overrides
 
     # ------------------------------------------------------------------ #
     # Cleanup
     # ------------------------------------------------------------------ #
-
-    @staticmethod
-    def _normalize_overrides_mapping(
-            overrides: Optional[Mapping[str, Any]],
-    ) -> Optional[MutableMapping[str, Any]]:
-        """
-        Normalize override payloads to a mutable per-context mapping.
-
-        Contract:
-            - Returns None when no overrides are supplied.
-            - Always returns a new dictionary copy for non-None input.
-            - Never aliases caller-provided mappings.
-        """
-        if overrides is None:
-            return None
-        return dict(overrides)
 
     def cleanup(self) -> None:
         """
@@ -162,22 +126,18 @@ class MeldContext(Cleanable):
             return
         self._cleaned = True
         self._root_spell = None
-        self._creations = None
         self._owner_creations = None
         self._caller_creations = None
         self._caller_creations_lock_held = False
         if self._overrides is not None:
             self._overrides.clear()
         self._overrides = None
-        self._conduit_id = None
-        self._conduit_name = None
-        self._aetheric_frame = None
 
     def reset(
             self,
             *,
             root_spell: Optional[ISpell] = None,
-            overrides: Optional[Mapping[str, Any]] = None,
+            overrides: Optional[dict[str, Any]] = None,
             caller_creations: Optional[Any] = None,
             caller_creations_lock_held: bool = False,
     ) -> None:
@@ -194,33 +154,20 @@ class MeldContext(Cleanable):
             self._root_spell = None
             self._owner_creations = None
             self._caller_creations = None
-            self._creations = None
             self._caller_creations_lock_held = False
             if self._overrides is not None:
                 self._overrides.clear()
             self._overrides = None
-            self._conduit_id = None
-            self._conduit_name = None
-            self._aetheric_frame = None
             return
 
         self._root_spell = root_spell
         self._owner_creations = root_spell._owner_creations
-        self._caller_creations = (
-            caller_creations
-            if caller_creations is not None
-            else self._owner_creations
-        )
-        self._creations = self._owner_creations
+        self._caller_creations = caller_creations
         self._caller_creations_lock_held = bool(caller_creations_lock_held)
 
         if self._overrides is not None and self._overrides is not overrides:
             self._overrides.clear()
-        self._overrides = self._normalize_overrides_mapping(overrides)
-
-        self._conduit_id = root_spell._owner_conduit_id
-        self._conduit_name = root_spell._owner_conduit_name
-        self._aetheric_frame = root_spell.aetheric_frame
+        self._overrides = overrides
 
 
 
@@ -232,18 +179,6 @@ class MeldContext(Cleanable):
     def root_spell(self) -> ISpell:
         """The root spell being activated for this meld call."""
         return self._root_spell
-
-    @property
-    def creations(self) -> Any:
-        """
-        The owner creations container for this meld call.
-
-        This is typically a `Creations` or `LesserCreations` instance and
-        is treated as an opaque handle by the runtime.
-
-        For per-conduit lifetimes, use :meth:`caller_creations` instead.
-        """
-        return self._creations
 
     @property
     def owner_creations(self) -> Any:
@@ -279,9 +214,9 @@ class MeldContext(Cleanable):
         return self._caller_creations_lock_held
 
     @property
-    def overrides(self) -> Optional[MutableMapping[str, Any]]:
+    def overrides(self) -> Optional[dict[str, Any]]:
         """
-        The normalized override map for this meld call.
+        The pre-normalized override map for this meld call.
 
         Semantics (matching `_normalize_spell_override`):
 
@@ -289,29 +224,11 @@ class MeldContext(Cleanable):
             * `{"__args__": [a0, a1, ...]}` – positional overrides.
             * A combination of both is allowed.
 
-        The runtime reads from this mapping but does not replace it
-        wholesale; callers are free to mutate it if they need to.
+        MeldContext does not copy this payload; it stores the mapping reference
+        supplied by Meld.
 
         Returns:
-            Optional[MutableMapping[str, Any]]:
+            Optional[dict[str, Any]]:
                 Override payload mapping, or None when no overrides are supplied.
         """
         return self._overrides
-
-    @property
-    def conduit_id(self) -> Optional[str]:
-        """Optional unique identifier of the owning Conduit."""
-        return self._conduit_id
-
-    @property
-    def conduit_name(self) -> Optional[str]:
-        """Optional human-readable name of the owning Conduit."""
-        return self._conduit_name
-
-    @property
-    def aetheric_frame(self) -> Optional[str]:
-        """
-        Optional aetheric frame name or identifier associated with the
-        Conduit / spell context for this meld call.
-        """
-        return self._aetheric_frame

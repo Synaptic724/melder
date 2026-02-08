@@ -376,7 +376,7 @@ class Meld(Cleanable, IMeld):
             return spell_name, id(spell), id(spellframe), binding_name
         return cache_key
 
-    def _bounded_cache_insert(
+    def  _bounded_cache_insert(
             self,
             *,
             cache: Dict[Any, ISpell],
@@ -940,7 +940,7 @@ class Meld(Cleanable, IMeld):
     # Resolution helpers
     # ----------------------------------------------------------------------
 
-    def _create_meld_context(
+    def  _create_meld_context(
             self,
             spell: ISpell,
             overrides: Optional[dict[str, Any]],
@@ -984,7 +984,6 @@ class Meld(Cleanable, IMeld):
                 caller_creations=self._creations,
                 caller_creations_lock_held=caller_creations_lock_held,
             )
-            context._conduit_id = self._resolution_conduit_id
             return context
 
         context = MeldContext(
@@ -993,7 +992,6 @@ class Meld(Cleanable, IMeld):
             caller_creations=self._creations,
             caller_creations_lock_held=caller_creations_lock_held,
         )
-        context._conduit_id = self._resolution_conduit_id
         return context
 
     def _release_meld_context(self, context: MeldContext) -> None:

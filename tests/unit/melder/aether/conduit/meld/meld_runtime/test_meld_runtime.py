@@ -1,6 +1,4 @@
 """Codegen-only contract tests for MeldRuntime."""
-
-from collections import deque
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
@@ -983,12 +981,11 @@ def test_build_override_shape_key_uses_precomputed_socket_shape() -> None:
     )
 
 
-def test_execute_with_overrides_evicts_oldest_shape_when_cache_is_bounded(
+def test_execute_with_overrides_reuses_cached_shape_without_eviction(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Per-spell override specialization cache evicts oldest shape in FIFO order."""
+    """Per-spell override specialization cache retains previously compiled shapes."""
     runtime = MeldRuntime()
-    runtime._max_override_specializations_per_spell = 1
     patch_map = object()
     spell = _Spell(
         spell_id="s1",
@@ -1030,7 +1027,7 @@ def test_execute_with_overrides_evicts_oldest_shape_when_cache_is_bounded(
     assert runtime.execute(_ctx(spell, overrides={"a": 1})) == "shape-a"
     assert runtime.execute(_ctx(spell, overrides={"b": 1})) == "shape-b"
     assert runtime.execute(_ctx(spell, overrides={"a": 1})) == "shape-a"
-    assert compile_count["value"] == 3
+    assert compile_count["value"] == 2
 
 
 def test_execute_with_overrides_wraps_schema_compile_failures(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1082,9 +1079,6 @@ def test_no_overrides_fast_transient_and_cleanup_contract() -> None:
     assert calls == [None]
 
     runtime._override_specialization_cache["s1"] = {("k",): lambda *args: None}
-    runtime._override_specialization_order["s1"] = deque([("k",)])
     runtime.cleanup()
     assert runtime._cleaned is True
     assert runtime._override_specialization_cache is None
-    assert runtime._override_specialization_order is None
-    assert runtime._max_override_specializations_per_spell is None

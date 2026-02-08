@@ -48,6 +48,23 @@ def _us(seconds: float) -> float:
     return seconds * 1_000_000.0
 
 
+def _median(values: list[float]) -> float:
+    """
+    Return the median value for a numeric sample list.
+
+    Contract:
+        - Returns 0.0 for empty input.
+        - Uses midpoint average for even-sized lists.
+    """
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2.0
+
+
 def _gc_cleanup() -> None:
     gc.collect()
 
@@ -145,9 +162,95 @@ def _melder_get(state: _MelderState) -> Any:
     return state.conduit.meld(spell=state.root_id)
 
 
+def _melder_get_alias(state: _MelderState) -> Any:
+    """
+    Resolve the root spell using local aliases for the callsite fields.
+
+    Contract:
+        - Executes the same meld route as `_melder_get`.
+        - Only differs by local aliasing of state fields.
+    """
+    conduit = state.conduit
+    root_id = state.root_id
+    return conduit.meld(spell=root_id)
+
+
 def _melder_cleanup(state: _MelderState) -> None:
     state.conduit.cleanup()
     _gc_cleanup()
+
+
+def _measure_loop_s(*, fn: Callable[[], Any], warmup: int, iterations: int) -> float:
+    """
+    Measure loop elapsed seconds for a zero-arg callable.
+
+    Contract:
+        - Executes warmup calls before timing.
+        - Returns total elapsed wall time for timed calls.
+    """
+    for _ in range(warmup):
+        fn()
+    t0 = time.perf_counter()
+    for _ in range(iterations):
+        fn()
+    return time.perf_counter() - t0
+
+
+def _paired_order_avg_and_delta_s(
+        *,
+        first_fn: Callable[[], Any],
+        second_fn: Callable[[], Any],
+        warmup: int,
+        iterations: int,
+        pair_repeats: int,
+) -> tuple[float, float, float]:
+    """
+    Measure two call paths with paired alternating order.
+
+    Contract:
+        - Alternates execution order each pair to reduce fixed-order bias.
+        - Returns average totals plus median per-iteration delta.
+    """
+    first_runs_s: list[float] = []
+    second_runs_s: list[float] = []
+    deltas_us_per_iter: list[float] = []
+    for pair_index in range(pair_repeats):
+        if pair_index % 2 == 0:
+            first_s = _measure_loop_s(fn=first_fn, warmup=warmup, iterations=iterations)
+            second_s = _measure_loop_s(fn=second_fn, warmup=warmup, iterations=iterations)
+        else:
+            second_s = _measure_loop_s(fn=second_fn, warmup=warmup, iterations=iterations)
+            first_s = _measure_loop_s(fn=first_fn, warmup=warmup, iterations=iterations)
+        first_runs_s.append(first_s)
+        second_runs_s.append(second_s)
+        deltas_us_per_iter.append(_us(second_s - first_s) / float(iterations))
+    return (
+        sum(first_runs_s) / float(pair_repeats),
+        sum(second_runs_s) / float(pair_repeats),
+        _median(deltas_us_per_iter),
+    )
+
+
+def _aa_noise_floor_us_per_iter(
+        *,
+        fn: Callable[[], Any],
+        warmup: int,
+        iterations: int,
+        pair_repeats: int,
+) -> float:
+    """
+    Measure median A/A absolute noise floor for one call path.
+
+    Contract:
+        - Runs the same callable twice per pair.
+        - Returns median absolute delta in microseconds per iteration.
+    """
+    deltas_us_per_iter: list[float] = []
+    for _ in range(pair_repeats):
+        first_s = _measure_loop_s(fn=fn, warmup=warmup, iterations=iterations)
+        second_s = _measure_loop_s(fn=fn, warmup=warmup, iterations=iterations)
+        deltas_us_per_iter.append(_us(abs(second_s - first_s)) / float(iterations))
+    return _median(deltas_us_per_iter)
 
 
 # ======================================================================================
@@ -672,3 +775,58 @@ def test_perf_mixed_workload_depth7_depth9_transient(lib: str) -> None:
         raise AssertionError(f"Unknown lib: {lib}")
 
     print(f"[{lib}] mixed transient (iters={iterations}) (ms): avg_step={_ms(total_s) / iterations:.3f}")
+
+
+def test_perf_melder_depth9_transient_direct_vs_alias_paired() -> None:
+    """
+    Measure melder transient depth-9 direct vs alias callsite with paired order.
+
+    Contract:
+        - Uses paired alternating run order to reduce order bias.
+        - Reports median per-iteration delta and A/A noise floor.
+        - Uses transient-only Depth9 root resolution path.
+    """
+    classes = get_depth_9_classes()
+    iterations = 300
+    warmup = 30
+    pair_repeats = 8
+    state = _melder_build_transient(
+        frame="transient-depth9-direct-vs-alias",
+        classes=classes,
+        root_cls=Depth9Root,
+    )
+    try:
+        direct_fn = lambda: _melder_get(state)
+        alias_fn = lambda: _melder_get_alias(state)
+        first_direct = direct_fn()
+        first_alias = alias_fn()
+        assert isinstance(first_direct, Depth9Root)
+        assert isinstance(first_alias, Depth9Root)
+        direct_avg_s, alias_avg_s, median_delta_us_per_iter = _paired_order_avg_and_delta_s(
+            first_fn=direct_fn,
+            second_fn=alias_fn,
+            warmup=warmup,
+            iterations=iterations,
+            pair_repeats=pair_repeats,
+        )
+        aa_noise_floor_us_per_iter = _aa_noise_floor_us_per_iter(
+            fn=direct_fn,
+            warmup=warmup,
+            iterations=iterations,
+            pair_repeats=pair_repeats,
+        )
+    finally:
+        _melder_cleanup(state)
+
+    direct_avg_us = _us(direct_avg_s) / float(iterations)
+    alias_avg_us = _us(alias_avg_s) / float(iterations)
+    ratio = alias_avg_s / direct_avg_s
+    print(
+        f"[melder-direct-vs-alias] depth9 transient | "
+        f"iterations={iterations}, warmup={warmup}, pair_repeats={pair_repeats} | "
+        f"direct_us_per_iter={direct_avg_us:.3f} | "
+        f"alias_us_per_iter={alias_avg_us:.3f} | "
+        f"alias_over_direct_ratio={ratio:.6f} | "
+        f"median_pair_delta_us_per_iter={median_delta_us_per_iter:.3f} | "
+        f"aa_noise_floor_us_per_iter={aa_noise_floor_us_per_iter:.3f}"
+    )

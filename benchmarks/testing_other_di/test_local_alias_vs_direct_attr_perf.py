@@ -1,5 +1,4 @@
 import time
-from functools import partial
 from typing import Any, Callable, List, Tuple
 
 
@@ -860,256 +859,453 @@ class _SocketShapeBench:
         return checksum + len(rows)
 
 
-class _PointerSink:
-    """
-    Minimal method-call sink for pointer-pass benchmarks.
-
-    Contract:
-        - Accepts one pointer argument.
-        - Returns immediately with a constant integer.
-        - Performs no work on the pointer itself.
-    """
-
-    __slots__ = ()
-
-    def accept_pointer(self, pointer: Any) -> int:
-        """
-        Accept one pointer and return immediately.
-
-        Args:
-            pointer: Arbitrary object reference passed into the method.
-
-        Returns:
-            int: Constant integer used for loop checksum.
-        """
-        _ = pointer
-        return 1
-
-
 class _PointerMethodCallBench:
     """
-    Benchmark direct versus aliased pointer method-call dispatch.
+    Benchmark one-copy accessor units for self and chained-self shapes.
 
     Contract:
-        - Provides ``self``-based flat and chained pointer call paths.
-        - Supports direct and alias variants for each path.
-        - Supports access-count fanout per invocation (1..4 calls).
-        - Method body performs only sink calls and immediate returns.
+        - Each benchmark unit performs one indexed read, one local copy, then
+          returns.
+        - No inner access loops are used inside the unit methods.
+        - Supports one method per shape for flat and chained depths 2..4.
     """
 
-    __slots__ = ("_sink", "_pointer", "_chain_root")
+    __slots__ = ("_shared", "_chain_root")
 
     def __init__(self) -> None:
         """
-        Initialize sink, pointer payload, and chain root.
+        Initialize shared flat and chained payload roots.
         """
-        self._sink = _PointerSink()
-        self._pointer = object()
+        self._shared = _SharedDependencies()
         self._chain_root = _ChainRoot()
 
-    def call_self_flat_direct_once(self, *, access_count: int) -> int:
+    def call_self_flat_direct_copy_once(self) -> int:
         """
-        Invoke sink calls via direct ``self`` flat pointer lookups.
+        Execute one flat self direct-index + copy unit.
 
         Returns:
-            int: Sum of sink returns for this invocation.
+            int: Copied value.
         """
-        total = 0
-        for _ in range(access_count):
-            total += self._sink.accept_pointer(self._pointer)
-        return total
+        indexed = self._shared.dep1
+        copied = indexed
+        return copied
 
-    def call_self_flat_alias_once(self, *, access_count: int) -> int:
+    def call_self_flat_alias_copy_once(self) -> int:
         """
-        Invoke sink calls via aliased ``self`` flat pointer lookups.
+        Execute one flat self alias-index + copy unit.
 
         Returns:
-            int: Sum of sink returns for this invocation.
+            int: Copied value.
         """
-        sink = self._sink
-        pointer = self._pointer
-        total = 0
-        for _ in range(access_count):
-            total += sink.accept_pointer(pointer)
-        return total
+        shared = self._shared
+        indexed = shared.dep1
+        copied = indexed
+        return copied
 
-    def call_self_chain_direct_once(
-            self,
-            *,
-            depth: int,
-            access_count: int,
-    ) -> int:
+    def call_self_chain_depth2_direct_copy_once(self) -> int:
         """
-        Invoke sink calls via direct ``self`` chained pointer lookups.
-
-        Args:
-            depth: Chain depth (2, 3, or 4).
-            access_count: Number of sink calls per invocation.
+        Execute one chained self direct-index + copy unit at depth 2.
 
         Returns:
-            int: Sum of sink returns for this invocation.
+            int: Copied value.
         """
-        total = 0
-        if depth == 2:
-            for _ in range(access_count):
-                total += self._sink.accept_pointer(self._chain_root.l2)
-            return total
-        if depth == 3:
-            for _ in range(access_count):
-                total += self._sink.accept_pointer(self._chain_root.l2.l3)
-            return total
-        if depth == 4:
-            for _ in range(access_count):
-                total += self._sink.accept_pointer(self._chain_root.l2.l3.l4)
-            return total
-        raise ValueError("depth must be 2, 3, or 4.")
+        indexed = self._chain_root.l2.dep1
+        copied = indexed
+        return copied
 
-    def call_self_chain_alias_once(
-            self,
-            *,
-            depth: int,
-            access_count: int,
-    ) -> int:
+    def call_self_chain_depth2_alias_copy_once(self) -> int:
         """
-        Invoke sink calls via aliased ``self`` chained pointer lookups.
-
-        Args:
-            depth: Chain depth (2, 3, or 4).
-            access_count: Number of sink calls per invocation.
+        Execute one chained self alias-index + copy unit at depth 2.
 
         Returns:
-            int: Sum of sink returns for this invocation.
+            int: Copied value.
         """
-        sink = self._sink
-        if depth == 2:
-            pointer = self._chain_root.l2
-        elif depth == 3:
-            pointer = self._chain_root.l2.l3
-        elif depth == 4:
-            pointer = self._chain_root.l2.l3.l4
+        leaf = self._chain_root.l2
+        indexed = leaf.dep1
+        copied = indexed
+        return copied
+
+    def call_self_chain_depth3_direct_copy_once(self) -> int:
+        """
+        Execute one chained self direct-index + copy unit at depth 3.
+
+        Returns:
+            int: Copied value.
+        """
+        indexed = self._chain_root.l2.l3.dep1
+        copied = indexed
+        return copied
+
+    def call_self_chain_depth3_alias_copy_once(self) -> int:
+        """
+        Execute one chained self alias-index + copy unit at depth 3.
+
+        Returns:
+            int: Copied value.
+        """
+        leaf = self._chain_root.l2.l3
+        indexed = leaf.dep1
+        copied = indexed
+        return copied
+
+    def call_self_chain_depth4_direct_copy_once(self) -> int:
+        """
+        Execute one chained self direct-index + copy unit at depth 4.
+
+        Returns:
+            int: Copied value.
+        """
+        indexed = self._chain_root.l2.l3.l4.dep1
+        copied = indexed
+        return copied
+
+    def call_self_chain_depth4_alias_copy_once(self) -> int:
+        """
+        Execute one chained self alias-index + copy unit at depth 4.
+
+        Returns:
+            int: Copied value.
+        """
+        leaf = self._chain_root.l2.l3.l4
+        indexed = leaf.dep1
+        copied = indexed
+        return copied
+
+
+def _call_param_flat_direct_copy_once(
+        shared: _SharedDependencies,
+) -> int:
+    """
+    Execute one flat param direct-index + copy unit.
+
+    Args:
+        shared: Flat parameter payload.
+
+    Returns:
+        int: Copied value.
+    """
+    indexed = shared.dep1
+    copied = indexed
+    return copied
+
+
+def _call_param_flat_alias_copy_once(
+        shared: _SharedDependencies,
+) -> int:
+    """
+    Execute one flat param alias-index + copy unit.
+
+    Args:
+        shared: Flat parameter payload.
+
+    Returns:
+        int: Copied value.
+    """
+    local_shared = shared
+    indexed = local_shared.dep1
+    copied = indexed
+    return copied
+
+
+def _call_param_chain_direct_copy_once(
+        chain_root: _ChainRoot,
+) -> int:
+    """
+    Execute one chained param direct-index + copy unit at depth 2.
+
+    Args:
+        chain_root: Root parameter containing chain payloads.
+
+    Returns:
+        int: Copied value.
+    """
+    indexed = chain_root.l2.dep1
+    copied = indexed
+    return copied
+
+
+def _call_param_chain_alias_copy_once(
+        chain_root: _ChainRoot,
+) -> int:
+    """
+    Execute one chained param alias-index + copy unit at depth 2.
+
+    Args:
+        chain_root: Root parameter containing chain payloads.
+
+    Returns:
+        int: Copied value.
+    """
+    leaf = chain_root.l2
+    indexed = leaf.dep1
+    copied = indexed
+    return copied
+
+
+def _call_param_chain_depth3_direct_copy_once(chain_root: _ChainRoot) -> int:
+    """
+    Execute one chained param direct-index + copy unit at depth 3.
+
+    Args:
+        chain_root: Root parameter containing chain payloads.
+
+    Returns:
+        int: Copied value.
+    """
+    indexed = chain_root.l2.l3.dep1
+    copied = indexed
+    return copied
+
+
+def _call_param_chain_depth3_alias_copy_once(chain_root: _ChainRoot) -> int:
+    """
+    Execute one chained param alias-index + copy unit at depth 3.
+
+    Args:
+        chain_root: Root parameter containing chain payloads.
+
+    Returns:
+        int: Copied value.
+    """
+    leaf = chain_root.l2.l3
+    indexed = leaf.dep1
+    copied = indexed
+    return copied
+
+
+def _call_param_chain_depth4_direct_copy_once(chain_root: _ChainRoot) -> int:
+    """
+    Execute one chained param direct-index + copy unit at depth 4.
+
+    Args:
+        chain_root: Root parameter containing chain payloads.
+
+    Returns:
+        int: Copied value.
+    """
+    indexed = chain_root.l2.l3.l4.dep1
+    copied = indexed
+    return copied
+
+
+def _call_param_chain_depth4_alias_copy_once(chain_root: _ChainRoot) -> int:
+    """
+    Execute one chained param alias-index + copy unit at depth 4.
+
+    Args:
+        chain_root: Root parameter containing chain payloads.
+
+    Returns:
+        int: Copied value.
+    """
+    leaf = chain_root.l2.l3.l4
+    indexed = leaf.dep1
+    copied = indexed
+    return copied
+
+
+def _measure_call_only_loop_ns(
+        *,
+        fn: Callable[..., int],
+        args: Tuple[Any, ...],
+        warmup: int,
+        iterations: int,
+) -> int:
+    """
+    Measure call-only loop cost for a one-unit benchmark method.
+
+    Args:
+        fn: Callable benchmark unit.
+        args: Positional arguments passed to ``fn``.
+        warmup: Warmup invocation count before the timed loop.
+        iterations: Timed invocation count.
+
+    Returns:
+        int: Elapsed nanoseconds for the timed loop only.
+    """
+    for _ in range(warmup):
+        fn(*args)
+    start_ns = time.perf_counter_ns()
+    for _ in range(iterations):
+        fn(*args)
+    end_ns = time.perf_counter_ns()
+    return end_ns - start_ns
+
+
+def _average_call_only_loop_ns(
+        *,
+        fn: Callable[..., int],
+        args: Tuple[Any, ...],
+        warmup: int,
+        iterations: int,
+        repeats: int,
+) -> float:
+    """
+    Measure averaged call-only loop cost.
+
+    Args:
+        fn: Callable benchmark unit.
+        args: Positional arguments passed to ``fn``.
+        warmup: Warmup invocation count before each timed repeat.
+        iterations: Timed invocation count per repeat.
+        repeats: Number of timed repeats.
+
+    Returns:
+        float: Average elapsed nanoseconds across repeats.
+    """
+    elapsed_runs: List[int] = []
+    for _ in range(repeats):
+        elapsed_runs.append(
+            _measure_call_only_loop_ns(
+                fn=fn,
+                args=args,
+                warmup=warmup,
+                iterations=iterations,
+            )
+        )
+    return sum(elapsed_runs) / float(repeats)
+
+
+def _median(values: List[float]) -> float:
+    """
+    Return the median for a non-empty numeric sample list.
+
+    Args:
+        values: Numeric samples.
+
+    Returns:
+        float: Median sample value, or 0.0 for empty input.
+    """
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2.0
+
+
+def _paired_order_call_only_avg_ns(
+        *,
+        direct_fn: Callable[..., int],
+        direct_args: Tuple[Any, ...],
+        alias_fn: Callable[..., int],
+        alias_args: Tuple[Any, ...],
+        warmup: int,
+        iterations: int,
+        pair_repeats: int,
+) -> Tuple[float, float, float]:
+    """
+    Measure direct vs alias with paired alternating run order.
+
+    Contract:
+        - Executes one direct and one alias run per pair.
+        - Alternates run order each pair to reduce fixed-order bias.
+        - Returns average totals and median alias-minus-direct delta per iter.
+
+    Args:
+        direct_fn: Direct-access benchmark callable.
+        direct_args: Positional args for ``direct_fn``.
+        alias_fn: Alias-access benchmark callable.
+        alias_args: Positional args for ``alias_fn``.
+        warmup: Warmup invocation count before each timed run.
+        iterations: Timed invocation count per run.
+        pair_repeats: Number of direct/alias pairs.
+
+    Returns:
+        Tuple[float, float, float]:
+            - direct average total elapsed ns
+            - alias average total elapsed ns
+            - median alias-minus-direct delta ns/iter
+    """
+    direct_runs_ns: List[int] = []
+    alias_runs_ns: List[int] = []
+    per_pair_delta_ns_per_iter: List[float] = []
+
+    for pair_index in range(pair_repeats):
+        if pair_index % 2 == 0:
+            direct_elapsed_ns = _measure_call_only_loop_ns(
+                fn=direct_fn,
+                args=direct_args,
+                warmup=warmup,
+                iterations=iterations,
+            )
+            alias_elapsed_ns = _measure_call_only_loop_ns(
+                fn=alias_fn,
+                args=alias_args,
+                warmup=warmup,
+                iterations=iterations,
+            )
         else:
-            raise ValueError("depth must be 2, 3, or 4.")
+            alias_elapsed_ns = _measure_call_only_loop_ns(
+                fn=alias_fn,
+                args=alias_args,
+                warmup=warmup,
+                iterations=iterations,
+            )
+            direct_elapsed_ns = _measure_call_only_loop_ns(
+                fn=direct_fn,
+                args=direct_args,
+                warmup=warmup,
+                iterations=iterations,
+            )
 
-        total = 0
-        for _ in range(access_count):
-            total += sink.accept_pointer(pointer)
-        return total
+        direct_runs_ns.append(direct_elapsed_ns)
+        alias_runs_ns.append(alias_elapsed_ns)
+        per_pair_delta_ns_per_iter.append(
+            (alias_elapsed_ns - direct_elapsed_ns) / float(iterations)
+        )
+
+    return (
+        sum(direct_runs_ns) / float(pair_repeats),
+        sum(alias_runs_ns) / float(pair_repeats),
+        _median(per_pair_delta_ns_per_iter),
+    )
 
 
-def _call_param_flat_direct_once(
+def _aa_noise_floor_ns_per_iter(
         *,
-        sink: _PointerSink,
-        pointer: Any,
-        access_count: int,
-) -> int:
+        fn: Callable[..., int],
+        args: Tuple[Any, ...],
+        warmup: int,
+        iterations: int,
+        pair_repeats: int,
+) -> float:
     """
-    Invoke sink calls via direct flat parameter pointer access.
+    Measure A/A same-callable noise floor in ns per iteration.
+
+    Contract:
+        - Runs the same callable twice per pair.
+        - Reports median absolute delta ns/iter across pairs.
 
     Args:
-        sink: Sink receiving pointer payloads.
-        pointer: Flat parameter pointer value.
-        access_count: Number of sink calls per invocation.
+        fn: Benchmark callable used for both A/A runs.
+        args: Positional args for ``fn``.
+        warmup: Warmup invocation count before each timed run.
+        iterations: Timed invocation count per run.
+        pair_repeats: Number of A/A pairs.
 
     Returns:
-        int: Sum of sink returns for this invocation.
+        float: Median absolute A/A delta in ns per iteration.
     """
-    total = 0
-    for _ in range(access_count):
-        total += sink.accept_pointer(pointer)
-    return total
-
-
-def _call_param_flat_alias_once(
-        *,
-        sink: _PointerSink,
-        pointer: Any,
-        access_count: int,
-) -> int:
-    """
-    Invoke sink calls via aliased flat parameter pointer access.
-
-    Args:
-        sink: Sink receiving pointer payloads.
-        pointer: Flat parameter pointer value.
-        access_count: Number of sink calls per invocation.
-
-    Returns:
-        int: Sum of sink returns for this invocation.
-    """
-    local_pointer = pointer
-    total = 0
-    for _ in range(access_count):
-        total += sink.accept_pointer(local_pointer)
-    return total
-
-
-def _call_param_chain_direct_once(
-        *,
-        sink: _PointerSink,
-        chain_root: _ChainRoot,
-        depth: int,
-        access_count: int,
-) -> int:
-    """
-    Invoke sink calls via direct chained parameter pointer access.
-
-    Args:
-        sink: Sink receiving pointer payloads.
-        chain_root: Root parameter containing chained pointer levels.
-        depth: Chain depth (2, 3, or 4).
-        access_count: Number of sink calls per invocation.
-
-    Returns:
-        int: Sum of sink returns for this invocation.
-    """
-    total = 0
-    if depth == 2:
-        for _ in range(access_count):
-            total += sink.accept_pointer(chain_root.l2)
-        return total
-    if depth == 3:
-        for _ in range(access_count):
-            total += sink.accept_pointer(chain_root.l2.l3)
-        return total
-    if depth == 4:
-        for _ in range(access_count):
-            total += sink.accept_pointer(chain_root.l2.l3.l4)
-        return total
-    raise ValueError("depth must be 2, 3, or 4.")
-
-
-def _call_param_chain_alias_once(
-        *,
-        sink: _PointerSink,
-        chain_root: _ChainRoot,
-        depth: int,
-        access_count: int,
-) -> int:
-    """
-    Invoke sink calls via aliased chained parameter pointer access.
-
-    Args:
-        sink: Sink receiving pointer payloads.
-        chain_root: Root parameter containing chained pointer levels.
-        depth: Chain depth (2, 3, or 4).
-        access_count: Number of sink calls per invocation.
-
-    Returns:
-        int: Sum of sink returns for this invocation.
-    """
-    if depth == 2:
-        pointer = chain_root.l2
-    elif depth == 3:
-        pointer = chain_root.l2.l3
-    elif depth == 4:
-        pointer = chain_root.l2.l3.l4
-    else:
-        raise ValueError("depth must be 2, 3, or 4.")
-
-    total = 0
-    for _ in range(access_count):
-        total += sink.accept_pointer(pointer)
-    return total
+    absolute_deltas_ns_per_iter: List[float] = []
+    for _ in range(pair_repeats):
+        first_elapsed_ns = _measure_call_only_loop_ns(
+            fn=fn,
+            args=args,
+            warmup=warmup,
+            iterations=iterations,
+        )
+        second_elapsed_ns = _measure_call_only_loop_ns(
+            fn=fn,
+            args=args,
+            warmup=warmup,
+            iterations=iterations,
+        )
+        absolute_deltas_ns_per_iter.append(
+            abs(second_elapsed_ns - first_elapsed_ns) / float(iterations)
+        )
+    return _median(absolute_deltas_ns_per_iter)
 
 
 def _measure_ns(fn: Callable[..., int], *args: Any, **kwargs: Any) -> Tuple[int, int]:
@@ -1794,293 +1990,305 @@ def test_local_alias_vs_direct_realworld_row_build_call_shape_perf() -> None:
 
 def test_pointer_call_only_self_flat_alias_vs_direct_perf() -> None:
     """
-    Compare self-flat pointer call overhead using original matrix shape.
+    Compare self-flat copy-unit overhead.
 
     Contract:
-        - Timed work is pointer->method->return only.
-        - Uses access-count matrix 1..4.
+        - Timed work per invocation is: index -> copy -> return.
         - Uses fixed warmup and repeat counts.
     """
     iterations = 1_000_000
     warmup = 50_000
-    repeats = 5
+    pair_repeats = 8
     bench = _PointerMethodCallBench()
     print(
-        "[pointer-self-flat] iterations={0}, warmup={1}, repeats={2}".format(
+        "[pointer-self-flat] iterations={0}, warmup={1}, pair_repeats={2}".format(
             iterations,
             warmup,
-            repeats,
+            pair_repeats,
         )
     )
     print(
-        "[pointer-self-flat] columns: accesses | direct_avg_total_ns | "
+        "[pointer-self-flat] columns: unit | direct_avg_total_ns | "
         "direct_avg_ns_per_iter | alias_avg_total_ns | alias_avg_ns_per_iter | "
-        "alias_over_direct_ratio"
+        "alias_over_direct_ratio | median_pair_delta_ns_per_iter | "
+        "aa_noise_floor_ns_per_iter"
     )
-    rows_emitted = 0
-    for access_count in (1, 2, 3, 4):
-        direct_fn = partial(
-            bench.call_self_flat_direct_once,
-            access_count=access_count,
-        )
-        alias_fn = partial(
-            bench.call_self_flat_alias_once,
-            access_count=access_count,
-        )
-        direct_avg_ns, direct_checksum = _average_invoke_loop_ns(
-            fn=direct_fn,
+    assert bench.call_self_flat_direct_copy_once() == 1
+    assert bench.call_self_flat_alias_copy_once() == 1
+
+    direct_avg_ns, alias_avg_ns, median_pair_delta_ns_per_iter = (
+        _paired_order_call_only_avg_ns(
+            direct_fn=bench.call_self_flat_direct_copy_once,
+            direct_args=(),
+            alias_fn=bench.call_self_flat_alias_copy_once,
+            alias_args=(),
             warmup=warmup,
             iterations=iterations,
-            repeats=repeats,
+            pair_repeats=pair_repeats,
         )
-        alias_avg_ns, alias_checksum = _average_invoke_loop_ns(
-            fn=alias_fn,
-            warmup=warmup,
-            iterations=iterations,
-            repeats=repeats,
+    )
+    aa_noise_floor_ns_per_iter = _aa_noise_floor_ns_per_iter(
+        fn=bench.call_self_flat_direct_copy_once,
+        args=(),
+        warmup=warmup,
+        iterations=iterations,
+        pair_repeats=pair_repeats,
+    )
+    direct_avg_per_iter = direct_avg_ns / float(iterations)
+    alias_avg_per_iter = alias_avg_ns / float(iterations)
+    ratio = alias_avg_ns / direct_avg_ns
+    print(
+        "[pointer-self-flat] unit=copy_once | direct_total_ns={0:.0f} | "
+        "direct_ns_per_iter={1:.6f} | alias_total_ns={2:.0f} | "
+        "alias_ns_per_iter={3:.6f} | ratio={4:.6f} | "
+        "median_pair_delta_ns_per_iter={5:.6f} | aa_noise_floor_ns_per_iter={6:.6f}".format(
+            direct_avg_ns,
+            direct_avg_per_iter,
+            alias_avg_ns,
+            alias_avg_per_iter,
+            ratio,
+            median_pair_delta_ns_per_iter,
+            aa_noise_floor_ns_per_iter,
         )
-        expected = iterations * access_count
-        assert direct_checksum == expected
-        assert alias_checksum == expected
-        direct_avg_per_iter = direct_avg_ns / float(iterations)
-        alias_avg_per_iter = alias_avg_ns / float(iterations)
-        ratio = alias_avg_ns / direct_avg_ns
-        print(
-            "[pointer-self-flat] accesses={0} | direct_total_ns={1:.0f} | "
-            "direct_ns_per_iter={2:.6f} | alias_total_ns={3:.0f} | "
-            "alias_ns_per_iter={4:.6f} | ratio={5:.6f}".format(
-                access_count,
-                direct_avg_ns,
-                direct_avg_per_iter,
-                alias_avg_ns,
-                alias_avg_per_iter,
-                ratio,
-            )
-        )
-        rows_emitted += 1
-    assert rows_emitted == 4
+    )
 
 
 def test_pointer_call_only_param_flat_alias_vs_direct_perf() -> None:
     """
-    Compare param-flat pointer call overhead using original matrix shape.
+    Compare param-flat copy-unit overhead.
 
     Contract:
-        - Timed work is pointer->method->return only.
-        - Uses access-count matrix 1..4.
+        - Timed work per invocation is: index -> copy -> return.
         - Uses fixed warmup and repeat counts.
     """
     iterations = 1_000_000
     warmup = 50_000
-    repeats = 5
-    sink = _PointerSink()
-    pointer = object()
+    pair_repeats = 8
+    shared = _SharedDependencies()
     print(
-        "[pointer-param-flat] iterations={0}, warmup={1}, repeats={2}".format(
+        "[pointer-param-flat] iterations={0}, warmup={1}, pair_repeats={2}".format(
             iterations,
             warmup,
-            repeats,
+            pair_repeats,
         )
     )
     print(
-        "[pointer-param-flat] columns: accesses | direct_avg_total_ns | "
+        "[pointer-param-flat] columns: unit | direct_avg_total_ns | "
         "direct_avg_ns_per_iter | alias_avg_total_ns | alias_avg_ns_per_iter | "
-        "alias_over_direct_ratio"
+        "alias_over_direct_ratio | median_pair_delta_ns_per_iter | "
+        "aa_noise_floor_ns_per_iter"
+    )
+    assert _call_param_flat_direct_copy_once(shared) == 1
+    assert _call_param_flat_alias_copy_once(shared) == 1
+
+    direct_avg_ns, alias_avg_ns, median_pair_delta_ns_per_iter = (
+        _paired_order_call_only_avg_ns(
+            direct_fn=_call_param_flat_direct_copy_once,
+            direct_args=(shared,),
+            alias_fn=_call_param_flat_alias_copy_once,
+            alias_args=(shared,),
+            warmup=warmup,
+            iterations=iterations,
+            pair_repeats=pair_repeats,
+        )
+    )
+    aa_noise_floor_ns_per_iter = _aa_noise_floor_ns_per_iter(
+        fn=_call_param_flat_direct_copy_once,
+        args=(shared,),
+        warmup=warmup,
+        iterations=iterations,
+        pair_repeats=pair_repeats,
+    )
+    direct_avg_per_iter = direct_avg_ns / float(iterations)
+    alias_avg_per_iter = alias_avg_ns / float(iterations)
+    ratio = alias_avg_ns / direct_avg_ns
+    print(
+        "[pointer-param-flat] unit=copy_once | direct_total_ns={0:.0f} | "
+        "direct_ns_per_iter={1:.6f} | alias_total_ns={2:.0f} | "
+        "alias_ns_per_iter={3:.6f} | ratio={4:.6f} | "
+        "median_pair_delta_ns_per_iter={5:.6f} | aa_noise_floor_ns_per_iter={6:.6f}".format(
+            direct_avg_ns,
+            direct_avg_per_iter,
+            alias_avg_ns,
+            alias_avg_per_iter,
+            ratio,
+            median_pair_delta_ns_per_iter,
+            aa_noise_floor_ns_per_iter,
+        )
+    )
+
+
+def test_pointer_call_only_self_chain_alias_vs_direct_perf() -> None:
+    """
+    Compare self-chain copy-unit overhead across depths.
+
+    Contract:
+        - Timed work per invocation is: index -> copy -> return.
+        - Uses depth matrix 2..4.
+        - Uses fixed warmup and repeat counts.
+    """
+    iterations = 1_000_000
+    warmup = 50_000
+    pair_repeats = 8
+    bench = _PointerMethodCallBench()
+    print(
+        "[pointer-self-chain] iterations={0}, warmup={1}, pair_repeats={2}".format(
+            iterations,
+            warmup,
+            pair_repeats,
+        )
+    )
+    print(
+        "[pointer-self-chain] columns: depth | direct_avg_total_ns | "
+        "direct_avg_ns_per_iter | alias_avg_total_ns | alias_avg_ns_per_iter | "
+        "alias_over_direct_ratio | median_pair_delta_ns_per_iter | "
+        "aa_noise_floor_ns_per_iter"
+    )
+    cases: Tuple[
+        Tuple[str, Callable[[], int], Callable[[], int]],
+        ...,
+    ] = (
+        (
+            "2",
+            bench.call_self_chain_depth2_direct_copy_once,
+            bench.call_self_chain_depth2_alias_copy_once,
+        ),
+        (
+            "3",
+            bench.call_self_chain_depth3_direct_copy_once,
+            bench.call_self_chain_depth3_alias_copy_once,
+        ),
+        (
+            "4",
+            bench.call_self_chain_depth4_direct_copy_once,
+            bench.call_self_chain_depth4_alias_copy_once,
+        ),
     )
     rows_emitted = 0
-    for access_count in (1, 2, 3, 4):
-        direct_fn = partial(
-            _call_param_flat_direct_once,
-            sink=sink,
-            pointer=pointer,
-            access_count=access_count,
+    for depth, direct_fn, alias_fn in cases:
+        assert direct_fn() == 1
+        assert alias_fn() == 1
+        direct_avg_ns, alias_avg_ns, median_pair_delta_ns_per_iter = (
+            _paired_order_call_only_avg_ns(
+                direct_fn=direct_fn,
+                direct_args=(),
+                alias_fn=alias_fn,
+                alias_args=(),
+                warmup=warmup,
+                iterations=iterations,
+                pair_repeats=pair_repeats,
+            )
         )
-        alias_fn = partial(
-            _call_param_flat_alias_once,
-            sink=sink,
-            pointer=pointer,
-            access_count=access_count,
-        )
-        direct_avg_ns, direct_checksum = _average_invoke_loop_ns(
+        aa_noise_floor_ns_per_iter = _aa_noise_floor_ns_per_iter(
             fn=direct_fn,
+            args=(),
             warmup=warmup,
             iterations=iterations,
-            repeats=repeats,
+            pair_repeats=pair_repeats,
         )
-        alias_avg_ns, alias_checksum = _average_invoke_loop_ns(
-            fn=alias_fn,
-            warmup=warmup,
-            iterations=iterations,
-            repeats=repeats,
-        )
-        expected = iterations * access_count
-        assert direct_checksum == expected
-        assert alias_checksum == expected
         direct_avg_per_iter = direct_avg_ns / float(iterations)
         alias_avg_per_iter = alias_avg_ns / float(iterations)
         ratio = alias_avg_ns / direct_avg_ns
         print(
-            "[pointer-param-flat] accesses={0} | direct_total_ns={1:.0f} | "
+            "[pointer-self-chain] depth={0} | direct_total_ns={1:.0f} | "
             "direct_ns_per_iter={2:.6f} | alias_total_ns={3:.0f} | "
-            "alias_ns_per_iter={4:.6f} | ratio={5:.6f}".format(
-                access_count,
+            "alias_ns_per_iter={4:.6f} | ratio={5:.6f} | "
+            "median_pair_delta_ns_per_iter={6:.6f} | aa_noise_floor_ns_per_iter={7:.6f}".format(
+                depth,
                 direct_avg_ns,
                 direct_avg_per_iter,
                 alias_avg_ns,
                 alias_avg_per_iter,
                 ratio,
+                median_pair_delta_ns_per_iter,
+                aa_noise_floor_ns_per_iter,
             )
         )
         rows_emitted += 1
-    assert rows_emitted == 4
-
-
-def test_pointer_call_only_self_chain_alias_vs_direct_perf() -> None:
-    """
-    Compare self-chain pointer call overhead across depth and access matrices.
-
-    Contract:
-        - Timed work is pointer->method->return only.
-        - Uses depth matrix 2..4 and access-count matrix 1..4.
-        - Uses fixed warmup and repeat counts.
-    """
-    iterations = 1_000_000
-    warmup = 50_000
-    repeats = 3
-    bench = _PointerMethodCallBench()
-    print(
-        "[pointer-self-chain] iterations={0}, warmup={1}, repeats={2}".format(
-            iterations,
-            warmup,
-            repeats,
-        )
-    )
-    print(
-        "[pointer-self-chain] columns: depth | accesses | direct_avg_total_ns | "
-        "direct_avg_ns_per_iter | alias_avg_total_ns | alias_avg_ns_per_iter | "
-        "alias_over_direct_ratio"
-    )
-    rows_emitted = 0
-    for depth in (2, 3, 4):
-        for access_count in (1, 2, 3, 4):
-            direct_fn = partial(
-                bench.call_self_chain_direct_once,
-                depth=depth,
-                access_count=access_count,
-            )
-            alias_fn = partial(
-                bench.call_self_chain_alias_once,
-                depth=depth,
-                access_count=access_count,
-            )
-            direct_avg_ns, direct_checksum = _average_invoke_loop_ns(
-                fn=direct_fn,
-                warmup=warmup,
-                iterations=iterations,
-                repeats=repeats,
-            )
-            alias_avg_ns, alias_checksum = _average_invoke_loop_ns(
-                fn=alias_fn,
-                warmup=warmup,
-                iterations=iterations,
-                repeats=repeats,
-            )
-            expected = iterations * access_count
-            assert direct_checksum == expected
-            assert alias_checksum == expected
-            direct_avg_per_iter = direct_avg_ns / float(iterations)
-            alias_avg_per_iter = alias_avg_ns / float(iterations)
-            ratio = alias_avg_ns / direct_avg_ns
-            print(
-                "[pointer-self-chain] depth={0} | accesses={1} | direct_total_ns={2:.0f} | "
-                "direct_ns_per_iter={3:.6f} | alias_total_ns={4:.0f} | "
-                "alias_ns_per_iter={5:.6f} | ratio={6:.6f}".format(
-                    depth,
-                    access_count,
-                    direct_avg_ns,
-                    direct_avg_per_iter,
-                    alias_avg_ns,
-                    alias_avg_per_iter,
-                    ratio,
-                )
-            )
-            rows_emitted += 1
-    assert rows_emitted == 12
+    assert rows_emitted == 3
 
 
 def test_pointer_call_only_param_chain_alias_vs_direct_perf() -> None:
     """
-    Compare param-chain pointer call overhead across depth and access matrices.
+    Compare param-chain copy-unit overhead across depths.
 
     Contract:
-        - Timed work is pointer->method->return only.
-        - Uses depth matrix 2..4 and access-count matrix 1..4.
+        - Timed work per invocation is: index -> copy -> return.
+        - Uses depth matrix 2..4.
         - Uses fixed warmup and repeat counts.
     """
     iterations = 1_000_000
     warmup = 50_000
-    repeats = 3
-    sink = _PointerSink()
+    pair_repeats = 8
     chain_root = _ChainRoot()
     print(
-        "[pointer-param-chain] iterations={0}, warmup={1}, repeats={2}".format(
+        "[pointer-param-chain] iterations={0}, warmup={1}, pair_repeats={2}".format(
             iterations,
             warmup,
-            repeats,
+            pair_repeats,
         )
     )
     print(
-        "[pointer-param-chain] columns: depth | accesses | direct_avg_total_ns | "
+        "[pointer-param-chain] columns: depth | direct_avg_total_ns | "
         "direct_avg_ns_per_iter | alias_avg_total_ns | alias_avg_ns_per_iter | "
-        "alias_over_direct_ratio"
+        "alias_over_direct_ratio | median_pair_delta_ns_per_iter | "
+        "aa_noise_floor_ns_per_iter"
+    )
+    cases: Tuple[
+        Tuple[str, Callable[[_ChainRoot], int], Callable[[_ChainRoot], int]],
+        ...,
+    ] = (
+        ("2", _call_param_chain_direct_copy_once, _call_param_chain_alias_copy_once),
+        (
+            "3",
+            _call_param_chain_depth3_direct_copy_once,
+            _call_param_chain_depth3_alias_copy_once,
+        ),
+        (
+            "4",
+            _call_param_chain_depth4_direct_copy_once,
+            _call_param_chain_depth4_alias_copy_once,
+        ),
     )
     rows_emitted = 0
-    for depth in (2, 3, 4):
-        for access_count in (1, 2, 3, 4):
-            direct_fn = partial(
-                _call_param_chain_direct_once,
-                sink=sink,
-                chain_root=chain_root,
-                depth=depth,
-                access_count=access_count,
-            )
-            alias_fn = partial(
-                _call_param_chain_alias_once,
-                sink=sink,
-                chain_root=chain_root,
-                depth=depth,
-                access_count=access_count,
-            )
-            direct_avg_ns, direct_checksum = _average_invoke_loop_ns(
-                fn=direct_fn,
+    for depth, direct_fn, alias_fn in cases:
+        assert direct_fn(chain_root) == 1
+        assert alias_fn(chain_root) == 1
+        direct_avg_ns, alias_avg_ns, median_pair_delta_ns_per_iter = (
+            _paired_order_call_only_avg_ns(
+                direct_fn=direct_fn,
+                direct_args=(chain_root,),
+                alias_fn=alias_fn,
+                alias_args=(chain_root,),
                 warmup=warmup,
                 iterations=iterations,
-                repeats=repeats,
+                pair_repeats=pair_repeats,
             )
-            alias_avg_ns, alias_checksum = _average_invoke_loop_ns(
-                fn=alias_fn,
-                warmup=warmup,
-                iterations=iterations,
-                repeats=repeats,
+        )
+        aa_noise_floor_ns_per_iter = _aa_noise_floor_ns_per_iter(
+            fn=direct_fn,
+            args=(chain_root,),
+            warmup=warmup,
+            iterations=iterations,
+            pair_repeats=pair_repeats,
+        )
+        direct_avg_per_iter = direct_avg_ns / float(iterations)
+        alias_avg_per_iter = alias_avg_ns / float(iterations)
+        ratio = alias_avg_ns / direct_avg_ns
+        print(
+            "[pointer-param-chain] depth={0} | direct_total_ns={1:.0f} | "
+            "direct_ns_per_iter={2:.6f} | alias_total_ns={3:.0f} | "
+            "alias_ns_per_iter={4:.6f} | ratio={5:.6f} | "
+            "median_pair_delta_ns_per_iter={6:.6f} | aa_noise_floor_ns_per_iter={7:.6f}".format(
+                depth,
+                direct_avg_ns,
+                direct_avg_per_iter,
+                alias_avg_ns,
+                alias_avg_per_iter,
+                ratio,
+                median_pair_delta_ns_per_iter,
+                aa_noise_floor_ns_per_iter,
             )
-            expected = iterations * access_count
-            assert direct_checksum == expected
-            assert alias_checksum == expected
-            direct_avg_per_iter = direct_avg_ns / float(iterations)
-            alias_avg_per_iter = alias_avg_ns / float(iterations)
-            ratio = alias_avg_ns / direct_avg_ns
-            print(
-                "[pointer-param-chain] depth={0} | accesses={1} | direct_total_ns={2:.0f} | "
-                "direct_ns_per_iter={3:.6f} | alias_total_ns={4:.0f} | "
-                "alias_ns_per_iter={5:.6f} | ratio={6:.6f}".format(
-                    depth,
-                    access_count,
-                    direct_avg_ns,
-                    direct_avg_per_iter,
-                    alias_avg_ns,
-                    alias_avg_per_iter,
-                    ratio,
-                )
-            )
-            rows_emitted += 1
-    assert rows_emitted == 12
+        )
+        rows_emitted += 1
+    assert rows_emitted == 3

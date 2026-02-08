@@ -1,4 +1,3 @@
-from collections import deque
 from operator import itemgetter
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
@@ -27,7 +26,7 @@ class MeldRuntime(Cleanable):
         - Executes no-overrides calls through `phase12_no_overrides_executor`.
         - Executes override calls through specialization executors compiled from
           the Phase 11 override execution IR rows.
-        - Keeps override specialization caches bounded per spell.
+        - Keeps override specialization caches per spell for runtime lifetime.
         - Mutation-bearing spells route through override specialization executors.
         - Trusts upstream Meld/Spellbook validation and uses direct artifact
           access on execution paths.
@@ -35,8 +34,6 @@ class MeldRuntime(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_override_specialization_cache",
-        "_override_specialization_order",
-        "_max_override_specializations_per_spell",
     )
 
     def __init__(self) -> None:
@@ -45,13 +42,11 @@ class MeldRuntime(Cleanable):
 
         Contract:
             - Runtime holds no engine or frame pools.
-            - Runtime owns a bounded per-spell override specialization cache.
+            - Runtime owns a per-spell override specialization cache.
             - All per-call state is supplied through MeldContext.
         """
         super().__init__()
         self._override_specialization_cache: Dict[str, Dict[Tuple[Any, ...], Callable[..., Any]]] = {}
-        self._override_specialization_order: Dict[str, deque[Tuple[Any, ...]]] = {}
-        self._max_override_specializations_per_spell: int = 64
 
     def execute_no_overrides_fast_transient(
             self,
@@ -119,16 +114,10 @@ class MeldRuntime(Cleanable):
         if self._cleaned:
             return
         override_specialization_cache = self._override_specialization_cache
-        override_specialization_order = self._override_specialization_order
         for cache in override_specialization_cache.values():
             cache.clear()
-        for order in override_specialization_order.values():
-            order.clear()
         override_specialization_cache.clear()
-        override_specialization_order.clear()
         self._override_specialization_cache = None
-        self._override_specialization_order = None
-        self._max_override_specializations_per_spell = None
         self._cleaned = True
 
     def _execute_no_overrides(
@@ -530,26 +519,18 @@ class MeldRuntime(Cleanable):
         Resolve a cached override specialization executor or compile on miss.
 
         Contract:
-            - Cache entries are bounded by `_max_override_specializations_per_spell`.
-            - Eviction order is deterministic FIFO per spell id.
+            - Cache entries are retained for the runtime lifetime.
         """
         spell_id = spell.spell_id
         override_specialization_cache = self._override_specialization_cache
-        override_specialization_order = self._override_specialization_order
-        max_override_specializations_per_spell = (
-            self._max_override_specializations_per_spell
-        )
         cache = override_specialization_cache.get(spell_id)
-        order = override_specialization_order.get(spell_id)
-        if cache is None:
+        if cache:
+            cached = cache.get(shape_key)
+            if cached is not None:
+                return cached
+        elif cache is None:
             cache = {}
-            order = deque()
             override_specialization_cache[spell_id] = cache
-            override_specialization_order[spell_id] = order
-
-        cached = cache.get(shape_key)
-        if cached is not None:
-            return cached
 
         compiled = compile_phase12_overrides_executor(
             execution_plan=execution_plan,
@@ -561,11 +542,7 @@ class MeldRuntime(Cleanable):
             spell_lookup=spell_lookup,
         )
 
-        if len(order) >= max_override_specializations_per_spell:
-            evicted = order.popleft()
-            cache.pop(evicted, None)
         cache[shape_key] = compiled
-        order.append(shape_key)
         return compiled
 
     @staticmethod
