@@ -11,6 +11,8 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanTargetKind
 from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
     compile_phase12_overrides_executor,
+    compile_phase12_overrides_executor_from_source,
+    emit_phase12_overrides_executor_source,
 )
 
 
@@ -161,6 +163,35 @@ def test_compile_phase12_overrides_executor_supports_schema_rows_execution() -> 
     result = executor(context, {}, None)
 
     assert result == "value:root"
+
+
+def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_execution() -> None:
+    """Source-restored compile path emits a callable executor that executes."""
+    spell = _make_spell("root")
+    source = emit_phase12_overrides_executor_source(step_count=1)
+    executor = compile_phase12_overrides_executor_from_source(
+        source=source,
+        execution_plan=None,
+        plan_rows=(_make_plan_row("root"),),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+        override_targets_by_spell_id={},
+        any_overrides_present=False,
+        path_registry=None,
+    )
+
+    context = SimpleNamespace(
+        caller_creations=SimpleNamespace(_lock=threading.RLock()),
+        caller_creations_lock_held=False,
+    )
+    result = executor(context, {}, None)
+    assert result == "value:root"
+
+
+def test_emit_phase12_overrides_executor_source_rejects_negative_step_count() -> None:
+    """Source emitter enforces non-negative step counts."""
+    with pytest.raises(ValueError, match="step_count must not be negative"):
+        emit_phase12_overrides_executor_source(step_count=-1)
 
 
 def test_compile_phase12_overrides_executor_raises_on_codegen_error(

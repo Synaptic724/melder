@@ -63,6 +63,84 @@ def compile_phase12_overrides_executor(
         RuntimeError:
             If the execution plan has no root instance key.
     """
+    compiled_executor, _ = _compile_phase12_overrides_executor_core(
+        source=None,
+        execution_plan=execution_plan,
+        override_targets_by_spell_id=override_targets_by_spell_id,
+        any_overrides_present=any_overrides_present,
+        path_registry=path_registry,
+        plan_rows=plan_rows,
+        root_spell_id=root_spell_id,
+        spell_lookup=spell_lookup,
+    )
+    return compiled_executor
+
+
+def compile_phase12_overrides_executor_from_source(
+        *,
+        source: str,
+        execution_plan: Optional[Any],
+        override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+        any_overrides_present: bool,
+        path_registry: Optional[Any],
+        plan_rows: Optional[Sequence[Dict[str, Any]]] = None,
+        root_spell_id: Optional[str] = None,
+        spell_lookup: Optional[Dict[str, Any]] = None,
+) -> Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]:
+    """
+    Compile a specialization executor from previously emitted source.
+
+    Contract:
+        - Reuses the same schema/plan validation as fresh compilation.
+        - Uses the supplied source verbatim for code object compilation.
+    """
+    compiled_executor, _ = _compile_phase12_overrides_executor_core(
+        source=source,
+        execution_plan=execution_plan,
+        override_targets_by_spell_id=override_targets_by_spell_id,
+        any_overrides_present=any_overrides_present,
+        path_registry=path_registry,
+        plan_rows=plan_rows,
+        root_spell_id=root_spell_id,
+        spell_lookup=spell_lookup,
+    )
+    return compiled_executor
+
+
+def emit_phase12_overrides_executor_source(
+        *,
+        step_count: int,
+) -> str:
+    """
+    Emit generated Phase12 override specialization source for a step count.
+
+    Contract:
+        - Source is deterministic for the same `step_count`.
+        - Raises when step_count is invalid.
+    """
+    return _build_phase12_overrides_executor_source(
+        step_count=step_count,
+    )
+
+
+def _compile_phase12_overrides_executor_core(
+        *,
+        source: Optional[str],
+        execution_plan: Optional[Any],
+        override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+        any_overrides_present: bool,
+        path_registry: Optional[Any],
+        plan_rows: Optional[Sequence[Dict[str, Any]]],
+        root_spell_id: Optional[str],
+        spell_lookup: Optional[Dict[str, Any]],
+) -> Tuple[Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any], str]:
+    """
+    Shared compile flow for fresh and source-restored override executors.
+
+    Contract:
+        - Validates plan/schema inputs before compiling generated source.
+        - Returns both the compiled callable and source used for compilation.
+    """
     if execution_plan is None and not plan_rows:
         raise ValueError("execution_plan must not be None.")
     if override_targets_by_spell_id is None:
@@ -95,9 +173,14 @@ def compile_phase12_overrides_executor(
         override_targets_by_spell_id=override_targets_by_spell_id,
     )
 
-    source = _build_phase12_overrides_executor_source(
-        step_count=len(steps),
-    )
+    source_to_compile = source
+    if source_to_compile is None:
+        source_to_compile = emit_phase12_overrides_executor_source(
+            step_count=len(steps),
+        )
+    elif not isinstance(source_to_compile, str) or not source_to_compile:
+        raise ValueError("source must be a non-empty string.")
+
     namespace = _build_phase12_overrides_executor_namespace(
         steps=steps,
         step_override_targets=step_override_targets,
@@ -109,7 +192,7 @@ def compile_phase12_overrides_executor(
     local_namespace: Dict[str, Any] = {}
     try:
         exec(
-            compile(source, "<melder_phase12_overrides_executor>", "exec"),
+            compile(source_to_compile, "<melder_phase12_overrides_executor>", "exec"),
             namespace,
             local_namespace,
         )
@@ -120,7 +203,7 @@ def compile_phase12_overrides_executor(
 
     compiled_executor = local_namespace.get("_phase12_executor")
     if callable(compiled_executor):
-        return compiled_executor
+        return compiled_executor, source_to_compile
     raise RuntimeError(
         "Phase 12 overrides executor source did not define a callable _phase12_executor."
     )

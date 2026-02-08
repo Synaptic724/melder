@@ -1,3 +1,7 @@
+import hashlib
+import json
+import os
+import time
 from collections import deque
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
@@ -9,6 +13,8 @@ from melder.spellbook.spell_crafter.blueprints.patch_maps import (
 )
 from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
     compile_phase12_overrides_executor,
+    compile_phase12_overrides_executor_from_source,
+    emit_phase12_overrides_executor_source,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
@@ -26,7 +32,7 @@ class MeldRuntime(Cleanable):
     Contract:
         - Executes no-overrides calls through `phase12_no_overrides_executor`.
         - Executes override calls through specialization executors compiled from
-          the Phase 11 override plan.
+          the Phase 11 override execution IR rows.
         - Keeps override specialization caches bounded per spell.
         - Mutation-bearing spells route through override specialization executors.
         - Enforces spell validity/change-control invariants before execution.
@@ -38,7 +44,11 @@ class MeldRuntime(Cleanable):
         "_override_specialization_cache",
         "_override_specialization_order",
         "_max_override_specializations_per_spell",
+        "_override_specialization_l2_cache_dir",
+        "_max_override_specializations_l2_per_spell",
     )
+    _OVERRIDE_L2_SCHEMA_VERSION = "phase12_override_source_l2_v1"
+    _OVERRIDE_L2_RUNTIME_VERSION = "meld_runtime_override_codegen_2026_02_08"
 
     def __init__(self) -> None:
         """
@@ -53,6 +63,8 @@ class MeldRuntime(Cleanable):
         self._override_specialization_cache: Dict[str, Dict[Tuple[Any, ...], Callable[..., Any]]] = {}
         self._override_specialization_order: Dict[str, deque[Tuple[Any, ...]]] = {}
         self._max_override_specializations_per_spell: int = 64
+        self._override_specialization_l2_cache_dir: Optional[str] = None
+        self._max_override_specializations_l2_per_spell: int = 256
 
     def execute_fast_transient(
             self,
@@ -159,6 +171,8 @@ class MeldRuntime(Cleanable):
         self._override_specialization_cache = None
         self._override_specialization_order = None
         self._max_override_specializations_per_spell = None
+        self._override_specialization_l2_cache_dir = None
+        self._max_override_specializations_l2_per_spell = None
         self._cleaned = True
 
     @staticmethod
@@ -235,6 +249,8 @@ class MeldRuntime(Cleanable):
 
         Contract:
             - Applies Phase 10 override patch maps to normalize TargetSpec keys.
+            - Requires Phase11 override execution IR rows for specialization
+              compile and shape-key signature construction.
             - Selects/compiles a spell-scoped specialization by override shape.
             - Uses mutation-aware plan artifacts when the root spell carries
               mutation overrides.
@@ -250,25 +266,44 @@ class MeldRuntime(Cleanable):
 
         is_mutation_route = spell.has_mutation_override
         execution_ir_key = "overrides_with_mutations" if is_mutation_route else "overrides"
-        execution_plan = (
-            crafter.execution_plan_phase11_overrides_with_mutations
-            if is_mutation_route
-            else crafter.execution_plan_phase11_overrides
+        override_execution_ir_payload = self._resolve_override_execution_ir_payload(
+            crafter=crafter,
+            execution_ir_key=execution_ir_key,
         )
-        if execution_plan is None:
+        if not override_execution_ir_payload:
             message = (
-                "Phase 11 override execution plan is required for override "
+                "Phase 11 override execution IR payload is required for override "
                 "specialization execution."
             )
             if is_mutation_route:
                 message = (
-                    "Phase 11 override+mutation execution plan is required for "
-                    "override specialization execution."
+                    "Phase 11 override+mutation execution IR payload is required "
+                    "for override specialization execution."
                 )
             raise MeldExecutionError(
                 spell_id=spell.spell_index.current,
                 spell_name=spell.spell_name,
                 message=message,
+            )
+        plan_rows = override_execution_ir_payload.get("steps_rows")
+        if not plan_rows:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Phase 11 override execution IR payload must provide non-empty "
+                    "'steps_rows'."
+                ),
+            )
+        root_spell_id = override_execution_ir_payload.get("root_spell_id")
+        if not root_spell_id:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Phase 11 override execution IR payload must provide "
+                    "'root_spell_id'."
+                ),
             )
 
         override_payload = context.overrides
@@ -314,7 +349,6 @@ class MeldRuntime(Cleanable):
         try:
             plan_signature = self._resolve_override_plan_signature(
                 crafter=crafter,
-                execution_plan=execution_plan,
                 execution_ir_key=execution_ir_key,
             )
             shape_key = self._build_override_shape_key(
@@ -337,22 +371,11 @@ class MeldRuntime(Cleanable):
         root_blueprint = crafter.root_blueprint_phase5
         path_registry = root_blueprint.path_registry if root_blueprint is not None else None
         any_overrides_present = bool(override_payload)
-        override_execution_ir_payload = self._resolve_override_execution_ir_payload(
-            crafter=crafter,
-            execution_ir_key=execution_ir_key,
-        )
-        plan_rows = None
-        root_spell_id = None
-        spell_lookup = None
-        if override_execution_ir_payload:
-            plan_rows = override_execution_ir_payload.get("steps_rows")
-            root_spell_id = override_execution_ir_payload.get("root_spell_id")
-            if plan_rows:
-                spell_lookup = spell._spellbook._spell_id_pool
+        spell_lookup = spell._spellbook._spell_id_pool
         executor = self._get_or_compile_override_executor(
             spell=spell,
             shape_key=shape_key,
-            execution_plan=execution_plan,
+            execution_plan=None,
             override_targets_by_spell_id=override_targets_by_spell_id,
             any_overrides_present=any_overrides_present,
             path_registry=path_registry,
@@ -494,35 +517,33 @@ class MeldRuntime(Cleanable):
     def _resolve_override_plan_signature(
             *,
             crafter: Any,
-            execution_plan: Any,
             execution_ir_key: str = "overrides",
     ) -> Tuple[Any, ...]:
         """
         Resolve the override plan-signature source for shape-key construction.
 
         Contract:
-            - Prefers schema-side Phase11 IR override signatures when present.
+            - Requires schema-side Phase11 IR override signatures.
             - Selects the execution variant payload by `execution_ir_key`.
-            - Falls back to execution-plan semantic signatures when IR data is
-              missing or incomplete.
+            - Raises when required signature data is missing.
         """
-        codegen_ir = crafter.codegen_ir
-        if codegen_ir is not None:
-            phase8_11_payload = codegen_ir.get("phase8_11")
-            if phase8_11_payload:
-                execution_payload = phase8_11_payload.get("execution")
-                if execution_payload:
-                    overrides_payload = execution_payload.get(execution_ir_key)
-                    if overrides_payload:
-                        variant_signature = overrides_payload.get("signature")
-                        if variant_signature is not None:
-                            return (
-                                "phase11_overrides_ir",
-                                variant_signature,
-                                overrides_payload.get("steps_rows_signature"),
-                            )
-        return MeldRuntime._build_override_plan_signature(
-            execution_plan=execution_plan,
+        overrides_payload = MeldRuntime._resolve_override_execution_ir_payload(
+            crafter=crafter,
+            execution_ir_key=execution_ir_key,
+        )
+        if not overrides_payload:
+            raise ValueError(
+                "Phase 11 override execution IR payload is missing for shape-key signature."
+            )
+        variant_signature = overrides_payload.get("signature")
+        if variant_signature is None:
+            raise ValueError(
+                "Phase 11 override execution IR payload is missing required field 'signature'."
+            )
+        return (
+            "phase11_overrides_ir",
+            variant_signature,
+            overrides_payload.get("steps_rows_signature"),
         )
 
     @staticmethod
@@ -683,6 +704,7 @@ class MeldRuntime(Cleanable):
         Contract:
             - Cache entries are bounded by `_max_override_specializations_per_spell`.
             - Eviction order is deterministic FIFO per spell id.
+            - Uses persisted L2 source artifacts before cold compile misses.
         """
         spell_id = spell.spell_id
         cache = self._override_specialization_cache.get(spell_id)
@@ -697,8 +719,200 @@ class MeldRuntime(Cleanable):
         if cached is not None:
             return cached
 
+        l2_key, shape_signature = self._build_override_l2_key(
+            spell_id=spell_id,
+            shape_key=shape_key,
+        )
+        restored = self._load_override_executor_from_l2(
+            spell=spell,
+            l2_key=l2_key,
+            shape_signature=shape_signature,
+            execution_plan=execution_plan,
+            override_targets_by_spell_id=override_targets_by_spell_id,
+            any_overrides_present=any_overrides_present,
+            path_registry=path_registry,
+            plan_rows=plan_rows,
+            root_spell_id=root_spell_id,
+            spell_lookup=spell_lookup,
+        )
+        if restored is not None:
+            compiled = restored
+        else:
+            try:
+                compiled = compile_phase12_overrides_executor(
+                    execution_plan=execution_plan,
+                    override_targets_by_spell_id=override_targets_by_spell_id,
+                    any_overrides_present=any_overrides_present,
+                    path_registry=path_registry,
+                    plan_rows=plan_rows,
+                    root_spell_id=root_spell_id,
+                    spell_lookup=spell_lookup,
+                )
+            except MeldExecutionError:
+                raise
+            except Exception as exc:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message="Phase 12 override specialization compilation failed.",
+                    inner=exc,
+                ) from exc
+            source = self._resolve_override_specialization_source(
+                execution_plan=execution_plan,
+                plan_rows=plan_rows,
+            )
+            if source is not None:
+                self._persist_override_executor_source_to_l2(
+                    spell_id=spell_id,
+                    l2_key=l2_key,
+                    shape_signature=shape_signature,
+                    source=source,
+                )
+
+        if shape_key not in cache:
+            if len(order) >= self._max_override_specializations_per_spell:
+                evicted = order.popleft()
+                cache.pop(evicted, None)
+            cache[shape_key] = compiled
+            order.append(shape_key)
+        return compiled
+
+    @staticmethod
+    def _resolve_override_specialization_source(
+            *,
+            execution_plan: Any,
+            plan_rows: Optional[Sequence[Dict[str, Any]]],
+    ) -> Optional[str]:
+        """
+        Resolve deterministic generated specialization source for persistence.
+
+        Contract:
+            - Uses plan row count when rows are present.
+            - Falls back to execution-plan step count when available.
+            - Returns None when step count cannot be derived.
+        """
+        step_count: Optional[int] = None
+        if plan_rows is not None:
+            step_count = len(plan_rows)
+        elif execution_plan is not None:
+            step_count = len(execution_plan.steps)
+        if step_count is None:
+            return None
+        return emit_phase12_overrides_executor_source(
+            step_count=step_count,
+        )
+
+    @staticmethod
+    def _build_override_l2_key(
+            *,
+            spell_id: str,
+            shape_key: Tuple[Any, ...],
+    ) -> Tuple[str, str]:
+        """
+        Build deterministic persisted-cache key metadata for one specialization.
+
+        Contract:
+            - Includes spell id, shape signature, schema version, and runtime version.
+            - Returns `(l2_key, shape_signature)`.
+        """
+        shape_signature = hashlib.sha256(repr(shape_key).encode("utf-8")).hexdigest()
+        raw = (
+            f"{MeldRuntime._OVERRIDE_L2_SCHEMA_VERSION}|"
+            f"{MeldRuntime._OVERRIDE_L2_RUNTIME_VERSION}|"
+            f"{spell_id}|"
+            f"{shape_signature}"
+        )
+        l2_key = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        return l2_key, shape_signature
+
+    def _get_override_l2_artifact_path(
+            self,
+            *,
+            spell_id: str,
+            l2_key: str,
+    ) -> str:
+        """
+        Resolve file path for one persisted override specialization artifact.
+
+        Contract:
+            - Uses spell-id hash directories to avoid invalid path characters.
+            - Returns a `.json` artifact path.
+        """
+        cache_root = self._override_specialization_l2_cache_dir
+        spell_hash = hashlib.sha256(spell_id.encode("utf-8")).hexdigest()
+        spell_cache_dir = os.path.join(cache_root, spell_hash)
+        return os.path.join(spell_cache_dir, f"{l2_key}.json")
+
+    def _load_override_executor_from_l2(
+            self,
+            *,
+            spell: ISpell,
+            l2_key: str,
+            shape_signature: str,
+            execution_plan: Any,
+            override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+            any_overrides_present: bool,
+            path_registry: Optional[Any],
+            plan_rows: Optional[Sequence[Dict[str, Any]]],
+            root_spell_id: Optional[str],
+            spell_lookup: Optional[Dict[str, Any]],
+    ) -> Optional[Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]]:
+        """
+        Attempt to restore a specialization executor from persisted L2 source.
+
+        Contract:
+            - Validates schema/runtime versions and key metadata before compile.
+            - Corrupt or stale artifacts are discarded and treated as cache misses.
+        """
+        if not self._override_specialization_l2_cache_dir:
+            return None
+        artifact_path = self._get_override_l2_artifact_path(
+            spell_id=spell.spell_id,
+            l2_key=l2_key,
+        )
+        if not os.path.exists(artifact_path):
+            return None
+
         try:
-            compiled = compile_phase12_overrides_executor(
+            with open(artifact_path, "r", encoding="utf-8") as artifact_file:
+                artifact = json.load(artifact_file)
+        except Exception:
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+
+        if not isinstance(artifact, dict):
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+        metadata = artifact.get("metadata")
+        source = artifact.get("source")
+        if not isinstance(metadata, dict) or not isinstance(source, str) or not source:
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+
+        if metadata.get("schema_version") != self._OVERRIDE_L2_SCHEMA_VERSION:
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+        if metadata.get("runtime_version") != self._OVERRIDE_L2_RUNTIME_VERSION:
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+        if metadata.get("spell_id") != spell.spell_id:
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+        if metadata.get("l2_key") != l2_key:
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+        if metadata.get("shape_signature") != shape_signature:
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+
+        source_sha256 = hashlib.sha256(source.encode("utf-8")).hexdigest()
+        if metadata.get("source_sha256") != source_sha256:
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+
+        try:
+            return compile_phase12_overrides_executor_from_source(
+                source=source,
                 execution_plan=execution_plan,
                 override_targets_by_spell_id=override_targets_by_spell_id,
                 any_overrides_present=any_overrides_present,
@@ -707,22 +921,120 @@ class MeldRuntime(Cleanable):
                 root_spell_id=root_spell_id,
                 spell_lookup=spell_lookup,
             )
-        except MeldExecutionError:
-            raise
-        except Exception as exc:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message="Phase 12 override specialization compilation failed.",
-                inner=exc,
-            ) from exc
-        if shape_key not in cache:
-            if len(order) >= self._max_override_specializations_per_spell:
-                evicted = order.popleft()
-                cache.pop(evicted, None)
-            cache[shape_key] = compiled
-            order.append(shape_key)
-        return compiled
+        except Exception:
+            self._discard_override_l2_artifact(artifact_path)
+            return None
+
+    def _persist_override_executor_source_to_l2(
+            self,
+            *,
+            spell_id: str,
+            l2_key: str,
+            shape_signature: str,
+            source: str,
+    ) -> None:
+        """
+        Persist specialization source to L2 cache with metadata validation fields.
+
+        Contract:
+            - Writes atomically via temp file + replace when possible.
+            - Best-effort only; write failures never break runtime execution.
+            - Applies per-spell L2 eviction after successful writes.
+        """
+        if not self._override_specialization_l2_cache_dir:
+            return
+        artifact_path = self._get_override_l2_artifact_path(
+            spell_id=spell_id,
+            l2_key=l2_key,
+        )
+        artifact_dir = os.path.dirname(artifact_path)
+        metadata = {
+            "schema_version": self._OVERRIDE_L2_SCHEMA_VERSION,
+            "runtime_version": self._OVERRIDE_L2_RUNTIME_VERSION,
+            "spell_id": spell_id,
+            "l2_key": l2_key,
+            "shape_signature": shape_signature,
+            "created_at_unix": time.time(),
+            "source_sha256": hashlib.sha256(source.encode("utf-8")).hexdigest(),
+        }
+        payload = {
+            "metadata": metadata,
+            "source": source,
+        }
+        temp_path = f"{artifact_path}.tmp"
+        try:
+            os.makedirs(artifact_dir, exist_ok=True)
+            with open(temp_path, "w", encoding="utf-8") as temp_file:
+                json.dump(
+                    payload,
+                    temp_file,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+            os.replace(temp_path, artifact_path)
+            self._evict_override_l2_artifacts(spell_id=spell_id)
+        except Exception:
+            try:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+            except Exception:
+                pass
+
+    def _evict_override_l2_artifacts(
+            self,
+            *,
+            spell_id: str,
+    ) -> None:
+        """
+        Enforce bounded per-spell L2 artifact retention.
+
+        Contract:
+            - Keeps at most `_max_override_specializations_l2_per_spell` entries.
+            - Evicts oldest files first by modification time.
+        """
+        if not self._override_specialization_l2_cache_dir:
+            return
+        max_entries = self._max_override_specializations_l2_per_spell
+        if max_entries is None or max_entries < 1:
+            return
+        spell_hash = hashlib.sha256(spell_id.encode("utf-8")).hexdigest()
+        spell_cache_dir = os.path.join(self._override_specialization_l2_cache_dir, spell_hash)
+        if not os.path.isdir(spell_cache_dir):
+            return
+
+        entries = []
+        try:
+            for name in os.listdir(spell_cache_dir):
+                if not name.endswith(".json"):
+                    continue
+                path = os.path.join(spell_cache_dir, name)
+                if not os.path.isfile(path):
+                    continue
+                try:
+                    mtime = os.path.getmtime(path)
+                except Exception:
+                    continue
+                entries.append((mtime, path))
+        except Exception:
+            return
+
+        if len(entries) <= max_entries:
+            return
+        entries.sort(key=lambda item: (item[0], item[1]))
+        excess = len(entries) - max_entries
+        for _, path in entries[:excess]:
+            self._discard_override_l2_artifact(path)
+
+    @staticmethod
+    def _discard_override_l2_artifact(path: str) -> None:
+        """
+        Best-effort deletion for corrupt or stale L2 cache artifacts.
+        """
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except Exception:
+            pass
 
     @staticmethod
     def _raise_on_missing_factory_result(
