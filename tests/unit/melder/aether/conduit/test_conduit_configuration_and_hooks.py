@@ -275,10 +275,10 @@ def test_initialize_conduit_hooks_attaches_for_lesser(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify lesser conduits attach shared configuration hooks.
+    Verify lesser conduits attach copied configuration hooks.
 
     Contract:
-        - Lesser conduits share the Spellbook hook map.
+        - Lesser conduits receive detached hook-map copies.
         - Cleanup hooks fire for lesser conduits.
 
     Args:
@@ -318,12 +318,135 @@ def test_initialize_conduit_hooks_attaches_for_lesser(
     )
     try:
         assert conduit._conduit_hooks is not None
-        assert conduit._conduit_hooks is configuration.get_hooks(spellbook_stub._id)
+        assert conduit._conduit_hooks == configuration.get_hooks(spellbook_stub._id)
+        assert conduit._conduit_hooks is not configuration.get_hooks(spellbook_stub._id)
         conduit.cleanup()
         assert events == [conduit]
     finally:
         if not conduit._cleaned:
             conduit.cleanup()
+
+
+def test_initialize_conduit_hooks_copies_hook_lists_from_configuration(
+    spellbook_stub: MagicMock,
+) -> None:
+    """
+    Verify Conduit snapshots hook lists from Configuration.
+
+    Contract:
+        - Conduit keeps detached list copies for conduit and meld hook maps.
+        - Later Configuration list mutations do not mutate Conduit maps.
+    """
+    configuration = Configuration()
+    configuration.set_property("system_state", "automatic")
+    configuration.with_defaults()
+
+    def conduit_hook(conduit: Conduit) -> None:
+        """
+        No-op conduit hook for copy checks.
+        """
+        _ = conduit
+
+    def conduit_hook_2(conduit: Conduit) -> None:
+        """
+        Secondary no-op conduit hook for copy checks.
+        """
+        _ = conduit
+
+    def meld_hook(conduit: Conduit) -> None:
+        """
+        No-op meld hook for copy checks.
+        """
+        _ = conduit
+
+    def meld_hook_2(conduit: Conduit) -> None:
+        """
+        Secondary no-op meld hook for copy checks.
+        """
+        _ = conduit
+
+    configuration.add_hook(spellbook_stub._id, "on_conduit_cleanup_start", conduit_hook)
+    configuration.add_hook(spellbook_stub._id, "on_meld_pre_resolve", meld_hook)
+
+    conduit = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration,
+        conduit_state=ConduitState.lesser,
+        aetheric_frame="default",
+        policy=Policies.default,
+    )
+    try:
+        config_hooks = configuration.get_hooks(spellbook_stub._id)
+        config_hooks["on_conduit_cleanup_start"].append(conduit_hook_2)
+        config_hooks["on_meld_pre_resolve"].append(meld_hook_2)
+
+        assert conduit._conduit_hooks is not None
+        assert conduit._meld_hooks is not None
+        assert conduit._conduit_hooks["on_conduit_cleanup_start"] == [conduit_hook]
+        assert conduit._meld_hooks["on_meld_pre_resolve"] == [meld_hook]
+    finally:
+        conduit.cleanup()
+
+
+def test_snapshot_split_hook_maps_from_configuration_uses_static_hook_lists(
+    spellbook_stub: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify Conduit pulls only static hook names from Configuration hook maps.
+
+    Contract:
+        - Unknown hook keys are ignored.
+        - Known hook keys are copied into the proper conduit/meld maps.
+    """
+    configuration = Configuration()
+    configuration.set_property("system_state", "automatic")
+    configuration.with_defaults()
+
+    def known_conduit_hook(conduit: Conduit) -> None:
+        """
+        No-op known conduit hook.
+        """
+        _ = conduit
+
+    def known_meld_hook(conduit: Conduit) -> None:
+        """
+        No-op known meld hook.
+        """
+        _ = conduit
+
+    def unknown_hook(conduit: Conduit) -> None:
+        """
+        No-op unknown hook.
+        """
+        _ = conduit
+
+    monkeypatch.setattr(
+        configuration,
+        "get_hooks",
+        lambda owner_id: {
+            "on_conduit_cleanup_start": [known_conduit_hook],
+            "on_meld_pre_resolve": [known_meld_hook],
+            "unknown_hook_name": [unknown_hook],
+        },
+    )
+
+    conduit = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration,
+        conduit_state=ConduitState.lesser,
+        aetheric_frame="default",
+        policy=Policies.default,
+    )
+    try:
+        assert conduit._conduit_hooks is not None
+        assert conduit._meld_hooks is not None
+        assert "on_conduit_cleanup_start" in conduit._conduit_hooks
+        assert "on_meld_pre_resolve" in conduit._meld_hooks
+        assert "unknown_hook_name" not in conduit._conduit_hooks
+        assert "unknown_hook_name" not in conduit._meld_hooks
+    finally:
+        conduit.cleanup()
 
 
 def test_register_conduit_hooks_registers_locally_only(
@@ -379,8 +502,10 @@ def test_register_conduit_hooks_local_allowed_after_configuration_freeze(
     spellbook_id = conduit_dynamic_normal._spellbook._id
     config_hooks = conduit_dynamic_normal._configuration.get_hooks(spellbook_id)
     assert "on_meld_pre_resolve" not in config_hooks
-    assert conduit_dynamic_normal._local_meld_hooks is not None
-    assert conduit_dynamic_normal._local_meld_hooks["on_meld_pre_resolve"][0] is hook
+    assert conduit_dynamic_normal._local_conduit_hooks is not None
+    assert conduit_dynamic_normal._local_conduit_hooks["on_meld_pre_resolve"][0] is hook
+    assert conduit_dynamic_normal._meld._meld_hooks is not None
+    assert "on_meld_pre_resolve" not in conduit_dynamic_normal._meld._meld_hooks
     assert conduit_dynamic_normal._has_meld_phase_hooks is True
 
 

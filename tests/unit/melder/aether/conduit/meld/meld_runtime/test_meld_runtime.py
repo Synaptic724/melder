@@ -934,11 +934,11 @@ def test_collect_override_targets_and_socket_shape_single_socket_fast_path_skips
     def _unexpected_sorted(*args: Any, **kwargs: Any) -> Any:
         raise AssertionError("sorted should not run for single-socket payloads")
 
-    monkeypatch.setattr("builtins.sorted", _unexpected_sorted)
-
-    targets, shape = MeldRuntime._collect_override_targets_and_socket_shape(
-        override_map={socket_ref: "value"},
-    )
+    with monkeypatch.context() as scoped_patch:
+        scoped_patch.setattr("builtins.sorted", _unexpected_sorted)
+        targets, shape = MeldRuntime._collect_override_targets_and_socket_shape(
+            override_map={socket_ref: "value"},
+        )
 
     assert targets == {"s1": (socket_ref,)}
     assert shape == (("s1", 7, "dep", "normal"),)
@@ -970,11 +970,11 @@ def test_collect_override_targets_and_socket_shape_two_socket_fast_path_skips_so
     def _unexpected_sorted(*args: Any, **kwargs: Any) -> Any:
         raise AssertionError("sorted should not run for two-socket payloads")
 
-    monkeypatch.setattr("builtins.sorted", _unexpected_sorted)
-
-    targets, shape = MeldRuntime._collect_override_targets_and_socket_shape(
-        override_map={socket_a: "va", socket_b: "vb"},
-    )
+    with monkeypatch.context() as scoped_patch:
+        scoped_patch.setattr("builtins.sorted", _unexpected_sorted)
+        targets, shape = MeldRuntime._collect_override_targets_and_socket_shape(
+            override_map={socket_a: "va", socket_b: "vb"},
+        )
 
     assert targets == {
         "s1": (socket_b,),
