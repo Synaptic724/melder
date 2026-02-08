@@ -5,10 +5,11 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
     OverrideRouteConfig,
 )
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell
 
 
-class CreationContextBuilder:
+class CreationContextBuilder(Cleanable):
     """
     Build spell-shaped `CreationContext` instances.
 
@@ -23,6 +24,28 @@ class CreationContextBuilder:
     """
 
     __slots__ = []
+
+    def __init__(self) -> None:
+        """
+        Initialize one stateless builder.
+
+        Contract:
+            - Builder owns no runtime caches.
+            - Cleanup only marks the builder as unusable.
+        """
+        super().__init__()
+
+    def cleanup(self) -> None:
+        """
+        Mark this builder as cleaned.
+
+        Contract:
+            - Idempotent cleanup.
+            - No child resources are owned by this builder.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
 
     def build(self, spell: ISpell) -> CreationContext:
         """
@@ -40,6 +63,7 @@ class CreationContextBuilder:
             RuntimeError:
                 If the spell is not in a runnable state for context creation.
         """
+        self.check_cleaned()
         spell.check_cleaned()
         if not spell.is_existing_creation and spell._crafter is None:
             raise RuntimeError(
@@ -60,10 +84,16 @@ class CreationContextBuilder:
             spell=spell,
             execution_ir_key="overrides_with_mutations",
         )
+        runtime_flags = self._build_runtime_flags(
+            fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
+            override_route_config_no_mutation=override_route_config_no_mutation,
+            override_route_config_mutation=override_route_config_mutation,
+        )
 
         return CreationContext(
             spell=spell,
             resolve_route_key=resolve_route_key,
+            runtime_flags=runtime_flags,
             fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
             no_overrides_executor=no_overrides_executor,
             override_patch_map_phase10=override_patch_map_phase10,
@@ -129,6 +159,29 @@ class CreationContextBuilder:
         return crafter.override_patch_map_phase10
 
     @staticmethod
+    def _build_runtime_flags(
+            *,
+            fast_transient_no_overrides_enabled: bool,
+            override_route_config_no_mutation: Optional[OverrideRouteConfig],
+            override_route_config_mutation: Optional[OverrideRouteConfig],
+    ) -> int:
+        """
+        Build spell-static runtime flag bits for one CreationContext.
+
+        Contract:
+            - Flags only represent spell-static lane availability.
+            - Per-call transients are not encoded in these flags.
+        """
+        runtime_flags = 0
+        if fast_transient_no_overrides_enabled:
+            runtime_flags |= CreationContext.FLAG_FAST_TRANSIENT_NO_OVERRIDES
+        if override_route_config_no_mutation is not None:
+            runtime_flags |= CreationContext.FLAG_OVERRIDE_ROUTE_NO_MUTATION
+        if override_route_config_mutation is not None:
+            runtime_flags |= CreationContext.FLAG_OVERRIDE_ROUTE_MUTATION
+        return runtime_flags
+
+    @staticmethod
     def _build_override_route_config(
             *,
             spell: ISpell,
@@ -172,10 +225,15 @@ class CreationContextBuilder:
         if spellbook is not None:
             spell_lookup = spellbook._spell_id_pool
 
+        plan_rows = override_execution_ir_payload.get("steps_rows")
+        root_spell_id = override_execution_ir_payload.get("root_spell_id")
+
         return OverrideRouteConfig(
             plan_signature=plan_signature,
             path_registry=path_registry,
-            plan_rows=override_execution_ir_payload.get("steps_rows"),
-            root_spell_id=override_execution_ir_payload.get("root_spell_id"),
+            plan_rows=plan_rows,
+            root_spell_id=root_spell_id,
             spell_lookup=spell_lookup,
+            empty_shape_key=None,
+            baseline_executor=None,
         )

@@ -180,6 +180,12 @@ class Meld(Cleanable, IMeld):
             self._creations = None
             self._conduit_id = None
             self._resolution_conduit_id = None
+            creation_context_factory = self._creation_context_factory
+            if creation_context_factory is not None:
+                try:
+                    creation_context_factory.cleanup()
+                except Exception:
+                    pass
             self._creation_context_factory = None
             self._meld_hooks = None
             self._input_resolution_cache = None

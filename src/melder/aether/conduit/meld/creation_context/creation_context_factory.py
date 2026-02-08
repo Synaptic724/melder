@@ -4,10 +4,11 @@ from melder.aether.conduit.meld.creation_context.creation_context import Creatio
 from melder.aether.conduit.meld.creation_context.creation_context_builder import (
     CreationContextBuilder,
 )
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell
 
 
-class CreationContextFactory:
+class CreationContextFactory(Cleanable):
     """
     Produce spell-shaped `CreationContext` instances.
 
@@ -22,7 +23,7 @@ class CreationContextFactory:
         - Factory delegates all shape rules to `CreationContextBuilder`.
     """
 
-    __slots__ = ["_builder"]
+    __slots__ = Cleanable.__slots__ + ["_builder"]
 
     def __init__(
             self,
@@ -36,6 +37,7 @@ class CreationContextFactory:
             builder:
                 Optional custom builder. Defaults to `CreationContextBuilder`.
         """
+        super().__init__()
         if builder is None:
             builder = CreationContextBuilder()
         self._builder: CreationContextBuilder = builder
@@ -52,6 +54,7 @@ class CreationContextFactory:
             CreationContext:
                 New spell-shaped context ready for runtime execution.
         """
+        self.check_cleaned()
         return self._builder.build(spell)
 
     def build_and_bind_for_spell(self, spell: ISpell) -> CreationContext:
@@ -63,6 +66,7 @@ class CreationContextFactory:
             - Replaces any existing spell-owned context reference.
             - Best-effort cleans replaced context.
         """
+        self.check_cleaned()
         built_creation_context = self._builder.build(spell)
         previous_creation_context: Optional[CreationContext] = None
         publish_error: Optional[Exception] = None
@@ -97,6 +101,7 @@ class CreationContextFactory:
             - Duplicate concurrent builds are accepted if output is equivalent.
             - Context ownership remains on Spell (`spell._creation_context`).
         """
+        self.check_cleaned()
         creation_context = spell._creation_context
         if creation_context is not None and not creation_context.is_cleaned:
             return creation_context
@@ -147,7 +152,29 @@ class CreationContextFactory:
             - Ignores existing context cache hit.
             - Useful for explicit runtime rebind flows.
         """
+        self.check_cleaned()
         return self.build_and_bind_for_spell(spell)
+
+    def cleanup(self) -> None:
+        """
+        Deterministically release the factory and its builder reference.
+
+        Contract:
+            - Idempotent cleanup.
+            - Best-effort cleanup is forwarded to the owned builder.
+            - Clears builder reference to prevent post-clean usage.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+        builder = self._builder
+        if builder is not None:
+            try:
+                builder.cleanup()
+            except Exception:
+                pass
+        self._builder = None
 
     @staticmethod
     def _cleanup_creation_context(

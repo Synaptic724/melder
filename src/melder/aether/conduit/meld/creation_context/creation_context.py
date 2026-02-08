@@ -14,7 +14,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ICreations, ISpell
 
 
-class OverrideRouteConfig:
+class OverrideRouteConfig(Cleanable):
     """
     Immutable spell-static override lane configuration.
 
@@ -27,12 +27,14 @@ class OverrideRouteConfig:
         - This object carries no per-call override payload data.
     """
 
-    __slots__ = [
+    __slots__ = Cleanable.__slots__ + [
         "plan_signature",
         "path_registry",
         "plan_rows",
         "root_spell_id",
         "spell_lookup",
+        "empty_shape_key",
+        "baseline_executor",
     ]
 
     def __init__(
@@ -43,6 +45,8 @@ class OverrideRouteConfig:
             plan_rows: Optional[Sequence[Dict[str, Any]]],
             root_spell_id: Optional[str],
             spell_lookup: Optional[Dict[str, Any]],
+            empty_shape_key: Optional[Tuple[Any, ...]] = None,
+            baseline_executor: Optional[Callable[..., Any]] = None,
     ) -> None:
         """
         Build one static override route configuration payload.
@@ -58,12 +62,41 @@ class OverrideRouteConfig:
                 Root spell id for this execution variant.
             spell_lookup:
                 Spell lookup map keyed by spell_id for schema hydration.
+            empty_shape_key:
+                Deterministic empty-shape specialization key for no-payload
+                override calls.
+            baseline_executor:
+                Optional precompiled override executor for empty override payload.
         """
+        super().__init__()
         self.plan_signature: Tuple[Any, ...] = plan_signature
         self.path_registry: Optional[Any] = path_registry
         self.plan_rows: Optional[Sequence[Dict[str, Any]]] = plan_rows
         self.root_spell_id: Optional[str] = root_spell_id
         self.spell_lookup: Optional[Dict[str, Any]] = spell_lookup
+        self.empty_shape_key: Optional[Tuple[Any, ...]] = empty_shape_key
+        self.baseline_executor: Optional[Callable[..., Any]] = baseline_executor
+
+    def cleanup(self) -> None:
+        """
+        Deterministically release references held by this route config.
+
+        Contract:
+            - Idempotent cleanup.
+            - Safe for best-effort cleanup flows on detached contexts.
+            - Drops all spell-static references to avoid stale retention.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+        self.plan_signature = None
+        self.path_registry = None
+        self.plan_rows = None
+        self.root_spell_id = None
+        self.spell_lookup = None
+        self.empty_shape_key = None
+        self.baseline_executor = None
 
 
 class CreationContext(Cleanable):
@@ -94,6 +127,9 @@ class CreationContext(Cleanable):
     ROUTE_UNIQUE_PER_CONDUIT = "unique_per_conduit"
     ROUTE_MANY = "many"
     ROUTE_SHARED = "shared"
+    FLAG_FAST_TRANSIENT_NO_OVERRIDES = 1
+    FLAG_OVERRIDE_ROUTE_NO_MUTATION = 2
+    FLAG_OVERRIDE_ROUTE_MUTATION = 4
 
     __slots__ = Cleanable.__slots__ + [
         "_spell",
@@ -101,6 +137,8 @@ class CreationContext(Cleanable):
         "_owner_creations",
         "_resolve_route_key",
         "_resolve_route",
+        "_runtime_dispatch",
+        "_runtime_flags",
         "_fast_transient_no_overrides_enabled",
         "_no_overrides_executor",
         "_override_patch_map_phase10",
@@ -114,6 +152,7 @@ class CreationContext(Cleanable):
             *,
             spell: ISpell,
             resolve_route_key: str,
+            runtime_flags: int = 0,
             fast_transient_no_overrides_enabled: bool = False,
             no_overrides_executor: Optional[Callable[..., Any]] = None,
             override_patch_map_phase10: Optional[Any] = None,
@@ -129,6 +168,9 @@ class CreationContext(Cleanable):
                 are scoped to this spell only.
             resolve_route_key:
                 Preselected existence route key from `CreationContextBuilder`.
+            runtime_flags:
+                Spell-static bit flags configuring hot-path lane behavior.
+                See FLAG_* class constants.
             fast_transient_no_overrides_enabled:
                 True when this spell can run no-overrides calls on the direct
                 transient executor lane.
@@ -149,6 +191,22 @@ class CreationContext(Cleanable):
         self._resolve_route: Callable[..., tuple[Any, bool]] = (
             self._resolve_route_from_key(resolve_route_key)
         )
+        resolved_runtime_flags = runtime_flags
+        if fast_transient_no_overrides_enabled:
+            resolved_runtime_flags |= self.FLAG_FAST_TRANSIENT_NO_OVERRIDES
+        if override_route_config_no_mutation is not None:
+            resolved_runtime_flags |= self.FLAG_OVERRIDE_ROUTE_NO_MUTATION
+        if override_route_config_mutation is not None:
+            resolved_runtime_flags |= self.FLAG_OVERRIDE_ROUTE_MUTATION
+        self._runtime_flags: int = resolved_runtime_flags
+        if resolved_runtime_flags & self.FLAG_FAST_TRANSIENT_NO_OVERRIDES:
+            self._runtime_dispatch: Callable[..., Any] = (
+                self._dispatch_meld_runtime_with_fast_transient
+            )
+        else:
+            self._runtime_dispatch: Callable[..., Any] = (
+                self._dispatch_meld_runtime_standard
+            )
         self._fast_transient_no_overrides_enabled: bool = (
             fast_transient_no_overrides_enabled
         )
@@ -168,6 +226,8 @@ class CreationContext(Cleanable):
             Tuple[Any, ...],
             Callable[..., Any],
         ] = {}
+        self._seed_baseline_override_executor(override_route_config_no_mutation)
+        self._seed_baseline_override_executor(override_route_config_mutation)
 
     def cleanup(self) -> None:
         """
@@ -185,11 +245,27 @@ class CreationContext(Cleanable):
         override_specialization_cache = self._override_specialization_cache
         override_specialization_cache.clear()
 
+        override_route_config_no_mutation = self._override_route_config_no_mutation
+        if override_route_config_no_mutation is not None:
+            try:
+                override_route_config_no_mutation.cleanup()
+            except Exception:
+                pass
+
+        override_route_config_mutation = self._override_route_config_mutation
+        if override_route_config_mutation is not None:
+            try:
+                override_route_config_mutation.cleanup()
+            except Exception:
+                pass
+
         self._spell = None
         self._spell_id = None
         self._owner_creations = None
         self._resolve_route_key = None
         self._resolve_route = None
+        self._runtime_dispatch = None
+        self._runtime_flags = None
         self._fast_transient_no_overrides_enabled = None
         self._no_overrides_executor = None
         self._override_patch_map_phase10 = None
@@ -243,6 +319,26 @@ class CreationContext(Cleanable):
         raise RuntimeError(
             f"Unsupported CreationContext resolve route key: {resolve_route_key}"
         )
+
+    def _seed_baseline_override_executor(
+            self,
+            override_route_config: Optional[OverrideRouteConfig],
+    ) -> None:
+        """
+        Seed the override specialization cache with one baseline executor.
+
+        Contract:
+            - No-op when route config has no baseline executor payload.
+            - Stores one empty-shape executor keyed by route-specific signature.
+            - Safe to call repeatedly; later values replace earlier cache values.
+        """
+        if override_route_config is None:
+            return
+        shape_key = override_route_config.empty_shape_key
+        baseline_executor = override_route_config.baseline_executor
+        if shape_key is None or baseline_executor is None:
+            return
+        self._override_specialization_cache[shape_key] = baseline_executor
 
     # ----------------------------------------------------------------------
     # Existence-specialized resolve routes
@@ -558,6 +654,29 @@ class CreationContext(Cleanable):
         )
         return result
 
+    def _resolve_override_route_config(
+            self,
+            *,
+            has_mutation_override: bool,
+    ) -> Optional[OverrideRouteConfig]:
+        """
+        Resolve the active override lane config from spell-static runtime flags.
+
+        Contract:
+            - Mutation route is selected only when the spell reports a mutation
+              override for this call.
+            - Lane availability is guarded by precomputed runtime flags.
+            - Returns None when the required lane was not configured.
+        """
+        runtime_flags = self._runtime_flags
+        if has_mutation_override:
+            if runtime_flags & self.FLAG_OVERRIDE_ROUTE_MUTATION:
+                return self._override_route_config_mutation
+            return None
+        if runtime_flags & self.FLAG_OVERRIDE_ROUTE_NO_MUTATION:
+            return self._override_route_config_no_mutation
+        return None
+
     def _execute_with_overrides(
             self,
             *,
@@ -569,9 +688,10 @@ class CreationContext(Cleanable):
         Execute one override-bearing call through phase 10/11/12 specialization.
         """
         spell = self._spell
-        override_route_config = self._override_route_config_no_mutation
-        if spell.has_mutation_override:
-            override_route_config = self._override_route_config_mutation
+        has_mutation_override = spell.has_mutation_override
+        override_route_config = self._resolve_override_route_config(
+            has_mutation_override=has_mutation_override,
+        )
         if override_route_config is None:
             raise RuntimeError(
                 "Override route config is missing on CreationContext runtime path. "
@@ -581,6 +701,25 @@ class CreationContext(Cleanable):
         override_payload = overrides
         root_positional_override: Optional[Sequence[Any]] = None
         override_map: Dict[Any, Any] = {}
+        if not override_payload:
+            baseline_executor = override_route_config.baseline_executor
+            if baseline_executor is not None:
+                result = baseline_executor(
+                    caller_creations,
+                    override_map,
+                    root_positional_override,
+                    owner_creations=self._owner_creations,
+                    caller_creations_lock_held=caller_creations_lock_held,
+                )
+                self._raise_on_missing_factory_result(
+                    spell=spell,
+                    result=result,
+                    message=(
+                        "Phase 12 override specialization executor returned None for a "
+                        "factory-style spell."
+                    ),
+                )
+                return result
         if override_payload:
             target_payload, root_positional_override = self._split_override_payload(
                 spell=spell,
@@ -611,12 +750,16 @@ class CreationContext(Cleanable):
                         inner=exc,
                     ) from exc
 
-        (
-            override_targets_by_spell_id,
-            socket_shape,
-        ) = self._collect_override_targets_and_socket_shape(
-            override_map=override_map,
-        )
+        if override_map:
+            (
+                override_targets_by_spell_id,
+                socket_shape,
+            ) = self._collect_override_targets_and_socket_shape(
+                override_map=override_map,
+            )
+        else:
+            override_targets_by_spell_id = {}
+            socket_shape = ()
         try:
             plan_signature = override_route_config.plan_signature
             shape_key = self._build_override_shape_key(
@@ -905,14 +1048,47 @@ class CreationContext(Cleanable):
             caller_creations_lock_held: bool = False,
     ) -> Any:
         """
-        Dispatch one construction call to fast-transient or context runtime path.
+        Dispatch one construction call through the prebound runtime lane.
+        """
+        runtime_dispatch = self._runtime_dispatch
+        return runtime_dispatch(
+            caller_creations=caller_creations,
+            overrides=overrides,
+            caller_creations_lock_held=caller_creations_lock_held,
+        )
+
+    def _dispatch_meld_runtime_standard(
+            self,
+            *,
+            caller_creations: ICreations,
+            overrides: Optional[dict[str, Any]],
+            caller_creations_lock_held: bool = False,
+    ) -> Any:
+        """
+        Dispatch runtime calls for contexts without fast-transient eligibility.
+        """
+        return self._execute_meld_runtime(
+            caller_creations=caller_creations,
+            overrides=overrides,
+            caller_creations_lock_held=caller_creations_lock_held,
+        )
+
+    def _dispatch_meld_runtime_with_fast_transient(
+            self,
+            *,
+            caller_creations: ICreations,
+            overrides: Optional[dict[str, Any]],
+            caller_creations_lock_held: bool = False,
+    ) -> Any:
+        """
+        Dispatch runtime calls for contexts with fast-transient eligibility.
+
+        Contract:
+            - No-overrides and no-mutation calls take the direct transient lane.
+            - All other calls delegate to standard runtime lane selection.
         """
         spell = self._spell
-        if (
-                overrides is None
-                and not spell.has_mutation_override
-                and self._fast_transient_no_overrides_enabled
-        ):
+        if not overrides and not spell.has_mutation_override:
             return self.execute_no_overrides_fast_transient()
         return self._execute_meld_runtime(
             caller_creations=caller_creations,
