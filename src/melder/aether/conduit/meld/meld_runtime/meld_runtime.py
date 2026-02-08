@@ -91,7 +91,6 @@ class MeldRuntime(Cleanable):
             - Returns the constructed root instance.
         """
         spell = context.root_spell
-
         overrides = context.overrides
         has_mutation_override = spell.has_mutation_override
         if overrides or has_mutation_override:
@@ -114,12 +113,14 @@ class MeldRuntime(Cleanable):
         """
         if self._cleaned:
             return
-        for cache in self._override_specialization_cache.values():
+        override_specialization_cache = self._override_specialization_cache
+        override_specialization_order = self._override_specialization_order
+        for cache in override_specialization_cache.values():
             cache.clear()
-        for order in self._override_specialization_order.values():
+        for order in override_specialization_order.values():
             order.clear()
-        self._override_specialization_cache.clear()
-        self._override_specialization_order.clear()
+        override_specialization_cache.clear()
+        override_specialization_order.clear()
         self._override_specialization_cache = None
         self._override_specialization_order = None
         self._max_override_specializations_per_spell = None
@@ -328,16 +329,20 @@ class MeldRuntime(Cleanable):
             return {}, ()
         if len(override_map) == 1:
             socket_ref = next(iter(override_map))
+            node_id = socket_ref.node_id
+            param_path_id = socket_ref.param_path_id
+            param_name = socket_ref.param_name
+            socket_kind_value = socket_ref.socket_kind.value
             return (
                 {
-                    socket_ref.node_id: (socket_ref,),
+                    node_id: (socket_ref,),
                 },
                 (
                     (
-                        socket_ref.node_id,
-                        socket_ref.param_path_id,
-                        socket_ref.param_name,
-                        socket_ref.socket_kind.value,
+                        node_id,
+                        param_path_id,
+                        param_name,
+                        socket_kind_value,
                     ),
                 ),
             )
@@ -345,32 +350,44 @@ class MeldRuntime(Cleanable):
             refs_iter = iter(override_map)
             first_ref = next(refs_iter)
             second_ref = next(refs_iter)
+            first_ref_node_id = first_ref.node_id
+            first_ref_param_path_id = first_ref.param_path_id
+            first_ref_param_name = first_ref.param_name
+            first_ref_socket_kind_value = first_ref.socket_kind.value
             first_shape_row = (
-                first_ref.node_id,
-                first_ref.param_path_id,
-                first_ref.param_name,
-                first_ref.socket_kind.value,
+                first_ref_node_id,
+                first_ref_param_path_id,
+                first_ref_param_name,
+                first_ref_socket_kind_value,
             )
+            second_ref_node_id = second_ref.node_id
+            second_ref_param_path_id = second_ref.param_path_id
+            second_ref_param_name = second_ref.param_name
+            second_ref_socket_kind_value = second_ref.socket_kind.value
             second_shape_row = (
-                second_ref.node_id,
-                second_ref.param_path_id,
-                second_ref.param_name,
-                second_ref.socket_kind.value,
+                second_ref_node_id,
+                second_ref_param_path_id,
+                second_ref_param_name,
+                second_ref_socket_kind_value,
             )
             if second_shape_row < first_shape_row:
                 first_ref, second_ref = second_ref, first_ref
                 first_shape_row, second_shape_row = second_shape_row, first_shape_row
-            if first_ref.node_id == second_ref.node_id:
+                first_ref_node_id, second_ref_node_id = (
+                    second_ref_node_id,
+                    first_ref_node_id,
+                )
+            if first_ref_node_id == second_ref_node_id:
                 by_spell_id = {
-                    first_ref.node_id: (
+                    first_ref_node_id: (
                         first_ref,
                         second_ref,
                     ),
                 }
             else:
                 by_spell_id = {
-                    first_ref.node_id: (first_ref,),
-                    second_ref.node_id: (second_ref,),
+                    first_ref_node_id: (first_ref,),
+                    second_ref_node_id: (second_ref,),
                 }
             return (
                 by_spell_id,
@@ -394,19 +411,22 @@ class MeldRuntime(Cleanable):
         current_spell_id: Optional[str] = None
         current_bucket: Optional[list[Any]] = None
         for socket_ref in ordered_refs:
-            spell_id = socket_ref.node_id
-            if spell_id != current_spell_id:
-                current_spell_id = spell_id
+            node_id = socket_ref.node_id
+            param_path_id = socket_ref.param_path_id
+            param_name = socket_ref.param_name
+            socket_kind_value = socket_ref.socket_kind.value
+            if node_id != current_spell_id:
+                current_spell_id = node_id
                 current_bucket = [socket_ref]
-                by_spell_id[spell_id] = current_bucket
+                by_spell_id[node_id] = current_bucket
             else:
                 current_bucket.append(socket_ref)
             socket_shape.append(
                 (
-                    socket_ref.node_id,
-                    socket_ref.param_path_id,
-                    socket_ref.param_name,
-                    socket_ref.socket_kind.value,
+                    node_id,
+                    param_path_id,
+                    param_name,
+                    socket_kind_value,
                 )
             )
 
@@ -501,13 +521,18 @@ class MeldRuntime(Cleanable):
             - Eviction order is deterministic FIFO per spell id.
         """
         spell_id = spell.spell_id
-        cache = self._override_specialization_cache.get(spell_id)
-        order = self._override_specialization_order.get(spell_id)
+        override_specialization_cache = self._override_specialization_cache
+        override_specialization_order = self._override_specialization_order
+        max_override_specializations_per_spell = (
+            self._max_override_specializations_per_spell
+        )
+        cache = override_specialization_cache.get(spell_id)
+        order = override_specialization_order.get(spell_id)
         if cache is None:
             cache = {}
             order = deque()
-            self._override_specialization_cache[spell_id] = cache
-            self._override_specialization_order[spell_id] = order
+            override_specialization_cache[spell_id] = cache
+            override_specialization_order[spell_id] = order
 
         cached = cache.get(shape_key)
         if cached is not None:
@@ -523,12 +548,11 @@ class MeldRuntime(Cleanable):
             spell_lookup=spell_lookup,
         )
 
-        if shape_key not in cache:
-            if len(order) >= self._max_override_specializations_per_spell:
-                evicted = order.popleft()
-                cache.pop(evicted, None)
-            cache[shape_key] = compiled
-            order.append(shape_key)
+        if len(order) >= max_override_specializations_per_spell:
+            evicted = order.popleft()
+            cache.pop(evicted, None)
+        cache[shape_key] = compiled
+        order.append(shape_key)
         return compiled
 
     @staticmethod
