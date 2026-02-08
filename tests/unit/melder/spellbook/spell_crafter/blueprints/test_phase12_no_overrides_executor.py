@@ -403,8 +403,16 @@ def test_compile_phase12_no_overrides_executor_reuses_spellspace_singleton_from_
         caller_creations_lock_held=False,
     )
 
-    assert executor(context) == "root-instance"
-    assert executor(context) == "root-instance"
+    assert executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    ) == "root-instance"
+    assert executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    ) == "root-instance"
     assert call_counter["value"] == 1
 
 
@@ -435,7 +443,11 @@ def test_compile_phase12_no_overrides_executor_requires_active_spellspace_for_sp
     )
 
     with pytest.raises(SpellSpaceScopeError, match="requires an active SpellSpace"):
-        executor(context)
+        executor(
+            caller_creations=context.caller_creations,
+            owner_creations=context.owner_creations,
+            caller_creations_lock_held=context.caller_creations_lock_held,
+        )
 
 
 def test_compile_phase12_no_overrides_executor_skips_spell_lock_when_caller_lock_is_held() -> None:
@@ -466,7 +478,11 @@ def test_compile_phase12_no_overrides_executor_skips_spell_lock_when_caller_lock
         caller_creations_lock_held=True,
     )
 
-    assert executor(context) == "value:root"
+    assert executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    ) == "value:root"
 
 
 def test_compile_phase12_no_overrides_executor_existing_hit_skips_spell_and_creations_locks() -> None:
@@ -499,7 +515,11 @@ def test_compile_phase12_no_overrides_executor_existing_hit_skips_spell_and_crea
         caller_creations_lock_held=False,
     )
 
-    assert executor(context) == "existing-root"
+    assert executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    ) == "existing-root"
 
 
 def test_compile_phase12_no_overrides_executor_existing_hit_skips_creations_lock_without_spell_hint() -> None:
@@ -531,7 +551,11 @@ def test_compile_phase12_no_overrides_executor_existing_hit_skips_creations_lock
         caller_creations_lock_held=False,
     )
 
-    assert executor(context) == "existing-root"
+    assert executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    ) == "existing-root"
 
 
 @pytest.mark.parametrize(
@@ -635,8 +659,16 @@ def test_compile_phase12_no_overrides_executor_existence_matrix(
         caller_creations_lock_held=False,
     )
 
-    first = executor(context)
-    second = executor(context)
+    first = executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    )
+    second = executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    )
     if expect_reuse:
         assert first == second
         assert call_counter["value"] == 1
@@ -682,8 +714,16 @@ def test_compile_phase12_no_overrides_executor_owner_target_prefers_spell_owner_
         caller_creations_lock_held=False,
     )
 
-    assert executor(context) == "owner-instance"
-    assert executor(context) == "owner-instance"
+    assert executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    ) == "owner-instance"
+    assert executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    ) == "owner-instance"
     assert call_counter["value"] == 1
     assert "root" in spell_owner_creations._creations
     assert "root" not in context_owner_creations._creations
@@ -719,7 +759,11 @@ def test_compile_phase12_no_overrides_executor_owner_target_falls_back_to_contex
         caller_creations_lock_held=False,
     )
 
-    assert executor(context) == "value:root"
+    assert executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    ) == "value:root"
     assert "root" in context_owner_creations._creations
     assert "root" not in caller_creations._creations
 

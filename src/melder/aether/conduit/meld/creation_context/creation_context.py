@@ -453,10 +453,22 @@ class CreationContext(Cleanable):
             )
             if target_payload:
                 override_patch_map_phase10 = self._override_patch_map_phase10
-                override_map = apply_phase10_override_payload(
-                    override_patch_map=override_patch_map_phase10,
-                    override_payload=target_payload,
-                )
+                try:
+                    override_map = apply_phase10_override_payload(
+                        override_patch_map=override_patch_map_phase10,
+                        override_payload=target_payload,
+                    )
+                except MeldExecutionError:
+                    raise
+                except Exception as exc:
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Failed to apply overrides."
+                        ),
+                        inner=exc,
+                    ) from exc
 
         if override_map:
             (

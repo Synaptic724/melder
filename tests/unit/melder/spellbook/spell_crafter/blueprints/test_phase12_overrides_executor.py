@@ -243,7 +243,12 @@ def test_compile_phase12_overrides_executor_supports_schema_rows_execution() -> 
         caller_creations=SimpleNamespace(_lock=threading.RLock()),
         caller_creations_lock_held=False,
     )
-    result = executor(context, {}, None)
+    result = executor(
+        context.caller_creations,
+        {},
+        None,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    )
 
     assert result == "value:root"
 
@@ -304,7 +309,12 @@ def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_exe
         caller_creations=SimpleNamespace(_lock=threading.RLock()),
         caller_creations_lock_held=False,
     )
-    result = executor(context, {}, None)
+    result = executor(
+        context.caller_creations,
+        {},
+        None,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    )
     assert result == "value:root"
 
 
@@ -428,9 +438,10 @@ def test_compile_phase12_overrides_executor_contract_and_root_override_precedenc
         caller_creations_lock_held=False,
     )
     result = executor(
-        context,
+        context.caller_creations,
         {socket_ref: "override-value"},
         ("runtime-positional",),
+        caller_creations_lock_held=context.caller_creations_lock_held,
     )
 
     assert result["args"] == ("runtime-positional",)
@@ -468,7 +479,13 @@ def test_compile_phase12_overrides_executor_rejects_root_override_on_existing_sh
     )
 
     with pytest.raises(MeldExecutionError, match="root spell that already exists"):
-        executor(context, {}, ("arg",))
+        executor(
+            context.caller_creations,
+            {},
+            ("arg",),
+            owner_creations=context.owner_creations,
+            caller_creations_lock_held=context.caller_creations_lock_held,
+        )
 
 
 def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existing_instance() -> None:
@@ -502,7 +519,13 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
     )
 
     with pytest.raises(MeldExecutionError, match="spell instance that already exists"):
-        executor(context, {socket_ref: "override"}, None)
+        executor(
+            context.caller_creations,
+            {socket_ref: "override"},
+            None,
+            owner_creations=context.owner_creations,
+            caller_creations_lock_held=context.caller_creations_lock_held,
+        )
 
 
 def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existing_spellspace_instance() -> None:
@@ -544,7 +567,13 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
     )
 
     with pytest.raises(MeldExecutionError, match="spell instance that already exists"):
-        executor(context, {socket_ref: "override"}, None)
+        executor(
+            context.caller_creations,
+            {socket_ref: "override"},
+            None,
+            owner_creations=context.owner_creations,
+            caller_creations_lock_held=context.caller_creations_lock_held,
+        )
 
 
 def test_build_step_override_targets_prefilters_non_shared_steps() -> None:
@@ -658,12 +687,14 @@ def test_compile_phase12_overrides_executor_non_shared_path_filtering_is_compile
         caller_creations_lock_held=False,
     )
     result = executor(
-        context,
+        context.caller_creations,
         {
             socket_keep: "keep",
             socket_drop: "drop",
         },
         None,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
     )
 
     assert result == "keep"

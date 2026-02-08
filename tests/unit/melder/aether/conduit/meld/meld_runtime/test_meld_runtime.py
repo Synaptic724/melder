@@ -363,6 +363,36 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
     assert compile_count["value"] == 1
 
 
+def test_execute_with_overrides_wraps_phase10_apply_failures(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify phase10 override-apply failures are wrapped as MeldExecutionError.
+    """
+    route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
+    context = _make_override_harness(
+        route_config_active=route_config,
+        route_config_no_mutation=route_config,
+        patch_map=object(),
+    )
+
+    def _raise_apply(**kwargs: Any) -> Dict[Any, Any]:
+        raise RuntimeError("apply-fail")
+
+    monkeypatch.setattr(
+        creation_context_module,
+        "apply_phase10_override_payload",
+        _raise_apply,
+    )
+
+    with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
+        context._execute_with_overrides(
+            caller_creations=object(),
+            overrides={"dep": "payload"},
+            caller_creations_lock_held=False,
+        )
+
+
 def test_cleanup_clears_runtime_cache_and_route_refs() -> None:
     """
     Verify cleanup clears override cache and cleans route-config children.
