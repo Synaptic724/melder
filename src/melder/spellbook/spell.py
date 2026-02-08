@@ -375,15 +375,12 @@ class Spell(Cleanable, ISpell):
               swallowed so callers can continue ownership/dirty transitions.
             - Leaves `_creation_context` as `None`.
         """
-        with self._lock:
-            creation_context = self._creation_context
-            self._creation_context = None
-
-        if creation_context is not None:
+        if self._creation_context is not None:
             try:
-                creation_context.cleanup()
+                self._creation_context.cleanup()
             except Exception:
                 pass
+            self._creation_context = None
 
     #region Disposal
     def cleanup(self) -> None:
