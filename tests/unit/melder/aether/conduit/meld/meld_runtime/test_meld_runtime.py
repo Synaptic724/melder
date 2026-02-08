@@ -10,6 +10,7 @@ import melder.aether.conduit.meld.meld_runtime.meld_runtime as runtime_module
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.existence.existence import Existence
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
@@ -143,6 +144,35 @@ def _crafter(
     )
 
 
+def _override_plan(*, override_keys: Optional[list[str]] = None) -> Any:
+    """
+    Build a minimal override execution-plan stub for runtime routing tests.
+    """
+    keys = override_keys if override_keys is not None else ["dep"]
+    step = SimpleNamespace(
+        instance_key=("dep-spell", None),
+        spell=SimpleNamespace(spell_index=SpellIndex("dep-spell")),
+        existence=Existence.unique,
+        creations_target_kind=1,
+        shared_instance=False,
+        dependency_resolution_order=[("dep", [("dep-spell", None)])],
+        override_match_prefix=None,
+        override_match_prefix_len=0,
+        override_keys=keys,
+        use_spell_lock_hint=False,
+        must_register=False,
+        uses_positional_override=False,
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+    )
+    return SimpleNamespace(
+        plan_variant="overrides",
+        root_spell_id="root",
+        steps=[step],
+    )
+
+
 def test_execute_rejects_none_context() -> None:
     """`execute` raises ValueError when context is None."""
     with pytest.raises(ValueError, match="context must not be None"):
@@ -269,7 +299,7 @@ def test_execute_with_overrides_requires_patch_map_and_plan() -> None:
 def test_execute_with_overrides_applies_payload_and_uses_cached_specialization(monkeypatch: pytest.MonkeyPatch) -> None:
     """Override path applies payload, compiles specialization once per shape, and reuses cache."""
     runtime = MeldRuntime()
-    plan = object()
+    plan = _override_plan()
     patch_map = object()
     root_blueprint = SimpleNamespace(path_registry="registry")
     spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "x", patch_map=patch_map, override_plan=plan, root_blueprint=root_blueprint))
@@ -306,7 +336,7 @@ def test_execute_with_overrides_applies_payload_and_uses_cached_specialization(m
 def test_execute_with_overrides_wraps_patch_or_executor_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     """Override path wraps patch-map and compiled-executor runtime errors."""
     runtime = MeldRuntime()
-    spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "x", patch_map=object(), override_plan=object()))
+    spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "x", patch_map=object(), override_plan=_override_plan()))
 
     def _raise_apply(**kwargs: Any) -> Dict[Any, Any]:
         raise RuntimeError("patch-fail")
@@ -329,6 +359,26 @@ def test_execute_with_overrides_wraps_patch_or_executor_errors(monkeypatch: pyte
     with pytest.raises(MeldExecutionError) as exc2:
         runtime.execute(_ctx(spell, overrides={"x": 1}))
     assert isinstance(exc2.value.inner, RuntimeError)
+
+
+def test_execute_with_overrides_wraps_shape_key_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Override path wraps malformed-plan shape-key failures as MeldExecutionError."""
+    runtime = MeldRuntime()
+    malformed_plan = SimpleNamespace(plan_variant="overrides", root_spell_id="root")
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(
+            executor=lambda c: "x",
+            patch_map=object(),
+            override_plan=malformed_plan,
+        ),
+    )
+    socket_ref = _SocketRef("s1", "x", 1, "normal")
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", lambda **kwargs: {socket_ref: "v"})
+
+    with pytest.raises(MeldExecutionError, match="Failed to build override specialization shape key") as exc:
+        runtime.execute(_ctx(spell, overrides={"x": 1}))
+    assert isinstance(exc.value.inner, ValueError)
 
 
 def test_fast_transient_and_cleanup_contract() -> None:

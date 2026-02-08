@@ -310,11 +310,24 @@ class MeldRuntime(Cleanable):
         override_targets_by_spell_id = self._collect_override_targets(
             override_map=override_map,
         )
-        shape_key = self._build_override_shape_key(
-            execution_plan=execution_plan,
-            override_targets_by_spell_id=override_targets_by_spell_id,
-            root_positional_override=root_positional_override,
-        )
+        try:
+            shape_key = self._build_override_shape_key(
+                execution_plan=execution_plan,
+                override_targets_by_spell_id=override_targets_by_spell_id,
+                root_positional_override=root_positional_override,
+            )
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Failed to build override specialization shape key from the "
+                    "Phase 11 execution plan."
+                ),
+                inner=exc,
+            ) from exc
         root_blueprint = crafter.root_blueprint_phase5
         path_registry = root_blueprint.path_registry if root_blueprint is not None else None
         any_overrides_present = bool(override_payload)
@@ -472,50 +485,63 @@ class MeldRuntime(Cleanable):
         if execution_plan is None:
             raise ValueError("execution_plan must not be None.")
 
+        try:
+            plan_variant = execution_plan.plan_variant
+            root_spell_id = execution_plan.root_spell_id
+            steps = execution_plan.steps
+        except AttributeError as exc:
+            raise ValueError(
+                "execution_plan must expose plan_variant, root_spell_id, and steps."
+            ) from exc
+
         step_signatures: list[Tuple[Any, ...]] = []
-        for step in execution_plan.steps:
-            dependency_order = tuple(
-                (
-                    param_name,
-                    tuple(dependency_keys),
+        for index, step in enumerate(steps):
+            try:
+                dependency_order = tuple(
+                    (
+                        param_name,
+                        tuple(dependency_keys),
+                    )
+                    for param_name, dependency_keys in step.dependency_resolution_order
                 )
-                for param_name, dependency_keys in step.dependency_resolution_order
-            )
-            contract_payload_items: Tuple[Any, ...] = ()
-            if step.contract_payload:
-                contract_payload_items = tuple(
-                    sorted(
-                        (
-                            param_name,
-                            MeldRuntime._freeze_override_signature_value(value),
+                contract_payload_items: Tuple[Any, ...] = ()
+                if step.contract_payload:
+                    contract_payload_items = tuple(
+                        sorted(
+                            (
+                                param_name,
+                                MeldRuntime._freeze_override_signature_value(value),
+                            )
+                            for param_name, value in step.contract_payload.items()
                         )
-                        for param_name, value in step.contract_payload.items()
+                    )
+                step_signatures.append(
+                    (
+                        step.instance_key,
+                        step.spell.spell_index.current,
+                        step.existence.name,
+                        step.creations_target_kind,
+                        step.shared_instance,
+                        dependency_order,
+                        step.override_match_prefix,
+                        step.override_match_prefix_len,
+                        tuple(step.override_keys),
+                        step.use_spell_lock_hint,
+                        step.must_register,
+                        step.uses_positional_override,
+                        MeldRuntime._freeze_override_signature_value(step.contract_positional_override),
+                        step.has_contract_payload,
+                        contract_payload_items,
                     )
                 )
-
-            step_signatures.append(
-                (
-                    step.instance_key,
-                    step.spell.spell_index.current,
-                    step.existence.name,
-                    step.creations_target_kind,
-                    step.shared_instance,
-                    dependency_order,
-                    step.override_match_prefix,
-                    step.override_match_prefix_len,
-                    tuple(step.override_keys),
-                    step.use_spell_lock_hint,
-                    step.must_register,
-                    step.uses_positional_override,
-                    MeldRuntime._freeze_override_signature_value(step.contract_positional_override),
-                    step.has_contract_payload,
-                    contract_payload_items,
-                )
-            )
+            except AttributeError as exc:
+                raise ValueError(
+                    f"execution_plan step at index {index} is missing required signature fields."
+                ) from exc
 
         return (
-            execution_plan.plan_variant,
-            execution_plan.root_spell_id,
+            plan_variant,
+            root_spell_id,
             tuple(step_signatures),
         )
 

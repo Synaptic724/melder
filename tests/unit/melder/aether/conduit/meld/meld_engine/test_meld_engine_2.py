@@ -1,6 +1,6 @@
 """Additional contract tests for meld runtime/planning helpers."""
 from types import SimpleNamespace
-from typing import Any, Iterable
+from typing import Any, Dict, Iterable, Optional
 from unittest.mock import MagicMock
 import pytest
 from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
@@ -52,6 +52,42 @@ def _make_spell(
         spell_index=SpellIndex(spell_id),
         spell=spell,
         existence=existence,
+    )
+
+
+def _make_override_execution_plan(
+    *,
+    plan_variant: str = "overrides",
+    root_spell_id: str = "root",
+    step_overrides: Optional[Dict[str, Any]] = None,
+) -> SimpleNamespace:
+    """
+    Build a minimal override execution-plan stub for shape-key tests.
+    """
+    step = SimpleNamespace(
+        instance_key=("node", None),
+        spell=_make_spell(spell_id="node"),
+        existence=Existence.unique,
+        creations_target_kind=1,
+        shared_instance=False,
+        dependency_resolution_order=[("dep", [("dep-node", None)])],
+        override_match_prefix=None,
+        override_match_prefix_len=0,
+        override_keys=["dep"],
+        use_spell_lock_hint=False,
+        must_register=False,
+        uses_positional_override=False,
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+    )
+    if step_overrides:
+        for key, value in step_overrides.items():
+            setattr(step, key, value)
+    return SimpleNamespace(
+        plan_variant=plan_variant,
+        root_spell_id=root_spell_id,
+        steps=[step],
     )
 
 
@@ -259,7 +295,7 @@ def test_build_override_shape_key_tracks_socket_targets() -> None:
 
     grouped_a = MeldRuntime._collect_override_targets(override_map=override_map_a)
     grouped_b = MeldRuntime._collect_override_targets(override_map=override_map_b)
-    execution_plan = object()
+    execution_plan = _make_override_execution_plan()
 
     key_a = MeldRuntime._build_override_shape_key(
         execution_plan=execution_plan,
@@ -294,7 +330,7 @@ def test_build_override_shape_key_tracks_positional_arity() -> None:
         ): "skip",
     }
     grouped = MeldRuntime._collect_override_targets(override_map=override_map)
-    execution_plan = object()
+    execution_plan = _make_override_execution_plan()
 
     no_args_key = MeldRuntime._build_override_shape_key(
         execution_plan=execution_plan,
@@ -307,3 +343,67 @@ def test_build_override_shape_key_tracks_positional_arity() -> None:
         root_positional_override=("a", "b"),
     )
     assert no_args_key != two_args_key
+
+
+def test_build_override_shape_key_ignores_plan_object_identity_for_equivalent_plans() -> None:
+    """
+    Equivalent plan semantics produce the same shape key across object rebuilds.
+    """
+    path_registry = PathRegistry()
+    override_map = {
+        _make_socket_ref(
+            node_id="node",
+            param_name="x",
+            param_path=("left", "x"),
+            path_registry=path_registry,
+        ): "left",
+    }
+    grouped = MeldRuntime._collect_override_targets(override_map=override_map)
+    plan_a = _make_override_execution_plan()
+    plan_b = _make_override_execution_plan()
+
+    key_a = MeldRuntime._build_override_shape_key(
+        execution_plan=plan_a,
+        override_targets_by_spell_id=grouped,
+        root_positional_override=None,
+    )
+    key_b = MeldRuntime._build_override_shape_key(
+        execution_plan=plan_b,
+        override_targets_by_spell_id=grouped,
+        root_positional_override=None,
+    )
+    assert key_a == key_b
+
+
+def test_build_override_shape_key_changes_when_plan_semantics_change() -> None:
+    """
+    Shape key changes when execution-plan step semantics change.
+    """
+    path_registry = PathRegistry()
+    override_map = {
+        _make_socket_ref(
+            node_id="node",
+            param_name="x",
+            param_path=("left", "x"),
+            path_registry=path_registry,
+        ): "left",
+    }
+    grouped = MeldRuntime._collect_override_targets(override_map=override_map)
+    plan_a = _make_override_execution_plan(
+        step_overrides={"override_keys": ["dep"]},
+    )
+    plan_b = _make_override_execution_plan(
+        step_overrides={"override_keys": ["dep", "other"]},
+    )
+
+    key_a = MeldRuntime._build_override_shape_key(
+        execution_plan=plan_a,
+        override_targets_by_spell_id=grouped,
+        root_positional_override=None,
+    )
+    key_b = MeldRuntime._build_override_shape_key(
+        execution_plan=plan_b,
+        override_targets_by_spell_id=grouped,
+        root_positional_override=None,
+    )
+    assert key_a != key_b
