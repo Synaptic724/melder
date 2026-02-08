@@ -311,8 +311,12 @@ class MeldRuntime(Cleanable):
             override_map=override_map,
         )
         try:
-            shape_key = self._build_override_shape_key(
+            plan_signature = self._resolve_override_plan_signature(
+                crafter=crafter,
                 execution_plan=execution_plan,
+            )
+            shape_key = self._build_override_shape_key(
+                plan_signature=plan_signature,
                 override_targets_by_spell_id=override_targets_by_spell_id,
                 root_positional_override=root_positional_override,
             )
@@ -331,6 +335,17 @@ class MeldRuntime(Cleanable):
         root_blueprint = crafter.root_blueprint_phase5
         path_registry = root_blueprint.path_registry if root_blueprint is not None else None
         any_overrides_present = bool(override_payload)
+        override_execution_ir_payload = self._resolve_override_execution_ir_payload(
+            crafter=crafter,
+        )
+        plan_rows = None
+        root_spell_id = None
+        spell_lookup = None
+        if override_execution_ir_payload:
+            plan_rows = override_execution_ir_payload.get("steps_rows")
+            root_spell_id = override_execution_ir_payload.get("root_spell_id")
+            if plan_rows:
+                spell_lookup = spell._spellbook._spell_id_pool
         executor = self._get_or_compile_override_executor(
             spell=spell,
             shape_key=shape_key,
@@ -338,6 +353,9 @@ class MeldRuntime(Cleanable):
             override_targets_by_spell_id=override_targets_by_spell_id,
             any_overrides_present=any_overrides_present,
             path_registry=path_registry,
+            plan_rows=plan_rows,
+            root_spell_id=root_spell_id,
+            spell_lookup=spell_lookup,
         )
 
         try:
@@ -433,7 +451,7 @@ class MeldRuntime(Cleanable):
     @staticmethod
     def _build_override_shape_key(
             *,
-            execution_plan: Any,
+            plan_signature: Any,
             override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
             root_positional_override: Optional[Sequence[Any]],
     ) -> Tuple[Any, ...]:
@@ -446,6 +464,9 @@ class MeldRuntime(Cleanable):
             - Includes deterministic socket-target tuples.
             - Includes root positional-argument arity when present.
         """
+        if plan_signature is None:
+            raise ValueError("plan_signature must not be None.")
+
         socket_shape: list[Tuple[Any, ...]] = []
         for spell_id in sorted(override_targets_by_spell_id.keys()):
             for socket_ref in override_targets_by_spell_id[spell_id]:
@@ -460,14 +481,67 @@ class MeldRuntime(Cleanable):
         positional_arity = -1
         if root_positional_override is not None:
             positional_arity = len(root_positional_override)
-        plan_signature = MeldRuntime._build_override_plan_signature(
-            execution_plan=execution_plan,
-        )
         return (
             plan_signature,
             tuple(socket_shape),
             positional_arity,
         )
+
+    @staticmethod
+    def _resolve_override_plan_signature(
+            *,
+            crafter: Any,
+            execution_plan: Any,
+    ) -> Tuple[Any, ...]:
+        """
+        Resolve the override plan-signature source for shape-key construction.
+
+        Contract:
+            - Prefers schema-side Phase11 IR override signatures when present.
+            - Falls back to execution-plan semantic signatures when IR data is
+              missing or incomplete.
+        """
+        codegen_ir = crafter.codegen_ir
+        if codegen_ir is not None:
+            phase8_11_payload = codegen_ir.get("phase8_11")
+            if phase8_11_payload:
+                execution_payload = phase8_11_payload.get("execution")
+                if execution_payload:
+                    overrides_payload = execution_payload.get("overrides")
+                    if overrides_payload:
+                        variant_signature = overrides_payload.get("signature")
+                        if variant_signature is not None:
+                            return (
+                                "phase11_overrides_ir",
+                                variant_signature,
+                                overrides_payload.get("steps_rows_signature"),
+                            )
+        return MeldRuntime._build_override_plan_signature(
+            execution_plan=execution_plan,
+        )
+
+    @staticmethod
+    def _resolve_override_execution_ir_payload(
+            *,
+            crafter: Any,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Resolve Phase11 override execution IR payload when available.
+
+        Contract:
+            - Returns None when codegen IR or override execution payload is absent.
+            - Returns the override execution payload mapping by reference.
+        """
+        codegen_ir = crafter.codegen_ir
+        if codegen_ir is None:
+            return None
+        phase8_11_payload = codegen_ir.get("phase8_11")
+        if not phase8_11_payload:
+            return None
+        execution_payload = phase8_11_payload.get("execution")
+        if not execution_payload:
+            return None
+        return execution_payload.get("overrides")
 
     @staticmethod
     def _build_override_plan_signature(
@@ -592,6 +666,9 @@ class MeldRuntime(Cleanable):
             override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
             any_overrides_present: bool,
             path_registry: Optional[Any],
+            plan_rows: Optional[Sequence[Dict[str, Any]]],
+            root_spell_id: Optional[str],
+            spell_lookup: Optional[Dict[str, Any]],
     ) -> Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]:
         """
         Resolve a cached override specialization executor or compile on miss.
@@ -618,6 +695,9 @@ class MeldRuntime(Cleanable):
             override_targets_by_spell_id=override_targets_by_spell_id,
             any_overrides_present=any_overrides_present,
             path_registry=path_registry,
+            plan_rows=plan_rows,
+            root_spell_id=root_spell_id,
+            spell_lookup=spell_lookup,
         )
         if shape_key not in cache:
             if len(order) >= self._max_override_specializations_per_spell:

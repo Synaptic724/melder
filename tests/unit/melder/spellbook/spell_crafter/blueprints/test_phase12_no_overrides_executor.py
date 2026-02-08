@@ -102,3 +102,73 @@ def test_compile_phase12_no_overrides_executor_falls_back_when_source_unavailabl
     executor = phase12_module.compile_phase12_no_overrides_executor(codegen_ir=codegen_ir)
 
     assert callable(executor)
+
+
+def test_compile_phase12_no_overrides_executor_supports_steps_rows_schema() -> None:
+    """
+    Ensure schema-only step rows can be hydrated into executable plan steps.
+
+    Contract:
+        - `steps_rows` plus `spell_lookup` compiles into a callable executor.
+    """
+    spell = SimpleNamespace(
+        spell_index=SimpleNamespace(current="root"),
+        spell_name="root",
+    )
+    codegen_ir = {
+        "steps_rows": (
+            {
+                "instance_key": ("root", None),
+                "spell_id": "root",
+                "existence": "many",
+                "creations_target_kind": 1,
+                "dependency_resolution_order": (),
+                "uses_positional_override": False,
+                "contract_positional_override": None,
+                "has_contract_payload": False,
+                "contract_payload_items": (),
+                "use_spell_lock_hint": False,
+                "must_register": False,
+            },
+        ),
+        "root_spell_id": "root",
+        "transient_plan": None,
+    }
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir=codegen_ir,
+        spell_lookup={"root": spell},
+    )
+
+    assert callable(executor)
+
+
+def test_compile_phase12_no_overrides_executor_requires_spell_lookup_for_steps_rows() -> None:
+    """
+    Ensure schema-only step rows fail fast when spell lookup is missing.
+
+    Contract:
+        - Missing spell_lookup with `steps_rows` raises RuntimeError.
+    """
+    codegen_ir = {
+        "steps_rows": (
+            {
+                "instance_key": ("root", None),
+                "spell_id": "root",
+                "existence": "many",
+                "creations_target_kind": 1,
+                "dependency_resolution_order": (),
+                "uses_positional_override": False,
+                "contract_positional_override": None,
+                "has_contract_payload": False,
+                "contract_payload_items": (),
+                "use_spell_lock_hint": False,
+                "must_register": False,
+            },
+        ),
+        "root_spell_id": "root",
+        "transient_plan": None,
+    }
+
+    with pytest.raises(RuntimeError, match="require spell_lookup"):
+        phase12_module.compile_phase12_no_overrides_executor(codegen_ir=codegen_ir)

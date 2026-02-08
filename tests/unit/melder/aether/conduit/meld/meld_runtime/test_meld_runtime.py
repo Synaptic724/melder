@@ -53,6 +53,7 @@ class _Spellbook:
     def __init__(self, *, validation_required: bool = True, aether: Optional[Any] = None) -> None:
         self._spellbook_validation_required = validation_required
         self._aether = aether
+        self._spell_id_pool: Dict[str, Any] = {}
 
 
 class _SocketKind:
@@ -134,6 +135,7 @@ def _crafter(
         patch_map: Optional[Any] = None,
         override_plan: Optional[Any] = None,
         root_blueprint: Optional[Any] = None,
+        codegen_ir: Optional[Any] = None,
 ) -> Any:
     """Build a minimal SpellCrafter artifact container."""
     return SimpleNamespace(
@@ -141,6 +143,7 @@ def _crafter(
         override_patch_map_phase10=patch_map,
         execution_plan_phase11_overrides=override_plan,
         root_blueprint_phase5=root_blueprint,
+        codegen_ir=codegen_ir,
     )
 
 
@@ -296,13 +299,110 @@ def test_execute_with_overrides_requires_patch_map_and_plan() -> None:
         runtime.execute(_ctx(no_plan, overrides={"x": 1}))
 
 
+def test_resolve_override_plan_signature_prefers_codegen_ir_payload() -> None:
+    """Override shape-key signature prefers codegen IR override signature when available."""
+    plan = _override_plan()
+    crafter = _crafter(
+        executor=lambda c: "x",
+        patch_map=object(),
+        override_plan=plan,
+    )
+    crafter.codegen_ir = {
+        "phase8_11": {
+            "execution": {
+                "overrides": {
+                    "signature": "sig-overrides",
+                    "steps_rows_signature": "sig-rows",
+                },
+            },
+        },
+    }
+
+    signature = MeldRuntime._resolve_override_plan_signature(
+        crafter=crafter,
+        execution_plan=plan,
+    )
+
+    assert signature == ("phase11_overrides_ir", "sig-overrides", "sig-rows")
+
+
+def test_resolve_override_plan_signature_falls_back_to_plan_signature() -> None:
+    """Override shape-key signature falls back to execution-plan semantic signature."""
+    plan = _override_plan()
+    crafter = _crafter(
+        executor=lambda c: "x",
+        patch_map=object(),
+        override_plan=plan,
+    )
+    crafter.codegen_ir = None
+
+    signature = MeldRuntime._resolve_override_plan_signature(
+        crafter=crafter,
+        execution_plan=plan,
+    )
+    expected = MeldRuntime._build_override_plan_signature(
+        execution_plan=plan,
+    )
+
+    assert signature == expected
+
+
+def test_resolve_override_execution_ir_payload_returns_overrides_payload() -> None:
+    """Override execution IR resolver returns the overrides payload when present."""
+    crafter = _crafter(
+        executor=lambda c: "x",
+        patch_map=object(),
+        override_plan=_override_plan(),
+        codegen_ir={
+            "phase8_11": {
+                "execution": {
+                    "overrides": {
+                        "signature": "sig-overrides",
+                        "steps_rows_signature": "sig-rows",
+                    },
+                },
+            },
+        },
+    )
+
+    payload = MeldRuntime._resolve_override_execution_ir_payload(
+        crafter=crafter,
+    )
+
+    assert payload == {
+        "signature": "sig-overrides",
+        "steps_rows_signature": "sig-rows",
+    }
+
+
 def test_execute_with_overrides_applies_payload_and_uses_cached_specialization(monkeypatch: pytest.MonkeyPatch) -> None:
     """Override path applies payload, compiles specialization once per shape, and reuses cache."""
     runtime = MeldRuntime()
     plan = _override_plan()
     patch_map = object()
     root_blueprint = SimpleNamespace(path_registry="registry")
-    spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "x", patch_map=patch_map, override_plan=plan, root_blueprint=root_blueprint))
+    codegen_ir = {
+        "phase8_11": {
+            "execution": {
+                "overrides": {
+                    "signature": "sig-overrides",
+                    "steps_rows_signature": "sig-rows",
+                    "root_spell_id": "s1",
+                    "steps_rows": ({"spell_id": "s1"},),
+                },
+            },
+        },
+    }
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(
+            executor=lambda c: "x",
+            patch_map=patch_map,
+            override_plan=plan,
+            root_blueprint=root_blueprint,
+            codegen_ir=codegen_ir,
+        ),
+    )
     socket_ref = _SocketRef("s1", "dep", 7, "normal")
     override_map = {socket_ref: "value"}
 
@@ -315,6 +415,9 @@ def test_execute_with_overrides_applies_payload_and_uses_cached_specialization(m
 
     def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
         compile_count["value"] += 1
+        assert kwargs["plan_rows"] == ({"spell_id": "s1"},)
+        assert kwargs["root_spell_id"] == "s1"
+        assert kwargs["spell_lookup"] is spell._spellbook._spell_id_pool
 
         def _executor(context: Any, received_override_map: Dict[Any, Any], root_args: Any) -> str:
             assert received_override_map is override_map

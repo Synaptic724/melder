@@ -296,14 +296,17 @@ def test_build_override_shape_key_tracks_socket_targets() -> None:
     grouped_a = MeldRuntime._collect_override_targets(override_map=override_map_a)
     grouped_b = MeldRuntime._collect_override_targets(override_map=override_map_b)
     execution_plan = _make_override_execution_plan()
+    plan_signature = MeldRuntime._build_override_plan_signature(
+        execution_plan=execution_plan,
+    )
 
     key_a = MeldRuntime._build_override_shape_key(
-        execution_plan=execution_plan,
+        plan_signature=plan_signature,
         override_targets_by_spell_id=grouped_a,
         root_positional_override=None,
     )
     key_b = MeldRuntime._build_override_shape_key(
-        execution_plan=execution_plan,
+        plan_signature=plan_signature,
         override_targets_by_spell_id=grouped_b,
         root_positional_override=None,
     )
@@ -331,14 +334,17 @@ def test_build_override_shape_key_tracks_positional_arity() -> None:
     }
     grouped = MeldRuntime._collect_override_targets(override_map=override_map)
     execution_plan = _make_override_execution_plan()
+    plan_signature = MeldRuntime._build_override_plan_signature(
+        execution_plan=execution_plan,
+    )
 
     no_args_key = MeldRuntime._build_override_shape_key(
-        execution_plan=execution_plan,
+        plan_signature=plan_signature,
         override_targets_by_spell_id=grouped,
         root_positional_override=None,
     )
     two_args_key = MeldRuntime._build_override_shape_key(
-        execution_plan=execution_plan,
+        plan_signature=plan_signature,
         override_targets_by_spell_id=grouped,
         root_positional_override=("a", "b"),
     )
@@ -361,14 +367,20 @@ def test_build_override_shape_key_ignores_plan_object_identity_for_equivalent_pl
     grouped = MeldRuntime._collect_override_targets(override_map=override_map)
     plan_a = _make_override_execution_plan()
     plan_b = _make_override_execution_plan()
+    plan_signature_a = MeldRuntime._build_override_plan_signature(
+        execution_plan=plan_a,
+    )
+    plan_signature_b = MeldRuntime._build_override_plan_signature(
+        execution_plan=plan_b,
+    )
 
     key_a = MeldRuntime._build_override_shape_key(
-        execution_plan=plan_a,
+        plan_signature=plan_signature_a,
         override_targets_by_spell_id=grouped,
         root_positional_override=None,
     )
     key_b = MeldRuntime._build_override_shape_key(
-        execution_plan=plan_b,
+        plan_signature=plan_signature_b,
         override_targets_by_spell_id=grouped,
         root_positional_override=None,
     )
@@ -395,14 +407,20 @@ def test_build_override_shape_key_changes_when_plan_semantics_change() -> None:
     plan_b = _make_override_execution_plan(
         step_overrides={"override_keys": ["dep", "other"]},
     )
+    plan_signature_a = MeldRuntime._build_override_plan_signature(
+        execution_plan=plan_a,
+    )
+    plan_signature_b = MeldRuntime._build_override_plan_signature(
+        execution_plan=plan_b,
+    )
 
     key_a = MeldRuntime._build_override_shape_key(
-        execution_plan=plan_a,
+        plan_signature=plan_signature_a,
         override_targets_by_spell_id=grouped,
         root_positional_override=None,
     )
     key_b = MeldRuntime._build_override_shape_key(
-        execution_plan=plan_b,
+        plan_signature=plan_signature_b,
         override_targets_by_spell_id=grouped,
         root_positional_override=None,
     )

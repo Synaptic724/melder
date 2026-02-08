@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.spellbook.existence.existence import Existence
@@ -11,10 +12,13 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 
 def compile_phase12_overrides_executor(
         *,
-        execution_plan: Any,
+        execution_plan: Optional[Any],
         override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
         any_overrides_present: bool,
         path_registry: Optional[Any],
+        plan_rows: Optional[Sequence[Dict[str, Any]]] = None,
+        root_spell_id: Optional[str] = None,
+        spell_lookup: Optional[Dict[str, Any]] = None,
 ) -> Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]:
     """
     Compile a spell-scoped Phase 12 overrides executor specialization.
@@ -42,6 +46,12 @@ def compile_phase12_overrides_executor(
         path_registry:
             Path registry from the active root blueprint, used for per-path
             socket filtering in non-shared instances.
+        plan_rows:
+            Optional schema-only step rows exported from Phase11 IR.
+        root_spell_id:
+            Optional root spell id for schema-row driven compilation.
+        spell_lookup:
+            Optional spell-id lookup used when hydrating schema rows.
 
     Returns:
         Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]:
@@ -53,21 +63,37 @@ def compile_phase12_overrides_executor(
         RuntimeError:
             If the execution plan has no root instance key.
     """
-    if execution_plan is None:
+    if execution_plan is None and not plan_rows:
         raise ValueError("execution_plan must not be None.")
     if override_targets_by_spell_id is None:
         raise ValueError("override_targets_by_spell_id must not be None.")
 
-    root_instance_key = execution_plan.root_instance_key
-    if root_instance_key is None:
-        raise RuntimeError("Phase 12 override executor requires a root instance key.")
+    if plan_rows:
+        steps = _hydrate_steps_from_rows(
+            plan_rows=plan_rows,
+            spell_lookup=spell_lookup,
+        )
+        resolved_root_spell_id = root_spell_id
+        if resolved_root_spell_id is None and execution_plan is not None:
+            resolved_root_spell_id = execution_plan.root_spell_id
+        root_instance_key = _resolve_root_instance_key(
+            steps=steps,
+            root_spell_id=resolved_root_spell_id,
+        )
+        if root_instance_key is None:
+            raise RuntimeError("Phase 12 override executor requires a root instance key.")
+        root_spell_id = resolved_root_spell_id
+    else:
+        root_instance_key = execution_plan.root_instance_key
+        if root_instance_key is None:
+            raise RuntimeError("Phase 12 override executor requires a root instance key.")
+        steps = tuple(execution_plan.steps)
+        root_spell_id = execution_plan.root_spell_id
 
-    steps = tuple(execution_plan.steps)
     step_override_targets = _build_step_override_targets(
         steps=steps,
         override_targets_by_spell_id=override_targets_by_spell_id,
     )
-    root_spell_id = execution_plan.root_spell_id
 
     def _phase12_executor(
             context: Any,
@@ -100,6 +126,125 @@ def compile_phase12_overrides_executor(
         return instance_results[root_instance_key]
 
     return _phase12_executor
+
+
+def _hydrate_steps_from_rows(
+        *,
+        plan_rows: Sequence[Dict[str, Any]],
+        spell_lookup: Optional[Dict[str, Any]],
+) -> Tuple[Any, ...]:
+    """
+    Hydrate override executor plan steps from schema-only Phase11 step rows.
+
+    Contract:
+        - Requires spell_lookup to resolve spell runtime objects.
+        - Validates required row fields and existence enum names.
+    """
+    if spell_lookup is None:
+        raise RuntimeError(
+            "Phase 12 overrides schema rows require spell_lookup for step hydration."
+        )
+
+    steps = []
+    for row_index, row in enumerate(plan_rows):
+        required_fields = (
+            "instance_key",
+            "spell_id",
+            "existence",
+            "creations_target_kind",
+            "shared_instance",
+            "dependency_resolution_order",
+            "override_match_prefix",
+            "override_match_prefix_len",
+            "uses_positional_override",
+            "contract_positional_override",
+            "has_contract_payload",
+            "contract_payload_items",
+            "use_spell_lock_hint",
+            "must_register",
+        )
+        for field_name in required_fields:
+            if field_name not in row:
+                raise RuntimeError(
+                    "Phase 12 overrides step schema is missing required field "
+                    f"'{field_name}' at index {row_index}."
+                )
+
+        spell_id = row["spell_id"]
+        spell = spell_lookup.get(spell_id)
+        if spell is None:
+            raise RuntimeError(
+                f"Phase 12 overrides step schema references unknown spell_id '{spell_id}'."
+            )
+
+        existence_name = row["existence"]
+        try:
+            existence = Existence[existence_name]
+        except KeyError as exc:
+            raise RuntimeError(
+                "Phase 12 overrides step schema contains unknown existence "
+                f"'{existence_name}' at index {row_index}."
+            ) from exc
+
+        dependency_resolution_order = tuple(
+            (
+                param_name,
+                tuple(dependency_keys),
+            )
+            for param_name, dependency_keys in row["dependency_resolution_order"]
+        )
+        contract_payload = None
+        if row["has_contract_payload"]:
+            contract_payload = {
+                param_name: value
+                for param_name, value in row["contract_payload_items"]
+            }
+
+        steps.append(
+            SimpleNamespace(
+                instance_key=tuple(row["instance_key"]),
+                spell=spell,
+                existence=existence,
+                creations_target_kind=row["creations_target_kind"],
+                shared_instance=row["shared_instance"],
+                dependency_resolution_order=dependency_resolution_order,
+                override_match_prefix=row["override_match_prefix"],
+                override_match_prefix_len=row["override_match_prefix_len"],
+                uses_positional_override=row["uses_positional_override"],
+                contract_positional_override=row["contract_positional_override"],
+                has_contract_payload=row["has_contract_payload"],
+                contract_payload=contract_payload,
+                use_spell_lock_hint=row["use_spell_lock_hint"],
+                must_register=row["must_register"],
+            )
+        )
+    return tuple(steps)
+
+
+def _resolve_root_instance_key(
+        *,
+        steps: Tuple[Any, ...],
+        root_spell_id: Optional[str],
+) -> Optional[Tuple[str, Optional[int]]]:
+    """
+    Resolve root instance key from hydrated schema steps.
+
+    Contract:
+        - Prefers canonical `(root_spell_id, None)` when present.
+        - Falls back to first matching step instance key.
+        - Returns None when no match exists.
+    """
+    if root_spell_id is None:
+        return None
+    for plan_step in steps:
+        instance_key = plan_step.instance_key
+        if instance_key[0] == root_spell_id and instance_key[1] is None:
+            return instance_key
+    for plan_step in steps:
+        instance_key = plan_step.instance_key
+        if instance_key[0] == root_spell_id:
+            return instance_key
+    return None
 
 
 def _build_step_override_targets(

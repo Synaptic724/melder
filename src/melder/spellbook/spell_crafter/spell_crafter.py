@@ -919,6 +919,119 @@ class SpellCrafter(Cleanable):
             tuple(transient_plan[39]),
         )
 
+    @staticmethod
+    def _freeze_phase11_schema_value(value: Any) -> Any:
+        """
+        Normalize arbitrary values into deterministic schema-safe forms.
+
+        Purpose:
+            Convert nested payload values into primitive/tuple structures so
+            Phase11 IR rows can be serialized without leaking live objects.
+        Contract:
+            - Primitive values are returned as-is.
+            - Dict/list/tuple/set values are recursively normalized.
+            - Non-primitive objects are represented by deterministic repr text.
+        Args:
+            value:
+                Raw value captured from plan metadata.
+        Returns:
+            Any:
+                Deterministic schema-safe value.
+        """
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        if isinstance(value, dict):
+            return tuple(
+                sorted(
+                    (
+                        key,
+                        SpellCrafter._freeze_phase11_schema_value(item),
+                    )
+                    for key, item in value.items()
+                )
+            )
+        if isinstance(value, (list, tuple)):
+            return tuple(
+                SpellCrafter._freeze_phase11_schema_value(item)
+                for item in value
+            )
+        if isinstance(value, set):
+            return tuple(
+                sorted(
+                    (
+                        SpellCrafter._freeze_phase11_schema_value(item)
+                        for item in value
+                    ),
+                    key=repr,
+                )
+            )
+        return repr(value)
+
+    def _build_phase11_step_ir_row(
+            self,
+            step: Any,
+    ) -> Dict[str, Any]:
+        """
+        Build one schema-only Phase11 step row for IR export.
+
+        Purpose:
+            Capture step semantics without exporting live plan/spell objects.
+        Contract:
+            - Output contains only primitive/tuple values.
+            - Includes all no-overrides and overrides semantics consumed by
+              compilers and runtime shape-key signatures.
+        Args:
+            step:
+                ExecutionPlanStep-like object.
+        Returns:
+            Dict[str, Any]:
+                Normalized step row.
+        """
+        dependency_resolution_order = tuple(
+            (
+                param_name,
+                tuple(dependency_keys),
+            )
+            for param_name, dependency_keys in step.dependency_resolution_order
+        )
+        contract_payload_items: Tuple[Any, ...] = ()
+        if step.contract_payload:
+            contract_payload_items = tuple(
+                sorted(
+                    (
+                        param_name,
+                        self._freeze_phase11_schema_value(value),
+                    )
+                    for param_name, value in step.contract_payload.items()
+                )
+            )
+        return {
+            "instance_key": tuple(step.instance_key),
+            "spell_id": step.spell.spell_index.current,
+            "existence": step.existence.name,
+            "creations_target_kind": step.creations_target_kind,
+            "shared_instance": step.shared_instance,
+            "dependency_resolution_order": dependency_resolution_order,
+            "override_match_prefix": step.override_match_prefix,
+            "override_match_prefix_len": step.override_match_prefix_len,
+            "override_keys": tuple(step.override_keys),
+            "expects_overrides": step.expects_overrides,
+            "contract_keys": tuple(step.contract_keys),
+            "allow_list_aggregation": step.allow_list_aggregation,
+            "uses_positional_override": step.uses_positional_override,
+            "contract_positional_override": self._freeze_phase11_schema_value(
+                step.contract_positional_override,
+            ),
+            "has_contract_payload": step.has_contract_payload,
+            "contract_payload_items": contract_payload_items,
+            "lock_hint": step.lock_hint,
+            "use_spell_lock_hint": step.use_spell_lock_hint,
+            "requires_spellspace": step.requires_spellspace,
+            "owner_conduit_required": step.owner_conduit_required,
+            "must_register": step.must_register,
+            "disposal_method_names": tuple(step.disposal_method_names),
+        }
+
     def _build_phase11_variant_ir_payload(
             self,
             plan: Optional[ExecutionPlan],
@@ -950,8 +1063,15 @@ class SpellCrafter(Cleanable):
                 "signature": None,
                 "transient_plan": None,
                 "steps": (),
+                "steps_rows": (),
+                "steps_rows_signature": None,
             }
 
+        steps_rows = tuple(
+            self._build_phase11_step_ir_row(step)
+            for step in plan.steps
+        )
+        steps_rows_signature = self._hash_codegen_signature(steps_rows)
         step_spell_ids = tuple(
             step.spell.spell_index.current
             for step in plan.steps
@@ -961,6 +1081,7 @@ class SpellCrafter(Cleanable):
             plan.plan_variant,
             plan.root_spell_id,
             step_spell_ids,
+            steps_rows_signature,
             transient_signature,
         )
         return {
@@ -972,6 +1093,8 @@ class SpellCrafter(Cleanable):
             "signature": signature,
             "transient_plan": plan.fast_transient_plan,
             "steps": tuple(plan.steps),
+            "steps_rows": steps_rows,
+            "steps_rows_signature": steps_rows_signature,
         }
 
     def _capture_phase8_11_codegen_ir(self) -> None:
@@ -1094,7 +1217,6 @@ class SpellCrafter(Cleanable):
         required_payload_fields = (
             "signature",
             "step_count",
-            "steps",
             "root_spell_id",
         )
         for field_name in required_payload_fields:
@@ -1103,6 +1225,14 @@ class SpellCrafter(Cleanable):
                     "Phase 12 no-overrides IR payload is missing required field "
                     f"'{field_name}'."
                 )
+
+        has_steps = "steps" in no_overrides_payload and bool(no_overrides_payload.get("steps"))
+        has_steps_rows = "steps_rows" in no_overrides_payload and bool(no_overrides_payload.get("steps_rows"))
+        if not has_steps and not has_steps_rows:
+            raise RuntimeError(
+                "Phase 12 no-overrides IR payload must provide 'steps' or "
+                "'steps_rows'."
+            )
 
         payload_signature = no_overrides_payload["signature"]
         if (
@@ -1113,6 +1243,7 @@ class SpellCrafter(Cleanable):
 
         compiled_executor = compile_phase12_no_overrides_executor(
             codegen_ir=no_overrides_payload,
+            spell_lookup=self._spell._spellbook._spell_id_pool,
         )
         if no_overrides_payload.get("step_count", 0) > 0 and compiled_executor is None:
             raise RuntimeError(

@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.spellbook.existence.existence import Existence
@@ -12,6 +13,7 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpac
 def compile_phase12_no_overrides_executor(
         *,
         codegen_ir: Dict[str, Any],
+        spell_lookup: Optional[Dict[str, Any]] = None,
 ) -> Optional[Callable[[Any], Any]]:
     """
     Compile a spell-scoped Phase 12 no-overrides executor from Codegen IR.
@@ -33,6 +35,9 @@ def compile_phase12_no_overrides_executor(
     Args:
         codegen_ir:
             Phase 11 variant payload produced by SpellCrafter IR export.
+        spell_lookup:
+            Optional spell-id lookup used to hydrate schema-only step rows when
+            live `steps` objects are not present in IR.
 
     Returns:
         Optional[Callable[[Any], Any]]:
@@ -49,6 +54,13 @@ def compile_phase12_no_overrides_executor(
         raise ValueError("codegen_ir must not be None.")
 
     steps = codegen_ir.get("steps")
+    if not steps:
+        steps_rows = codegen_ir.get("steps_rows")
+        if steps_rows:
+            steps = _hydrate_steps_from_rows(
+                steps_rows=steps_rows,
+                spell_lookup=spell_lookup,
+            )
     if not steps:
         return None
     root_spell_id = codegen_ir.get("root_spell_id")
@@ -89,6 +101,95 @@ def compile_phase12_no_overrides_executor(
         steps=steps,
         root_instance_key=root_instance_key,
     )
+
+
+def _hydrate_steps_from_rows(
+        *,
+        steps_rows: Sequence[Dict[str, Any]],
+        spell_lookup: Optional[Dict[str, Any]],
+) -> Tuple[Any, ...]:
+    """
+    Hydrate executable step adapters from schema-only Phase11 step rows.
+
+    Contract:
+        - Requires spell_lookup when schema rows are used.
+        - Validates required row fields and existence enum names.
+        - Returns adapters exposing the same attributes consumed by the no-
+          overrides compiler/runtime helpers in this module.
+    """
+    if spell_lookup is None:
+        raise RuntimeError(
+            "Phase 12 no-overrides schema rows require spell_lookup for step hydration."
+        )
+
+    hydrated_steps = []
+    for row_index, row in enumerate(steps_rows):
+        required_fields = (
+            "instance_key",
+            "spell_id",
+            "existence",
+            "creations_target_kind",
+            "dependency_resolution_order",
+            "uses_positional_override",
+            "contract_positional_override",
+            "has_contract_payload",
+            "contract_payload_items",
+            "use_spell_lock_hint",
+            "must_register",
+        )
+        for field_name in required_fields:
+            if field_name not in row:
+                raise RuntimeError(
+                    "Phase 12 no-overrides schema row is missing required field "
+                    f"'{field_name}' at index {row_index}."
+                )
+
+        spell_id = row["spell_id"]
+        spell = spell_lookup.get(spell_id)
+        if spell is None:
+            raise RuntimeError(
+                f"Phase 12 no-overrides step schema references unknown spell_id '{spell_id}'."
+            )
+
+        existence_name = row["existence"]
+        try:
+            existence = Existence[existence_name]
+        except KeyError as exc:
+            raise RuntimeError(
+                "Phase 12 no-overrides step schema contains unknown existence "
+                f"'{existence_name}' at index {row_index}."
+            ) from exc
+
+        dependency_resolution_order = tuple(
+            (
+                param_name,
+                tuple(dependency_keys),
+            )
+            for param_name, dependency_keys in row["dependency_resolution_order"]
+        )
+        contract_payload = None
+        if row["has_contract_payload"]:
+            contract_payload = {
+                param_name: value
+                for param_name, value in row["contract_payload_items"]
+            }
+
+        hydrated_steps.append(
+            SimpleNamespace(
+                instance_key=tuple(row["instance_key"]),
+                spell=spell,
+                existence=existence,
+                creations_target_kind=row["creations_target_kind"],
+                dependency_resolution_order=dependency_resolution_order,
+                uses_positional_override=row["uses_positional_override"],
+                contract_positional_override=row["contract_positional_override"],
+                has_contract_payload=row["has_contract_payload"],
+                contract_payload=contract_payload,
+                use_spell_lock_hint=row["use_spell_lock_hint"],
+                must_register=row["must_register"],
+            )
+        )
+    return tuple(hydrated_steps)
 
 
 def _resolve_root_instance_key(
