@@ -4304,8 +4304,46 @@ def test_capture_phase2_5_codegen_ir_exports_required_fields() -> None:
         ),
     )
     root_blueprint = _RootBlueprintStub("root")
+    root_blueprint.root_lineage_id = "lineage-root"
     root_blueprint.ordered_node_ids = ["dep", "root"]
-    root_blueprint.socket_refs = [object(), object()]
+    root_blueprint.socket_refs = [
+        types.SimpleNamespace(
+            node_id="dep",
+            param_name="beta",
+            param_path_id=7,
+            socket_kind=types.SimpleNamespace(value="spell_contract"),
+        ),
+        types.SimpleNamespace(
+            node_id="dep",
+            param_name="alpha",
+            param_path_id=2,
+            socket_kind=types.SimpleNamespace(value="normal"),
+        ),
+    ]
+    class _Node:
+        def __init__(self, node_id: str) -> None:
+            self.id = node_id
+            self.dependents: set[object] = set()
+            self.incoming_params: dict[object, str] = {}
+
+    parent_a = _Node("dep-a")
+    parent_b = _Node("dep-b")
+    child_root = _Node("root")
+    parent_a.dependents.add(child_root)
+    parent_b.dependents.add(child_root)
+    child_root.incoming_params[parent_a] = "alpha"
+    child_root.incoming_params[parent_b] = "beta"
+    root_blueprint.dag = types.SimpleNamespace(
+        nodes={
+            "dep-b": parent_b,
+            "dep-a": parent_a,
+            "root": child_root,
+        },
+        _socket_kinds={
+            (parent_b, child_root): types.SimpleNamespace(value="spell_contract"),
+            (parent_a, child_root): types.SimpleNamespace(value="normal"),
+        },
+    )
     crafter._root_blueprint_phase5 = root_blueprint
     crafter._spell_system_index_phase5 = types.SimpleNamespace(
         nodes={"z": object(), "a": object()},
@@ -4324,18 +4362,108 @@ def test_capture_phase2_5_codegen_ir_exports_required_fields() -> None:
         "phase4_is_broken",
         "phase4_issue_codes",
         "phase5_root_spell_id",
+        "phase5_root_lineage_id",
         "phase5_root_ordered_node_ids",
         "phase5_socket_ref_count",
+        "phase5_socket_rows",
+        "phase5_dag_edge_rows",
         "phase5_index_spell_ids",
         "signature",
     }
     assert payload["phase5_index_spell_ids"] == ("a", "z")
     assert payload["phase5_root_spell_id"] == "root"
+    assert payload["phase5_root_lineage_id"] == "lineage-root"
     assert payload["phase5_socket_ref_count"] == 2
+    assert payload["phase5_socket_rows"] == (
+        ("dep", "alpha", 2, "normal"),
+        ("dep", "beta", 7, "spell_contract"),
+    )
+    assert payload["phase5_dag_edge_rows"] == (
+        ("dep-a", "root", "alpha", "normal"),
+        ("dep-b", "root", "beta", "spell_contract"),
+    )
     assert signatures["phase2_5"] == first_signature
 
     crafter._capture_phase2_5_codegen_ir()
     assert crafter.codegen_ir["phase2_5"]["signature"] == first_signature
+
+
+def test_capture_phase2_5_codegen_ir_signature_changes_on_phase5_schema_rows() -> None:
+    """
+    Purpose:
+        Ensure phase2_5 signature invalidates when Phase5 schema rows change.
+    Contract:
+        Changing socket or DAG edge schema rows changes the exported signature.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If schema-row changes do not invalidate signatures.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+
+    root_blueprint = _RootBlueprintStub("root")
+    root_blueprint.root_lineage_id = "lineage-root"
+    root_blueprint.ordered_node_ids = ["dep-a", "root"]
+    root_blueprint.socket_refs = [
+        types.SimpleNamespace(
+            node_id="dep-a",
+            param_name="alpha",
+            param_path_id=1,
+            socket_kind=types.SimpleNamespace(value="normal"),
+        ),
+    ]
+    class _Node:
+        def __init__(self, node_id: str) -> None:
+            self.id = node_id
+            self.dependents: set[object] = set()
+            self.incoming_params: dict[object, str] = {}
+
+    parent_a = _Node("dep-a")
+    child_root = _Node("root")
+    parent_a.dependents.add(child_root)
+    child_root.incoming_params[parent_a] = "alpha"
+    root_blueprint.dag = types.SimpleNamespace(
+        nodes={
+            "dep-a": parent_a,
+            "root": child_root,
+        },
+        _socket_kinds={
+            (parent_a, child_root): types.SimpleNamespace(value="normal"),
+        },
+    )
+    crafter._root_blueprint_phase5 = root_blueprint
+    crafter._capture_phase2_5_codegen_ir()
+    first_signature = crafter.codegen_ir["phase2_5"]["signature"]
+
+    changed_blueprint = _RootBlueprintStub("root")
+    changed_blueprint.root_lineage_id = "lineage-root"
+    changed_blueprint.ordered_node_ids = ["dep-a", "root"]
+    changed_blueprint.socket_refs = [
+        types.SimpleNamespace(
+            node_id="dep-a",
+            param_name="alpha",
+            param_path_id=9,
+            socket_kind=types.SimpleNamespace(value="normal"),
+        ),
+    ]
+    changed_parent = _Node("dep-a")
+    changed_child = _Node("root")
+    changed_parent.dependents.add(changed_child)
+    changed_child.incoming_params[changed_parent] = "alpha_changed"
+    changed_blueprint.dag = types.SimpleNamespace(
+        nodes={
+            "dep-a": changed_parent,
+            "root": changed_child,
+        },
+        _socket_kinds={
+            (changed_parent, changed_child): types.SimpleNamespace(value="normal"),
+        },
+    )
+    crafter._root_blueprint_phase5 = changed_blueprint
+    crafter._capture_phase2_5_codegen_ir()
+    second_signature = crafter.codegen_ir["phase2_5"]["signature"]
+
+    assert second_signature != first_signature
 
 
 def test_capture_phase8_11_codegen_ir_exports_sorted_payloads() -> None:
@@ -4356,19 +4484,95 @@ def test_capture_phase8_11_codegen_ir_exports_sorted_payloads() -> None:
         root_instance_key=("root", None),
         shared_spell_ids={"z", "a"},
         contract_dependencies_complete=True,
+        occurrence_graph={
+            ("root", 0): {
+                "alpha": [("a", 1), ("b", 2)],
+                "beta": [("a", 1)],
+            },
+            ("a", 1): {},
+            ("b", 2): {},
+        },
+        instance_keys_by_spell_id={
+            "root": [("root", None)],
+            "a": [("a", 3), ("a", 1)],
+        },
+        canonical_occurrences_by_spell_id={
+            "root": ("root", 0),
+            "a": ("a", 1),
+        },
+        contract_overrides_by_occurrence={
+            ("a", 1): {"x": 7, "__args__": [1, 2]},
+        },
+        contract_overrides_by_spell_id={
+            "a": [(("a", 1), {"x": 7, "__args__": [1, 2]})],
+        },
+    )
+    socket_ref_a = types.SimpleNamespace(
+        node_id="dep-a",
+        param_name="arg",
+        param_path_id=3,
+        socket_kind=types.SimpleNamespace(value="normal"),
+    )
+    socket_ref_b = types.SimpleNamespace(
+        node_id="dep-b",
+        param_name="arg",
+        param_path_id=1,
+        socket_kind=types.SimpleNamespace(value="normal"),
+    )
+    mutation_patch_a = types.SimpleNamespace(
+        child_spell_id="child-a",
+        param_name="mut",
+        param_path_id=2,
+        old_parent_id="old-a",
+    )
+    mutation_patch_b = types.SimpleNamespace(
+        child_spell_id="child-b",
+        param_name="mut",
+        param_path_id=5,
+        old_parent_id="old-b",
     )
     crafter._injection_plan_phase9 = types.SimpleNamespace(
         instance_injections={
-            ("z", 3): object(),
-            ("a", 2): object(),
+            ("z", 3): types.SimpleNamespace(
+                allow_list_aggregation=False,
+                uses_positional_override=False,
+                contract_payload=None,
+                param_sources={},
+            ),
+            ("a", 2): types.SimpleNamespace(
+                allow_list_aggregation=True,
+                uses_positional_override=True,
+                contract_payload={"fixed": "ok", "__args__": [9]},
+                param_sources={
+                    "dep": types.SimpleNamespace(
+                        kind="dependency",
+                        dependency_keys=[("z", 3), ("a", None)],
+                        override_key="dep",
+                        contract_key=None,
+                    ),
+                    "contracted": types.SimpleNamespace(
+                        kind="contract",
+                        dependency_keys=[],
+                        override_key="contracted",
+                        contract_key="ckey",
+                    ),
+                },
+            ),
             ("a", None): object(),
         },
     )
     crafter._override_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"override-z": object(), "override-a": object()},
+        _targets_by_spec={
+            "override-z": [socket_ref_a],
+            "override-a": [socket_ref_a, socket_ref_b],
+        },
+        _specificity_by_spec={"override-z": 1, "override-a": 3},
     )
     crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"mutation-z": object(), "mutation-a": object()},
+        _targets_by_spec={
+            "mutation-z": [mutation_patch_b],
+            "mutation-a": [mutation_patch_b, mutation_patch_a],
+        },
     )
     crafter._execution_plan_phase11_no_overrides = _make_phase11_plan_stub(
         plan_variant="no_overrides_fast",
@@ -4391,18 +4595,72 @@ def test_capture_phase8_11_codegen_ir_exports_sorted_payloads() -> None:
     signatures = crafter.codegen_ir["signatures"]
 
     assert payload["occurrence"]["shared_spell_ids"] == ("a", "z")
+    assert payload["occurrence"]["graph_rows"][0] == (("a", 1), ())
+    assert payload["occurrence"]["instance_key_rows"] == (
+        ("a", (("a", 1), ("a", 3))),
+        ("root", (("root", None),)),
+    )
+    assert payload["occurrence"]["canonical_occurrence_rows"] == (
+        ("a", ("a", 1)),
+        ("root", ("root", 0)),
+    )
+    assert payload["occurrence"]["contract_override_rows"] == (
+        (("a", 1), (("__args__", (1, 2)), ("x", 7))),
+    )
     assert payload["injection"]["instance_keys"] == (
         ("a", None),
         ("a", 2),
         ("z", 3),
     )
+    assert payload["injection"]["instance_rows"][1] == (
+        ("a", 2),
+        True,
+        True,
+        (("__args__", (9,)), ("fixed", "ok")),
+        (
+            ("contracted", "contract", (), "contracted", "ckey"),
+            ("dep", "dependency", (("a", None), ("z", 3)), "dep", None),
+        ),
+    )
     assert payload["patch_maps"]["override_target_specs"] == (
         "override-a",
         "override-z",
     )
+    assert payload["patch_maps"]["override_target_rows"] == (
+        (
+            "override-a",
+            3,
+            (
+                ("dep-a", "arg", 3, "normal"),
+                ("dep-b", "arg", 1, "normal"),
+            ),
+        ),
+        (
+            "override-z",
+            1,
+            (
+                ("dep-a", "arg", 3, "normal"),
+            ),
+        ),
+    )
     assert payload["patch_maps"]["mutation_target_specs"] == (
         "mutation-a",
         "mutation-z",
+    )
+    assert payload["patch_maps"]["mutation_target_rows"] == (
+        (
+            "mutation-a",
+            (
+                ("child-a", "mut", 2, "old-a"),
+                ("child-b", "mut", 5, "old-b"),
+            ),
+        ),
+        (
+            "mutation-z",
+            (
+                ("child-b", "mut", 5, "old-b"),
+            ),
+        ),
     )
     assert payload["execution"]["no_overrides"]["plan_variant"] == "no_overrides_fast"
     no_overrides_payload = payload["execution"]["no_overrides"]
@@ -4438,6 +4696,27 @@ def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orde
         root_instance_key=("root", None),
         shared_spell_ids={"a"},
         contract_dependencies_complete=True,
+        occurrence_graph={
+            ("root", 0): {
+                "dep": [("a", 1), ("b", 2)],
+            },
+            ("a", 1): {},
+            ("b", 2): {},
+        },
+        instance_keys_by_spell_id={
+            "b": [("b", 2)],
+            "a": [("a", None)],
+        },
+        canonical_occurrences_by_spell_id={
+            "b": ("b", 2),
+            "a": ("a", 1),
+        },
+        contract_overrides_by_occurrence={
+            ("a", 1): {"x": 1},
+        },
+        contract_overrides_by_spell_id={
+            "a": [(("a", 1), {"x": 1})],
+        },
     )
     crafter._execution_plan_phase11_no_overrides = _make_phase11_plan_stub(
         plan_variant="no_overrides_fast",
@@ -4457,15 +4736,57 @@ def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orde
 
     crafter._injection_plan_phase9 = types.SimpleNamespace(
         instance_injections={
-            ("b", 1): object(),
-            ("a", None): object(),
+            ("b", 1): types.SimpleNamespace(
+                allow_list_aggregation=True,
+                uses_positional_override=False,
+                contract_payload={"fixed": "v"},
+                param_sources={
+                    "dep": types.SimpleNamespace(
+                        kind="dependency",
+                        dependency_keys=[("x", None), ("y", 2)],
+                        override_key="dep",
+                        contract_key=None,
+                    ),
+                },
+            ),
+            ("a", None): types.SimpleNamespace(
+                allow_list_aggregation=False,
+                uses_positional_override=False,
+                contract_payload=None,
+                param_sources={},
+            ),
         },
     )
+    override_ref_a = types.SimpleNamespace(
+        node_id="node-a",
+        param_name="p",
+        param_path_id=2,
+        socket_kind=types.SimpleNamespace(value="normal"),
+    )
+    override_ref_b = types.SimpleNamespace(
+        node_id="node-b",
+        param_name="p",
+        param_path_id=1,
+        socket_kind=types.SimpleNamespace(value="normal"),
+    )
+    mutation_patch_a = types.SimpleNamespace(
+        child_spell_id="child-a",
+        param_name="m",
+        param_path_id=4,
+        old_parent_id="old-a",
+    )
+    mutation_patch_b = types.SimpleNamespace(
+        child_spell_id="child-b",
+        param_name="m",
+        param_path_id=5,
+        old_parent_id="old-b",
+    )
     crafter._override_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"z": object(), "a": object()},
+        _targets_by_spec={"z": [override_ref_a], "a": [override_ref_a, override_ref_b]},
+        _specificity_by_spec={"z": 1, "a": 3},
     )
     crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"z": object(), "a": object()},
+        _targets_by_spec={"z": [mutation_patch_b], "a": [mutation_patch_b, mutation_patch_a]},
     )
     crafter._capture_phase8_11_codegen_ir()
     first_signature = crafter.codegen_ir["phase8_11"]["signature"]
@@ -4473,15 +4794,33 @@ def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orde
 
     crafter._injection_plan_phase9 = types.SimpleNamespace(
         instance_injections={
-            ("a", None): object(),
-            ("b", 1): object(),
+            ("a", None): types.SimpleNamespace(
+                allow_list_aggregation=False,
+                uses_positional_override=False,
+                contract_payload=None,
+                param_sources={},
+            ),
+            ("b", 1): types.SimpleNamespace(
+                allow_list_aggregation=True,
+                uses_positional_override=False,
+                contract_payload={"fixed": "v"},
+                param_sources={
+                    "dep": types.SimpleNamespace(
+                        kind="dependency",
+                        dependency_keys=[("y", 2), ("x", None)],
+                        override_key="dep",
+                        contract_key=None,
+                    ),
+                },
+            ),
         },
     )
     crafter._override_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"a": object(), "z": object()},
+        _targets_by_spec={"a": [override_ref_b, override_ref_a], "z": [override_ref_a]},
+        _specificity_by_spec={"a": 3, "z": 1},
     )
     crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"a": object(), "z": object()},
+        _targets_by_spec={"a": [mutation_patch_a, mutation_patch_b], "z": [mutation_patch_b]},
     )
     crafter._capture_phase8_11_codegen_ir()
     second_signature = crafter.codegen_ir["phase8_11"]["signature"]
