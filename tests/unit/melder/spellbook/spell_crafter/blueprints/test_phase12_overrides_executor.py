@@ -529,7 +529,42 @@ def test_build_step_override_targets_prefilters_non_shared_steps() -> None:
     assert step_targets[0] == (socket_keep,)
     assert step_targets[1] == (socket_keep, socket_drop)
     assert path_registry.parent_calls == 2
-    assert path_registry.depth_calls == 1
+    assert path_registry.depth_calls == 2
+
+
+def test_build_step_override_targets_caches_path_metadata_across_steps() -> None:
+    """Non-shared prefilter reuses per-socket path metadata across repeated step checks."""
+    socket_keep = _SocketRef("dep", "value", 101, "normal")
+    socket_drop = _SocketRef("dep", "value", 202, "normal")
+    path_registry = _TrackingPathRegistry(
+        parent_map={101: 7, 202: 5},
+        depth_map={101: 2, 202: 2},
+    )
+    steps = (
+        SimpleNamespace(
+            spell=_make_spell("dep"),
+            shared_instance=False,
+            override_match_prefix=7,
+            override_match_prefix_len=1,
+        ),
+        SimpleNamespace(
+            spell=_make_spell("dep"),
+            shared_instance=False,
+            override_match_prefix=7,
+            override_match_prefix_len=1,
+        ),
+    )
+
+    step_targets = phase12_module._build_step_override_targets(
+        steps=steps,
+        override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
+        path_registry=path_registry,
+    )
+
+    assert step_targets[0] == (socket_keep,)
+    assert step_targets[1] == (socket_keep,)
+    assert path_registry.parent_calls == 2
+    assert path_registry.depth_calls == 2
 
 
 def test_compile_phase12_overrides_executor_non_shared_path_filtering_is_compile_time_only() -> None:

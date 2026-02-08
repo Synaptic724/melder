@@ -645,7 +645,21 @@ def _build_step_override_targets(
         - Preserves deterministic target order provided by the caller.
         - Returns empty tuples for steps with no targeted sockets.
         - Pre-filters non-shared step targets at compile time.
+        - Caches per-socket path metadata during compile-time prefiltering.
     """
+    path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
+
+    def _resolve_socket_path_metadata(socket_ref: Any) -> Tuple[Any, Any]:
+        metadata = path_metadata_cache.get(socket_ref)
+        if metadata is not None:
+            return metadata
+        metadata = (
+            path_registry.parent_id(socket_ref.param_path_id),
+            path_registry.depth(socket_ref.param_path_id),
+        )
+        path_metadata_cache[socket_ref] = metadata
+        return metadata
+
     step_targets = []
     for plan_step in steps:
         spell_id = plan_step.spell.spell_index.current
@@ -663,15 +677,12 @@ def _build_step_override_targets(
             step_targets.append(())
             continue
         match_depth = plan_step.override_match_prefix_len + 1
-        filtered_targets = tuple(
-            socket_ref
-            for socket_ref in spell_targets
-            if (
-                path_registry.parent_id(socket_ref.param_path_id) == match_prefix
-                and path_registry.depth(socket_ref.param_path_id) == match_depth
-            )
-        )
-        step_targets.append(filtered_targets)
+        filtered_targets = []
+        for socket_ref in spell_targets:
+            parent_id, depth = _resolve_socket_path_metadata(socket_ref)
+            if parent_id == match_prefix and depth == match_depth:
+                filtered_targets.append(socket_ref)
+        step_targets.append(tuple(filtered_targets))
     return tuple(step_targets)
 
 def _raise_override_on_existing_instance(
