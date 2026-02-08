@@ -852,6 +852,49 @@ def test_collect_override_targets_is_deterministic_for_equivalent_maps() -> None
     assert targets_a["s1"] == (socket_b, socket_a)
 
 
+def test_collect_override_targets_and_socket_shape_is_deterministic() -> None:
+    """Combined grouping+shape helper emits stable deterministic structures."""
+    socket_a = _SocketRef("s1", "a", 9, "normal")
+    socket_b = _SocketRef("s1", "b", 1, "normal")
+    socket_c = _SocketRef("s2", "z", 3, "optional")
+
+    map_a = {socket_a: "va", socket_b: "vb", socket_c: "vc"}
+    map_b = {socket_c: "vc", socket_b: "vb", socket_a: "va"}
+
+    targets_a, shape_a = MeldRuntime._collect_override_targets_and_socket_shape(
+        override_map=map_a,
+    )
+    targets_b, shape_b = MeldRuntime._collect_override_targets_and_socket_shape(
+        override_map=map_b,
+    )
+
+    assert targets_a == targets_b
+    assert shape_a == shape_b
+    assert targets_a["s1"] == (socket_b, socket_a)
+    assert targets_a["s2"] == (socket_c,)
+    assert shape_a == (
+        ("s1", 1, "b", "normal"),
+        ("s1", 9, "a", "normal"),
+        ("s2", 3, "z", "optional"),
+    )
+
+
+def test_build_override_shape_key_uses_precomputed_socket_shape() -> None:
+    """Shape-key builder accepts precomputed socket-shape tuples as-is."""
+    shape_key = MeldRuntime._build_override_shape_key(
+        plan_signature=("plan", "sig"),
+        override_targets_by_spell_id={},
+        root_positional_override=(1, 2, 3),
+        socket_shape=(("s1", 7, "dep", "normal"),),
+    )
+
+    assert shape_key == (
+        ("plan", "sig"),
+        (("s1", 7, "dep", "normal"),),
+        3,
+    )
+
+
 def test_get_or_compile_override_executor_skips_l2_work_when_disabled(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:

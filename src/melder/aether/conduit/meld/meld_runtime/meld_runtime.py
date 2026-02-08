@@ -738,7 +738,10 @@ class MeldRuntime(Cleanable):
                         inner=exc,
                     ) from exc
 
-        override_targets_by_spell_id = self._collect_override_targets(
+        (
+            override_targets_by_spell_id,
+            socket_shape,
+        ) = self._collect_override_targets_and_socket_shape(
             override_map=override_map,
         )
         try:
@@ -749,6 +752,7 @@ class MeldRuntime(Cleanable):
                 plan_signature=plan_signature,
                 override_targets_by_spell_id=override_targets_by_spell_id,
                 root_positional_override=root_positional_override,
+                socket_shape=socket_shape,
             )
         except MeldExecutionError:
             raise
@@ -842,7 +846,29 @@ class MeldRuntime(Cleanable):
             - Output ordering is deterministic for stable shape keying.
             - Socket refs are grouped by `socket_ref.node_id`.
         """
+        by_spell_id, _ = MeldRuntime._collect_override_targets_and_socket_shape(
+            override_map=override_map,
+        )
+        return by_spell_id
+
+    @staticmethod
+    def _collect_override_targets_and_socket_shape(
+            *,
+            override_map: Dict[Any, Any],
+    ) -> Tuple[Dict[str, Tuple[Any, ...]], Tuple[Tuple[Any, ...], ...]]:
+        """
+        Collect grouped override targets and socket-shape tuples in one pass.
+
+        Contract:
+            - Performs a single deterministic sort over socket refs.
+            - Groups refs by `socket_ref.node_id`.
+            - Emits socket-shape tuples in stable sorted order.
+        """
+        if not override_map:
+            return {}, ()
+
         by_spell_id: Dict[str, list[Any]] = {}
+        socket_shape: list[Tuple[Any, ...]] = []
         ordered_refs = sorted(
             override_map.keys(),
             key=lambda ref: (
@@ -859,11 +885,22 @@ class MeldRuntime(Cleanable):
                 by_spell_id[spell_id] = [socket_ref]
             else:
                 bucket.append(socket_ref)
+            socket_shape.append(
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_path_id,
+                    socket_ref.param_name,
+                    socket_ref.socket_kind.value,
+                )
+            )
 
-        return {
-            spell_id: tuple(refs)
-            for spell_id, refs in by_spell_id.items()
-        }
+        return (
+            {
+                spell_id: tuple(refs)
+                for spell_id, refs in by_spell_id.items()
+            },
+            tuple(socket_shape),
+        )
 
     @staticmethod
     def _build_override_shape_key(
@@ -871,6 +908,7 @@ class MeldRuntime(Cleanable):
             plan_signature: Any,
             override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
             root_positional_override: Optional[Sequence[Any]],
+            socket_shape: Optional[Tuple[Tuple[Any, ...], ...]] = None,
     ) -> Tuple[Any, ...]:
         """
         Build a stable override-shape key for specialization cache lookup.
@@ -884,23 +922,26 @@ class MeldRuntime(Cleanable):
         if plan_signature is None:
             raise ValueError("plan_signature must not be None.")
 
-        socket_shape: list[Tuple[Any, ...]] = []
-        for spell_id in sorted(override_targets_by_spell_id.keys()):
-            for socket_ref in override_targets_by_spell_id[spell_id]:
-                socket_shape.append(
-                    (
-                        socket_ref.node_id,
-                        socket_ref.param_path_id,
-                        socket_ref.param_name,
-                        socket_ref.socket_kind.value,
+        resolved_socket_shape = socket_shape
+        if resolved_socket_shape is None:
+            socket_shape_rows: list[Tuple[Any, ...]] = []
+            for spell_id in sorted(override_targets_by_spell_id.keys()):
+                for socket_ref in override_targets_by_spell_id[spell_id]:
+                    socket_shape_rows.append(
+                        (
+                            socket_ref.node_id,
+                            socket_ref.param_path_id,
+                            socket_ref.param_name,
+                            socket_ref.socket_kind.value,
+                        )
                     )
-                )
+            resolved_socket_shape = tuple(socket_shape_rows)
         positional_arity = -1
         if root_positional_override is not None:
             positional_arity = len(root_positional_override)
         return (
             plan_signature,
-            tuple(socket_shape),
+            resolved_socket_shape,
             positional_arity,
         )
 

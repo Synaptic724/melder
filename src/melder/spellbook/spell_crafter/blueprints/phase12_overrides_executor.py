@@ -11,6 +11,8 @@ from melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor imp
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
+_MISSING = object()
+
 
 def compile_phase12_overrides_executor(
         *,
@@ -777,6 +779,13 @@ def _build_kwargs_with_overrides(
         - Override values take precedence over dependency and contract payloads.
         - Missing dependency instance keys raise MeldExecutionError.
     """
+    if (
+            not plan_step.dependency_resolution_order
+            and plan_step.contract_positional_override is None
+            and not plan_step.has_contract_payload
+    ):
+        return dict(override_values) if override_values else {}
+
     spell = plan_step.spell
     spell_id = spell.spell_index.current
     kwargs: Dict[str, Any] = {}
@@ -819,8 +828,7 @@ def _build_kwargs_with_overrides(
                     continue
                 kwargs[param_name] = value
 
-    for param_name, value in override_values.items():
-        kwargs[param_name] = value
+    kwargs.update(override_values)
     return kwargs
 
 
@@ -836,6 +844,7 @@ def _invoke_spell_with_kwargs(
         - Existing-creation singleton spells return user_created_object.
         - Non-callable spells return spell.spell directly.
         - ``"__args__"`` must be a list/tuple when supplied.
+        - Avoids kwargs copy when positional override args are absent.
     """
     if spell.existence is Existence.unique and spell.is_existing_creation:
         instance = spell.user_created_object
@@ -849,10 +858,14 @@ def _invoke_spell_with_kwargs(
     if not (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell):
         return spell.spell
 
-    call_kwargs = dict(kwargs)
-    raw_args = call_kwargs.pop("__args__", [])
-    if isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
+    raw_args = kwargs.get("__args__", _MISSING)
+    if raw_args is _MISSING:
+        args = []
+        call_kwargs = kwargs
+    elif isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
         args = list(raw_args)
+        call_kwargs = dict(kwargs)
+        call_kwargs.pop("__args__", None)
     else:
         raise MeldExecutionError(
             spell_id=spell.spell_index.current,

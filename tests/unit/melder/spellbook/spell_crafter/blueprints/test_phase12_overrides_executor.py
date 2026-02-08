@@ -585,3 +585,60 @@ def test_compile_phase12_overrides_executor_non_shared_path_filtering_is_compile
     assert captured["value"] == "keep"
     assert path_registry.parent_calls == parent_calls_after_compile
     assert path_registry.depth_calls == depth_calls_after_compile
+
+
+def test_build_kwargs_with_overrides_fast_path_returns_override_copy() -> None:
+    """Kwargs helper fast path returns a copy of override values when no base payload exists."""
+    plan_step = SimpleNamespace(
+        dependency_resolution_order=(),
+        contract_positional_override=None,
+        has_contract_payload=False,
+    )
+    override_values = {"value": "override"}
+
+    kwargs = phase12_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values=override_values,
+    )
+
+    assert kwargs == {"value": "override"}
+    assert kwargs is not override_values
+
+
+def test_invoke_spell_with_kwargs_preserves_args_payload_mapping() -> None:
+    """Invoke helper does not mutate input kwargs when `__args__` payload is supplied."""
+    captured: Dict[str, Any] = {}
+
+    def _callable(*args: Any, **kwargs: Any) -> str:
+        captured["args"] = args
+        captured["kwargs"] = dict(kwargs)
+        return "ok"
+
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = _callable
+    kwargs_payload = {"__args__": [1, 2], "value": "override"}
+
+    result = phase12_module._invoke_spell_with_kwargs(
+        spell=spell,
+        kwargs=kwargs_payload,
+    )
+
+    assert result == "ok"
+    assert captured["args"] == (1, 2)
+    assert captured["kwargs"] == {"value": "override"}
+    assert kwargs_payload == {"__args__": [1, 2], "value": "override"}
+
+
+def test_invoke_spell_with_kwargs_rejects_invalid_args_payload_type() -> None:
+    """Invoke helper rejects invalid non-sequence `__args__` payloads."""
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = lambda **kwargs: kwargs
+
+    with pytest.raises(MeldExecutionError, match="__args__ override must be a list or tuple"):
+        phase12_module._invoke_spell_with_kwargs(
+            spell=spell,
+            kwargs={"__args__": None},
+        )
