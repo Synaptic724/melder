@@ -423,3 +423,193 @@ def test_compile_phase12_no_overrides_executor_skips_spell_lock_when_caller_lock
     )
 
     assert executor(context) == "value:root"
+
+
+@pytest.mark.parametrize(
+    "existence_name,target_kind,must_register,has_disposal,expect_reuse,expect_many_count,activate_spellspace",
+    (
+        (
+            "unique",
+            ExecutionPlanTargetKind.CALLER,
+            True,
+            False,
+            True,
+            0,
+            False,
+        ),
+        (
+            "unique_per_conduit",
+            ExecutionPlanTargetKind.CALLER,
+            True,
+            False,
+            True,
+            0,
+            False,
+        ),
+        (
+            "many",
+            ExecutionPlanTargetKind.CALLER,
+            False,
+            False,
+            False,
+            0,
+            False,
+        ),
+        (
+            "many",
+            ExecutionPlanTargetKind.CALLER,
+            True,
+            True,
+            False,
+            2,
+            False,
+        ),
+        (
+            "unique_per_spell_space",
+            ExecutionPlanTargetKind.SPELLSPACE,
+            True,
+            False,
+            True,
+            0,
+            True,
+        ),
+    ),
+)
+def test_compile_phase12_no_overrides_executor_existence_matrix(
+        existence_name: str,
+        target_kind: int,
+        must_register: bool,
+        has_disposal: bool,
+        expect_reuse: bool,
+        expect_many_count: int,
+        activate_spellspace: bool,
+) -> None:
+    """
+    Generated no-overrides executor preserves existence semantics across scopes.
+
+    Contract:
+        - Shared scopes reuse existing creations after first registration.
+        - Existence.many constructs each call.
+        - many-registration only writes to many-creation storage when disposal exists.
+        - Spellspace target path reuses active spellspace registrations.
+    """
+    creations = _Creations()
+    if activate_spellspace:
+        creations._conduit._active_spellspace = _Spellspace("space-1", creations._conduit)
+    call_counter = {"value": 0}
+
+    def _build_root() -> str:
+        call_counter["value"] += 1
+        return "root-instance-{0}".format(call_counter["value"])
+
+    spell = _make_spell("root")
+    spell.spell = _build_root
+    spell.existence = Existence[existence_name]
+    spell.has_disposal_methods = has_disposal
+    spell.disposal_method_names = ("cleanup",) if has_disposal else ()
+    row = _make_step_row("root")
+    row["existence"] = existence_name
+    row["creations_target_kind"] = target_kind
+    row["must_register"] = must_register
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir={
+            "steps_rows": (row,),
+            "root_spell_id": "root",
+            "transient_schema": None,
+        },
+        spell_lookup={"root": spell},
+    )
+    context = SimpleNamespace(
+        caller_creations=creations,
+        owner_creations=creations,
+        caller_creations_lock_held=False,
+    )
+
+    first = executor(context)
+    second = executor(context)
+    if expect_reuse:
+        assert first == second
+        assert call_counter["value"] == 1
+    else:
+        assert first != second
+        assert call_counter["value"] == 2
+    assert len(creations._many) == expect_many_count
+
+
+def test_compile_phase12_no_overrides_executor_owner_target_prefers_spell_owner_creations() -> None:
+    """
+    OWNER target routes registration through spell-owned creations when available.
+    """
+    caller_creations = _Creations()
+    context_owner_creations = _Creations()
+    spell_owner_creations = _Creations()
+    call_counter = {"value": 0}
+
+    def _build_root() -> str:
+        call_counter["value"] += 1
+        return "owner-instance"
+
+    spell = _make_spell("root")
+    spell.existence = Existence.unique
+    spell.spell = _build_root
+    spell._owner_creations = spell_owner_creations
+    row = _make_step_row("root")
+    row["existence"] = "unique"
+    row["creations_target_kind"] = ExecutionPlanTargetKind.OWNER
+    row["must_register"] = True
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir={
+            "steps_rows": (row,),
+            "root_spell_id": "root",
+            "transient_schema": None,
+        },
+        spell_lookup={"root": spell},
+    )
+    context = SimpleNamespace(
+        caller_creations=caller_creations,
+        owner_creations=context_owner_creations,
+        caller_creations_lock_held=False,
+    )
+
+    assert executor(context) == "owner-instance"
+    assert executor(context) == "owner-instance"
+    assert call_counter["value"] == 1
+    assert "root" in spell_owner_creations._creations
+    assert "root" not in context_owner_creations._creations
+    assert "root" not in caller_creations._creations
+
+
+def test_compile_phase12_no_overrides_executor_owner_target_falls_back_to_context_owner_creations() -> None:
+    """
+    OWNER target uses context owner_creations when spell owner-creations is absent.
+    """
+    caller_creations = _Creations()
+    context_owner_creations = _Creations()
+
+    spell = _make_spell("root")
+    spell.existence = Existence.unique
+    spell._owner_creations = None
+    row = _make_step_row("root")
+    row["existence"] = "unique"
+    row["creations_target_kind"] = ExecutionPlanTargetKind.OWNER
+    row["must_register"] = True
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir={
+            "steps_rows": (row,),
+            "root_spell_id": "root",
+            "transient_schema": None,
+        },
+        spell_lookup={"root": spell},
+    )
+    context = SimpleNamespace(
+        caller_creations=caller_creations,
+        owner_creations=context_owner_creations,
+        caller_creations_lock_held=False,
+    )
+
+    assert executor(context) == "value:root"
+    assert "root" in context_owner_creations._creations
+    assert "root" not in caller_creations._creations
