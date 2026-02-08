@@ -577,7 +577,7 @@ def test_legacy_registration_helpers_removed_from_meld() -> None:
     assert not hasattr(meld, "_register_spellspace_to_lesser_creations")
 
 
-def test_meld_by_spell_type_runtime_missing_raises() -> None:
+def test_dispatch_meld_runtime_runtime_missing_raises() -> None:
     """
     Verify class spell creation fails when MeldRuntime is missing.
 
@@ -591,9 +591,9 @@ def test_meld_by_spell_type_runtime_missing_raises() -> None:
         is_class_spell=True,
     )
     with pytest.raises(AttributeError):
-        meld._meld_by_spell_type(
+        meld._dispatch_meld_runtime(
             spell,
-            overrides=None,
+            overrides={"x": 1},
         )
 
 

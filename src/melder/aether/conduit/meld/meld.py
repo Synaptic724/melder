@@ -300,12 +300,6 @@ class Meld(Cleanable, IMeld):
         # 2) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[ISpell] = None
         if isinstance(spell, str):
-            self._validate_meld_inputs(
-                spell_name=spell_name,
-                spell=spell,
-                spellframe=spellframe,
-                binding_name=binding_name,
-            )
             spell_id_resolution_cache = self._spell_id_resolution_cache
             target_spell = spell_id_resolution_cache.get(spell)
             if target_spell is None:
@@ -846,7 +840,7 @@ class Meld(Cleanable, IMeld):
         hook_list = self._meld_hooks.get(hook_name)
         if not hook_list:
             return
-        for hook in list(hook_list):
+        for hook in hook_list:
             try:
                 hook(*args)
             except Exception as e:
@@ -918,63 +912,6 @@ class Meld(Cleanable, IMeld):
         raise TypeError(
             "[MELD] spell_override must be a dict, list, or tuple."
         )
-
-
-    def _validate_meld_inputs(
-            self,
-            *,
-            spell_name: Optional[str],
-            spell: Optional[object],
-            spellframe: Optional[object],
-            binding_name: Optional[str],
-    ) -> None:
-        """
-        Internal
-
-        Validate meld identity inputs when no cache hit is available.
-
-        Contract:
-            - Raises ValueError when no identity inputs are supplied.
-            - Raises TypeError when spell_name or binding_name are provided with non-string types.
-            - Logs errors through the Spellbook logger before raising.
-
-        Args:
-            spell_name: Optional logical spell name.
-            spell: Optional spell identifier (string spell_id or object).
-            spellframe: Optional spellframe/protocol identifier.
-            binding_name: Optional binding name for lookup discrimination.
-
-        Raises:
-            ValueError: When all identity inputs are None.
-            TypeError: When spell_name or binding_name are provided but not strings.
-        """
-        if spell_name is None and spell is None and spellframe is None:
-            self._spellbook._logger.error(
-                "Conduit.meld requires at least one of spell_name, spell, or spellframe",
-                "meld",
-            )
-            raise ValueError(
-                "[CONDUIT] meld(...) requires at least one of "
-                "`spell_name`, `spell`, or `spellframe`."
-            )
-
-        if spell_name is not None and not isinstance(spell_name, str):
-            self._spellbook._logger.error("spell_name must be a string when provided", "meld")
-            raise TypeError(
-                "[CONDUIT] 'spell_name' must be a string when "
-                "provided to Conduit.meld()."
-            )
-
-        if binding_name is not None and not isinstance(binding_name, str):
-            self._spellbook._logger.error(
-                "binding_name must be a string identifier when provided",
-                "meld",
-            )
-            raise TypeError(
-                "[CONDUIT] 'binding_name' must be a string identifier when "
-                "provided to Conduit.meld()."
-            )
-
 
 
     # ----------------------------------------------------------------------
@@ -1106,18 +1043,13 @@ class Meld(Cleanable, IMeld):
         Raises:
             KeyError:
                 If no spell can be resolved for the provided inputs.
+            ValueError:
+                If resolution key normalization receives no spell identity source.
             RuntimeError:
                 If the Spellbook maps are internally inconsistent (e.g.
                 a lookup key resolves to a SpellIndex that has no
                 corresponding spell object).
         """
-        self._validate_meld_inputs(
-            spell_name=spell_name,
-            spell=spell,
-            spellframe=spellframe,
-            binding_name=binding_name,
-        )
-
         # 1) string spell → treated as spell_id (SHA)
         if isinstance(spell, str):
             return self._resolve_spell_by_id(spell)
@@ -1544,7 +1476,7 @@ class Meld(Cleanable, IMeld):
                 spellspace=spellspace,
             )
             if instance is None:
-                instance = self._meld_by_spell_type(
+                instance = self._dispatch_meld_runtime(
                     spell,
                     overrides,
                     caller_creations_lock_held=True,
@@ -1602,7 +1534,7 @@ class Meld(Cleanable, IMeld):
         created = False
 
         if existence is Existence.many:
-            instance = self._meld_by_spell_type(
+            instance = self._dispatch_meld_runtime(
                 spell,
                 overrides,
                 caller_creations_lock_held=False,
@@ -1627,7 +1559,7 @@ class Meld(Cleanable, IMeld):
                     creations=creations,
                 )
                 if instance is None:
-                    instance = self._meld_by_spell_type(
+                    instance = self._dispatch_meld_runtime(
                         spell,
                         overrides,
                         caller_creations_lock_held=True,
@@ -1671,7 +1603,7 @@ class Meld(Cleanable, IMeld):
                 )
 
             if instance is None:
-                instance = self._meld_by_spell_type(
+                instance = self._dispatch_meld_runtime(
                     spell,
                     overrides,
                     caller_creations_lock_held=False,
@@ -1743,9 +1675,9 @@ class Meld(Cleanable, IMeld):
         return spellspace
 
     # ----------------------------------------------------------------------
-    # Spell-type–aware dispatch and registration
+    # Runtime dispatch and registration
     # ----------------------------------------------------------------------
-    def _meld_by_spell_type(
+    def _dispatch_meld_runtime(
             self,
             spell: ISpell,
             overrides: Optional[dict[str, Any]],
@@ -1753,16 +1685,16 @@ class Meld(Cleanable, IMeld):
             caller_creations_lock_held: bool = False,
     ) -> Any:
         """
-        Obtain a new component instance based on the Spell's canonical `SpellType`.
+        Dispatch one construction call into the meld runtime path.
 
         Behaviour:
 
-            * Class / method / lambda spells:
-                  Delegate to the Phase 12 codegen runtime using a per-call
-                  `MeldContext` seeded with `overrides`.
+            * No overrides + no mutation + fast-transient-eligible:
+                  Dispatch directly to the fast transient Phase 12 executor.
 
-            * Anything else:
-                  Raises a `RuntimeError` indicating an unsupported SpellType.
+            * Otherwise:
+                  Build a pooled `MeldContext` and dispatch through
+                  `MeldRuntime.execute(...)`.
 
         Args:
             spell:
@@ -1780,17 +1712,16 @@ class Meld(Cleanable, IMeld):
 
         Raises:
             RuntimeError:
-                - If the meld runtime is not configured.
-                - If the SpellType is unsupported.
+                If runtime dispatch prerequisites are not satisfied.
             MeldExecutionError:
                 Propagated from `MeldRuntime.execute` if DI or construction fails.
         """
         if (
                 overrides is None
                 and not spell.has_mutation_override
-                and self._should_use_fast_transient_shortcut(spell)
+                and self._should_dispatch_fast_transient(spell)
         ):
-            return self._runtime.execute_fast_transient(
+            return self._runtime.execute_no_overrides_fast_transient(
                 spell=spell,
                 conduit_id=self._resolution_conduit_id,
             )
@@ -1805,19 +1736,23 @@ class Meld(Cleanable, IMeld):
         finally:
             self._release_meld_context(context)
 
-    def _should_use_fast_transient_shortcut(self, spell: ISpell) -> bool:
+    def _should_dispatch_fast_transient(self, spell: ISpell) -> bool:
         """
         Determine whether to route to the fast transient executor.
 
         Contract:
             - Only considers the no-overrides execution plan.
             - Uses cached Phase 11 metrics when available.
+            - Requires a non-None spell crafter on this runtime dispatch path.
         """
         crafter = spell._crafter
         if crafter is None:
-            return False
-        preferred_route = spell.execution_plan_preferred_route
-        if preferred_route and preferred_route.startswith("FAST_TRANSIENT"):
+            raise RuntimeError(
+                "Spell crafter is missing on meld runtime dispatch path. "
+                "Run conjure phases before melding this spell."
+            )
+        dispatch_route = spell.execution_plan_dispatch_route
+        if dispatch_route and dispatch_route.startswith("FAST_TRANSIENT"):
             return True
         plan = crafter.execution_plan_phase11_no_overrides
         if plan is None or plan.fast_transient_plan is None:

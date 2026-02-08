@@ -156,7 +156,7 @@ class Spell(Cleanable, ISpell):
         "execution_plan_has_calln",
         "execution_plan_has_contract_payloads",
         "execution_plan_has_existing_creations",
-        "execution_plan_preferred_route",
+        "execution_plan_dispatch_route",
         "retries",
         "spell",
         "spell_id",
@@ -291,7 +291,7 @@ class Spell(Cleanable, ISpell):
         self.execution_plan_has_calln: Optional[bool] = None
         self.execution_plan_has_contract_payloads: Optional[bool] = None
         self.execution_plan_has_existing_creations: Optional[bool] = None
-        self.execution_plan_preferred_route: Optional[str] = None
+        self.execution_plan_dispatch_route: Optional[str] = None
 
         # Per-spell compiler / resolution helper (SpellCrafter).
         # This owns all Phase 1–7 artifacts and is disposable.
@@ -461,7 +461,7 @@ class Spell(Cleanable, ISpell):
             self.execution_plan_has_calln = None
             self.execution_plan_has_contract_payloads = None
             self.execution_plan_has_existing_creations = None
-            self.execution_plan_preferred_route = None
+            self.execution_plan_dispatch_route = None
             self.profile = None
             self.spell = None
             self._key = None

@@ -1628,8 +1628,8 @@ def test_evaluate_codegen_benchmark_baseline_deltas_validates_inputs() -> None:
         )
 
 
-def test_fast_transient_and_cleanup_contract() -> None:
-    """Fast transient executes phase12 executor with None context; cleanup clears cache state."""
+def test_no_overrides_fast_transient_and_cleanup_contract() -> None:
+    """Fast transient no-overrides path executes with None context; cleanup clears cache state."""
     runtime = MeldRuntime()
     calls = []
 
@@ -1638,9 +1638,8 @@ def test_fast_transient_and_cleanup_contract() -> None:
         return "t"
 
     spell = _Spell(spell_id="s1", crafter=_crafter(executor=_executor))
-    assert runtime.execute_fast_transient(spell=spell, conduit_id="cid") == "t"
-    assert runtime.codegen_fast_transient(spell=spell, conduit_id="cid") == "t"
-    assert calls == [None, None]
+    assert runtime.execute_no_overrides_fast_transient(spell=spell, conduit_id="cid") == "t"
+    assert calls == [None]
 
     runtime._override_specialization_cache["s1"] = {("k",): lambda *args: None}
     runtime._override_specialization_order["s1"] = deque([("k",)])

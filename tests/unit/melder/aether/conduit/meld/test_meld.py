@@ -268,6 +268,7 @@ class _SpellStub:
         self._spell_system_states = spell_system_states
         self._spellbook = spellbook
         self._crafter = None
+        self.execution_plan_dispatch_route = None
         self.is_broken = is_broken
         self.is_existing_creation = is_existing_creation
         self.user_created_object = user_created_object
@@ -1341,12 +1342,12 @@ def test_meld_reuses_existing_instance_without_activation_hooks() -> None:
 
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
     creations.add_creation(spell.spell_id, "reuse")
-    meld._meld_by_spell_type = MagicMock()
+    meld._dispatch_meld_runtime = MagicMock()
     meld._register_spell = MagicMock()
 
     assert meld.meld(spell="spell-1") == "reuse"
     assert events == ["pre", "post"]
-    meld._meld_by_spell_type.assert_not_called()
+    meld._dispatch_meld_runtime.assert_not_called()
     meld._register_spell.assert_not_called()
 
 
@@ -1355,7 +1356,7 @@ def test_meld_creates_instance_and_runs_activation_hooks() -> None:
     Verify meld creation path runs activation hooks and registration.
 
     Contract:
-        - new instance path calls meld_by_spell_type.
+        - new instance path dispatches into runtime.
         - activation hooks receive the created instance.
         - pre and post hooks still execute.
     """
@@ -1388,12 +1389,12 @@ def test_meld_creates_instance_and_runs_activation_hooks() -> None:
     spell._hooks_enabled = True
 
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
-    meld._meld_by_spell_type = MagicMock(return_value="created")
+    meld._dispatch_meld_runtime = MagicMock(return_value="created")
     meld._register_spell = MagicMock()
 
     assert meld.meld(spell="spell-1", spell_override=[1, 2]) == "created"
     assert events == ["pre", "activation:created", "post"]
-    meld._meld_by_spell_type.assert_called_once_with(
+    meld._dispatch_meld_runtime.assert_called_once_with(
         spell,
         {"__args__": [1, 2]},
         caller_creations_lock_held=False,
@@ -1406,7 +1407,7 @@ def test_meld_unique_per_conduit_holds_creations_lock_during_construct() -> None
     Verify unique_per_conduit holds the caller creations lock during construction.
 
     Contract:
-        - creations lock is held while _meld_by_spell_type runs.
+        - creations lock is held while _dispatch_meld_runtime runs.
         - caller_creations_lock_held is True for runtime invocations.
     """
     creations, _ = _make_creations()
@@ -1427,7 +1428,7 @@ def test_meld_unique_per_conduit_holds_creations_lock_during_construct() -> None
         assert caller_creations_lock_held is True
         return "created"
 
-    meld._meld_by_spell_type = MagicMock(side_effect=_construct)
+    meld._dispatch_meld_runtime = MagicMock(side_effect=_construct)
     meld._register_spell = MagicMock()
 
     assert meld.meld(spell="spell-1") == "created"
@@ -1438,7 +1439,7 @@ def test_meld_shared_unique_holds_spell_lock_during_construct() -> None:
     Verify shared unique existence holds the spell lock during construction.
 
     Contract:
-        - spell lock is held while _meld_by_spell_type runs.
+        - spell lock is held while _dispatch_meld_runtime runs.
         - creations lock is not held during construction.
     """
     creations, _ = _make_creations()
@@ -1465,7 +1466,7 @@ def test_meld_shared_unique_holds_spell_lock_during_construct() -> None:
         assert caller_creations_lock_held is False
         return "created"
 
-    meld._meld_by_spell_type = MagicMock(side_effect=_construct)
+    meld._dispatch_meld_runtime = MagicMock(side_effect=_construct)
     meld._register_spell = MagicMock()
 
     assert meld.meld(spell="spell-1") == "created"
@@ -1523,7 +1524,7 @@ def test_resolve_instance_with_locks_existing_creation_requires_object() -> None
         )
 
 
-def test_meld_by_spell_type_runtime_executes_and_cleans_context() -> None:
+def test_dispatch_meld_runtime_executes_and_cleans_context() -> None:
     """
     Verify runtime path executes and cleans the context.
 
@@ -1538,7 +1539,7 @@ def test_meld_by_spell_type_runtime_executes_and_cleans_context() -> None:
     meld._runtime.execute = MagicMock(return_value="result")
     spell = _SpellStub(spell_id="spell-1", is_class_spell=True)
 
-    assert meld._meld_by_spell_type(
+    assert meld._dispatch_meld_runtime(
         spell,
         overrides={"x": 1},
     ) == "result"
@@ -1546,7 +1547,7 @@ def test_meld_by_spell_type_runtime_executes_and_cleans_context() -> None:
     assert context.reset_called is True
 
 
-def test_meld_by_spell_type_unsupported_type_raises() -> None:
+def test_dispatch_meld_runtime_unsupported_type_raises() -> None:
     """
     Verify meld-by-type fails when runtime is missing.
 
@@ -1557,9 +1558,9 @@ def test_meld_by_spell_type_unsupported_type_raises() -> None:
     meld._runtime = None
     spell = _SpellStub(spell_id="spell-1", spell_type="unknown")
     with pytest.raises(AttributeError):
-        meld._meld_by_spell_type(
+        meld._dispatch_meld_runtime(
             spell,
-            overrides=None,
+            overrides={"x": 1},
         )
 
 
@@ -1640,13 +1641,13 @@ def test_resolve_instance_with_locks_many_constructs_and_returns_created() -> No
     Verify Existence.many constructs a new instance without reuse.
 
     Contract:
-        - _meld_by_spell_type is called.
+        - _dispatch_meld_runtime is called.
         - created is True for Existence.many.
     """
     creations, _ = _make_creations()
     meld = _make_meld(creations=creations)
     spell = _SpellStub(spell_id="spell-1", existence=Existence.many)
-    meld._meld_by_spell_type = MagicMock(return_value="created")
+    meld._dispatch_meld_runtime = MagicMock(return_value="created")
     instance, created = meld._resolve_instance_with_locks(
         spell=spell,
         spell_id=spell.spell_id,
@@ -1657,7 +1658,7 @@ def test_resolve_instance_with_locks_many_constructs_and_returns_created() -> No
 
     assert instance == "created"
     assert created is True
-    meld._meld_by_spell_type.assert_called_once_with(
+    meld._dispatch_meld_runtime.assert_called_once_with(
         spell,
         None,
         caller_creations_lock_held=False,
@@ -1669,7 +1670,7 @@ def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
     Verify Existence.many still constructs when spell flags existing creation.
 
     Contract:
-        - _meld_by_spell_type is executed and created flag is True.
+        - _dispatch_meld_runtime is executed and created flag is True.
     """
     creations, _ = _make_creations()
     meld = _make_meld(creations=creations)
@@ -1679,7 +1680,7 @@ def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
         is_existing_creation=True,
         user_created_object=object(),
     )
-    meld._meld_by_spell_type = MagicMock(return_value="created")
+    meld._dispatch_meld_runtime = MagicMock(return_value="created")
 
     instance, created = meld._resolve_instance_with_locks(
         spell=spell,
@@ -1691,7 +1692,7 @@ def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
 
     assert instance == "created"
     assert created is True
-    meld._meld_by_spell_type.assert_called_once()
+    meld._dispatch_meld_runtime.assert_called_once()
 
 
 def test_resolve_instance_with_locks_shared_with_no_creations_raises() -> None:
@@ -1709,7 +1710,7 @@ def test_resolve_instance_with_locks_shared_with_no_creations_raises() -> None:
         owner_creations=None,
         is_class_spell=True,
     )
-    meld._meld_by_spell_type = MagicMock(return_value="created")
+    meld._dispatch_meld_runtime = MagicMock(return_value="created")
 
     with pytest.raises(AttributeError, match="_creations"):
         meld._resolve_instance_with_locks(

@@ -398,6 +398,65 @@ def test_register_conduit_hooks_on_upgrade_raises_when_not_dynamic(
         )
 
 
+def test_register_conduit_hooks_shared_rejects_frozen_configuration(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """
+    Verify shared hook registration is blocked after configuration freeze.
+
+    Contract:
+        - Shared hook mutation raises when configuration is frozen.
+        - Error instructs callers to use local hook overlays.
+    """
+    conduit_dynamic_normal._configuration.freeze()
+
+    def hook(conduit: Conduit) -> None:
+        """
+        No-op hook for frozen shared registration checks.
+        """
+        _ = conduit
+
+    with pytest.raises(
+        RuntimeError,
+        match="Cannot register shared conduit hooks after configuration is frozen",
+    ):
+        conduit_dynamic_normal.register_conduit_hooks(
+            {"on_conduit_cleanup_start": hook},
+        )
+
+
+def test_register_conduit_hooks_local_allowed_after_configuration_freeze(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """
+    Verify local hook overlays remain available after configuration freeze.
+
+    Contract:
+        - Local registration succeeds after freeze.
+        - Shared hook map remains unchanged.
+        - Meld hook presence cache updates for meld-phase local hooks.
+    """
+    conduit_dynamic_normal._configuration.freeze()
+
+    def hook(conduit: Conduit) -> None:
+        """
+        No-op hook for frozen local registration checks.
+        """
+        _ = conduit
+
+    conduit_dynamic_normal.register_conduit_hooks(
+        {"on_meld_pre_resolve": hook},
+        create_local_hooks=True,
+    )
+
+    spellbook_id = conduit_dynamic_normal._spellbook._id
+    config_hooks = conduit_dynamic_normal._configuration.get_hooks(spellbook_id)
+    assert "on_meld_pre_resolve" not in config_hooks
+    assert conduit_dynamic_normal._local_conduit_hooks is not None
+    assert conduit_dynamic_normal._local_conduit_hooks["on_meld_pre_resolve"][0] is hook
+    assert conduit_dynamic_normal._has_meld_phase_hooks is True
+
+
 def test_register_conduit_hooks_local_creates_local_map_and_wires_meld(
     conduit_normal: Conduit,
 ) -> None:

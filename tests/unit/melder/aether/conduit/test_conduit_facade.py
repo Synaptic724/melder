@@ -535,38 +535,62 @@ def test_meld_requires_identifier(conduit_lesser: Conduit) -> None:
         conduit_lesser.meld()
 
 
-def test_meld_rejects_non_string_spell_name(conduit_lesser: Conduit) -> None:
+def test_meld_forwards_non_string_spell_name(conduit_lesser: Conduit) -> None:
     """
-    Verify meld enforces spell_name to be a string when provided.
+    Verify meld forwards non-string spell_name values to Meld.
 
     Contract:
-        - Non-string spell_name raises TypeError.
+        - Conduit does not type-validate spell_name.
+        - spell_name is delegated unchanged to Meld.meld.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
 
     Raises:
-        AssertionError: If non-string spell_name does not raise.
+        AssertionError: If forwarding behavior is incorrect.
     """
-    with pytest.raises(TypeError, match="spell_name"):
-        conduit_lesser.meld(spell_name=123)
+    conduit_lesser._meld = MagicMock()
+    conduit_lesser._meld.meld.return_value = "result"
+
+    result = conduit_lesser.meld(spell_name=123)
+
+    assert result == "result"
+    conduit_lesser._meld.meld.assert_called_once_with(
+        spell_name=123,
+        spell=None,
+        spellframe=None,
+        binding_name=None,
+        spell_override=None,
+    )
 
 
-def test_meld_rejects_non_string_binding_name(conduit_lesser: Conduit) -> None:
+def test_meld_forwards_non_string_binding_name(conduit_lesser: Conduit) -> None:
     """
-    Verify meld enforces binding_name to be a string when provided.
+    Verify meld forwards non-string binding_name values to Meld.
 
     Contract:
-        - Non-string binding_name raises TypeError.
+        - Conduit does not type-validate binding_name.
+        - binding_name is delegated unchanged to Meld.meld.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
 
     Raises:
-        AssertionError: If non-string binding_name does not raise.
+        AssertionError: If forwarding behavior is incorrect.
     """
-    with pytest.raises(TypeError, match="binding_name"):
-        conduit_lesser.meld(spell="sha-1", binding_name=5)
+    conduit_lesser._meld = MagicMock()
+    conduit_lesser._meld.meld.return_value = "result"
+
+    result = conduit_lesser.meld(spell="sha-1", binding_name=5)
+
+    assert result == "result"
+    conduit_lesser._meld.meld.assert_called_once_with(
+        spell_name=None,
+        spell="sha-1",
+        spellframe=None,
+        binding_name=5,
+        spell_override=None,
+    )
 
 
 def test_meld_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
@@ -646,15 +670,77 @@ def test_meld_fires_pre_and_post_hooks(conduit_lesser: Conduit) -> None:
 
     conduit_lesser._meld = MagicMock()
     conduit_lesser._meld.meld.return_value = "result"
-    conduit_lesser._conduit_hooks = {
-        "on_meld_pre_resolve": [pre_hook],
-        "on_meld_post_resolve": [post_hook],
-    }
+    conduit_lesser.register_conduit_hooks(
+        {
+            "on_meld_pre_resolve": pre_hook,
+            "on_meld_post_resolve": post_hook,
+        },
+        create_local_hooks=True,
+    )
 
     result = conduit_lesser.meld(spell="sha-1")
 
     assert result == "result"
     assert events == [("pre", conduit_lesser), ("post", conduit_lesser)]
+
+
+def test_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
+    conduit_lesser: Conduit,
+) -> None:
+    """
+    Verify conduit meld bypasses hook dispatch when no meld hooks exist.
+
+    Contract:
+        - The no-hook meld path does not call _fire_conduit_hooks.
+        - Meld delegation still executes and returns normally.
+
+    Args:
+        conduit_lesser (Conduit): Lesser conduit instance.
+
+    Raises:
+        AssertionError: If hook dispatch is used on the no-hook path.
+    """
+    conduit_lesser._meld = MagicMock()
+    conduit_lesser._meld.meld.return_value = "result"
+    conduit_lesser._conduit_hooks = {}
+    conduit_lesser._local_conduit_hooks = {}
+    conduit_lesser._has_meld_phase_hooks = False
+    conduit_lesser._fire_conduit_hooks = MagicMock()
+
+    result = conduit_lesser.meld(spell="sha-1")
+
+    assert result == "result"
+    conduit_lesser._fire_conduit_hooks.assert_not_called()
+
+
+def test_dynamic_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """
+    Verify dynamic meld bypasses hook dispatch when no meld hooks exist.
+
+    Contract:
+        - Dynamic meld no-hook path does not call _fire_conduit_hooks.
+        - Ticket tracking still drains to zero after the call.
+
+    Args:
+        conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
+
+    Raises:
+        AssertionError: If hook dispatch is used or ticket cleanup fails.
+    """
+    conduit_dynamic_normal._meld = MagicMock()
+    conduit_dynamic_normal._meld.meld.return_value = "result"
+    conduit_dynamic_normal._conduit_hooks = {}
+    conduit_dynamic_normal._local_conduit_hooks = {}
+    conduit_dynamic_normal._has_meld_phase_hooks = False
+    conduit_dynamic_normal._fire_conduit_hooks = MagicMock()
+
+    result = conduit_dynamic_normal.meld(spell="sha-1")
+
+    assert result == "result"
+    conduit_dynamic_normal._fire_conduit_hooks.assert_not_called()
+    assert conduit_dynamic_normal._meld_gate.active_ticket_count() == 0
 
 
 def test_get_conduit_by_id_rejects_non_string_frame(

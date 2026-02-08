@@ -68,7 +68,7 @@ class MeldRuntime(Cleanable):
         self._override_specialization_l2_cache_dir: Optional[str] = None
         self._max_override_specializations_l2_per_spell: int = 256
 
-    def execute_fast_transient(
+    def execute_no_overrides_fast_transient(
             self,
             *,
             spell: ISpell,
@@ -104,23 +104,6 @@ class MeldRuntime(Cleanable):
                 message="Phase 12 transient executor failed.",
                 inner=exc,
             ) from exc
-
-    def codegen_fast_transient(
-            self,
-            *,
-            spell: ISpell,
-            conduit_id: Optional[str],
-    ) -> Any:
-        """
-        Execute fast transient through the same Phase 12 runtime path.
-
-        Contract:
-            - Delegates directly to `execute_fast_transient`.
-        """
-        return self.execute_fast_transient(
-            spell=spell,
-            conduit_id=conduit_id,
-        )
 
     def execute(self, context: MeldContext) -> Any:
         """

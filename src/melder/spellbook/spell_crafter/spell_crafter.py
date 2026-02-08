@@ -3636,18 +3636,18 @@ class SpellCrafter(Cleanable):
             fast_call_modes = fast_plan[20]
             has_calln = ExecutionPlanCallMode.CALLN in fast_call_modes
 
-        preferred_route = "ENGINE"
+        dispatch_route = "ENGINE"
         if plan.fast_transient_plan is not None and not has_existing_creations:
             if max_occurrence_depth <= 3 and step_count <= 8:
-                preferred_route = "FAST_TRANSIENT_TIER_0"
+                dispatch_route = "FAST_TRANSIENT_TIER_0"
             elif max_occurrence_depth <= 6 and step_count <= 16 and max_dependency_count <= 8:
-                preferred_route = "FAST_TRANSIENT_TIER_1"
+                dispatch_route = "FAST_TRANSIENT_TIER_1"
             elif max_occurrence_depth <= 8 and step_count <= 24 and max_dependency_count <= 8:
-                preferred_route = "FAST_TRANSIENT_TIER_2"
+                dispatch_route = "FAST_TRANSIENT_TIER_2"
             elif max_occurrence_depth <= 9 and step_count <= 32 and max_dependency_count <= 10:
-                preferred_route = "FAST_TRANSIENT_TIER_3"
+                dispatch_route = "FAST_TRANSIENT_TIER_3"
             else:
-                preferred_route = "ENGINE"
+                dispatch_route = "ENGINE"
 
         self._spell.execution_plan_step_count = step_count
         self._spell.execution_plan_unique_spell_count = unique_spell_count
@@ -3656,7 +3656,7 @@ class SpellCrafter(Cleanable):
         self._spell.execution_plan_has_calln = has_calln
         self._spell.execution_plan_has_contract_payloads = has_contract_payloads
         self._spell.execution_plan_has_existing_creations = has_existing_creations
-        self._spell.execution_plan_preferred_route = preferred_route
+        self._spell.execution_plan_dispatch_route = dispatch_route
 
     def run_phase_execution_plan(
             self,

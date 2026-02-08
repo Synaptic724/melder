@@ -170,6 +170,8 @@ class Conduit(Cleanable, IConduit):
         # Local hook overlay for this conduit only.
         # Shape: { hook_name: [callables...] }
         self._local_conduit_hooks: dict[str, list[Any]] | None = None
+        # Cached per-conduit gate for meld-phase conduit hooks.
+        self._has_meld_phase_hooks: bool = False
 
         self._configure_conduit_state()
 
@@ -233,6 +235,7 @@ class Conduit(Cleanable, IConduit):
                         )
             self._conduit_hooks = None
             self._local_conduit_hooks = None
+            self._has_meld_phase_hooks = False
 
         # Logger last
         if self._logger is not None:
@@ -657,6 +660,7 @@ class Conduit(Cleanable, IConduit):
         """
         self._conduit_hooks = self._configuration.get_hooks(self._spellbook._id)
         self._meld.set_meld_hooks(self._compose_meld_hook_map())
+        self._refresh_meld_hook_presence()
 
 
     #region Context Management
@@ -805,6 +809,7 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If the conduit is cleaned.
             RuntimeError: If shared registration is requested in non-dynamic mode.
+            RuntimeError: If shared registration is requested after configuration freeze.
             ValueError / TypeError: If hook names or values are invalid.
         """
         self.check_cleaned()
@@ -816,7 +821,14 @@ class Conduit(Cleanable, IConduit):
             self._merge_conduit_hooks(self._local_conduit_hooks, hooks)
             if self._meld is not None:
                 self._meld.set_meld_hooks(self._compose_meld_hook_map())
+            self._refresh_meld_hook_presence()
             return
+
+        if self._configuration._frozen:
+            raise RuntimeError(
+                "Cannot register shared conduit hooks after configuration is frozen. "
+                "Use create_local_hooks=True for conduit-local hook overrides."
+            )
 
         self._register_conduit_hooks_on_upgrade(hooks)
 
@@ -974,6 +986,7 @@ class Conduit(Cleanable, IConduit):
 
         Rules:
             - Only allowed when the system is in **dynamic** mode.
+            - Shared registration is blocked after configuration freeze.
             - `hooks` values may be a single callable or an iterable of callables.
             - Hook names must be in Configuration._ALLOWED_HOOKS.
             - Hooks are validated by Configuration.add_hooks(...).
@@ -988,6 +1001,12 @@ class Conduit(Cleanable, IConduit):
                 "Dynamic environment is not enabled. Cannot register per-conduit hooks."
             )
 
+        if self._configuration._frozen:
+            raise RuntimeError(
+                "Cannot register shared conduit hooks after configuration is frozen. "
+                "Use create_local_hooks=True for conduit-local hook overrides."
+            )
+
         # 1) Push into Configuration using the Spellbook owner id.
         spellbook_id = self._spellbook._id
         self._configuration.add_hooks(spellbook_id, **hooks)
@@ -996,6 +1015,7 @@ class Conduit(Cleanable, IConduit):
         self._conduit_hooks = self._configuration.get_hooks(spellbook_id)
         if self._meld is not None:
             self._meld.set_meld_hooks(self._compose_meld_hook_map())
+        self._refresh_meld_hook_presence()
 
     def _compose_meld_hook_map(self) -> dict[str, list[Any]]:
         """
@@ -1028,6 +1048,32 @@ class Conduit(Cleanable, IConduit):
 
         return merged_hooks
 
+    def _refresh_meld_hook_presence(self) -> None:
+        """
+        Internal
+
+        Recompute the per-conduit meld hook presence cache.
+
+        Contract:
+            - Sets `_has_meld_phase_hooks` when at least one meld pre/post hook
+              exists in shared or local conduit hook maps.
+            - Uses direct map values and does not snapshot hook lists.
+            - Must be called after conduit hook topology changes.
+        """
+        has_pre_hooks = False
+        has_post_hooks = False
+        shared_hooks = self._conduit_hooks
+        if shared_hooks:
+            has_pre_hooks = bool(shared_hooks.get("on_meld_pre_resolve"))
+            has_post_hooks = bool(shared_hooks.get("on_meld_post_resolve"))
+        local_hooks = self._local_conduit_hooks
+        if local_hooks:
+            if not has_pre_hooks:
+                has_pre_hooks = bool(local_hooks.get("on_meld_pre_resolve"))
+            if not has_post_hooks:
+                has_post_hooks = bool(local_hooks.get("on_meld_post_resolve"))
+        self._has_meld_phase_hooks = has_pre_hooks or has_post_hooks
+
     def _collect_conduit_hook_chain(self, hook_name: str) -> list[Callable[..., Any]]:
         """
         Internal
@@ -1044,12 +1090,12 @@ class Conduit(Cleanable, IConduit):
         if self._conduit_hooks is not None:
             shared_hooks = self._conduit_hooks.get(hook_name)
             if shared_hooks:
-                hook_chain.extend(list(shared_hooks))
+                hook_chain.extend(shared_hooks)
 
         if self._local_conduit_hooks is not None:
             local_hooks = self._local_conduit_hooks.get(hook_name)
             if local_hooks:
-                hook_chain.extend(list(local_hooks))
+                hook_chain.extend(local_hooks)
 
         return hook_chain
 
@@ -2371,9 +2417,18 @@ class Conduit(Cleanable, IConduit):
         Purpose:
             Provide the minimal hot path for automatic (non-dynamic) mode.
         """
-        self._fire_conduit_hooks("on_meld_pre_resolve", self) # I think these can go, they are redundant and meld hooks are probably enough on their own
+        if not self._has_meld_phase_hooks:
+            return self._invoke_meld_runtime(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                spell_override=spell_override,
+            )
 
-        result = self._meld.meld(
+        self._fire_conduit_hooks("on_meld_pre_resolve", self)
+
+        result = self._invoke_meld_runtime(
             spell_name=spell_name,
             spell=spell,
             spellframe=spellframe,
@@ -2381,7 +2436,7 @@ class Conduit(Cleanable, IConduit):
             spell_override=spell_override,
         )
 
-        self._fire_conduit_hooks("on_meld_post_resolve", self) # I think these can go, they are redundant and meld hooks are probably enough on their own
+        self._fire_conduit_hooks("on_meld_post_resolve", self)
 
         return result
 
@@ -2414,9 +2469,18 @@ class Conduit(Cleanable, IConduit):
         try:
             # Track active melds for shutdown/drain semantics.
             self._meld_gate.register_ticket()
+            if not self._has_meld_phase_hooks:
+                return self._invoke_meld_runtime(
+                    spell_name=spell_name,
+                    spell=spell,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                    spell_override=spell_override,
+                )
+
             self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
-            result = self._meld.meld(
+            result = self._invoke_meld_runtime(
                 spell_name=spell_name,
                 spell=spell,
                 spellframe=spellframe,
@@ -2430,8 +2494,32 @@ class Conduit(Cleanable, IConduit):
         finally:
             self._meld_gate.unregister_ticket()
 
+    def _invoke_meld_runtime(
+            self,
+            *,
+            spell_name: Optional[str],
+            spell: Optional[object],
+            spellframe: Optional[object],
+            binding_name: Optional[str],
+            spell_override: Optional[Union[dict, list, tuple]],
+    ) -> Optional[Any]:
+        """
+        Internal
 
+        Invoke the underlying Meld runtime with normalized conduit inputs.
 
+        Contract:
+            - Forwards arguments directly to ``self._meld.meld``.
+            - Returns exactly what ``Meld.meld`` returns.
+            - Performs no hook dispatch or gate checks.
+        """
+        return self._meld.meld(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            spell_override=spell_override,
+        )
 
     #endregion Meld
     #region Conduit Cloud
@@ -3713,20 +3801,32 @@ class Conduit(Cleanable, IConduit):
             *conduits:
                 One or more Conduit instances passed directly to each hook.
         """
-        hook_chain = self._collect_conduit_hook_chain(hook_name)
-        if not hook_chain:
-            return
-
-        for hook in hook_chain:
-            try:
-                hook(*conduits)
-            except Exception as e:
-                # Hooks are advisory; they must not break Conduit behavior.
-                self._logger.error(
-                    f"Error while executing hook '{hook_name}': {e}",
-                    "_fire_conduit_hooks",
-                    exc_info=True,
-                )
+        if self._conduit_hooks is not None:
+            shared_hooks = self._conduit_hooks.get(hook_name)
+            if shared_hooks:
+                for hook in shared_hooks:
+                    try:
+                        hook(*conduits)
+                    except Exception as e:
+                        # Hooks are advisory; they must not break Conduit behavior.
+                        self._logger.error(
+                            f"Error while executing hook '{hook_name}': {e}",
+                            "_fire_conduit_hooks",
+                            exc_info=True,
+                        )
+        if self._local_conduit_hooks is not None:
+            local_hooks = self._local_conduit_hooks.get(hook_name)
+            if local_hooks:
+                for hook in local_hooks:
+                    try:
+                        hook(*conduits)
+                    except Exception as e:
+                        # Hooks are advisory; they must not break Conduit behavior.
+                        self._logger.error(
+                            f"Error while executing hook '{hook_name}': {e}",
+                            "_fire_conduit_hooks",
+                            exc_info=True,
+                        )
 
 
 #endregion Hooks
