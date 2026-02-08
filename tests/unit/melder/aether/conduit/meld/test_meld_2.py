@@ -577,23 +577,23 @@ def test_legacy_registration_helpers_removed_from_meld() -> None:
     assert not hasattr(meld, "_register_spellspace_to_lesser_creations")
 
 
-def test_dispatch_meld_runtime_runtime_missing_raises() -> None:
+def test_dispatch_meld_runtime_missing_crafter_raises() -> None:
     """
-    Verify class spell creation fails when MeldRuntime is missing.
+    Verify dispatch fails when spell runtime artifacts are missing.
 
     Contract:
-        - missing runtime raises RuntimeError.
+        - Missing spell crafter raises RuntimeError during fast-route checks.
     """
     meld = _make_meld()
-    meld._runtime = None
     spell = _SpellStub(
         spell_id="spell-1",
         is_class_spell=True,
     )
-    with pytest.raises(AttributeError):
+    spell._crafter = None
+    with pytest.raises(RuntimeError, match="Spell crafter is missing"):
         meld._dispatch_meld_runtime(
             spell,
-            overrides={"x": 1},
+            overrides=None,
         )
 
 

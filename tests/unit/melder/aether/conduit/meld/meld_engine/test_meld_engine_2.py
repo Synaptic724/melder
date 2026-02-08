@@ -2,7 +2,7 @@
 from types import SimpleNamespace
 from typing import Any, Iterable
 import pytest
-from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
+from melder.aether.conduit.meld.meld import Meld
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
@@ -54,13 +54,26 @@ def _make_spell(
     )
 
 
+def _make_runtime_harness() -> Meld:
+    """
+    Build a lightweight Meld harness for merged runtime-route unit tests.
+
+    Contract:
+        - Uses object construction without `__init__` to isolate runtime routing
+          behavior under test.
+    """
+    runtime = object.__new__(Meld)
+    runtime._override_specialization_cache = {}
+    return runtime
+
+
 def test_execute_routes_to_overrides_when_payload_present(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Verify execute routes to override execution when overrides are provided.
     """
-    runtime = MeldRuntime()
+    runtime = _make_runtime_harness()
     calls: list[str] = []
 
     def _execute_no_overrides(*, context: Any, spell: Any) -> str:
@@ -72,12 +85,12 @@ def test_execute_routes_to_overrides_when_payload_present(
         return "with-overrides"
 
     monkeypatch.setattr(
-        MeldRuntime,
+        Meld,
         "_execute_no_overrides",
         staticmethod(_execute_no_overrides),
     )
     monkeypatch.setattr(
-        MeldRuntime,
+        Meld,
         "_execute_with_overrides",
         staticmethod(_execute_with_overrides),
     )
@@ -93,7 +106,7 @@ def test_execute_routes_to_overrides_when_payload_present(
         overrides={"x": 1},
     )
 
-    assert runtime.execute(context) == "with-overrides"
+    assert runtime._execute_meld_runtime_context(context) == "with-overrides"
     assert calls == ["with"]
 
 
@@ -103,7 +116,7 @@ def test_execute_routes_to_no_overrides_when_payload_missing(
     """
     Verify execute routes to no-overrides execution when overrides are empty.
     """
-    runtime = MeldRuntime()
+    runtime = _make_runtime_harness()
     calls: list[str] = []
 
     def _execute_no_overrides(*, context: Any, spell: Any) -> str:
@@ -115,12 +128,12 @@ def test_execute_routes_to_no_overrides_when_payload_missing(
         return "with-overrides"
 
     monkeypatch.setattr(
-        MeldRuntime,
+        Meld,
         "_execute_no_overrides",
         staticmethod(_execute_no_overrides),
     )
     monkeypatch.setattr(
-        MeldRuntime,
+        Meld,
         "_execute_with_overrides",
         staticmethod(_execute_with_overrides),
     )
@@ -136,7 +149,7 @@ def test_execute_routes_to_no_overrides_when_payload_missing(
         overrides=None,
     )
 
-    assert runtime.execute(context) == "no-overrides"
+    assert runtime._execute_meld_runtime_context(context) == "no-overrides"
     assert calls == ["no"]
 
 
@@ -159,7 +172,7 @@ def test_collect_override_targets_groups_by_spell_id() -> None:
             path_registry=path_registry,
         ): "b",
     }
-    grouped, shape = MeldRuntime._collect_override_targets_and_socket_shape(
+    grouped, shape = Meld._collect_override_targets_and_socket_shape(
         override_map=override_map,
     )
     assert set(grouped.keys()) == {"node-a", "node-b"}
@@ -249,19 +262,19 @@ def test_build_override_shape_key_tracks_socket_targets() -> None:
         ): "left",
     }
 
-    _, shape_a = MeldRuntime._collect_override_targets_and_socket_shape(
+    _, shape_a = Meld._collect_override_targets_and_socket_shape(
         override_map=override_map_a,
     )
-    _, shape_b = MeldRuntime._collect_override_targets_and_socket_shape(
+    _, shape_b = Meld._collect_override_targets_and_socket_shape(
         override_map=override_map_b,
     )
 
-    key_a = MeldRuntime._build_override_shape_key(
+    key_a = Meld._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides", "sig-rows"),
         socket_shape=shape_a,
         root_positional_override=None,
     )
-    key_b = MeldRuntime._build_override_shape_key(
+    key_b = Meld._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides", "sig-rows"),
         socket_shape=shape_b,
         root_positional_override=None,
@@ -288,16 +301,16 @@ def test_build_override_shape_key_tracks_positional_arity() -> None:
             path_registry=path_registry,
         ): "skip",
     }
-    _, shape = MeldRuntime._collect_override_targets_and_socket_shape(
+    _, shape = Meld._collect_override_targets_and_socket_shape(
         override_map=override_map,
     )
 
-    no_args_key = MeldRuntime._build_override_shape_key(
+    no_args_key = Meld._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides", "sig-rows"),
         socket_shape=shape,
         root_positional_override=None,
     )
-    two_args_key = MeldRuntime._build_override_shape_key(
+    two_args_key = Meld._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides", "sig-rows"),
         socket_shape=shape,
         root_positional_override=("a", "b"),
@@ -318,16 +331,16 @@ def test_build_override_shape_key_changes_when_signature_changes() -> None:
             path_registry=path_registry,
         ): "left",
     }
-    _, shape = MeldRuntime._collect_override_targets_and_socket_shape(
+    _, shape = Meld._collect_override_targets_and_socket_shape(
         override_map=override_map,
     )
 
-    key_a = MeldRuntime._build_override_shape_key(
+    key_a = Meld._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides-a", "sig-rows"),
         socket_shape=shape,
         root_positional_override=None,
     )
-    key_b = MeldRuntime._build_override_shape_key(
+    key_b = Meld._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides-b", "sig-rows"),
         socket_shape=shape,
         root_positional_override=None,

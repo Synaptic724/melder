@@ -1,10 +1,10 @@
 import inspect
 from collections import deque
+from operator import itemgetter
 from threading import RLock
-from typing import Optional, Dict, Any, Callable, List, Tuple
+from typing import Optional, Dict, Any, Callable, List, Tuple, Sequence
 
 from melder.aether.conduit.meld.meld_context.meld_context import MeldContext
-from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -28,6 +28,12 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
     SpellStateChangeReason,
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.spellbook.spell_crafter.blueprints.patch_maps import (
+    apply_phase10_override_payload,
+)
+from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
+    compile_phase12_overrides_executor,
+)
 
 
 class Meld(Cleanable, IMeld):
@@ -75,7 +81,7 @@ class Meld(Cleanable, IMeld):
     ) -> None:
         """
         Initialize the Meld component with references to the component store,
-        spellbook lookup maps, spell_id maps, and the DAG-based meld runtime.
+        spellbook lookup maps, spell_id maps, and meld runtime caches.
 
         Args:
             creations:
@@ -130,9 +136,8 @@ class Meld(Cleanable, IMeld):
         self._max_resolution_cache_size: int = 2048
         self._max_context_pool_size: int = 64
 
-        # DAG-based runtime that will actually execute the DI graph for
-        # factory-style spells (class / method / lambda).
-        self._runtime: MeldRuntime = MeldRuntime()
+        # Per-spell override specialization cache for codegen override routes.
+        self._override_specialization_cache: Dict[str, Dict[Tuple[Any, ...], Callable[..., Any]]] = {}
 
         # Optional hook map pulled from Configuration (via Conduit).
         # This is stored by reference when provided.
@@ -144,20 +149,20 @@ class Meld(Cleanable, IMeld):
     def cleanup(self) -> None:
         """
         Cleanup the Meld instance to prevent further use and release references
-        to spell configurations, creations manager, and the meld runtime.
+        to spell configurations, creations manager, and runtime caches.
 
         This should be called when the owning `Conduit` is being shut down.
 
         Contract:
             - Idempotent: repeated calls are safe.
             - Thread-safe: guarded by the internal lock.
-            - Runtime reference is dropped (no runtime cleanup is performed).
+            - Runtime caches are cleared deterministically.
             - After cleanup, references are cleared and this instance must not be used.
 
         Behaviour:
             - Marks the instance as cleaned.
             - Clears references to spellbook maps, spell_id maps, and creations.
-            - Drops the internal `MeldRuntime` reference.
+            - Clears override specialization cache state.
 
         Returns:
             None.
@@ -189,11 +194,16 @@ class Meld(Cleanable, IMeld):
                 except Exception:
                     pass
 
+            override_specialization_cache = self._override_specialization_cache
+            for cache in override_specialization_cache.values():
+                cache.clear()
+            override_specialization_cache.clear()
+
             # Clear creations reference
             self._creations = None
             self._conduit_id = None
             self._resolution_conduit_id = None
-            self._runtime = None
+            self._override_specialization_cache = None
             self._meld_hooks = None
             self._input_resolution_cache = None
             self._spell_id_resolution_cache = None
@@ -957,7 +967,7 @@ class Meld(Cleanable, IMeld):
             - The owner Conduit's creations manager (from the spell).
             - Any normalized per-call overrides (constructor/factory args).
 
-        This object is passed into the `MeldRuntime` Phase 12 stack and
+        This object is passed into Meld's merged Phase 12 runtime stack and
         returned to the context pool after execution completes.
 
         Args:
@@ -1683,6 +1693,503 @@ class Meld(Cleanable, IMeld):
     # ----------------------------------------------------------------------
     # Runtime dispatch and registration
     # ----------------------------------------------------------------------
+    def execute_no_overrides_fast_transient(
+            self,
+            *,
+            spell: ISpell,
+    ) -> Any:
+        """
+        Execute a transient no-overrides spell through the compiled Phase 12 path.
+
+        Contract:
+            - Uses the precompiled no-overrides executor directly.
+            - Requires a compiled Phase 12 no-overrides executor.
+            - Wraps unexpected failures in MeldExecutionError.
+        """
+        crafter = spell._crafter
+        executor = crafter.phase12_no_overrides_executor
+        try:
+            return executor(None)
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Phase 12 transient executor failed.",
+                inner=exc,
+            ) from exc
+
+    def _execute_meld_runtime_context(self, context: MeldContext) -> Any:
+        """
+        Execute one meld call through the merged codegen runtime routes.
+
+        Contract:
+            - No-overrides route uses the precompiled no-overrides executor.
+            - Override or mutation routes use override specialization executors.
+            - Mutation-bearing spells route through override specialization even
+              when no per-call overrides are supplied.
+        """
+        spell = context.root_spell
+        overrides = context.overrides
+        has_mutation_override = spell.has_mutation_override
+        execute_with_overrides = self._execute_with_overrides
+        execute_no_overrides = self._execute_no_overrides
+        if overrides or has_mutation_override:
+            return execute_with_overrides(
+                context=context,
+                spell=spell,
+            )
+        return execute_no_overrides(
+            context=context,
+            spell=spell,
+        )
+
+    def _execute_no_overrides(
+            self,
+            *,
+            context: MeldContext,
+            spell: ISpell,
+    ) -> Any:
+        """
+        Execute a no-overrides meld call through the precompiled executor.
+
+        Contract:
+            - Requires `phase12_no_overrides_executor`.
+            - Wraps unexpected executor exceptions in MeldExecutionError.
+        """
+        crafter = spell._crafter
+        executor = crafter.phase12_no_overrides_executor
+        try:
+            result = executor(context)
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Phase 12 no-overrides executor failed.",
+                inner=exc,
+            ) from exc
+        self._raise_on_missing_factory_result(
+            spell=spell,
+            result=result,
+            message=(
+                "Phase 12 no-overrides executor returned None for a "
+                "factory-style spell."
+            ),
+        )
+        return result
+
+    def _execute_with_overrides(
+            self,
+            *,
+            context: MeldContext,
+            spell: ISpell,
+    ) -> Any:
+        """
+        Execute an override-bearing meld call through specialization routing.
+
+        Contract:
+            - Applies Phase 10 override patch maps to normalize TargetSpec keys.
+            - Resolves Phase 11 override execution IR rows for specialization keys.
+            - Uses mutation-aware execution IR when mutation overrides are present.
+            - Never falls back to legacy runtime engines.
+        """
+        crafter = spell._crafter
+        is_mutation_route = spell.has_mutation_override
+        execution_ir_key = "overrides_with_mutations" if is_mutation_route else "overrides"
+        override_execution_ir_payload = self._resolve_override_execution_ir_payload(
+            crafter=crafter,
+            execution_ir_key=execution_ir_key,
+        )
+
+        override_payload = context.overrides
+        root_positional_override: Optional[Sequence[Any]] = None
+        override_map: Dict[Any, Any] = {}
+        if override_payload:
+            target_payload, root_positional_override = self._split_override_payload(
+                spell=spell,
+                override_payload=override_payload,
+            )
+            if target_payload:
+                try:
+                    override_map = apply_phase10_override_payload(
+                        override_patch_map=crafter.override_patch_map_phase10,
+                        override_payload=target_payload,
+                    )
+                except MeldExecutionError:
+                    raise
+                except Exception as exc:
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Failed to apply overrides through the Phase 10 "
+                            "override patch map."
+                        ),
+                        inner=exc,
+                    ) from exc
+
+        (
+            override_targets_by_spell_id,
+            socket_shape,
+        ) = self._collect_override_targets_and_socket_shape(
+            override_map=override_map,
+        )
+        try:
+            plan_signature = self._build_override_plan_signature_from_ir_payload(
+                override_execution_ir_payload=override_execution_ir_payload,
+            )
+            shape_key = self._build_override_shape_key(
+                plan_signature=plan_signature,
+                socket_shape=socket_shape,
+                root_positional_override=root_positional_override,
+            )
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=(
+                    "Failed to build override specialization shape key from the "
+                    "Phase 11 execution plan."
+                ),
+                inner=exc,
+            ) from exc
+        root_blueprint_phase5 = crafter.root_blueprint_phase5
+        path_registry = root_blueprint_phase5.path_registry
+        plan_rows = override_execution_ir_payload["steps_rows"]
+        root_spell_id = override_execution_ir_payload["root_spell_id"]
+        spellbook = spell._spellbook
+        spell_lookup = spellbook._spell_id_pool
+        any_overrides_present = bool(override_payload)
+        executor = self._get_or_compile_override_executor(
+            spell=spell,
+            shape_key=shape_key,
+            execution_plan=None,
+            override_targets_by_spell_id=override_targets_by_spell_id,
+            any_overrides_present=any_overrides_present,
+            path_registry=path_registry,
+            plan_rows=plan_rows,
+            root_spell_id=root_spell_id,
+            spell_lookup=spell_lookup,
+        )
+
+        result = executor(
+            context,
+            override_map,
+            root_positional_override,
+        )
+
+        self._raise_on_missing_factory_result(
+            spell=spell,
+            result=result,
+            message=(
+                "Phase 12 override specialization executor returned None for a "
+                "factory-style spell."
+            ),
+        )
+        return result
+
+    @staticmethod
+    def _split_override_payload(
+            *,
+            spell: ISpell,
+            override_payload: Dict[str, Any],
+    ) -> Tuple[Dict[str, Any], Optional[Sequence[Any]]]:
+        """
+        Split root positional overrides from TargetSpec override payloads.
+
+        Contract:
+            - Removes `__args__` from the payload passed into patch-map apply.
+            - Validates that `__args__` is list/tuple when provided.
+        """
+        raw_args = override_payload.get("__args__")
+        if raw_args is None:
+            return override_payload, None
+        if isinstance(raw_args, tuple):
+            normalized_root_args = raw_args
+        elif isinstance(raw_args, list):
+            normalized_root_args = tuple(raw_args)
+        else:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="__args__ override must be a list or tuple.",
+            )
+        override_payload_size = len(override_payload)
+        if override_payload_size == 1:
+            return {}, normalized_root_args
+        if override_payload_size == 2:
+            for param_name, value in override_payload.items():
+                if param_name != "__args__":
+                    return {
+                        param_name: value,
+                    }, normalized_root_args
+
+        normalized_payload: Dict[str, Any] = {}
+        for param_name, value in override_payload.items():
+            if param_name == "__args__":
+                continue
+            normalized_payload[param_name] = value
+        return normalized_payload, normalized_root_args
+
+    @staticmethod
+    def _collect_override_targets_and_socket_shape(
+            *,
+            override_map: Dict[Any, Any],
+    ) -> Tuple[Dict[str, Tuple[Any, ...]], Tuple[Tuple[Any, ...], ...]]:
+        """
+        Collect grouped override targets and socket-shape tuples in one pass.
+
+        Contract:
+            - Performs a single deterministic sort over socket refs.
+            - Uses dedicated no-sort fast paths for one- and two-socket payloads.
+            - Groups refs by `socket_ref.node_id`.
+            - Emits socket-shape tuples in stable sorted order.
+        """
+        if not override_map:
+            return {}, ()
+        if len(override_map) == 1:
+            socket_ref = next(iter(override_map))
+            node_id = socket_ref.node_id
+            param_path_id = socket_ref.param_path_id
+            param_name = socket_ref.param_name
+            socket_kind_value = socket_ref.socket_kind.value
+            return (
+                {
+                    node_id: (socket_ref,),
+                },
+                (
+                    (
+                        node_id,
+                        param_path_id,
+                        param_name,
+                        socket_kind_value,
+                    ),
+                ),
+            )
+        if len(override_map) == 2:
+            refs_iter = iter(override_map)
+            first_ref = next(refs_iter)
+            second_ref = next(refs_iter)
+            first_ref_node_id = first_ref.node_id
+            first_ref_param_path_id = first_ref.param_path_id
+            first_ref_param_name = first_ref.param_name
+            first_ref_socket_kind_value = first_ref.socket_kind.value
+            first_shape_row = (
+                first_ref_node_id,
+                first_ref_param_path_id,
+                first_ref_param_name,
+                first_ref_socket_kind_value,
+            )
+            second_ref_node_id = second_ref.node_id
+            second_ref_param_path_id = second_ref.param_path_id
+            second_ref_param_name = second_ref.param_name
+            second_ref_socket_kind_value = second_ref.socket_kind.value
+            second_shape_row = (
+                second_ref_node_id,
+                second_ref_param_path_id,
+                second_ref_param_name,
+                second_ref_socket_kind_value,
+            )
+            if second_shape_row < first_shape_row:
+                first_ref, second_ref = second_ref, first_ref
+                first_shape_row, second_shape_row = second_shape_row, first_shape_row
+                first_ref_node_id, second_ref_node_id = (
+                    second_ref_node_id,
+                    first_ref_node_id,
+                )
+            if first_ref_node_id == second_ref_node_id:
+                by_spell_id = {
+                    first_ref_node_id: (
+                        first_ref,
+                        second_ref,
+                    ),
+                }
+            else:
+                by_spell_id = {
+                    first_ref_node_id: (first_ref,),
+                    second_ref_node_id: (second_ref,),
+                }
+            return (
+                by_spell_id,
+                (
+                    first_shape_row,
+                    second_shape_row,
+                ),
+            )
+
+        by_spell_id: Dict[str, list[Any]] = {}
+        socket_shape: list[Tuple[Any, ...]] = []
+        ordered_rows: list[Tuple[Tuple[Any, ...], Any]] = []
+        for socket_ref in override_map:
+            node_id = socket_ref.node_id
+            param_path_id = socket_ref.param_path_id
+            param_name = socket_ref.param_name
+            socket_kind_value = socket_ref.socket_kind.value
+            ordered_rows.append(
+                (
+                    (
+                        node_id,
+                        param_path_id,
+                        param_name,
+                        socket_kind_value,
+                    ),
+                    socket_ref,
+                )
+            )
+        ordered_rows.sort(key=itemgetter(0))
+        current_spell_id: Optional[str] = None
+        current_bucket: Optional[list[Any]] = None
+        for shape_row, socket_ref in ordered_rows:
+            node_id, _, _, _ = shape_row
+            if node_id != current_spell_id:
+                current_spell_id = node_id
+                current_bucket = [socket_ref]
+                by_spell_id[node_id] = current_bucket
+            else:
+                current_bucket.append(socket_ref)
+            socket_shape.append(shape_row)
+
+        return (
+            {
+                spell_id: tuple(refs)
+                for spell_id, refs in by_spell_id.items()
+            },
+            tuple(socket_shape),
+        )
+
+    @staticmethod
+    def _build_override_shape_key(
+            *,
+            plan_signature: Any,
+            socket_shape: Tuple[Tuple[Any, ...], ...],
+            root_positional_override: Optional[Sequence[Any]],
+    ) -> Tuple[Any, ...]:
+        """
+        Build a stable override-shape key for specialization cache lookup.
+
+        Contract:
+            - Includes deterministic execution-plan signature.
+            - Includes deterministic socket-target tuples.
+            - Includes root positional-argument arity when present.
+        """
+        positional_arity = -1
+        if root_positional_override is not None:
+            positional_arity = len(root_positional_override)
+        return (
+            plan_signature,
+            socket_shape,
+            positional_arity,
+        )
+
+    @staticmethod
+    def _build_override_plan_signature_from_ir_payload(
+            *,
+            override_execution_ir_payload: Dict[str, Any],
+    ) -> Tuple[Any, ...]:
+        """
+        Build deterministic override plan signature from execution IR payload.
+
+        Contract:
+            - Requires payload field ``signature``.
+            - Includes optional ``steps_rows_signature`` when present.
+        """
+        variant_signature = override_execution_ir_payload["signature"]
+        return (
+            "phase11_overrides_ir",
+            variant_signature,
+            override_execution_ir_payload.get("steps_rows_signature"),
+        )
+
+    @staticmethod
+    def _resolve_override_execution_ir_payload(
+            *,
+            crafter: Any,
+            execution_ir_key: str = "overrides",
+    ) -> Dict[str, Any]:
+        """
+        Resolve Phase11 override execution IR payload by required variant key.
+
+        Contract:
+            - Selects the execution variant payload by `execution_ir_key`.
+            - Returns the override execution payload mapping by reference.
+        """
+        codegen_ir = crafter.codegen_ir
+        phase8_11_payload = codegen_ir["phase8_11"]
+        execution_payload = phase8_11_payload["execution"]
+        return execution_payload[execution_ir_key]
+
+    def _get_or_compile_override_executor(
+            self,
+            *,
+            spell: ISpell,
+            shape_key: Tuple[Any, ...],
+            execution_plan: Any,
+            override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+            any_overrides_present: bool,
+            path_registry: Optional[Any],
+            plan_rows: Optional[Sequence[Dict[str, Any]]],
+            root_spell_id: Optional[str],
+            spell_lookup: Optional[Dict[str, Any]],
+    ) -> Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]:
+        """
+        Resolve a cached override specialization executor or compile on miss.
+
+        Contract:
+            - Cache entries are retained for the Meld runtime lifetime.
+        """
+        spell_id = spell.spell_id
+        override_specialization_cache = self._override_specialization_cache
+        cache = override_specialization_cache.get(spell_id)
+        if cache:
+            cached = cache.get(shape_key)
+            if cached is not None:
+                return cached
+        elif cache is None:
+            cache = {}
+            override_specialization_cache[spell_id] = cache
+
+        compiled = compile_phase12_overrides_executor(
+            execution_plan=execution_plan,
+            override_targets_by_spell_id=override_targets_by_spell_id,
+            any_overrides_present=any_overrides_present,
+            path_registry=path_registry,
+            plan_rows=plan_rows,
+            root_spell_id=root_spell_id,
+            spell_lookup=spell_lookup,
+        )
+
+        cache[shape_key] = compiled
+        return compiled
+
+    @staticmethod
+    def _raise_on_missing_factory_result(
+            *,
+            spell: ISpell,
+            result: Any,
+            message: str,
+    ) -> None:
+        """
+        Raise when factory-style spells produce no runtime result.
+
+        Contract:
+            - Applies only to class/method/lambda spells.
+            - Returns silently for non-factory spell types.
+        """
+        if (
+            result is None
+            and (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell)
+        ):
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message=message,
+            )
+
     def _dispatch_meld_runtime(
             self,
             spell: ISpell,
@@ -1700,7 +2207,7 @@ class Meld(Cleanable, IMeld):
 
             * Otherwise:
                   Build a pooled `MeldContext` and dispatch through
-                  `MeldRuntime.execute(...)`.
+                  the merged internal runtime execution route.
 
         Args:
             spell:
@@ -1720,14 +2227,14 @@ class Meld(Cleanable, IMeld):
             RuntimeError:
                 If runtime dispatch prerequisites are not satisfied.
             MeldExecutionError:
-                Propagated from `MeldRuntime.execute` if DI or construction fails.
+                Propagated from merged runtime execution helpers.
         """
         if (
                 overrides is None
                 and not spell.has_mutation_override
                 and self._should_dispatch_fast_transient(spell)
         ):
-            return self._runtime.execute_no_overrides_fast_transient(
+            return self.execute_no_overrides_fast_transient(
                 spell=spell,
             )
 
@@ -1737,7 +2244,7 @@ class Meld(Cleanable, IMeld):
             caller_creations_lock_held=caller_creations_lock_held,
         )
         try:
-            return self._runtime.execute(context)
+            return self._execute_meld_runtime_context(context)
         finally:
             self._release_meld_context(context)
 

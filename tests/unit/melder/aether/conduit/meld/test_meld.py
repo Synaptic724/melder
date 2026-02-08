@@ -579,48 +579,29 @@ def _make_creations(
     return Creations(conduit), conduit
 
 
-def test_cleanup_clears_references_and_drops_runtime() -> None:
+def test_cleanup_clears_references_and_runtime_caches() -> None:
     """
-    Verify Meld.cleanup releases references and drops the runtime reference.
+    Verify Meld.cleanup releases references and clears merged runtime caches.
 
     Contract:
         - Spellbook maps and creations references are cleared.
-        - Runtime reference is dropped without invoking cleanup.
+        - Override specialization cache is cleared.
         - Meld hooks are cleared and removed.
     """
-    class _RuntimeStub:
-        """
-        Minimal runtime stub that records cleanup calls.
-        """
-
-        def __init__(self) -> None:
-            """
-            Initialize the cleanup flag.
-            """
-            self.cleaned = False
-
-        def cleanup(self) -> None:
-            """
-            Mark the runtime as cleaned.
-            """
-            self.cleaned = True
-
     meld = _make_meld()
-    runtime = _RuntimeStub()
     hook_list: list[Callable[..., Any]] = [lambda: None]
-    meld._runtime = runtime
+    meld._override_specialization_cache["spell-1"] = {("shape",): lambda *args: None}
     meld._meld_hooks = {"on_meld_pre_resolve": hook_list}
 
     meld.cleanup()
 
-    assert runtime.cleaned is False
     assert hook_list == [hook_list[0]]
     assert meld._owned_spells is None
     assert meld._contracted_spells is None
     assert meld._lookup_owned_spells is None
     assert meld._lookup_contracted_spells is None
     assert meld._creations is None
-    assert meld._runtime is None
+    assert meld._override_specialization_cache is None
     assert meld._meld_hooks is None
 
 
@@ -1591,38 +1572,36 @@ def test_dispatch_meld_runtime_executes_and_cleans_context() -> None:
     Verify runtime path executes and cleans the context.
 
     Contract:
-        - runtime.execute is called for class/method/lambda spells.
+        - merged runtime execution path is called for dispatched spells.
         - context.reset is called before returning to pool.
     """
     meld = _make_meld()
     context = _ContextStub()
     meld._create_meld_context = MagicMock(return_value=context)
-    meld._runtime = MagicMock()
-    meld._runtime.execute = MagicMock(return_value="result")
+    meld._execute_meld_runtime_context = MagicMock(return_value="result")
     spell = _SpellStub(spell_id="spell-1", is_class_spell=True)
 
     assert meld._dispatch_meld_runtime(
         spell,
         overrides={"x": 1},
     ) == "result"
-    meld._runtime.execute.assert_called_once_with(context)
+    meld._execute_meld_runtime_context.assert_called_once_with(context)
     assert context.reset_called is True
 
 
-def test_dispatch_meld_runtime_unsupported_type_raises() -> None:
+def test_dispatch_meld_runtime_missing_crafter_raises() -> None:
     """
-    Verify meld-by-type fails when runtime is missing.
+    Verify dispatch fails when spell runtime artifacts are missing.
 
     Contract:
-        - Missing runtime raises AttributeError during execution.
+        - Missing spell crafter raises RuntimeError on fast-transient checks.
     """
     meld = _make_meld()
-    meld._runtime = None
     spell = _SpellStub(spell_id="spell-1", spell_type="unknown")
-    with pytest.raises(AttributeError):
+    with pytest.raises(RuntimeError, match="Spell crafter is missing"):
         meld._dispatch_meld_runtime(
             spell,
-            overrides={"x": 1},
+            overrides=None,
         )
 
 
@@ -1902,31 +1881,22 @@ def test_gated_validation_required_change_control_error_falls_back() -> None:
         meld._gated_validation_required(spell)
 
 
-def test_cleanup_drops_runtime_without_invoking_cleanup() -> None:
+def test_cleanup_clears_override_specialization_cache_entries() -> None:
     """
-    Verify Meld.cleanup drops the runtime reference without invoking cleanup.
+    Verify Meld.cleanup clears override specialization caches.
 
     Contract:
-        - runtime.cleanup is not called.
-        - runtime reference is dropped.
+        - Per-spell specialization entries are dropped.
+        - Override specialization cache reference is cleared.
     """
-    class _RuntimeStub:
-        """
-        Runtime stub that raises on cleanup.
-        """
-
-        def cleanup(self) -> None:
-            """
-            Raise if cleanup is invoked.
-            """
-            raise RuntimeError("cleanup should not be called")
-
     meld = _make_meld()
-    meld._runtime = _RuntimeStub()
+    meld._override_specialization_cache["spell-1"] = {
+        ("shape",): lambda *args: "value",
+    }
 
     meld.cleanup()
 
-    assert meld._runtime is None
+    assert meld._override_specialization_cache is None
 
 
 def test_resolve_spell_by_id_raises_when_maps_missing() -> None:

@@ -36,7 +36,7 @@ class MeldContext(Cleanable):
            - caller creations (current Conduit scope)
            - owner creations (spell owner Conduit scope)
            - Pre-normalized overrides map
-    3. `MeldRuntime.execute(context)` is called.
+    3. Meld's merged runtime execution path is called with the context.
     4. After execution returns, `Meld` calls `context.reset()`
        and returns the context to the local pool.
     5. When `Meld.cleanup()` runs, pooled contexts receive final

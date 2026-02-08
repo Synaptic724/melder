@@ -61,7 +61,7 @@ def compile_phase12_no_overrides_executor(
     Compile a spell-scoped Phase 12 no-overrides executor from Codegen IR.
 
     Purpose:
-        Build the no-overrides execution callable consumed by MeldRuntime so
+        Build the no-overrides execution callable consumed by Meld's runtime path so
         meld no longer depends on legacy engine execution for no-overrides calls.
 
     Contract:
