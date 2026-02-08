@@ -7,7 +7,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.meld_context.meld_context import MeldContext
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.spell_crafter.blueprints.patch_maps import (
     apply_phase10_override_payload,
 )
@@ -35,9 +34,8 @@ class MeldRuntime(Cleanable):
           the Phase 11 override execution IR rows.
         - Keeps override specialization caches bounded per spell.
         - Mutation-bearing spells route through override specialization executors.
-        - Enforces spell validity/change-control invariants before execution.
-        - Raises deterministic `MeldExecutionError` when runtime prerequisites
-          are not satisfied.
+        - Trusts upstream Meld/Spellbook validation and uses direct artifact
+          access on execution paths.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = (
@@ -78,21 +76,12 @@ class MeldRuntime(Cleanable):
         Execute a transient no-overrides spell through Phase 12 executor.
 
         Contract:
-            - Enforces spell invariants before execution.
+            - Uses the precompiled Phase 12 transient executor directly.
             - Requires a compiled Phase 12 executor.
-            - Does not accept overrides or mutations.
+            - Caller must route only no-overrides/no-mutation spells here.
         """
-        self._enforce_spell_invariants(spell, conduit_id)
-        if spell.has_mutation_override:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message=(
-                    "Mutation overrides are not supported on the Phase 12 "
-                    "no-overrides runtime path."
-                ),
-            )
-        executor = self._require_phase12_executor(spell)
+        _ = conduit_id
+        executor = spell._crafter.phase12_no_overrides_executor
         try:
             return executor(None)
         except MeldExecutionError:
@@ -110,22 +99,15 @@ class MeldRuntime(Cleanable):
         Execute one meld call through the appropriate Phase 12 executor route.
 
         Contract:
-            - `context` must contain a non-None root spell.
+            - `context` and `context.root_spell` are required call contracts.
             - No-overrides calls use the precompiled no-overrides executor.
             - Override calls use spell-scoped specialization executors.
             - Mutation-bearing spells use override specialization routing even
               when no per-call override payload is present.
-            - Raises MeldExecutionError when required Phase 11/12 artifacts are
-              missing.
+            - Trusts upstream artifact preparation and uses direct contract access.
             - Returns the constructed root instance.
         """
-        if context is None:
-            raise ValueError("context must not be None.")
         spell = context.root_spell
-        if spell is None:
-            raise ValueError("context.root_spell must not be None.")
-
-        self._enforce_spell_invariants(spell, context.conduit_id)
 
         overrides = context.overrides
         has_mutation_override = spell.has_mutation_override
@@ -164,34 +146,6 @@ class MeldRuntime(Cleanable):
         self._max_override_specializations_l2_per_spell = None
         self._cleaned = True
 
-    @staticmethod
-    def _require_phase12_executor(spell: ISpell) -> Callable[[Any], Any]:
-        """
-        Require and return the compiled Phase 12 no-overrides executor.
-
-        Contract:
-            - Raises MeldExecutionError when SpellCrafter artifacts are absent.
-            - Raises MeldExecutionError when no Phase 12 executor is compiled.
-        """
-        crafter = spell._crafter
-        if crafter is None:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message="Missing SpellCrafter artifacts for Phase 12 execution.",
-            )
-        executor = crafter.phase12_no_overrides_executor
-        if executor is None:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message=(
-                    "Missing Phase 12 no-overrides executor for this spell. "
-                    "Run conjure resolution phases before melding."
-                ),
-            )
-        return executor
-
     def _execute_no_overrides(
             self,
             *,
@@ -205,7 +159,7 @@ class MeldRuntime(Cleanable):
             - Requires `phase12_no_overrides_executor`.
             - Wraps unexpected executor exceptions in MeldExecutionError.
         """
-        executor = self._require_phase12_executor(spell)
+        executor = spell._crafter.phase12_no_overrides_executor
         try:
             result = executor(context)
         except MeldExecutionError:
@@ -246,54 +200,14 @@ class MeldRuntime(Cleanable):
             - Never falls back to engine execution.
         """
         crafter = spell._crafter
-        if crafter is None:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message="Missing SpellCrafter artifacts for Phase 12 override execution.",
-            )
-
         is_mutation_route = spell.has_mutation_override
         execution_ir_key = "overrides_with_mutations" if is_mutation_route else "overrides"
         override_execution_ir_payload = self._resolve_override_execution_ir_payload(
             crafter=crafter,
             execution_ir_key=execution_ir_key,
         )
-        if not override_execution_ir_payload:
-            message = (
-                "Phase 11 override execution IR payload is required for override "
-                "specialization execution."
-            )
-            if is_mutation_route:
-                message = (
-                    "Phase 11 override+mutation execution IR payload is required "
-                    "for override specialization execution."
-                )
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message=message,
-            )
-        plan_rows = override_execution_ir_payload.get("steps_rows")
-        if not plan_rows:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message=(
-                    "Phase 11 override execution IR payload must provide non-empty "
-                    "'steps_rows'."
-                ),
-            )
-        root_spell_id = override_execution_ir_payload.get("root_spell_id")
-        if not root_spell_id:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message=(
-                    "Phase 11 override execution IR payload must provide "
-                    "'root_spell_id'."
-                ),
-            )
+        plan_rows = override_execution_ir_payload["steps_rows"]
+        root_spell_id = override_execution_ir_payload["root_spell_id"]
 
         override_payload = context.overrides
         root_positional_override: Optional[Sequence[Any]] = None
@@ -304,19 +218,9 @@ class MeldRuntime(Cleanable):
                 override_payload=override_payload,
             )
             if target_payload:
-                override_patch_map = crafter.override_patch_map_phase10
-                if override_patch_map is None:
-                    raise MeldExecutionError(
-                        spell_id=spell.spell_index.current,
-                        spell_name=spell.spell_name,
-                        message=(
-                            "Phase 10 override patch map is required for override "
-                            "specialization execution."
-                        ),
-                    )
                 try:
                     override_map = apply_phase10_override_payload(
-                        override_patch_map=override_patch_map,
+                        override_patch_map=crafter.override_patch_map_phase10,
                         override_payload=target_payload,
                     )
                 except MeldExecutionError:
@@ -360,8 +264,7 @@ class MeldRuntime(Cleanable):
                 ),
                 inner=exc,
             ) from exc
-        root_blueprint = crafter.root_blueprint_phase5
-        path_registry = root_blueprint.path_registry if root_blueprint is not None else None
+        path_registry = crafter.root_blueprint_phase5.path_registry
         any_overrides_present = bool(override_payload)
         spell_lookup = spell._spellbook._spell_id_pool
         executor = self._get_or_compile_override_executor(
@@ -551,11 +454,7 @@ class MeldRuntime(Cleanable):
                 current_bucket = [socket_ref]
                 by_spell_id[spell_id] = current_bucket
             else:
-                if current_bucket is None:
-                    current_bucket = [socket_ref]
-                    by_spell_id[spell_id] = current_bucket
-                else:
-                    current_bucket.append(socket_ref)
+                current_bucket.append(socket_ref)
             socket_shape.append(
                 (
                     socket_ref.node_id,
@@ -590,9 +489,6 @@ class MeldRuntime(Cleanable):
             - Includes deterministic socket-target tuples.
             - Includes root positional-argument arity when present.
         """
-        if plan_signature is None:
-            raise ValueError("plan_signature must not be None.")
-
         resolved_socket_shape = socket_shape
         if resolved_socket_shape is None:
             socket_shape_rows: list[Tuple[Any, ...]] = []
@@ -641,30 +537,20 @@ class MeldRuntime(Cleanable):
     @staticmethod
     def _build_override_plan_signature_from_ir_payload(
             *,
-            override_execution_ir_payload: Optional[Dict[str, Any]],
+            override_execution_ir_payload: Dict[str, Any],
     ) -> Tuple[Any, ...]:
         """
         Build deterministic override plan signature from execution IR payload.
 
         Contract:
-            - Requires a non-empty override execution IR payload mapping.
             - Requires payload field ``signature``.
             - Includes optional ``steps_rows_signature`` when present.
         """
-        overrides_payload = override_execution_ir_payload
-        if not overrides_payload:
-            raise ValueError(
-                "Phase 11 override execution IR payload is missing for shape-key signature."
-            )
-        variant_signature = overrides_payload.get("signature")
-        if variant_signature is None:
-            raise ValueError(
-                "Phase 11 override execution IR payload is missing required field 'signature'."
-            )
+        variant_signature = override_execution_ir_payload["signature"]
         return (
             "phase11_overrides_ir",
             variant_signature,
-            overrides_payload.get("steps_rows_signature"),
+            override_execution_ir_payload.get("steps_rows_signature"),
         )
 
     @staticmethod
@@ -672,25 +558,18 @@ class MeldRuntime(Cleanable):
             *,
             crafter: Any,
             execution_ir_key: str = "overrides",
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
-        Resolve Phase11 override execution IR payload when available.
+        Resolve Phase11 override execution IR payload by required variant key.
 
         Contract:
-            - Returns None when codegen IR or override execution payload is absent.
             - Selects the execution variant payload by `execution_ir_key`.
             - Returns the override execution payload mapping by reference.
         """
         codegen_ir = crafter.codegen_ir
-        if codegen_ir is None:
-            return None
-        phase8_11_payload = codegen_ir.get("phase8_11")
-        if not phase8_11_payload:
-            return None
-        execution_payload = phase8_11_payload.get("execution")
-        if not execution_payload:
-            return None
-        return execution_payload.get(execution_ir_key)
+        phase8_11_payload = codegen_ir["phase8_11"]
+        execution_payload = phase8_11_payload["execution"]
+        return execution_payload[execution_ir_key]
 
     @staticmethod
     def _build_override_plan_signature(
@@ -708,59 +587,49 @@ class MeldRuntime(Cleanable):
         if execution_plan is None:
             raise ValueError("execution_plan must not be None.")
 
-        try:
-            plan_variant = execution_plan.plan_variant
-            root_spell_id = execution_plan.root_spell_id
-            steps = execution_plan.steps
-        except AttributeError as exc:
-            raise ValueError(
-                "execution_plan must expose plan_variant, root_spell_id, and steps."
-            ) from exc
+        plan_variant = execution_plan.plan_variant
+        root_spell_id = execution_plan.root_spell_id
+        steps = execution_plan.steps
 
         step_signatures: list[Tuple[Any, ...]] = []
-        for index, step in enumerate(steps):
-            try:
-                dependency_order = tuple(
-                    (
-                        param_name,
-                        tuple(dependency_keys),
-                    )
-                    for param_name, dependency_keys in step.dependency_resolution_order
+        for step in steps:
+            dependency_order = tuple(
+                (
+                    param_name,
+                    tuple(dependency_keys),
                 )
-                contract_payload_items: Tuple[Any, ...] = ()
-                if step.contract_payload:
-                    contract_payload_items = tuple(
-                        sorted(
-                            (
-                                param_name,
-                                MeldRuntime._freeze_override_signature_value(value),
-                            )
-                            for param_name, value in step.contract_payload.items()
+                for param_name, dependency_keys in step.dependency_resolution_order
+            )
+            contract_payload_items: Tuple[Any, ...] = ()
+            if step.contract_payload:
+                contract_payload_items = tuple(
+                    sorted(
+                        (
+                            param_name,
+                            MeldRuntime._freeze_override_signature_value(value),
                         )
-                    )
-                step_signatures.append(
-                    (
-                        step.instance_key,
-                        step.spell.spell_index.current,
-                        step.existence.name,
-                        step.creations_target_kind,
-                        step.shared_instance,
-                        dependency_order,
-                        step.override_match_prefix,
-                        step.override_match_prefix_len,
-                        tuple(step.override_keys),
-                        step.use_spell_lock_hint,
-                        step.must_register,
-                        step.uses_positional_override,
-                        MeldRuntime._freeze_override_signature_value(step.contract_positional_override),
-                        step.has_contract_payload,
-                        contract_payload_items,
+                        for param_name, value in step.contract_payload.items()
                     )
                 )
-            except AttributeError as exc:
-                raise ValueError(
-                    f"execution_plan step at index {index} is missing required signature fields."
-                ) from exc
+            step_signatures.append(
+                (
+                    step.instance_key,
+                    step.spell.spell_index.current,
+                    step.existence.name,
+                    step.creations_target_kind,
+                    step.shared_instance,
+                    dependency_order,
+                    step.override_match_prefix,
+                    step.override_match_prefix_len,
+                    tuple(step.override_keys),
+                    step.use_spell_lock_hint,
+                    step.must_register,
+                    step.uses_positional_override,
+                    MeldRuntime._freeze_override_signature_value(step.contract_positional_override),
+                    step.has_contract_payload,
+                    contract_payload_items,
+                )
+            )
 
         return (
             plan_variant,
@@ -1193,73 +1062,3 @@ class MeldRuntime(Cleanable):
                 message=message,
             )
 
-    @staticmethod
-    def _enforce_spell_invariants(
-            spell: ISpell,
-            conduit_id: Optional[str],
-    ) -> None:
-        """
-        Validate spell validity and change-control gating before execution.
-
-        Contract:
-            - Blocks invalid/gated/disabled lineages.
-            - Blocks dirty roots under ChangeControlManager.
-            - Blocks broken or unvalidated spells.
-        """
-        if not spell._spellbook._spellbook_validation_required:
-            return
-
-        state = spell.system_state
-        if state is not None:
-            validity = state.validity
-            if validity in (
-                    SpellValidity.invalid,
-                    SpellValidity.gated,
-                    SpellValidity.disabled,
-            ):
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message=(
-                        "Cannot execute meld runtime for a spell whose lineage is "
-                        f"{validity.name}."
-                    ),
-                )
-
-        try:
-            spellbook = spell._spellbook
-            aether = spellbook._aether
-            manager = aether._get_change_control_manager(spell.aetheric_frame)
-            if manager is not None and conduit_id and manager.is_root_dirty(
-                    conduit_id,
-                    spell.spell_index.current,
-            ):
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message=(
-                        "Cannot execute meld runtime while the root is marked dirty. "
-                        "Revalidation is required."
-                    ),
-                )
-        except MeldExecutionError:
-            raise
-        except Exception:
-            pass
-
-        if spell.is_broken:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message="Cannot execute meld runtime for a broken spell.",
-            )
-
-        if not spell.validated:
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message=(
-                    "Spell has not been validated. Run the SpellCrafter phases "
-                    "before attempting to meld this spell."
-                ),
-            )

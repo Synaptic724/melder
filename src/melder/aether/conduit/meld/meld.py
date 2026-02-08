@@ -627,8 +627,6 @@ class Meld(Cleanable, IMeld):
                     raise SpellbookValidationError([spell])
 
                 spellbook = spell._spellbook
-                if spellbook is None:
-                    raise SpellbookValidationError([spell])
                 spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
 
                 resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
@@ -1223,18 +1221,12 @@ class Meld(Cleanable, IMeld):
         Raises:
             RuntimeError:
                 If a ``SpellIndex`` is found in the local lookup map but
-                the owned spell map is unavailable or does not contain
-                the corresponding spell object.
+                the owned spell map does not contain the corresponding
+                spell object.
         """
         spell_index = self._lookup_owned_spells.get(lookup_key)
         if spell_index is None:
             return None
-
-        if self._owned_spells is None:
-            raise RuntimeError(
-                "[MELD] Local lookup map resolved a SpellIndex, but the "
-                "owned spell map is not available."
-            )
 
         result = self._owned_spells.get(spell_index)
         if result is None:
@@ -1270,10 +1262,8 @@ class Meld(Cleanable, IMeld):
         Raises:
             RuntimeError:
                 If a contracted lookup map resolves a ``SpellIndex`` but:
-                  * the global contracted spell map is unavailable, or
-                  * there is no spell map for that conduit ID, or
                   * the spell map does not contain a spell object for
-                    the resolved ``SpellIndex``.
+                     the resolved ``SpellIndex``.
         """
         # If contracted lookup maps exist, we expect contracted spell maps
         # to exist as well. We only enforce this when we actually find a hit.
@@ -1283,12 +1273,6 @@ class Meld(Cleanable, IMeld):
                 continue
 
             spell_map = self._contracted_spells.get(conduit_id)
-            if spell_map is None:
-                raise RuntimeError(
-                    f"[MELD] Contracted lookup map exists for conduit "
-                    f"'{conduit_id}' but no contracted spell map is present."
-                )
-
             result = spell_map.get(spell_index)
             if result is None:
                 raise RuntimeError(

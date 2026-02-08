@@ -826,10 +826,10 @@ def test_resolve_spell_by_lookup_key_prefers_local() -> None:
 
 def test_resolve_local_by_lookup_key_raises_when_owned_map_missing() -> None:
     """
-    Verify local resolution raises when owned spell map is unavailable.
+    Verify local resolution fails naturally when owned spell map is unavailable.
 
     Contract:
-        - If lookup hits but owned map is None, raise RuntimeError.
+        - If lookup hits but owned map is None, direct map access raises AttributeError.
     """
     lookup_key = ("frame", "binding")
     spell_index = object()
@@ -839,7 +839,7 @@ def test_resolve_local_by_lookup_key_raises_when_owned_map_missing() -> None:
     )
     meld = _make_meld(spellbook=spellbook)
     meld._owned_spells = None
-    with pytest.raises(RuntimeError, match="owned spell map is not available"):
+    with pytest.raises(AttributeError, match="has no attribute 'get'"):
         meld._resolve_local_by_lookup_key(lookup_key)
 
 
@@ -862,10 +862,10 @@ def test_resolve_local_by_lookup_key_raises_when_spell_missing() -> None:
 
 def test_resolve_contracted_by_lookup_key_raises_when_conduit_missing() -> None:
     """
-    Verify contracted resolution raises when conduit spell map is absent.
+    Verify contracted resolution fails naturally when conduit spell map is absent.
 
     Contract:
-        - Lookup hit with missing conduit map raises RuntimeError.
+        - Lookup hit with missing conduit map raises AttributeError on direct map access.
     """
     lookup_key = ("frame", "binding")
     spell_index = object()
@@ -874,7 +874,7 @@ def test_resolve_contracted_by_lookup_key_raises_when_conduit_missing() -> None:
         lookup_contracted_spells={"peer": {lookup_key: spell_index}},
     )
     meld = _make_meld(spellbook=spellbook)
-    with pytest.raises(RuntimeError, match="no contracted spell map is present"):
+    with pytest.raises(AttributeError, match="has no attribute 'get'"):
         meld._resolve_contracted_by_lookup_key(lookup_key)
 
 
