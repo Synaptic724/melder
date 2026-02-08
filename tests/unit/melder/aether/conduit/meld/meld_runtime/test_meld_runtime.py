@@ -484,6 +484,37 @@ def test_execute_with_overrides_wraps_shape_key_failures(monkeypatch: pytest.Mon
     assert isinstance(exc.value.inner, ValueError)
 
 
+def test_execute_with_overrides_wraps_schema_compile_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Override path wraps schema-row compile failures from specialization compiler."""
+    runtime = MeldRuntime()
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(
+            executor=lambda c: "x",
+            patch_map=object(),
+            override_plan=_override_plan(),
+            codegen_ir={
+                "phase8_11": {
+                    "execution": {
+                        "overrides": {
+                            "signature": "sig-overrides",
+                            "steps_rows_signature": "sig-rows",
+                            "root_spell_id": "s1",
+                            "steps_rows": ({"spell_id": "s1"},),
+                        },
+                    },
+                },
+            },
+        ),
+    )
+    socket_ref = _SocketRef("s1", "x", 1, "normal")
+    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", lambda **kwargs: {socket_ref: "v"})
+
+    with pytest.raises(MeldExecutionError, match="specialization compilation failed") as exc:
+        runtime.execute(_ctx(spell, overrides={"x": 1}))
+    assert isinstance(exc.value.inner, RuntimeError)
+
+
 def test_fast_transient_and_cleanup_contract() -> None:
     """Fast transient executes phase12 executor with None context; cleanup clears cache state."""
     runtime = MeldRuntime()

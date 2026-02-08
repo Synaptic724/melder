@@ -690,15 +690,25 @@ class MeldRuntime(Cleanable):
         if cached is not None:
             return cached
 
-        compiled = compile_phase12_overrides_executor(
-            execution_plan=execution_plan,
-            override_targets_by_spell_id=override_targets_by_spell_id,
-            any_overrides_present=any_overrides_present,
-            path_registry=path_registry,
-            plan_rows=plan_rows,
-            root_spell_id=root_spell_id,
-            spell_lookup=spell_lookup,
-        )
+        try:
+            compiled = compile_phase12_overrides_executor(
+                execution_plan=execution_plan,
+                override_targets_by_spell_id=override_targets_by_spell_id,
+                any_overrides_present=any_overrides_present,
+                path_registry=path_registry,
+                plan_rows=plan_rows,
+                root_spell_id=root_spell_id,
+                spell_lookup=spell_lookup,
+            )
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Phase 12 override specialization compilation failed.",
+                inner=exc,
+            ) from exc
         if shape_key not in cache:
             if len(order) >= self._max_override_specializations_per_spell:
                 evicted = order.popleft()
