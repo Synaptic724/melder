@@ -268,7 +268,7 @@ class Meld(Cleanable, IMeld):
                   a special internal key (e.g. `"__args__"`).
 
                 This data is **not** written onto the Spell itself; it is intended
-                to be consumed by the runtime / engine layer for this specific
+                to be consumed by the runtime codegen layer for this specific
                 meld invocation.
 
         Returns:
@@ -803,7 +803,7 @@ class Meld(Cleanable, IMeld):
         The **override payload** is intended to represent *per-call* constructor
         / factory overrides for a given meld operation. This helper converts the
         user-facing shapes into a uniform internal representation that can be
-        consumed by the Meld runtime / engine layer.
+        consumed by the Meld runtime codegen layer.
 
         Supported input shapes
         ----------------------
@@ -820,7 +820,7 @@ class Meld(Cleanable, IMeld):
         * ``list`` / ``tuple``:
             - Treated as **positional argument** overrides.
             - These are stored under the special key ``"__args__"`` so that the
-              engine can distinguish them from keyword overrides:
+              runtime can distinguish them from keyword overrides:
               ``{"__args__": [arg0, arg1, ...]}``.
 
         Any more sophisticated interpretation (e.g. mixing positional and keyword

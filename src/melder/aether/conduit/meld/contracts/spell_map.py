@@ -13,8 +13,8 @@ class SpellMap(Cleanable):
 
     SpellMap is **never** resolved eagerly. It is a *pure intent object*:
     - You put it in your `__init__` defaults or instance attributes.
-    - SpellCrafter / the resolution engine inspect it when a `meld(...)` happens.
-    - The DI engine replaces it with a real creation (or callable) using the
+    - SpellCrafter / the runtime planning path inspect it when a `meld(...)` happens.
+    - The runtime replaces it with a real creation (or callable) using the
       normal Spellbook + SpellIndex + Existence pipeline.
 
     ─────────────────────────────────────────────
@@ -133,7 +133,7 @@ class SpellMap(Cleanable):
                 - list/tuple → treated as positional arguments
 
                 This payload is **not** interpreted here. It is propagated
-                unchanged so that the resolution engine can attach it to
+                unchanged so that the runtime planning path can attach it to
                 Spell metadata (e.g. under `"spell_override"`) or feed it
                 directly into the constructor / callable.
 
@@ -193,7 +193,7 @@ class SpellMap(Cleanable):
 
             (spell, spellframe, binding_name)
 
-        This is what SpellCrafter / the Resolution engine should consume when
+        This is what SpellCrafter / the runtime planning path should consume when
         deciding how to locate the underlying Spell in the Spellbook.
 
         Typical usage:

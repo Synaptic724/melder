@@ -126,8 +126,8 @@ class SpellContract(Cleanable):
                     - list/tuple → treated as positional arguments
 
                 `SpellContract` itself does *not* interpret this payload; it is
-                carried forward so that the linker / resolution engine can attach
-                it to the eventual provider spell.
+                carried forward so that the linker / runtime planning path can
+                attach it to the eventual provider spell.
 
                 When None, no override payload is attached.
         """
