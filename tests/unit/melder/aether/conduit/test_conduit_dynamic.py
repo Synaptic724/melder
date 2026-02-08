@@ -353,10 +353,10 @@ def test_upgrade_to_normal_registers_hooks(
     aether_stub: MagicMock,
 ) -> None:
     """
-    Verify upgrade_to_normal registers per-conduit hooks when provided.
+    Verify upgrade_to_normal registers per-conduit local hooks when provided.
 
     Contract:
-        - The supplied hook is attached to the conduit hook map.
+        - The supplied hook is attached to the conduit local hook map.
 
     Args:
         conduit_dynamic_lesser (Conduit): Dynamic lesser conduit instance.
@@ -387,8 +387,8 @@ def test_upgrade_to_normal_registers_hooks(
     )
 
     assert conduit_dynamic_lesser._creations is old_creations
-    assert conduit_dynamic_lesser._conduit_hooks is not None
-    assert conduit_dynamic_lesser._conduit_hooks["on_conduit_post_link"][0] is hook
+    assert conduit_dynamic_lesser._local_conduit_hooks is not None
+    assert conduit_dynamic_lesser._local_conduit_hooks["on_conduit_post_link"][0] is hook
 
 
 def test_get_mutation_research_raises_for_lesser(conduit_lesser: Conduit) -> None:

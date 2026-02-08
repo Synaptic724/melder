@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 import time
 from contextvars import ContextVar
 from contextlib import contextmanager
@@ -153,36 +153,45 @@ class Conduit(Cleanable, IConduit):
         self._meld_gate: MeldGate = meld_gate
         self._spellbook: ISpellbook = spellbook
 
-        # Shared hook map for this spellbook lineage.
-        # Populated from Configuration using the Spellbook's ID.
-        # Shape: { hook_name: [callables...] }
-        self._conduit_hooks: dict[str, list[Any]] | None = self._configuration.get_hooks(
-            self._spellbook._id
-        )
-        # Local hook overlay for this conduit only.
-        # Shape: { hook_name: [callables...] }
-        self._local_conduit_hooks: dict[str, list[Any]] | None = None
-        # Fast gate for conduit-level meld pre/post hook dispatch.
-        self._has_meld_phase_hooks: bool = bool(self._conduit_hooks)
+        # Split hook maps: conduit lifecycle/link/contract hooks are separated
+        # from meld hooks (pre/post resolve).
+        raw_hook_map = self._configuration.get_hooks(self._spellbook._id)
+        allowed_hook_names = self._configuration._ALLOWED_HOOKS
+        self._conduit_hooks: dict[str, list[Any]] | None = {}
+        self._meld_hooks: dict[str, list[Any]] | None = {}
+        for hook_name, hook_list in raw_hook_map.items():
+            if not hook_list or hook_name not in allowed_hook_names:
+                continue
+            if hook_name in ("on_meld_pre_resolve", "on_meld_post_resolve"):
+                self._meld_hooks[hook_name] = list(hook_list)
+            else:
+                self._conduit_hooks[hook_name] = list(hook_list)
 
+        # Local hook overlays for this conduit only.
+        self._local_conduit_hooks: dict[str, list[Any]] | None = None
+        self._local_meld_hooks: dict[str, list[Any]] | None = None
+        # Fast gate for conduit-level meld pre/post hook dispatch.
+        self._has_meld_phase_hooks: bool = bool(self._meld_hooks)
+        initial_meld_hooks: dict[str, list[Any]] = {
+            name: list(hook_list)
+            for name, hook_list in self._meld_hooks.items()
+            if hook_list
+        }
         self._meld: Meld = Meld(
             creations=self._creations,
             spellbook=self._spellbook,
             conduit_id=self._id,
             resolution_conduit_id=self._root_conduit_id,
-            meld_hooks=self._conduit_hooks,
+            meld_hooks=initial_meld_hooks,
         )
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
             f"_spellspace_stack_{self._id}", default=[]
         )
         self._spellspace_registry: set[SpellSpace] = set()
-
         self._configure_conduit_state()
-
         # ID swap: pull hooks registered under this Spellbook's ID in the
         # Configuration into this Conduit instance as a shared hook map.
         self._initialize_conduit_hooks()
-
         self._conduit_ward: ConduitWard = ConduitWard(
             conduit=self,
             dynamic=self.__dynamic_environment__,
@@ -212,11 +221,6 @@ class Conduit(Cleanable, IConduit):
             if self._cleaned:
                 return
             self._fire_conduit_hooks("on_conduit_cleanup_start", self)
-            cleanup_complete_hooks = self._collect_conduit_hook_chain(
-                "on_conduit_cleanup_complete"
-            )
-            if not cleanup_complete_hooks:
-                cleanup_complete_hooks = None
             self._cleaned = True
             if self._conduit_state == ConduitState.lesser:
                 self._cleanup_lesser_conduit()
@@ -225,20 +229,11 @@ class Conduit(Cleanable, IConduit):
             else:
                 self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                 raise RuntimeError("Conduit state is unknown during cleanup")
-            if cleanup_complete_hooks is None:
-                self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
-            else:
-                for hook in cleanup_complete_hooks:
-                    try:
-                        hook(self)
-                    except Exception as e:
-                        self._logger.error(
-                            f"Error while executing hook 'on_conduit_cleanup_complete': {e}",
-                            "_fire_conduit_hooks",
-                            exc_info=True,
-                        )
+            self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
             self._conduit_hooks = None
+            self._meld_hooks = None
             self._local_conduit_hooks = None
+            self._local_meld_hooks = None
             self._has_meld_phase_hooks = False
 
         # Logger last
@@ -662,9 +657,26 @@ class Conduit(Cleanable, IConduit):
             - Uses direct owned attributes (no defensive fallback path).
             - Wires Meld with the effective composed hook map.
         """
-        self._conduit_hooks = self._configuration.get_hooks(self._spellbook._id)
-        self._meld.set_meld_hooks(self._compose_meld_hook_map())
-        self._has_meld_phase_hooks = bool(self._conduit_hooks)
+        raw_hook_map = self._configuration.get_hooks(self._spellbook._id)
+        allowed_hook_names = self._configuration._ALLOWED_HOOKS
+        conduit_hooks: dict[str, list[Any]] = {}
+        meld_hooks: dict[str, list[Any]] = {}
+        for hook_name, hook_list in raw_hook_map.items():
+            if not hook_list or hook_name not in allowed_hook_names:
+                continue
+            if hook_name in ("on_meld_pre_resolve", "on_meld_post_resolve"):
+                meld_hooks[hook_name] = list(hook_list)
+            else:
+                conduit_hooks[hook_name] = list(hook_list)
+
+        self._conduit_hooks = conduit_hooks
+        self._meld_hooks = meld_hooks
+        self._meld.set_meld_hooks(
+            self._compose_meld_hook_map(),
+            create_local_hooks=True,
+            overwrite=True,
+        )
+        self._has_meld_phase_hooks = bool(self._meld_hooks or self._local_meld_hooks)
 
 
     #region Context Management
@@ -794,48 +806,48 @@ class Conduit(Cleanable, IConduit):
     def register_conduit_hooks(
             self,
             hooks: dict[str, Any],
-            *,
-            create_local_hooks: bool = True,
     ) -> None:
         """
         Public API
 
         Register hook callables for this Conduit.
 
-        By default, hooks are registered locally on this Conduit only and do not
-        propagate to other conduits. Set ``create_local_hooks=False`` to register
-        into the shared Configuration hook registry (Spellbook-wide).
+        Hooks are always registered locally on this Conduit and do not propagate
+        to other conduits or mutate the shared Configuration hook registry.
 
         Args:
             hooks: Mapping of hook name -> callable or iterable of callables.
-            create_local_hooks: If True, keep hooks local to this Conduit.
 
         Raises:
             RuntimeError: If the conduit is cleaned.
-            RuntimeError: If shared registration is requested in non-dynamic mode.
-            RuntimeError: If shared registration is requested after configuration freeze.
             ValueError / TypeError: If hook names or values are invalid.
         """
         self.check_cleaned()
         if not hooks:
             return
 
-        if create_local_hooks:
+        conduit_hook_payload: dict[str, Any] = {}
+        meld_hook_payload: dict[str, Any] = {}
+        for hook_name, hook_value in hooks.items():
+            if hook_name in ("on_meld_pre_resolve", "on_meld_post_resolve"):
+                meld_hook_payload[hook_name] = hook_value
+            else:
+                conduit_hook_payload[hook_name] = hook_value
+
+        if conduit_hook_payload:
             self._ensure_local_conduit_hooks()
-            self._merge_conduit_hooks(self._local_conduit_hooks, hooks)
-            if self._meld is not None:
-                self._meld.set_meld_hooks(self._compose_meld_hook_map())
-            if not self._has_meld_phase_hooks:
-                self._has_meld_phase_hooks = bool(self._local_conduit_hooks)
-            return
-
-        if self._configuration._frozen:
-            raise RuntimeError(
-                "Cannot register shared conduit hooks after configuration is frozen. "
-                "Use create_local_hooks=True for conduit-local hook overrides."
+            self._merge_conduit_hooks(self._local_conduit_hooks, conduit_hook_payload)
+        if meld_hook_payload:
+            self._ensure_local_meld_hooks()
+            self._merge_conduit_hooks(self._local_meld_hooks, meld_hook_payload)
+        if self._meld is not None:
+            self._meld.set_meld_hooks(
+                self._compose_meld_hook_map(),
+                create_local_hooks=True,
+                overwrite=True,
             )
-
-        self._register_conduit_hooks_on_upgrade(hooks)
+        if not self._has_meld_phase_hooks:
+            self._has_meld_phase_hooks = bool(self._meld_hooks or self._local_meld_hooks)
 
     def unregister_conduit_cloud(self, conduit: IConduit):
         """
@@ -942,6 +954,15 @@ class Conduit(Cleanable, IConduit):
         if self._local_conduit_hooks is None:
             self._local_conduit_hooks = {}
 
+    def _ensure_local_meld_hooks(self) -> None:
+        """
+        Internal
+
+        Ensure the conduit has a local meld hook map for conduit-local meld overlays.
+        """
+        if self._local_meld_hooks is None:
+            self._local_meld_hooks = {}
+
     def _merge_conduit_hooks(self, hook_map: dict[str, list[Any]], hooks: dict[str, Any]) -> None:
         """
         Internal
@@ -970,59 +991,6 @@ class Conduit(Cleanable, IConduit):
                     )
             hook_map.setdefault(name, []).extend(value)
 
-    def _register_conduit_hooks_on_upgrade(
-            self,
-            hooks: dict[str, Any],
-    ) -> None:
-        """
-        Internal
-
-        Register hook additions for this upgraded Conduit into the shared
-        Spellbook hook registry.
-
-        This updates the Configuration hook map for the Spellbook so all
-        conduits in the lineage (parent + lessers) see the same hook set.
-
-        Shape is identical to the Configuration registry:
-
-            _hooks[owner_id][hook_name] -> list[callables]
-
-        where `owner_id` here is the Spellbook id.
-
-        Rules:
-            - Only allowed when the system is in **dynamic** mode.
-            - Shared registration is blocked after configuration freeze.
-            - `hooks` values may be a single callable or an iterable of callables.
-            - Hook names must be in Configuration._ALLOWED_HOOKS.
-            - Hooks are validated by Configuration.add_hooks(...).
-        """
-        # Enforce dynamic environment – this is a dynamic-only feature.
-        if not self.__dynamic_environment__:
-            self._logger.error(
-                "_register_conduit_hooks_on_upgrade in non-dynamic env",
-                "_register_conduit_hooks_on_upgrade",
-            )
-            raise RuntimeError(
-                "Dynamic environment is not enabled. Cannot register per-conduit hooks."
-            )
-
-        if self._configuration._frozen:
-            raise RuntimeError(
-                "Cannot register shared conduit hooks after configuration is frozen. "
-                "Use create_local_hooks=True for conduit-local hook overrides."
-            )
-
-        # 1) Push into Configuration using the Spellbook owner id.
-        spellbook_id = self._spellbook._id
-        self._configuration.add_hooks(spellbook_id, **hooks)
-
-        # 2) Ensure local references point at the shared hook map.
-        self._conduit_hooks = self._configuration.get_hooks(spellbook_id)
-        if self._meld is not None:
-            self._meld.set_meld_hooks(self._compose_meld_hook_map())
-        if not self._has_meld_phase_hooks:
-            self._has_meld_phase_hooks = bool(self._conduit_hooks)
-
     def _compose_meld_hook_map(self) -> dict[str, list[Any]]:
         """
         Internal
@@ -1035,14 +1003,14 @@ class Conduit(Cleanable, IConduit):
             - Returns a detached merged dictionary when local hooks exist.
             - Empty maps result in an empty dictionary.
         """
-        if self._local_conduit_hooks is None or not self._local_conduit_hooks:
-            if self._conduit_hooks is None:
+        if self._local_meld_hooks is None or not self._local_meld_hooks:
+            if self._meld_hooks is None:
                 return {}
-            return self._conduit_hooks
+            return self._meld_hooks
 
         merged_hooks: dict[str, list[Any]] = {}
-        shared_hooks = self._conduit_hooks or {}
-        local_hooks = self._local_conduit_hooks
+        shared_hooks = self._meld_hooks or {}
+        local_hooks = self._local_meld_hooks
         for name, hook_list in shared_hooks.items():
             if hook_list:
                 merged_hooks[name] = list(hook_list)
@@ -1066,6 +1034,18 @@ class Conduit(Cleanable, IConduit):
             - Returned list is detached from internal maps.
         """
         hook_chain: list[Callable[..., Any]] = []
+
+        if hook_name in ("on_meld_pre_resolve", "on_meld_post_resolve"):
+            if self._meld_hooks is not None:
+                shared_hooks = self._meld_hooks.get(hook_name)
+                if shared_hooks:
+                    hook_chain.extend(list(shared_hooks))
+
+            if self._local_meld_hooks is not None:
+                local_hooks = self._local_meld_hooks.get(hook_name)
+                if local_hooks:
+                    hook_chain.extend(list(local_hooks))
+            return hook_chain
 
         if self._conduit_hooks is not None:
             shared_hooks = self._conduit_hooks.get(hook_name)
@@ -1126,18 +1106,17 @@ class Conduit(Cleanable, IConduit):
         can access the Spellbook to bind new spells.
 
         Optionally, in **dynamic mode**, you can supply a `hooks` mapping that will be
-        registered into the Configuration and attached to this Conduit:
+        registered through ``register_conduit_hooks(...)`` and attached only to this
+        upgraded conduit:
 
             hooks = {
                 "on_meld_pre_resolve": trace_before_meld,
                 "on_conduit_post_link": [log_link, audit_link],
             }
 
-        The shape mirrors the Configuration hook registry:
+        The ``hooks`` mapping shape is:
 
-            _hooks[owner_id][hook_name] -> list[callables]
-
-        where `owner_id` is this Conduit's id.
+            hook_name -> callable | list[callable] | tuple[callable, ...]
 
         Please name the conduit if your intention is to add it to the Conduit Cloud.
 
@@ -1151,9 +1130,9 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If the dynamic environment is not enabled.
             RuntimeError: If the current conduit state is not 'lesser'.
-            RuntimeError / ValueError / TypeError:
-                Propagated from Configuration.add_hooks(...) if the hook set is invalid
-                (frozen configuration, unknown hook names, non-callables, etc.).
+            ValueError / TypeError:
+                Propagated from register_conduit_hooks(...) if the hook set is invalid
+                (unknown hook names, non-callables, etc.).
         Contract:
             - Preserves the current creations manager during lesser -> normal upgrade.
             - Rewires meld runtime to use the current creations manager.
@@ -1190,10 +1169,6 @@ class Conduit(Cleanable, IConduit):
                 self._conduit_state = ConduitState.normal
                 self._root_conduit_id = self._id
                 self._name = name
-
-                # Step 1.1: Attach any Spellbook-level hooks now that we're normal.
-                # This *only* wires the map into _conduit_hooks; it does NOT fire hooks.
-                self._initialize_conduit_hooks()
 
                 # Step 2: Keep the current creations object and sync state.
                 self._creations._conduit = self
@@ -1255,7 +1230,7 @@ class Conduit(Cleanable, IConduit):
 
                 # Step 6: If the caller supplied per-conduit hooks, register them now.
                 if hooks:
-                    self._register_conduit_hooks_on_upgrade(hooks)
+                    self.register_conduit_hooks(hooks)
 
             except Exception as e:
                 self._logger.error(f"upgrade_to_normal failed: {e}", "upgrade_to_normal", exc_info=True)
@@ -1982,13 +1957,13 @@ class Conduit(Cleanable, IConduit):
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
 
-        The `bind()` method registers a class, function, or object into Melder’s system,
+        The `bind()` method registers a class, function, or object into Melderâ€™s system,
         associating it with a lifecycle (`Existence`), a permission policy, and optional metadata.
         Once bound, the spell becomes available for resolution and casting within its conduit
         or across systems (depending on permissions).
 
-        ──────────────────────────────────────────────
-        🧠 Binding Overview:
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ðŸ§  Binding Overview:
             - Profiles the spell via reflection.
             - Computes a unique SHA256 `spell_id`.
             - Stores the spell into the internal spell registry.
@@ -1996,8 +1971,8 @@ class Conduit(Cleanable, IConduit):
             - Applies lifecycle and permission policies.
             - Optionally attaches lifecycle hooks.
 
-        ──────────────────────────────────────────────
-        🛡️ Permissions (access control to other conduits):
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ðŸ›¡ï¸ Permissions (access control to other conduits):
             - `"read"`:
                 Allows other conduits to *use* the spell but not create new instances.
                 Useful for shared utilities or resources.
@@ -2009,20 +1984,20 @@ class Conduit(Cleanable, IConduit):
                 Completely blocks access to the spell from other conduits.
                 Only the owning conduit can use or instantiate it.
 
-        🔄 Existence (spell lifecycle):
+        ðŸ”„ Existence (spell lifecycle):
             Determines how the spell instance is managed (singleton, transient, etc.).
             Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
 
-        📦 Spellframe (optional):
+        ðŸ“¦ Spellframe (optional):
             Logical namespace or grouping label.
             Often corresponds to a shared interface, protocol, or feature group.
 
-        🔑 Binding Name (optional):
+        ðŸ”‘ Binding Name (optional):
             Secondary key used to distinguish different versions or roles of the same type.
             Useful when multiple spells are bound under the same interface.
 
-        ──────────────────────────────────────────────
-        🪝 Lifecycle Hooks (optional `**kwargs`):
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ðŸª Lifecycle Hooks (optional `**kwargs`):
 
             - `pre_hooks`: List[Callable]
                 Executed *before* the spell is constructed or cast.
@@ -2036,9 +2011,9 @@ class Conduit(Cleanable, IConduit):
                 Executed *after* the spell has been cast. Often used for initialization,
                 analytics, or final injection steps.
 
-            ⚠️ All hooks must be callables.
+            âš ï¸ All hooks must be callables.
 
-        ──────────────────────────────────────────────
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Args:
             spell (Any): The class, function, or object to bind into the spellbook.
             existence (Existence): The lifecycle scope for this spell.
@@ -2109,7 +2084,7 @@ class Conduit(Cleanable, IConduit):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduit’s own spellbook**.
+        conduitâ€™s own spellbook**.
 
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
@@ -2148,7 +2123,7 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Create a new conduit cluster in this conduit’s aetheric frame.
+        Create a new conduit cluster in this conduitâ€™s aetheric frame.
         """
         self.check_cleaned()
         Conduit._aether._create_cluster(cluster_name, self._aetheric_frame)
@@ -2157,7 +2132,7 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Delete an existing conduit cluster in this conduit’s aetheric frame.
+        Delete an existing conduit cluster in this conduitâ€™s aetheric frame.
         """
         self.check_cleaned()
         Conduit._aether._remove_cluster(cluster_name, self._aetheric_frame)
@@ -3580,7 +3555,7 @@ class Conduit(Cleanable, IConduit):
         Produces a detailed diagnostic summary of a contract established with a specific conduit.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
-        including the peer conduit’s name, the number of active spells involved, and permission levels.
+        including the peer conduitâ€™s name, the number of active spells involved, and permission levels.
         Primarily used for debugging, introspection, and UI inspection tools.
 
         Args:

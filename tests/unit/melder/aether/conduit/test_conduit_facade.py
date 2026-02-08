@@ -674,8 +674,7 @@ def test_meld_fires_pre_and_post_hooks(conduit_lesser: Conduit) -> None:
         {
             "on_meld_pre_resolve": pre_hook,
             "on_meld_post_resolve": post_hook,
-        },
-        create_local_hooks=True,
+        }
     )
 
     result = conduit_lesser.meld(spell="sha-1")
