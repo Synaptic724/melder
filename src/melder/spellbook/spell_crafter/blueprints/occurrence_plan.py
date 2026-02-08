@@ -491,6 +491,52 @@ class OccurrencePlanBuilder(object):
         """
         return existence is not Existence.many
 
+    @staticmethod
+    def _occurrence_sort_key(occurrence: OccurrenceKey) -> Tuple[str, int]:
+        """
+        Build a deterministic ordering key for occurrence tuples.
+
+        Contract:
+            - Spell id is the primary sort key.
+            - Path ids sort ascending.
+            - None path ids sort before concrete ids.
+
+        Args:
+            occurrence: Occurrence tuple ``(spell_id, path_id)``.
+
+        Returns:
+            Tuple[str, int]: Comparable key used for deterministic ordering.
+        """
+        path_id = occurrence[1]
+        if path_id is None:
+            return occurrence[0], -1
+        return occurrence[0], path_id
+
+    @staticmethod
+    def _iter_dependency_occurrences_for_enqueue(
+            dependencies: Dict[str, List[OccurrenceKey]],
+    ) -> Iterable[OccurrenceKey]:
+        """
+        Iterate dependency occurrences in deterministic queue order.
+
+        Contract:
+            - Parameters are traversed in lexical key order.
+            - Occurrences for each parameter are traversed with occurrence sort.
+
+        Args:
+            dependencies: Parameter-to-occurrence mapping.
+
+        Yields:
+            OccurrenceKey: Dependency occurrence entries in canonical order.
+        """
+        for param_name in sorted(dependencies.keys()):
+            child_occurrences = sorted(
+                dependencies[param_name],
+                key=OccurrencePlanBuilder._occurrence_sort_key,
+            )
+            for child_occurrence in child_occurrences:
+                yield child_occurrence
+
     def _should_collapse_shared_occurrences(self) -> bool:
         """
         Determine whether shared occurrences can be collapsed during expansion.
@@ -569,11 +615,12 @@ class OccurrencePlanBuilder(object):
             )
             occurrence_graph[occurrence] = dependencies
 
-            for child_list in dependencies.values():
-                for child_occurrence in child_list:
-                    if child_occurrence not in seen and child_occurrence not in queued:
-                        queued.add(child_occurrence)
-                        queue.append(child_occurrence)
+            for child_occurrence in self._iter_dependency_occurrences_for_enqueue(
+                    dependencies,
+            ):
+                if child_occurrence not in seen and child_occurrence not in queued:
+                    queued.add(child_occurrence)
+                    queue.append(child_occurrence)
 
         return occurrence_graph
 
@@ -648,14 +695,15 @@ class OccurrencePlanBuilder(object):
                 )
                 occurrence_graph[occurrence] = dependencies
 
-                for child_list in dependencies.values():
-                    for child_occurrence in child_list:
-                        if (
-                                child_occurrence not in existing_occurrences
-                                and child_occurrence not in queued
-                        ):
-                            queued.add(child_occurrence)
-                            queue.append(child_occurrence)
+                for child_occurrence in self._iter_dependency_occurrences_for_enqueue(
+                        dependencies,
+                ):
+                    if (
+                            child_occurrence not in existing_occurrences
+                            and child_occurrence not in queued
+                    ):
+                        queued.add(child_occurrence)
+                        queue.append(child_occurrence)
 
     @staticmethod
     def _build_execution_order(
@@ -683,7 +731,10 @@ class OccurrencePlanBuilder(object):
         indegree: Dict[str, int] = defaultdict(int)
         nodes: Set[str] = set()
 
-        for occurrence in sorted(occurrence_graph.keys(), key=lambda key: (key[0], key[1])):
+        for occurrence in sorted(
+                occurrence_graph.keys(),
+                key=OccurrencePlanBuilder._occurrence_sort_key,
+        ):
             dependencies = occurrence_graph[occurrence]
             node_id = occurrence[0]
             nodes.add(node_id)
@@ -843,10 +894,13 @@ class OccurrencePlanBuilder(object):
             return
         mutated_params: Set[str] = set()
         path_registry = self._path_registry
+        parent_entries: List[Tuple[str, str, Any]] = []
         for parent_node in node.dependencies:
-            param_name = node.incoming_params.get(parent_node)
-            if param_name is None:
+            incoming_name = node.incoming_params.get(parent_node)
+            if incoming_name is None:
                 continue
+            parent_entries.append((incoming_name, parent_node.id, parent_node))
+        for param_name, _, parent_node in sorted(parent_entries):
             socket_kind = dag._socket_kinds.get((parent_node, node))
             child_path_id = path_registry.extend_path(path_id, param_name)
             child_occurrence = (parent_node.id, child_path_id)
@@ -1066,7 +1120,8 @@ class OccurrencePlanBuilder(object):
         contracted_maps = spellbook._contracted_spells
 
         contracted_candidates: List[ISpell] = []
-        for conduit_id, lookup_map in contracted_lookup.items():
+        for conduit_id in sorted(contracted_lookup.keys()):
+            lookup_map = contracted_lookup[conduit_id]
             spell_index = lookup_map.get(contract_key)
             if spell_index is None:
                 continue
@@ -1078,6 +1133,7 @@ class OccurrencePlanBuilder(object):
                 continue
             contracted_candidates.append(spell_obj)
 
+        contracted_candidates.sort(key=lambda spell: spell.spell_index.current)
         return contracted_candidates
 
     def _allow_missing_contract_providers(self) -> bool:
@@ -1129,8 +1185,16 @@ class OccurrencePlanBuilder(object):
             )
 
         resolved: List[Tuple[SocketRef, str]] = []
+        mutation_items: List[Tuple[Any, Any]]
+        if all(isinstance(key, str) for key in mutation_override.keys()):
+            mutation_items = [
+                (raw_key, mutation_override[raw_key])
+                for raw_key in sorted(mutation_override.keys())
+            ]
+        else:
+            mutation_items = list(mutation_override.items())
 
-        for raw_key, target_id in mutation_override.items():
+        for raw_key, target_id in mutation_items:
             self._validate_mutation_override_entry(
                 raw_key=raw_key,
                 target_id=target_id,
@@ -1473,7 +1537,10 @@ class OccurrencePlanBuilder(object):
                 - Set[str]: Shared spell ids.
         """
         occurrences_by_spell_id: Dict[str, List[OccurrenceKey]] = defaultdict(list)
-        for occurrence in occurrence_graph:
+        for occurrence in sorted(
+                occurrence_graph.keys(),
+                key=self._occurrence_sort_key,
+        ):
             spell_id, _ = occurrence
             occurrences_by_spell_id[spell_id].append(occurrence)
 
@@ -1481,7 +1548,11 @@ class OccurrencePlanBuilder(object):
         canonical_occurrences_by_spell_id: Dict[str, OccurrenceKey] = {}
         shared_spell_ids: Set[str] = set()
 
-        for spell_id, occurrences in occurrences_by_spell_id.items():
+        for spell_id in sorted(occurrences_by_spell_id.keys()):
+            occurrences = sorted(
+                occurrences_by_spell_id[spell_id],
+                key=self._occurrence_sort_key,
+            )
             spell = self._spell_lookup[spell_id]
 
             if self._is_shared_existence(spell.existence):
@@ -1536,7 +1607,11 @@ class OccurrencePlanBuilder(object):
         overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]] = {}
         complete = True
 
-        for occurrence, dependencies in occurrence_graph.items():
+        for occurrence in sorted(
+                occurrence_graph.keys(),
+                key=self._occurrence_sort_key,
+        ):
+            dependencies = occurrence_graph[occurrence]
             is_complete = self._compile_contract_overrides_for_occurrence(
                 occurrence=occurrence,
                 dependencies=dependencies,
@@ -1732,8 +1807,8 @@ class OccurrencePlanBuilder(object):
         Pick a stable occurrence for shared instance dependency paths.
 
         Contract:
-            - The canonical occurrence is the first entry in the provided
-              sequence (no lexicographic ordering).
+            - The canonical occurrence is the lexicographically smallest
+              occurrence key.
 
         Args:
             occurrences: Occurrences for the same spell id.
@@ -1741,7 +1816,10 @@ class OccurrencePlanBuilder(object):
         Returns:
             OccurrenceKey: The canonical occurrence.
         """
-        return occurrences[0]
+        return min(
+            occurrences,
+            key=OccurrencePlanBuilder._occurrence_sort_key,
+        )
 
     def _instance_key_for_occurrence(
             self,

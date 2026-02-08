@@ -4834,19 +4834,60 @@ def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orde
     "step_overrides",
     (
         {
+            "instance_key": ("root", 1),
+        },
+        {
+            "existence": Existence.many,
+        },
+        {
+            "shared_instance": True,
+        },
+        {
             "dependency_resolution_order": (
                 ("dep", (("alt-dep", None),)),
             ),
+        },
+        {
+            "override_match_prefix": 42,
+            "override_match_prefix_len": 1,
+        },
+        {
+            "override_keys": ("dep", "dep2"),
+        },
+        {
+            "expects_overrides": True,
+        },
+        {
+            "contract_keys": ("dep", "contract"),
+        },
+        {
+            "allow_list_aggregation": True,
+        },
+        {
+            "uses_positional_override": True,
+            "contract_positional_override": (1, 2),
         },
         {
             "has_contract_payload": True,
             "contract_payload": {"custom": "value"},
         },
         {
+            "lock_hint": "spell_lock",
+        },
+        {
             "use_spell_lock_hint": True,
         },
         {
+            "requires_spellspace": True,
+        },
+        {
+            "owner_conduit_required": True,
+        },
+        {
             "must_register": True,
+        },
+        {
+            "disposal_method_names": ("cleanup",),
         },
         {
             "creations_target_kind": 2,
@@ -4888,6 +4929,136 @@ def test_build_phase11_variant_ir_payload_signature_changes_on_step_semantics(
 
     assert changed_payload["steps_rows_signature"] != base_payload["steps_rows_signature"]
     assert changed_payload["signature"] != base_payload["signature"]
+
+
+def test_build_phase11_variant_ir_payload_signature_changes_on_variant_label() -> None:
+    """
+    Purpose:
+        Ensure Phase11 variant payloads remain distinct even with identical steps.
+    Contract:
+        `plan_variant` contributes to variant signatures while step-row signatures
+        remain equal for equivalent step semantics.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If variant signatures collapse across variant labels.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    overrides_plan = _make_phase11_plan_stub(
+        plan_variant="overrides",
+        root_spell_id="root",
+        step_spell_ids=("root",),
+    )
+    mutation_plan = _make_phase11_plan_stub(
+        plan_variant="overrides_with_mutations",
+        root_spell_id="root",
+        step_spell_ids=("root",),
+    )
+
+    overrides_payload = crafter._build_phase11_variant_ir_payload(overrides_plan)
+    mutation_payload = crafter._build_phase11_variant_ir_payload(mutation_plan)
+
+    assert mutation_payload["steps_rows_signature"] == overrides_payload["steps_rows_signature"]
+    assert mutation_payload["signature"] != overrides_payload["signature"]
+
+
+def test_capture_phase8_11_codegen_ir_signature_changes_on_enriched_payload_semantics() -> None:
+    """
+    Purpose:
+        Ensure enriched Phase8-10 schema rows participate in `phase8_11` signature.
+    Contract:
+        Equivalent base plans with changed occurrence/injection/patch-map schema
+        rows must produce different phase8_11 signatures.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If enriched-segment semantic drift does not invalidate signature.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._execution_plan_phase11_no_overrides = _make_phase11_plan_stub(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        step_spell_ids=("a",),
+    )
+    crafter._execution_plan_phase11_overrides = _make_phase11_plan_stub(
+        plan_variant="overrides",
+        root_spell_id="root",
+        step_spell_ids=("a",),
+    )
+    crafter._execution_plan_phase11 = _make_phase11_plan_stub(
+        plan_variant="overrides_with_mutations",
+        root_spell_id="root",
+        step_spell_ids=("a",),
+    )
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace(
+        execution_order=("a",),
+        root_instance_key=("root", None),
+        shared_spell_ids={"a"},
+        contract_dependencies_complete=True,
+        occurrence_graph={
+            ("root", 0): {"dep": [("a", 1)]},
+            ("a", 1): {},
+        },
+        instance_keys_by_spell_id={"a": [("a", None)]},
+        canonical_occurrences_by_spell_id={"a": ("a", 1)},
+        contract_overrides_by_occurrence={("a", 1): {"x": 1}},
+        contract_overrides_by_spell_id={"a": [(("a", 1), {"x": 1})]},
+    )
+    crafter._injection_plan_phase9 = types.SimpleNamespace(
+        instance_injections={
+            ("a", None): types.SimpleNamespace(
+                allow_list_aggregation=False,
+                uses_positional_override=False,
+                contract_payload=None,
+                param_sources={},
+            ),
+        },
+    )
+    crafter._override_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"**dep": []},
+        _specificity_by_spec={"**dep": 1},
+    )
+    crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"**mut": []},
+    )
+    crafter._capture_phase8_11_codegen_ir()
+    first_signature = crafter.codegen_ir["phase8_11"]["signature"]
+
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace(
+        execution_order=("a",),
+        root_instance_key=("root", None),
+        shared_spell_ids={"a"},
+        contract_dependencies_complete=True,
+        occurrence_graph={
+            ("root", 0): {"dep": [("a", 2)]},
+            ("a", 2): {},
+        },
+        instance_keys_by_spell_id={"a": [("a", None)]},
+        canonical_occurrences_by_spell_id={"a": ("a", 2)},
+        contract_overrides_by_occurrence={("a", 2): {"x": 2}},
+        contract_overrides_by_spell_id={"a": [(("a", 2), {"x": 2})]},
+    )
+    crafter._injection_plan_phase9 = types.SimpleNamespace(
+        instance_injections={
+            ("a", None): types.SimpleNamespace(
+                allow_list_aggregation=True,
+                uses_positional_override=False,
+                contract_payload={"fixed": "v"},
+                param_sources={},
+            ),
+        },
+    )
+    crafter._override_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"**dep": []},
+        _specificity_by_spec={"**dep": 3},
+    )
+    crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"**mut2": []},
+    )
+    crafter._capture_phase8_11_codegen_ir()
+    second_signature = crafter.codegen_ir["phase8_11"]["signature"]
+
+    assert second_signature != first_signature
 
 
 def test_compile_phase12_no_overrides_executor_recompiles_on_phase11_semantic_change(

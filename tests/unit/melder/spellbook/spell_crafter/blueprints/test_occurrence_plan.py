@@ -570,3 +570,182 @@ def test_occurrence_plan_builder_resolves_spell_contract_when_available() -> Non
     assert plan.contract_overrides_by_occurrence == {}
     assert plan.contract_overrides_by_spell_id == {}
     assert plan.contract_dependencies_complete is True
+
+
+def test_build_instance_plan_is_stable_across_occurrence_graph_insertion_orders() -> None:
+    """
+    Purpose:
+        Ensure instance planning is deterministic across equivalent map orders.
+    Contract:
+        - Canonical occurrence selection is stable for shared spells.
+        - Many-existence instance-key ordering is stable.
+    """
+    root_id = "root"
+    shared_id = "shared"
+    many_id = "many"
+    spellbook = _StubSpellbook({})
+    root_spell = _StubSpell(
+        spell_id=root_id,
+        spell_name="Root",
+        existence=Existence.unique,
+        spell_callable=_root_factory,
+        spellbook=spellbook,
+    )
+    shared_spell = _StubSpell(
+        spell_id=shared_id,
+        spell_name="Shared",
+        existence=Existence.unique,
+        spell_callable=_dep_factory,
+        spellbook=spellbook,
+    )
+    many_spell = _StubSpell(
+        spell_id=many_id,
+        spell_name="Many",
+        existence=Existence.many,
+        spell_callable=_dep_factory,
+        spellbook=spellbook,
+    )
+    builder = OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=_make_blueprint(root_id, shared_id),
+        spell_lookup={
+            root_id: root_spell,
+            shared_id: shared_spell,
+            many_id: many_spell,
+        },
+        system_states=_SystemStatesStub(),
+    )
+
+    occurrence_graph_first = {
+        (shared_id, 7): {},
+        (many_id, 5): {},
+        (root_id, 0): {},
+        (many_id, 1): {},
+        (shared_id, 2): {},
+    }
+    occurrence_graph_second = {
+        (root_id, 0): {},
+        (shared_id, 2): {},
+        (many_id, 1): {},
+        (shared_id, 7): {},
+        (many_id, 5): {},
+    }
+
+    first_result = builder._build_instance_plan(
+        occurrence_graph=occurrence_graph_first,
+        root_spell_id=root_id,
+    )
+    second_result = builder._build_instance_plan(
+        occurrence_graph=occurrence_graph_second,
+        root_spell_id=root_id,
+    )
+
+    assert first_result == second_result
+    first_instance_keys, first_canonical, first_root_key, first_shared = first_result
+    assert first_instance_keys[many_id] == [(many_id, 1), (many_id, 5)]
+    assert first_canonical[shared_id] == (shared_id, 2)
+    assert first_root_key == (root_id, None)
+    assert first_shared == {root_id, shared_id}
+
+
+def test_compile_contract_overrides_is_stable_across_occurrence_map_orders() -> None:
+    """
+    Purpose:
+        Ensure contract override compilation is deterministic for equivalent maps.
+    Contract:
+        - Provider occurrence keys are stable across occurrence-map insertion order.
+        - Spell-id grouped override rows are stable across equivalent inputs.
+    """
+
+    def _root_factory_with_override_contract(
+            contract: object = SpellContract(
+                spellframe="Service",
+                binding_name="primary",
+                spell_override={"value": "x"},
+            ),
+    ) -> object:
+        return object()
+
+    root_id = "root"
+    provider_id = "provider"
+
+    root_spell = _StubSpell(
+        spell_id=root_id,
+        spell_name="Root",
+        existence=Existence.unique,
+        spell_callable=_root_factory_with_override_contract,
+        spellframe="Root",
+        binding_name="primary",
+    )
+    provider_spell = _StubSpell(
+        spell_id=provider_id,
+        spell_name="Provider",
+        existence=Existence.unique,
+        spell_callable=_dep_factory,
+        spellframe="Service",
+        binding_name="primary",
+    )
+    spellbook = _StubSpellbook({
+        root_spell.spell_index: root_spell,
+    })
+    spellbook._contracted_spells = {
+        "conduit-a": {provider_spell.spell_index: provider_spell},
+    }
+    spellbook._lookup_contracted_spells = {
+        "conduit-a": {provider_spell.key: provider_spell.spell_index},
+    }
+    root_spell._spellbook = spellbook
+    provider_spell._spellbook = spellbook
+
+    blueprint = _make_blueprint(root_id, provider_id)
+
+    builder_one = OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=blueprint,
+        spell_lookup={
+            root_id: root_spell,
+            provider_id: provider_spell,
+        },
+        system_states=_SystemStatesStub(),
+    )
+    branch_path_one = builder_one._path_registry.extend_path(
+        builder_one._path_registry.root_path_id,
+        "branch",
+    )
+    first_occurrence_graph = {
+        (root_id, branch_path_one): {},
+        (root_id, builder_one._path_registry.root_path_id): {},
+    }
+    first_occurrence_map, first_spell_map, first_complete = (
+        builder_one._compile_contract_overrides(
+            occurrence_graph=first_occurrence_graph,
+        )
+    )
+
+    builder_two = OccurrencePlanBuilder(
+        root_spell=root_spell,
+        blueprint=_make_blueprint(root_id, provider_id),
+        spell_lookup={
+            root_id: root_spell,
+            provider_id: provider_spell,
+        },
+        system_states=_SystemStatesStub(),
+    )
+    branch_path_two = builder_two._path_registry.extend_path(
+        builder_two._path_registry.root_path_id,
+        "branch",
+    )
+    second_occurrence_graph = {
+        (root_id, builder_two._path_registry.root_path_id): {},
+        (root_id, branch_path_two): {},
+    }
+    second_occurrence_map, second_spell_map, second_complete = (
+        builder_two._compile_contract_overrides(
+            occurrence_graph=second_occurrence_graph,
+        )
+    )
+
+    assert first_complete is True
+    assert second_complete is True
+    assert first_occurrence_map == second_occurrence_map
+    assert first_spell_map == second_spell_map
