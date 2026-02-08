@@ -712,6 +712,7 @@ def _construct_spell_instance(
         - Reads dependencies from prior step results using plan_step call recipe.
         - Applies plan-time contract payload fields.
         - Supports __args__ positional payloads when present.
+        - Preserves tuple positional payloads without rebuilding list objects.
         - Raises MeldExecutionError when dependency results are missing or call
           target invocation fails.
     """
@@ -738,7 +739,10 @@ def _construct_spell_instance(
         args = []
         call_kwargs = kwargs
     elif isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
-        args = list(raw_args)
+        if isinstance(raw_args, tuple):
+            args = raw_args
+        else:
+            args = tuple(raw_args)
         call_kwargs = dict(kwargs)
         call_kwargs.pop("__args__", None)
     else:

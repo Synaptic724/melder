@@ -762,3 +762,36 @@ def test_construct_spell_instance_rejects_invalid_positional_payload() -> None:
             plan_step=plan_step,
             instance_results={},
         )
+
+
+def test_construct_spell_instance_accepts_tuple_positional_payload() -> None:
+    """No-overrides construct helper accepts tuple positional payloads for invocation."""
+    captured: Dict[str, Any] = {}
+
+    def _callable(*args: Any, **kwargs: Any) -> str:
+        captured["args"] = args
+        captured["kwargs"] = dict(kwargs)
+        return "ok"
+
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = _callable
+    tuple_payload = ("left", "right")
+    plan_step = SimpleNamespace(
+        spell=spell,
+        dependency_resolution_order=(),
+        contract_positional_override=tuple_payload,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=True,
+    )
+
+    result = phase12_module._construct_spell_instance(
+        plan_step=plan_step,
+        instance_results={},
+    )
+
+    assert result == "ok"
+    assert captured["args"] == tuple_payload
+    assert captured["kwargs"] == {}
+    assert plan_step.contract_positional_override == tuple_payload

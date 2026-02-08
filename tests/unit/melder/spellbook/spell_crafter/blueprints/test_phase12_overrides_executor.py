@@ -279,6 +279,8 @@ def test_compile_phase12_overrides_executor_prebinds_step_metadata() -> None:
     assert "step_existences" in executor.__code__.co_varnames
     assert "step_instance_keys" in executor.__code__.co_varnames
     assert "step_use_spell_lock_hints" in executor.__code__.co_varnames
+    assert "step_has_targeted_overrides" in executor.__code__.co_varnames
+    assert "step_must_register_flags" in executor.__code__.co_varnames
 
 
 def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_execution() -> None:
@@ -310,6 +312,36 @@ def test_emit_phase12_overrides_executor_source_rejects_negative_step_count() ->
     """Source emitter enforces non-negative step counts."""
     with pytest.raises(ValueError, match="step_count must not be negative"):
         emit_phase12_overrides_executor_source(step_count=-1)
+
+
+def test_emit_phase12_overrides_executor_source_uses_prebound_must_register_flags() -> None:
+    """Generated source uses prebound must-register tuple flags in many-step blocks."""
+    source = emit_phase12_overrides_executor_source(step_count=1)
+
+    assert "step_must_register_flags=step_must_register_flags" in source
+    assert "must_register_0 = step_must_register_flags[0]" in source
+    assert "plan_step_0.must_register" not in source
+
+
+def test_emit_phase12_overrides_executor_source_prebinds_root_positional_override_once_per_step() -> None:
+    """Generated source prebinds root positional payload once per step and reuses it."""
+    source = emit_phase12_overrides_executor_source(step_count=1)
+
+    assert (
+        "step_root_positional_override_0 = root_positional_override if "
+        "is_root_step_0 else None"
+    ) in source
+    assert source.count("root_positional_override if is_root_step_0 else None") == 1
+    assert source.count("root_positional_override=step_root_positional_override_0") == 4
+
+
+def test_emit_phase12_overrides_executor_source_uses_prebound_targeted_override_flags() -> None:
+    """Generated source wires per-step targeted-override bool flags from prebound tuple."""
+    source = emit_phase12_overrides_executor_source(step_count=1)
+
+    assert "step_has_targeted_overrides=step_has_targeted_overrides" in source
+    assert "has_targeted_overrides_0 = step_has_targeted_overrides[0]" in source
+    assert "has_targeted_overrides_0 = bool(override_targets_0)" not in source
 
 
 def test_compile_phase12_overrides_executor_raises_on_codegen_error(
@@ -659,6 +691,95 @@ def test_build_kwargs_with_overrides_fast_path_returns_override_copy() -> None:
     assert kwargs is not override_values
 
 
+def test_build_step_override_values_fast_path_returns_empty_when_no_targets(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Step override values helper returns empty payload without touching target-map helper."""
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_instance_override_map",
+        lambda override_targets, override_map: (_ for _ in ()).throw(
+            AssertionError("target helper must not be called for empty targets")
+        ),
+    )
+
+    values = phase12_module._build_step_override_values(
+        override_targets=(),
+        override_map={},
+        root_positional_override=None,
+    )
+
+    assert values == {}
+
+
+def test_build_step_override_values_fast_path_returns_root_positional_payload(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Step override values helper returns only root positional payload for empty targets."""
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_instance_override_map",
+        lambda override_targets, override_map: (_ for _ in ()).throw(
+            AssertionError("target helper must not be called for empty targets")
+        ),
+    )
+
+    values = phase12_module._build_step_override_values(
+        override_targets=(),
+        override_map={},
+        root_positional_override=("arg-1",),
+    )
+
+    assert values == {"__args__": ("arg-1",)}
+
+
+def test_build_step_override_values_single_target_fast_path_without_root_args(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Single-target helper path materializes direct param mapping without generic helper."""
+    socket_ref = _SocketRef("root", "value", 7, "normal")
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_instance_override_map",
+        lambda override_targets, override_map: (_ for _ in ()).throw(
+            AssertionError("generic target helper must not be called for single target")
+        ),
+    )
+
+    values = phase12_module._build_step_override_values(
+        override_targets=(socket_ref,),
+        override_map={socket_ref: "override-value"},
+        root_positional_override=None,
+    )
+
+    assert values == {"value": "override-value"}
+
+
+def test_build_step_override_values_single_target_fast_path_with_root_args(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Single-target helper path merges direct param mapping with root positional args."""
+    socket_ref = _SocketRef("root", "value", 7, "normal")
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_instance_override_map",
+        lambda override_targets, override_map: (_ for _ in ()).throw(
+            AssertionError("generic target helper must not be called for single target")
+        ),
+    )
+
+    values = phase12_module._build_step_override_values(
+        override_targets=(socket_ref,),
+        override_map={socket_ref: "override-value"},
+        root_positional_override=("arg-1",),
+    )
+
+    assert values == {
+        "value": "override-value",
+        "__args__": ("arg-1",),
+    }
+
+
 def test_invoke_spell_with_kwargs_preserves_args_payload_mapping() -> None:
     """Invoke helper does not mutate input kwargs when `__args__` payload is supplied."""
     captured: Dict[str, Any] = {}
@@ -682,6 +803,31 @@ def test_invoke_spell_with_kwargs_preserves_args_payload_mapping() -> None:
     assert captured["args"] == (1, 2)
     assert captured["kwargs"] == {"value": "override"}
     assert kwargs_payload == {"__args__": [1, 2], "value": "override"}
+
+
+def test_invoke_spell_with_kwargs_accepts_tuple_args_payload_and_preserves_mapping() -> None:
+    """Invoke helper accepts tuple `__args__` payloads and does not mutate input kwargs."""
+    captured: Dict[str, Any] = {}
+
+    def _callable(*args: Any, **kwargs: Any) -> str:
+        captured["args"] = args
+        captured["kwargs"] = dict(kwargs)
+        return "ok"
+
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = _callable
+    kwargs_payload = {"__args__": (1, 2), "value": "override"}
+
+    result = phase12_module._invoke_spell_with_kwargs(
+        spell=spell,
+        kwargs=kwargs_payload,
+    )
+
+    assert result == "ok"
+    assert captured["args"] == (1, 2)
+    assert captured["kwargs"] == {"value": "override"}
+    assert kwargs_payload == {"__args__": (1, 2), "value": "override"}
 
 
 def test_invoke_spell_with_kwargs_rejects_invalid_args_payload_type() -> None:

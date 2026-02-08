@@ -894,6 +894,79 @@ def test_collect_override_targets_and_socket_shape_is_deterministic() -> None:
     )
 
 
+def test_collect_override_targets_and_socket_shape_single_socket_fast_path_output() -> None:
+    """Single-socket payloads emit deterministic grouped target and shape tuples."""
+    socket_ref = _SocketRef("s1", "dep", 7, "normal")
+
+    targets, shape = MeldRuntime._collect_override_targets_and_socket_shape(
+        override_map={socket_ref: "value"},
+    )
+
+    assert targets == {"s1": (socket_ref,)}
+    assert shape == (("s1", 7, "dep", "normal"),)
+
+
+def test_collect_override_targets_and_socket_shape_single_socket_fast_path_skips_sort(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Single-socket payloads bypass sort work in the collection helper."""
+    socket_ref = _SocketRef("s1", "dep", 7, "normal")
+
+    def _unexpected_sorted(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("sorted should not run for single-socket payloads")
+
+    monkeypatch.setattr("builtins.sorted", _unexpected_sorted)
+
+    targets, shape = MeldRuntime._collect_override_targets_and_socket_shape(
+        override_map={socket_ref: "value"},
+    )
+
+    assert targets == {"s1": (socket_ref,)}
+    assert shape == (("s1", 7, "dep", "normal"),)
+
+
+def test_collect_override_targets_and_socket_shape_two_socket_fast_path_output() -> None:
+    """Two-socket payloads emit deterministic grouped targets and sorted shape rows."""
+    socket_a = _SocketRef("s1", "a", 9, "normal")
+    socket_b = _SocketRef("s1", "b", 1, "normal")
+
+    targets, shape = MeldRuntime._collect_override_targets_and_socket_shape(
+        override_map={socket_a: "va", socket_b: "vb"},
+    )
+
+    assert targets == {"s1": (socket_b, socket_a)}
+    assert shape == (
+        ("s1", 1, "b", "normal"),
+        ("s1", 9, "a", "normal"),
+    )
+
+
+def test_collect_override_targets_and_socket_shape_two_socket_fast_path_skips_sort(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Two-socket payloads bypass sort work while preserving deterministic output order."""
+    socket_a = _SocketRef("s2", "z", 5, "normal")
+    socket_b = _SocketRef("s1", "a", 8, "optional")
+
+    def _unexpected_sorted(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("sorted should not run for two-socket payloads")
+
+    monkeypatch.setattr("builtins.sorted", _unexpected_sorted)
+
+    targets, shape = MeldRuntime._collect_override_targets_and_socket_shape(
+        override_map={socket_a: "va", socket_b: "vb"},
+    )
+
+    assert targets == {
+        "s1": (socket_b,),
+        "s2": (socket_a,),
+    }
+    assert shape == (
+        ("s1", 8, "a", "optional"),
+        ("s2", 5, "z", "normal"),
+    )
+
+
 def test_build_override_shape_key_uses_precomputed_socket_shape() -> None:
     """Shape-key builder accepts precomputed socket-shape tuples as-is."""
     shape_key = MeldRuntime._build_override_shape_key(
@@ -908,6 +981,49 @@ def test_build_override_shape_key_uses_precomputed_socket_shape() -> None:
         (("s1", 7, "dep", "normal"),),
         3,
     )
+
+
+def test_resolve_override_specialization_source_memoizes_by_step_count(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Runtime reuses emitted override source for repeated step-count lookups."""
+    runtime = MeldRuntime()
+    emit_calls = []
+
+    def _emit_phase12_overrides_executor_source(*, step_count: int) -> str:
+        emit_calls.append(step_count)
+        return f"source-{step_count}-{len(emit_calls)}"
+
+    monkeypatch.setattr(
+        runtime_module,
+        "emit_phase12_overrides_executor_source",
+        _emit_phase12_overrides_executor_source,
+    )
+
+    first = runtime._resolve_override_specialization_source(
+        execution_plan=None,
+        plan_rows=(
+            {"spell_id": "s1"},
+            {"spell_id": "s2"},
+        ),
+    )
+    second = runtime._resolve_override_specialization_source(
+        execution_plan=SimpleNamespace(steps=("a", "b")),
+        plan_rows=None,
+    )
+    third = runtime._resolve_override_specialization_source(
+        execution_plan=None,
+        plan_rows=(
+            {"spell_id": "s1"},
+            {"spell_id": "s2"},
+            {"spell_id": "s3"},
+        ),
+    )
+
+    assert first == "source-2-1"
+    assert second == "source-2-1"
+    assert third == "source-3-2"
+    assert emit_calls == [2, 3]
 
 
 def test_get_or_compile_override_executor_skips_l2_work_when_disabled(
@@ -1494,8 +1610,10 @@ def test_fast_transient_and_cleanup_contract() -> None:
 
     runtime._override_specialization_cache["s1"] = {("k",): lambda *args: None}
     runtime._override_specialization_order["s1"] = deque([("k",)])
+    runtime._override_specialization_source_cache[1] = "source-1"
     runtime.cleanup()
     assert runtime._cleaned is True
     assert runtime._override_specialization_cache is None
     assert runtime._override_specialization_order is None
     assert runtime._max_override_specializations_per_spell is None
+    assert runtime._override_specialization_source_cache is None

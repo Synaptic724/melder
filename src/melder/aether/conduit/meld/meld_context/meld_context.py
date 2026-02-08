@@ -136,17 +136,15 @@ class MeldContext(Cleanable):
             overrides: Optional[Mapping[str, Any]],
     ) -> Optional[MutableMapping[str, Any]]:
         """
-        Normalize override payloads to a mutable mapping with minimal churn.
+        Normalize override payloads to a mutable per-context mapping.
 
         Contract:
             - Returns None when no overrides are supplied.
-            - Reuses dictionary instances directly for hot-path context reuse.
-            - Materializes non-dict mappings into a new dictionary.
+            - Always returns a new dictionary copy for non-None input.
+            - Never aliases caller-provided mappings.
         """
         if overrides is None:
             return None
-        if isinstance(overrides, dict):
-            return overrides
         return dict(overrides)
 
     def cleanup(self) -> None:

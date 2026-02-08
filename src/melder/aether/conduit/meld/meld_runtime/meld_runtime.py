@@ -44,6 +44,7 @@ class MeldRuntime(Cleanable):
         "_override_specialization_cache",
         "_override_specialization_order",
         "_max_override_specializations_per_spell",
+        "_override_specialization_source_cache",
         "_override_specialization_l2_cache_dir",
         "_max_override_specializations_l2_per_spell",
     )
@@ -63,6 +64,7 @@ class MeldRuntime(Cleanable):
         self._override_specialization_cache: Dict[str, Dict[Tuple[Any, ...], Callable[..., Any]]] = {}
         self._override_specialization_order: Dict[str, deque[Tuple[Any, ...]]] = {}
         self._max_override_specializations_per_spell: int = 64
+        self._override_specialization_source_cache: Dict[int, str] = {}
         self._override_specialization_l2_cache_dir: Optional[str] = None
         self._max_override_specializations_l2_per_spell: int = 256
 
@@ -170,9 +172,11 @@ class MeldRuntime(Cleanable):
             order.clear()
         self._override_specialization_cache.clear()
         self._override_specialization_order.clear()
+        self._override_specialization_source_cache.clear()
         self._override_specialization_cache = None
         self._override_specialization_order = None
         self._max_override_specializations_per_spell = None
+        self._override_specialization_source_cache = None
         self._override_specialization_l2_cache_dir = None
         self._max_override_specializations_l2_per_spell = None
         self._cleaned = True
@@ -863,11 +867,65 @@ class MeldRuntime(Cleanable):
 
         Contract:
             - Performs a single deterministic sort over socket refs.
+            - Uses dedicated no-sort fast paths for one- and two-socket payloads.
             - Groups refs by `socket_ref.node_id`.
             - Emits socket-shape tuples in stable sorted order.
         """
         if not override_map:
             return {}, ()
+        if len(override_map) == 1:
+            socket_ref = next(iter(override_map))
+            return (
+                {
+                    socket_ref.node_id: (socket_ref,),
+                },
+                (
+                    (
+                        socket_ref.node_id,
+                        socket_ref.param_path_id,
+                        socket_ref.param_name,
+                        socket_ref.socket_kind.value,
+                    ),
+                ),
+            )
+        if len(override_map) == 2:
+            refs_iter = iter(override_map)
+            first_ref = next(refs_iter)
+            second_ref = next(refs_iter)
+            first_shape_row = (
+                first_ref.node_id,
+                first_ref.param_path_id,
+                first_ref.param_name,
+                first_ref.socket_kind.value,
+            )
+            second_shape_row = (
+                second_ref.node_id,
+                second_ref.param_path_id,
+                second_ref.param_name,
+                second_ref.socket_kind.value,
+            )
+            if second_shape_row < first_shape_row:
+                first_ref, second_ref = second_ref, first_ref
+                first_shape_row, second_shape_row = second_shape_row, first_shape_row
+            if first_ref.node_id == second_ref.node_id:
+                by_spell_id = {
+                    first_ref.node_id: (
+                        first_ref,
+                        second_ref,
+                    ),
+                }
+            else:
+                by_spell_id = {
+                    first_ref.node_id: (first_ref,),
+                    second_ref.node_id: (second_ref,),
+                }
+            return (
+                by_spell_id,
+                (
+                    first_shape_row,
+                    second_shape_row,
+                ),
+            )
 
         by_spell_id: Dict[str, list[Any]] = {}
         socket_shape: list[Tuple[Any, ...]] = []
@@ -880,13 +938,20 @@ class MeldRuntime(Cleanable):
                 ref.socket_kind.value,
             ),
         )
+        current_spell_id: Optional[str] = None
+        current_bucket: Optional[list[Any]] = None
         for socket_ref in ordered_refs:
             spell_id = socket_ref.node_id
-            bucket = by_spell_id.get(spell_id)
-            if bucket is None:
-                by_spell_id[spell_id] = [socket_ref]
+            if spell_id != current_spell_id:
+                current_spell_id = spell_id
+                current_bucket = [socket_ref]
+                by_spell_id[spell_id] = current_bucket
             else:
-                bucket.append(socket_ref)
+                if current_bucket is None:
+                    current_bucket = [socket_ref]
+                    by_spell_id[spell_id] = current_bucket
+                else:
+                    current_bucket.append(socket_ref)
             socket_shape.append(
                 (
                     socket_ref.node_id,
@@ -1234,8 +1299,8 @@ class MeldRuntime(Cleanable):
             order.append(shape_key)
         return compiled
 
-    @staticmethod
     def _resolve_override_specialization_source(
+            self,
             *,
             execution_plan: Any,
             plan_rows: Optional[Sequence[Dict[str, Any]]],
@@ -1246,6 +1311,7 @@ class MeldRuntime(Cleanable):
         Contract:
             - Uses plan row count when rows are present.
             - Falls back to execution-plan step count when available.
+            - Reuses runtime-owned source cache entries by step_count.
             - Returns None when step count cannot be derived.
         """
         step_count: Optional[int] = None
@@ -1255,9 +1321,14 @@ class MeldRuntime(Cleanable):
             step_count = len(execution_plan.steps)
         if step_count is None:
             return None
-        return emit_phase12_overrides_executor_source(
+        cached_source = self._override_specialization_source_cache.get(step_count)
+        if cached_source is not None:
+            return cached_source
+        source = emit_phase12_overrides_executor_source(
             step_count=step_count,
         )
+        self._override_specialization_source_cache[step_count] = source
+        return source
 
     @staticmethod
     def _build_override_l2_key(

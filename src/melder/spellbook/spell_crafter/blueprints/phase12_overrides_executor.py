@@ -227,6 +227,7 @@ def _build_phase12_overrides_executor_namespace(
     Contract:
         - Captures immutable specialization constants as function defaults.
         - Exposes helper callables required by generated executor source.
+        - Prebinds per-step registration flags to avoid hot-path attribute reads.
     """
     return {
         "MeldExecutionError": MeldExecutionError,
@@ -252,12 +253,20 @@ def _build_phase12_overrides_executor_namespace(
             plan_step.spell.spell_index.current == root_spell_id
             for plan_step in steps
         ),
+        "step_has_targeted_overrides": tuple(
+            bool(override_targets)
+            for override_targets in step_override_targets
+        ),
         "step_instance_keys": tuple(
             plan_step.instance_key
             for plan_step in steps
         ),
         "step_use_spell_lock_hints": tuple(
             plan_step.use_spell_lock_hint
+            for plan_step in steps
+        ),
+        "step_must_register_flags": tuple(
+            plan_step.must_register
             for plan_step in steps
         ),
         "steps": steps,
@@ -296,8 +305,10 @@ def _build_phase12_overrides_executor_source(
         "        step_existences=step_existences,",
         "        step_creations_target_kinds=step_creations_target_kinds,",
         "        step_is_root=step_is_root,",
+        "        step_has_targeted_overrides=step_has_targeted_overrides,",
         "        step_instance_keys=step_instance_keys,",
         "        step_use_spell_lock_hints=step_use_spell_lock_hints,",
+        "        step_must_register_flags=step_must_register_flags,",
         "        root_instance_key=root_instance_key,",
         "        root_spell_id=root_spell_id,",
         "        any_overrides_present=any_overrides_present,",
@@ -376,8 +387,16 @@ def _append_overrides_step_source(
             f"for spell '{{spell_{step_index}.spell_id}}'.\")"
         ),
         f"    override_targets_{step_index} = step_override_targets[{step_index}]",
-        f"    has_targeted_overrides_{step_index} = bool(override_targets_{step_index})",
+        (
+            f"    has_targeted_overrides_{step_index} = "
+            f"step_has_targeted_overrides[{step_index}]"
+        ),
         f"    is_root_step_{step_index} = step_is_root[{step_index}]",
+        (
+            f"    step_root_positional_override_{step_index} = "
+            f"root_positional_override if is_root_step_{step_index} else None"
+        ),
+        f"    must_register_{step_index} = step_must_register_flags[{step_index}]",
         f"    if existence_{step_index} is Existence.many:",
         (
             f"        instance_{step_index} = _construct_spell_instance_with_overrides("
@@ -385,11 +404,9 @@ def _append_overrides_step_source(
             f"instance_results=instance_results, "
             f"override_targets=override_targets_{step_index}, "
             f"override_map=override_map, "
-            f"root_positional_override=("
-            f"root_positional_override if is_root_step_{step_index} else None"
-            f"))"
+            f"root_positional_override=step_root_positional_override_{step_index})"
         ),
-        f"        if plan_step_{step_index}.must_register:",
+        f"        if must_register_{step_index}:",
         f"            with creations_{step_index}._lock:",
         (
             f"                _register_spell_instance("
@@ -439,9 +456,7 @@ def _append_overrides_step_source(
                     f"instance_results=instance_results, "
                     f"override_targets=override_targets_{step_index}, "
                     f"override_map=override_map, "
-                    f"root_positional_override=("
-                    f"root_positional_override if is_root_step_{step_index} else None"
-                    f"))"
+                    f"root_positional_override=step_root_positional_override_{step_index})"
         ),
         (
             f"                    _register_spell_instance("
@@ -483,9 +498,7 @@ def _append_overrides_step_source(
                     f"instance_results=instance_results, "
                     f"override_targets=override_targets_{step_index}, "
                     f"override_map=override_map, "
-                    f"root_positional_override=("
-                    f"root_positional_override if is_root_step_{step_index} else None"
-                    f"))"
+                    f"root_positional_override=step_root_positional_override_{step_index})"
         ),
         f"                    with creations_{step_index}._lock:",
         (
@@ -518,9 +531,7 @@ def _append_overrides_step_source(
                     f"instance_results=instance_results, "
                     f"override_targets=override_targets_{step_index}, "
                     f"override_map=override_map, "
-                    f"root_positional_override=("
-                    f"root_positional_override if is_root_step_{step_index} else None"
-                    f"))"
+                    f"root_positional_override=step_root_positional_override_{step_index})"
         ),
         (
             f"                    _register_spell_instance("
@@ -759,12 +770,11 @@ def _construct_spell_instance_with_overrides(
         - Override values supersede dependency and contract payload values.
         - ``root_positional_override`` is applied as ``"__args__"`` for root steps.
     """
-    override_values = _build_instance_override_map(
+    override_values = _build_step_override_values(
         override_targets=override_targets,
         override_map=override_map,
+        root_positional_override=root_positional_override,
     )
-    if root_positional_override is not None:
-        override_values["__args__"] = root_positional_override
     kwargs = _build_kwargs_with_overrides(
         plan_step=plan_step,
         instance_results=instance_results,
@@ -774,6 +784,48 @@ def _construct_spell_instance_with_overrides(
         spell=plan_step.spell,
         kwargs=kwargs,
     )
+
+
+def _build_step_override_values(
+        *,
+        override_targets: Tuple[Any, ...],
+        override_map: Dict[Any, Any],
+        root_positional_override: Optional[Sequence[Any]],
+) -> Dict[str, Any]:
+    """
+    Build per-step override payload values with an empty-target fast path.
+
+    Contract:
+        - Returns an empty mapping when no step targets and no positional payload.
+        - Returns only ``"__args__"`` when root positional payload is supplied
+          with no targeted socket overrides.
+        - Uses direct single-target mapping when exactly one socket is targeted.
+        - Preserves targeted socket override resolution order.
+    """
+    if not override_targets:
+        if root_positional_override is None:
+            return {}
+        return {
+            "__args__": root_positional_override,
+        }
+    if len(override_targets) == 1:
+        socket_ref = override_targets[0]
+        if root_positional_override is None:
+            return {
+                socket_ref.param_name: override_map[socket_ref],
+            }
+        return {
+            socket_ref.param_name: override_map[socket_ref],
+            "__args__": root_positional_override,
+        }
+
+    override_values = _build_instance_override_map(
+        override_targets=override_targets,
+        override_map=override_map,
+    )
+    if root_positional_override is not None:
+        override_values["__args__"] = root_positional_override
+    return override_values
 
 
 def _build_instance_override_map(
@@ -876,6 +928,7 @@ def _invoke_spell_with_kwargs(
         - Non-callable spells return spell.spell directly.
         - ``"__args__"`` must be a list/tuple when supplied.
         - Avoids kwargs copy when positional override args are absent.
+        - Preserves tuple positional payloads without rebuilding list objects.
     """
     if spell.existence is Existence.unique and spell.is_existing_creation:
         instance = spell.user_created_object
@@ -894,7 +947,10 @@ def _invoke_spell_with_kwargs(
         args = []
         call_kwargs = kwargs
     elif isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
-        args = list(raw_args)
+        if isinstance(raw_args, tuple):
+            args = raw_args
+        else:
+            args = tuple(raw_args)
         call_kwargs = dict(kwargs)
         call_kwargs.pop("__args__", None)
     else:
