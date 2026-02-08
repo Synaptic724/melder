@@ -1091,6 +1091,19 @@ class SpellCrafter(Cleanable):
             self._phase12_no_overrides_executor_signature = None
             return
 
+        required_payload_fields = (
+            "signature",
+            "step_count",
+            "steps",
+            "root_spell_id",
+        )
+        for field_name in required_payload_fields:
+            if field_name not in no_overrides_payload:
+                raise RuntimeError(
+                    "Phase 12 no-overrides IR payload is missing required field "
+                    f"'{field_name}'."
+                )
+
         payload_signature = no_overrides_payload["signature"]
         if (
                 payload_signature == self._phase12_no_overrides_executor_signature

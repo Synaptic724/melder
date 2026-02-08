@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import types
 from typing import Any, Iterable, Sequence
 from threading import RLock
 
@@ -4180,4 +4181,404 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     crafter.run_all_phases("cid", cancel_event=cancel)
 
     assert received == [cancel] * 11
+
+
+def _make_phase11_step_stub(spell_id: str) -> object:
+    """
+    Purpose:
+        Build a minimal Phase 11 step stub for IR export tests.
+    Contract:
+        Exposes only fields read by SpellCrafter phase8_11 IR capture helpers.
+    Args:
+        spell_id: Spell id to expose through step.spell.spell_index.current.
+    Returns:
+        object: Step stub compatible with `_build_phase11_variant_ir_payload`.
+    """
+    return types.SimpleNamespace(
+        spell=types.SimpleNamespace(
+            spell_index=types.SimpleNamespace(current=spell_id),
+        ),
+    )
+
+
+def _make_phase11_plan_stub(
+    *,
+    plan_variant: str,
+    root_spell_id: str,
+    step_spell_ids: Sequence[str],
+) -> object:
+    """
+    Purpose:
+        Build a minimal Phase 11 plan stub for IR export tests.
+    Contract:
+        Exposes the plan fields consumed by SpellCrafter phase8_11 capture.
+    Args:
+        plan_variant: Execution plan variant label.
+        root_spell_id: Root spell id for the plan.
+        step_spell_ids: Ordered spell ids for plan steps.
+    Returns:
+        object: Plan stub with deterministic step order and no transient plan.
+    """
+    steps = tuple(_make_phase11_step_stub(spell_id) for spell_id in step_spell_ids)
+    return types.SimpleNamespace(
+        plan_variant=plan_variant,
+        root_spell_id=root_spell_id,
+        steps=steps,
+        fast_transient_plan=None,
+    )
+
+
+def test_capture_phase2_5_codegen_ir_exports_required_fields() -> None:
+    """
+    Purpose:
+        Verify phase2_5 IR export includes required fields and stable signatures.
+    Contract:
+        Captured payload includes deterministic index ordering and signature
+        parity between payload and top-level signature map.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If required fields or deterministic values are missing.
+    """
+    crafter, spell, _ = _build_spell_and_crafter(spell_id="root")
+    dependencies = (
+        _make_dependency(
+            spell_id=spell.spell_index.current,
+            param_name="alpha",
+            position=0,
+            di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
+            is_optional=False,
+        ),
+        _make_dependency(
+            spell_id=spell.spell_index.current,
+            param_name="beta",
+            position=1,
+            di_shape=ParameterDIShape.SPELL_CONTRACT,
+            is_optional=True,
+        ),
+    )
+    crafter._symbolic_graph = _make_symbolic_graph(
+        spell_id=spell.spell_index.current,
+        dependencies=dependencies,
+    )
+    crafter._resolution_frame = types.SimpleNamespace(
+        ordered_node_ids=("dep", "root"),
+    )
+    spell.dependencies = ["dep-b", "dep-a"]
+    crafter._validated_phase4 = True
+    crafter._is_broken = False
+    crafter._validation_result_phase4 = types.SimpleNamespace(
+        issues=(
+            types.SimpleNamespace(code="I-B"),
+            types.SimpleNamespace(code="I-A"),
+        ),
+    )
+    root_blueprint = _RootBlueprintStub("root")
+    root_blueprint.ordered_node_ids = ["dep", "root"]
+    root_blueprint.socket_refs = [object(), object()]
+    crafter._root_blueprint_phase5 = root_blueprint
+    crafter._spell_system_index_phase5 = types.SimpleNamespace(
+        nodes={"z": object(), "a": object()},
+    )
+
+    crafter._capture_phase2_5_codegen_ir()
+    payload = crafter.codegen_ir["phase2_5"]
+    signatures = crafter.codegen_ir["signatures"]
+    first_signature = payload["signature"]
+
+    assert set(payload.keys()) == {
+        "symbolic_dependencies",
+        "local_ordered_node_ids",
+        "dependency_ids",
+        "phase4_validated",
+        "phase4_is_broken",
+        "phase4_issue_codes",
+        "phase5_root_spell_id",
+        "phase5_root_ordered_node_ids",
+        "phase5_socket_ref_count",
+        "phase5_index_spell_ids",
+        "signature",
+    }
+    assert payload["phase5_index_spell_ids"] == ("a", "z")
+    assert payload["phase5_root_spell_id"] == "root"
+    assert payload["phase5_socket_ref_count"] == 2
+    assert signatures["phase2_5"] == first_signature
+
+    crafter._capture_phase2_5_codegen_ir()
+    assert crafter.codegen_ir["phase2_5"]["signature"] == first_signature
+
+
+def test_capture_phase8_11_codegen_ir_exports_sorted_payloads() -> None:
+    """
+    Purpose:
+        Verify phase8_11 IR export normalizes sorted fields and variant payloads.
+    Contract:
+        Shared spell ids, injection instance keys, and patch-map target specs are
+        emitted in deterministic order for signature stability.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If normalized ordering or required payload sections fail.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace(
+        execution_order=("step-b", "step-a"),
+        root_instance_key=("root", None),
+        shared_spell_ids={"z", "a"},
+        contract_dependencies_complete=True,
+    )
+    crafter._injection_plan_phase9 = types.SimpleNamespace(
+        instance_injections={
+            ("z", 3): object(),
+            ("a", 2): object(),
+            ("a", None): object(),
+        },
+    )
+    crafter._override_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"override-z": object(), "override-a": object()},
+    )
+    crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"mutation-z": object(), "mutation-a": object()},
+    )
+    crafter._execution_plan_phase11_no_overrides = _make_phase11_plan_stub(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        step_spell_ids=("a", "b"),
+    )
+    crafter._execution_plan_phase11_overrides = _make_phase11_plan_stub(
+        plan_variant="overrides",
+        root_spell_id="root",
+        step_spell_ids=("a",),
+    )
+    crafter._execution_plan_phase11 = _make_phase11_plan_stub(
+        plan_variant="overrides_with_mutations",
+        root_spell_id="root",
+        step_spell_ids=("a", "b", "c"),
+    )
+
+    crafter._capture_phase8_11_codegen_ir()
+    payload = crafter.codegen_ir["phase8_11"]
+    signatures = crafter.codegen_ir["signatures"]
+
+    assert payload["occurrence"]["shared_spell_ids"] == ("a", "z")
+    assert payload["injection"]["instance_keys"] == (
+        ("a", None),
+        ("a", 2),
+        ("z", 3),
+    )
+    assert payload["patch_maps"]["override_target_specs"] == (
+        "override-a",
+        "override-z",
+    )
+    assert payload["patch_maps"]["mutation_target_specs"] == (
+        "mutation-a",
+        "mutation-z",
+    )
+    assert payload["execution"]["no_overrides"]["plan_variant"] == "no_overrides_fast"
+    assert payload["execution"]["overrides"]["plan_variant"] == "overrides"
+    assert payload["execution"]["overrides_with_mutations"]["plan_variant"] == "overrides_with_mutations"
+    assert signatures["phase8_11"] == payload["signature"]
+
+
+def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orders() -> None:
+    """
+    Purpose:
+        Ensure phase8_11 signature is stable across equivalent map insertion orders.
+    Contract:
+        Equivalent injection and patch-map data produce identical signatures even
+        when dictionary insertion orders differ.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If signatures differ for equivalent semantic payloads.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace(
+        execution_order=("step-a",),
+        root_instance_key=("root", None),
+        shared_spell_ids={"a"},
+        contract_dependencies_complete=True,
+    )
+    crafter._execution_plan_phase11_no_overrides = _make_phase11_plan_stub(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        step_spell_ids=("a",),
+    )
+    crafter._execution_plan_phase11_overrides = _make_phase11_plan_stub(
+        plan_variant="overrides",
+        root_spell_id="root",
+        step_spell_ids=("a",),
+    )
+    crafter._execution_plan_phase11 = _make_phase11_plan_stub(
+        plan_variant="overrides_with_mutations",
+        root_spell_id="root",
+        step_spell_ids=("a",),
+    )
+
+    crafter._injection_plan_phase9 = types.SimpleNamespace(
+        instance_injections={
+            ("b", 1): object(),
+            ("a", None): object(),
+        },
+    )
+    crafter._override_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"z": object(), "a": object()},
+    )
+    crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"z": object(), "a": object()},
+    )
+    crafter._capture_phase8_11_codegen_ir()
+    first_signature = crafter.codegen_ir["phase8_11"]["signature"]
+
+    crafter._injection_plan_phase9 = types.SimpleNamespace(
+        instance_injections={
+            ("a", None): object(),
+            ("b", 1): object(),
+        },
+    )
+    crafter._override_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"a": object(), "z": object()},
+    )
+    crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
+        _targets_by_spec={"a": object(), "z": object()},
+    )
+    crafter._capture_phase8_11_codegen_ir()
+    second_signature = crafter.codegen_ir["phase8_11"]["signature"]
+
+    assert second_signature == first_signature
+
+
+def test_compile_phase12_no_overrides_executor_requires_signature_field() -> None:
+    """
+    Purpose:
+        Verify missing required IR fields fail fast during compile wiring.
+    Contract:
+        `_compile_phase12_no_overrides_executor` raises RuntimeError when the
+        no-overrides payload omits required contract fields.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If missing required-field errors are not raised.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._codegen_ir = {
+        "phase8_11": {
+            "execution": {
+                "no_overrides": {
+                    "step_count": 1,
+                    "steps": (types.SimpleNamespace(instance_key=("root", None)),),
+                    "root_spell_id": "root",
+                },
+            },
+        },
+        "signatures": {},
+    }
+
+    with pytest.raises(RuntimeError, match="missing required field 'signature'"):
+        crafter._compile_phase12_no_overrides_executor()
+
+
+def test_compile_phase12_no_overrides_executor_reuses_cached_signature(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify no-overrides executor compile is skipped when signature is unchanged.
+    Contract:
+        Compile helper is called once for a repeated identical payload signature.
+    Args:
+        monkeypatch: Pytest fixture for replacing compile helper function.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If compile helper is called more than once.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    payload = {
+        "signature": "sig-1",
+        "step_count": 1,
+        "steps": (types.SimpleNamespace(instance_key=("root", None)),),
+        "root_spell_id": "root",
+    }
+    crafter._codegen_ir = {
+        "phase8_11": {
+            "execution": {
+                "no_overrides": payload,
+            },
+        },
+        "signatures": {},
+    }
+    compile_calls: list[str] = []
+
+    def _compile_stub(*, codegen_ir: dict[str, object]) -> object:
+        compile_calls.append(str(codegen_ir["signature"]))
+        return lambda _context: "compiled"
+
+    monkeypatch.setattr(
+        spell_crafter_module,
+        "compile_phase12_no_overrides_executor",
+        _compile_stub,
+    )
+
+    crafter._compile_phase12_no_overrides_executor()
+    first_executor = crafter.phase12_no_overrides_executor
+    crafter._compile_phase12_no_overrides_executor()
+
+    assert len(compile_calls) == 1
+    assert crafter.phase12_no_overrides_executor is first_executor
+
+
+def test_compile_phase12_no_overrides_executor_recompiles_on_signature_change(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify no-overrides executor recompiles when payload signature changes.
+    Contract:
+        Compile helper is called again after signature update and executor cache
+        reference is replaced.
+    Args:
+        monkeypatch: Pytest fixture for replacing compile helper function.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If compile helper is not invoked for changed signatures.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    payload = {
+        "signature": "sig-1",
+        "step_count": 1,
+        "steps": (types.SimpleNamespace(instance_key=("root", None)),),
+        "root_spell_id": "root",
+    }
+    crafter._codegen_ir = {
+        "phase8_11": {
+            "execution": {
+                "no_overrides": payload,
+            },
+        },
+        "signatures": {},
+    }
+    compiled_executors: list[object] = []
+
+    def _compile_stub(*, codegen_ir: dict[str, object]) -> object:
+        marker = len(compiled_executors)
+        executor = lambda _context, m=marker: m
+        compiled_executors.append(executor)
+        return executor
+
+    monkeypatch.setattr(
+        spell_crafter_module,
+        "compile_phase12_no_overrides_executor",
+        _compile_stub,
+    )
+
+    crafter._compile_phase12_no_overrides_executor()
+    first_executor = crafter.phase12_no_overrides_executor
+    payload["signature"] = "sig-2"
+    crafter._compile_phase12_no_overrides_executor()
+
+    assert len(compiled_executors) == 2
+    assert first_executor is compiled_executors[0]
+    assert crafter.phase12_no_overrides_executor is compiled_executors[1]
 
