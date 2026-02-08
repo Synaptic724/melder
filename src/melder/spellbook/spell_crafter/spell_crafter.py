@@ -854,9 +854,73 @@ class SpellCrafter(Cleanable):
         ir_payload["phase2_5"] = phase2_5_payload
         ir_payload["signatures"]["phase2_5"] = phase2_5_signature
 
-    def _build_fast_transient_signature(
+    def _build_fast_transient_schema(
             self,
             transient_plan: Optional[Tuple[Any, ...]],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Convert the Phase11 transient tuple into a schema-only IR payload.
+
+        Purpose:
+            Remove callable/object references from transient payload export while
+            preserving all indices needed for no-overrides transient codegen.
+        Contract:
+            - Returns None when no transient plan exists.
+            - Returned payload contains only ints and tuples of ints.
+        Args:
+            transient_plan:
+                Phase 11 transient tuple payload.
+        Returns:
+            Optional[Dict[str, Any]]:
+                Schema-only transient payload, or None.
+        """
+        if transient_plan is None:
+            return None
+        return {
+            "step_count": transient_plan[0],
+            "root_step_index": transient_plan[1],
+            "call_modes": tuple(transient_plan[3]),
+            "dep1": tuple(transient_plan[4]),
+            "dep2a": tuple(transient_plan[5]),
+            "dep2b": tuple(transient_plan[6]),
+            "dep3a": tuple(transient_plan[7]),
+            "dep3b": tuple(transient_plan[8]),
+            "dep3c": tuple(transient_plan[9]),
+            "dep4a": tuple(transient_plan[10]),
+            "dep4b": tuple(transient_plan[11]),
+            "dep4c": tuple(transient_plan[12]),
+            "dep4d": tuple(transient_plan[13]),
+            "dep5a": tuple(transient_plan[14]),
+            "dep5b": tuple(transient_plan[15]),
+            "dep5c": tuple(transient_plan[16]),
+            "dep5d": tuple(transient_plan[17]),
+            "dep5e": tuple(transient_plan[18]),
+            "dep6a": tuple(transient_plan[19]),
+            "dep6b": tuple(transient_plan[20]),
+            "dep6c": tuple(transient_plan[21]),
+            "dep6d": tuple(transient_plan[22]),
+            "dep6e": tuple(transient_plan[23]),
+            "dep6f": tuple(transient_plan[24]),
+            "dep7a": tuple(transient_plan[25]),
+            "dep7b": tuple(transient_plan[26]),
+            "dep7c": tuple(transient_plan[27]),
+            "dep7d": tuple(transient_plan[28]),
+            "dep7e": tuple(transient_plan[29]),
+            "dep7f": tuple(transient_plan[30]),
+            "dep7g": tuple(transient_plan[31]),
+            "dep8a": tuple(transient_plan[32]),
+            "dep8b": tuple(transient_plan[33]),
+            "dep8c": tuple(transient_plan[34]),
+            "dep8d": tuple(transient_plan[35]),
+            "dep8e": tuple(transient_plan[36]),
+            "dep8f": tuple(transient_plan[37]),
+            "dep8g": tuple(transient_plan[38]),
+            "dep8h": tuple(transient_plan[39]),
+        }
+
+    def _build_fast_transient_signature(
+            self,
+            transient_schema: Optional[Dict[str, Any]],
     ) -> Optional[str]:
         """
         Build a deterministic signature for a Phase 11 fast transient plan.
@@ -869,54 +933,55 @@ class SpellCrafter(Cleanable):
             - Signature includes step counts, call modes, and dependency index
               arrays used by no-overrides execution.
         Args:
-            transient_plan:
-                Phase 11 transient tuple payload.
+            transient_schema:
+                Schema-only transient payload exported by
+                `_build_fast_transient_schema`.
         Returns:
             Optional[str]:
                 Deterministic transient signature, or None.
         """
-        if transient_plan is None:
+        if transient_schema is None:
             return None
         return self._hash_codegen_signature(
-            transient_plan[0],
-            transient_plan[1],
-            tuple(transient_plan[3]),
-            tuple(transient_plan[4]),
-            tuple(transient_plan[5]),
-            tuple(transient_plan[6]),
-            tuple(transient_plan[7]),
-            tuple(transient_plan[8]),
-            tuple(transient_plan[9]),
-            tuple(transient_plan[10]),
-            tuple(transient_plan[11]),
-            tuple(transient_plan[12]),
-            tuple(transient_plan[13]),
-            tuple(transient_plan[14]),
-            tuple(transient_plan[15]),
-            tuple(transient_plan[16]),
-            tuple(transient_plan[17]),
-            tuple(transient_plan[18]),
-            tuple(transient_plan[19]),
-            tuple(transient_plan[20]),
-            tuple(transient_plan[21]),
-            tuple(transient_plan[22]),
-            tuple(transient_plan[23]),
-            tuple(transient_plan[24]),
-            tuple(transient_plan[25]),
-            tuple(transient_plan[26]),
-            tuple(transient_plan[27]),
-            tuple(transient_plan[28]),
-            tuple(transient_plan[29]),
-            tuple(transient_plan[30]),
-            tuple(transient_plan[31]),
-            tuple(transient_plan[32]),
-            tuple(transient_plan[33]),
-            tuple(transient_plan[34]),
-            tuple(transient_plan[35]),
-            tuple(transient_plan[36]),
-            tuple(transient_plan[37]),
-            tuple(transient_plan[38]),
-            tuple(transient_plan[39]),
+            transient_schema["step_count"],
+            transient_schema["root_step_index"],
+            transient_schema["call_modes"],
+            transient_schema["dep1"],
+            transient_schema["dep2a"],
+            transient_schema["dep2b"],
+            transient_schema["dep3a"],
+            transient_schema["dep3b"],
+            transient_schema["dep3c"],
+            transient_schema["dep4a"],
+            transient_schema["dep4b"],
+            transient_schema["dep4c"],
+            transient_schema["dep4d"],
+            transient_schema["dep5a"],
+            transient_schema["dep5b"],
+            transient_schema["dep5c"],
+            transient_schema["dep5d"],
+            transient_schema["dep5e"],
+            transient_schema["dep6a"],
+            transient_schema["dep6b"],
+            transient_schema["dep6c"],
+            transient_schema["dep6d"],
+            transient_schema["dep6e"],
+            transient_schema["dep6f"],
+            transient_schema["dep7a"],
+            transient_schema["dep7b"],
+            transient_schema["dep7c"],
+            transient_schema["dep7d"],
+            transient_schema["dep7e"],
+            transient_schema["dep7f"],
+            transient_schema["dep7g"],
+            transient_schema["dep8a"],
+            transient_schema["dep8b"],
+            transient_schema["dep8c"],
+            transient_schema["dep8d"],
+            transient_schema["dep8e"],
+            transient_schema["dep8f"],
+            transient_schema["dep8g"],
+            transient_schema["dep8h"],
         )
 
     @staticmethod
@@ -1045,7 +1110,7 @@ class SpellCrafter(Cleanable):
         Contract:
             - Returns a payload dictionary for any input; empty plan fields are
               represented as None/empty tuples.
-            - Includes transient plan and steps for no-overrides compilation.
+            - Exposes schema-only step/transient payloads with no live objects.
         Args:
             plan:
                 Execution plan variant to export.
@@ -1061,8 +1126,7 @@ class SpellCrafter(Cleanable):
                 "step_spell_ids": (),
                 "transient_signature": None,
                 "signature": None,
-                "transient_plan": None,
-                "steps": (),
+                "transient_schema": None,
                 "steps_rows": (),
                 "steps_rows_signature": None,
             }
@@ -1076,7 +1140,8 @@ class SpellCrafter(Cleanable):
             step.spell.spell_index.current
             for step in plan.steps
         )
-        transient_signature = self._build_fast_transient_signature(plan.fast_transient_plan)
+        transient_schema = self._build_fast_transient_schema(plan.fast_transient_plan)
+        transient_signature = self._build_fast_transient_signature(transient_schema)
         signature = self._hash_codegen_signature(
             plan.plan_variant,
             plan.root_spell_id,
@@ -1091,8 +1156,7 @@ class SpellCrafter(Cleanable):
             "step_spell_ids": step_spell_ids,
             "transient_signature": transient_signature,
             "signature": signature,
-            "transient_plan": plan.fast_transient_plan,
-            "steps": tuple(plan.steps),
+            "transient_schema": transient_schema,
             "steps_rows": steps_rows,
             "steps_rows_signature": steps_rows_signature,
         }
@@ -1226,11 +1290,10 @@ class SpellCrafter(Cleanable):
                     f"'{field_name}'."
                 )
 
-        has_steps = "steps" in no_overrides_payload and bool(no_overrides_payload.get("steps"))
         has_steps_rows = "steps_rows" in no_overrides_payload and bool(no_overrides_payload.get("steps_rows"))
-        if not has_steps and not has_steps_rows:
+        if not has_steps_rows:
             raise RuntimeError(
-                "Phase 12 no-overrides IR payload must provide 'steps' or "
+                "Phase 12 no-overrides IR payload must provide non-empty "
                 "'steps_rows'."
             )
 

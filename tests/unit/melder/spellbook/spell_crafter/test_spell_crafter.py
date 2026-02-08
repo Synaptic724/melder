@@ -4405,6 +4405,9 @@ def test_capture_phase8_11_codegen_ir_exports_sorted_payloads() -> None:
         ("dep", (("a-dep", None),)),
     )
     assert no_overrides_payload["steps_rows_signature"] is not None
+    assert "steps" not in no_overrides_payload
+    assert "transient_plan" not in no_overrides_payload
+    assert "transient_schema" in no_overrides_payload
     assert payload["execution"]["overrides"]["plan_variant"] == "overrides"
     assert payload["execution"]["overrides_with_mutations"]["plan_variant"] == "overrides_with_mutations"
     assert signatures["phase8_11"] == payload["signature"]
@@ -4499,7 +4502,7 @@ def test_compile_phase12_no_overrides_executor_requires_signature_field() -> Non
             "execution": {
                 "no_overrides": {
                     "step_count": 1,
-                    "steps": (types.SimpleNamespace(instance_key=("root", None)),),
+                    "steps_rows": ({"spell_id": "root"},),
                     "root_spell_id": "root",
                 },
             },
@@ -4511,13 +4514,13 @@ def test_compile_phase12_no_overrides_executor_requires_signature_field() -> Non
         crafter._compile_phase12_no_overrides_executor()
 
 
-def test_compile_phase12_no_overrides_executor_requires_steps_or_steps_rows() -> None:
+def test_compile_phase12_no_overrides_executor_requires_steps_rows() -> None:
     """
     Purpose:
         Verify no-overrides compile wiring requires executable step payload fields.
     Contract:
-        `_compile_phase12_no_overrides_executor` raises RuntimeError when both
-        `steps` and `steps_rows` are absent/empty.
+        `_compile_phase12_no_overrides_executor` raises RuntimeError when
+        `steps_rows` is absent/empty.
     Returns:
         None.
     Raises:
@@ -4530,7 +4533,6 @@ def test_compile_phase12_no_overrides_executor_requires_steps_or_steps_rows() ->
                 "no_overrides": {
                     "signature": "sig-1",
                     "step_count": 1,
-                    "steps": (),
                     "steps_rows": (),
                     "root_spell_id": "root",
                 },
@@ -4539,7 +4541,7 @@ def test_compile_phase12_no_overrides_executor_requires_steps_or_steps_rows() ->
         "signatures": {},
     }
 
-    with pytest.raises(RuntimeError, match="must provide 'steps' or 'steps_rows'"):
+    with pytest.raises(RuntimeError, match="must provide non-empty 'steps_rows'"):
         crafter._compile_phase12_no_overrides_executor()
 
 
@@ -4562,7 +4564,7 @@ def test_compile_phase12_no_overrides_executor_reuses_cached_signature(
     payload = {
         "signature": "sig-1",
         "step_count": 1,
-        "steps": (types.SimpleNamespace(instance_key=("root", None)),),
+        "steps_rows": ({"spell_id": "root"},),
         "root_spell_id": "root",
     }
     crafter._codegen_ir = {
@@ -4617,7 +4619,7 @@ def test_compile_phase12_no_overrides_executor_recompiles_on_signature_change(
     payload = {
         "signature": "sig-1",
         "step_count": 1,
-        "steps": (types.SimpleNamespace(instance_key=("root", None)),),
+        "steps_rows": ({"spell_id": "root"},),
         "root_spell_id": "root",
     }
     crafter._codegen_ir = {

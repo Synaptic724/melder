@@ -9,6 +9,46 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
+_TRANSIENT_SCHEMA_SEQUENCE_FIELDS = (
+    "call_modes",
+    "dep1",
+    "dep2a",
+    "dep2b",
+    "dep3a",
+    "dep3b",
+    "dep3c",
+    "dep4a",
+    "dep4b",
+    "dep4c",
+    "dep4d",
+    "dep5a",
+    "dep5b",
+    "dep5c",
+    "dep5d",
+    "dep5e",
+    "dep6a",
+    "dep6b",
+    "dep6c",
+    "dep6d",
+    "dep6e",
+    "dep6f",
+    "dep7a",
+    "dep7b",
+    "dep7c",
+    "dep7d",
+    "dep7e",
+    "dep7f",
+    "dep7g",
+    "dep8a",
+    "dep8b",
+    "dep8c",
+    "dep8d",
+    "dep8e",
+    "dep8f",
+    "dep8g",
+    "dep8h",
+)
+
 
 def compile_phase12_no_overrides_executor(
         *,
@@ -26,18 +66,17 @@ def compile_phase12_no_overrides_executor(
         - Returns a callable when the IR contains a no-overrides step plan.
         - Returns None when no steps are present for this variant.
         - Uses a transient unrolled executor when the IR carries a compatible
-          transient-only plan.
+          transient-only schema.
         - Falls back to a step-plan executor only when transient unrolling is
           not applicable for this plan.
         - Raises when transient codegen source compilation or namespace wiring
-          fails for an otherwise compatible transient plan.
+          fails for an otherwise compatible transient schema.
 
     Args:
         codegen_ir:
             Phase 11 variant payload produced by SpellCrafter IR export.
         spell_lookup:
-            Optional spell-id lookup used to hydrate schema-only step rows when
-            live `steps` objects are not present in IR.
+            Optional spell-id lookup used to hydrate schema-only step rows.
 
     Returns:
         Optional[Callable[[Any], Any]]:
@@ -53,14 +92,13 @@ def compile_phase12_no_overrides_executor(
     if codegen_ir is None:
         raise ValueError("codegen_ir must not be None.")
 
-    steps = codegen_ir.get("steps")
-    if not steps:
-        steps_rows = codegen_ir.get("steps_rows")
-        if steps_rows:
-            steps = _hydrate_steps_from_rows(
-                steps_rows=steps_rows,
-                spell_lookup=spell_lookup,
-            )
+    steps_rows = codegen_ir.get("steps_rows")
+    steps = None
+    if steps_rows:
+        steps = _hydrate_steps_from_rows(
+            steps_rows=steps_rows,
+            spell_lookup=spell_lookup,
+        )
     if not steps:
         return None
     root_spell_id = codegen_ir.get("root_spell_id")
@@ -71,12 +109,15 @@ def compile_phase12_no_overrides_executor(
     if root_instance_key is None:
         raise RuntimeError("Phase 12 IR is missing a resolvable root instance key.")
 
-    transient_plan = codegen_ir.get("transient_plan")
-    if transient_plan is not None and _supports_transient_unrolled_plan(steps):
-        source = _build_phase12_executor_source(transient_plan=transient_plan)
+    transient_schema = codegen_ir.get("transient_schema")
+    if transient_schema is not None and _supports_transient_unrolled_plan(steps):
+        normalized_transient_schema = _normalize_transient_schema(
+            transient_schema=transient_schema,
+        )
+        source = _build_phase12_executor_source(transient_schema=normalized_transient_schema)
         if source is not None:
             namespace = _build_executor_namespace(
-                transient_plan=transient_plan,
+                transient_schema=normalized_transient_schema,
                 steps=steps,
             )
             local_namespace: Dict[str, Any] = {}
@@ -190,6 +231,70 @@ def _hydrate_steps_from_rows(
             )
         )
     return tuple(hydrated_steps)
+
+
+def _normalize_transient_schema(
+        *,
+        transient_schema: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Validate and normalize schema-only transient payload fields.
+
+    Contract:
+        - Requires `step_count`, `root_step_index`, and all transient arrays.
+        - Enforces sequence lengths equal to `step_count`.
+        - Returns tuples for all transient arrays to stabilize downstream access.
+    """
+    required_fields = ("step_count", "root_step_index") + _TRANSIENT_SCHEMA_SEQUENCE_FIELDS
+    for field_name in required_fields:
+        if field_name not in transient_schema:
+            raise RuntimeError(
+                "Phase 12 no-overrides transient schema is missing required "
+                f"field '{field_name}'."
+            )
+
+    step_count = transient_schema["step_count"]
+    if not isinstance(step_count, int) or step_count < 0:
+        raise RuntimeError(
+            "Phase 12 no-overrides transient schema 'step_count' must be a non-negative int."
+        )
+
+    root_step_index = transient_schema["root_step_index"]
+    if not isinstance(root_step_index, int):
+        raise RuntimeError(
+            "Phase 12 no-overrides transient schema 'root_step_index' must be an int."
+        )
+
+    normalized = {
+        "step_count": step_count,
+        "root_step_index": root_step_index,
+    }
+    for field_name in _TRANSIENT_SCHEMA_SEQUENCE_FIELDS:
+        value = transient_schema[field_name]
+        if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+            raise RuntimeError(
+                "Phase 12 no-overrides transient schema field "
+                f"'{field_name}' must be a sequence."
+            )
+        values = tuple(value)
+        if len(values) != step_count:
+            raise RuntimeError(
+                "Phase 12 no-overrides transient schema field "
+                f"'{field_name}' length must equal step_count."
+            )
+        normalized[field_name] = values
+
+    if step_count == 0:
+        if root_step_index != 0:
+            raise RuntimeError(
+                "Phase 12 no-overrides transient schema with step_count 0 must use root_step_index 0."
+            )
+    elif root_step_index < 0 or root_step_index >= step_count:
+        raise RuntimeError(
+            "Phase 12 no-overrides transient schema root_step_index is out of range."
+        )
+
+    return normalized
 
 
 def _resolve_root_instance_key(
@@ -645,55 +750,55 @@ def _register_spell_instance(
 
 def _build_phase12_executor_source(
         *,
-        transient_plan: Tuple[Any, ...],
+        transient_schema: Dict[str, Any],
 ) -> Optional[str]:
     """
-    Build Python source for a transient-only unrolled Phase 12 executor.
+    Build Python source for a transient-schema unrolled Phase 12 executor.
 
     Contract:
         - Emits one direct call statement per transient step.
         - Returns None when any step uses CALLN or an unsupported call mode.
         - Emits a context-accepting function signature for API consistency.
     """
-    transient_step_count = transient_plan[0]
-    transient_root_index = transient_plan[1]
-    transient_call_modes = transient_plan[3]
-    transient_dep1 = transient_plan[4]
-    transient_dep2a = transient_plan[5]
-    transient_dep2b = transient_plan[6]
-    transient_dep3a = transient_plan[7]
-    transient_dep3b = transient_plan[8]
-    transient_dep3c = transient_plan[9]
-    transient_dep4a = transient_plan[10]
-    transient_dep4b = transient_plan[11]
-    transient_dep4c = transient_plan[12]
-    transient_dep4d = transient_plan[13]
-    transient_dep5a = transient_plan[14]
-    transient_dep5b = transient_plan[15]
-    transient_dep5c = transient_plan[16]
-    transient_dep5d = transient_plan[17]
-    transient_dep5e = transient_plan[18]
-    transient_dep6a = transient_plan[19]
-    transient_dep6b = transient_plan[20]
-    transient_dep6c = transient_plan[21]
-    transient_dep6d = transient_plan[22]
-    transient_dep6e = transient_plan[23]
-    transient_dep6f = transient_plan[24]
-    transient_dep7a = transient_plan[25]
-    transient_dep7b = transient_plan[26]
-    transient_dep7c = transient_plan[27]
-    transient_dep7d = transient_plan[28]
-    transient_dep7e = transient_plan[29]
-    transient_dep7f = transient_plan[30]
-    transient_dep7g = transient_plan[31]
-    transient_dep8a = transient_plan[32]
-    transient_dep8b = transient_plan[33]
-    transient_dep8c = transient_plan[34]
-    transient_dep8d = transient_plan[35]
-    transient_dep8e = transient_plan[36]
-    transient_dep8f = transient_plan[37]
-    transient_dep8g = transient_plan[38]
-    transient_dep8h = transient_plan[39]
+    transient_step_count = transient_schema["step_count"]
+    transient_root_index = transient_schema["root_step_index"]
+    transient_call_modes = transient_schema["call_modes"]
+    transient_dep1 = transient_schema["dep1"]
+    transient_dep2a = transient_schema["dep2a"]
+    transient_dep2b = transient_schema["dep2b"]
+    transient_dep3a = transient_schema["dep3a"]
+    transient_dep3b = transient_schema["dep3b"]
+    transient_dep3c = transient_schema["dep3c"]
+    transient_dep4a = transient_schema["dep4a"]
+    transient_dep4b = transient_schema["dep4b"]
+    transient_dep4c = transient_schema["dep4c"]
+    transient_dep4d = transient_schema["dep4d"]
+    transient_dep5a = transient_schema["dep5a"]
+    transient_dep5b = transient_schema["dep5b"]
+    transient_dep5c = transient_schema["dep5c"]
+    transient_dep5d = transient_schema["dep5d"]
+    transient_dep5e = transient_schema["dep5e"]
+    transient_dep6a = transient_schema["dep6a"]
+    transient_dep6b = transient_schema["dep6b"]
+    transient_dep6c = transient_schema["dep6c"]
+    transient_dep6d = transient_schema["dep6d"]
+    transient_dep6e = transient_schema["dep6e"]
+    transient_dep6f = transient_schema["dep6f"]
+    transient_dep7a = transient_schema["dep7a"]
+    transient_dep7b = transient_schema["dep7b"]
+    transient_dep7c = transient_schema["dep7c"]
+    transient_dep7d = transient_schema["dep7d"]
+    transient_dep7e = transient_schema["dep7e"]
+    transient_dep7f = transient_schema["dep7f"]
+    transient_dep7g = transient_schema["dep7g"]
+    transient_dep8a = transient_schema["dep8a"]
+    transient_dep8b = transient_schema["dep8b"]
+    transient_dep8c = transient_schema["dep8c"]
+    transient_dep8d = transient_schema["dep8d"]
+    transient_dep8e = transient_schema["dep8e"]
+    transient_dep8f = transient_schema["dep8f"]
+    transient_dep8g = transient_schema["dep8g"]
+    transient_dep8h = transient_schema["dep8h"]
 
     lines = [
         "def _phase12_executor(",
@@ -813,42 +918,42 @@ def _build_unrolled_call_expression(
         *,
         step_index: int,
         call_mode: int,
-        transient_dep1: list[int],
-        transient_dep2a: list[int],
-        transient_dep2b: list[int],
-        transient_dep3a: list[int],
-        transient_dep3b: list[int],
-        transient_dep3c: list[int],
-        transient_dep4a: list[int],
-        transient_dep4b: list[int],
-        transient_dep4c: list[int],
-        transient_dep4d: list[int],
-        transient_dep5a: list[int],
-        transient_dep5b: list[int],
-        transient_dep5c: list[int],
-        transient_dep5d: list[int],
-        transient_dep5e: list[int],
-        transient_dep6a: list[int],
-        transient_dep6b: list[int],
-        transient_dep6c: list[int],
-        transient_dep6d: list[int],
-        transient_dep6e: list[int],
-        transient_dep6f: list[int],
-        transient_dep7a: list[int],
-        transient_dep7b: list[int],
-        transient_dep7c: list[int],
-        transient_dep7d: list[int],
-        transient_dep7e: list[int],
-        transient_dep7f: list[int],
-        transient_dep7g: list[int],
-        transient_dep8a: list[int],
-        transient_dep8b: list[int],
-        transient_dep8c: list[int],
-        transient_dep8d: list[int],
-        transient_dep8e: list[int],
-        transient_dep8f: list[int],
-        transient_dep8g: list[int],
-        transient_dep8h: list[int],
+        transient_dep1: Sequence[int],
+        transient_dep2a: Sequence[int],
+        transient_dep2b: Sequence[int],
+        transient_dep3a: Sequence[int],
+        transient_dep3b: Sequence[int],
+        transient_dep3c: Sequence[int],
+        transient_dep4a: Sequence[int],
+        transient_dep4b: Sequence[int],
+        transient_dep4c: Sequence[int],
+        transient_dep4d: Sequence[int],
+        transient_dep5a: Sequence[int],
+        transient_dep5b: Sequence[int],
+        transient_dep5c: Sequence[int],
+        transient_dep5d: Sequence[int],
+        transient_dep5e: Sequence[int],
+        transient_dep6a: Sequence[int],
+        transient_dep6b: Sequence[int],
+        transient_dep6c: Sequence[int],
+        transient_dep6d: Sequence[int],
+        transient_dep6e: Sequence[int],
+        transient_dep6f: Sequence[int],
+        transient_dep7a: Sequence[int],
+        transient_dep7b: Sequence[int],
+        transient_dep7c: Sequence[int],
+        transient_dep7d: Sequence[int],
+        transient_dep7e: Sequence[int],
+        transient_dep7f: Sequence[int],
+        transient_dep7g: Sequence[int],
+        transient_dep8a: Sequence[int],
+        transient_dep8b: Sequence[int],
+        transient_dep8c: Sequence[int],
+        transient_dep8d: Sequence[int],
+        transient_dep8e: Sequence[int],
+        transient_dep8f: Sequence[int],
+        transient_dep8g: Sequence[int],
+        transient_dep8h: Sequence[int],
 ) -> Optional[str]:
     """
     Build a direct call expression for one transient step.
@@ -921,54 +1026,90 @@ def _build_unrolled_call_expression(
 
 def _build_executor_namespace(
         *,
-        transient_plan: Tuple[Any, ...],
-        steps: Any,
+        transient_schema: Dict[str, Any],
+        steps: Tuple[Any, ...],
 ) -> Dict[str, Any]:
     """
     Build the globals namespace for transient unrolled compilation.
 
     Contract:
-        - Exposes transient arrays and steps as function defaults.
+        - Exposes transient schema arrays and derived call targets.
+        - Exposes hydrated steps for deterministic error reporting.
     """
+    transient_step_count = transient_schema["step_count"]
+    transient_targets = _resolve_transient_targets(
+        steps=steps,
+        transient_step_count=transient_step_count,
+    )
+
     return {
         "MeldExecutionError": MeldExecutionError,
-        "transient_root_index": transient_plan[1],
-        "transient_targets": transient_plan[2],
-        "transient_dep1": transient_plan[4],
-        "transient_dep2a": transient_plan[5],
-        "transient_dep2b": transient_plan[6],
-        "transient_dep3a": transient_plan[7],
-        "transient_dep3b": transient_plan[8],
-        "transient_dep3c": transient_plan[9],
-        "transient_dep4a": transient_plan[10],
-        "transient_dep4b": transient_plan[11],
-        "transient_dep4c": transient_plan[12],
-        "transient_dep4d": transient_plan[13],
-        "transient_dep5a": transient_plan[14],
-        "transient_dep5b": transient_plan[15],
-        "transient_dep5c": transient_plan[16],
-        "transient_dep5d": transient_plan[17],
-        "transient_dep5e": transient_plan[18],
-        "transient_dep6a": transient_plan[19],
-        "transient_dep6b": transient_plan[20],
-        "transient_dep6c": transient_plan[21],
-        "transient_dep6d": transient_plan[22],
-        "transient_dep6e": transient_plan[23],
-        "transient_dep6f": transient_plan[24],
-        "transient_dep7a": transient_plan[25],
-        "transient_dep7b": transient_plan[26],
-        "transient_dep7c": transient_plan[27],
-        "transient_dep7d": transient_plan[28],
-        "transient_dep7e": transient_plan[29],
-        "transient_dep7f": transient_plan[30],
-        "transient_dep7g": transient_plan[31],
-        "transient_dep8a": transient_plan[32],
-        "transient_dep8b": transient_plan[33],
-        "transient_dep8c": transient_plan[34],
-        "transient_dep8d": transient_plan[35],
-        "transient_dep8e": transient_plan[36],
-        "transient_dep8f": transient_plan[37],
-        "transient_dep8g": transient_plan[38],
-        "transient_dep8h": transient_plan[39],
+        "transient_root_index": transient_schema["root_step_index"],
+        "transient_targets": transient_targets,
+        "transient_dep1": transient_schema["dep1"],
+        "transient_dep2a": transient_schema["dep2a"],
+        "transient_dep2b": transient_schema["dep2b"],
+        "transient_dep3a": transient_schema["dep3a"],
+        "transient_dep3b": transient_schema["dep3b"],
+        "transient_dep3c": transient_schema["dep3c"],
+        "transient_dep4a": transient_schema["dep4a"],
+        "transient_dep4b": transient_schema["dep4b"],
+        "transient_dep4c": transient_schema["dep4c"],
+        "transient_dep4d": transient_schema["dep4d"],
+        "transient_dep5a": transient_schema["dep5a"],
+        "transient_dep5b": transient_schema["dep5b"],
+        "transient_dep5c": transient_schema["dep5c"],
+        "transient_dep5d": transient_schema["dep5d"],
+        "transient_dep5e": transient_schema["dep5e"],
+        "transient_dep6a": transient_schema["dep6a"],
+        "transient_dep6b": transient_schema["dep6b"],
+        "transient_dep6c": transient_schema["dep6c"],
+        "transient_dep6d": transient_schema["dep6d"],
+        "transient_dep6e": transient_schema["dep6e"],
+        "transient_dep6f": transient_schema["dep6f"],
+        "transient_dep7a": transient_schema["dep7a"],
+        "transient_dep7b": transient_schema["dep7b"],
+        "transient_dep7c": transient_schema["dep7c"],
+        "transient_dep7d": transient_schema["dep7d"],
+        "transient_dep7e": transient_schema["dep7e"],
+        "transient_dep7f": transient_schema["dep7f"],
+        "transient_dep7g": transient_schema["dep7g"],
+        "transient_dep8a": transient_schema["dep8a"],
+        "transient_dep8b": transient_schema["dep8b"],
+        "transient_dep8c": transient_schema["dep8c"],
+        "transient_dep8d": transient_schema["dep8d"],
+        "transient_dep8e": transient_schema["dep8e"],
+        "transient_dep8f": transient_schema["dep8f"],
+        "transient_dep8g": transient_schema["dep8g"],
+        "transient_dep8h": transient_schema["dep8h"],
         "steps": steps,
     }
+
+
+def _resolve_transient_targets(
+        *,
+        steps: Tuple[Any, ...],
+        transient_step_count: int,
+) -> Tuple[Any, ...]:
+    """
+    Derive transient call targets from hydrated step spell metadata.
+
+    Contract:
+        - Transient schema step_count must match hydrated step count.
+        - Every step must be callable under transient execution constraints.
+    """
+    if transient_step_count != len(steps):
+        raise RuntimeError(
+            "Phase 12 no-overrides transient schema step_count does not match hydrated steps."
+        )
+
+    transient_targets = []
+    for step_index, plan_step in enumerate(steps):
+        spell = plan_step.spell
+        if not (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell):
+            raise RuntimeError(
+                "Phase 12 no-overrides transient schema requires callable steps; "
+                f"step {step_index} is not callable."
+            )
+        transient_targets.append(spell.spell)
+    return tuple(transient_targets)
