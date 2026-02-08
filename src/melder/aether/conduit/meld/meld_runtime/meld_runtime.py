@@ -3,7 +3,7 @@ import json
 import os
 import time
 from collections import deque
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.meld_context.meld_context import MeldContext
@@ -174,6 +174,232 @@ class MeldRuntime(Cleanable):
         self._override_specialization_l2_cache_dir = None
         self._max_override_specializations_l2_per_spell = None
         self._cleaned = True
+
+    @staticmethod
+    def collect_codegen_benchmark_samples_ns(
+            *,
+            cold_compile_fn: Callable[[], Any],
+            warm_execute_fn: Callable[[], Any],
+            mixed_execute_fn: Callable[[], Any],
+            sample_count: int = 9,
+            warmup_count: int = 1,
+    ) -> Dict[str, Tuple[int, ...]]:
+        """
+        Collect benchmark timing samples for cold compile and warm/mixed execution.
+
+        Contract:
+            - Executes warmup iterations before timed samples.
+            - Uses `time.perf_counter_ns` for all timing measurements.
+            - Returns immutable sample tuples grouped by benchmark path.
+            - Does not swallow callable exceptions.
+
+        Args:
+            cold_compile_fn:
+                Callable that performs one cold compile path iteration.
+            warm_execute_fn:
+                Callable that performs one warm execution iteration.
+            mixed_execute_fn:
+                Callable that performs one mixed workload iteration.
+            sample_count:
+                Number of timed samples collected for each path.
+            warmup_count:
+                Number of untimed warmup iterations per path.
+
+        Returns:
+            Dict[str, Tuple[int, ...]]:
+                Mapping containing `cold_compile_ns`, `warm_execute_ns`,
+                and `mixed_execute_ns` sample tuples.
+
+        Raises:
+            ValueError:
+                If callables are missing or counts are invalid.
+        """
+        if cold_compile_fn is None:
+            raise ValueError("cold_compile_fn must not be None.")
+        if warm_execute_fn is None:
+            raise ValueError("warm_execute_fn must not be None.")
+        if mixed_execute_fn is None:
+            raise ValueError("mixed_execute_fn must not be None.")
+        if sample_count < 1:
+            raise ValueError("sample_count must be >= 1.")
+        if warmup_count < 0:
+            raise ValueError("warmup_count must be >= 0.")
+
+        return {
+            "cold_compile_ns": MeldRuntime._sample_callable_ns(
+                fn=cold_compile_fn,
+                sample_count=sample_count,
+                warmup_count=warmup_count,
+            ),
+            "warm_execute_ns": MeldRuntime._sample_callable_ns(
+                fn=warm_execute_fn,
+                sample_count=sample_count,
+                warmup_count=warmup_count,
+            ),
+            "mixed_execute_ns": MeldRuntime._sample_callable_ns(
+                fn=mixed_execute_fn,
+                sample_count=sample_count,
+                warmup_count=warmup_count,
+            ),
+        }
+
+    @staticmethod
+    def evaluate_codegen_benchmark_gates(
+            *,
+            cold_compile_ns: Sequence[int],
+            warm_execute_ns: Sequence[int],
+            mixed_execute_ns: Sequence[int],
+            warm_to_cold_max_ratio: float = 0.35,
+            mixed_to_cold_max_ratio: float = 0.60,
+    ) -> Dict[str, Any]:
+        """
+        Evaluate benchmark samples against cold/warm regression thresholds.
+
+        Contract:
+            - Uses median sample values for gate comparisons.
+            - Reports warm-to-cold and mixed-to-cold ratios.
+            - Declares pass only when all ratios are <= configured thresholds.
+
+        Args:
+            cold_compile_ns:
+                Cold compile duration samples in nanoseconds.
+            warm_execute_ns:
+                Warm execution duration samples in nanoseconds.
+            mixed_execute_ns:
+                Mixed workload duration samples in nanoseconds.
+            warm_to_cold_max_ratio:
+                Maximum allowed warm median / cold median ratio.
+            mixed_to_cold_max_ratio:
+                Maximum allowed mixed median / cold median ratio.
+
+        Returns:
+            Dict[str, Any]:
+                Threshold report containing medians, ratios, failures, and pass flag.
+
+        Raises:
+            ValueError:
+                If sample payloads are invalid or thresholds are non-positive.
+        """
+        if warm_to_cold_max_ratio <= 0:
+            raise ValueError("warm_to_cold_max_ratio must be > 0.")
+        if mixed_to_cold_max_ratio <= 0:
+            raise ValueError("mixed_to_cold_max_ratio must be > 0.")
+
+        cold_samples = MeldRuntime._normalize_benchmark_samples(
+            name="cold_compile_ns",
+            samples=cold_compile_ns,
+        )
+        warm_samples = MeldRuntime._normalize_benchmark_samples(
+            name="warm_execute_ns",
+            samples=warm_execute_ns,
+        )
+        mixed_samples = MeldRuntime._normalize_benchmark_samples(
+            name="mixed_execute_ns",
+            samples=mixed_execute_ns,
+        )
+
+        cold_median = MeldRuntime._median_ns(cold_samples)
+        warm_median = MeldRuntime._median_ns(warm_samples)
+        mixed_median = MeldRuntime._median_ns(mixed_samples)
+        if cold_median < 1:
+            raise ValueError("cold_compile_ns median must be >= 1.")
+
+        warm_ratio = warm_median / cold_median
+        mixed_ratio = mixed_median / cold_median
+        failures: List[str] = []
+        if warm_ratio > warm_to_cold_max_ratio:
+            failures.append(
+                "warm_to_cold_ratio {0:.4f} exceeded {1:.4f}".format(
+                    warm_ratio,
+                    warm_to_cold_max_ratio,
+                )
+            )
+        if mixed_ratio > mixed_to_cold_max_ratio:
+            failures.append(
+                "mixed_to_cold_ratio {0:.4f} exceeded {1:.4f}".format(
+                    mixed_ratio,
+                    mixed_to_cold_max_ratio,
+                )
+            )
+
+        return {
+            "cold_compile_median_ns": cold_median,
+            "warm_execute_median_ns": warm_median,
+            "mixed_execute_median_ns": mixed_median,
+            "warm_to_cold_ratio": warm_ratio,
+            "mixed_to_cold_ratio": mixed_ratio,
+            "thresholds": {
+                "warm_to_cold_max_ratio": warm_to_cold_max_ratio,
+                "mixed_to_cold_max_ratio": mixed_to_cold_max_ratio,
+            },
+            "failures": tuple(failures),
+            "passed": len(failures) == 0,
+        }
+
+    @staticmethod
+    def _sample_callable_ns(
+            *,
+            fn: Callable[[], Any],
+            sample_count: int,
+            warmup_count: int,
+    ) -> Tuple[int, ...]:
+        """
+        Time one callable repeatedly and return per-iteration durations.
+
+        Contract:
+            - Performs `warmup_count` untimed calls before sampling.
+            - Collects exactly `sample_count` timed durations.
+        """
+        for _ in range(warmup_count):
+            fn()
+        durations: List[int] = []
+        for _ in range(sample_count):
+            start_ns = time.perf_counter_ns()
+            fn()
+            end_ns = time.perf_counter_ns()
+            durations.append(end_ns - start_ns)
+        return tuple(durations)
+
+    @staticmethod
+    def _normalize_benchmark_samples(
+            *,
+            name: str,
+            samples: Sequence[int],
+    ) -> Tuple[int, ...]:
+        """
+        Validate benchmark sample payloads and return immutable tuples.
+
+        Contract:
+            - Requires a non-empty sequence.
+            - Requires all sample values to be ints >= 0.
+        """
+        if samples is None:
+            raise ValueError("{0} must not be None.".format(name))
+        normalized = tuple(samples)
+        if len(normalized) == 0:
+            raise ValueError("{0} must not be empty.".format(name))
+        for sample in normalized:
+            if not isinstance(sample, int):
+                raise ValueError("{0} samples must be ints.".format(name))
+            if sample < 0:
+                raise ValueError("{0} samples must be >= 0.".format(name))
+        return normalized
+
+    @staticmethod
+    def _median_ns(samples: Sequence[int]) -> int:
+        """
+        Compute median duration from integer nanosecond samples.
+
+        Contract:
+            - Uses sorted median with midpoint average for even sample counts.
+            - Returns an integer nanosecond median.
+        """
+        ordered = sorted(samples)
+        size = len(ordered)
+        mid_index = size // 2
+        if size % 2 == 1:
+            return ordered[mid_index]
+        return (ordered[mid_index - 1] + ordered[mid_index]) // 2
 
     @staticmethod
     def _require_phase12_executor(spell: ISpell) -> Callable[[Any], Any]:
