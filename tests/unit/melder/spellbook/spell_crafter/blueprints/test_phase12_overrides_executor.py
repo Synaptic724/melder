@@ -155,6 +155,8 @@ def test_compile_phase12_overrides_executor_supports_schema_rows_execution() -> 
         any_overrides_present=False,
         path_registry=None,
     )
+    assert executor.__code__.co_filename == "<melder_phase12_overrides_executor>"
+    assert "_resolve_step_instance_with_overrides" not in executor.__code__.co_names
 
     context = SimpleNamespace(
         caller_creations=SimpleNamespace(_lock=threading.RLock()),
@@ -179,6 +181,8 @@ def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_exe
         any_overrides_present=False,
         path_registry=None,
     )
+    assert executor.__code__.co_filename == "<melder_phase12_overrides_executor>"
+    assert "_resolve_step_instance_with_overrides" not in executor.__code__.co_names
 
     context = SimpleNamespace(
         caller_creations=SimpleNamespace(_lock=threading.RLock()),

@@ -25,7 +25,7 @@ def compile_phase12_overrides_executor(
 
     Purpose:
         Build the runtime callable used for override-aware meld execution after
-        Phase 11 planning, without relying on MeldEngine.
+        Phase 11 planning, without relying on legacy engine execution paths.
 
     Contract:
         - Executes Phase 11 steps in plan order.
@@ -227,7 +227,12 @@ def _build_phase12_overrides_executor_namespace(
     """
     return {
         "MeldExecutionError": MeldExecutionError,
-        "_resolve_step_instance_with_overrides": _resolve_step_instance_with_overrides,
+        "Existence": Existence,
+        "_select_creations_for_target_kind": _select_creations_for_target_kind,
+        "_construct_spell_instance_with_overrides": _construct_spell_instance_with_overrides,
+        "_get_existing_creation": _get_existing_creation,
+        "_register_spell_instance": _register_spell_instance,
+        "_raise_override_on_existing_instance": _raise_override_on_existing_instance,
         "steps": steps,
         "step_override_targets": step_override_targets,
         "root_instance_key": root_instance_key,
@@ -245,7 +250,8 @@ def _build_phase12_overrides_executor_source(
     Build generated Python source for override specialization execution.
 
     Contract:
-        - Emits one direct step-resolution statement per Phase11 step.
+        - Emits one direct step-resolution block per Phase11 step.
+        - Inlines override-aware existence/lock/reuse/register semantics.
         - Uses prebound defaults for specialization constants.
         - Preserves root-result verification semantics.
     """
@@ -264,27 +270,22 @@ def _build_phase12_overrides_executor_source(
         "        root_spell_id=root_spell_id,",
         "        path_registry=path_registry,",
         "        any_overrides_present=any_overrides_present,",
-        "        _resolve_step_instance_with_overrides=_resolve_step_instance_with_overrides,",
+        "        Existence=Existence,",
+        "        _select_creations_for_target_kind=_select_creations_for_target_kind,",
+        "        _construct_spell_instance_with_overrides=_construct_spell_instance_with_overrides,",
+        "        _get_existing_creation=_get_existing_creation,",
+        "        _register_spell_instance=_register_spell_instance,",
+        "        _raise_override_on_existing_instance=_raise_override_on_existing_instance,",
         "        MeldExecutionError=MeldExecutionError,",
         "    ):",
         "    instance_results = {}",
     ]
 
     for index in range(step_count):
-        lines.append(f"    plan_step_{index} = steps[{index}]")
-        lines.append(
-            f"    instance_{index} = _resolve_step_instance_with_overrides("
-            f"context=context, "
-            f"plan_step=plan_step_{index}, "
-            f"instance_results=instance_results, "
-            f"override_targets=step_override_targets[{index}], "
-            f"override_map=override_map, "
-            f"any_overrides_present=any_overrides_present, "
-            f"root_spell_id=root_spell_id, "
-            f"path_registry=path_registry, "
-            f"root_positional_override=root_positional_override)"
+        _append_overrides_step_source(
+            lines=lines,
+            step_index=index,
         )
-        lines.append(f"    instance_results[plan_step_{index}.instance_key] = instance_{index}")
 
     lines.extend([
         "    if root_instance_key not in instance_results:",
@@ -299,6 +300,175 @@ def _build_phase12_overrides_executor_source(
         "    return instance_results[root_instance_key]",
     ])
     return "\n".join(lines)
+
+
+def _append_overrides_step_source(
+        *,
+        lines: list[str],
+        step_index: int,
+) -> None:
+    """
+    Append emitted source lines for one override-aware step execution block.
+
+    Contract:
+        - Emits deterministic variable names per step index.
+        - Mirrors override-aware reuse, lock, and registration semantics.
+    """
+    lines.extend([
+        f"    plan_step_{step_index} = steps[{step_index}]",
+        f"    spell_{step_index} = plan_step_{step_index}.spell",
+        f"    existence_{step_index} = plan_step_{step_index}.existence",
+        (
+            f"    creations_{step_index} = _select_creations_for_target_kind("
+            f"context=context, "
+            f"plan_step=plan_step_{step_index}, "
+            f"spell=spell_{step_index})"
+        ),
+        f"    override_targets_{step_index} = step_override_targets[{step_index}]",
+        f"    has_targeted_overrides_{step_index} = bool(override_targets_{step_index})",
+        f"    is_root_step_{step_index} = spell_{step_index}.spell_index.current == root_spell_id",
+        f"    if existence_{step_index} is Existence.many:",
+        (
+            f"        instance_{step_index} = _construct_spell_instance_with_overrides("
+            f"plan_step=plan_step_{step_index}, "
+            f"instance_results=instance_results, "
+            f"override_targets=override_targets_{step_index}, "
+            f"override_map=override_map, "
+            f"path_registry=path_registry, "
+            f"root_positional_override=("
+            f"root_positional_override if is_root_step_{step_index} else None"
+            f"))"
+        ),
+        f"        if plan_step_{step_index}.must_register:",
+        f"            with creations_{step_index}._lock:",
+        (
+            f"                _register_spell_instance("
+            f"spell=spell_{step_index}, "
+            f"instance=instance_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=existence_{step_index})"
+        ),
+        (
+            f"    elif existence_{step_index} in ("
+            f"Existence.unique_per_conduit, Existence.unique_per_spell_space):"
+        ),
+        f"        with creations_{step_index}._lock:",
+        (
+            f"            instance_{step_index} = _get_existing_creation("
+            f"spell=spell_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=existence_{step_index})"
+        ),
+        f"            if instance_{step_index} is not None:",
+        (
+            f"                _raise_override_on_existing_instance("
+            f"spell=spell_{step_index}, "
+            f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
+            f"any_overrides_present=any_overrides_present, "
+            f"root_spell_id=root_spell_id)"
+        ),
+        "            else:",
+        (
+            f"                instance_{step_index} = _construct_spell_instance_with_overrides("
+            f"plan_step=plan_step_{step_index}, "
+            f"instance_results=instance_results, "
+            f"override_targets=override_targets_{step_index}, "
+            f"override_map=override_map, "
+            f"path_registry=path_registry, "
+            f"root_positional_override=("
+            f"root_positional_override if is_root_step_{step_index} else None"
+            f"))"
+        ),
+        (
+            f"                _register_spell_instance("
+            f"spell=spell_{step_index}, "
+            f"instance=instance_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=existence_{step_index})"
+        ),
+        "    else:",
+        f"        use_spell_lock_{step_index} = plan_step_{step_index}.use_spell_lock_hint",
+        "        if (",
+        f"                use_spell_lock_{step_index}",
+        "                and context is not None",
+        "                and context.caller_creations_lock_held",
+        f"                and creations_{step_index} is context.caller_creations",
+        "        ):",
+        f"            use_spell_lock_{step_index} = False",
+        f"        if use_spell_lock_{step_index}:",
+        f"            with spell_{step_index}._lock:",
+        f"                with creations_{step_index}._lock:",
+        (
+            f"                    instance_{step_index} = _get_existing_creation("
+            f"spell=spell_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=existence_{step_index})"
+        ),
+        f"                if instance_{step_index} is not None:",
+        (
+            f"                    _raise_override_on_existing_instance("
+            f"spell=spell_{step_index}, "
+            f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
+            f"any_overrides_present=any_overrides_present, "
+            f"root_spell_id=root_spell_id)"
+        ),
+        "                else:",
+        (
+            f"                    instance_{step_index} = _construct_spell_instance_with_overrides("
+            f"plan_step=plan_step_{step_index}, "
+            f"instance_results=instance_results, "
+            f"override_targets=override_targets_{step_index}, "
+            f"override_map=override_map, "
+            f"path_registry=path_registry, "
+            f"root_positional_override=("
+            f"root_positional_override if is_root_step_{step_index} else None"
+            f"))"
+        ),
+        f"                    with creations_{step_index}._lock:",
+        (
+            f"                        _register_spell_instance("
+            f"spell=spell_{step_index}, "
+            f"instance=instance_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=existence_{step_index})"
+        ),
+        "        else:",
+        f"            with creations_{step_index}._lock:",
+        (
+            f"                instance_{step_index} = _get_existing_creation("
+            f"spell=spell_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=existence_{step_index})"
+        ),
+        f"                if instance_{step_index} is not None:",
+        (
+            f"                    _raise_override_on_existing_instance("
+            f"spell=spell_{step_index}, "
+            f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
+            f"any_overrides_present=any_overrides_present, "
+            f"root_spell_id=root_spell_id)"
+        ),
+        "                else:",
+        (
+            f"                    instance_{step_index} = _construct_spell_instance_with_overrides("
+            f"plan_step=plan_step_{step_index}, "
+            f"instance_results=instance_results, "
+            f"override_targets=override_targets_{step_index}, "
+            f"override_map=override_map, "
+            f"path_registry=path_registry, "
+            f"root_positional_override=("
+            f"root_positional_override if is_root_step_{step_index} else None"
+            f"))"
+        ),
+        (
+            f"                    _register_spell_instance("
+            f"spell=spell_{step_index}, "
+            f"instance=instance_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=existence_{step_index})"
+        ),
+        f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}",
+    ])
 
 
 def _hydrate_steps_from_rows(
@@ -437,146 +607,6 @@ def _build_step_override_targets(
         spell_id = plan_step.spell.spell_index.current
         step_targets.append(override_targets_by_spell_id.get(spell_id, ()))
     return tuple(step_targets)
-
-
-def _resolve_step_instance_with_overrides(
-        *,
-        context: Any,
-        plan_step: Any,
-        instance_results: Dict[Tuple[str, Optional[int]], Any],
-        override_targets: Tuple[Any, ...],
-        override_map: Dict[Any, Any],
-        any_overrides_present: bool,
-        root_spell_id: str,
-        path_registry: Optional[Any],
-        root_positional_override: Optional[Sequence[Any]],
-) -> Any:
-    """
-    Resolve one step using override-aware creation, reuse, and registration rules.
-
-    Contract:
-        - Existence.many always constructs and never raises reuse override errors.
-        - Non-`many` existences raise when an existing instance is reused while
-          overrides target the instance (or root overrides target the root spell).
-        - Lock ordering follows Phase 11 lock hints.
-    """
-    spell = plan_step.spell
-    existence = plan_step.existence
-    creations = _select_creations_for_target_kind(
-        context=context,
-        plan_step=plan_step,
-        spell=spell,
-    )
-    has_targeted_overrides = bool(override_targets)
-    is_root_step = spell.spell_index.current == root_spell_id
-
-    def _construct() -> Any:
-        return _construct_spell_instance_with_overrides(
-            plan_step=plan_step,
-            instance_results=instance_results,
-            override_targets=override_targets,
-            override_map=override_map,
-            path_registry=path_registry,
-            root_positional_override=root_positional_override if is_root_step else None,
-        )
-
-    if existence is Existence.many:
-        instance = _construct()
-        if plan_step.must_register:
-            with creations._lock:
-                _register_spell_instance(
-                    spell=spell,
-                    instance=instance,
-                    creations=creations,
-                    existence=existence,
-                )
-        return instance
-
-    if existence in (
-            Existence.unique_per_conduit,
-            Existence.unique_per_spell_space,
-    ):
-        with creations._lock:
-            instance = _get_existing_creation(
-                spell=spell,
-                creations=creations,
-                existence=existence,
-            )
-            if instance is not None:
-                _raise_override_on_existing_instance(
-                    spell=spell,
-                    has_targeted_overrides=has_targeted_overrides,
-                    any_overrides_present=any_overrides_present,
-                    root_spell_id=root_spell_id,
-                )
-                return instance
-            instance = _construct()
-            _register_spell_instance(
-                spell=spell,
-                instance=instance,
-                creations=creations,
-                existence=existence,
-            )
-            return instance
-
-    use_spell_lock = plan_step.use_spell_lock_hint
-    if (
-            use_spell_lock
-            and context is not None
-            and context.caller_creations_lock_held
-            and creations is context.caller_creations
-    ):
-        use_spell_lock = False
-
-    if use_spell_lock:
-        with spell._lock:
-            with creations._lock:
-                instance = _get_existing_creation(
-                    spell=spell,
-                    creations=creations,
-                    existence=existence,
-                )
-            if instance is not None:
-                _raise_override_on_existing_instance(
-                    spell=spell,
-                    has_targeted_overrides=has_targeted_overrides,
-                    any_overrides_present=any_overrides_present,
-                    root_spell_id=root_spell_id,
-                )
-                return instance
-            instance = _construct()
-            with creations._lock:
-                _register_spell_instance(
-                    spell=spell,
-                    instance=instance,
-                    creations=creations,
-                    existence=existence,
-                )
-            return instance
-
-    with creations._lock:
-        instance = _get_existing_creation(
-            spell=spell,
-            creations=creations,
-            existence=existence,
-        )
-        if instance is not None:
-            _raise_override_on_existing_instance(
-                spell=spell,
-                has_targeted_overrides=has_targeted_overrides,
-                any_overrides_present=any_overrides_present,
-                root_spell_id=root_spell_id,
-            )
-            return instance
-        instance = _construct()
-        _register_spell_instance(
-            spell=spell,
-            instance=instance,
-            creations=creations,
-            existence=existence,
-        )
-        return instance
-
 
 def _raise_override_on_existing_instance(
         *,

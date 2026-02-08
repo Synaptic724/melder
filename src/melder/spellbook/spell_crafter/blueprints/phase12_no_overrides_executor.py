@@ -60,7 +60,7 @@ def compile_phase12_no_overrides_executor(
 
     Purpose:
         Build the no-overrides execution callable consumed by MeldRuntime so
-        meld no longer depends on MeldEngine for no-overrides execution.
+        meld no longer depends on legacy engine execution for no-overrides calls.
 
     Contract:
         - Returns a callable when the IR contains a no-overrides step plan.

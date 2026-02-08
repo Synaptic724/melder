@@ -27,7 +27,7 @@ class MeldRuntime(Cleanable):
 
     Purpose:
         Provide the execution boundary between `Meld` and spell-scoped Phase 12
-        executors compiled by SpellCrafter, without invoking MeldEngine.
+        executors compiled by SpellCrafter, without invoking legacy engine paths.
 
     Contract:
         - Executes no-overrides calls through `phase12_no_overrides_executor`.
