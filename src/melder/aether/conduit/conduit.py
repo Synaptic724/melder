@@ -152,24 +152,28 @@ class Conduit(Cleanable, IConduit):
             self._meld_gate_controller.register_gate(conduit_id, meld_gate)
         self._meld_gate: MeldGate = meld_gate
         self._spellbook: ISpellbook = spellbook
+
+        # Shared hook map for this spellbook lineage.
+        # Populated from Configuration using the Spellbook's ID.
+        # Shape: { hook_name: [callables...] }
+        self._conduit_hooks: dict[str, list[Any]] | None = self._configuration.get_hooks(
+            self._spellbook._id
+        )
+        # Local hook overlay for this conduit only.
+        # Shape: { hook_name: [callables...] }
+        self._local_conduit_hooks: dict[str, list[Any]] | None = None
+
         self._meld: Meld = Meld(
             creations=self._creations,
             spellbook=self._spellbook,
             conduit_id=self._id,
             resolution_conduit_id=self._root_conduit_id,
+            meld_hooks=self._conduit_hooks,
         )
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
             f"_spellspace_stack_{self._id}", default=[]
         )
         self._spellspace_registry: set[SpellSpace] = set()
-
-        # Shared hook map for this spellbook lineage.
-        # Populated from Configuration using the Spellbook's ID.
-        # Shape: { hook_name: [callables...] }
-        self._conduit_hooks: dict[str, list[Any]] | None = None
-        # Local hook overlay for this conduit only.
-        # Shape: { hook_name: [callables...] }
-        self._local_conduit_hooks: dict[str, list[Any]] | None = None
 
         self._configure_conduit_state()
 

@@ -940,6 +940,68 @@ def test_fire_meld_hooks_wraps_errors() -> None:
         meld._fire_meld_hooks("on_meld_pre_resolve")
 
 
+def test_set_meld_hooks_local_merge_adds_to_existing_hooks() -> None:
+    """
+    Verify local hook mode merges into the current effective map by default.
+
+    Contract:
+        - Existing hooks are preserved in local mode.
+        - Incoming hooks append after existing hooks for the same name.
+        - Local map is detached from the original shared map.
+    """
+    meld = _make_meld()
+    shared_calls: list[str] = []
+    local_calls: list[str] = []
+
+    def shared_hook() -> None:
+        shared_calls.append("shared")
+
+    def local_hook() -> None:
+        local_calls.append("local")
+
+    shared_map = {"on_meld_pre_resolve": [shared_hook]}
+    meld.set_meld_hooks(shared_map)
+    meld.set_meld_hooks(
+        {"on_meld_pre_resolve": [local_hook]},
+        create_local_hooks=True,
+    )
+
+    assert meld._meld_hooks is not shared_map
+    assert meld._meld_hooks["on_meld_pre_resolve"] == [shared_hook, local_hook]
+    assert shared_map["on_meld_pre_resolve"] == [shared_hook]
+
+
+def test_set_meld_hooks_local_overwrite_replaces_existing_hooks() -> None:
+    """
+    Verify local hook overwrite mode replaces the current effective map.
+
+    Contract:
+        - overwrite=True drops previously installed hooks.
+        - Incoming hooks become the complete local map.
+        - Local map is detached from the original shared map.
+    """
+    meld = _make_meld()
+
+    def shared_hook() -> None:
+        return None
+
+    def local_hook() -> None:
+        return None
+
+    shared_map = {"on_meld_pre_resolve": [shared_hook]}
+    meld.set_meld_hooks(shared_map)
+    meld.set_meld_hooks(
+        {"on_meld_post_resolve": [local_hook]},
+        create_local_hooks=True,
+        overwrite=True,
+    )
+
+    assert meld._meld_hooks is not shared_map
+    assert "on_meld_pre_resolve" not in meld._meld_hooks
+    assert meld._meld_hooks["on_meld_post_resolve"] == [local_hook]
+    assert shared_map["on_meld_pre_resolve"] == [shared_hook]
+
+
 def test_ensure_lineage_resolvable_skips_without_state() -> None:
     """
     Verify lineage gating is skipped without system state.

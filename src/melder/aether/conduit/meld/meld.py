@@ -71,6 +71,7 @@ class Meld(Cleanable, IMeld):
             spellbook: ISpellbook,
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
+            meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = None,
     ) -> None:
         """
         Initialize the Meld component with references to the component store,
@@ -89,6 +90,10 @@ class Meld(Cleanable, IMeld):
             resolution_conduit_id:
                 Optional identifier used for per-conduit resolution/change-control
                 state lookups. For lesser conduits this should be the root conduit id.
+            meld_hooks:
+                Optional hook map passed by Conduit. When provided, Meld stores
+                this map by reference so shared hook mutations are immediately
+                visible without re-copying.
         """
         super().__init__()
 
@@ -130,7 +135,10 @@ class Meld(Cleanable, IMeld):
         self._runtime: MeldRuntime = MeldRuntime()
 
         # Optional hook map pulled from Configuration (via Conduit).
-        self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = {}
+        # This is stored by reference when provided.
+        self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = (
+            meld_hooks if meld_hooks is not None else {}
+        )
 
 
     def cleanup(self) -> None:
@@ -812,6 +820,7 @@ class Meld(Cleanable, IMeld):
             hooks: Dict[str, list[Callable[..., Any]]] | None,
             *,
             create_local_hooks: bool = False,
+            overwrite: bool = False,
     ) -> None:
         """
         Install a hook map used by Meld-level hook firing.
@@ -820,17 +829,32 @@ class Meld(Cleanable, IMeld):
         When create_local_hooks is False, the supplied map is stored by
         reference (no copy). When True, a local copy is created so changes
         do not propagate to other conduits.
+
+        Local mode behavior:
+            - overwrite=False (default): incoming hooks are merged into the
+              current effective hook map.
+            - overwrite=True: incoming hooks replace the local map.
         """
         if not create_local_hooks:
             self._meld_hooks = hooks
             return
 
         local_hooks: Dict[str, list[Callable[..., Any]]] = {}
+
+        if not overwrite and self._meld_hooks:
+            for name, hook_list in self._meld_hooks.items():
+                if hook_list is None:
+                    continue
+                local_hooks[name] = list(hook_list)
+
         if hooks:
             for name, hook_list in hooks.items():
                 if hook_list is None:
                     continue
-                local_hooks[name] = list(hook_list)
+                if overwrite:
+                    local_hooks[name] = list(hook_list)
+                else:
+                    local_hooks.setdefault(name, []).extend(hook_list)
         self._meld_hooks = local_hooks
 
     def _fire_meld_hooks(self, hook_name: str, *args: Any) -> None:
