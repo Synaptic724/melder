@@ -563,6 +563,302 @@ def _run_param_chain_alias(
     raise ValueError("access_count must be between 1 and 4.")
 
 
+class _HookFlags:
+    """
+    Hold conduit-like hook flags for real-world call-shape benchmarks.
+
+    Contract:
+        - Stores one boolean flag used by singleton resolve paths.
+    """
+
+    __slots__ = ("has_meld_phase_hooks",)
+
+    def __init__(self, has_meld_phase_hooks: bool) -> None:
+        """
+        Initialize hook-flag state.
+
+        Args:
+            has_meld_phase_hooks: Whether conduit-level meld hooks are active.
+        """
+        self.has_meld_phase_hooks = has_meld_phase_hooks
+
+
+class _ValidationFlags:
+    """
+    Hold spellbook-like validation flags for real-world call-shape benchmarks.
+
+    Contract:
+        - Stores one boolean validation gate flag.
+    """
+
+    __slots__ = ("spellbook_validation_required",)
+
+    def __init__(self, spellbook_validation_required: bool) -> None:
+        """
+        Initialize validation-flag state.
+
+        Args:
+            spellbook_validation_required:
+                Whether lineage validation gates are active.
+        """
+        self.spellbook_validation_required = spellbook_validation_required
+
+
+class _RuntimeCounter:
+    """
+    Provide deterministic runtime-construction behavior for miss-path checks.
+
+    Contract:
+        - Tracks build invocations through ``counter``.
+        - Returns deterministic integer payloads for one spell id.
+    """
+
+    __slots__ = ("counter",)
+
+    def __init__(self) -> None:
+        """
+        Initialize runtime counter to zero.
+        """
+        self.counter = 0
+
+    def build_value(self, spell_id: str) -> int:
+        """
+        Build one deterministic value and increment build count.
+
+        Args:
+            spell_id: Spell identifier used to derive payload value.
+
+        Returns:
+            int: Deterministic integer payload.
+        """
+        self.counter += 1
+        return len(spell_id) + self.counter
+
+
+class _SingletonCallShapeBench:
+    """
+    Model one real-world singleton resolve call shape.
+
+    Contract:
+        - Performs hook gate checks.
+        - Performs spellbook validation gate checks.
+        - Performs one singleton cache lookup and optional build on miss.
+        - Returns deterministic checksum-compatible integers.
+    """
+
+    __slots__ = (
+        "_hook_flags",
+        "_validation_flags",
+        "_cache",
+        "_runtime",
+        "_spell_id",
+    )
+
+    def __init__(
+            self,
+            *,
+            preload_cache: bool,
+            hooks_enabled: bool,
+            validation_required: bool,
+            spell_id: str = "service-spell-id",
+    ) -> None:
+        """
+        Initialize call-shape benchmark state.
+
+        Args:
+            preload_cache:
+                When True, cache-hit path is used for all timed calls.
+            hooks_enabled:
+                Hook gate state for timed calls.
+            validation_required:
+                Validation gate state for timed calls.
+            spell_id:
+                Spell id used as singleton cache key.
+        """
+        self._hook_flags = _HookFlags(hooks_enabled)
+        self._validation_flags = _ValidationFlags(validation_required)
+        self._cache: dict[str, int] = {}
+        self._runtime = _RuntimeCounter()
+        self._spell_id = spell_id
+        if preload_cache:
+            self._cache[spell_id] = 101
+
+    def resolve_direct_once(self) -> int:
+        """
+        Resolve one singleton-like call using direct chained access.
+
+        Returns:
+            int: Deterministic payload with branch checksum.
+        """
+        branch_score = 0
+        if self._hook_flags.has_meld_phase_hooks:
+            branch_score += 1
+        if self._validation_flags.spellbook_validation_required:
+            branch_score += 1
+
+        cached = self._cache.get(self._spell_id)
+        if cached is None:
+            cached = self._runtime.build_value(self._spell_id)
+            self._cache[self._spell_id] = cached
+        return cached + branch_score
+
+    def resolve_alias_once(self) -> int:
+        """
+        Resolve one singleton-like call using local aliases.
+
+        Returns:
+            int: Deterministic payload with branch checksum.
+        """
+        hook_flags = self._hook_flags
+        validation_flags = self._validation_flags
+        cache = self._cache
+        runtime = self._runtime
+        spell_id = self._spell_id
+
+        branch_score = 0
+        if hook_flags.has_meld_phase_hooks:
+            branch_score += 1
+        if validation_flags.spellbook_validation_required:
+            branch_score += 1
+
+        cached = cache.get(spell_id)
+        if cached is None:
+            cached = runtime.build_value(spell_id)
+            cache[spell_id] = cached
+        return cached + branch_score
+
+
+class _SocketKindValue:
+    """
+    Hold socket-kind enum-like values for row-build benchmarks.
+
+    Contract:
+        - Exposes one ``value`` field.
+    """
+
+    __slots__ = ("value",)
+
+    def __init__(self, value: str) -> None:
+        """
+        Initialize socket-kind value.
+
+        Args:
+            value: Socket-kind string label.
+        """
+        self.value = value
+
+
+class _SocketRefRow:
+    """
+    Hold deterministic socket-ref payload values for row-build benchmarks.
+
+    Contract:
+        - Stores node id, param path id, param name, and socket kind.
+    """
+
+    __slots__ = ("node_id", "param_path_id", "param_name", "socket_kind")
+
+    def __init__(
+            self,
+            *,
+            node_id: str,
+            param_path_id: int,
+            param_name: str,
+            socket_kind: str,
+    ) -> None:
+        """
+        Initialize one socket-ref row payload.
+
+        Args:
+            node_id: Node identifier.
+            param_path_id: Path position integer.
+            param_name: Parameter name label.
+            socket_kind: Socket kind label.
+        """
+        self.node_id = node_id
+        self.param_path_id = param_path_id
+        self.param_name = param_name
+        self.socket_kind = _SocketKindValue(socket_kind)
+
+
+class _SocketShapeBench:
+    """
+    Model one runtime-like socket-shape row build call.
+
+    Contract:
+        - Builds tuple rows from fixed socket-ref inputs.
+        - Returns deterministic checksum per call.
+        - Uses no sorting; focuses on chained field-read cost.
+    """
+
+    __slots__ = ("_refs",)
+
+    def __init__(self, *, ref_count: int) -> None:
+        """
+        Initialize deterministic socket-ref rows.
+
+        Args:
+            ref_count: Number of socket refs included in each call.
+        """
+        refs: list[_SocketRefRow] = []
+        for index in range(ref_count):
+            refs.append(
+                _SocketRefRow(
+                    node_id="n{0}".format(index % 3),
+                    param_path_id=index,
+                    param_name="p{0}".format(index),
+                    socket_kind="normal" if (index % 2 == 0) else "optional",
+                )
+            )
+        self._refs = refs
+
+    def build_rows_direct_once(self) -> int:
+        """
+        Build one socket-shape payload with direct chained field reads.
+
+        Returns:
+            int: Deterministic checksum from payload rows.
+        """
+        rows: list[Tuple[Any, ...]] = []
+        checksum = 0
+        for socket_ref in self._refs:
+            rows.append(
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_path_id,
+                    socket_ref.param_name,
+                    socket_ref.socket_kind.value,
+                )
+            )
+            checksum += socket_ref.param_path_id
+        return checksum + len(rows)
+
+    def build_rows_alias_once(self) -> int:
+        """
+        Build one socket-shape payload with local aliased field reads.
+
+        Returns:
+            int: Deterministic checksum from payload rows.
+        """
+        rows: list[Tuple[Any, ...]] = []
+        checksum = 0
+        for socket_ref in self._refs:
+            node_id = socket_ref.node_id
+            param_path_id = socket_ref.param_path_id
+            param_name = socket_ref.param_name
+            socket_kind_value = socket_ref.socket_kind.value
+            rows.append(
+                (
+                    node_id,
+                    param_path_id,
+                    param_name,
+                    socket_kind_value,
+                )
+            )
+            checksum += param_path_id
+        return checksum + len(rows)
+
+
 def _measure_ns(fn: Callable[..., int], *args: Any, **kwargs: Any) -> Tuple[int, int]:
     """
     Measure one callable execution in nanoseconds.
@@ -579,6 +875,65 @@ def _measure_ns(fn: Callable[..., int], *args: Any, **kwargs: Any) -> Tuple[int,
     result = fn(*args, **kwargs)
     end_ns = time.perf_counter_ns()
     return end_ns - start_ns, result
+
+
+def _measure_invoke_loop_ns(
+        *,
+        fn: Callable[[], int],
+        warmup: int,
+        iterations: int,
+) -> Tuple[int, int]:
+    """
+    Measure per-call invocation cost over a fixed loop.
+
+    Args:
+        fn: Zero-argument callable invoked once per iteration.
+        warmup: Warmup invocation count before timed loop.
+        iterations: Timed invocation count.
+
+    Returns:
+        Tuple[int, int]: (elapsed_ns, checksum_across_calls).
+    """
+    for _ in range(warmup):
+        fn()
+    checksum = 0
+    start_ns = time.perf_counter_ns()
+    for _ in range(iterations):
+        checksum += fn()
+    end_ns = time.perf_counter_ns()
+    return end_ns - start_ns, checksum
+
+
+def _average_invoke_loop_ns(
+        *,
+        fn: Callable[[], int],
+        warmup: int,
+        iterations: int,
+        repeats: int,
+) -> Tuple[float, int]:
+    """
+    Measure averaged per-call invocation loop cost.
+
+    Args:
+        fn: Zero-argument callable invoked once per iteration.
+        warmup: Warmup invocation count before each timed repeat.
+        iterations: Timed invocation count per repeat.
+        repeats: Number of timed repeats.
+
+    Returns:
+        Tuple[float, int]: (average_total_ns, final_checksum).
+    """
+    elapsed_runs: List[int] = []
+    final_checksum = 0
+    for _ in range(repeats):
+        elapsed_ns, checksum = _measure_invoke_loop_ns(
+            fn=fn,
+            warmup=warmup,
+            iterations=iterations,
+        )
+        elapsed_runs.append(elapsed_ns)
+        final_checksum = checksum
+    return sum(elapsed_runs) / float(repeats), final_checksum
 
 
 def _average_mode_ns(
