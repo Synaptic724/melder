@@ -153,44 +153,30 @@ class Conduit(Cleanable, IConduit):
         self._meld_gate: MeldGate = meld_gate
         self._spellbook: ISpellbook = spellbook
 
-        # Split hook maps: conduit lifecycle/link/contract hooks are separated
-        # from meld hooks (pre/post resolve).
-        raw_hook_map = self._configuration.get_hooks(self._spellbook._id)
-        allowed_hook_names = self._configuration._ALLOWED_HOOKS
-        self._conduit_hooks: dict[str, list[Any]] | None = {}
-        self._meld_hooks: dict[str, list[Any]] | None = {}
-        for hook_name, hook_list in raw_hook_map.items():
-            if not hook_list or hook_name not in allowed_hook_names:
-                continue
-            if hook_name in ("on_meld_pre_resolve", "on_meld_post_resolve"):
-                self._meld_hooks[hook_name] = list(hook_list)
-            else:
-                self._conduit_hooks[hook_name] = list(hook_list)
+        # Split hook maps into conduit-owned copies so runtime behavior does not
+        # depend on future Configuration hook-map mutations.
+        conduit_hooks, meld_hooks = self._snapshot_split_hook_maps_from_configuration()
+        self._conduit_hooks: dict[str, list[Any]] | None = conduit_hooks
+        self._meld_hooks: dict[str, list[Any]] | None = meld_hooks
 
         # Local hook overlays for this conduit only.
         self._local_conduit_hooks: dict[str, list[Any]] | None = None
         self._local_meld_hooks: dict[str, list[Any]] | None = None
         # Fast gate for conduit-level meld pre/post hook dispatch.
-        self._has_meld_phase_hooks: bool = bool(self._meld_hooks)
-        initial_meld_hooks: dict[str, list[Any]] = {
-            name: list(hook_list)
-            for name, hook_list in self._meld_hooks.items()
-            if hook_list
-        }
+        self._has_meld_phase_hooks: bool = bool(self._conduit_hooks)
         self._meld: Meld = Meld(
             creations=self._creations,
             spellbook=self._spellbook,
             conduit_id=self._id,
             resolution_conduit_id=self._root_conduit_id,
-            meld_hooks=initial_meld_hooks,
+            meld_hooks=self._meld_hooks,
         )
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
             f"_spellspace_stack_{self._id}", default=[]
         )
         self._spellspace_registry: set[SpellSpace] = set()
         self._configure_conduit_state()
-        # ID swap: pull hooks registered under this Spellbook's ID in the
-        # Configuration into this Conduit instance as a shared hook map.
+        # Snapshot configured hooks into conduit-owned maps.
         self._initialize_conduit_hooks()
         self._conduit_ward: ConduitWard = ConduitWard(
             conduit=self,
@@ -648,14 +634,38 @@ class Conduit(Cleanable, IConduit):
                   configuration.add_hook(spellbook_id, hook_name, hook)
 
             - At Conduit construction time, we look up that Spellbook ID
-              and pull the hook map into a Conduit-local structure:
+              and copy the hook map into Conduit-owned structures:
 
                   self._conduit_hooks: { hook_name: [callables...] }
 
         Rules:
-            - All conduits attach to the same shared hook map for the Spellbook.
+            - Conduit hook maps are detached copies from Configuration.
             - Uses direct owned attributes (no defensive fallback path).
             - Wires Meld with the effective composed hook map.
+        """
+        conduit_hooks, meld_hooks = self._snapshot_split_hook_maps_from_configuration()
+        self._conduit_hooks = conduit_hooks
+        self._meld_hooks = meld_hooks
+        self._meld.set_meld_hooks(
+            self._compose_meld_hook_map(),
+            create_local_hooks=True,
+            overwrite=True,
+        )
+        self._has_meld_phase_hooks = bool(self._meld_hooks or self._local_meld_hooks)
+
+    def _snapshot_split_hook_maps_from_configuration(
+            self,
+    ) -> tuple[dict[str, list[Any]], dict[str, list[Any]]]:
+        """
+        Internal
+
+        Build detached conduit/meld hook maps from the current Configuration.
+
+        Contract:
+            - Reads hooks from Configuration for this Conduit's Spellbook id.
+            - Keeps only allowed hook names.
+            - Splits meld pre/post hooks from conduit hooks.
+            - Returns copied lists owned by this Conduit.
         """
         raw_hook_map = self._configuration.get_hooks(self._spellbook._id)
         allowed_hook_names = self._configuration._ALLOWED_HOOKS
@@ -668,15 +678,7 @@ class Conduit(Cleanable, IConduit):
                 meld_hooks[hook_name] = list(hook_list)
             else:
                 conduit_hooks[hook_name] = list(hook_list)
-
-        self._conduit_hooks = conduit_hooks
-        self._meld_hooks = meld_hooks
-        self._meld.set_meld_hooks(
-            self._compose_meld_hook_map(),
-            create_local_hooks=True,
-            overwrite=True,
-        )
-        self._has_meld_phase_hooks = bool(self._meld_hooks or self._local_meld_hooks)
+        return conduit_hooks, meld_hooks
 
 
     #region Context Management
