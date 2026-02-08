@@ -89,16 +89,10 @@ class CreationContextBuilder(Cleanable):
         override_route_config_mutation = (
             self._build_mutation_override_route_config(spell=spell)
         )
-        runtime_flags = self._build_runtime_flags(
-            fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
-            override_route_config_no_mutation=override_route_config_no_mutation,
-            override_route_config_mutation=override_route_config_mutation,
-        )
 
         return CreationContext(
             spell=spell,
             resolve_route_key=resolve_route_key,
-            runtime_flags=runtime_flags,
             fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
             no_overrides_executor=no_overrides_executor,
             override_patch_map_phase10=override_patch_map_phase10,
@@ -202,29 +196,6 @@ class CreationContextBuilder(Cleanable):
         )
 
     @staticmethod
-    def _build_runtime_flags(
-            *,
-            fast_transient_no_overrides_enabled: bool,
-            override_route_config_no_mutation: Optional[OverrideRouteConfig],
-            override_route_config_mutation: Optional[OverrideRouteConfig],
-    ) -> int:
-        """
-        Build spell-static runtime flag bits for one CreationContext.
-
-        Contract:
-            - Flags only represent spell-static lane availability.
-            - Per-call transients are not encoded in these flags.
-        """
-        runtime_flags = 0
-        if fast_transient_no_overrides_enabled:
-            runtime_flags |= CreationContext.FLAG_FAST_TRANSIENT_NO_OVERRIDES
-        if override_route_config_no_mutation is not None:
-            runtime_flags |= CreationContext.FLAG_OVERRIDE_ROUTE_NO_MUTATION
-        if override_route_config_mutation is not None:
-            runtime_flags |= CreationContext.FLAG_OVERRIDE_ROUTE_MUTATION
-        return runtime_flags
-
-    @staticmethod
     def _build_override_route_config(
             *,
             spell: ISpell,
@@ -277,6 +248,10 @@ class CreationContextBuilder(Cleanable):
             plan_rows=plan_rows,
             root_spell_id=root_spell_id,
             spell_lookup=spell_lookup,
-            empty_shape_key=None,
+            empty_shape_key=(
+                plan_signature,
+                (),
+                -1,
+            ),
             baseline_executor=None,
         )

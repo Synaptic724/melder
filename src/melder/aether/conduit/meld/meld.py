@@ -294,7 +294,10 @@ class Meld(Cleanable, IMeld):
         """
 
         # 1) Normalize per-call overrides into a stable dict shape.
-        override_map = self._normalize_spell_override(spell_override)
+        if spell_override is None:
+            override_map = None
+        else:
+            override_map = self._normalize_spell_override(spell_override)
 
         # 2) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[ISpell] = None
@@ -303,19 +306,24 @@ class Meld(Cleanable, IMeld):
             target_spell = spell_id_resolution_cache.get(spell)
             if target_spell is None:
                 target_spell = self._resolve_spell_by_id(spell)
-                self._bounded_cache_insert(
-                    cache=spell_id_resolution_cache,
-                    key=spell,
-                    value=target_spell,
-                )
+                if len(spell_id_resolution_cache) >= self._max_resolution_cache_size:
+                    spell_id_resolution_cache.pop(
+                        next(iter(spell_id_resolution_cache)),
+                        None,
+                    )
+                spell_id_resolution_cache[spell] = target_spell
         else:
             input_resolution_cache = self._input_resolution_cache
-            cache_key = self._build_input_resolution_cache_key(
-                spell_name=spell_name,
-                spell=spell,
-                spellframe=spellframe,
-                binding_name=binding_name,
-            )
+            cache_key = (spell_name, spell, spellframe, binding_name)
+            try:
+                hash(cache_key)
+            except TypeError:
+                cache_key = (
+                    spell_name,
+                    id(spell),
+                    id(spellframe),
+                    binding_name,
+                )
             target_spell = input_resolution_cache.get(cache_key)
             if target_spell is None:
                 target_spell = self._resolve_spell(
@@ -324,151 +332,60 @@ class Meld(Cleanable, IMeld):
                     spellframe=spellframe,
                     binding_name=binding_name,
                 )
-                self._bounded_cache_insert(
-                    cache=input_resolution_cache,
-                    key=cache_key,
-                    value=target_spell,
-                )
+                if len(input_resolution_cache) >= self._max_resolution_cache_size:
+                    input_resolution_cache.pop(
+                        next(iter(input_resolution_cache)),
+                        None,
+                    )
+                input_resolution_cache[cache_key] = target_spell
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         if self._spellbook._spellbook_validation_required:
             self._ensure_lineage_resolvable(target_spell)
 
-        if self._meld_hooks or target_spell._hooks_enabled:
-            return self._comprehensive_meld_with_hooks(
-                target_spell=target_spell,
-                override_map=override_map,
-            )
+        if not (self._meld_hooks or target_spell._hooks_enabled):
+            creation_context = target_spell._creation_context
+            if creation_context is None or creation_context._cleaned:
+                creation_context_factory = self._creation_context_factory
+                creation_context = creation_context_factory.get_or_build_for_spell(
+                    target_spell
+                )
+            execute_instance_compiled = creation_context._execute_instance_compiled
+            if override_map is None:
+                instance = execute_instance_compiled(self._creations)
+            else:
+                instance = execute_instance_compiled(self._creations, override_map)
+
+            # 7) Return the resolved instance.
+            return instance
         else:
-            return self._meld_without_hooks(
-                target_spell=target_spell,
-                override_map=override_map,
-            )
+            # 1) Execute pre-cast hooks (no instance context yet).
+            self._execute_hooks(target_spell._pre_hooks, "pre_cast")
+            self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
-    @staticmethod
-    def _build_input_resolution_cache_key(
-            *,
-            spell_name: Optional[str],
-            spell: Optional[Any],
-            spellframe: Optional[Any],
-            binding_name: Optional[str],
-    ) -> tuple[Any, Any, Any, Any]:
-        """
-        Build a stable front-door resolution cache key for meld input tuples.
+            creation_context = target_spell._creation_context
+            if creation_context is None or creation_context._cleaned:
+                creation_context_factory = self._creation_context_factory
+                creation_context = creation_context_factory.get_or_build_for_spell(
+                    target_spell
+                )
+            execute_compiled = creation_context._execute_compiled
+            if override_map is None:
+                instance, created = execute_compiled(self._creations)
+            else:
+                instance, created = execute_compiled(self._creations, override_map)
 
-        Contract:
-            - Uses direct object keys for hashable inputs.
-            - Falls back to object identity for unhashable spell/spellframe values.
-        """
-        cache_key = (spell_name, spell, spellframe, binding_name)
-        try:
-            hash(cache_key)
-        except TypeError:
-            return spell_name, id(spell), id(spellframe), binding_name
-        return cache_key
+            if created:
+                # Activation hooks fire only when the instance is newly created.
+                self._execute_activation_hooks(target_spell._activation_hooks, instance)
+                self._fire_meld_hooks("on_meld_activation", target_spell, instance)
 
-    def  _bounded_cache_insert(
-            self,
-            *,
-            cache: Dict[Any, ISpell],
-            key: Any,
-            value: ISpell,
-    ) -> None:
-        """
-        Insert one spell-resolution cache entry with deterministic oldest eviction.
+            # 2) Execute post-cast hooks (still no arguments for now).
+            self._execute_hooks(target_spell._post_hooks, "post_cast")
+            self._fire_meld_hooks("on_meld_post_resolve", target_spell)
 
-        Contract:
-            - Enforces `_max_resolution_cache_size` as a hard upper bound.
-            - Evicts one oldest key when the bound is reached.
-        """
-        if len(cache) >= self._max_resolution_cache_size:
-            cache.pop(next(iter(cache)), None)
-        cache[key] = value
-
-    def _get_or_build_spell_creation_context(
-            self,
-            spell: ISpell,
-    ) -> Any:
-        """
-        Resolve one spell-owned CreationContext through the factory.
-        """
-        return self._creation_context_factory.get_or_build_for_spell(spell)
-
-    def _meld_without_hooks(
-            self,
-            target_spell: ISpell,
-            override_map: Optional[dict[str, Any]] = None,
-    ) -> Optional[Any]:
-        """
-        Internal
-        
-        Resolve a spell instance through the minimal meld pipeline (no hook execution).
-        
-        Notes:
-            - Accepts the same identity inputs as meld().
-            - Normalizes overrides and resolves the spell instance.
-        
-        Returns:
-            Optional[Any]: The resolved instance.
-        
-        Raises:
-            ValueError: If no identity inputs are provided.
-            KeyError: If the spell cannot be resolved.
-            RuntimeError: For unexpected internal state issues.
-        """
-        creation_context = self._get_or_build_spell_creation_context(target_spell)
-        instance, _created = creation_context.execute(
-            caller_creations=self._creations,
-            overrides=override_map,
-        )
-
-        # 7) Return the resolved instance.
-        return instance
-
-    def _comprehensive_meld_with_hooks(
-            self,
-            target_spell: ISpell,
-            override_map: Optional[dict[str, Any]] = None,
-    ) -> Optional[Any]:
-        """
-        Internal
-        
-        Resolve a spell instance with full validation and hook execution.
-        
-        Notes:
-            - Accepts the same identity inputs as meld().
-            - Runs lineage validation and spell hooks.
-        
-        Returns:
-            Optional[Any]: The resolved instance.
-        
-        Raises:
-            ValueError: If no identity inputs are provided.
-            KeyError: If the spell cannot be resolved.
-            HookExecutionError: If a hook raises during execution.
-            RuntimeError: If the spell is broken or state is invalid.
-        """
-        # 1) Execute pre-cast hooks (no instance context yet).
-        self._execute_hooks(target_spell._pre_hooks, "pre_cast")
-        self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
-
-        creation_context = self._get_or_build_spell_creation_context(target_spell)
-        instance, created = creation_context.execute(
-            caller_creations=self._creations,
-            overrides=override_map,
-        )
-
-        if created:
-            # Activation hooks fire only when the instance is newly created.
-            self._execute_activation_hooks(target_spell._activation_hooks, instance)
-            self._fire_meld_hooks("on_meld_activation", target_spell, instance)
-
-        # 2) Execute post-cast hooks (still no arguments for now).
-        self._execute_hooks(target_spell._post_hooks, "post_cast")
-        self._fire_meld_hooks("on_meld_post_resolve", target_spell)
-
-        # 3) Return the resolved instance.
-        return instance
+            # 3) Return the resolved instance.
+            return instance
 
     def _ensure_lineage_resolvable(self, spell: ISpell) -> None:
         """

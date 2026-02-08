@@ -391,7 +391,6 @@ def _build_step_plan_executor_source(
     lines = [
         "def _phase12_executor(",
         "        caller_creations=None,",
-        "        *,",
         "        owner_creations=None,",
         "        caller_creations_lock_held=False,",
         "        steps=steps,",
@@ -1070,7 +1069,6 @@ def _build_phase12_executor_source(
     lines = [
         "def _phase12_executor(",
         "        caller_creations=None,",
-        "        *,",
         "        owner_creations=None,",
         "        caller_creations_lock_held=False,",
         "        transient_root_index=transient_root_index,",
