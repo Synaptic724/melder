@@ -119,6 +119,101 @@ def compile_creation_context_instance_executor(
     )
 
 
+def compile_creation_context_instance_overrides_only_executor(
+        *,
+        resolve_route_key: str,
+        spell: Any,
+        spell_id: str,
+        owner_creations: Any,
+        no_overrides_executor: Optional[Callable[..., Any]],
+        execute_with_overrides: Callable[..., Any],
+        meld_execution_error_type: Any,
+        spell_space_scope_error_type: Any,
+) -> Callable[..., Any]:
+    """
+    Build one spell-bound overrides-only CreationContext executor.
+
+    Purpose:
+        Provide a no-hooks override lane that never branches on
+        `overrides is None` before entering existence-specific override routing.
+
+    Contract:
+        - Output callable signature: `(caller_creations, overrides) -> Any`.
+        - Caller must pass a frontdoor-normalized override payload.
+        - Emits the same existence-specific override semantics as the
+          tuple-return hook lane.
+    """
+    template = _select_overrides_only_template(
+        resolve_route_key=resolve_route_key,
+    )
+    return template(
+        _spell=spell,
+        _spell_id=spell_id,
+        _owner_creations=owner_creations,
+        _no_overrides_executor=no_overrides_executor,
+        _execute_with_overrides=execute_with_overrides,
+        _MeldExecutionError=meld_execution_error_type,
+        _SpellSpaceScopeError=spell_space_scope_error_type,
+        _existing_override_message=(
+            "Overrides were supplied for a spell instance that already exists. "
+            "Shared instances cannot be overridden after creation."
+        ),
+        _existing_creation_missing_message=(
+            "[MELD] EXISTING_CREATION spell has no `user_created_object` "
+            f"(spell_id={spell_id})."
+        ),
+        _spellspace_required_message=(
+            "Existence.unique_per_spell_space requires an active SpellSpace. "
+            "Use 'with conduit.enter_spellspace()' when melding."
+        ),
+    )
+
+
+def compile_creation_context_instance_no_overrides_executor(
+        *,
+        resolve_route_key: str,
+        fast_transient_no_overrides_enabled: bool,
+        spell: Any,
+        spell_id: str,
+        owner_creations: Any,
+        no_overrides_executor: Optional[Callable[..., Any]],
+        spell_space_scope_error_type: Any,
+) -> Callable[..., Any]:
+    """
+    Build one spell-bound no-overrides-only CreationContext executor.
+
+    Purpose:
+        Provide the no-hooks / no-overrides fast door with no override branch.
+
+    Contract:
+        - Output callable signature: `(caller_creations) -> Any`.
+        - Caller must ensure override payload is absent for this lane.
+    """
+    use_fast_transient = bool(
+        resolve_route_key == "many"
+        and fast_transient_no_overrides_enabled
+    )
+    template = _select_no_overrides_only_template(
+        resolve_route_key=resolve_route_key,
+        use_fast_transient=use_fast_transient,
+    )
+    return template(
+        _spell=spell,
+        _spell_id=spell_id,
+        _owner_creations=owner_creations,
+        _no_overrides_executor=no_overrides_executor,
+        _SpellSpaceScopeError=spell_space_scope_error_type,
+        _existing_creation_missing_message=(
+            "[MELD] EXISTING_CREATION spell has no `user_created_object` "
+            f"(spell_id={spell_id})."
+        ),
+        _spellspace_required_message=(
+            "Existence.unique_per_spell_space requires an active SpellSpace. "
+            "Use 'with conduit.enter_spellspace()' when melding."
+        ),
+    )
+
+
 def _select_template(
         *,
         resolve_route_key: str,
@@ -178,6 +273,53 @@ def _select_template(
     )
 
 
+def _select_overrides_only_template(
+        *,
+        resolve_route_key: str,
+) -> Callable[..., Any]:
+    """
+    Resolve one precompiled overrides-only template by existence route.
+    """
+    if resolve_route_key == "existing_creation":
+        return _TEMPLATE_EXISTING_INSTANCE_OVERRIDES_ONLY
+    if resolve_route_key == "many":
+        return _TEMPLATE_MANY_INSTANCE_OVERRIDES_ONLY
+    if resolve_route_key == "unique_per_conduit":
+        return _TEMPLATE_UNIQUE_PER_CONDUIT_INSTANCE_OVERRIDES_ONLY
+    if resolve_route_key == "spellspace":
+        return _TEMPLATE_SPELLSPACE_INSTANCE_OVERRIDES_ONLY
+    if resolve_route_key == "shared":
+        return _TEMPLATE_SHARED_INSTANCE_OVERRIDES_ONLY
+    raise RuntimeError(
+        f"Unsupported CreationContext overrides-only route key: {resolve_route_key}"
+    )
+
+
+def _select_no_overrides_only_template(
+        *,
+        resolve_route_key: str,
+        use_fast_transient: bool,
+) -> Callable[..., Any]:
+    """
+    Resolve one precompiled no-overrides-only template by existence route.
+    """
+    if resolve_route_key == "existing_creation":
+        return _TEMPLATE_EXISTING_INSTANCE_NO_OVERRIDES_ONLY
+    if resolve_route_key == "many":
+        if use_fast_transient:
+            return _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY_FAST
+        return _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY
+    if resolve_route_key == "unique_per_conduit":
+        return _TEMPLATE_UNIQUE_PER_CONDUIT_INSTANCE_NO_OVERRIDES_ONLY
+    if resolve_route_key == "spellspace":
+        return _TEMPLATE_SPELLSPACE_INSTANCE_NO_OVERRIDES_ONLY
+    if resolve_route_key == "shared":
+        return _TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY
+    raise RuntimeError(
+        f"Unsupported CreationContext resolve route key: {resolve_route_key}"
+    )
+
+
 def _compile_creation_context_template(
         *,
         resolve_route_key: str,
@@ -228,6 +370,82 @@ def _compile_creation_context_template(
     )
 
 
+def _compile_creation_context_overrides_only_template(
+        *,
+        resolve_route_key: str,
+) -> Callable[..., Any]:
+    """
+    Compile one overrides-only template factory for no-hooks overrides door.
+    """
+    with_overrides_lines = _build_with_overrides_lines(
+        resolve_route_key=resolve_route_key,
+        return_created=False,
+        overrides_maybe_none=False,
+    )
+    source = _build_overrides_only_template_source(
+        with_overrides_lines=with_overrides_lines,
+    )
+    local_namespace: dict[str, Any] = {}
+    source_name = f"<creation_context_overrides_only_template:{resolve_route_key}>"
+    try:
+        exec(
+            compile(source, source_name, "exec"),
+            {},
+            local_namespace,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "Failed to compile CreationContext overrides-only template source."
+        ) from exc
+    template = local_namespace.get("_creation_context_overrides_only_template")
+    if callable(template):
+        return template
+    raise RuntimeError(
+        "CreationContext overrides-only template source did not define callable "
+        "_creation_context_overrides_only_template."
+    )
+
+
+def _compile_creation_context_no_overrides_only_template(
+        *,
+        resolve_route_key: str,
+        fast_transient_no_overrides_enabled: bool,
+) -> Callable[..., Any]:
+    """
+    Compile one no-overrides-only template factory for no-hooks fast door.
+    """
+    no_overrides_lines = _build_no_overrides_lines(
+        resolve_route_key=resolve_route_key,
+        fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
+        return_created=False,
+    )
+    source = _build_no_overrides_only_template_source(
+        no_overrides_lines=no_overrides_lines,
+    )
+    local_namespace: dict[str, Any] = {}
+    source_name = (
+        "<creation_context_no_overrides_only_template:"
+        f"{resolve_route_key}:{int(fast_transient_no_overrides_enabled)}>"
+    )
+    try:
+        exec(
+            compile(source, source_name, "exec"),
+            {},
+            local_namespace,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "Failed to compile CreationContext no-overrides-only template source."
+        ) from exc
+    template = local_namespace.get("_creation_context_no_overrides_only_template")
+    if callable(template):
+        return template
+    raise RuntimeError(
+        "CreationContext no-overrides-only template source did not define callable "
+        "_creation_context_no_overrides_only_template."
+    )
+
+
 def _build_template_source(
         *,
         mutation_override_enabled: bool,
@@ -259,6 +477,57 @@ def _build_template_source(
         lines.extend(_indent_lines(no_overrides_lines, 3))
         lines.extend(_indent_lines(with_overrides_lines, 2))
     lines.append("    return _creation_context_execute")
+    return "\n".join(lines)
+
+
+def _build_no_overrides_only_template_source(
+        *,
+        no_overrides_lines: Sequence[str],
+) -> str:
+    """
+    Build emitted source for one no-overrides-only template factory.
+    """
+    lines = [
+        "def _creation_context_no_overrides_only_template(",
+        "        _spell,",
+        "        _spell_id,",
+        "        _owner_creations,",
+        "        _no_overrides_executor,",
+        "        _SpellSpaceScopeError,",
+        "        _existing_creation_missing_message,",
+        "        _spellspace_required_message,",
+        "    ):",
+        "    def _creation_context_execute_no_overrides_only(caller_creations):",
+    ]
+    lines.extend(_indent_lines(no_overrides_lines, 2))
+    lines.append("    return _creation_context_execute_no_overrides_only")
+    return "\n".join(lines)
+
+
+def _build_overrides_only_template_source(
+        *,
+        with_overrides_lines: Sequence[str],
+) -> str:
+    """
+    Build emitted source for one overrides-only template factory.
+    """
+    lines = [
+        "def _creation_context_overrides_only_template(",
+        "        _spell,",
+        "        _spell_id,",
+        "        _owner_creations,",
+        "        _no_overrides_executor,",
+        "        _execute_with_overrides,",
+        "        _MeldExecutionError,",
+        "        _SpellSpaceScopeError,",
+        "        _existing_override_message,",
+        "        _existing_creation_missing_message,",
+        "        _spellspace_required_message,",
+        "    ):",
+        "    def _creation_context_execute_overrides_only(caller_creations, overrides):",
+    ]
+    lines.extend(_indent_lines(with_overrides_lines, 2))
+    lines.append("    return _creation_context_execute_overrides_only")
     return "\n".join(lines)
 
 
@@ -398,11 +667,20 @@ def _build_with_overrides_lines(
         *,
         resolve_route_key: str,
         return_created: bool,
+        overrides_maybe_none: bool = True,
 ) -> Sequence[str]:
     """
     Build with-overrides existence path source lines.
     """
     if resolve_route_key == "existing_creation":
+        if not overrides_maybe_none:
+            return [
+                "raise _MeldExecutionError(",
+                "    spell_id=_spell.spell_index.current,",
+                "    spell_name=_spell.spell_name,",
+                "    message=_existing_override_message,",
+                ")",
+            ]
         return [
             "if overrides is not None:",
             "    raise _MeldExecutionError(",
@@ -429,6 +707,32 @@ def _build_with_overrides_lines(
             ),
         ]
     if resolve_route_key == "unique_per_conduit":
+        if not overrides_maybe_none:
+            return [
+                "creation = caller_creations._creations.get(_spell_id)",
+                "if creation is not None:",
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.current,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+                "with caller_creations._lock:",
+                "    creation = caller_creations._creations.get(_spell_id)",
+                "    if creation is None:",
+                "        instance = _execute_with_overrides(caller_creations, overrides, True)",
+                _prefix_two_indent(
+                    _build_return_statement(
+                        value_expression="instance",
+                        created=True,
+                        return_created=return_created,
+                    ),
+                ),
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.current,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+            ]
         return [
             "creation = caller_creations._creations.get(_spell_id)",
             "if creation is not None:",
@@ -471,6 +775,35 @@ def _build_with_overrides_lines(
             ),
         ]
     if resolve_route_key == "spellspace":
+        if not overrides_maybe_none:
+            return [
+                "spellspace = caller_creations._conduit.get_active_spellspace()",
+                "if spellspace is None:",
+                "    raise _SpellSpaceScopeError(_spellspace_required_message)",
+                "creation = caller_creations.get_spellspace_creation(spellspace.id, _spell_id)",
+                "if creation is not None:",
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.current,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+                "with caller_creations._lock:",
+                "    creation = caller_creations.get_spellspace_creation(spellspace.id, _spell_id)",
+                "    if creation is None:",
+                "        instance = _execute_with_overrides(caller_creations, overrides, True)",
+                _prefix_two_indent(
+                    _build_return_statement(
+                        value_expression="instance",
+                        created=True,
+                        return_created=return_created,
+                    ),
+                ),
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.current,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+            ]
         return [
             "spellspace = caller_creations._conduit.get_active_spellspace()",
             "if spellspace is None:",
@@ -516,6 +849,33 @@ def _build_with_overrides_lines(
             ),
         ]
     if resolve_route_key == "shared":
+        if not overrides_maybe_none:
+            return [
+                "creation = _owner_creations._creations.get(_spell_id)",
+                "if creation is not None:",
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.current,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+                "with _spell._lock:",
+                "    with _owner_creations._lock:",
+                "        creation = _owner_creations._creations.get(_spell_id)",
+                "    if creation is None:",
+                "        instance = _execute_with_overrides(caller_creations, overrides, False)",
+                _prefix_two_indent(
+                    _build_return_statement(
+                        value_expression="instance",
+                        created=True,
+                        return_created=return_created,
+                    ),
+                ),
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.current,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+            ]
         return [
             "creation = _owner_creations._creations.get(_spell_id)",
             "if creation is not None:",
@@ -752,4 +1112,65 @@ _TEMPLATE_SHARED_MUTATION_INSTANCE = _compile_creation_context_template(
     mutation_override_enabled=True,
     fast_transient_no_overrides_enabled=False,
     return_created=False,
+)
+_TEMPLATE_EXISTING_INSTANCE_OVERRIDES_ONLY = (
+    _compile_creation_context_overrides_only_template(
+        resolve_route_key="existing_creation",
+    )
+)
+_TEMPLATE_MANY_INSTANCE_OVERRIDES_ONLY = (
+    _compile_creation_context_overrides_only_template(
+        resolve_route_key="many",
+    )
+)
+_TEMPLATE_UNIQUE_PER_CONDUIT_INSTANCE_OVERRIDES_ONLY = (
+    _compile_creation_context_overrides_only_template(
+        resolve_route_key="unique_per_conduit",
+    )
+)
+_TEMPLATE_SPELLSPACE_INSTANCE_OVERRIDES_ONLY = (
+    _compile_creation_context_overrides_only_template(
+        resolve_route_key="spellspace",
+    )
+)
+_TEMPLATE_SHARED_INSTANCE_OVERRIDES_ONLY = (
+    _compile_creation_context_overrides_only_template(
+        resolve_route_key="shared",
+    )
+)
+_TEMPLATE_EXISTING_INSTANCE_NO_OVERRIDES_ONLY = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="existing_creation",
+        fast_transient_no_overrides_enabled=False,
+    )
+)
+_TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="many",
+        fast_transient_no_overrides_enabled=False,
+    )
+)
+_TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY_FAST = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="many",
+        fast_transient_no_overrides_enabled=True,
+    )
+)
+_TEMPLATE_UNIQUE_PER_CONDUIT_INSTANCE_NO_OVERRIDES_ONLY = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="unique_per_conduit",
+        fast_transient_no_overrides_enabled=False,
+    )
+)
+_TEMPLATE_SPELLSPACE_INSTANCE_NO_OVERRIDES_ONLY = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="spellspace",
+        fast_transient_no_overrides_enabled=False,
+    )
+)
+_TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="shared",
+        fast_transient_no_overrides_enabled=False,
+    )
 )

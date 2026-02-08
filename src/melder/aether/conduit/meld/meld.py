@@ -350,11 +350,19 @@ class Meld(Cleanable, IMeld):
                 creation_context = creation_context_factory.get_or_build_for_spell(
                     target_spell
                 )
-            execute_no_hooks_compiled = creation_context._execute_no_hooks_compiled
-            instance = execute_no_hooks_compiled(
-                self._creations,
-                override_map,
-            )
+            if override_map is None:
+                execute_no_hooks_no_overrides_compiled = (
+                    creation_context._execute_no_hooks_no_overrides_compiled
+                )
+                instance = execute_no_hooks_no_overrides_compiled(self._creations)
+            else:
+                execute_no_hooks_overrides_compiled = (
+                    creation_context._execute_no_hooks_overrides_compiled
+                )
+                instance = execute_no_hooks_overrides_compiled(
+                    self._creations,
+                    override_map,
+                )
 
             # 7) Return the resolved instance.
             return instance
@@ -369,11 +377,14 @@ class Meld(Cleanable, IMeld):
                 creation_context = creation_context_factory.get_or_build_for_spell(
                     target_spell
                 )
-            execute_compiled = creation_context._execute_compiled
+            execute_hooks_compiled = creation_context._execute_hooks_compiled
             if override_map is None:
-                instance, created = execute_compiled(self._creations)
+                instance, created = execute_hooks_compiled(self._creations)
             else:
-                instance, created = execute_compiled(self._creations, override_map)
+                instance, created = execute_hooks_compiled(
+                    self._creations,
+                    override_map,
+                )
 
             if created:
                 # Activation hooks fire only when the instance is newly created.

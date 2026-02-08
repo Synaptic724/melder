@@ -4,7 +4,8 @@ from typing import Optional, Dict, Any, Callable, Tuple, Sequence
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.creation_context.creation_context_codegen import (
     compile_creation_context_executor,
-    compile_creation_context_instance_executor,
+    compile_creation_context_instance_overrides_only_executor,
+    compile_creation_context_instance_no_overrides_executor,
 )
 from melder.spellbook.spell_crafter.blueprints.patch_maps import (
     apply_phase10_override_payload,
@@ -136,9 +137,9 @@ class CreationContext(Cleanable):
         "_spell",
         "_spell_id",
         "_owner_creations",
-        "_execute_compiled",
-        "_execute_no_hooks_compiled",
-        "_execute_instance_compiled",
+        "_execute_hooks_compiled",
+        "_execute_no_hooks_overrides_compiled",
+        "_execute_no_hooks_no_overrides_compiled",
         "_no_overrides_executor",
         "_override_patch_map_phase10",
         "_override_route_config_no_mutation",
@@ -218,7 +219,7 @@ class CreationContext(Cleanable):
         ] = {}
         self._seed_baseline_override_executor(override_route_config_no_mutation)
         self._seed_baseline_override_executor(override_route_config_mutation)
-        self._execute_compiled: Callable[..., tuple[Any, bool]] = (
+        self._execute_hooks_compiled: Callable[..., tuple[Any, bool]] = (
             compile_creation_context_executor(
                 resolve_route_key=resolve_route_key,
                 mutation_override_enabled=mutation_override_enabled,
@@ -236,15 +237,9 @@ class CreationContext(Cleanable):
                 spell_space_scope_error_type=SpellSpaceScopeError,
             )
         )
-        self._execute_instance_compiled: Callable[..., Any] = (
-            compile_creation_context_instance_executor(
+        self._execute_no_hooks_overrides_compiled: Callable[..., Any] = (
+            compile_creation_context_instance_overrides_only_executor(
                 resolve_route_key=resolve_route_key,
-                mutation_override_enabled=mutation_override_enabled,
-                fast_transient_no_overrides_enabled=(
-                    resolve_route_key == self.ROUTE_MANY
-                    and fast_transient_no_overrides_enabled
-                    and not mutation_override_enabled
-                ),
                 spell=spell,
                 spell_id=self._spell_id,
                 owner_creations=self._owner_creations,
@@ -254,9 +249,25 @@ class CreationContext(Cleanable):
                 spell_space_scope_error_type=SpellSpaceScopeError,
             )
         )
-        self._execute_no_hooks_compiled: Callable[..., Any] = (
-            self._execute_instance_compiled
-        )
+        if mutation_override_enabled:
+            self._execute_no_hooks_no_overrides_compiled: Callable[..., Any] = (
+                self._execute_no_hooks_overrides_compiled
+            )
+        else:
+            self._execute_no_hooks_no_overrides_compiled = (
+                compile_creation_context_instance_no_overrides_executor(
+                    resolve_route_key=resolve_route_key,
+                    fast_transient_no_overrides_enabled=(
+                        resolve_route_key == self.ROUTE_MANY
+                        and fast_transient_no_overrides_enabled
+                    ),
+                    spell=spell,
+                    spell_id=self._spell_id,
+                    owner_creations=self._owner_creations,
+                    no_overrides_executor=self._no_overrides_executor,
+                    spell_space_scope_error_type=SpellSpaceScopeError,
+                )
+            )
 
     def cleanup(self) -> None:
         """
@@ -291,9 +302,9 @@ class CreationContext(Cleanable):
         self._spell = None
         self._spell_id = None
         self._owner_creations = None
-        self._execute_compiled = None
-        self._execute_no_hooks_compiled = None
-        self._execute_instance_compiled = None
+        self._execute_hooks_compiled = None
+        self._execute_no_hooks_overrides_compiled = None
+        self._execute_no_hooks_no_overrides_compiled = None
         self._no_overrides_executor = None
         self._override_patch_map_phase10 = None
         self._override_route_config_no_mutation = None
@@ -321,8 +332,8 @@ class CreationContext(Cleanable):
                 `(instance, created)` where `created=True` means this call
                 instantiated the spell object.
         """
-        execute_compiled = self._execute_compiled
-        return execute_compiled(caller_creations, overrides)
+        execute_hooks_compiled = self._execute_hooks_compiled
+        return execute_hooks_compiled(caller_creations, overrides)
 
     def execute_no_hooks(
             self,
@@ -333,11 +344,19 @@ class CreationContext(Cleanable):
         Execute no-hooks lane through dedicated no-hooks runtime doors.
 
         Contract:
-            - Uses the spell-shaped no-hooks compiled route for all payloads.
+            - `overrides is None` uses the no-overrides compiled door.
+            - Override payloads route through the no-hooks compiled override door.
             - Caller must supply frontdoor-normalized overrides from Meld.
         """
-        execute_no_hooks_compiled = self._execute_no_hooks_compiled
-        return execute_no_hooks_compiled(caller_creations, overrides)
+        if overrides is None:
+            execute_no_hooks_no_overrides_compiled = (
+                self._execute_no_hooks_no_overrides_compiled
+            )
+            return execute_no_hooks_no_overrides_compiled(caller_creations)
+        execute_no_hooks_overrides_compiled = (
+            self._execute_no_hooks_overrides_compiled
+        )
+        return execute_no_hooks_overrides_compiled(caller_creations, overrides)
 
     def _seed_baseline_override_executor(
             self,
