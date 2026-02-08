@@ -4183,7 +4183,10 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     assert received == [cancel] * 11
 
 
-def _make_phase11_step_stub(spell_id: str) -> object:
+def _make_phase11_step_stub(
+    spell_id: str,
+    **overrides: object,
+) -> object:
     """
     Purpose:
         Build a minimal Phase 11 step stub for IR export tests.
@@ -4191,10 +4194,11 @@ def _make_phase11_step_stub(spell_id: str) -> object:
         Exposes only fields read by SpellCrafter phase8_11 IR capture helpers.
     Args:
         spell_id: Spell id to expose through step.spell.spell_index.current.
+        overrides: Optional explicit field overrides applied to the base step.
     Returns:
         object: Step stub compatible with `_build_phase11_variant_ir_payload`.
     """
-    return types.SimpleNamespace(
+    step = types.SimpleNamespace(
         instance_key=(spell_id, None),
         spell=types.SimpleNamespace(
             spell_index=types.SimpleNamespace(current=spell_id),
@@ -4222,6 +4226,9 @@ def _make_phase11_step_stub(spell_id: str) -> object:
         must_register=False,
         disposal_method_names=(),
     )
+    for field_name, value in overrides.items():
+        setattr(step, field_name, value)
+    return step
 
 
 def _make_phase11_plan_stub(
@@ -4482,6 +4489,126 @@ def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orde
 
     assert second_signature == first_signature
     assert second_rows_signature == first_rows_signature
+
+
+@pytest.mark.parametrize(
+    "step_overrides",
+    (
+        {
+            "dependency_resolution_order": (
+                ("dep", (("alt-dep", None),)),
+            ),
+        },
+        {
+            "has_contract_payload": True,
+            "contract_payload": {"custom": "value"},
+        },
+        {
+            "use_spell_lock_hint": True,
+        },
+        {
+            "must_register": True,
+        },
+        {
+            "creations_target_kind": 2,
+        },
+    ),
+)
+def test_build_phase11_variant_ir_payload_signature_changes_on_step_semantics(
+    step_overrides: dict[str, object],
+) -> None:
+    """
+    Purpose:
+        Ensure Phase11 variant signatures invalidate on step semantic changes.
+    Contract:
+        Changing dependency wiring, payload, lock/register, or routing semantics
+        must change both step-row and variant signatures.
+    Args:
+        step_overrides: Semantic field overrides applied to one plan step.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If semantic changes do not invalidate signatures.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    base_plan = _make_phase11_plan_stub(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        step_spell_ids=("root",),
+    )
+    changed_step = _make_phase11_step_stub("root", **step_overrides)
+    changed_plan = types.SimpleNamespace(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        steps=(changed_step,),
+        fast_transient_plan=None,
+    )
+
+    base_payload = crafter._build_phase11_variant_ir_payload(base_plan)
+    changed_payload = crafter._build_phase11_variant_ir_payload(changed_plan)
+
+    assert changed_payload["steps_rows_signature"] != base_payload["steps_rows_signature"]
+    assert changed_payload["signature"] != base_payload["signature"]
+
+
+def test_compile_phase12_no_overrides_executor_recompiles_on_phase11_semantic_change(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Ensure no-overrides executor cache invalidates on Phase11 semantic drift.
+    Contract:
+        Re-capturing IR with a semantic step change produces a new signature and
+        forces a recompilation.
+    Args:
+        monkeypatch: Pytest fixture for replacing compile helper function.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If semantic changes do not trigger recompilation.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    compile_calls: list[str] = []
+
+    def _compile_stub(
+            *,
+            codegen_ir: dict[str, object],
+            spell_lookup: dict[str, object],
+    ) -> object:
+        compile_calls.append(str(codegen_ir["signature"]))
+        return lambda _context: "compiled"
+
+    monkeypatch.setattr(
+        spell_crafter_module,
+        "compile_phase12_no_overrides_executor",
+        _compile_stub,
+    )
+
+    crafter._execution_plan_phase11_no_overrides = _make_phase11_plan_stub(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        step_spell_ids=("root",),
+    )
+    crafter._capture_phase8_11_codegen_ir()
+    crafter._compile_phase12_no_overrides_executor()
+    first_signature = crafter._phase12_no_overrides_executor_signature
+
+    changed_step = _make_phase11_step_stub(
+        "root",
+        must_register=True,
+    )
+    crafter._execution_plan_phase11_no_overrides = types.SimpleNamespace(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        steps=(changed_step,),
+        fast_transient_plan=None,
+    )
+    crafter._capture_phase8_11_codegen_ir()
+    crafter._compile_phase12_no_overrides_executor()
+
+    assert len(compile_calls) == 2
+    assert compile_calls[1] != compile_calls[0]
+    assert crafter._phase12_no_overrides_executor_signature != first_signature
 
 
 def test_compile_phase12_no_overrides_executor_requires_signature_field() -> None:

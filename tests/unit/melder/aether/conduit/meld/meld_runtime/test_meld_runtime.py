@@ -134,6 +134,7 @@ def _crafter(
         executor: Optional[Any] = None,
         patch_map: Optional[Any] = None,
         override_plan: Optional[Any] = None,
+        mutation_plan: Optional[Any] = None,
         root_blueprint: Optional[Any] = None,
         codegen_ir: Optional[Any] = None,
 ) -> Any:
@@ -142,12 +143,19 @@ def _crafter(
         phase12_no_overrides_executor=executor,
         override_patch_map_phase10=patch_map,
         execution_plan_phase11_overrides=override_plan,
+        execution_plan_phase11_overrides_with_mutations=(
+            mutation_plan if mutation_plan is not None else override_plan
+        ),
         root_blueprint_phase5=root_blueprint,
         codegen_ir=codegen_ir,
     )
 
 
-def _override_plan(*, override_keys: Optional[list[str]] = None) -> Any:
+def _override_plan(
+        *,
+        override_keys: Optional[list[str]] = None,
+        plan_variant: str = "overrides",
+) -> Any:
     """
     Build a minimal override execution-plan stub for runtime routing tests.
     """
@@ -170,7 +178,7 @@ def _override_plan(*, override_keys: Optional[list[str]] = None) -> Any:
         contract_payload=None,
     )
     return SimpleNamespace(
-        plan_variant="overrides",
+        plan_variant=plan_variant,
         root_spell_id="root",
         steps=[step],
     )
@@ -260,16 +268,87 @@ def test_execute_no_overrides_requires_crafter_and_executor() -> None:
         runtime.execute(_ctx(_Spell(spell_id="s2", crafter=_crafter(executor=None))))
 
 
-def test_execute_rejects_mutation_override() -> None:
-    """Mutation overrides are hard-failed on codegen runtime path."""
+def test_execute_mutation_only_routes_to_override_specialization(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Mutation-only calls use the override specialization route without patch-map apply."""
+    runtime = MeldRuntime()
+    mutation_plan = _override_plan(plan_variant="overrides_with_mutations")
+    spell = _Spell(
+        spell_id="s1",
+        has_mutation_override=True,
+        crafter=_crafter(
+            executor=lambda c: "x",
+            patch_map=None,
+            override_plan=_override_plan(),
+            mutation_plan=mutation_plan,
+            root_blueprint=SimpleNamespace(path_registry="registry"),
+            codegen_ir={
+                "phase8_11": {
+                    "execution": {
+                        "overrides_with_mutations": {
+                            "signature": "sig-mut",
+                            "steps_rows_signature": "sig-rows",
+                            "root_spell_id": "s1",
+                            "steps_rows": ({"spell_id": "s1"},),
+                        },
+                    },
+                },
+            },
+        ),
+    )
+
+    def _unexpected_apply(**kwargs: Any) -> Dict[Any, Any]:
+        raise AssertionError("patch-map apply should not run")
+
+    monkeypatch.setattr(
+        runtime_module,
+        "apply_phase10_override_payload",
+        _unexpected_apply,
+    )
+
+    compile_count = {"value": 0}
+
+    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
+        compile_count["value"] += 1
+        assert kwargs["execution_plan"] is mutation_plan
+        assert kwargs["any_overrides_present"] is False
+        assert kwargs["override_targets_by_spell_id"] == {}
+        assert kwargs["plan_rows"] == ({"spell_id": "s1"},)
+
+        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
+            assert override_map == {}
+            assert root_args is None
+            return "mutation-ok"
+
+        return _executor
+
+    monkeypatch.setattr(
+        runtime_module,
+        "compile_phase12_overrides_executor",
+        _compile_phase12_overrides_executor,
+    )
+
+    assert runtime.execute(_ctx(spell)) == "mutation-ok"
+    assert compile_count["value"] == 1
+
+
+def test_execute_mutation_with_overrides_requires_patch_map() -> None:
+    """Mutation route still requires phase10 patch-map when per-call overrides are provided."""
     runtime = MeldRuntime()
     spell = _Spell(
         spell_id="s1",
-        crafter=_crafter(executor=lambda c: "ok"),
         has_mutation_override=True,
+        crafter=_crafter(
+            executor=lambda c: "x",
+            patch_map=None,
+            override_plan=_override_plan(),
+            mutation_plan=_override_plan(plan_variant="overrides_with_mutations"),
+        ),
     )
-    with pytest.raises(MeldExecutionError, match="Mutation overrides are not supported"):
-        runtime.execute(_ctx(spell))
+
+    with pytest.raises(MeldExecutionError, match="Phase 10 override patch map"):
+        runtime.execute(_ctx(spell, overrides={"x": 1}))
 
 
 def test_execute_none_result_rules() -> None:
@@ -347,6 +426,35 @@ def test_resolve_override_plan_signature_falls_back_to_plan_signature() -> None:
     assert signature == expected
 
 
+def test_resolve_override_plan_signature_prefers_mutation_codegen_payload_when_requested() -> None:
+    """Override shape-key signature supports selecting mutation execution payloads."""
+    plan = _override_plan(plan_variant="overrides_with_mutations")
+    crafter = _crafter(
+        executor=lambda c: "x",
+        patch_map=object(),
+        override_plan=_override_plan(),
+        mutation_plan=plan,
+    )
+    crafter.codegen_ir = {
+        "phase8_11": {
+            "execution": {
+                "overrides_with_mutations": {
+                    "signature": "sig-mutations",
+                    "steps_rows_signature": "sig-rows-mut",
+                },
+            },
+        },
+    }
+
+    signature = MeldRuntime._resolve_override_plan_signature(
+        crafter=crafter,
+        execution_plan=plan,
+        execution_ir_key="overrides_with_mutations",
+    )
+
+    assert signature == ("phase11_overrides_ir", "sig-mutations", "sig-rows-mut")
+
+
 def test_resolve_override_execution_ir_payload_returns_overrides_payload() -> None:
     """Override execution IR resolver returns the overrides payload when present."""
     crafter = _crafter(
@@ -372,6 +480,36 @@ def test_resolve_override_execution_ir_payload_returns_overrides_payload() -> No
     assert payload == {
         "signature": "sig-overrides",
         "steps_rows_signature": "sig-rows",
+    }
+
+
+def test_resolve_override_execution_ir_payload_supports_mutation_variant_key() -> None:
+    """Override execution IR resolver supports selecting mutation variant payloads."""
+    crafter = _crafter(
+        executor=lambda c: "x",
+        patch_map=object(),
+        override_plan=_override_plan(),
+        mutation_plan=_override_plan(plan_variant="overrides_with_mutations"),
+        codegen_ir={
+            "phase8_11": {
+                "execution": {
+                    "overrides_with_mutations": {
+                        "signature": "sig-mutations",
+                        "steps_rows_signature": "sig-rows-mut",
+                    },
+                },
+            },
+        },
+    )
+
+    payload = MeldRuntime._resolve_override_execution_ir_payload(
+        crafter=crafter,
+        execution_ir_key="overrides_with_mutations",
+    )
+
+    assert payload == {
+        "signature": "sig-mutations",
+        "steps_rows_signature": "sig-rows-mut",
     }
 
 
