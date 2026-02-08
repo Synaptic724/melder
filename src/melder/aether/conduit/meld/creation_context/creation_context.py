@@ -137,6 +137,7 @@ class CreationContext(Cleanable):
         "_spell_id",
         "_owner_creations",
         "_execute_compiled",
+        "_execute_no_hooks_compiled",
         "_execute_instance_compiled",
         "_no_overrides_executor",
         "_override_patch_map_phase10",
@@ -253,6 +254,9 @@ class CreationContext(Cleanable):
                 spell_space_scope_error_type=SpellSpaceScopeError,
             )
         )
+        self._execute_no_hooks_compiled: Callable[..., Any] = (
+            self._execute_instance_compiled
+        )
 
     def cleanup(self) -> None:
         """
@@ -288,6 +292,7 @@ class CreationContext(Cleanable):
         self._spell_id = None
         self._owner_creations = None
         self._execute_compiled = None
+        self._execute_no_hooks_compiled = None
         self._execute_instance_compiled = None
         self._no_overrides_executor = None
         self._override_patch_map_phase10 = None
@@ -318,6 +323,21 @@ class CreationContext(Cleanable):
         """
         execute_compiled = self._execute_compiled
         return execute_compiled(caller_creations, overrides)
+
+    def execute_no_hooks(
+            self,
+            caller_creations: ICreations,
+            overrides: Optional[dict[str, Any]] = None,
+    ) -> Any:
+        """
+        Execute no-hooks lane through dedicated no-hooks runtime doors.
+
+        Contract:
+            - Uses the spell-shaped no-hooks compiled route for all payloads.
+            - Caller must supply frontdoor-normalized overrides from Meld.
+        """
+        execute_no_hooks_compiled = self._execute_no_hooks_compiled
+        return execute_no_hooks_compiled(caller_creations, overrides)
 
     def _seed_baseline_override_executor(
             self,

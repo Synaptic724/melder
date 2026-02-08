@@ -285,7 +285,7 @@ def _build_no_overrides_lines(
     if resolve_route_key == "many":
         if fast_transient_no_overrides_enabled:
             return [
-                "instance = _no_overrides_executor(None)",
+                "instance = _no_overrides_executor()",
                 _build_return_statement(
                     value_expression="instance",
                     created=True,

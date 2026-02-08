@@ -2242,91 +2242,6 @@ class Conduit(Cleanable, IConduit):
         self.check_cleaned()
 
         if not self.__dynamic_environment__:
-            return self._meld_without_gate(
-                spell_name=spell_name,
-                spell=spell,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                spell_override=spell_override,
-            )
-
-        return self._meld_with_gate(
-            spell_name=spell_name,
-            spell=spell,
-            spellframe=spellframe,
-            binding_name=binding_name,
-            spell_override=spell_override,
-        )
-
-    def _meld_without_gate(
-            self,
-            spell_name: Optional[str] = None,
-            *,
-            spell: Optional[object] = None,
-            spellframe: Optional[object] = None,
-            binding_name: Optional[str] = None,
-            spell_override: Optional[Union[dict, list, tuple]] = None,
-    ) -> Optional[Any]:
-        """
-        Internal
-
-        Resolve a meld call without gate checks or ticketing.
-
-        Purpose:
-            Provide the minimal hot path for automatic (non-dynamic) mode.
-        """
-        if not self._has_meld_phase_hooks:
-            return self._meld.meld(
-                spell_name=spell_name,
-                spell=spell,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                spell_override=spell_override,
-            )
-
-        self._fire_conduit_hooks("on_meld_pre_resolve", self)
-
-        result = self._meld.meld(
-            spell_name=spell_name,
-            spell=spell,
-            spellframe=spellframe,
-            binding_name=binding_name,
-            spell_override=spell_override,
-        )
-
-        self._fire_conduit_hooks("on_meld_post_resolve", self)
-
-        return result
-
-    def _meld_with_gate(
-            self,
-            spell_name: Optional[str] = None,
-            *,
-            spell: Optional[object] = None,
-            spellframe: Optional[object] = None,
-            binding_name: Optional[str] = None,
-            spell_override: Optional[Union[dict, list, tuple]] = None,
-    ) -> Optional[Any]:
-        """
-        Internal
-
-        Resolve a meld call with gate checks and ticketing.
-
-        Purpose:
-            Enforce dynamic-mode gating and track active melds so the
-            lineage can be paused or drained safely.
-        """
-        if self._meld_gate.is_closed():
-            raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
-
-        if not self._meld_gate.enabled:
-            self._meld_gate.wait()
-            if self._meld_gate.is_closed():
-                raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
-
-        try:
-            # Track active melds for shutdown/drain semantics.
-            self._meld_gate.register_ticket()
             if not self._has_meld_phase_hooks:
                 return self._meld.meld(
                     spell_name=spell_name,
@@ -2335,22 +2250,58 @@ class Conduit(Cleanable, IConduit):
                     binding_name=binding_name,
                     spell_override=spell_override,
                 )
+            else:
+                self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
-            self._fire_conduit_hooks("on_meld_pre_resolve", self)
+                result = self._meld.meld(
+                    spell_name=spell_name,
+                    spell=spell,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                    spell_override=spell_override,
+                )
 
-            result = self._meld.meld(
-                spell_name=spell_name,
-                spell=spell,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                spell_override=spell_override,
-            )
+                self._fire_conduit_hooks("on_meld_post_resolve", self)
 
-            self._fire_conduit_hooks("on_meld_post_resolve", self)
+                return result
 
-            return result
-        finally:
-            self._meld_gate.unregister_ticket()
+        else:
+            if self._meld_gate.is_closed():
+                raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
+
+            if not self._meld_gate.enabled:
+                self._meld_gate.wait()
+                if self._meld_gate.is_closed():
+                    raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
+
+            try:
+                # Track active melds for shutdown/drain semantics.
+                self._meld_gate.register_ticket()
+                if not self._has_meld_phase_hooks:
+                    return self._meld.meld(
+                        spell_name=spell_name,
+                        spell=spell,
+                        spellframe=spellframe,
+                        binding_name=binding_name,
+                        spell_override=spell_override,
+                    )
+                else:
+                    self._fire_conduit_hooks("on_meld_pre_resolve", self)
+
+                    result = self._meld.meld(
+                        spell_name=spell_name,
+                        spell=spell,
+                        spellframe=spellframe,
+                        binding_name=binding_name,
+                        spell_override=spell_override,
+                    )
+
+                    self._fire_conduit_hooks("on_meld_post_resolve", self)
+
+                    return result
+            finally:
+                self._meld_gate.unregister_ticket()
+
 
 
     #endregion Meld
