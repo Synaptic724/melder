@@ -1,5 +1,6 @@
 """Contract tests for Meld resolution, gating, and activation flow."""
 from threading import RLock
+from types import SimpleNamespace
 from typing import Any, Callable, Iterable, Dict
 from unittest.mock import MagicMock
 
@@ -224,6 +225,7 @@ class _SpellStub:
         spell_type: str = "test",
         validity_after_run: SpellValidity | None = None,
         broken_after_run: bool | None = None,
+        creation_context: Any | None = None,
     ) -> None:
         """
         Initialize a stub spell with the requested properties.
@@ -254,6 +256,7 @@ class _SpellStub:
             spell_type: Spell type label used in error messages.
             validity_after_run: Validity to assign after structural phases.
             broken_after_run: Broken state to assign after structural phases.
+            creation_context: Optional spell-owned creation context cache.
         """
         self.spell_id = spell_id
         self.spell_name = spell_name
@@ -287,6 +290,7 @@ class _SpellStub:
         self.aetheric_frame = aetheric_frame
         self.spell_type = spell_type
         self._lock = RLock()
+        self._creation_context = creation_context
         self._pre_hooks: list[Callable[..., Any]] = []
         self._activation_hooks: list[Callable[..., Any]] = []
         self._post_hooks: list[Callable[..., Any]] = []
@@ -534,6 +538,97 @@ class _ContextStub:
         self.cleanup_called = True
 
 
+class _CreationContextStub:
+    """
+    Minimal CreationContext stub exposing the four compiled execution doors.
+
+    Contract:
+        - Tracks invocation door and payloads for assertions.
+        - Exposes `_cleaned` so Meld cache-miss logic can rebuild when needed.
+        - Returns caller-configurable payloads per door.
+    """
+
+    def __init__(
+        self,
+        *,
+        no_hooks_no_overrides_result: Any = "no-hooks-no-overrides",
+        no_hooks_overrides_result: Any = "no-hooks-overrides",
+        hooks_no_overrides_result: tuple[Any, bool] = ("hooks-no-overrides", False),
+        hooks_overrides_result: tuple[Any, bool] = ("hooks-overrides", False),
+        cleaned: bool = False,
+    ) -> None:
+        """
+        Initialize one four-door CreationContext test stub.
+
+        Args:
+            no_hooks_no_overrides_result:
+                Return value for no-hooks no-overrides calls.
+            no_hooks_overrides_result:
+                Return value for no-hooks overrides calls.
+            hooks_no_overrides_result:
+                Return tuple `(instance, created)` for hooks no-overrides calls.
+            hooks_overrides_result:
+                Return tuple `(instance, created)` for hooks overrides calls.
+            cleaned:
+                Whether this context should appear cleaned.
+        """
+        self._cleaned = cleaned
+        self.calls: list[str] = []
+        self.last_caller_creations: Any = None
+        self.last_overrides: dict[str, Any] | None = None
+        self._no_hooks_no_overrides_result = no_hooks_no_overrides_result
+        self._no_hooks_overrides_result = no_hooks_overrides_result
+        self._hooks_no_overrides_result = hooks_no_overrides_result
+        self._hooks_overrides_result = hooks_overrides_result
+
+    def _execute_no_hooks_no_overrides_compiled(self, caller_creations: Any) -> Any:
+        """
+        Simulate no-hooks no-overrides compiled door.
+        """
+        self.calls.append("no_hooks_no_overrides")
+        self.last_caller_creations = caller_creations
+        self.last_overrides = None
+        return self._no_hooks_no_overrides_result
+
+    def _execute_no_hooks_overrides_compiled(
+            self,
+            caller_creations: Any,
+            overrides: dict[str, Any],
+    ) -> Any:
+        """
+        Simulate no-hooks overrides compiled door.
+        """
+        self.calls.append("no_hooks_overrides")
+        self.last_caller_creations = caller_creations
+        self.last_overrides = overrides
+        return self._no_hooks_overrides_result
+
+    def _execute_hooks_no_overrides_compiled(
+            self,
+            caller_creations: Any,
+    ) -> tuple[Any, bool]:
+        """
+        Simulate hooks no-overrides compiled door.
+        """
+        self.calls.append("hooks_no_overrides")
+        self.last_caller_creations = caller_creations
+        self.last_overrides = None
+        return self._hooks_no_overrides_result
+
+    def _execute_hooks_overrides_compiled(
+            self,
+            caller_creations: Any,
+            overrides: dict[str, Any],
+    ) -> tuple[Any, bool]:
+        """
+        Simulate hooks overrides compiled door.
+        """
+        self.calls.append("hooks_overrides")
+        self.last_caller_creations = caller_creations
+        self.last_overrides = overrides
+        return self._hooks_overrides_result
+
+
 def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None = None) -> Meld:
     """
     Build a Meld instance with stubbed spellbook/creations.
@@ -579,104 +674,170 @@ def _make_creations(
     return Creations(conduit), conduit
 
 
-def test_cleanup_clears_references_and_runtime_caches() -> None:
+def test_cleanup_clears_references_and_creation_context_factory() -> None:
     """
-    Verify Meld.cleanup releases references and clears merged runtime caches.
+    Verify Meld.cleanup releases references and cleans the context factory.
 
     Contract:
         - Spellbook maps and creations references are cleared.
-        - Override specialization cache is cleared.
+        - CreationContextFactory cleanup is called.
         - Meld hooks are cleared and removed.
     """
     meld = _make_meld()
     hook_list: list[Callable[..., Any]] = [lambda: None]
-    meld._override_specialization_cache["spell-1"] = {("shape",): lambda *args: None}
+    factory = MagicMock()
+    meld._creation_context_factory = factory
     meld._meld_hooks = {"on_meld_pre_resolve": hook_list}
 
     meld.cleanup()
 
+    factory.cleanup.assert_called_once()
     assert hook_list == [hook_list[0]]
     assert meld._owned_spells is None
     assert meld._contracted_spells is None
     assert meld._lookup_owned_spells is None
     assert meld._lookup_contracted_spells is None
     assert meld._creations is None
-    assert meld._override_specialization_cache is None
+    assert meld._creation_context_factory is None
     assert meld._meld_hooks is None
 
 
-def test_meld_uses_comprehensive_path_when_spell_hooks_enabled() -> None:
+def test_meld_no_hooks_uses_cached_context_no_overrides_door() -> None:
     """
-    Verify meld selects the comprehensive path when spell hooks are enabled.
+    Verify no-hooks/no-overrides calls execute cached context fast door.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    context = _CreationContextStub(no_hooks_no_overrides_result="instance")
+    spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
+    spell._hooks_enabled = False
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
 
-    Contract:
-        - _comprehensive_meld_with_hooks is called when spell._hooks_enabled is True.
-        - _meld_without_hooks is not used in that case.
+    assert meld.meld(spell="spell-1") == "instance"
+    assert context.calls == ["no_hooks_no_overrides"]
+    assert context.last_caller_creations is creations
+    assert context.last_overrides is None
+
+
+def test_meld_no_hooks_uses_cached_context_overrides_door() -> None:
     """
-    meld = _make_meld()
-    spell = _SpellStub(spell_id="spell-1")
+    Verify no-hooks override calls use override door with normalized payload.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    context = _CreationContextStub(no_hooks_overrides_result="instance-with-overrides")
+    spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
+    spell._hooks_enabled = False
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+
+    assert meld.meld(spell="spell-1", spell_override=[1, 2]) == "instance-with-overrides"
+    assert context.calls == ["no_hooks_overrides"]
+    assert context.last_overrides == {"__args__": [1, 2]}
+
+
+def test_meld_hooks_lane_runs_activation_on_created_instance() -> None:
+    """
+    Verify hooks lane executes activation hooks only when context reports created.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    events: list[str] = []
+
+    def pre_hook() -> None:
+        events.append("pre")
+
+    def post_hook() -> None:
+        events.append("post")
+
+    def activation_hook(instance: Any) -> None:
+        events.append("activation:{0}".format(instance))
+
+    context = _CreationContextStub(hooks_overrides_result=("created", True))
+    spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
     spell._hooks_enabled = True
-
+    spell._pre_hooks = [pre_hook]
+    spell._post_hooks = [post_hook]
+    spell._activation_hooks = [activation_hook]
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
-    meld._comprehensive_meld_with_hooks = MagicMock(return_value="result")
-    meld._meld_without_hooks = MagicMock(return_value="without")
 
-    assert meld.meld(spell="spell-1") == "result"
-    meld._comprehensive_meld_with_hooks.assert_called_once_with(
-        target_spell=spell,
-        override_map=None,
-    )
-    meld._meld_without_hooks.assert_not_called()
+    assert meld.meld(spell="spell-1", spell_override={"x": 1}) == "created"
+    assert context.calls == ["hooks_overrides"]
+    assert events == ["pre", "activation:created", "post"]
 
 
-def test_meld_uses_comprehensive_path_when_meld_hooks_present() -> None:
+def test_meld_hooks_lane_skips_activation_for_reused_instance() -> None:
     """
-    Verify meld selects the comprehensive path when meld-level hooks exist.
-
-    Contract:
-        - _comprehensive_meld_with_hooks is called when _meld_hooks is non-empty.
-        - _meld_without_hooks is not used in that case.
+    Verify hooks lane skips activation hooks when context reports created=False.
     """
-    meld = _make_meld()
-    meld._meld_hooks = {"on_meld_pre_resolve": [lambda: None]}
-    spell = _SpellStub(spell_id="spell-1")
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    events: list[str] = []
+
+    def pre_hook() -> None:
+        events.append("pre")
+
+    def post_hook() -> None:
+        events.append("post")
+
+    def activation_hook(instance: Any) -> None:
+        events.append("activation:{0}".format(instance))
+
+    context = _CreationContextStub(hooks_no_overrides_result=("reuse", False))
+    spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
+    spell._hooks_enabled = True
+    spell._pre_hooks = [pre_hook]
+    spell._post_hooks = [post_hook]
+    spell._activation_hooks = [activation_hook]
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+
+    assert meld.meld(spell="spell-1") == "reuse"
+    assert context.calls == ["hooks_no_overrides"]
+    assert events == ["pre", "post"]
+
+
+def test_meld_builds_context_on_cache_miss() -> None:
+    """
+    Verify meld calls CreationContextFactory when spell cache has no context.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    built_context = _CreationContextStub(no_hooks_no_overrides_result="built")
+    factory = MagicMock()
+    factory.get_or_build_for_spell.return_value = built_context
+    meld._creation_context_factory = factory
+    spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=None)
     spell._hooks_enabled = False
-
+    spell._crafter = SimpleNamespace(root_blueprint_phase5=None)
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
-    meld._comprehensive_meld_with_hooks = MagicMock(return_value="result")
-    meld._meld_without_hooks = MagicMock(return_value="without")
 
-    assert meld.meld(spell="spell-1") == "result"
-    meld._comprehensive_meld_with_hooks.assert_called_once_with(
-        target_spell=spell,
-        override_map=None,
+    assert meld.meld(spell="spell-1") == "built"
+    factory.get_or_build_for_spell.assert_called_once_with(spell)
+    assert built_context.calls == ["no_hooks_no_overrides"]
+
+
+def test_meld_rebuilds_context_when_cached_context_is_cleaned() -> None:
+    """
+    Verify meld rebuilds spell context when cached context is marked cleaned.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    stale_context = _CreationContextStub(cleaned=True)
+    fresh_context = _CreationContextStub(no_hooks_no_overrides_result="fresh")
+    factory = MagicMock()
+    factory.get_or_build_for_spell.return_value = fresh_context
+    meld._creation_context_factory = factory
+    spell = _SpellStub(
+        spell_id="spell-1",
+        owner_creations=creations,
+        creation_context=stale_context,
     )
-    meld._meld_without_hooks.assert_not_called()
-
-
-def test_meld_uses_without_hooks_path_when_no_hooks() -> None:
-    """
-    Verify meld selects the minimal path when no hooks are configured.
-
-    Contract:
-        - _meld_without_hooks is called when there are no meld or spell hooks.
-        - _comprehensive_meld_with_hooks is not used in that case.
-    """
-    meld = _make_meld()
-    meld._meld_hooks = {}
-    spell = _SpellStub(spell_id="spell-1")
     spell._hooks_enabled = False
-
+    spell._crafter = SimpleNamespace(root_blueprint_phase5=None)
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
-    meld._comprehensive_meld_with_hooks = MagicMock(return_value="with")
-    meld._meld_without_hooks = MagicMock(return_value="result")
 
-    assert meld.meld(spell="spell-1") == "result"
-    meld._meld_without_hooks.assert_called_once_with(
-        target_spell=spell,
-        override_map=None,
-    )
-    meld._comprehensive_meld_with_hooks.assert_not_called()
+    assert meld.meld(spell="spell-1") == "fresh"
+    factory.get_or_build_for_spell.assert_called_once_with(spell)
+    assert fresh_context.calls == ["no_hooks_no_overrides"]
 
 
 def test_meld_requires_identity_source() -> None:
@@ -1245,522 +1406,66 @@ def test_gated_validation_required_blocks_dirty_root() -> None:
         meld._gated_validation_required(spell)
 
 
-def test_get_existing_creation_from_creations_unique_returns_instance() -> None:
+def test_meld_reuses_cached_context_without_factory_rebuild() -> None:
     """
-    Verify unique existence returns the cached creation.
-
-    Contract:
-        - Creations.unique returns the stored instance.
-    """
-    creations, _ = _make_creations()
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique,
-        owner_creations=creations,
-    )
-    instance = object()
-    creations.add_creation(spell.spell_id, instance)
-    meld = _make_meld(creations=creations)
-
-    assert meld._get_existing_creation_from_creations(
-        spell_id=spell.spell_id,
-        creations=creations,
-    ) is instance
-
-
-def test_get_existing_creation_from_creations_many_raises() -> None:
-    """
-    Verify many slots are unsupported by the singleton lookup helper.
-
-    Contract:
-        - Passing a many-list slot raises because singleton lookup expects Creation.
-    """
-    creations, _ = _make_creations()
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.many)
-    creations.add_many_creations(spell.spell_id, object())
-    meld = _make_meld(creations=creations)
-
-    with pytest.raises(AttributeError):
-        meld._get_existing_creation_from_creations(
-            spell_id=spell.spell_id,
-            creations=creations,
-        )
-
-
-def test_get_existing_creation_spellspace_requires_active_spellspace() -> None:
-    """
-    Verify spellspace existence requires an active spellspace.
-
-    Contract:
-        - Missing spellspace raises SpellSpaceScopeError.
+    Verify cached clean context is reused without calling factory rebuild.
     """
     creations, _ = _make_creations()
     meld = _make_meld(creations=creations)
-
-    with pytest.raises(SpellSpaceScopeError, match="active SpellSpace"):
-        meld._get_active_spellspace_for_creations(creations)
-
-
-def test_get_existing_creation_spellspace_owner_mismatch_allowed() -> None:
-    """
-    Verify active spellspace lookup does not reject owner mismatches.
-
-    Contract:
-        - Active spellspace lookup returns the configured spellspace object.
-    """
-    creations, conduit = _make_creations()
-    other_conduit = _ConduitStub(
-        conduit_id="conduit-2",
-        conduit_state=ConduitState.normal,
-    )
-    conduit._active_spellspace = _SpellSpaceStub(
-        spellspace_id="space-1",
-        owner_conduit=other_conduit,
-    )
-    meld = _make_meld(creations=creations)
-
-    assert meld._get_active_spellspace_for_creations(creations) is conduit._active_spellspace
-
-
-def test_get_existing_creation_spellspace_returns_instance() -> None:
-    """
-    Verify spellspace existence returns the spellspace-scoped instance.
-
-    Contract:
-        - Matching spellspace bucket returns the instance.
-    """
-    creations, conduit = _make_creations()
-    conduit._active_spellspace = _SpellSpaceStub(
-        spellspace_id="space-1",
-        owner_conduit=conduit,
-    )
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_spell_space)
-    instance = object()
-    creations.register_spellspace_creation("space-1", spell.spell_id, instance)
-    meld = _make_meld(creations=creations)
-
-    assert meld._get_spellspace_existing_creation_from_creations(
-        spell_id=spell.spell_id,
-        creations=creations,
-        spellspace=conduit._active_spellspace,
-    ) is instance
-
-
-def test_meld_reuses_existing_instance_without_activation_hooks() -> None:
-    """
-    Verify meld reuse skips activation hooks and registration.
-
-    Contract:
-        - pre/post hooks execute.
-        - activation hooks do not execute when reusing.
-        - meld_by_spell_type and register_spell are not called.
-    """
-    creations, _ = _make_creations()
-    meld = _make_meld(creations=creations)
-    events: list[str] = []
-
-    def pre_hook() -> None:
-        """
-        Record a pre-hook invocation.
-        """
-        events.append("pre")
-
-    def post_hook() -> None:
-        """
-        Record a post-hook invocation.
-        """
-        events.append("post")
-
-    def activation_hook(_: Any) -> None:
-        """
-        Record activation hooks to detect reuse.
-        """
-        events.append("activation")
-
-    spell = _SpellStub(spell_id="spell-1", owner_creations=creations)
-    spell._pre_hooks = [pre_hook]
-    spell._post_hooks = [post_hook]
-    spell._activation_hooks = [activation_hook]
-    spell._hooks_enabled = True
-
+    context = _CreationContextStub(no_hooks_no_overrides_result="reuse")
+    spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
+    spell._hooks_enabled = False
+    factory = MagicMock()
+    meld._creation_context_factory = factory
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
-    creations.add_creation(spell.spell_id, "reuse")
-    meld._dispatch_meld_runtime = MagicMock()
-    meld._register_spell = MagicMock()
 
     assert meld.meld(spell="spell-1") == "reuse"
-    assert events == ["pre", "post"]
-    meld._dispatch_meld_runtime.assert_not_called()
-    meld._register_spell.assert_not_called()
+    factory.get_or_build_for_spell.assert_not_called()
+    assert context.calls == ["no_hooks_no_overrides"]
 
 
-def test_meld_creates_instance_and_runs_activation_hooks() -> None:
+def test_meld_level_hooks_receive_expected_arguments() -> None:
     """
-    Verify meld creation path runs activation hooks and registration.
+    Verify meld-level hooks receive spell and activation payload arguments.
 
     Contract:
-        - new instance path dispatches into runtime.
-        - activation hooks receive the created instance.
-        - pre and post hooks still execute.
+        - on_meld_pre_resolve receives `(spell)`.
+        - on_meld_activation receives `(spell, instance)` when created.
+        - on_meld_post_resolve receives `(spell)`.
     """
     creations, _ = _make_creations()
     meld = _make_meld(creations=creations)
-    events: list[str] = []
-
-    def pre_hook() -> None:
-        """
-        Record a pre-hook invocation.
-        """
-        events.append("pre")
-
-    def post_hook() -> None:
-        """
-        Record a post-hook invocation.
-        """
-        events.append("post")
-
-    def activation_hook(instance: Any) -> None:
-        """
-        Record activation hooks with instance.
-        """
-        events.append(f"activation:{instance}")
-
     spell = _SpellStub(spell_id="spell-1", owner_creations=creations)
-    spell._pre_hooks = [pre_hook]
-    spell._post_hooks = [post_hook]
-    spell._activation_hooks = [activation_hook]
     spell._hooks_enabled = True
-
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
-    meld._dispatch_meld_runtime = MagicMock(return_value="created")
-    meld._register_spell = MagicMock()
-
-    assert meld.meld(spell="spell-1", spell_override=[1, 2]) == "created"
-    assert events == ["pre", "activation:created", "post"]
-    meld._dispatch_meld_runtime.assert_called_once_with(
-        spell,
-        {"__args__": [1, 2]},
-        caller_creations_lock_held=False,
+    spell._creation_context = _CreationContextStub(
+        hooks_no_overrides_result=("instance", True),
     )
-    meld._register_spell.assert_not_called()
+    seen: list[tuple[Any, ...]] = []
 
+    def on_pre_resolve(received_spell: Any) -> None:
+        seen.append(("pre", received_spell))
 
-def test_meld_unique_per_conduit_holds_creations_lock_during_construct() -> None:
-    """
-    Verify unique_per_conduit holds the caller creations lock during construction.
+    def on_activation(received_spell: Any, instance: Any) -> None:
+        seen.append(("activation", received_spell, instance))
 
-    Contract:
-        - creations lock is held while _dispatch_meld_runtime runs.
-        - caller_creations_lock_held is True for runtime invocations.
-    """
-    creations, _ = _make_creations()
-    creations_lock = _TrackingLock()
-    creations._lock = creations_lock
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_conduit)
-    spell._lock = _TrackingLock()
-    meld = _make_meld(creations=creations)
+    def on_post_resolve(received_spell: Any) -> None:
+        seen.append(("post", received_spell))
+
+    meld.set_meld_hooks(
+        {
+            "on_meld_pre_resolve": [on_pre_resolve],
+            "on_meld_activation": [on_activation],
+            "on_meld_post_resolve": [on_post_resolve],
+        }
+    )
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
 
-    def _construct(
-        _spell: _SpellStub,
-        _overrides: dict[str, Any] | None,
-        *,
-        caller_creations_lock_held: bool = False,
-    ) -> str:
-        assert creations_lock.locked is True
-        assert caller_creations_lock_held is True
-        return "created"
-
-    meld._dispatch_meld_runtime = MagicMock(side_effect=_construct)
-    meld._register_spell = MagicMock()
-
-    assert meld.meld(spell="spell-1") == "created"
-
-
-def test_meld_shared_unique_holds_spell_lock_during_construct() -> None:
-    """
-    Verify shared unique existence holds the spell lock during construction.
-
-    Contract:
-        - spell lock is held while _dispatch_meld_runtime runs.
-        - creations lock is not held during construction.
-    """
-    creations, _ = _make_creations()
-    creations_lock = _TrackingLock()
-    creations._lock = creations_lock
-    spell_lock = _TrackingLock()
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique,
-        owner_creations=creations,
-    )
-    spell._lock = spell_lock
-    meld = _make_meld(creations=creations)
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
-
-    def _construct(
-        _spell: _SpellStub,
-        _overrides: dict[str, Any] | None,
-        *,
-        caller_creations_lock_held: bool = False,
-    ) -> str:
-        assert spell_lock.locked is True
-        assert creations_lock.locked is False
-        assert caller_creations_lock_held is False
-        return "created"
-
-    meld._dispatch_meld_runtime = MagicMock(side_effect=_construct)
-    meld._register_spell = MagicMock()
-
-    assert meld.meld(spell="spell-1") == "created"
-
-
-def test_resolve_instance_with_locks_existing_creation_returns_object() -> None:
-    """
-    Verify existing-creation unique spells return the pre-created object.
-
-    Contract:
-        - user_created_object is returned without construction.
-    """
-    creations, _ = _make_creations()
-    meld = _make_meld(creations=creations)
-    instance = object()
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique,
-        is_existing_creation=True,
-        user_created_object=instance,
-    )
-    resolved, created = meld._resolve_instance_with_locks(
-        spell=spell,
-        spell_id=spell.spell_id,
-        existence=spell.existence,
-        creations=creations,
-        overrides=None,
-    )
-    assert resolved is instance
-    assert created is False
-
-
-def test_resolve_instance_with_locks_existing_creation_requires_object() -> None:
-    """
-    Verify existing-creation unique spells require a user_created_object.
-
-    Contract:
-        - Missing user_created_object raises RuntimeError.
-    """
-    creations, _ = _make_creations()
-    meld = _make_meld(creations=creations)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique,
-        is_existing_creation=True,
-        user_created_object=None,
-    )
-    with pytest.raises(RuntimeError, match="EXISTING_CREATION spell has no"):
-        meld._resolve_instance_with_locks(
-            spell=spell,
-            spell_id=spell.spell_id,
-            existence=spell.existence,
-            creations=creations,
-            overrides=None,
-        )
-
-
-def test_dispatch_meld_runtime_executes_and_cleans_context() -> None:
-    """
-    Verify runtime path executes and cleans the context.
-
-    Contract:
-        - merged runtime execution path is called for dispatched spells.
-        - context.reset is called before returning to pool.
-    """
-    meld = _make_meld()
-    context = _ContextStub()
-    meld._create_meld_context = MagicMock(return_value=context)
-    meld._execute_meld_runtime_context = MagicMock(return_value="result")
-    spell = _SpellStub(spell_id="spell-1", is_class_spell=True)
-
-    assert meld._dispatch_meld_runtime(
-        spell,
-        overrides={"x": 1},
-    ) == "result"
-    meld._execute_meld_runtime_context.assert_called_once_with(context)
-    assert context.reset_called is True
-
-
-def test_dispatch_meld_runtime_missing_crafter_raises() -> None:
-    """
-    Verify dispatch fails when spell runtime artifacts are missing.
-
-    Contract:
-        - Missing spell crafter raises RuntimeError on fast-transient checks.
-    """
-    meld = _make_meld()
-    spell = _SpellStub(spell_id="spell-1", spell_type="unknown")
-    with pytest.raises(RuntimeError, match="Spell crafter is missing"):
-        meld._dispatch_meld_runtime(
-            spell,
-            overrides=None,
-        )
-
-
-def test_select_creations_for_spell_many_prefers_caller() -> None:
-    """
-    Verify Existence.many selects caller creations when available.
-
-    Contract:
-        - per-conduit lifetimes prefer caller creations.
-    """
-    caller_creations = object()
-    owner_creations = object()
-    meld = _make_meld(creations=caller_creations)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.many,
-        owner_creations=owner_creations,
-    )
-    assert meld._select_creations_for_spell(spell, spell.existence) is caller_creations
-
-
-def test_select_creations_for_spell_many_does_not_fall_back_to_owner() -> None:
-    """
-    Verify Existence.many keeps caller routing even when caller is missing.
-
-    Contract:
-        - per-conduit lifetimes do not use owner creations as fallback.
-    """
-    owner_creations = object()
-    meld = _make_meld()
-    meld._creations = None
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.many,
-        owner_creations=owner_creations,
-    )
-    assert meld._select_creations_for_spell(spell, spell.existence) is None
-
-
-def test_select_creations_for_spell_spellspace_prefers_caller() -> None:
-    """
-    Verify Existence.unique_per_spell_space prefers caller creations.
-
-    Contract:
-        - spellspace lifetimes use caller creations when available.
-    """
-    caller_creations = object()
-    owner_creations = object()
-    meld = _make_meld(creations=caller_creations)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique_per_spell_space,
-        owner_creations=owner_creations,
-    )
-    assert meld._select_creations_for_spell(spell, spell.existence) is caller_creations
-
-
-def test_select_creations_for_spell_spellspace_does_not_fall_back_to_owner() -> None:
-    """
-    Verify Existence.unique_per_spell_space keeps caller routing when caller is missing.
-
-    Contract:
-        - spellspace lifetimes do not use owner creations as fallback.
-    """
-    owner_creations = object()
-    meld = _make_meld()
-    meld._creations = None
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique_per_spell_space,
-        owner_creations=owner_creations,
-    )
-    assert meld._select_creations_for_spell(spell, spell.existence) is None
-
-
-def test_resolve_instance_with_locks_many_constructs_and_returns_created() -> None:
-    """
-    Verify Existence.many constructs a new instance without reuse.
-
-    Contract:
-        - _dispatch_meld_runtime is called.
-        - created is True for Existence.many.
-    """
-    creations, _ = _make_creations()
-    meld = _make_meld(creations=creations)
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.many)
-    meld._dispatch_meld_runtime = MagicMock(return_value="created")
-    instance, created = meld._resolve_instance_with_locks(
-        spell=spell,
-        spell_id=spell.spell_id,
-        existence=spell.existence,
-        creations=creations,
-        overrides=None,
-    )
-
-    assert instance == "created"
-    assert created is True
-    meld._dispatch_meld_runtime.assert_called_once_with(
-        spell,
-        None,
-        caller_creations_lock_held=False,
-    )
-
-
-def test_resolve_instance_with_locks_many_registers_existing_creation() -> None:
-    """
-    Verify Existence.many still constructs when spell flags existing creation.
-
-    Contract:
-        - _dispatch_meld_runtime is executed and created flag is True.
-    """
-    creations, _ = _make_creations()
-    meld = _make_meld(creations=creations)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.many,
-        is_existing_creation=True,
-        user_created_object=object(),
-    )
-    meld._dispatch_meld_runtime = MagicMock(return_value="created")
-
-    instance, created = meld._resolve_instance_with_locks(
-        spell=spell,
-        spell_id=spell.spell_id,
-        existence=spell.existence,
-        creations=creations,
-        overrides=None,
-    )
-
-    assert instance == "created"
-    assert created is True
-    meld._dispatch_meld_runtime.assert_called_once()
-
-
-def test_resolve_instance_with_locks_shared_with_no_creations_raises() -> None:
-    """
-    Verify shared lifetimes require an explicit creations reference.
-
-    Contract:
-        - Missing creations raises during lock acquisition.
-    """
-    meld = _make_meld()
-    meld._creations = None
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique,
-        owner_creations=None,
-        is_class_spell=True,
-    )
-    meld._dispatch_meld_runtime = MagicMock(return_value="created")
-
-    with pytest.raises(AttributeError, match="_creations"):
-        meld._resolve_instance_with_locks(
-            spell=spell,
-            spell_id=spell.spell_id,
-            existence=spell.existence,
-            creations=None,
-            overrides=None,
-        )
+    assert meld.meld(spell="spell-1") == "instance"
+    assert seen == [
+        ("pre", spell),
+        ("activation", spell, "instance"),
+        ("post", spell),
+    ]
 
 
 def test_ensure_lineage_resolvable_raises_for_invalid_state() -> None:
@@ -1881,22 +1586,22 @@ def test_gated_validation_required_change_control_error_falls_back() -> None:
         meld._gated_validation_required(spell)
 
 
-def test_cleanup_clears_override_specialization_cache_entries() -> None:
+def test_cleanup_clears_creation_context_factory_reference() -> None:
     """
-    Verify Meld.cleanup clears override specialization caches.
+    Verify Meld.cleanup clears creation-context factory reference.
 
     Contract:
-        - Per-spell specialization entries are dropped.
-        - Override specialization cache reference is cleared.
+        - Factory cleanup is invoked.
+        - Factory reference is nulled after cleanup.
     """
     meld = _make_meld()
-    meld._override_specialization_cache["spell-1"] = {
-        ("shape",): lambda *args: "value",
-    }
+    factory = MagicMock()
+    meld._creation_context_factory = factory
 
     meld.cleanup()
 
-    assert meld._override_specialization_cache is None
+    factory.cleanup.assert_called_once()
+    assert meld._creation_context_factory is None
 
 
 def test_resolve_spell_by_id_raises_when_maps_missing() -> None:

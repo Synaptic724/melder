@@ -1,8 +1,10 @@
-"""Additional contract tests for meld runtime/planning helpers."""
+"""Contract tests for CreationContext execution routing and planning helpers."""
 from types import SimpleNamespace
 from typing import Any, Iterable
+
 import pytest
-from melder.aether.conduit.meld.meld import Meld
+
+from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
@@ -11,15 +13,15 @@ from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 
 
 def _make_socket_ref(
-    *,
-    node_id: str,
-    param_name: str,
-    param_path: Iterable[str],
-    path_registry: PathRegistry,
-    socket_kind: SocketKind = SocketKind.NORMAL,
+        *,
+        node_id: str,
+        param_name: str,
+        param_path: Iterable[str],
+        path_registry: PathRegistry,
+        socket_kind: SocketKind = SocketKind.NORMAL,
 ) -> SocketRef:
     """
-    Build a SocketRef for override targeting.
+    Build a SocketRef for override-target shape helper tests.
     """
     path_id = path_registry.root_path_id
     for segment in param_path:
@@ -33,129 +35,105 @@ def _make_socket_ref(
 
 
 def _make_spell(
-    *,
-    spell_id: str,
-    existence: Existence = Existence.unique,
-    spell: Any | None = None,
+        *,
+        spell_id: str,
+        existence: Existence = Existence.unique,
+        spell: Any = None,
 ) -> SimpleNamespace:
     """
     Build a minimal spell stub with OccurrencePlanBuilder-required attributes.
     """
-    if spell is None:
+    resolved_spell = spell
+    if resolved_spell is None:
         def _default_callable(**_kwargs: Any) -> str:
-            return f"value:{spell_id}"
-        spell = _default_callable
+            return "value:{0}".format(spell_id)
+
+        resolved_spell = _default_callable
     return SimpleNamespace(
         spell_id=spell_id,
         spell_name=spell_id,
         spell_index=SpellIndex(spell_id),
-        spell=spell,
+        spell=resolved_spell,
         existence=existence,
     )
 
 
-def _make_runtime_harness() -> Meld:
+def _make_execute_dispatch_harness() -> tuple[CreationContext, list[str]]:
     """
-    Build a lightweight Meld harness for merged runtime-route unit tests.
-
-    Contract:
-        - Uses object construction without `__init__` to isolate runtime routing
-          behavior under test.
+    Build a minimal CreationContext instance used only for execute-door routing.
     """
-    runtime = object.__new__(Meld)
-    runtime._override_specialization_cache = {}
-    return runtime
-
-
-def test_execute_routes_to_overrides_when_payload_present(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Verify execute routes to override execution when overrides are provided.
-    """
-    runtime = _make_runtime_harness()
     calls: list[str] = []
+    context = object.__new__(CreationContext)
+    context._cleaned = False
 
-    def _execute_no_overrides(*, context: Any, spell: Any) -> str:
-        calls.append("no")
-        return "no-overrides"
+    def _hooks_no_overrides(caller_creations: Any) -> tuple[str, bool]:
+        calls.append("hooks_no_overrides")
+        return "no-overrides", False
 
-    def _execute_with_overrides(*, context: Any, spell: Any) -> str:
-        calls.append("with")
-        return "with-overrides"
+    def _hooks_overrides(
+            caller_creations: Any,
+            overrides: dict[str, Any],
+    ) -> tuple[str, bool]:
+        calls.append("hooks_overrides")
+        return "with-overrides", True
 
-    monkeypatch.setattr(
-        Meld,
-        "_execute_no_overrides",
-        staticmethod(_execute_no_overrides),
-    )
-    monkeypatch.setattr(
-        Meld,
-        "_execute_with_overrides",
-        staticmethod(_execute_with_overrides),
-    )
+    def _no_hooks_no_overrides(caller_creations: Any) -> str:
+        calls.append("no_hooks_no_overrides")
+        return "no-hooks-no-overrides"
 
-    spell = SimpleNamespace(
-        has_mutation_override=False,
-        spell_index=SpellIndex("root"),
-        spell_name="root",
-    )
-    context = SimpleNamespace(
-        root_spell=spell,
-        conduit_id="conduit-1",
-        overrides={"x": 1},
-    )
+    def _no_hooks_overrides(
+            caller_creations: Any,
+            overrides: dict[str, Any],
+    ) -> str:
+        calls.append("no_hooks_overrides")
+        return "no-hooks-overrides"
 
-    assert runtime._execute_meld_runtime_context(context) == "with-overrides"
-    assert calls == ["with"]
+    context._execute_hooks_no_overrides_compiled = _hooks_no_overrides
+    context._execute_hooks_overrides_compiled = _hooks_overrides
+    context._execute_no_hooks_no_overrides_compiled = _no_hooks_no_overrides
+    context._execute_no_hooks_overrides_compiled = _no_hooks_overrides
+    return context, calls
 
 
-def test_execute_routes_to_no_overrides_when_payload_missing(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_execute_routes_to_overrides_when_payload_present() -> None:
     """
-    Verify execute routes to no-overrides execution when overrides are empty.
+    Verify execute routes to the hooks+overrides compiled door when overrides exist.
     """
-    runtime = _make_runtime_harness()
-    calls: list[str] = []
+    context, calls = _make_execute_dispatch_harness()
+    assert context.execute(object(), overrides={"x": 1}) == ("with-overrides", True)
+    assert calls == ["hooks_overrides"]
 
-    def _execute_no_overrides(*, context: Any, spell: Any) -> str:
-        calls.append("no")
-        return "no-overrides"
 
-    def _execute_with_overrides(*, context: Any, spell: Any) -> str:
-        calls.append("with")
-        return "with-overrides"
+def test_execute_routes_to_no_overrides_when_payload_missing() -> None:
+    """
+    Verify execute routes to the hooks+no-overrides compiled door on empty payload.
+    """
+    context, calls = _make_execute_dispatch_harness()
+    assert context.execute(object(), overrides=None) == ("no-overrides", False)
+    assert calls == ["hooks_no_overrides"]
 
-    monkeypatch.setattr(
-        Meld,
-        "_execute_no_overrides",
-        staticmethod(_execute_no_overrides),
-    )
-    monkeypatch.setattr(
-        Meld,
-        "_execute_with_overrides",
-        staticmethod(_execute_with_overrides),
-    )
 
-    spell = SimpleNamespace(
-        has_mutation_override=False,
-        spell_index=SpellIndex("root"),
-        spell_name="root",
-    )
-    context = SimpleNamespace(
-        root_spell=spell,
-        conduit_id="conduit-1",
-        overrides=None,
-    )
+def test_execute_no_hooks_routes_to_overrides_when_payload_present() -> None:
+    """
+    Verify execute_no_hooks routes to no-hooks overrides compiled door.
+    """
+    context, calls = _make_execute_dispatch_harness()
+    assert context.execute_no_hooks(object(), overrides={"x": 1}) == "no-hooks-overrides"
+    assert calls == ["no_hooks_overrides"]
 
-    assert runtime._execute_meld_runtime_context(context) == "no-overrides"
-    assert calls == ["no"]
+
+def test_execute_no_hooks_routes_to_no_overrides_when_payload_missing() -> None:
+    """
+    Verify execute_no_hooks routes to no-hooks no-overrides compiled door.
+    """
+    context, calls = _make_execute_dispatch_harness()
+    assert context.execute_no_hooks(object(), overrides=None) == "no-hooks-no-overrides"
+    assert calls == ["no_hooks_no_overrides"]
 
 
 def test_collect_override_targets_groups_by_spell_id() -> None:
     """
-    Verify override targets are grouped by spell id.
+    Verify override-target grouping is keyed by socket node id and shape rows.
     """
     path_registry = PathRegistry()
     override_map = {
@@ -172,7 +150,7 @@ def test_collect_override_targets_groups_by_spell_id() -> None:
             path_registry=path_registry,
         ): "b",
     }
-    grouped, shape = Meld._collect_override_targets_and_socket_shape(
+    grouped, shape = CreationContext._collect_override_targets_and_socket_shape(
         override_map=override_map,
     )
     assert set(grouped.keys()) == {"node-a", "node-b"}
@@ -190,18 +168,18 @@ def test_collect_override_targets_groups_by_spell_id() -> None:
     ),
 )
 def test_is_shared_existence_marks_many_as_false(
-    existence: Existence,
-    expected: bool,
+        existence: Existence,
+        expected: bool,
 ) -> None:
     """
-    Verify shared existence detection treats Existence.many as non-shared.
+    Verify shared-existence helper treats Existence.many as non-shared.
     """
     assert OccurrencePlanBuilder._is_shared_existence(existence) is expected
 
 
 def test_instance_key_for_occurrence_shared_collapses_path() -> None:
     """
-    Verify shared occurrences collapse to None paths.
+    Verify shared occurrence keys collapse path-id for shared existences.
     """
     spell = _make_spell(spell_id="node", existence=Existence.unique)
     builder = object.__new__(OccurrencePlanBuilder)
@@ -213,7 +191,7 @@ def test_instance_key_for_occurrence_shared_collapses_path() -> None:
 
 def test_instance_key_for_occurrence_many_preserves_path() -> None:
     """
-    Verify Existence.many preserves occurrence paths.
+    Verify Existence.many keeps occurrence path-id in instance keys.
     """
     spell = _make_spell(spell_id="node", existence=Existence.many)
     builder = object.__new__(OccurrencePlanBuilder)
@@ -225,7 +203,7 @@ def test_instance_key_for_occurrence_many_preserves_path() -> None:
 
 def test_select_canonical_occurrence_returns_lexicographically_smallest() -> None:
     """
-    Verify canonical occurrence selection is stable across insertion order.
+    Verify canonical occurrence selection is deterministic across insertion order.
     """
     path_registry = PathRegistry()
     left_id = path_registry.extend_path(path_registry.root_path_id, "left")
@@ -236,7 +214,7 @@ def test_select_canonical_occurrence_returns_lexicographically_smallest() -> Non
 
 def test_build_override_shape_key_tracks_socket_targets() -> None:
     """
-    Verify override shape key changes with socket target shape.
+    Verify shape key changes when socket-target shape changes.
     """
     path_registry = PathRegistry()
     override_map_a = {
@@ -262,19 +240,19 @@ def test_build_override_shape_key_tracks_socket_targets() -> None:
         ): "left",
     }
 
-    _, shape_a = Meld._collect_override_targets_and_socket_shape(
+    _, shape_a = CreationContext._collect_override_targets_and_socket_shape(
         override_map=override_map_a,
     )
-    _, shape_b = Meld._collect_override_targets_and_socket_shape(
+    _, shape_b = CreationContext._collect_override_targets_and_socket_shape(
         override_map=override_map_b,
     )
 
-    key_a = Meld._build_override_shape_key(
+    key_a = CreationContext._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides", "sig-rows"),
         socket_shape=shape_a,
         root_positional_override=None,
     )
-    key_b = Meld._build_override_shape_key(
+    key_b = CreationContext._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides", "sig-rows"),
         socket_shape=shape_b,
         root_positional_override=None,
@@ -284,7 +262,7 @@ def test_build_override_shape_key_tracks_socket_targets() -> None:
 
 def test_build_override_shape_key_tracks_positional_arity() -> None:
     """
-    Verify override shape key includes root positional override arity.
+    Verify shape key includes root positional override arity.
     """
     path_registry = PathRegistry()
     override_map = {
@@ -301,16 +279,16 @@ def test_build_override_shape_key_tracks_positional_arity() -> None:
             path_registry=path_registry,
         ): "skip",
     }
-    _, shape = Meld._collect_override_targets_and_socket_shape(
+    _, shape = CreationContext._collect_override_targets_and_socket_shape(
         override_map=override_map,
     )
 
-    no_args_key = Meld._build_override_shape_key(
+    no_args_key = CreationContext._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides", "sig-rows"),
         socket_shape=shape,
         root_positional_override=None,
     )
-    two_args_key = Meld._build_override_shape_key(
+    two_args_key = CreationContext._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides", "sig-rows"),
         socket_shape=shape,
         root_positional_override=("a", "b"),
@@ -320,7 +298,7 @@ def test_build_override_shape_key_tracks_positional_arity() -> None:
 
 def test_build_override_shape_key_changes_when_signature_changes() -> None:
     """
-    Shape key changes when execution signature changes.
+    Verify shape key changes when the plan-signature tuple changes.
     """
     path_registry = PathRegistry()
     override_map = {
@@ -331,16 +309,16 @@ def test_build_override_shape_key_changes_when_signature_changes() -> None:
             path_registry=path_registry,
         ): "left",
     }
-    _, shape = Meld._collect_override_targets_and_socket_shape(
+    _, shape = CreationContext._collect_override_targets_and_socket_shape(
         override_map=override_map,
     )
 
-    key_a = Meld._build_override_shape_key(
+    key_a = CreationContext._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides-a", "sig-rows"),
         socket_shape=shape,
         root_positional_override=None,
     )
-    key_b = Meld._build_override_shape_key(
+    key_b = CreationContext._build_override_shape_key(
         plan_signature=("phase11_overrides_ir", "sig-overrides-b", "sig-rows"),
         socket_shape=shape,
         root_positional_override=None,

@@ -363,28 +363,19 @@ def test_resolve_spell_by_lookup_key_finds_contracted_spell() -> None:
     assert meld._resolve_spell_by_lookup_key(lookup_key) is spell
 
 
-def test_create_meld_context_wires_overrides_and_lock_flag() -> None:
+def test_meld_initializes_creation_context_factory() -> None:
     """
-    Verify _create_meld_context wires overrides and lock flags.
+    Verify Meld initializes an owned creation-context factory.
 
     Contract:
-        - overrides are stored on the context.
-        - caller_creations_lock_held is passed through.
+        - `_creation_context_factory` is present after initialization.
+        - Factory exposes build/get-or-build API.
     """
-    spell = _SpellStub(spell_id="spell-1")
     meld = _make_meld(creations=object())
-    context = meld._create_meld_context(
-        spell,
-        overrides={"x": 1},
-        caller_creations_lock_held=True,
-    )
-    try:
-        assert context.root_spell is spell
-        assert context.overrides == {"x": 1}
-        assert context.caller_creations is meld._creations
-        assert context.caller_creations_lock_held is True
-    finally:
-        context.cleanup()
+    factory = meld._creation_context_factory
+    assert factory is not None
+    assert hasattr(factory, "build_for_spell")
+    assert hasattr(factory, "get_or_build_for_spell")
 
 
 def test_execute_hooks_runs_all_hooks() -> None:
@@ -466,101 +457,21 @@ def test_execute_activation_hooks_wraps_error() -> None:
         Meld._execute_activation_hooks([boom], object())
 
 
-def test_select_creations_per_conduit_prefers_caller() -> None:
+def test_legacy_runtime_helpers_removed_from_meld() -> None:
     """
-    Verify per-conduit existences prefer caller creations.
+    Verify removed runtime helper methods are no longer exposed on Meld.
 
     Contract:
-        - caller creations are selected for per-conduit lifetimes.
+        - Legacy runtime helper methods remain removed after CreationContext migration.
     """
-    caller_creations = object()
-    owner_creations = object()
-    meld = _make_meld(creations=caller_creations)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique_per_conduit,
-        owner_creations=owner_creations,
-    )
-    assert meld._select_creations_for_spell(spell, spell.existence) is caller_creations
-
-
-def test_select_creations_per_conduit_does_not_fall_back_to_owner() -> None:
-    """
-    Verify per-conduit selection does not fall back to owner creations.
-
-    Contract:
-        - caller routing is preserved even when caller creations are missing.
-    """
-    owner_creations = object()
-    meld = _make_meld()
-    meld._creations = None
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique_per_conduit,
-        owner_creations=owner_creations,
-    )
-    assert meld._select_creations_for_spell(spell, spell.existence) is None
-
-
-def test_select_creations_shared_prefers_owner() -> None:
-    """
-    Verify shared existences prefer owner creations.
-
-    Contract:
-        - owner creations are selected for shared lifetimes.
-    """
-    caller_creations = object()
-    owner_creations = object()
-    meld = _make_meld(creations=caller_creations)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique,
-        owner_creations=owner_creations,
-    )
-    assert meld._select_creations_for_spell(spell, spell.existence) is owner_creations
-
-
-def test_select_creations_shared_does_not_fall_back_to_caller() -> None:
-    """
-    Verify shared selection does not fall back to caller creations.
-
-    Contract:
-        - owner routing is preserved even when owner creations are missing.
-    """
-    caller_creations = object()
-    meld = _make_meld(creations=caller_creations)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        existence=Existence.unique,
-        owner_creations=None,
-    )
-    assert meld._select_creations_for_spell(spell, spell.existence) is None
-
-
-def test_raise_override_on_existing_instance_no_overrides() -> None:
-    """
-    Verify override checks are skipped when overrides are empty.
-
-    Contract:
-        - no exception is raised for empty overrides.
-    """
-    meld = _make_meld()
-    spell = _SpellStub(spell_id="spell-1")
-    meld._raise_override_on_existing_instance(spell=spell, overrides=None)
-    meld._raise_override_on_existing_instance(spell=spell, overrides={})
-
-
-def test_raise_override_on_existing_instance_raises() -> None:
-    """
-    Verify override reuse rejects overrides for existing instances.
-
-    Contract:
-        - non-empty overrides raise MeldExecutionError.
-    """
-    meld = _make_meld()
-    spell = _SpellStub(spell_id="spell-1")
-    with pytest.raises(MeldExecutionError, match="already exists"):
-        meld._raise_override_on_existing_instance(spell=spell, overrides={"x": 1})
+    meld = _make_meld(creations=object())
+    assert not hasattr(meld, "_create_meld_context")
+    assert not hasattr(meld, "_dispatch_meld_runtime")
+    assert not hasattr(meld, "_execute_meld_runtime_context")
+    assert not hasattr(meld, "_select_creations_for_spell")
+    assert not hasattr(meld, "_raise_override_on_existing_instance")
+    assert not hasattr(meld, "_get_existing_creation_from_creations")
+    assert not hasattr(meld, "_get_active_spellspace_for_creations")
 
 
 def test_legacy_registration_helpers_removed_from_meld() -> None:
@@ -575,26 +486,6 @@ def test_legacy_registration_helpers_removed_from_meld() -> None:
     assert not hasattr(meld, "_register_spellspace_to_creations")
     assert not hasattr(meld, "_register_to_lesser_creations")
     assert not hasattr(meld, "_register_spellspace_to_lesser_creations")
-
-
-def test_dispatch_meld_runtime_missing_crafter_raises() -> None:
-    """
-    Verify dispatch fails when spell runtime artifacts are missing.
-
-    Contract:
-        - Missing spell crafter raises RuntimeError during fast-route checks.
-    """
-    meld = _make_meld()
-    spell = _SpellStub(
-        spell_id="spell-1",
-        is_class_spell=True,
-    )
-    spell._crafter = None
-    with pytest.raises(RuntimeError, match="Spell crafter is missing"):
-        meld._dispatch_meld_runtime(
-            spell,
-            overrides=None,
-        )
 
 
 def test_register_spellspace_creation_registers_instance() -> None:
@@ -641,48 +532,6 @@ def test_add_many_creations_records_instance_without_disposal() -> None:
     assert spell_id in creations._creations
     assert isinstance(creations._creations[spell_id], list)
     assert len(creations._creations[spell_id]) == 1
-
-
-def test_get_existing_creation_from_creations_ignores_spellspace_slots() -> None:
-    """
-    Verify singleton lookup helper does not read spellspace-only entries.
-
-    Contract:
-        - _get_existing_creation_from_creations returns None when only spellspace data exists.
-    """
-    creations = _make_creations()
-    conduit = creations._conduit
-    spellspace = SimpleNamespace(id="space-1", owner_conduit=conduit)
-    conduit._active_spellspace = spellspace
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_spell_space)
-    creations.register_spellspace_creation(
-        spellspace_id=spellspace.id,
-        spell_id=spell.spell_id,
-        item=object(),
-    )
-    meld = _make_meld(creations=creations)
-    assert (
-        meld._get_existing_creation_from_creations(
-            spell_id=spell.spell_id,
-            creations=creations,
-        )
-        is None
-    )
-
-
-def test_get_active_spellspace_for_creations_owner_mismatch_allowed() -> None:
-    """
-    Verify active spellspace lookup does not reject owner mismatches.
-
-    Contract:
-        - Active spellspace lookup returns the configured spellspace.
-    """
-    creations = _make_creations()
-    conduit = creations._conduit
-    other_conduit = _ConduitStub("conduit-2", ConduitState.normal)
-    conduit._active_spellspace = SimpleNamespace(id="space-1", owner_conduit=other_conduit)
-    meld = _make_meld(creations=creations)
-    assert meld._get_active_spellspace_for_creations(creations) is conduit._active_spellspace
 
 
 def test_register_to_creations_helper_is_removed() -> None:

@@ -1,362 +1,239 @@
-import logging
+from threading import RLock
 from types import SimpleNamespace
-from typing import Any, Mapping
-from unittest.mock import MagicMock
+from typing import Any, Optional
 
 import pytest
 
-from melder.aether.conduit.meld.meld_context.meld_context import MeldContext
-from melder.utilities.interfaces.interfaces import IChannelLogger
-from melder.utilities.logger.safe_logger import SafeLogger
-from melder.utilities.synchronization.cancellation_event_signal import (
-    CancellationEventSignal,
+from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
+from melder.aether.conduit.meld.creation_context.creation_context_builder import (
+    CreationContextBuilder,
 )
+from melder.aether.conduit.meld.creation_context.creation_context_factory import (
+    CreationContextFactory,
+)
+from melder.spellbook.existence.existence import Existence
 
 
-class _ChannelLoggerStub:
+class _CrafterStub:
     """
-    Minimal stub that satisfies IChannelLogger structural checks.
-
-    This provides all protocol attributes and a setLevel method so SafeLogger
-    can initialize without raising.
+    Minimal crafter artifact container required by CreationContextBuilder.
     """
 
     def __init__(self) -> None:
         """
-        Initialize the stub with protocol attributes and a setLevel hook.
+        Initialize default no-overrides/overrides codegen artifacts.
         """
-        for name in IChannelLogger.__protocol_attrs__:
-            setattr(self, name, MagicMock())
-        self.setLevel = MagicMock()
+        self.phase12_no_overrides_executor = lambda _context: "built"
+        self.execution_plan_phase11_no_overrides = SimpleNamespace(
+            fast_transient_plan=None,
+        )
+        self.override_patch_map_phase10 = None
+        self.root_blueprint_phase5 = None
+        self.codegen_ir = None
 
 
-def _make_root_spell(
-    *,
-    creations: Any = None,
-) -> SimpleNamespace:
+_DEFAULT_CRAFTER = object()
+
+
+class _CachedContextStub:
     """
-    Build a minimal spell stub with the attributes MeldContext expects.
+    Simple spell-owned context cache stub with cleanup tracking.
+    """
+
+    def __init__(self, *, cleaned: bool = False) -> None:
+        """
+        Initialize one cached-context stub.
+        """
+        self._cleaned = cleaned
+        self.cleanup_calls = 0
+
+    @property
+    def is_cleaned(self) -> bool:
+        """
+        Return whether this cached context is already cleaned.
+        """
+        return self._cleaned
+
+    def cleanup(self) -> None:
+        """
+        Mark the stub as cleaned and count cleanup calls.
+        """
+        self.cleanup_calls += 1
+        self._cleaned = True
+
+
+class _SpellStub:
+    """
+    Minimal spell stub exposing the contract used by builder/factory tests.
+    """
+
+    def __init__(
+            self,
+            *,
+            spell_id: str = "spell-1",
+            existence: Existence = Existence.unique,
+            is_existing_creation: bool = False,
+            has_mutation_override: bool = False,
+            crafter: Any = _DEFAULT_CRAFTER,
+            creation_context: Optional[Any] = None,
+    ) -> None:
+        """
+        Initialize a spell-shaped object for CreationContext tests.
+        """
+        self.spell_id = spell_id
+        self.spell_name = spell_id
+        self.spell_index = SimpleNamespace(current=spell_id)
+        self.existence = existence
+        self.is_existing_creation = is_existing_creation
+        self.user_created_object = object() if is_existing_creation else None
+        self.has_mutation_override = has_mutation_override
+        self.execution_plan_dispatch_route = None
+
+        self._owner_creations = SimpleNamespace(_creations={}, _lock=RLock())
+        self._spellbook = SimpleNamespace(_spell_id_pool={})
+        if crafter is _DEFAULT_CRAFTER:
+            self._crafter = _CrafterStub()
+        else:
+            self._crafter = crafter
+        self._creation_context = creation_context
+        self._lock = RLock()
+        self._cleaned = False
+
+    def check_cleaned(self) -> None:
+        """
+        Enforce the owned spell cleaned contract.
+        """
+        if self._cleaned:
+            raise RuntimeError("Spell has been cleaned.")
+
+
+def test_build_for_spell_returns_creation_context_instance() -> None:
+    """
+    Verify factory build returns a spell-bound CreationContext.
 
     Contract:
-        - Provides owner creations metadata.
-
-    Args:
-        creations (Any): The creations container to expose on the spell.
-
-    Returns:
-        SimpleNamespace: Spell-like object with the expected attributes.
+        - build_for_spell returns a CreationContext instance.
+        - The returned context is bound to the same spell.
     """
-    return SimpleNamespace(
-        _owner_creations=creations,
-    )
-
-
-def test_init_with_missing_root_spell_raises_attributeerror() -> None:
-    """
-    Verify missing root spell fails via raw contract violation.
-
-    Contract:
-        - root_spell None propagates attribute-access failure.
-
-    Raises:
-        AssertionError: If root_spell None does not raise.
-    """
-    with pytest.raises(AttributeError):
-        MeldContext(root_spell=None)
-
-
-def test_root_spell_property_returns_value() -> None:
-    """
-    Verify root_spell property returns the provided spell object.
-
-    Contract:
-        - root_spell returns the same object supplied at initialization.
-
-    Raises:
-        AssertionError: If root_spell does not match the input.
-    """
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell)
+    spell = _SpellStub()
+    factory = CreationContextFactory()
+    context = factory.build_for_spell(spell)
     try:
-        assert context.root_spell is root_spell
+        assert isinstance(context, CreationContext)
+        assert context._spell is spell
+        assert context._spell_id == spell.spell_id
     finally:
         context.cleanup()
+        factory.cleanup()
 
 
-def test_owner_creations_property_returns_owner_creations() -> None:
+def test_get_or_build_for_spell_publishes_and_reuses_context() -> None:
     """
-    Verify owner_creations returns the root spell's owner creations.
+    Verify get-or-build publishes to spell and reuses cached context.
 
     Contract:
-        - owner_creations returns root_spell._owner_creations.
-
-    Raises:
-        AssertionError: If owner_creations does not match spell owner creations.
+        - First call builds and publishes spell._creation_context.
+        - Second call returns the same published context.
     """
-    creations = object()
-    root_spell = _make_root_spell(creations=creations)
-    context = MeldContext(root_spell=root_spell)
+    spell = _SpellStub()
+    factory = CreationContextFactory()
+    context_a = factory.get_or_build_for_spell(spell)
+    context_b = factory.get_or_build_for_spell(spell)
     try:
-        assert context.owner_creations is creations
+        assert spell._creation_context is context_a
+        assert context_b is context_a
+    finally:
+        context_a.cleanup()
+        factory.cleanup()
+
+
+def test_get_or_build_for_spell_replaces_cleaned_cache_entry() -> None:
+    """
+    Verify get-or-build replaces cleaned spell-owned contexts.
+
+    Contract:
+        - Cleaned cached context is treated as cache miss.
+        - Newly built context is published onto the spell.
+    """
+    stale_context = _CachedContextStub(cleaned=True)
+    spell = _SpellStub(creation_context=stale_context)
+    factory = CreationContextFactory()
+    new_context = factory.get_or_build_for_spell(spell)
+    try:
+        assert new_context is not stale_context
+        assert spell._creation_context is new_context
+    finally:
+        new_context.cleanup()
+        factory.cleanup()
+
+
+def test_build_and_bind_for_spell_replaces_previous_context() -> None:
+    """
+    Verify build-and-bind replaces and cleans prior spell-owned context.
+
+    Contract:
+        - Existing context is cleaned during replacement.
+        - Spell ends up owning the newly built context.
+    """
+    previous_context = _CachedContextStub(cleaned=False)
+    spell = _SpellStub(creation_context=previous_context)
+    factory = CreationContextFactory()
+    new_context = factory.build_and_bind_for_spell(spell)
+    try:
+        assert previous_context.cleanup_calls == 1
+        assert spell._creation_context is new_context
+    finally:
+        new_context.cleanup()
+        factory.cleanup()
+
+
+@pytest.mark.parametrize(
+    "existence, expected",
+    (
+        (Existence.unique, CreationContext.ROUTE_SHARED),
+        (Existence.unique_per_conduit, CreationContext.ROUTE_UNIQUE_PER_CONDUIT),
+        (Existence.unique_per_spell_space, CreationContext.ROUTE_SPELLSPACE),
+        (Existence.many, CreationContext.ROUTE_MANY),
+    ),
+)
+def test_builder_resolve_route_key_maps_existence_variants(
+        existence: Existence,
+        expected: str,
+) -> None:
+    """
+    Verify builder route-key mapping matches spell existence policy.
+    """
+    spell = _SpellStub(existence=existence)
+    assert CreationContextBuilder._resolve_route_key(spell) == expected
+
+
+def test_builder_requires_crafter_for_non_existing_creation() -> None:
+    """
+    Verify builder rejects non-existing-creation spells without crafter artifacts.
+
+    Contract:
+        - build raises RuntimeError when crafter is missing.
+    """
+    builder = CreationContextBuilder()
+    spell = _SpellStub(crafter=None)
+    spell.is_existing_creation = False
+    with pytest.raises(RuntimeError, match="spell crafter artifacts"):
+        builder.build(spell)
+
+
+def test_builder_allows_existing_creation_without_crafter() -> None:
+    """
+    Verify existing-creation spells can build without crafter artifacts.
+
+    Contract:
+        - Existing-creation route does not require spell._crafter.
+    """
+    builder = CreationContextBuilder()
+    spell = _SpellStub(is_existing_creation=True, crafter=None)
+    context = builder.build(spell)
+    try:
+        assert isinstance(context, CreationContext)
+        assert context._spell is spell
     finally:
         context.cleanup()
-
-
-def test_caller_creations_defaults_none_when_not_provided() -> None:
-    """
-    Verify caller_creations remains None when not provided.
-
-    Contract:
-        - caller_creations is None when omitted.
-
-    Raises:
-        AssertionError: If caller_creations is not None by default.
-    """
-    creations = object()
-    root_spell = _make_root_spell(creations=creations)
-    context = MeldContext(root_spell=root_spell)
-    try:
-        assert context.caller_creations is None
-    finally:
-        context.cleanup()
-
-
-def test_caller_creations_uses_explicit_value() -> None:
-    """
-    Verify caller_creations uses the explicit value when provided.
-
-    Contract:
-        - caller_creations returns the provided object.
-        - owner_creations remains bound to root_spell._owner_creations.
-
-    Raises:
-        AssertionError: If caller_creations does not reflect the explicit value.
-    """
-    owner_creations = object()
-    caller_creations = object()
-    root_spell = _make_root_spell(creations=owner_creations)
-    context = MeldContext(
-        root_spell=root_spell,
-        caller_creations=caller_creations,
-    )
-    try:
-        assert context.owner_creations is owner_creations
-        assert context.caller_creations is caller_creations
-    finally:
-        context.cleanup()
-
-
-def test_caller_creations_lock_held_defaults_false() -> None:
-    """
-    Verify caller_creations_lock_held defaults to False.
-
-    Contract:
-        - caller_creations_lock_held is False when not provided.
-
-    Raises:
-        AssertionError: If the default is not False.
-    """
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell)
-    try:
-        assert context.caller_creations_lock_held is False
-    finally:
-        context.cleanup()
-
-
-def test_caller_creations_lock_held_is_stored() -> None:
-    """
-    Verify caller_creations_lock_held preserves explicit values.
-
-    Contract:
-        - caller_creations_lock_held returns the provided boolean.
-
-    Raises:
-        AssertionError: If the flag does not match the input.
-    """
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(
-        root_spell=root_spell,
-        caller_creations_lock_held=True,
-    )
-    try:
-        assert context.caller_creations_lock_held is True
-    finally:
-        context.cleanup()
-
-
-def test_overrides_default_none() -> None:
-    """
-    Verify overrides defaults to None when not provided.
-
-    Contract:
-        - overrides is None when no overrides are supplied.
-
-    Raises:
-        AssertionError: If overrides is not None by default.
-    """
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell)
-    try:
-        assert context.overrides is None
-    finally:
-        context.cleanup()
-
-
-def test_overrides_default_none_for_each_context() -> None:
-    """
-    Verify default overrides are None per context.
-
-    Contract:
-        - Each MeldContext starts with overrides set to None.
-
-    Raises:
-        AssertionError: If overrides defaults are not None.
-    """
-    root_spell = _make_root_spell(creations=object())
-    first = MeldContext(root_spell=root_spell)
-    second = MeldContext(root_spell=root_spell)
-    try:
-        assert first.overrides is None
-        assert second.overrides is None
-    finally:
-        first.cleanup()
-        second.cleanup()
-
-
-def test_overrides_referenced_from_input_mapping() -> None:
-    """
-    Verify overrides reference the input mapping.
-
-    Contract:
-        - overrides equals the input mapping contents.
-        - overrides is the same object supplied to MeldContext.
-
-    Raises:
-        AssertionError: If overrides are not referenced.
-    """
-    overrides: Mapping[str, Any] = {"x": 1}
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell, overrides=overrides)
-    try:
-        assert context.overrides == overrides
-        assert context.overrides is overrides
-    finally:
-        context.cleanup()
-
-
-def test_overrides_track_input_mapping_changes() -> None:
-    """
-    Verify overrides reflect input mapping changes.
-
-    Contract:
-        - Updates to the input mapping alter context overrides.
-
-    Raises:
-        AssertionError: If context overrides do not track external mutations.
-    """
-    overrides = {"x": 1}
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell, overrides=overrides)
-    try:
-        overrides["x"] = 2
-        assert context.overrides["x"] == 2
-    finally:
-        context.cleanup()
-
-
-def test_overrides_mutation_affects_original_mapping() -> None:
-    """
-    Verify context override mutations affect the input mapping.
-
-    Contract:
-        - Mutating context overrides mutates the original mapping.
-
-    Raises:
-        AssertionError: If external overrides are not mutated.
-    """
-    overrides = {"x": 1}
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell, overrides=overrides)
-    try:
-        context.overrides["x"] = 2
-        assert overrides["x"] == 2
-    finally:
-        context.cleanup()
-
-
-def test_overrides_property_mutations_persist() -> None:
-    """
-    Verify mutations made through overrides persist.
-
-    Contract:
-        - updates through overrides are reflected on subsequent access.
-
-    Raises:
-        AssertionError: If override mutations are not persisted.
-    """
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell, overrides={})
-    try:
-        context.overrides["x"] = 1
-        assert context.overrides["x"] == 1
-    finally:
-        context.cleanup()
-
-
-def test_owner_creations_snapshot_is_immutable() -> None:
-    """
-    Verify owner_creations reference is captured at initialization time.
-
-    Contract:
-        - Subsequent changes to root spell creations do not alter
-          context.owner_creations.
-
-    Raises:
-        AssertionError: If context.owner_creations tracks root spell mutations.
-    """
-    creations = object()
-    root_spell = _make_root_spell(creations=creations)
-    context = MeldContext(root_spell=root_spell)
-    try:
-        root_spell._owner_creations = object()
-        assert context.owner_creations is creations
-    finally:
-        context.cleanup()
-
-
-def test_cleanup_clears_referenced_overrides_mapping() -> None:
-    """
-    Verify cleanup clears referenced overrides mapping.
-
-    Contract:
-        - context overrides are cleared on cleanup.
-        - referenced override mapping is cleared.
-
-    Raises:
-        AssertionError: If cleanup does not clear referenced overrides.
-    """
-    overrides = {"x": 1}
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell, overrides=overrides)
-    context.cleanup()
-    assert overrides == {}
-    assert context.overrides is None
-
-
-def test_cleanup_is_idempotent() -> None:
-    """
-    Verify cleanup can be called multiple times safely.
-
-    Contract:
-        - Subsequent cleanup calls do not raise.
-        - Context remains cleaned after repeated calls.
-
-    Raises:
-        AssertionError: If cleanup is not idempotent.
-    """
-    root_spell = _make_root_spell(creations=object())
-    context = MeldContext(root_spell=root_spell)
-    context.cleanup()
-    context.cleanup()
-    assert context.cleaned is True
+        builder.cleanup()
