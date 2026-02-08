@@ -9,6 +9,8 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
+_MISSING = object()
+
 _TRANSIENT_SCHEMA_SEQUENCE_FIELDS = (
     "call_modes",
     "dep1",
@@ -391,7 +393,10 @@ def _build_step_plan_executor_source(
         "        context=None,",
         "        *,",
         "        steps=steps,",
+        "        step_spells=step_spells,",
+        "        step_existences=step_existences,",
         "        step_creations_target_kinds=step_creations_target_kinds,",
+        "        step_instance_keys=step_instance_keys,",
         "        root_instance_key=root_instance_key,",
         "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
         "        _construct_spell_instance=_construct_spell_instance,",
@@ -434,7 +439,8 @@ def _append_step_resolution_source(
     """
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
-        f"    spell_{step_index} = plan_step_{step_index}.spell",
+        f"    spell_{step_index} = step_spells[{step_index}]",
+        f"    existence_{step_index} = step_existences[{step_index}]",
         f"    target_kind_{step_index} = step_creations_target_kinds[{step_index}]",
         (
             f"    if target_kind_{step_index} in ("
@@ -481,7 +487,7 @@ def _append_step_resolution_source(
                     f"existence=plan_step_{step_index}.existence)"
                 ),
             ])
-        lines.append(f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}")
+        lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
         return
 
     if existence in (
@@ -501,7 +507,7 @@ def _append_step_resolution_source(
                 f"            instance_{step_index} = _get_existing_creation("
                 f"spell=spell_{step_index}, "
                 f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
+                f"existence=existence_{step_index})"
             ),
             f"            if instance_{step_index} is None:",
             (
@@ -514,9 +520,9 @@ def _append_step_resolution_source(
                 f"spell=spell_{step_index}, "
                 f"instance=instance_{step_index}, "
                 f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
+                f"existence=existence_{step_index})"
             ),
-            f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}",
+            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}",
         ])
         return
 
@@ -529,76 +535,90 @@ def _append_step_resolution_source(
             f"            and creations_{step_index} is context.caller_creations",
             "    ):",
             f"        use_spell_lock_{step_index} = False",
-            f"    if use_spell_lock_{step_index}:",
-            f"        with spell_{step_index}._lock:",
+            (
+                f"    instance_{step_index} = _get_existing_creation("
+                f"spell=spell_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=existence_{step_index})"
+            ),
+            f"    if instance_{step_index} is None:",
+            f"        if use_spell_lock_{step_index}:",
+            f"            with spell_{step_index}._lock:",
+            f"                with creations_{step_index}._lock:",
+                (
+                    f"                    instance_{step_index} = _get_existing_creation("
+                    f"spell=spell_{step_index}, "
+                    f"creations=creations_{step_index}, "
+                    f"existence=existence_{step_index})"
+            ),
+            f"                if instance_{step_index} is None:",
+            (
+                f"                    instance_{step_index} = _construct_spell_instance("
+                f"plan_step=plan_step_{step_index}, "
+                f"instance_results=instance_results)"
+            ),
+            f"                    with creations_{step_index}._lock:",
+            (
+                f"                        _register_spell_instance("
+                f"spell=spell_{step_index}, "
+                f"instance=instance_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=existence_{step_index})"
+            ),
+            "        else:",
             f"            with creations_{step_index}._lock:",
             (
                 f"                instance_{step_index} = _get_existing_creation("
                 f"spell=spell_{step_index}, "
                 f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
+                f"existence=existence_{step_index})"
             ),
-            f"            if instance_{step_index} is None:",
+            f"                if instance_{step_index} is None:",
             (
-                f"                instance_{step_index} = _construct_spell_instance("
+                f"                    instance_{step_index} = _construct_spell_instance("
                 f"plan_step=plan_step_{step_index}, "
                 f"instance_results=instance_results)"
             ),
-            f"                with creations_{step_index}._lock:",
             (
                 f"                    _register_spell_instance("
                 f"spell=spell_{step_index}, "
                 f"instance=instance_{step_index}, "
                 f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
+                f"existence=existence_{step_index})"
             ),
-            "    else:",
-            f"        with creations_{step_index}._lock:",
-            (
-                f"            instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
-            ),
-            f"            if instance_{step_index} is None:",
-            (
-                f"                instance_{step_index} = _construct_spell_instance("
-                f"plan_step=plan_step_{step_index}, "
-                f"instance_results=instance_results)"
-            ),
-            (
-                f"                _register_spell_instance("
-                f"spell=spell_{step_index}, "
-                f"instance=instance_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
-            ),
-            f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}",
+            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}",
         ])
         return
 
     lines.extend([
-        f"    with creations_{step_index}._lock:",
         (
-            f"        instance_{step_index} = _get_existing_creation("
+            f"    instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "
             f"creations=creations_{step_index}, "
-            f"existence=plan_step_{step_index}.existence)"
+            f"existence=existence_{step_index})"
         ),
-        f"        if instance_{step_index} is None:",
+        f"    if instance_{step_index} is None:",
+        f"        with creations_{step_index}._lock:",
         (
-            f"            instance_{step_index} = _construct_spell_instance("
+            f"            instance_{step_index} = _get_existing_creation("
+            f"spell=spell_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=existence_{step_index})"
+        ),
+        f"            if instance_{step_index} is None:",
+        (
+            f"                instance_{step_index} = _construct_spell_instance("
             f"plan_step=plan_step_{step_index}, "
             f"instance_results=instance_results)"
         ),
         (
-            f"            _register_spell_instance("
+            f"                _register_spell_instance("
             f"spell=spell_{step_index}, "
             f"instance=instance_{step_index}, "
             f"creations=creations_{step_index}, "
-            f"existence=plan_step_{step_index}.existence)"
+            f"existence=existence_{step_index})"
         ),
-        f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}",
+        f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}",
     ])
 
 
@@ -620,8 +640,20 @@ def _build_step_executor_namespace(
         "_construct_spell_instance": _construct_spell_instance,
         "_get_existing_creation": _get_existing_creation,
         "_register_spell_instance": _register_spell_instance,
+        "step_spells": tuple(
+            plan_step.spell
+            for plan_step in steps
+        ),
+        "step_existences": tuple(
+            plan_step.existence
+            for plan_step in steps
+        ),
         "step_creations_target_kinds": tuple(
             plan_step.creations_target_kind
+            for plan_step in steps
+        ),
+        "step_instance_keys": tuple(
+            plan_step.instance_key
             for plan_step in steps
         ),
         "steps": steps,
@@ -701,10 +733,14 @@ def _construct_spell_instance(
     if not (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell):
         return spell.spell
 
-    call_kwargs = dict(kwargs)
-    raw_args = call_kwargs.pop("__args__", [])
-    if isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
+    raw_args = kwargs.get("__args__", _MISSING)
+    if raw_args is _MISSING:
+        args = []
+        call_kwargs = kwargs
+    elif isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
         args = list(raw_args)
+        call_kwargs = dict(kwargs)
+        call_kwargs.pop("__args__", None)
     else:
         raise MeldExecutionError(
             spell_id=spell.spell_index.current,
@@ -736,6 +772,13 @@ def _build_kwargs_no_overrides(
         - Single dependency maps to one value; multiple map to a list.
         - Includes plan-time contract payload values.
     """
+    if (
+            not plan_step.dependency_resolution_order
+            and plan_step.contract_positional_override is None
+            and not plan_step.has_contract_payload
+    ):
+        return {}
+
     spell = plan_step.spell
     spell_id = spell.spell_index.current
     kwargs: Dict[str, Any] = {}

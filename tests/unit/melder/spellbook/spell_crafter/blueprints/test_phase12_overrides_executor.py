@@ -263,6 +263,24 @@ def test_compile_phase12_overrides_executor_inlines_creations_target_routing() -
     assert "_select_creations_for_target_kind" not in executor.__code__.co_names
 
 
+def test_compile_phase12_overrides_executor_prebinds_step_metadata() -> None:
+    """Generated override source prebinds step metadata tuples for hot-path access."""
+    spell = _make_spell("root")
+    executor = compile_phase12_overrides_executor(
+        execution_plan=None,
+        plan_rows=(_make_plan_row("root"),),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+        override_targets_by_spell_id={},
+        any_overrides_present=False,
+        path_registry=None,
+    )
+    assert "step_spells" in executor.__code__.co_varnames
+    assert "step_existences" in executor.__code__.co_varnames
+    assert "step_instance_keys" in executor.__code__.co_varnames
+    assert "step_use_spell_lock_hints" in executor.__code__.co_varnames
+
+
 def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_execution() -> None:
     """Source-restored compile path emits a callable executor that executes."""
     spell = _make_spell("root")

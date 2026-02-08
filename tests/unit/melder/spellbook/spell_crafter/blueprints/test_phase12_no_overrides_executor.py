@@ -310,6 +310,29 @@ def test_compile_phase12_no_overrides_executor_inlines_creations_target_routing(
     assert "_select_creations_for_target_kind" not in executor.__code__.co_names
 
 
+def test_compile_phase12_no_overrides_executor_prebinds_step_existences() -> None:
+    """
+    Ensure emitted step executors prebind per-step existence metadata.
+
+    Contract:
+        - Generated executor defaults include `step_existences`.
+    """
+    codegen_ir = {
+        "steps_rows": (_make_step_row("root"),),
+        "root_spell_id": "root",
+        "transient_schema": None,
+    }
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir=codegen_ir,
+        spell_lookup={"root": _make_spell("root")},
+    )
+
+    assert "step_spells" in executor.__code__.co_varnames
+    assert "step_existences" in executor.__code__.co_varnames
+    assert "step_instance_keys" in executor.__code__.co_varnames
+
+
 def test_compile_phase12_no_overrides_executor_requires_spell_lookup_for_steps_rows() -> None:
     """
     Ensure schema-only step rows fail fast when spell lookup is missing.
@@ -444,6 +467,71 @@ def test_compile_phase12_no_overrides_executor_skips_spell_lock_when_caller_lock
     )
 
     assert executor(context) == "value:root"
+
+
+def test_compile_phase12_no_overrides_executor_existing_hit_skips_spell_and_creations_locks() -> None:
+    """
+    Existing shared-instance hits skip spell/creations lock acquisition.
+    """
+    creations = _Creations()
+    creations._lock = _ExplodingLock()
+    creations._creations["root"] = _CreationRecord("existing-root")
+    spell = _make_spell("root")
+    spell.existence = Existence.unique
+    spell._lock = _ExplodingLock()
+    row = _make_step_row("root")
+    row["existence"] = "unique"
+    row["creations_target_kind"] = ExecutionPlanTargetKind.CALLER
+    row["use_spell_lock_hint"] = True
+    row["must_register"] = True
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir={
+            "steps_rows": (row,),
+            "root_spell_id": "root",
+            "transient_schema": None,
+        },
+        spell_lookup={"root": spell},
+    )
+    context = SimpleNamespace(
+        caller_creations=creations,
+        owner_creations=creations,
+        caller_creations_lock_held=False,
+    )
+
+    assert executor(context) == "existing-root"
+
+
+def test_compile_phase12_no_overrides_executor_existing_hit_skips_creations_lock_without_spell_hint() -> None:
+    """
+    Existing shared-instance hits skip creations lock when spell-lock hint is disabled.
+    """
+    creations = _Creations()
+    creations._lock = _ExplodingLock()
+    creations._creations["root"] = _CreationRecord("existing-root")
+    spell = _make_spell("root")
+    spell.existence = Existence.unique
+    row = _make_step_row("root")
+    row["existence"] = "unique"
+    row["creations_target_kind"] = ExecutionPlanTargetKind.CALLER
+    row["use_spell_lock_hint"] = False
+    row["must_register"] = True
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir={
+            "steps_rows": (row,),
+            "root_spell_id": "root",
+            "transient_schema": None,
+        },
+        spell_lookup={"root": spell},
+    )
+    context = SimpleNamespace(
+        caller_creations=creations,
+        owner_creations=creations,
+        caller_creations_lock_held=False,
+    )
+
+    assert executor(context) == "existing-root"
 
 
 @pytest.mark.parametrize(
@@ -634,3 +722,43 @@ def test_compile_phase12_no_overrides_executor_owner_target_falls_back_to_contex
     assert executor(context) == "value:root"
     assert "root" in context_owner_creations._creations
     assert "root" not in caller_creations._creations
+
+
+def test_build_kwargs_no_overrides_fast_path_returns_empty_dict() -> None:
+    """No-overrides kwargs helper fast path returns empty kwargs for empty call recipe."""
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = phase12_module._build_kwargs_no_overrides(
+        plan_step=plan_step,
+        instance_results={},
+    )
+
+    assert kwargs == {}
+
+
+def test_construct_spell_instance_rejects_invalid_positional_payload() -> None:
+    """No-overrides construct helper rejects invalid non-sequence positional payloads."""
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = lambda **kwargs: kwargs
+    plan_step = SimpleNamespace(
+        spell=spell,
+        dependency_resolution_order=(),
+        contract_positional_override="bad-args",
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    with pytest.raises(phase12_module.MeldExecutionError, match="__args__ override must be a list or tuple"):
+        phase12_module._construct_spell_instance(
+            plan_step=plan_step,
+            instance_results={},
+        )

@@ -706,6 +706,21 @@ def test_split_override_payload_rejects_non_sequence_root_args() -> None:
         )
 
 
+def test_split_override_payload_root_args_only_returns_empty_target_payload() -> None:
+    """Root-args-only payload split returns empty target payload without key bleed."""
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(executor=lambda c: "x"),
+    )
+    stripped_payload, root_args = MeldRuntime._split_override_payload(
+        spell=spell,
+        override_payload={"__args__": (7, 8)},
+    )
+
+    assert stripped_payload == {}
+    assert root_args == (7, 8)
+
+
 def test_execute_with_overrides_applies_payload_and_uses_cached_specialization(monkeypatch: pytest.MonkeyPatch) -> None:
     """Override path applies payload, compiles specialization once per shape, and reuses cache."""
     runtime = MeldRuntime()

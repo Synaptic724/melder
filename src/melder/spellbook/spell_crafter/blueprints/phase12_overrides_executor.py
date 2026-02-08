@@ -236,12 +236,28 @@ def _build_phase12_overrides_executor_namespace(
         "_get_existing_creation": _get_existing_creation,
         "_register_spell_instance": _register_spell_instance,
         "_raise_override_on_existing_instance": _raise_override_on_existing_instance,
+        "step_spells": tuple(
+            plan_step.spell
+            for plan_step in steps
+        ),
+        "step_existences": tuple(
+            plan_step.existence
+            for plan_step in steps
+        ),
         "step_creations_target_kinds": tuple(
             plan_step.creations_target_kind
             for plan_step in steps
         ),
         "step_is_root": tuple(
             plan_step.spell.spell_index.current == root_spell_id
+            for plan_step in steps
+        ),
+        "step_instance_keys": tuple(
+            plan_step.instance_key
+            for plan_step in steps
+        ),
+        "step_use_spell_lock_hints": tuple(
+            plan_step.use_spell_lock_hint
             for plan_step in steps
         ),
         "steps": steps,
@@ -275,9 +291,13 @@ def _build_phase12_overrides_executor_source(
         "        root_positional_override,",
         "        *,",
         "        steps=steps,",
+        "        step_spells=step_spells,",
         "        step_override_targets=step_override_targets,",
+        "        step_existences=step_existences,",
         "        step_creations_target_kinds=step_creations_target_kinds,",
         "        step_is_root=step_is_root,",
+        "        step_instance_keys=step_instance_keys,",
+        "        step_use_spell_lock_hints=step_use_spell_lock_hints,",
         "        root_instance_key=root_instance_key,",
         "        root_spell_id=root_spell_id,",
         "        any_overrides_present=any_overrides_present,",
@@ -327,8 +347,8 @@ def _append_overrides_step_source(
     """
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
-        f"    spell_{step_index} = plan_step_{step_index}.spell",
-        f"    existence_{step_index} = plan_step_{step_index}.existence",
+        f"    spell_{step_index} = step_spells[{step_index}]",
+        f"    existence_{step_index} = step_existences[{step_index}]",
         f"    target_kind_{step_index} = step_creations_target_kinds[{step_index}]",
         (
             f"    if target_kind_{step_index} in ("
@@ -431,7 +451,7 @@ def _append_overrides_step_source(
             f"existence=existence_{step_index})"
         ),
         "    else:",
-        f"        use_spell_lock_{step_index} = plan_step_{step_index}.use_spell_lock_hint",
+        f"        use_spell_lock_{step_index} = step_use_spell_lock_hints[{step_index}]",
         "        if (",
         f"                use_spell_lock_{step_index}",
         "                and context is not None",
@@ -509,7 +529,7 @@ def _append_overrides_step_source(
             f"creations=creations_{step_index}, "
             f"existence=existence_{step_index})"
         ),
-        f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}",
+        f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}",
     ])
 
 

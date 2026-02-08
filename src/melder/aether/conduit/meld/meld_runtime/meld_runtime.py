@@ -830,6 +830,8 @@ class MeldRuntime(Cleanable):
                 spell_name=spell.spell_name,
                 message="__args__ override must be a list or tuple.",
             )
+        if len(override_payload) == 1:
+            return {}, tuple(raw_args)
         normalized_payload = dict(override_payload)
         normalized_payload.pop("__args__", None)
         return normalized_payload, tuple(raw_args)
