@@ -3,7 +3,8 @@ from typing import Optional, Dict, Any, Callable, Tuple, Sequence
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.creation_context.creation_context_codegen import (
-    compile_creation_context_executor,
+    compile_creation_context_hooks_overrides_only_executor,
+    compile_creation_context_hooks_no_overrides_executor,
     compile_creation_context_instance_overrides_only_executor,
     compile_creation_context_instance_no_overrides_executor,
 )
@@ -137,7 +138,8 @@ class CreationContext(Cleanable):
         "_spell",
         "_spell_id",
         "_owner_creations",
-        "_execute_hooks_compiled",
+        "_execute_hooks_overrides_compiled",
+        "_execute_hooks_no_overrides_compiled",
         "_execute_no_hooks_overrides_compiled",
         "_execute_no_hooks_no_overrides_compiled",
         "_no_overrides_executor",
@@ -219,15 +221,9 @@ class CreationContext(Cleanable):
         ] = {}
         self._seed_baseline_override_executor(override_route_config_no_mutation)
         self._seed_baseline_override_executor(override_route_config_mutation)
-        self._execute_hooks_compiled: Callable[..., tuple[Any, bool]] = (
-            compile_creation_context_executor(
+        self._execute_hooks_overrides_compiled: Callable[..., tuple[Any, bool]] = (
+            compile_creation_context_hooks_overrides_only_executor(
                 resolve_route_key=resolve_route_key,
-                mutation_override_enabled=mutation_override_enabled,
-                fast_transient_no_overrides_enabled=(
-                    resolve_route_key == self.ROUTE_MANY
-                    and fast_transient_no_overrides_enabled
-                    and not mutation_override_enabled
-                ),
                 spell=spell,
                 spell_id=self._spell_id,
                 owner_creations=self._owner_creations,
@@ -237,6 +233,25 @@ class CreationContext(Cleanable):
                 spell_space_scope_error_type=SpellSpaceScopeError,
             )
         )
+        if mutation_override_enabled:
+            self._execute_hooks_no_overrides_compiled: Callable[..., tuple[Any, bool]] = (
+                self._execute_hooks_overrides_compiled
+            )
+        else:
+            self._execute_hooks_no_overrides_compiled = (
+                compile_creation_context_hooks_no_overrides_executor(
+                    resolve_route_key=resolve_route_key,
+                    fast_transient_no_overrides_enabled=(
+                        resolve_route_key == self.ROUTE_MANY
+                        and fast_transient_no_overrides_enabled
+                    ),
+                    spell=spell,
+                    spell_id=self._spell_id,
+                    owner_creations=self._owner_creations,
+                    no_overrides_executor=self._no_overrides_executor,
+                    spell_space_scope_error_type=SpellSpaceScopeError,
+                )
+            )
         self._execute_no_hooks_overrides_compiled: Callable[..., Any] = (
             compile_creation_context_instance_overrides_only_executor(
                 resolve_route_key=resolve_route_key,
@@ -302,7 +317,8 @@ class CreationContext(Cleanable):
         self._spell = None
         self._spell_id = None
         self._owner_creations = None
-        self._execute_hooks_compiled = None
+        self._execute_hooks_overrides_compiled = None
+        self._execute_hooks_no_overrides_compiled = None
         self._execute_no_hooks_overrides_compiled = None
         self._execute_no_hooks_no_overrides_compiled = None
         self._no_overrides_executor = None
@@ -332,8 +348,13 @@ class CreationContext(Cleanable):
                 `(instance, created)` where `created=True` means this call
                 instantiated the spell object.
         """
-        execute_hooks_compiled = self._execute_hooks_compiled
-        return execute_hooks_compiled(caller_creations, overrides)
+        if overrides is None:
+            execute_hooks_no_overrides_compiled = (
+                self._execute_hooks_no_overrides_compiled
+            )
+            return execute_hooks_no_overrides_compiled(caller_creations)
+        execute_hooks_overrides_compiled = self._execute_hooks_overrides_compiled
+        return execute_hooks_overrides_compiled(caller_creations, overrides)
 
     def execute_no_hooks(
             self,

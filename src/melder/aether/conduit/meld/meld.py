@@ -377,11 +377,18 @@ class Meld(Cleanable, IMeld):
                 creation_context = creation_context_factory.get_or_build_for_spell(
                     target_spell
                 )
-            execute_hooks_compiled = creation_context._execute_hooks_compiled
             if override_map is None:
-                instance, created = execute_hooks_compiled(self._creations)
+                execute_hooks_no_overrides_compiled = (
+                    creation_context._execute_hooks_no_overrides_compiled
+                )
+                instance, created = execute_hooks_no_overrides_compiled(
+                    self._creations
+                )
             else:
-                instance, created = execute_hooks_compiled(
+                execute_hooks_overrides_compiled = (
+                    creation_context._execute_hooks_overrides_compiled
+                )
+                instance, created = execute_hooks_overrides_compiled(
                     self._creations,
                     override_map,
                 )
