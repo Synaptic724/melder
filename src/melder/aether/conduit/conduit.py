@@ -2371,7 +2371,7 @@ class Conduit(Cleanable, IConduit):
         Purpose:
             Provide the minimal hot path for automatic (non-dynamic) mode.
         """
-        self._fire_conduit_hooks("on_meld_pre_resolve", self)
+        self._fire_conduit_hooks("on_meld_pre_resolve", self) # I think these can go, they are redundant and meld hooks are probably enough on their own
 
         result = self._meld.meld(
             spell_name=spell_name,
@@ -2381,7 +2381,7 @@ class Conduit(Cleanable, IConduit):
             spell_override=spell_override,
         )
 
-        self._fire_conduit_hooks("on_meld_post_resolve", self)
+        self._fire_conduit_hooks("on_meld_post_resolve", self) # I think these can go, they are redundant and meld hooks are probably enough on their own
 
         return result
 

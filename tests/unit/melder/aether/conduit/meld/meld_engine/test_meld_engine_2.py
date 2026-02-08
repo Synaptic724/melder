@@ -254,15 +254,15 @@ def test_instance_key_for_occurrence_many_preserves_path() -> None:
     assert builder._instance_key_for_occurrence(("node", path_id)) == ("node", path_id)
 
 
-def test_select_canonical_occurrence_returns_first() -> None:
+def test_select_canonical_occurrence_returns_lexicographically_smallest() -> None:
     """
-    Verify canonical occurrence selection returns the first entry.
+    Verify canonical occurrence selection is stable across insertion order.
     """
     path_registry = PathRegistry()
     left_id = path_registry.extend_path(path_registry.root_path_id, "left")
     right_id = path_registry.extend_path(path_registry.root_path_id, "right")
-    occurrences = [("node", left_id), ("node", right_id)]
-    assert OccurrencePlanBuilder._select_canonical_occurrence(occurrences) == occurrences[0]
+    occurrences = [("node", right_id), ("node", left_id)]
+    assert OccurrencePlanBuilder._select_canonical_occurrence(occurrences) == ("node", left_id)
 
 
 def test_build_override_shape_key_tracks_socket_targets() -> None:

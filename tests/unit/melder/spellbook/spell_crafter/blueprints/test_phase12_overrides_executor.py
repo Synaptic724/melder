@@ -99,6 +99,7 @@ class _Creations:
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self._creations: dict[str, _CreationRecord] = {}
+        self._spellspace: dict[tuple[str, str], _CreationRecord] = {}
         self._conduit = SimpleNamespace(get_active_spellspace=lambda: None)
 
     def add_creation(
@@ -120,6 +121,20 @@ class _Creations:
             disposal_methods: Any,
     ) -> None:
         self._creations[spell_id] = _CreationRecord(instance)
+
+    def register_spellspace_creation(
+            self,
+            spellspace_id: str,
+            spell_id: str,
+            instance: Any,
+            *,
+            has_disposal_methods: bool,
+            disposal_methods: Any,
+    ) -> None:
+        self._spellspace[(spellspace_id, spell_id)] = _CreationRecord(instance)
+
+    def get_spellspace_creation(self, spellspace_id: str, spell_id: str) -> Any:
+        return self._spellspace.get((spellspace_id, spell_id))
 
 
 def test_compile_phase12_overrides_executor_requires_spell_lookup_for_schema_rows() -> None:
@@ -378,6 +393,48 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
     dep_row["existence"] = "unique_per_conduit"
     dep_row["creations_target_kind"] = ExecutionPlanTargetKind.CALLER
     socket_ref = _SocketRef("dep", "value", 11, "normal")
+
+    executor = compile_phase12_overrides_executor(
+        execution_plan=None,
+        plan_rows=(root_row, dep_row),
+        root_spell_id="root",
+        spell_lookup={"root": root_spell, "dep": dep_spell},
+        override_targets_by_spell_id={"dep": (socket_ref,)},
+        any_overrides_present=True,
+        path_registry=None,
+    )
+    context = SimpleNamespace(
+        caller_creations=creations,
+        owner_creations=creations,
+        caller_creations_lock_held=False,
+    )
+
+    with pytest.raises(MeldExecutionError, match="spell instance that already exists"):
+        executor(context, {socket_ref: "override"}, None)
+
+
+def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existing_spellspace_instance() -> None:
+    """
+    Spellspace-scoped targeted overrides reject reuse of existing spellspace instances.
+    """
+    creations = _Creations()
+    active_conduit = SimpleNamespace()
+    active_spellspace = SimpleNamespace(
+        id="space-1",
+        owner_conduit=active_conduit,
+    )
+    active_conduit.get_active_spellspace = lambda: active_spellspace
+    creations._conduit = active_conduit
+    creations._spellspace[(active_spellspace.id, "dep")] = _CreationRecord("existing-dep")
+
+    root_spell = _make_spell("root")
+    dep_spell = _make_spell("dep")
+    dep_spell.existence = Existence.unique_per_spell_space
+    root_row = _make_plan_row("root")
+    dep_row = _make_plan_row("dep")
+    dep_row["existence"] = "unique_per_spell_space"
+    dep_row["creations_target_kind"] = ExecutionPlanTargetKind.SPELLSPACE
+    socket_ref = _SocketRef("dep", "value", 12, "normal")
 
     executor = compile_phase12_overrides_executor(
         execution_plan=None,
