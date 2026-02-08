@@ -146,14 +146,14 @@ def test_compile_phase12_no_overrides_executor_raises_when_callable_missing(
         )
 
 
-def test_compile_phase12_no_overrides_executor_falls_back_when_source_unavailable(
+def test_compile_phase12_no_overrides_executor_uses_emitted_step_source_when_transient_source_unavailable(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Ensure non-generated transient paths use the step-plan fallback.
+    Ensure transient-source misses still compile through emitted step source.
 
     Contract:
-        - When transient source generation returns None, step-plan executor is returned.
+        - When transient source generation returns None, emitted step source is used.
     """
     codegen_ir = {
         "steps_rows": (_make_step_row("root"),),
@@ -172,6 +172,7 @@ def test_compile_phase12_no_overrides_executor_falls_back_when_source_unavailabl
     )
 
     assert callable(executor)
+    assert executor.__code__.co_filename == "<melder_phase12_no_overrides_step_executor>"
 
 
 def test_compile_phase12_no_overrides_executor_supports_steps_rows_schema() -> None:
@@ -193,6 +194,7 @@ def test_compile_phase12_no_overrides_executor_supports_steps_rows_schema() -> N
     )
 
     assert callable(executor)
+    assert executor.__code__.co_filename == "<melder_phase12_no_overrides_step_executor>"
 
 
 def test_compile_phase12_no_overrides_executor_requires_spell_lookup_for_steps_rows() -> None:

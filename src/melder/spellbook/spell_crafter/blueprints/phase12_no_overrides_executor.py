@@ -67,8 +67,8 @@ def compile_phase12_no_overrides_executor(
         - Returns None when no steps are present for this variant.
         - Uses a transient unrolled executor when the IR carries a compatible
           transient-only schema.
-        - Falls back to a step-plan executor only when transient unrolling is
-          not applicable for this plan.
+        - Uses emitted step-plan source for all non-transient-compatible plans.
+        - Does not use Python loop-based interpreter fallback executors.
         - Raises when transient codegen source compilation or namespace wiring
           fails for an otherwise compatible transient schema.
 
@@ -120,27 +120,29 @@ def compile_phase12_no_overrides_executor(
                 transient_schema=normalized_transient_schema,
                 steps=steps,
             )
-            local_namespace: Dict[str, Any] = {}
-            try:
-                exec(
-                    compile(source, "<melder_phase12_no_overrides_executor>", "exec"),
-                    namespace,
-                    local_namespace,
-                )
-            except Exception as exc:
-                raise RuntimeError(
+            return _compile_emitted_no_overrides_executor(
+                source=source,
+                namespace=namespace,
+                source_name="<melder_phase12_no_overrides_transient_executor>",
+                compile_failure_message=(
                     "Phase 12 no-overrides transient executor code generation failed."
-                ) from exc
-            executor = local_namespace.get("_phase12_executor")
-            if callable(executor):
-                return executor
-            raise RuntimeError(
-                "Phase 12 no-overrides transient executor source did not define a callable _phase12_executor."
+                ),
             )
 
-    return _build_step_plan_executor(
+    step_source = _build_step_plan_executor_source(
+        steps=steps,
+    )
+    step_namespace = _build_step_executor_namespace(
         steps=steps,
         root_instance_key=root_instance_key,
+    )
+    return _compile_emitted_no_overrides_executor(
+        source=step_source,
+        namespace=step_namespace,
+        source_name="<melder_phase12_no_overrides_step_executor>",
+        compile_failure_message=(
+            "Phase 12 no-overrides executor code generation failed."
+        ),
     )
 
 
@@ -340,40 +342,259 @@ def _supports_transient_unrolled_plan(steps: Tuple[Any, ...]) -> bool:
     return True
 
 
-def _build_step_plan_executor(
+def _compile_emitted_no_overrides_executor(
+        *,
+        source: str,
+        namespace: Dict[str, Any],
+        source_name: str,
+        compile_failure_message: str,
+) -> Callable[[Any], Any]:
+    """
+    Compile generated no-overrides source and return `_phase12_executor`.
+
+    Contract:
+        - Raises RuntimeError when source compilation/execution fails.
+        - Raises RuntimeError when `_phase12_executor` is not callable.
+    """
+    local_namespace: Dict[str, Any] = {}
+    try:
+        exec(
+            compile(source, source_name, "exec"),
+            namespace,
+            local_namespace,
+        )
+    except Exception as exc:
+        raise RuntimeError(compile_failure_message) from exc
+    executor = local_namespace.get("_phase12_executor")
+    if callable(executor):
+        return executor
+    raise RuntimeError(
+        "Phase 12 no-overrides executor source did not define a callable _phase12_executor."
+    )
+
+
+def _build_step_plan_executor_source(
+        *,
+        steps: Tuple[Any, ...],
+) -> str:
+    """
+    Build emitted source for general no-overrides step-plan execution.
+
+    Contract:
+        - Emits one direct step-resolution block per plan step.
+        - Inlines existence/lock/reuse/register routing in generated source.
+        - Preserves root-instance verification semantics.
+    """
+    step_count = len(steps)
+    lines = [
+        "def _phase12_executor(",
+        "        context=None,",
+        "        *,",
+        "        steps=steps,",
+        "        root_instance_key=root_instance_key,",
+        "        _select_creations_for_target_kind=_select_creations_for_target_kind,",
+        "        _construct_spell_instance=_construct_spell_instance,",
+        "        _get_existing_creation=_get_existing_creation,",
+        "        _register_spell_instance=_register_spell_instance,",
+        "        MeldExecutionError=MeldExecutionError,",
+        "    ):",
+        "    instance_results = {}",
+    ]
+    for index, plan_step in enumerate(steps):
+        _append_step_resolution_source(
+            lines=lines,
+            step_index=index,
+            plan_step=plan_step,
+        )
+    lines.extend([
+        "    if root_instance_key not in instance_results:",
+        "        raise MeldExecutionError(",
+        "            spell_id=root_instance_key[0],",
+        "            spell_name=root_instance_key[0],",
+        "            message=f\"Phase 12 root instance '{root_instance_key[0]}' is missing.\",",
+        "        )",
+        "    return instance_results[root_instance_key]",
+    ])
+    return "\n".join(lines)
+
+
+def _append_step_resolution_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        plan_step: Any,
+) -> None:
+    """
+    Append emitted source lines for one no-overrides plan step.
+
+    Contract:
+        - Emits deterministic variable names per step index.
+        - Mirrors `_resolve_step_instance` semantics for all existence modes.
+    """
+    lines.extend([
+        f"    plan_step_{step_index} = steps[{step_index}]",
+        f"    spell_{step_index} = plan_step_{step_index}.spell",
+        (
+            f"    creations_{step_index} = _select_creations_for_target_kind("
+            f"context=context, "
+            f"plan_step=plan_step_{step_index}, "
+            f"spell=spell_{step_index})"
+        ),
+    ])
+
+    existence = plan_step.existence
+    if existence is Existence.many:
+        lines.append(
+            f"    instance_{step_index} = _construct_spell_instance("
+            f"plan_step=plan_step_{step_index}, "
+            f"instance_results=instance_results)"
+        )
+        if plan_step.must_register:
+            lines.extend([
+                f"    with creations_{step_index}._lock:",
+                (
+                    f"        _register_spell_instance("
+                    f"spell=spell_{step_index}, "
+                    f"instance=instance_{step_index}, "
+                    f"creations=creations_{step_index}, "
+                    f"existence=plan_step_{step_index}.existence)"
+                ),
+            ])
+        lines.append(f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}")
+        return
+
+    if existence in (
+            Existence.unique_per_conduit,
+            Existence.unique_per_spell_space,
+    ):
+        lines.extend([
+            f"    with creations_{step_index}._lock:",
+            (
+                f"        instance_{step_index} = _get_existing_creation("
+                f"spell=spell_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=plan_step_{step_index}.existence)"
+            ),
+            f"        if instance_{step_index} is None:",
+            (
+                f"            instance_{step_index} = _construct_spell_instance("
+                f"plan_step=plan_step_{step_index}, "
+                f"instance_results=instance_results)"
+            ),
+            (
+                f"            _register_spell_instance("
+                f"spell=spell_{step_index}, "
+                f"instance=instance_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=plan_step_{step_index}.existence)"
+            ),
+            f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}",
+        ])
+        return
+
+    if plan_step.use_spell_lock_hint:
+        lines.extend([
+            f"    use_spell_lock_{step_index} = True",
+            "    if (",
+            "            context is not None",
+            "            and context.caller_creations_lock_held",
+            f"            and creations_{step_index} is context.caller_creations",
+            "    ):",
+            f"        use_spell_lock_{step_index} = False",
+            f"    if use_spell_lock_{step_index}:",
+            f"        with spell_{step_index}._lock:",
+            f"            with creations_{step_index}._lock:",
+            (
+                f"                instance_{step_index} = _get_existing_creation("
+                f"spell=spell_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=plan_step_{step_index}.existence)"
+            ),
+            f"            if instance_{step_index} is None:",
+            (
+                f"                instance_{step_index} = _construct_spell_instance("
+                f"plan_step=plan_step_{step_index}, "
+                f"instance_results=instance_results)"
+            ),
+            f"                with creations_{step_index}._lock:",
+            (
+                f"                    _register_spell_instance("
+                f"spell=spell_{step_index}, "
+                f"instance=instance_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=plan_step_{step_index}.existence)"
+            ),
+            "    else:",
+            f"        with creations_{step_index}._lock:",
+            (
+                f"            instance_{step_index} = _get_existing_creation("
+                f"spell=spell_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=plan_step_{step_index}.existence)"
+            ),
+            f"            if instance_{step_index} is None:",
+            (
+                f"                instance_{step_index} = _construct_spell_instance("
+                f"plan_step=plan_step_{step_index}, "
+                f"instance_results=instance_results)"
+            ),
+            (
+                f"                _register_spell_instance("
+                f"spell=spell_{step_index}, "
+                f"instance=instance_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=plan_step_{step_index}.existence)"
+            ),
+            f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}",
+        ])
+        return
+
+    lines.extend([
+        f"    with creations_{step_index}._lock:",
+        (
+            f"        instance_{step_index} = _get_existing_creation("
+            f"spell=spell_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=plan_step_{step_index}.existence)"
+        ),
+        f"        if instance_{step_index} is None:",
+        (
+            f"            instance_{step_index} = _construct_spell_instance("
+            f"plan_step=plan_step_{step_index}, "
+            f"instance_results=instance_results)"
+        ),
+        (
+            f"            _register_spell_instance("
+            f"spell=spell_{step_index}, "
+            f"instance=instance_{step_index}, "
+            f"creations=creations_{step_index}, "
+            f"existence=plan_step_{step_index}.existence)"
+        ),
+        f"    instance_results[plan_step_{step_index}.instance_key] = instance_{step_index}",
+    ])
+
+
+def _build_step_executor_namespace(
         *,
         steps: Tuple[Any, ...],
         root_instance_key: Tuple[str, Optional[int]],
-) -> Callable[[Any], Any]:
+) -> Dict[str, Any]:
     """
-    Build a Phase 12 executor for the general no-overrides step plan.
+    Build namespace values for emitted no-overrides step executor source.
 
     Contract:
-        - Executes steps in Phase 11 order.
-        - Applies plan-time reuse and registration rules for all existences.
-        - Returns the instance keyed by root_instance_key.
-        - Raises MeldExecutionError when dependency results are missing or
-          spell invocation fails.
+        - Captures immutable plan values as function defaults.
+        - Exposes helper callables used by generated source.
     """
-    def _phase12_executor(context: Any = None) -> Any:
-        instance_results: Dict[Tuple[str, Optional[int]], Any] = {}
-        for plan_step in steps:
-            spell = plan_step.spell
-            instance = _resolve_step_instance(
-                context=context,
-                plan_step=plan_step,
-                instance_results=instance_results,
-            )
-            instance_results[plan_step.instance_key] = instance
-        if root_instance_key not in instance_results:
-            raise MeldExecutionError(
-                spell_id=root_instance_key[0],
-                spell_name=root_instance_key[0],
-                message=f"Phase 12 root instance '{root_instance_key[0]}' is missing.",
-            )
-        return instance_results[root_instance_key]
-
-    return _phase12_executor
+    return {
+        "MeldExecutionError": MeldExecutionError,
+        "_select_creations_for_target_kind": _select_creations_for_target_kind,
+        "_construct_spell_instance": _construct_spell_instance,
+        "_get_existing_creation": _get_existing_creation,
+        "_register_spell_instance": _register_spell_instance,
+        "steps": steps,
+        "root_instance_key": root_instance_key,
+    }
 
 
 def _resolve_step_instance(
