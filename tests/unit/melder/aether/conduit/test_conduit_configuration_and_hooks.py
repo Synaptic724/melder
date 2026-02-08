@@ -422,6 +422,7 @@ def test_register_conduit_hooks_shared_rejects_frozen_configuration(
     ):
         conduit_dynamic_normal.register_conduit_hooks(
             {"on_conduit_cleanup_start": hook},
+            create_local_hooks=False,
         )
 
 
@@ -574,7 +575,10 @@ def test_register_conduit_hooks_shared_updates_existing_lesser(
             """
             _ = conduit
 
-        normal.register_conduit_hooks({"on_conduit_cleanup_start": hook})
+        normal.register_conduit_hooks(
+            {"on_conduit_cleanup_start": hook},
+            create_local_hooks=False,
+        )
 
         assert lesser._conduit_hooks is not None
         assert lesser._conduit_hooks["on_conduit_cleanup_start"][0] is hook
@@ -598,7 +602,10 @@ def test_register_conduit_hooks_shared_wires_meld_map(
         """
         _ = conduit
 
-    conduit_dynamic_normal.register_conduit_hooks({"on_conduit_cleanup_start": hook})
+    conduit_dynamic_normal.register_conduit_hooks(
+        {"on_conduit_cleanup_start": hook},
+        create_local_hooks=False,
+    )
 
     assert conduit_dynamic_normal._conduit_hooks is not None
     assert conduit_dynamic_normal._meld._meld_hooks is conduit_dynamic_normal._conduit_hooks

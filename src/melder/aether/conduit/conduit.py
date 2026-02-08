@@ -162,6 +162,8 @@ class Conduit(Cleanable, IConduit):
         # Local hook overlay for this conduit only.
         # Shape: { hook_name: [callables...] }
         self._local_conduit_hooks: dict[str, list[Any]] | None = None
+        # Fast gate for conduit-level meld pre/post hook dispatch.
+        self._has_meld_phase_hooks: bool = bool(self._conduit_hooks)
 
         self._meld: Meld = Meld(
             creations=self._creations,
@@ -237,6 +239,7 @@ class Conduit(Cleanable, IConduit):
                         )
             self._conduit_hooks = None
             self._local_conduit_hooks = None
+            self._has_meld_phase_hooks = False
 
         # Logger last
         if self._logger is not None:
@@ -661,6 +664,7 @@ class Conduit(Cleanable, IConduit):
         """
         self._conduit_hooks = self._configuration.get_hooks(self._spellbook._id)
         self._meld.set_meld_hooks(self._compose_meld_hook_map())
+        self._has_meld_phase_hooks = bool(self._conduit_hooks)
 
 
     #region Context Management
@@ -791,16 +795,16 @@ class Conduit(Cleanable, IConduit):
             self,
             hooks: dict[str, Any],
             *,
-            create_local_hooks: bool = False,
+            create_local_hooks: bool = True,
     ) -> None:
         """
         Public API
 
         Register hook callables for this Conduit.
 
-        When create_local_hooks is False, hooks are registered into the shared
-        Configuration hook registry (Spellbook-wide). When True, hooks are stored
-        locally on this Conduit only and do not propagate to other conduits.
+        By default, hooks are registered locally on this Conduit only and do not
+        propagate to other conduits. Set ``create_local_hooks=False`` to register
+        into the shared Configuration hook registry (Spellbook-wide).
 
         Args:
             hooks: Mapping of hook name -> callable or iterable of callables.
@@ -809,6 +813,7 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If the conduit is cleaned.
             RuntimeError: If shared registration is requested in non-dynamic mode.
+            RuntimeError: If shared registration is requested after configuration freeze.
             ValueError / TypeError: If hook names or values are invalid.
         """
         self.check_cleaned()
@@ -820,7 +825,15 @@ class Conduit(Cleanable, IConduit):
             self._merge_conduit_hooks(self._local_conduit_hooks, hooks)
             if self._meld is not None:
                 self._meld.set_meld_hooks(self._compose_meld_hook_map())
+            if not self._has_meld_phase_hooks:
+                self._has_meld_phase_hooks = bool(self._local_conduit_hooks)
             return
+
+        if self._configuration._frozen:
+            raise RuntimeError(
+                "Cannot register shared conduit hooks after configuration is frozen. "
+                "Use create_local_hooks=True for conduit-local hook overrides."
+            )
 
         self._register_conduit_hooks_on_upgrade(hooks)
 
@@ -978,6 +991,7 @@ class Conduit(Cleanable, IConduit):
 
         Rules:
             - Only allowed when the system is in **dynamic** mode.
+            - Shared registration is blocked after configuration freeze.
             - `hooks` values may be a single callable or an iterable of callables.
             - Hook names must be in Configuration._ALLOWED_HOOKS.
             - Hooks are validated by Configuration.add_hooks(...).
@@ -992,6 +1006,12 @@ class Conduit(Cleanable, IConduit):
                 "Dynamic environment is not enabled. Cannot register per-conduit hooks."
             )
 
+        if self._configuration._frozen:
+            raise RuntimeError(
+                "Cannot register shared conduit hooks after configuration is frozen. "
+                "Use create_local_hooks=True for conduit-local hook overrides."
+            )
+
         # 1) Push into Configuration using the Spellbook owner id.
         spellbook_id = self._spellbook._id
         self._configuration.add_hooks(spellbook_id, **hooks)
@@ -1000,6 +1020,8 @@ class Conduit(Cleanable, IConduit):
         self._conduit_hooks = self._configuration.get_hooks(spellbook_id)
         if self._meld is not None:
             self._meld.set_meld_hooks(self._compose_meld_hook_map())
+        if not self._has_meld_phase_hooks:
+            self._has_meld_phase_hooks = bool(self._conduit_hooks)
 
     def _compose_meld_hook_map(self) -> dict[str, list[Any]]:
         """
@@ -2375,7 +2397,16 @@ class Conduit(Cleanable, IConduit):
         Purpose:
             Provide the minimal hot path for automatic (non-dynamic) mode.
         """
-        self._fire_conduit_hooks("on_meld_pre_resolve", self) # I think these can go, they are redundant and meld hooks are probably enough on their own
+        if not self._has_meld_phase_hooks:
+            return self._meld.meld(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                spell_override=spell_override,
+            )
+
+        self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
         result = self._meld.meld(
             spell_name=spell_name,
@@ -2385,7 +2416,7 @@ class Conduit(Cleanable, IConduit):
             spell_override=spell_override,
         )
 
-        self._fire_conduit_hooks("on_meld_post_resolve", self) # I think these can go, they are redundant and meld hooks are probably enough on their own
+        self._fire_conduit_hooks("on_meld_post_resolve", self)
 
         return result
 
@@ -2418,6 +2449,15 @@ class Conduit(Cleanable, IConduit):
         try:
             # Track active melds for shutdown/drain semantics.
             self._meld_gate.register_ticket()
+            if not self._has_meld_phase_hooks:
+                return self._meld.meld(
+                    spell_name=spell_name,
+                    spell=spell,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                    spell_override=spell_override,
+                )
+
             self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
             result = self._meld.meld(
@@ -2433,8 +2473,6 @@ class Conduit(Cleanable, IConduit):
             return result
         finally:
             self._meld_gate.unregister_ticket()
-
-
 
 
     #endregion Meld
