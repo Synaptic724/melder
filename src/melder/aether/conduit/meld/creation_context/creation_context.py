@@ -207,6 +207,11 @@ class CreationContext(Cleanable):
             self._runtime_dispatch: Callable[..., Any] = (
                 self._dispatch_meld_runtime_standard
             )
+        if (
+                resolve_route_key == self.ROUTE_MANY
+                and (resolved_runtime_flags & self.FLAG_FAST_TRANSIENT_NO_OVERRIDES)
+        ):
+            self._resolve_route = self._resolve_many_instance_fast_transient
         self._fast_transient_no_overrides_enabled: bool = (
             fast_transient_no_overrides_enabled
         )
@@ -293,7 +298,6 @@ class CreationContext(Cleanable):
                 `(instance, created)` where `created=True` means this call
                 instantiated the spell object.
         """
-        self.check_cleaned()
         return self._resolve_route(
             caller_creations=caller_creations,
             overrides=overrides,
@@ -353,7 +357,9 @@ class CreationContext(Cleanable):
         Resolve EXISTING_CREATION spells by returning the bound object.
         """
         spell = self._spell
-        self._raise_override_on_existing_instance(overrides=overrides)
+        self._raise_override_on_existing_instance(
+            overrides=overrides,
+        )
         instance = spell.user_created_object
         if instance is None:
             raise RuntimeError(
@@ -378,6 +384,30 @@ class CreationContext(Cleanable):
         )
         return instance, True
 
+    def _resolve_many_instance_fast_transient(
+            self,
+            *,
+            caller_creations: ICreations,
+            overrides: Optional[dict[str, Any]] = None,
+    ) -> tuple[Any, bool]:
+        """
+        Resolve many-existence spells with direct fast-transient routing.
+
+        Contract:
+            - No effective per-call overrides and no mutation override execute
+              directly on the no-overrides transient lane.
+            - Otherwise execution is delegated to the standard runtime fork.
+        """
+        spell = self._spell
+        if overrides is None and not spell.has_mutation_override:
+            return self.execute_no_overrides_fast_transient(), True
+        instance = self._execute_meld_runtime(
+            caller_creations=caller_creations,
+            overrides=overrides,
+            caller_creations_lock_held=False,
+        )
+        return instance, True
+
     def _resolve_unique_per_conduit_instance(
             self,
             *,
@@ -393,7 +423,9 @@ class CreationContext(Cleanable):
             creations=caller_creations,
         )
         if instance is not None:
-            self._raise_override_on_existing_instance(overrides=overrides)
+            self._raise_override_on_existing_instance(
+                overrides=overrides,
+            )
             return instance, False
 
         with caller_creations._lock:
@@ -409,7 +441,9 @@ class CreationContext(Cleanable):
                 )
                 return instance, True
 
-            self._raise_override_on_existing_instance(overrides=overrides)
+            self._raise_override_on_existing_instance(
+                overrides=overrides,
+            )
             return instance, False
 
     def _resolve_spellspace_instance(
@@ -429,7 +463,9 @@ class CreationContext(Cleanable):
             spellspace=spellspace,
         )
         if instance is not None:
-            self._raise_override_on_existing_instance(overrides=overrides)
+            self._raise_override_on_existing_instance(
+                overrides=overrides,
+            )
             return instance, False
 
         with caller_creations._lock:
@@ -446,7 +482,9 @@ class CreationContext(Cleanable):
                 )
                 return instance, True
 
-            self._raise_override_on_existing_instance(overrides=overrides)
+            self._raise_override_on_existing_instance(
+                overrides=overrides,
+            )
             return instance, False
 
     def _resolve_shared_instance(
@@ -467,7 +505,9 @@ class CreationContext(Cleanable):
             creations=owner_creations,
         )
         if instance is not None:
-            self._raise_override_on_existing_instance(overrides=overrides)
+            self._raise_override_on_existing_instance(
+                overrides=overrides,
+            )
             return instance, False
 
         with spell._lock:
@@ -485,7 +525,9 @@ class CreationContext(Cleanable):
                 )
                 return instance, True
 
-            self._raise_override_on_existing_instance(overrides=overrides)
+            self._raise_override_on_existing_instance(
+                overrides=overrides,
+            )
             return instance, False
 
     def _get_owner_creations(self) -> Any:
@@ -508,7 +550,7 @@ class CreationContext(Cleanable):
         """
         Reject per-call overrides when reuse returns an existing instance.
         """
-        if not overrides:
+        if overrides is None:
             return
 
         spell = self._spell
@@ -602,7 +644,7 @@ class CreationContext(Cleanable):
         Execute one call through no-overrides or override specialization lanes.
         """
         spell = self._spell
-        if overrides or spell.has_mutation_override:
+        if overrides is not None or spell.has_mutation_override:
             return self._execute_with_overrides(
                 caller_creations=caller_creations,
                 overrides=overrides,
@@ -779,10 +821,9 @@ class CreationContext(Cleanable):
                 ),
                 inner=exc,
             ) from exc
-        any_overrides_present = bool(override_payload)
+        any_overrides_present = overrides is not None
         executor = self._get_or_compile_override_executor(
             shape_key=shape_key,
-            execution_plan=None,
             override_targets_by_spell_id=override_targets_by_spell_id,
             any_overrides_present=any_overrides_present,
             path_registry=override_route_config.path_registry,
@@ -991,7 +1032,6 @@ class CreationContext(Cleanable):
             self,
             *,
             shape_key: Tuple[Any, ...],
-            execution_plan: Any,
             override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
             any_overrides_present: bool,
             path_registry: Optional[Any],
@@ -1008,7 +1048,7 @@ class CreationContext(Cleanable):
             return cached
 
         compiled = compile_phase12_overrides_executor(
-            execution_plan=execution_plan,
+            execution_plan=None,
             override_targets_by_spell_id=override_targets_by_spell_id,
             any_overrides_present=any_overrides_present,
             path_registry=path_registry,
@@ -1088,7 +1128,7 @@ class CreationContext(Cleanable):
             - All other calls delegate to standard runtime lane selection.
         """
         spell = self._spell
-        if not overrides and not spell.has_mutation_override:
+        if overrides is None and not spell.has_mutation_override:
             return self.execute_no_overrides_fast_transient()
         return self._execute_meld_runtime(
             caller_creations=caller_creations,

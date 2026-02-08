@@ -74,15 +74,20 @@ class CreationContextBuilder(Cleanable):
         fast_transient_no_overrides_enabled = (
             self._resolve_fast_transient_no_overrides_enabled(spell)
         )
+        fast_transient_no_overrides_enabled = (
+            self._coerce_fast_transient_route_eligibility(
+                resolve_route_key=resolve_route_key,
+                fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
+            )
+        )
         no_overrides_executor = self._resolve_no_overrides_executor(spell)
         override_patch_map_phase10 = self._resolve_override_patch_map_phase10(spell)
         override_route_config_no_mutation = self._build_override_route_config(
             spell=spell,
             execution_ir_key="overrides",
         )
-        override_route_config_mutation = self._build_override_route_config(
-            spell=spell,
-            execution_ir_key="overrides_with_mutations",
+        override_route_config_mutation = (
+            self._build_mutation_override_route_config(spell=spell)
         )
         runtime_flags = self._build_runtime_flags(
             fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
@@ -117,6 +122,23 @@ class CreationContextBuilder(Cleanable):
         if existence is Existence.many:
             return CreationContext.ROUTE_MANY
         return CreationContext.ROUTE_SHARED
+
+    @staticmethod
+    def _coerce_fast_transient_route_eligibility(
+            *,
+            resolve_route_key: str,
+            fast_transient_no_overrides_enabled: bool,
+    ) -> bool:
+        """
+        Coerce fast-transient eligibility by resolve route.
+
+        Contract:
+            - Fast transient lane is valid only for `many` route contexts.
+            - Other existence routes always use the standard runtime dispatch.
+        """
+        if not fast_transient_no_overrides_enabled:
+            return False
+        return resolve_route_key == CreationContext.ROUTE_MANY
 
     @staticmethod
     def _resolve_fast_transient_no_overrides_enabled(spell: ISpell) -> bool:
@@ -157,6 +179,27 @@ class CreationContextBuilder(Cleanable):
             return None
         crafter = spell._crafter
         return crafter.override_patch_map_phase10
+
+    @staticmethod
+    def _build_mutation_override_route_config(
+            *,
+            spell: ISpell,
+    ) -> Optional[OverrideRouteConfig]:
+        """
+        Build mutation-lane route config only when mutation overlay is active.
+
+        Contract:
+            - Default spell contexts (no mutation overlay) omit mutation route
+              config to keep builder output lean.
+            - Applying or clearing mutation overlay cleans spell-owned context,
+              so a rebuilt context can materialize the required lane.
+        """
+        if not spell.has_mutation_override:
+            return None
+        return CreationContextBuilder._build_override_route_config(
+            spell=spell,
+            execution_ir_key="overrides_with_mutations",
+        )
 
     @staticmethod
     def _build_runtime_flags(
