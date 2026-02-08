@@ -86,6 +86,33 @@ class _SocketRef:
         )
 
 
+class _TrackingPathRegistry:
+    """Path registry stub that tracks parent/depth calls for filtering tests."""
+
+    def __init__(
+            self,
+            parent_map: Dict[int, Any],
+            depth_map: Dict[int, Any],
+    ) -> None:
+        self._parent_map = parent_map
+        self._depth_map = depth_map
+        self.parent_calls = 0
+        self.depth_calls = 0
+        self.raise_on_access = False
+
+    def parent_id(self, path_id: int) -> Any:
+        if self.raise_on_access:
+            raise AssertionError("parent_id should not be called during runtime execution.")
+        self.parent_calls += 1
+        return self._parent_map.get(path_id)
+
+    def depth(self, path_id: int) -> Any:
+        if self.raise_on_access:
+            raise AssertionError("depth should not be called during runtime execution.")
+        self.depth_calls += 1
+        return self._depth_map.get(path_id)
+
+
 class _CreationRecord:
     """Container matching creations registry record contract."""
 
@@ -468,3 +495,93 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
 
     with pytest.raises(MeldExecutionError, match="spell instance that already exists"):
         executor(context, {socket_ref: "override"}, None)
+
+
+def test_build_step_override_targets_prefilters_non_shared_steps() -> None:
+    """Compile-time target preparation filters non-shared targets by path metadata."""
+    socket_keep = _SocketRef("dep", "value", 101, "normal")
+    socket_drop = _SocketRef("dep", "value", 202, "normal")
+    path_registry = _TrackingPathRegistry(
+        parent_map={101: 7, 202: 5},
+        depth_map={101: 2, 202: 2},
+    )
+    steps = (
+        SimpleNamespace(
+            spell=_make_spell("dep"),
+            shared_instance=False,
+            override_match_prefix=7,
+            override_match_prefix_len=1,
+        ),
+        SimpleNamespace(
+            spell=_make_spell("dep"),
+            shared_instance=True,
+            override_match_prefix=None,
+            override_match_prefix_len=0,
+        ),
+    )
+
+    step_targets = phase12_module._build_step_override_targets(
+        steps=steps,
+        override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
+        path_registry=path_registry,
+    )
+
+    assert step_targets[0] == (socket_keep,)
+    assert step_targets[1] == (socket_keep, socket_drop)
+    assert path_registry.parent_calls == 2
+    assert path_registry.depth_calls == 1
+
+
+def test_compile_phase12_overrides_executor_non_shared_path_filtering_is_compile_time_only() -> None:
+    """Runtime override materialization does not call path registry after compile."""
+    captured: Dict[str, Any] = {}
+
+    def _callable(**kwargs: Any) -> Any:
+        captured.update(kwargs)
+        return kwargs.get("value")
+
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = _callable
+    row = _make_plan_row("root")
+    row["shared_instance"] = False
+    row["override_match_prefix"] = 7
+    row["override_match_prefix_len"] = 1
+    socket_keep = _SocketRef("root", "value", 11, "normal")
+    socket_drop = _SocketRef("root", "value", 12, "normal")
+    path_registry = _TrackingPathRegistry(
+        parent_map={11: 7, 12: 9},
+        depth_map={11: 2, 12: 2},
+    )
+
+    executor = compile_phase12_overrides_executor(
+        execution_plan=None,
+        plan_rows=(row,),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+        override_targets_by_spell_id={"root": (socket_keep, socket_drop)},
+        any_overrides_present=True,
+        path_registry=path_registry,
+    )
+    parent_calls_after_compile = path_registry.parent_calls
+    depth_calls_after_compile = path_registry.depth_calls
+
+    path_registry.raise_on_access = True
+    context = SimpleNamespace(
+        caller_creations=SimpleNamespace(_lock=threading.RLock()),
+        owner_creations=None,
+        caller_creations_lock_held=False,
+    )
+    result = executor(
+        context,
+        {
+            socket_keep: "keep",
+            socket_drop: "drop",
+        },
+        None,
+    )
+
+    assert result == "keep"
+    assert captured["value"] == "keep"
+    assert path_registry.parent_calls == parent_calls_after_compile
+    assert path_registry.depth_calls == depth_calls_after_compile

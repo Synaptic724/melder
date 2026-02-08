@@ -552,6 +552,26 @@ def test_resolve_override_plan_signature_prefers_codegen_ir_payload() -> None:
     assert signature == ("phase11_overrides_ir", "sig-overrides", "sig-rows")
 
 
+def test_build_override_plan_signature_from_ir_payload_requires_signature() -> None:
+    """IR payload signature helper enforces payload and signature requirements."""
+    signature = MeldRuntime._build_override_plan_signature_from_ir_payload(
+        override_execution_ir_payload={
+            "signature": "sig-overrides",
+            "steps_rows_signature": "sig-rows",
+        },
+    )
+    assert signature == ("phase11_overrides_ir", "sig-overrides", "sig-rows")
+
+    with pytest.raises(ValueError, match="execution IR payload is missing"):
+        MeldRuntime._build_override_plan_signature_from_ir_payload(
+            override_execution_ir_payload=None,
+        )
+    with pytest.raises(ValueError, match="required field 'signature'"):
+        MeldRuntime._build_override_plan_signature_from_ir_payload(
+            override_execution_ir_payload={"steps_rows_signature": "sig-rows"},
+        )
+
+
 def test_resolve_override_plan_signature_raises_when_execution_ir_missing() -> None:
     """Override shape-key signature requires Phase11 execution IR payload."""
     plan = _override_plan()
@@ -652,6 +672,38 @@ def test_resolve_override_execution_ir_payload_supports_mutation_variant_key() -
         "signature": "sig-mutations",
         "steps_rows_signature": "sig-rows-mut",
     }
+
+
+def test_split_override_payload_strips_root_args_without_mutating_input() -> None:
+    """Root args split keeps input payload stable and returns stripped target payload."""
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(executor=lambda c: "x"),
+    )
+    payload = {"__args__": [1, 2], "dep": "value"}
+
+    stripped_payload, root_args = MeldRuntime._split_override_payload(
+        spell=spell,
+        override_payload=payload,
+    )
+
+    assert stripped_payload == {"dep": "value"}
+    assert root_args == (1, 2)
+    assert payload == {"__args__": [1, 2], "dep": "value"}
+    assert stripped_payload is not payload
+
+
+def test_split_override_payload_rejects_non_sequence_root_args() -> None:
+    """Root args split rejects invalid `__args__` payload types."""
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(executor=lambda c: "x"),
+    )
+    with pytest.raises(MeldExecutionError, match="__args__ override must be a list or tuple"):
+        MeldRuntime._split_override_payload(
+            spell=spell,
+            override_payload={"__args__": "not-a-sequence"},
+        )
 
 
 def test_execute_with_overrides_applies_payload_and_uses_cached_specialization(monkeypatch: pytest.MonkeyPatch) -> None:

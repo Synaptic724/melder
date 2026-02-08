@@ -742,9 +742,8 @@ class MeldRuntime(Cleanable):
             override_map=override_map,
         )
         try:
-            plan_signature = self._resolve_override_plan_signature(
-                crafter=crafter,
-                execution_ir_key=execution_ir_key,
+            plan_signature = self._build_override_plan_signature_from_ir_payload(
+                override_execution_ir_payload=override_execution_ir_payload,
             )
             shape_key = self._build_override_shape_key(
                 plan_signature=plan_signature,
@@ -827,11 +826,8 @@ class MeldRuntime(Cleanable):
                 spell_name=spell.spell_name,
                 message="__args__ override must be a list or tuple.",
             )
-        normalized_payload: Dict[str, Any] = {}
-        for key, value in override_payload.items():
-            if key == "__args__":
-                continue
-            normalized_payload[key] = value
+        normalized_payload = dict(override_payload)
+        normalized_payload.pop("__args__", None)
         return normalized_payload, tuple(raw_args)
 
     @staticmethod
@@ -926,6 +922,24 @@ class MeldRuntime(Cleanable):
             crafter=crafter,
             execution_ir_key=execution_ir_key,
         )
+        return MeldRuntime._build_override_plan_signature_from_ir_payload(
+            override_execution_ir_payload=overrides_payload,
+        )
+
+    @staticmethod
+    def _build_override_plan_signature_from_ir_payload(
+            *,
+            override_execution_ir_payload: Optional[Dict[str, Any]],
+    ) -> Tuple[Any, ...]:
+        """
+        Build deterministic override plan signature from execution IR payload.
+
+        Contract:
+            - Requires a non-empty override execution IR payload mapping.
+            - Requires payload field ``signature``.
+            - Includes optional ``steps_rows_signature`` when present.
+        """
+        overrides_payload = override_execution_ir_payload
         if not overrides_payload:
             raise ValueError(
                 "Phase 11 override execution IR payload is missing for shape-key signature."

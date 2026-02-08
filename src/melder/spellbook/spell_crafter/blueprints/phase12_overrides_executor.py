@@ -46,8 +46,8 @@ def compile_phase12_overrides_executor(
         any_overrides_present:
             True when this specialization represents a call with overrides.
         path_registry:
-            Path registry from the active root blueprint, used for per-path
-            socket filtering in non-shared instances.
+            Path registry from the active root blueprint, used to pre-filter
+            non-shared step socket targets at specialization compile time.
         plan_rows:
             Optional schema-only step rows exported from Phase11 IR.
         root_spell_id:
@@ -173,6 +173,7 @@ def _compile_phase12_overrides_executor_core(
     step_override_targets = _build_step_override_targets(
         steps=steps,
         override_targets_by_spell_id=override_targets_by_spell_id,
+        path_registry=path_registry,
     )
 
     source_to_compile = source
@@ -188,7 +189,6 @@ def _compile_phase12_overrides_executor_core(
         step_override_targets=step_override_targets,
         root_instance_key=root_instance_key,
         root_spell_id=root_spell_id,
-        path_registry=path_registry,
         any_overrides_present=any_overrides_present,
     )
     local_namespace: Dict[str, Any] = {}
@@ -217,7 +217,6 @@ def _build_phase12_overrides_executor_namespace(
         step_override_targets: Tuple[Tuple[Any, ...], ...],
         root_instance_key: Tuple[str, Optional[int]],
         root_spell_id: Optional[str],
-        path_registry: Optional[Any],
         any_overrides_present: bool,
 ) -> Dict[str, Any]:
     """
@@ -247,7 +246,6 @@ def _build_phase12_overrides_executor_namespace(
         "step_override_targets": step_override_targets,
         "root_instance_key": root_instance_key,
         "root_spell_id": root_spell_id,
-        "path_registry": path_registry,
         "any_overrides_present": any_overrides_present,
     }
 
@@ -280,7 +278,6 @@ def _build_phase12_overrides_executor_source(
         "        step_is_root=step_is_root,",
         "        root_instance_key=root_instance_key,",
         "        root_spell_id=root_spell_id,",
-        "        path_registry=path_registry,",
         "        any_overrides_present=any_overrides_present,",
         "        Existence=Existence,",
         "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
@@ -366,7 +363,6 @@ def _append_overrides_step_source(
             f"instance_results=instance_results, "
             f"override_targets=override_targets_{step_index}, "
             f"override_map=override_map, "
-            f"path_registry=path_registry, "
             f"root_positional_override=("
             f"root_positional_override if is_root_step_{step_index} else None"
             f"))"
@@ -416,15 +412,14 @@ def _append_overrides_step_source(
         ),
         "                else:",
         (
-            f"                    instance_{step_index} = _construct_spell_instance_with_overrides("
-            f"plan_step=plan_step_{step_index}, "
-            f"instance_results=instance_results, "
-            f"override_targets=override_targets_{step_index}, "
-            f"override_map=override_map, "
-            f"path_registry=path_registry, "
-            f"root_positional_override=("
-            f"root_positional_override if is_root_step_{step_index} else None"
-            f"))"
+                    f"                    instance_{step_index} = _construct_spell_instance_with_overrides("
+                    f"plan_step=plan_step_{step_index}, "
+                    f"instance_results=instance_results, "
+                    f"override_targets=override_targets_{step_index}, "
+                    f"override_map=override_map, "
+                    f"root_positional_override=("
+                    f"root_positional_override if is_root_step_{step_index} else None"
+                    f"))"
         ),
         (
             f"                    _register_spell_instance("
@@ -461,15 +456,14 @@ def _append_overrides_step_source(
         ),
         "                else:",
         (
-            f"                    instance_{step_index} = _construct_spell_instance_with_overrides("
-            f"plan_step=plan_step_{step_index}, "
-            f"instance_results=instance_results, "
-            f"override_targets=override_targets_{step_index}, "
-            f"override_map=override_map, "
-            f"path_registry=path_registry, "
-            f"root_positional_override=("
-            f"root_positional_override if is_root_step_{step_index} else None"
-            f"))"
+                    f"                    instance_{step_index} = _construct_spell_instance_with_overrides("
+                    f"plan_step=plan_step_{step_index}, "
+                    f"instance_results=instance_results, "
+                    f"override_targets=override_targets_{step_index}, "
+                    f"override_map=override_map, "
+                    f"root_positional_override=("
+                    f"root_positional_override if is_root_step_{step_index} else None"
+                    f"))"
         ),
         f"                    with creations_{step_index}._lock:",
         (
@@ -497,15 +491,14 @@ def _append_overrides_step_source(
         ),
         "                else:",
         (
-            f"                    instance_{step_index} = _construct_spell_instance_with_overrides("
-            f"plan_step=plan_step_{step_index}, "
-            f"instance_results=instance_results, "
-            f"override_targets=override_targets_{step_index}, "
-            f"override_map=override_map, "
-            f"path_registry=path_registry, "
-            f"root_positional_override=("
-            f"root_positional_override if is_root_step_{step_index} else None"
-            f"))"
+                    f"                    instance_{step_index} = _construct_spell_instance_with_overrides("
+                    f"plan_step=plan_step_{step_index}, "
+                    f"instance_results=instance_results, "
+                    f"override_targets=override_targets_{step_index}, "
+                    f"override_map=override_map, "
+                    f"root_positional_override=("
+                    f"root_positional_override if is_root_step_{step_index} else None"
+                    f"))"
         ),
         (
             f"                    _register_spell_instance("
@@ -641,6 +634,7 @@ def _build_step_override_targets(
         *,
         steps: Tuple[Any, ...],
         override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+        path_registry: Optional[Any],
 ) -> Tuple[Tuple[Any, ...], ...]:
     """
     Build per-step override target tuples from spell-id grouped targets.
@@ -648,11 +642,34 @@ def _build_step_override_targets(
     Contract:
         - Preserves deterministic target order provided by the caller.
         - Returns empty tuples for steps with no targeted sockets.
+        - Pre-filters non-shared step targets at compile time.
     """
     step_targets = []
     for plan_step in steps:
         spell_id = plan_step.spell.spell_index.current
-        step_targets.append(override_targets_by_spell_id.get(spell_id, ()))
+        spell_targets = override_targets_by_spell_id.get(spell_id, ())
+        if not spell_targets:
+            step_targets.append(())
+            continue
+
+        if plan_step.shared_instance:
+            step_targets.append(spell_targets)
+            continue
+
+        match_prefix = plan_step.override_match_prefix
+        if match_prefix is None or path_registry is None:
+            step_targets.append(())
+            continue
+        match_depth = plan_step.override_match_prefix_len + 1
+        filtered_targets = tuple(
+            socket_ref
+            for socket_ref in spell_targets
+            if (
+                path_registry.parent_id(socket_ref.param_path_id) == match_prefix
+                and path_registry.depth(socket_ref.param_path_id) == match_depth
+            )
+        )
+        step_targets.append(filtered_targets)
     return tuple(step_targets)
 
 def _raise_override_on_existing_instance(
@@ -698,7 +715,6 @@ def _construct_spell_instance_with_overrides(
         instance_results: Dict[Tuple[str, Optional[int]], Any],
         override_targets: Tuple[Any, ...],
         override_map: Dict[Any, Any],
-        path_registry: Optional[Any],
         root_positional_override: Optional[Sequence[Any]],
 ) -> Any:
     """
@@ -706,14 +722,13 @@ def _construct_spell_instance_with_overrides(
 
     Contract:
         - Dependency values are read from prior step results.
+        - `override_targets` is already shape-filtered for this step.
         - Override values supersede dependency and contract payload values.
         - ``root_positional_override`` is applied as ``"__args__"`` for root steps.
     """
     override_values = _build_instance_override_map(
-        plan_step=plan_step,
         override_targets=override_targets,
         override_map=override_map,
-        path_registry=path_registry,
     )
     if root_positional_override is not None:
         override_values["__args__"] = root_positional_override
@@ -730,40 +745,22 @@ def _construct_spell_instance_with_overrides(
 
 def _build_instance_override_map(
         *,
-        plan_step: Any,
         override_targets: Tuple[Any, ...],
         override_map: Dict[Any, Any],
-        path_registry: Optional[Any],
 ) -> Dict[str, Any]:
     """
     Resolve override values that apply to the current plan step instance.
 
     Contract:
-        - Shared instances accept all targeted socket values for the spell id.
-        - Non-shared instances match socket path parent to the step prefix path.
+        - Expects `override_targets` to be pre-filtered for the target step.
+        - Materializes a parameter-value map in deterministic target order.
     """
     if not override_targets:
         return {}
 
-    shared = plan_step.shared_instance
-    match_prefix = plan_step.override_match_prefix
-    match_prefix_len = plan_step.override_match_prefix_len
     values: Dict[str, Any] = {}
     for socket_ref in override_targets:
-        if socket_ref not in override_map:
-            continue
-        value = override_map[socket_ref]
-        if shared:
-            values[socket_ref.param_name] = value
-            continue
-        if match_prefix is None or path_registry is None:
-            continue
-        parent_id = path_registry.parent_id(socket_ref.param_path_id)
-        if parent_id is None or parent_id != match_prefix:
-            continue
-        if path_registry.depth(socket_ref.param_path_id) != match_prefix_len + 1:
-            continue
-        values[socket_ref.param_name] = value
+        values[socket_ref.param_name] = override_map[socket_ref]
     return values
 
 
