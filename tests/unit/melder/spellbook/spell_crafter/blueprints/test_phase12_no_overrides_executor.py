@@ -1,22 +1,34 @@
+import threading
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
+from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlanCallMode,
+    ExecutionPlanTargetKind,
 )
 import melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor as phase12_module
+from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 
 def _make_spell(spell_id: str) -> SimpleNamespace:
     """Build a minimal callable spell stub for schema hydration tests."""
     return SimpleNamespace(
+        spell_id=spell_id,
         spell_index=SimpleNamespace(current=spell_id),
         spell_name=spell_id,
+        existence=Existence.many,
+        is_existing_creation=False,
         is_class_spell=True,
         is_method_spell=False,
         is_lambda_spell=False,
         spell=lambda: f"value:{spell_id}",
+        _owner_creations=None,
+        _lock=threading.RLock(),
+        has_disposal_methods=False,
+        disposal_method_names=(),
     )
 
 
@@ -35,6 +47,86 @@ def _make_step_row(spell_id: str) -> dict[str, object]:
         "use_spell_lock_hint": False,
         "must_register": False,
     }
+
+
+class _CreationRecord:
+    """Container matching creations registry value contract."""
+
+    def __init__(self, value: Any) -> None:
+        self.value = value
+
+
+class _Spellspace:
+    """Active spellspace stub used by spellspace-creation tests."""
+
+    def __init__(self, spellspace_id: str, owner_conduit: Any) -> None:
+        self.id = spellspace_id
+        self.owner_conduit = owner_conduit
+
+
+class _Conduit:
+    """Conduit stub exposing active spellspace lookup for creations."""
+
+    def __init__(self) -> None:
+        self._active_spellspace = None
+
+    def get_active_spellspace(self) -> Any:
+        return self._active_spellspace
+
+
+class _Creations:
+    """Creations stub for emitted no-overrides execution semantics tests."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._creations: dict[str, _CreationRecord] = {}
+        self._many: list[tuple[str, Any]] = []
+        self._spellspace: dict[tuple[str, str], _CreationRecord] = {}
+        self._conduit = _Conduit()
+
+    def add_creation(
+            self,
+            spell_id: str,
+            instance: Any,
+            *,
+            has_disposal_methods: bool,
+            disposal_methods: Any,
+    ) -> None:
+        self._creations[spell_id] = _CreationRecord(instance)
+
+    def add_many_creations(
+            self,
+            spell_id: str,
+            instance: Any,
+            *,
+            has_disposal_methods: bool,
+            disposal_methods: Any,
+    ) -> None:
+        self._many.append((spell_id, instance))
+
+    def register_spellspace_creation(
+            self,
+            spellspace_id: str,
+            spell_id: str,
+            instance: Any,
+            *,
+            has_disposal_methods: bool,
+            disposal_methods: Any,
+    ) -> None:
+        self._spellspace[(spellspace_id, spell_id)] = _CreationRecord(instance)
+
+    def get_spellspace_creation(self, spellspace_id: str, spell_id: str) -> Any:
+        return self._spellspace.get((spellspace_id, spell_id))
+
+
+class _ExplodingLock:
+    """Lock stub that fails if the emitted path tries to acquire spell lock."""
+
+    def __enter__(self) -> "_ExplodingLock":
+        raise AssertionError("spell lock should not be acquired for this path")
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        return None
 
 
 def _make_transient_schema() -> dict[str, object]:
@@ -227,3 +319,107 @@ def test_compile_phase12_no_overrides_executor_rejects_invalid_transient_schema(
             codegen_ir=codegen_ir,
             spell_lookup={"root": _make_spell("root")},
         )
+
+
+def test_compile_phase12_no_overrides_executor_reuses_spellspace_singleton_from_emitted_path() -> None:
+    """
+    Spellspace existence route reuses an active spellspace singleton.
+
+    Contract:
+        - First execution constructs and registers spellspace creation.
+        - Second execution reuses existing spellspace creation.
+    """
+    creations = _Creations()
+    creations._conduit._active_spellspace = _Spellspace("space-1", creations._conduit)
+    call_counter = {"value": 0}
+
+    def _build_root() -> str:
+        call_counter["value"] += 1
+        return "root-instance"
+
+    spell = _make_spell("root")
+    spell.existence = Existence.unique_per_spell_space
+    spell.spell = _build_root
+    row = _make_step_row("root")
+    row["existence"] = "unique_per_spell_space"
+    row["creations_target_kind"] = ExecutionPlanTargetKind.SPELLSPACE
+    row["must_register"] = True
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir={
+            "steps_rows": (row,),
+            "root_spell_id": "root",
+            "transient_schema": None,
+        },
+        spell_lookup={"root": spell},
+    )
+    context = SimpleNamespace(
+        caller_creations=creations,
+        owner_creations=creations,
+        caller_creations_lock_held=False,
+    )
+
+    assert executor(context) == "root-instance"
+    assert executor(context) == "root-instance"
+    assert call_counter["value"] == 1
+
+
+def test_compile_phase12_no_overrides_executor_requires_active_spellspace_for_spellspace_existence() -> None:
+    """
+    Spellspace existence route fails fast when no active spellspace exists.
+    """
+    creations = _Creations()
+    spell = _make_spell("root")
+    spell.existence = Existence.unique_per_spell_space
+    row = _make_step_row("root")
+    row["existence"] = "unique_per_spell_space"
+    row["creations_target_kind"] = ExecutionPlanTargetKind.SPELLSPACE
+    row["must_register"] = True
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir={
+            "steps_rows": (row,),
+            "root_spell_id": "root",
+            "transient_schema": None,
+        },
+        spell_lookup={"root": spell},
+    )
+    context = SimpleNamespace(
+        caller_creations=creations,
+        owner_creations=creations,
+        caller_creations_lock_held=False,
+    )
+
+    with pytest.raises(SpellSpaceScopeError, match="requires an active SpellSpace"):
+        executor(context)
+
+
+def test_compile_phase12_no_overrides_executor_skips_spell_lock_when_caller_lock_is_held() -> None:
+    """
+    Emitted unique route suppresses spell lock when caller creations lock is held.
+    """
+    creations = _Creations()
+    spell = _make_spell("root")
+    spell.existence = Existence.unique
+    spell._lock = _ExplodingLock()
+    row = _make_step_row("root")
+    row["existence"] = "unique"
+    row["creations_target_kind"] = ExecutionPlanTargetKind.CALLER
+    row["use_spell_lock_hint"] = True
+    row["must_register"] = True
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir={
+            "steps_rows": (row,),
+            "root_spell_id": "root",
+            "transient_schema": None,
+        },
+        spell_lookup={"root": spell},
+    )
+    context = SimpleNamespace(
+        caller_creations=creations,
+        owner_creations=creations,
+        caller_creations_lock_held=True,
+    )
+
+    assert executor(context) == "value:root"
