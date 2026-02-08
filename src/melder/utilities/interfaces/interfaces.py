@@ -433,6 +433,7 @@ class ISpell(ICleanable, Protocol):
     # Note: These are populated by the resolution pipeline via SpellCrafter
     resolution_profile: Optional['SpellResolutionProfile']
     _crafter: Optional[Any] # 'SpellCrafter'
+    _creation_context: Optional[Any]
 
     # Phase 11 execution-plan metrics (populated during conjure)
     execution_plan_step_count: Optional[int]
@@ -483,7 +484,7 @@ class ISpell(ICleanable, Protocol):
 
         - Mutation and contract operations can ask for the current state.
         - Higher-level dev-ops / validation pipelines can use this hook to
-          inspect or assert state when orchestrating Phase 1–7 revalidation.
+          inspect or assert state when orchestrating Phase 1â€“7 revalidation.
 
         Returns:
             SpellSystemState | None:
@@ -517,6 +518,17 @@ class ISpell(ICleanable, Protocol):
                 Optional list/tuple of activation hooks.
             post_hooks:
                 Optional list/tuple of post-cast hooks.
+        """
+        ...
+
+    def _cleanup_creation_context(self) -> None:
+        """
+        Internal
+
+        Dispose and clear the spell-owned CreationContext.
+
+        This is used when spell ownership or structural runtime artifacts
+        change and the context must be rebuilt on next meld execution.
         """
         ...
 
@@ -767,11 +779,11 @@ class ISpell(ICleanable, Protocol):
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Phase 1 – Requirements Extraction (facade).
+        Phase 1 â€“ Requirements Extraction (facade).
 
         Delegates to :class:`SpellCrafter` to:
 
-            - Inspect the spell’s constructor/signature and metadata.
+            - Inspect the spellâ€™s constructor/signature and metadata.
             - Determine dependencies (spellframes, binding names, types, etc.).
             - Capture existence constraints that are relevant to resolution.
 
@@ -788,7 +800,7 @@ class ISpell(ICleanable, Protocol):
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Phase 2 – Symbolic Graph Construction (facade).
+        Phase 2 â€“ Symbolic Graph Construction (facade).
 
         Delegates to :class:`SpellCrafter`.
 
@@ -808,7 +820,7 @@ class ISpell(ICleanable, Protocol):
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Phase 3 – Local Resolution Frame / DAG (facade).
+        Phase 3 â€“ Local Resolution Frame / DAG (facade).
 
         Delegates to :class:`SpellCrafter`.
 
@@ -830,7 +842,7 @@ class ISpell(ICleanable, Protocol):
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Phase 4 – Validation (facade).
+        Phase 4 â€“ Validation (facade).
 
         Delegates to :class:`SpellCrafter`.
 
@@ -1222,7 +1234,7 @@ class ISpellbook(ICleanable, Protocol):
 
         Returns:
             Mapping[SpellIndex, ISpell]:
-                An immutable map of `SpellIndex` → spell object.
+                An immutable map of `SpellIndex` â†’ spell object.
         """
         ...
 
@@ -1234,11 +1246,11 @@ class ISpellbook(ICleanable, Protocol):
         Returns a per-conduit read-only view of all **borrowed** spells.
 
         Each peer conduit ID maps to its own immutable
-        `SpellIndex → ISpell` map.
+        `SpellIndex â†’ ISpell` map.
 
         Returns:
             Mapping[str, Mapping[SpellIndex, ISpell]]:
-                Immutable map of peer Conduit ID → immutable map of
+                Immutable map of peer Conduit ID â†’ immutable map of
                 borrowed spells.
         """
         ...
@@ -1765,7 +1777,7 @@ class ISpellbook(ICleanable, Protocol):
             * Each `conduit_id` in `_contracted_spells` will have a
               corresponding `Set[str]` in `_contracted_versions`
               containing **all version IDs** (SHA256) for that
-              conduit’s spells.
+              conduitâ€™s spells.
         """
         ...
 
@@ -1913,9 +1925,9 @@ class ISpellbook(ICleanable, Protocol):
         Internal
 
         Resolves a contracted spell by its **version SHA** using the
-        Spellbook’s local copies of contracted spells.
+        Spellbookâ€™s local copies of contracted spells.
 
-        Each contracted spell’s `SpellIndex` contains all known versions,
+        Each contracted spellâ€™s `SpellIndex` contains all known versions,
         so this can be resolved purely from local SpellIndex data.
 
         Args:
@@ -2218,8 +2230,8 @@ class IUnitOfWork(ICleanable, Protocol):
 
     This class extends both:
 
-        * :class:`Cleanable` – deterministic, idempotent cleanup semantics.
-        * :class:`concurrent.futures.Future` – result(), exception(), callbacks, etc.
+        * :class:`Cleanable` â€“ deterministic, idempotent cleanup semantics.
+        * :class:`concurrent.futures.Future` â€“ result(), exception(), callbacks, etc.
 
     It **does not** own threads or an executor:
 
@@ -2267,7 +2279,7 @@ class IUnitOfWork(ICleanable, Protocol):
         disabling further use.
 
         Behavior:
-            * Idempotent – safe to call multiple times.
+            * Idempotent â€“ safe to call multiple times.
             * Clears:
                 - The wrapped callable and its bound args/kwargs.
                 - The associated CancellationEvent.
@@ -3929,13 +3941,13 @@ class IConduit(ICleanable, Protocol):
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
 
-        The `bind()` method registers a class, function, or object into Melder’s system,
+        The `bind()` method registers a class, function, or object into Melderâ€™s system,
         associating it with a lifecycle (`Existence`), a permission policy, and optional metadata.
         Once bound, the spell becomes available for resolution and casting within its conduit
         or across systems (depending on permissions).
 
-        ──────────────────────────────────────────────
-        🧠 Binding Overview:
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ðŸ§  Binding Overview:
             - Profiles the spell via reflection.
             - Computes a unique SHA256 `spell_id`.
             - Stores the spell into the internal spell registry.
@@ -3943,8 +3955,8 @@ class IConduit(ICleanable, Protocol):
             - Applies lifecycle and permission policies.
             - Optionally attaches lifecycle hooks.
 
-        ──────────────────────────────────────────────
-        🛡️ Permissions (access control to other conduits):
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ðŸ›¡ï¸ Permissions (access control to other conduits):
             - `"read"`:
                 Allows other conduits to *use* the spell but not create new instances.
                 Useful for shared utilities or resources.
@@ -3956,20 +3968,20 @@ class IConduit(ICleanable, Protocol):
                 Completely blocks access to the spell from other conduits.
                 Only the owning conduit can use or instantiate it.
 
-        🔄 Existence (spell lifecycle):
+        ðŸ”„ Existence (spell lifecycle):
             Determines how the spell instance is managed (singleton, transient, etc.).
             Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
 
-        📦 Spellframe (optional):
+        ðŸ“¦ Spellframe (optional):
             Logical namespace or grouping label.
             Often corresponds to a shared interface, protocol, or feature group.
 
-        🔑 Binding Name (optional):
+        ðŸ”‘ Binding Name (optional):
             Secondary key used to distinguish different versions or roles of the same type.
             Useful when multiple spells are bound under the same interface.
 
-        ──────────────────────────────────────────────
-        🪝 Lifecycle Hooks (optional `**kwargs`):
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ðŸª Lifecycle Hooks (optional `**kwargs`):
 
             - `pre_hooks`: List[Callable]
                 Executed *before* the spell is constructed or cast.
@@ -3983,9 +3995,9 @@ class IConduit(ICleanable, Protocol):
                 Executed *after* the spell has been cast. Often used for initialization,
                 analytics, or final injection steps.
 
-            ⚠️ All hooks must be callables.
+            âš ï¸ All hooks must be callables.
 
-        ──────────────────────────────────────────────
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Args:
             spell (Any): The class, function, or object to bind into the spellbook.
             existence (Existence): The lifecycle scope for this spell.
@@ -4178,7 +4190,7 @@ class IConduit(ICleanable, Protocol):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduit’s own spellbook**.
+        conduitâ€™s own spellbook**.
 
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
@@ -4890,7 +4902,7 @@ class IConduit(ICleanable, Protocol):
         Produces a detailed diagnostic summary of a contract established with a specific conduit.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
-        including the peer conduit’s name, the number of active spells involved, and permission levels.
+        including the peer conduitâ€™s name, the number of active spells involved, and permission levels.
         Primarily used for debugging, introspection, and UI inspection tools.
 
         Args:
@@ -5397,7 +5409,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         Stop routing this ChannelLogger to a specific IRIS channel.
 
-        We detect the child logger(s) to drop by inspecting their *parent* logger’s
+        We detect the child logger(s) to drop by inspecting their *parent* loggerâ€™s
         monkey-patched attribute `_command_ops_name`, which IrisChannel sets when
         constructing the parent (e.g., "console").
         """
@@ -6253,7 +6265,7 @@ class IConfiguration(ICleanable, Protocol):
         """
         Fluent
 
-        Load Melder’s standard defaults into this configuration and return `self`
+        Load Melderâ€™s standard defaults into this configuration and return `self`
         so you can keep chaining.
 
         Behavior:
@@ -6867,7 +6879,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         Attach direct dependency ids for this lineage and update reverse edges.
 
-        `dependency_ids` are generic "spell ids" (version or lineage ids) – the
+        `dependency_ids` are generic "spell ids" (version or lineage ids) â€“ the
         SpellCrafter / Spellbook decides the semantics. This manager only
         cares about connectivity, not the type system.
 
@@ -7007,7 +7019,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         Pop and return the current set of dirty lineage ids.
 
         This is the handoff to whatever runs the revalidation / mutation
-        governor (your "Phase 5–7" or equivalent).
+        governor (your "Phase 5â€“7" or equivalent).
 
         Behaviour:
         - Snapshot all ids currently in `_dirty_lineages`.
@@ -7549,7 +7561,7 @@ class IChangeControlManager(ICleanable, Protocol):
         Record that a given lineage has a pending change (mutation candidate,
         promotion proposal, config swap, etc.).
 
-        This is *bookkeeping only* – it does not apply the change, it just
+        This is *bookkeeping only* â€“ it does not apply the change, it just
         surfaces it for DevOps / AI tooling.
 
         Args:
@@ -7588,7 +7600,7 @@ class IChangeControlManager(ICleanable, Protocol):
               ...
             }
 
-        This is intended for DevOps / AI tooling – not for hot-path use.
+        This is intended for DevOps / AI tooling â€“ not for hot-path use.
         """
         ...
 
@@ -7604,3 +7616,4 @@ class IChangeControlManager(ICleanable, Protocol):
           - explicitly cancelled/abandoned.
         """
         ...
+

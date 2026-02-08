@@ -23,7 +23,7 @@ def compile_phase12_overrides_executor(
         plan_rows: Optional[Sequence[Dict[str, Any]]] = None,
         root_spell_id: Optional[str] = None,
         spell_lookup: Optional[Dict[str, Any]] = None,
-) -> Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]:
+) -> Callable[..., Any]:
     """
     Compile a spell-scoped Phase 12 overrides executor specialization.
 
@@ -58,8 +58,9 @@ def compile_phase12_overrides_executor(
             Optional spell-id lookup used when hydrating schema rows.
 
     Returns:
-        Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]:
-            Executor receiving `(context, override_map, root_positional_override)`.
+        Callable[..., Any]:
+            Executor receiving creations inputs plus
+            `(override_map, root_positional_override)`.
 
     Raises:
         ValueError:
@@ -90,7 +91,7 @@ def compile_phase12_overrides_executor_from_source(
         plan_rows: Optional[Sequence[Dict[str, Any]]] = None,
         root_spell_id: Optional[str] = None,
         spell_lookup: Optional[Dict[str, Any]] = None,
-) -> Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any]:
+) -> Callable[..., Any]:
     """
     Compile a specialization executor from previously emitted source.
 
@@ -137,7 +138,7 @@ def _compile_phase12_overrides_executor_core(
         plan_rows: Optional[Sequence[Dict[str, Any]]],
         root_spell_id: Optional[str],
         spell_lookup: Optional[Dict[str, Any]],
-) -> Tuple[Callable[[Any, Dict[Any, Any], Optional[Sequence[Any]]], Any], str]:
+) -> Tuple[Callable[..., Any], str]:
     """
     Shared compile flow for fresh and source-restored override executors.
 
@@ -295,10 +296,12 @@ def _build_phase12_overrides_executor_source(
 
     lines = [
         "def _phase12_executor(",
-        "        context,",
+        "        caller_creations,",
         "        override_map,",
         "        root_positional_override,",
         "        *,",
+        "        owner_creations=None,",
+        "        caller_creations_lock_held=False,",
         "        steps=steps,",
         "        step_spells=step_spells,",
         "        step_override_targets=step_override_targets,",
@@ -365,21 +368,21 @@ def _append_overrides_step_source(
             f"    if target_kind_{step_index} in ("
             f"ExecutionPlanTargetKind.CALLER, ExecutionPlanTargetKind.SPELLSPACE):"
         ),
-        "        if context is None:",
+        "        if caller_creations is None:",
         "            raise RuntimeError(",
-        "                \"Phase 12 CALLER/SPELLSPACE execution requires a MeldContext.\"",
+        "                \"Phase 12 CALLER/SPELLSPACE execution requires caller_creations.\"",
         "            )",
-        f"        creations_{step_index} = context.caller_creations",
+        f"        creations_{step_index} = caller_creations",
         f"    elif target_kind_{step_index} == ExecutionPlanTargetKind.OWNER:",
         f"        owner_creations_{step_index} = spell_{step_index}._owner_creations",
         f"        if owner_creations_{step_index} is not None:",
         f"            creations_{step_index} = owner_creations_{step_index}",
-        "        elif context is None:",
+        "        elif owner_creations is None:",
         "            raise RuntimeError(",
-        "                \"Phase 12 OWNER execution requires owner creations context.\"",
+        "                \"Phase 12 OWNER execution requires owner_creations.\"",
         "            )",
         "        else:",
-        f"            creations_{step_index} = context.owner_creations",
+        f"            creations_{step_index} = owner_creations",
         "    else:",
         (
             f"        raise RuntimeError("
@@ -469,9 +472,8 @@ def _append_overrides_step_source(
         f"        use_spell_lock_{step_index} = step_use_spell_lock_hints[{step_index}]",
         "        if (",
         f"                use_spell_lock_{step_index}",
-        "                and context is not None",
-        "                and context.caller_creations_lock_held",
-        f"                and creations_{step_index} is context.caller_creations",
+        "                and caller_creations_lock_held",
+        f"                and creations_{step_index} is caller_creations",
         "        ):",
         f"            use_spell_lock_{step_index} = False",
         f"        if use_spell_lock_{step_index}:",

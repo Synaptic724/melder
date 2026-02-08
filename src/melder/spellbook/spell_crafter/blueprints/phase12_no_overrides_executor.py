@@ -56,7 +56,7 @@ def compile_phase12_no_overrides_executor(
         *,
         codegen_ir: Dict[str, Any],
         spell_lookup: Optional[Dict[str, Any]] = None,
-) -> Optional[Callable[[Any], Any]]:
+) -> Optional[Callable[..., Any]]:
     """
     Compile a spell-scoped Phase 12 no-overrides executor from Codegen IR.
 
@@ -81,8 +81,8 @@ def compile_phase12_no_overrides_executor(
             Optional spell-id lookup used to hydrate schema-only step rows.
 
     Returns:
-        Optional[Callable[[Any], Any]]:
-            Compiled executor receiving an optional MeldContext.
+        Optional[Callable[..., Any]]:
+            Compiled executor receiving direct creations inputs.
 
     Raises:
         ValueError:
@@ -350,7 +350,7 @@ def _compile_emitted_no_overrides_executor(
         namespace: Dict[str, Any],
         source_name: str,
         compile_failure_message: str,
-) -> Callable[[Any], Any]:
+) -> Callable[..., Any]:
     """
     Compile generated no-overrides source and return `_phase12_executor`.
 
@@ -390,8 +390,10 @@ def _build_step_plan_executor_source(
     step_count = len(steps)
     lines = [
         "def _phase12_executor(",
-        "        context=None,",
+        "        caller_creations=None,",
         "        *,",
+        "        owner_creations=None,",
+        "        caller_creations_lock_held=False,",
         "        steps=steps,",
         "        step_spells=step_spells,",
         "        step_existences=step_existences,",
@@ -446,21 +448,21 @@ def _append_step_resolution_source(
             f"    if target_kind_{step_index} in ("
             f"ExecutionPlanTargetKind.CALLER, ExecutionPlanTargetKind.SPELLSPACE):"
         ),
-        "        if context is None:",
+        "        if caller_creations is None:",
         "            raise RuntimeError(",
-        "                \"Phase 12 CALLER/SPELLSPACE execution requires a MeldContext.\"",
+        "                \"Phase 12 CALLER/SPELLSPACE execution requires caller_creations.\"",
         "            )",
-        f"        creations_{step_index} = context.caller_creations",
+        f"        creations_{step_index} = caller_creations",
         f"    elif target_kind_{step_index} == ExecutionPlanTargetKind.OWNER:",
         f"        owner_creations_{step_index} = spell_{step_index}._owner_creations",
         f"        if owner_creations_{step_index} is not None:",
         f"            creations_{step_index} = owner_creations_{step_index}",
-        "        elif context is None:",
+        "        elif owner_creations is None:",
         "            raise RuntimeError(",
-        "                \"Phase 12 OWNER execution requires owner creations context.\"",
+        "                \"Phase 12 OWNER execution requires owner_creations.\"",
         "            )",
         "        else:",
-        f"            creations_{step_index} = context.owner_creations",
+        f"            creations_{step_index} = owner_creations",
         "    else:",
         (
             f"        raise RuntimeError("
@@ -530,9 +532,8 @@ def _append_step_resolution_source(
         lines.extend([
             f"    use_spell_lock_{step_index} = True",
             "    if (",
-            "            context is not None",
-            "            and context.caller_creations_lock_held",
-            f"            and creations_{step_index} is context.caller_creations",
+            "            caller_creations_lock_held",
+            f"            and creations_{step_index} is caller_creations",
             "    ):",
             f"        use_spell_lock_{step_index} = False",
             (
@@ -662,7 +663,8 @@ def _build_step_executor_namespace(
 
 def _select_creations_for_target_kind(
         *,
-        context: Any,
+        caller_creations: Any,
+        owner_creations: Any,
         plan_step: Any,
         spell: Any,
 ) -> Any:
@@ -671,29 +673,29 @@ def _select_creations_for_target_kind(
 
     Contract:
         - CALLER and SPELLSPACE target caller_creations.
-        - OWNER targets spell owner creations, then context owner_creations.
-        - Requires context for CALLER/SPELLSPACE targets.
+        - OWNER targets spell owner creations, then `owner_creations`.
+        - Requires caller_creations for CALLER/SPELLSPACE targets.
     """
     target_kind = plan_step.creations_target_kind
     if target_kind in (
             ExecutionPlanTargetKind.CALLER,
             ExecutionPlanTargetKind.SPELLSPACE,
     ):
-        if context is None:
+        if caller_creations is None:
             raise RuntimeError(
-                "Phase 12 CALLER/SPELLSPACE execution requires a MeldContext."
+                "Phase 12 CALLER/SPELLSPACE execution requires caller_creations."
             )
-        return context.caller_creations
+        return caller_creations
 
     if target_kind == ExecutionPlanTargetKind.OWNER:
-        owner_creations = spell._owner_creations
-        if owner_creations is not None:
-            return owner_creations
-        if context is None:
+        spell_owner_creations = spell._owner_creations
+        if spell_owner_creations is not None:
+            return spell_owner_creations
+        if owner_creations is None:
             raise RuntimeError(
-                "Phase 12 OWNER execution requires owner creations context."
+                "Phase 12 OWNER execution requires owner_creations."
             )
-        return context.owner_creations
+        return owner_creations
 
     raise RuntimeError(
         f"Unsupported creations target kind '{target_kind}' for spell '{spell.spell_id}'."
@@ -1023,7 +1025,7 @@ def _build_phase12_executor_source(
     Contract:
         - Emits one direct call statement per transient step.
         - Returns None when any step uses CALLN or an unsupported call mode.
-        - Emits a context-accepting function signature for API consistency.
+        - Emits a creations-parameter signature for API consistency.
     """
     transient_step_count = transient_schema["step_count"]
     transient_root_index = transient_schema["root_step_index"]
@@ -1067,8 +1069,10 @@ def _build_phase12_executor_source(
 
     lines = [
         "def _phase12_executor(",
-        "        context=None,",
+        "        caller_creations=None,",
         "        *,",
+        "        owner_creations=None,",
+        "        caller_creations_lock_held=False,",
         "        transient_root_index=transient_root_index,",
         "        transient_targets=transient_targets,",
         "        transient_dep1=transient_dep1,",

@@ -239,7 +239,7 @@ class SpellCrafter(Cleanable):
         self._execution_plan_phase11: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_overrides: Optional[ExecutionPlan] = None
-        self._phase12_no_overrides_executor: Optional[Callable[[Any], Any]] = None
+        self._phase12_no_overrides_executor: Optional[Callable[..., Any]] = None
         self._phase12_no_overrides_executor_signature: Optional[str] = None
         self._codegen_ir: Optional[Dict[str, Any]] = None
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
@@ -502,7 +502,7 @@ class SpellCrafter(Cleanable):
         return self._execution_plan_phase11
 
     @property
-    def phase12_no_overrides_executor(self) -> Optional[Callable[[Any], Any]]:
+    def phase12_no_overrides_executor(self) -> Optional[Callable[..., Any]]:
         """
         Phase 12 compiled no-overrides executor for this spell.
 
@@ -514,9 +514,9 @@ class SpellCrafter(Cleanable):
             - Returns None when the spell has no transient-only fast path.
             - Callable returns the constructed root instance for this spell.
         Returns:
-            Optional[Callable[[Any], Any]]:
-                Compiled no-overrides executor that accepts an optional
-                meld context, or None when unavailable.
+            Optional[Callable[..., Any]]:
+                Compiled no-overrides executor that accepts direct creations
+                inputs, or None when unavailable.
         """
         self.check_cleaned()
         return self._phase12_no_overrides_executor

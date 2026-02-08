@@ -22,7 +22,7 @@ class Spell(Cleanable, ISpell):
     """
     Internal
 
-    🪄 Represents a registered spell within the Melder system.
+    ðŸª„ Represents a registered spell within the Melder system.
 
     A `Spell` encapsulates an instantiable or callable unit of logic (class, function,
     lambda, or existing object) that can be bound, shared, and conjured via conduits
@@ -42,12 +42,12 @@ class Spell(Cleanable, ISpell):
     - Caches Phase 11 execution-plan metrics (node count, max depth, etc.) for
       runtime path selection.
 
-    🔐 Permissions (Permissions Enum):
+    ðŸ” Permissions (Permissions Enum):
         - `read`: Allows other conduits to use the spell as-is, but not modify or recreate it.
         - `create`: Allows other conduits to instantiate or construct new versions.
         - `block`: Prevents external access. Internal (owner conduit) access is still allowed.
 
-    🎯 Key Concepts:
+    ðŸŽ¯ Key Concepts:
         - Each spell has a unique SHA256 `spell_id`, generated from its structural fingerprint.
         - `spellframe` distinguishes the context it was declared in (e.g., Protocol, class,
           or string frame).
@@ -120,6 +120,7 @@ class Spell(Cleanable, ISpell):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_activation_hooks",
+        "_creation_context",
         "_crafter",
         "_hooks_enabled",
         "_id",
@@ -280,7 +281,7 @@ class Spell(Cleanable, ISpell):
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
         # Optional resolution profile (DI contract), to be populated by the
-        # resolution pipeline (SpellExaminer → ResolutionProfileStrategy).
+        # resolution pipeline (SpellExaminer â†’ ResolutionProfileStrategy).
         self.resolution_profile: Optional[SpellResolutionProfile] = None
 
         # Phase 11 execution-plan metrics (populated during conjure).
@@ -294,8 +295,10 @@ class Spell(Cleanable, ISpell):
         self.execution_plan_dispatch_route: Optional[str] = None
 
         # Per-spell compiler / resolution helper (SpellCrafter).
-        # This owns all Phase 1–7 artifacts and is disposable.
+        # This owns all Phase 1â€“7 artifacts and is disposable.
         self._crafter: Optional["SpellCrafter"] = None
+        # Spell-owned meld execution context (created lazily by Meld).
+        self._creation_context: Optional[Any] = None
 
         # Created after Conduit made (ownership / scope integration)
         self._owner_conduit_id: Optional[str] = None
@@ -360,6 +363,28 @@ class Spell(Cleanable, ISpell):
                 self._pre_hooks or self._activation_hooks or self._post_hooks
             )
 
+    def _cleanup_creation_context(self) -> None:
+        """
+        Internal
+
+        Dispose and clear the spell-owned CreationContext, if present.
+
+        Contract:
+            - Idempotent and safe to call repeatedly.
+            - Best-effort cleanup; exceptions are
+              swallowed so callers can continue ownership/dirty transitions.
+            - Leaves `_creation_context` as `None`.
+        """
+        with self._lock:
+            creation_context = self._creation_context
+            self._creation_context = None
+
+        if creation_context is not None:
+            try:
+                creation_context.cleanup()
+            except Exception:
+                pass
+
     #region Disposal
     def cleanup(self) -> None:
         """
@@ -405,7 +430,7 @@ class Spell(Cleanable, ISpell):
                 except Exception:
                     pass
 
-            # Phase artifacts – deterministically dropped via SpellCrafter.
+            # Phase artifacts â€“ deterministically dropped via SpellCrafter.
             if self._crafter is not None:
                 try:
                     self._crafter.cleanup()
@@ -423,6 +448,7 @@ class Spell(Cleanable, ISpell):
             self._spellbook = None
 
             # Drop references to help GC and enforce immutability after cleanup.
+            self._cleanup_creation_context()
             self._owner_creations = None
             self.user_created_object = None
             self._spell_system_states = None
@@ -473,6 +499,7 @@ class Spell(Cleanable, ISpell):
             self._owner_conduit_name = None
             self.owned_spell = None
             self._owner_creations = None
+            self._creation_context = None
             self.aetheric_frame = None
             self.spell_index = None
 
@@ -674,6 +701,7 @@ class Spell(Cleanable, ISpell):
         This is used to:
         - Attach the spell to a specific Conduit identity (for logging, diagnostics, and scoping).
         - Provide a handle to the Conduit's creation scope (e.g., for singletons tied to that conduit).
+        - Invalidate the spell-owned CreationContext because ownership/scoping changed.
 
         Args:
             conduit_id (str):
@@ -684,6 +712,8 @@ class Spell(Cleanable, ISpell):
                 Conduit-level creations container used for managing shared instances.
         """
         with self._lock:
+            # Ownership changes invalidate spell-bound runtime context shape.
+            self._cleanup_creation_context()
             self._owner_conduit_id = conduit_id
             self._owner_conduit_name = conduit_name
             self.owned_spell = True
@@ -701,6 +731,11 @@ class Spell(Cleanable, ISpell):
 
         This is typically invoked by the SpellCrafter / DAG builder after it has
         analyzed the spell's parameters and constructed a dependency DAG.
+
+        Contract:
+            - Replaces the current dependency graph/dependencies references.
+            - Invalidates any existing spell-owned CreationContext so runtime
+              shape is rebuilt against the updated spell structure.
 
         Args:
             dag:
@@ -722,6 +757,7 @@ class Spell(Cleanable, ISpell):
         with self._lock:
             self.dependency_graph = dag
             self.dependencies = dependencies
+            self._cleanup_creation_context()
 
 
     #endregion Configuration
@@ -972,10 +1008,15 @@ class Spell(Cleanable, ISpell):
 
         Delegates to the SpellCrafter to compile the execution plan for
         root spells. Non-root spells are treated as a no-op.
+
+        Contract:
+            - Invalidates the spell-owned CreationContext after execution-plan
+              changes so meld rebuilds a fresh spell-shaped runtime context.
         """
         self.check_cleaned()
         crafter = self._ensure_crafter()
         crafter.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
+        self._cleanup_creation_context()
 
     def run_phase_system_validation(
             self,
@@ -1163,6 +1204,7 @@ class Spell(Cleanable, ISpell):
         crafter.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
+        self._cleanup_creation_context()
         crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         crafter.cleanup_phase_artifacts()
@@ -1180,7 +1222,7 @@ class Spell(Cleanable, ISpell):
 
         - Mutation and contract operations can ask for the current state.
         - Higher-level dev-ops / validation pipelines can use this hook to
-          inspect or assert state when orchestrating Phase 1–7 revalidation.
+          inspect or assert state when orchestrating Phase 1â€“7 revalidation.
 
         Returns:
             SpellSystemState | None:
@@ -1207,12 +1249,12 @@ class Spell(Cleanable, ISpell):
         to the spell's DI shape in Dynamic / AI-native mode. It is conceptually
         separate from normal SpellMap overrides:
 
-        - SpellMap.spell_override → per-call / per-site DI override.
-        - Spell.mutation_override → per-spell *graph* overlay used by the
+        - SpellMap.spell_override â†’ per-call / per-site DI override.
+        - Spell.mutation_override â†’ per-spell *graph* overlay used by the
           MutationContract / mutation hub.
 
         Semantics:
-            - An empty dict (`{}`) is treated as “no active overlay” by
+            - An empty dict (`{}`) is treated as â€œno active overlayâ€ by
               default. The higher-level mutation system may refine this
               distinction later (e.g., between "no overlay" and "explicit
               empty override") but at the Spell level we simply expose the
@@ -1238,12 +1280,13 @@ class Spell(Cleanable, ISpell):
         Instead, it:
 
         - Updates the local overlay payload; and
+        - Clears the spell-owned CreationContext so meld rebuilds runtime shape; and
         - Marks the Spell's lineage as structurally changed via
           SpellSystemStates (if available), using a mutation_contract_*
           change reason.
 
         The actual rebuild / revalidation of the system graph is expected to
-        be driven by the Phase 5–7 pipelines and the mutation hub.
+        be driven by the Phase 5â€“7 pipelines and the mutation hub.
 
         Args:
             override:
@@ -1254,6 +1297,7 @@ class Spell(Cleanable, ISpell):
 
         new_payload: dict = override if override is not None else {}
         self._mutation_override = new_payload
+        self._cleanup_creation_context()
 
         if self._spell_system_states is not None and self.spell_index is not None:
             if new_payload:
@@ -1272,6 +1316,7 @@ class Spell(Cleanable, ISpell):
         Clear any active mutation overlay for this Spell.
 
         This resets the local overlay payload back to the default empty dict,
+        clears the spell-owned CreationContext,
         and, if SpellSystemStates is available, marks the lineage as having
         rolled back a mutation.
 
@@ -1285,6 +1330,7 @@ class Spell(Cleanable, ISpell):
             return
 
         self._mutation_override = {}
+        self._cleanup_creation_context()
 
         if self._spell_system_states is not None and self.spell_index is not None:
             self._spell_system_states.mark_structural_change(
@@ -1294,4 +1340,5 @@ class Spell(Cleanable, ISpell):
 
     #endregion Spell Mutations
 #endregion Spell
+
 
