@@ -2,6 +2,9 @@ from operator import itemgetter
 from typing import Optional, Dict, Any, Callable, Tuple, Sequence
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.conduit.meld.creation_context.creation_context_codegen import (
+    compile_creation_context_executor,
+)
 from melder.spellbook.spell_crafter.blueprints.patch_maps import (
     apply_phase10_override_payload,
 )
@@ -136,14 +139,15 @@ class CreationContext(Cleanable):
         "_spell_id",
         "_owner_creations",
         "_resolve_route_key",
-        "_resolve_route",
-        "_runtime_dispatch",
+        "_execute_compiled",
         "_runtime_flags",
+        "_mutation_override_enabled",
         "_fast_transient_no_overrides_enabled",
         "_no_overrides_executor",
         "_override_patch_map_phase10",
         "_override_route_config_no_mutation",
         "_override_route_config_mutation",
+        "_override_route_config_active",
         "_override_specialization_cache",
     ]
 
@@ -188,9 +192,6 @@ class CreationContext(Cleanable):
         self._spell_id: str = spell.spell_id
         self._owner_creations: Any = spell._owner_creations
         self._resolve_route_key: str = resolve_route_key
-        self._resolve_route: Callable[..., tuple[Any, bool]] = (
-            self._resolve_route_from_key(resolve_route_key)
-        )
         resolved_runtime_flags = runtime_flags
         if fast_transient_no_overrides_enabled:
             resolved_runtime_flags |= self.FLAG_FAST_TRANSIENT_NO_OVERRIDES
@@ -199,19 +200,9 @@ class CreationContext(Cleanable):
         if override_route_config_mutation is not None:
             resolved_runtime_flags |= self.FLAG_OVERRIDE_ROUTE_MUTATION
         self._runtime_flags: int = resolved_runtime_flags
-        if resolved_runtime_flags & self.FLAG_FAST_TRANSIENT_NO_OVERRIDES:
-            self._runtime_dispatch: Callable[..., Any] = (
-                self._dispatch_meld_runtime_with_fast_transient
-            )
-        else:
-            self._runtime_dispatch: Callable[..., Any] = (
-                self._dispatch_meld_runtime_standard
-            )
-        if (
-                resolve_route_key == self.ROUTE_MANY
-                and (resolved_runtime_flags & self.FLAG_FAST_TRANSIENT_NO_OVERRIDES)
-        ):
-            self._resolve_route = self._resolve_many_instance_fast_transient
+        self._mutation_override_enabled: bool = bool(
+            resolved_runtime_flags & self.FLAG_OVERRIDE_ROUTE_MUTATION
+        )
         self._fast_transient_no_overrides_enabled: bool = (
             fast_transient_no_overrides_enabled
         )
@@ -227,12 +218,36 @@ class CreationContext(Cleanable):
         self._override_route_config_mutation: Optional[OverrideRouteConfig] = (
             override_route_config_mutation
         )
+        if self._mutation_override_enabled:
+            self._override_route_config_active: Optional[OverrideRouteConfig] = (
+                self._override_route_config_mutation
+            )
+        else:
+            self._override_route_config_active = self._override_route_config_no_mutation
         self._override_specialization_cache: Dict[
             Tuple[Any, ...],
             Callable[..., Any],
         ] = {}
         self._seed_baseline_override_executor(override_route_config_no_mutation)
         self._seed_baseline_override_executor(override_route_config_mutation)
+        self._execute_compiled: Callable[..., tuple[Any, bool]] = (
+            compile_creation_context_executor(
+                resolve_route_key=resolve_route_key,
+                mutation_override_enabled=self._mutation_override_enabled,
+                fast_transient_no_overrides_enabled=(
+                    resolve_route_key == self.ROUTE_MANY
+                    and fast_transient_no_overrides_enabled
+                    and not self._mutation_override_enabled
+                ),
+                spell=spell,
+                spell_id=self._spell_id,
+                owner_creations=self._owner_creations,
+                no_overrides_executor=self._no_overrides_executor,
+                execute_with_overrides=self._execute_with_overrides,
+                meld_execution_error_type=MeldExecutionError,
+                spell_space_scope_error_type=SpellSpaceScopeError,
+            )
+        )
 
     def cleanup(self) -> None:
         """
@@ -268,19 +283,19 @@ class CreationContext(Cleanable):
         self._spell_id = None
         self._owner_creations = None
         self._resolve_route_key = None
-        self._resolve_route = None
-        self._runtime_dispatch = None
+        self._execute_compiled = None
         self._runtime_flags = None
+        self._mutation_override_enabled = None
         self._fast_transient_no_overrides_enabled = None
         self._no_overrides_executor = None
         self._override_patch_map_phase10 = None
         self._override_route_config_no_mutation = None
         self._override_route_config_mutation = None
+        self._override_route_config_active = None
         self._override_specialization_cache = None
 
     def execute(
             self,
-            *,
             caller_creations: ICreations,
             overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
@@ -298,31 +313,8 @@ class CreationContext(Cleanable):
                 `(instance, created)` where `created=True` means this call
                 instantiated the spell object.
         """
-        return self._resolve_route(
-            caller_creations=caller_creations,
-            overrides=overrides,
-        )
-
-    def _resolve_route_from_key(
-            self,
-            resolve_route_key: str,
-    ) -> Callable[..., tuple[Any, bool]]:
-        """
-        Resolve one existence-specialized resolver function from a route key.
-        """
-        if resolve_route_key == self.ROUTE_EXISTING_CREATION:
-            return self._resolve_existing_creation_instance
-        if resolve_route_key == self.ROUTE_SPELLSPACE:
-            return self._resolve_spellspace_instance
-        if resolve_route_key == self.ROUTE_UNIQUE_PER_CONDUIT:
-            return self._resolve_unique_per_conduit_instance
-        if resolve_route_key == self.ROUTE_MANY:
-            return self._resolve_many_instance
-        if resolve_route_key == self.ROUTE_SHARED:
-            return self._resolve_shared_instance
-        raise RuntimeError(
-            f"Unsupported CreationContext resolve route key: {resolve_route_key}"
-        )
+        execute_compiled = self._execute_compiled
+        return execute_compiled(caller_creations, overrides)
 
     def _seed_baseline_override_executor(
             self,
@@ -347,19 +339,14 @@ class CreationContext(Cleanable):
     # ----------------------------------------------------------------------
     # Existence-specialized resolve routes
     # ----------------------------------------------------------------------
-    def _resolve_existing_creation_instance(
+    def _resolve_existing_creation_instance_no_overrides(
             self,
-            *,
             caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
-        Resolve EXISTING_CREATION spells by returning the bound object.
+        Resolve EXISTING_CREATION spells with no override payload.
         """
         spell = self._spell
-        self._raise_override_on_existing_instance(
-            overrides=overrides,
-        )
         instance = spell.user_created_object
         if instance is None:
             raise RuntimeError(
@@ -368,167 +355,272 @@ class CreationContext(Cleanable):
             )
         return instance, False
 
-    def _resolve_many_instance(
+    def _resolve_existing_creation_instance_with_overrides(
             self,
-            *,
             caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]] = None,
+            overrides: Optional[dict[str, Any]],
     ) -> tuple[Any, bool]:
         """
-        Resolve many-existence spells by always creating a new instance.
-        """
-        instance = self._dispatch_meld_runtime(
-            caller_creations=caller_creations,
-            overrides=overrides,
-            caller_creations_lock_held=False,
-        )
-        return instance, True
-
-    def _resolve_many_instance_fast_transient(
-            self,
-            *,
-            caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]] = None,
-    ) -> tuple[Any, bool]:
-        """
-        Resolve many-existence spells with direct fast-transient routing.
-
-        Contract:
-            - No effective per-call overrides and no mutation override execute
-              directly on the no-overrides transient lane.
-            - Otherwise execution is delegated to the standard runtime fork.
+        Resolve EXISTING_CREATION spells when override or mutation lanes are active.
         """
         spell = self._spell
-        if overrides is None and not spell.has_mutation_override:
-            return self.execute_no_overrides_fast_transient(), True
-        instance = self._execute_meld_runtime(
+        self._raise_override_on_existing_instance(overrides)
+        instance = spell.user_created_object
+        if instance is None:
+            raise RuntimeError(
+                "[MELD] EXISTING_CREATION spell has no `user_created_object` "
+                f"(spell_id={self._spell_id})."
+            )
+        return instance, False
+
+    def _resolve_many_instance_no_overrides(
+            self,
+            caller_creations: ICreations,
+    ) -> tuple[Any, bool]:
+        """
+        Resolve many-existence spells on the no-overrides lane.
+        """
+        instance = self._execute_no_overrides(
             caller_creations=caller_creations,
-            overrides=overrides,
             caller_creations_lock_held=False,
         )
         return instance, True
 
-    def _resolve_unique_per_conduit_instance(
+    def _resolve_many_instance_no_overrides_fast_transient(
             self,
-            *,
             caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
-        Resolve unique-per-conduit spells against caller creations scope.
+        Resolve many-existence no-overrides calls through transient fast lane.
+        """
+        spell = self._spell
+        executor = self._no_overrides_executor
+        try:
+            return executor(None), True
+        except MeldExecutionError:
+            raise
+        except Exception as exc:
+            raise MeldExecutionError(
+                spell_id=spell.spell_index.current,
+                spell_name=spell.spell_name,
+                message="Phase 12 transient executor failed.",
+                inner=exc,
+            ) from exc
+
+    def _resolve_many_instance_with_overrides(
+            self,
+            caller_creations: ICreations,
+            overrides: Optional[dict[str, Any]],
+    ) -> tuple[Any, bool]:
+        """
+        Resolve many-existence spells on the overrides or mutation lane.
+        """
+        instance = self._execute_with_overrides(
+            caller_creations,
+            overrides,
+            False,
+        )
+        return instance, True
+
+    def _resolve_unique_per_conduit_instance_no_overrides(
+            self,
+            caller_creations: ICreations,
+    ) -> tuple[Any, bool]:
+        """
+        Resolve unique-per-conduit spells on the no-overrides lane.
         """
         spell_id = self._spell_id
-        instance = self._get_existing_creation_from_creations(
-            spell_id=spell_id,
-            creations=caller_creations,
-        )
-        if instance is not None:
-            self._raise_override_on_existing_instance(
-                overrides=overrides,
-            )
-            return instance, False
+        creation = caller_creations._creations.get(spell_id)
+        if creation is not None:
+            return creation.value, False
 
         with caller_creations._lock:
-            instance = self._get_existing_creation_from_creations(
-                spell_id=spell_id,
-                creations=caller_creations,
-            )
-            if instance is None:
-                instance = self._dispatch_meld_runtime(
-                    caller_creations=caller_creations,
-                    overrides=overrides,
-                    caller_creations_lock_held=True,
+            creation = caller_creations._creations.get(spell_id)
+            if creation is None:
+                instance = self._execute_no_overrides(caller_creations, True)
+                return instance, True
+            return creation.value, False
+
+    def _resolve_unique_per_conduit_instance_with_overrides(
+            self,
+            caller_creations: ICreations,
+            overrides: Optional[dict[str, Any]],
+    ) -> tuple[Any, bool]:
+        """
+        Resolve unique-per-conduit spells on overrides or mutation lane.
+        """
+        spell = self._spell
+        spell_id = self._spell_id
+        creation = caller_creations._creations.get(spell_id)
+        if creation is not None:
+            if overrides is not None:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Overrides were supplied for a spell instance that already exists. "
+                        "Shared instances cannot be overridden after creation."
+                    ),
+                )
+            return creation.value, False
+
+        with caller_creations._lock:
+            creation = caller_creations._creations.get(spell_id)
+            if creation is None:
+                instance = self._execute_with_overrides(
+                    caller_creations,
+                    overrides,
+                    True,
                 )
                 return instance, True
 
-            self._raise_override_on_existing_instance(
-                overrides=overrides,
-            )
-            return instance, False
+            if overrides is not None:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Overrides were supplied for a spell instance that already exists. "
+                        "Shared instances cannot be overridden after creation."
+                    ),
+                )
+            return creation.value, False
 
-    def _resolve_spellspace_instance(
+    def _resolve_spellspace_instance_no_overrides(
             self,
-            *,
             caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
-        Resolve spellspace-scoped spells against active caller spellspace.
+        Resolve spellspace-scoped spells on the no-overrides lane.
         """
         spellspace = self._get_active_spellspace_for_creations(caller_creations)
         spell_id = self._spell_id
-        instance = self._get_spellspace_existing_creation_from_creations(
-            spell_id=spell_id,
-            creations=caller_creations,
-            spellspace=spellspace,
-        )
-        if instance is not None:
-            self._raise_override_on_existing_instance(
-                overrides=overrides,
-            )
-            return instance, False
+        creation = caller_creations.get_spellspace_creation(spellspace.id, spell_id)
+        if creation is not None:
+            return creation.value, False
 
         with caller_creations._lock:
-            instance = self._get_spellspace_existing_creation_from_creations(
-                spell_id=spell_id,
-                creations=caller_creations,
-                spellspace=spellspace,
-            )
-            if instance is None:
-                instance = self._dispatch_meld_runtime(
-                    caller_creations=caller_creations,
-                    overrides=overrides,
-                    caller_creations_lock_held=True,
+            creation = caller_creations.get_spellspace_creation(spellspace.id, spell_id)
+            if creation is None:
+                instance = self._execute_no_overrides(caller_creations, True)
+                return instance, True
+            return creation.value, False
+
+    def _resolve_spellspace_instance_with_overrides(
+            self,
+            caller_creations: ICreations,
+            overrides: Optional[dict[str, Any]],
+    ) -> tuple[Any, bool]:
+        """
+        Resolve spellspace-scoped spells on overrides or mutation lane.
+        """
+        spell = self._spell
+        spellspace = self._get_active_spellspace_for_creations(caller_creations)
+        spell_id = self._spell_id
+        creation = caller_creations.get_spellspace_creation(spellspace.id, spell_id)
+        if creation is not None:
+            if overrides is not None:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Overrides were supplied for a spell instance that already exists. "
+                        "Shared instances cannot be overridden after creation."
+                    ),
+                )
+            return creation.value, False
+
+        with caller_creations._lock:
+            creation = caller_creations.get_spellspace_creation(spellspace.id, spell_id)
+            if creation is None:
+                instance = self._execute_with_overrides(
+                    caller_creations,
+                    overrides,
+                    True,
                 )
                 return instance, True
 
-            self._raise_override_on_existing_instance(
-                overrides=overrides,
-            )
-            return instance, False
+            if overrides is not None:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Overrides were supplied for a spell instance that already exists. "
+                        "Shared instances cannot be overridden after creation."
+                    ),
+                )
+            return creation.value, False
 
-    def _resolve_shared_instance(
+    def _resolve_shared_instance_no_overrides(
             self,
-            *,
             caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
-        Resolve shared unique routes against the spell owner creations scope.
+        Resolve shared unique routes on the no-overrides lane.
         """
         spell = self._spell
         spell_id = self._spell_id
-        owner_creations = self._get_owner_creations()
+        owner_creations = self._owner_creations
 
-        instance = self._get_existing_creation_from_creations(
-            spell_id=spell_id,
-            creations=owner_creations,
-        )
-        if instance is not None:
-            self._raise_override_on_existing_instance(
-                overrides=overrides,
-            )
-            return instance, False
+        creation = owner_creations._creations.get(spell_id)
+        if creation is not None:
+            return creation.value, False
 
         with spell._lock:
             with owner_creations._lock:
-                instance = self._get_existing_creation_from_creations(
-                    spell_id=spell_id,
-                    creations=owner_creations,
-                )
+                creation = owner_creations._creations.get(spell_id)
 
-            if instance is None:
-                instance = self._dispatch_meld_runtime(
-                    caller_creations=caller_creations,
-                    overrides=overrides,
-                    caller_creations_lock_held=False,
+            if creation is None:
+                instance = self._execute_no_overrides(caller_creations, False)
+                return instance, True
+            return creation.value, False
+
+    def _resolve_shared_instance_with_overrides(
+            self,
+            caller_creations: ICreations,
+            overrides: Optional[dict[str, Any]],
+    ) -> tuple[Any, bool]:
+        """
+        Resolve shared unique routes on overrides or mutation lane.
+        """
+        spell = self._spell
+        spell_id = self._spell_id
+        owner_creations = self._owner_creations
+
+        creation = owner_creations._creations.get(spell_id)
+        if creation is not None:
+            if overrides is not None:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Overrides were supplied for a spell instance that already exists. "
+                        "Shared instances cannot be overridden after creation."
+                    ),
+                )
+            return creation.value, False
+
+        with spell._lock:
+            with owner_creations._lock:
+                creation = owner_creations._creations.get(spell_id)
+
+            if creation is None:
+                instance = self._execute_with_overrides(
+                    caller_creations,
+                    overrides,
+                    False,
                 )
                 return instance, True
 
-            self._raise_override_on_existing_instance(
-                overrides=overrides,
-            )
-            return instance, False
+            if overrides is not None:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Overrides were supplied for a spell instance that already exists. "
+                        "Shared instances cannot be overridden after creation."
+                    ),
+                )
+            return creation.value, False
 
     def _get_owner_creations(self) -> Any:
         """
@@ -544,7 +636,6 @@ class CreationContext(Cleanable):
 
     def _raise_override_on_existing_instance(
             self,
-            *,
             overrides: Optional[dict[str, Any]],
     ) -> None:
         """
@@ -612,17 +703,8 @@ class CreationContext(Cleanable):
         """
         spell = self._spell
         executor = self._no_overrides_executor
-        if executor is None:
-            raise RuntimeError(
-                "No-overrides executor is missing on fast transient dispatch path. "
-                "Rebuild this CreationContext after spell codegen."
-            )
         try:
-            return executor(
-                caller_creations=None,
-                owner_creations=None,
-                caller_creations_lock_held=False,
-            )
+            return executor(None)
         except MeldExecutionError:
             raise
         except Exception as exc:
@@ -633,31 +715,8 @@ class CreationContext(Cleanable):
                 inner=exc,
             ) from exc
 
-    def _execute_meld_runtime(
-            self,
-            *,
-            caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]],
-            caller_creations_lock_held: bool = False,
-    ) -> Any:
-        """
-        Execute one call through no-overrides or override specialization lanes.
-        """
-        spell = self._spell
-        if overrides is not None or spell.has_mutation_override:
-            return self._execute_with_overrides(
-                caller_creations=caller_creations,
-                overrides=overrides,
-                caller_creations_lock_held=caller_creations_lock_held,
-            )
-        return self._execute_no_overrides(
-            caller_creations=caller_creations,
-            caller_creations_lock_held=caller_creations_lock_held,
-        )
-
     def _execute_no_overrides(
             self,
-            *,
             caller_creations: ICreations,
             caller_creations_lock_held: bool,
     ) -> Any:
@@ -666,14 +725,9 @@ class CreationContext(Cleanable):
         """
         spell = self._spell
         executor = self._no_overrides_executor
-        if executor is None:
-            raise RuntimeError(
-                "No-overrides executor is missing on CreationContext runtime path. "
-                "Rebuild this CreationContext after spell codegen."
-            )
         try:
             result = executor(
-                caller_creations=caller_creations,
+                caller_creations,
                 owner_creations=self._owner_creations,
                 caller_creations_lock_held=caller_creations_lock_held,
             )
@@ -686,42 +740,10 @@ class CreationContext(Cleanable):
                 message="Phase 12 no-overrides executor failed.",
                 inner=exc,
             ) from exc
-        self._raise_on_missing_factory_result(
-            spell=spell,
-            result=result,
-            message=(
-                "Phase 12 no-overrides executor returned None for a "
-                "factory-style spell."
-            ),
-        )
         return result
-
-    def _resolve_override_route_config(
-            self,
-            *,
-            has_mutation_override: bool,
-    ) -> Optional[OverrideRouteConfig]:
-        """
-        Resolve the active override lane config from spell-static runtime flags.
-
-        Contract:
-            - Mutation route is selected only when the spell reports a mutation
-              override for this call.
-            - Lane availability is guarded by precomputed runtime flags.
-            - Returns None when the required lane was not configured.
-        """
-        runtime_flags = self._runtime_flags
-        if has_mutation_override:
-            if runtime_flags & self.FLAG_OVERRIDE_ROUTE_MUTATION:
-                return self._override_route_config_mutation
-            return None
-        if runtime_flags & self.FLAG_OVERRIDE_ROUTE_NO_MUTATION:
-            return self._override_route_config_no_mutation
-        return None
 
     def _execute_with_overrides(
             self,
-            *,
             caller_creations: ICreations,
             overrides: Optional[dict[str, Any]],
             caller_creations_lock_held: bool,
@@ -730,15 +752,7 @@ class CreationContext(Cleanable):
         Execute one override-bearing call through phase 10/11/12 specialization.
         """
         spell = self._spell
-        has_mutation_override = spell.has_mutation_override
-        override_route_config = self._resolve_override_route_config(
-            has_mutation_override=has_mutation_override,
-        )
-        if override_route_config is None:
-            raise RuntimeError(
-                "Override route config is missing on CreationContext runtime path. "
-                "Rebuild this CreationContext after spell codegen."
-            )
+        override_route_config = self._override_route_config_active
 
         override_payload = overrides
         root_positional_override: Optional[Sequence[Any]] = None
@@ -753,14 +767,6 @@ class CreationContext(Cleanable):
                     owner_creations=self._owner_creations,
                     caller_creations_lock_held=caller_creations_lock_held,
                 )
-                self._raise_on_missing_factory_result(
-                    spell=spell,
-                    result=result,
-                    message=(
-                        "Phase 12 override specialization executor returned None for a "
-                        "factory-style spell."
-                    ),
-                )
                 return result
         if override_payload:
             target_payload, root_positional_override = self._split_override_payload(
@@ -769,11 +775,6 @@ class CreationContext(Cleanable):
             )
             if target_payload:
                 override_patch_map_phase10 = self._override_patch_map_phase10
-                if override_patch_map_phase10 is None:
-                    raise RuntimeError(
-                        "Override patch map is missing on CreationContext runtime path. "
-                        "Rebuild this CreationContext after spell codegen."
-                    )
                 try:
                     override_map = apply_phase10_override_payload(
                         override_patch_map=override_patch_map_phase10,
@@ -838,15 +839,6 @@ class CreationContext(Cleanable):
             root_positional_override,
             owner_creations=self._owner_creations,
             caller_creations_lock_held=caller_creations_lock_held,
-        )
-
-        self._raise_on_missing_factory_result(
-            spell=spell,
-            result=result,
-            message=(
-                "Phase 12 override specialization executor returned None for a "
-                "factory-style spell."
-            ),
         )
         return result
 
@@ -1059,79 +1051,3 @@ class CreationContext(Cleanable):
 
         override_specialization_cache[shape_key] = compiled
         return compiled
-
-    @staticmethod
-    def _raise_on_missing_factory_result(
-            *,
-            spell: ISpell,
-            result: Any,
-            message: str,
-    ) -> None:
-        """
-        Raise when factory-style spells return None from runtime executor paths.
-        """
-        if (
-                result is None
-                and (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell)
-        ):
-            raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
-                spell_name=spell.spell_name,
-                message=message,
-            )
-
-    def _dispatch_meld_runtime(
-            self,
-            *,
-            caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]],
-            caller_creations_lock_held: bool = False,
-    ) -> Any:
-        """
-        Dispatch one construction call through the prebound runtime lane.
-        """
-        runtime_dispatch = self._runtime_dispatch
-        return runtime_dispatch(
-            caller_creations=caller_creations,
-            overrides=overrides,
-            caller_creations_lock_held=caller_creations_lock_held,
-        )
-
-    def _dispatch_meld_runtime_standard(
-            self,
-            *,
-            caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]],
-            caller_creations_lock_held: bool = False,
-    ) -> Any:
-        """
-        Dispatch runtime calls for contexts without fast-transient eligibility.
-        """
-        return self._execute_meld_runtime(
-            caller_creations=caller_creations,
-            overrides=overrides,
-            caller_creations_lock_held=caller_creations_lock_held,
-        )
-
-    def _dispatch_meld_runtime_with_fast_transient(
-            self,
-            *,
-            caller_creations: ICreations,
-            overrides: Optional[dict[str, Any]],
-            caller_creations_lock_held: bool = False,
-    ) -> Any:
-        """
-        Dispatch runtime calls for contexts with fast-transient eligibility.
-
-        Contract:
-            - No-overrides and no-mutation calls take the direct transient lane.
-            - All other calls delegate to standard runtime lane selection.
-        """
-        spell = self._spell
-        if overrides is None and not spell.has_mutation_override:
-            return self.execute_no_overrides_fast_transient()
-        return self._execute_meld_runtime(
-            caller_creations=caller_creations,
-            overrides=overrides,
-            caller_creations_lock_held=caller_creations_lock_held,
-        )
