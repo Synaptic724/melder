@@ -1,4 +1,5 @@
 from collections import deque
+from operator import itemgetter
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -65,8 +66,10 @@ class MeldRuntime(Cleanable):
             - Requires a compiled Phase 12 executor.
             - Caller must route only no-overrides/no-mutation spells here.
         """
+        crafter = spell._crafter
+        executor = crafter.phase12_no_overrides_executor
         try:
-            return spell._crafter.phase12_no_overrides_executor(None)
+            return executor(None)
         except MeldExecutionError:
             raise
         except Exception as exc:
@@ -93,12 +96,14 @@ class MeldRuntime(Cleanable):
         spell = context.root_spell
         overrides = context.overrides
         has_mutation_override = spell.has_mutation_override
+        execute_with_overrides = self._execute_with_overrides
+        execute_no_overrides = self._execute_no_overrides
         if overrides or has_mutation_override:
-            return self._execute_with_overrides(
+            return execute_with_overrides(
                 context=context,
                 spell=spell,
             )
-        return self._execute_no_overrides(
+        return execute_no_overrides(
             context=context,
             spell=spell,
         )
@@ -139,7 +144,8 @@ class MeldRuntime(Cleanable):
             - Requires `phase12_no_overrides_executor`.
             - Wraps unexpected executor exceptions in MeldExecutionError.
         """
-        executor = spell._crafter.phase12_no_overrides_executor
+        crafter = spell._crafter
+        executor = crafter.phase12_no_overrides_executor
         try:
             result = executor(context)
         except MeldExecutionError:
@@ -241,16 +247,23 @@ class MeldRuntime(Cleanable):
                 ),
                 inner=exc,
             ) from exc
+        root_blueprint_phase5 = crafter.root_blueprint_phase5
+        path_registry = root_blueprint_phase5.path_registry
+        plan_rows = override_execution_ir_payload["steps_rows"]
+        root_spell_id = override_execution_ir_payload["root_spell_id"]
+        spellbook = spell._spellbook
+        spell_lookup = spellbook._spell_id_pool
+        any_overrides_present = bool(override_payload)
         executor = self._get_or_compile_override_executor(
             spell=spell,
             shape_key=shape_key,
             execution_plan=None,
             override_targets_by_spell_id=override_targets_by_spell_id,
-            any_overrides_present=bool(override_payload),
-            path_registry=crafter.root_blueprint_phase5.path_registry,
-            plan_rows=override_execution_ir_payload["steps_rows"],
-            root_spell_id=override_execution_ir_payload["root_spell_id"],
-            spell_lookup=spell._spellbook._spell_id_pool,
+            any_overrides_present=any_overrides_present,
+            path_registry=path_registry,
+            plan_rows=plan_rows,
+            root_spell_id=root_spell_id,
+            spell_lookup=spell_lookup,
         )
 
         result = executor(
@@ -295,9 +308,10 @@ class MeldRuntime(Cleanable):
                 spell_name=spell.spell_name,
                 message="__args__ override must be a list or tuple.",
             )
-        if len(override_payload) == 1:
+        override_payload_size = len(override_payload)
+        if override_payload_size == 1:
             return {}, normalized_root_args
-        if len(override_payload) == 2:
+        if override_payload_size == 2:
             for param_name, value in override_payload.items():
                 if param_name != "__args__":
                     return {
@@ -399,36 +413,35 @@ class MeldRuntime(Cleanable):
 
         by_spell_id: Dict[str, list[Any]] = {}
         socket_shape: list[Tuple[Any, ...]] = []
-        ordered_refs = sorted(
-            override_map.keys(),
-            key=lambda ref: (
-                ref.node_id,
-                ref.param_path_id,
-                ref.param_name,
-                ref.socket_kind.value,
-            ),
-        )
-        current_spell_id: Optional[str] = None
-        current_bucket: Optional[list[Any]] = None
-        for socket_ref in ordered_refs:
+        ordered_rows: list[Tuple[Tuple[Any, ...], Any]] = []
+        for socket_ref in override_map:
             node_id = socket_ref.node_id
             param_path_id = socket_ref.param_path_id
             param_name = socket_ref.param_name
             socket_kind_value = socket_ref.socket_kind.value
+            ordered_rows.append(
+                (
+                    (
+                        node_id,
+                        param_path_id,
+                        param_name,
+                        socket_kind_value,
+                    ),
+                    socket_ref,
+                )
+            )
+        ordered_rows.sort(key=itemgetter(0))
+        current_spell_id: Optional[str] = None
+        current_bucket: Optional[list[Any]] = None
+        for shape_row, socket_ref in ordered_rows:
+            node_id, _, _, _ = shape_row
             if node_id != current_spell_id:
                 current_spell_id = node_id
                 current_bucket = [socket_ref]
                 by_spell_id[node_id] = current_bucket
             else:
                 current_bucket.append(socket_ref)
-            socket_shape.append(
-                (
-                    node_id,
-                    param_path_id,
-                    param_name,
-                    socket_kind_value,
-                )
-            )
+            socket_shape.append(shape_row)
 
         return (
             {
