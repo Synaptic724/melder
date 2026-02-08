@@ -28,7 +28,7 @@ class MeldRuntime(Cleanable):
         - Executes override calls through specialization executors compiled from
           the Phase 11 override plan.
         - Keeps override specialization caches bounded per spell.
-        - Mutation overrides are not supported on this runtime path.
+        - Mutation-bearing spells route through override specialization executors.
         - Enforces spell validity/change-control invariants before execution.
         - Raises deterministic `MeldExecutionError` when runtime prerequisites
           are not satisfied.
@@ -275,37 +275,38 @@ class MeldRuntime(Cleanable):
         root_positional_override: Optional[Sequence[Any]] = None
         override_map: Dict[Any, Any] = {}
         if override_payload:
-            override_patch_map = crafter.override_patch_map_phase10
-            if override_patch_map is None:
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message=(
-                        "Phase 10 override patch map is required for override "
-                        "specialization execution."
-                    ),
-                )
             target_payload, root_positional_override = self._split_override_payload(
                 spell=spell,
                 override_payload=override_payload,
             )
-            try:
-                override_map = apply_phase10_override_payload(
-                    override_patch_map=override_patch_map,
-                    override_payload=target_payload,
-                )
-            except MeldExecutionError:
-                raise
-            except Exception as exc:
-                raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
-                    spell_name=spell.spell_name,
-                    message=(
-                        "Failed to apply overrides through the Phase 10 "
-                        "override patch map."
-                    ),
-                    inner=exc,
-                ) from exc
+            if target_payload:
+                override_patch_map = crafter.override_patch_map_phase10
+                if override_patch_map is None:
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Phase 10 override patch map is required for override "
+                            "specialization execution."
+                        ),
+                    )
+                try:
+                    override_map = apply_phase10_override_payload(
+                        override_patch_map=override_patch_map,
+                        override_payload=target_payload,
+                    )
+                except MeldExecutionError:
+                    raise
+                except Exception as exc:
+                    raise MeldExecutionError(
+                        spell_id=spell.spell_index.current,
+                        spell_name=spell.spell_name,
+                        message=(
+                            "Failed to apply overrides through the Phase 10 "
+                            "override patch map."
+                        ),
+                        inner=exc,
+                    ) from exc
 
         override_targets_by_spell_id = self._collect_override_targets(
             override_map=override_map,

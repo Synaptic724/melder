@@ -95,37 +95,127 @@ def compile_phase12_overrides_executor(
         override_targets_by_spell_id=override_targets_by_spell_id,
     )
 
-    def _phase12_executor(
-            context: Any,
-            override_map: Dict[Any, Any],
-            root_positional_override: Optional[Sequence[Any]],
-    ) -> Any:
-        instance_results: Dict[Tuple[str, Optional[int]], Any] = {}
-        for index, plan_step in enumerate(steps):
-            instance = _resolve_step_instance_with_overrides(
-                context=context,
-                plan_step=plan_step,
-                instance_results=instance_results,
-                override_targets=step_override_targets[index],
-                override_map=override_map,
-                any_overrides_present=any_overrides_present,
-                root_spell_id=root_spell_id,
-                path_registry=path_registry,
-                root_positional_override=root_positional_override,
-            )
-            instance_results[plan_step.instance_key] = instance
-        if root_instance_key not in instance_results:
-            raise MeldExecutionError(
-                spell_id=root_instance_key[0],
-                spell_name=root_instance_key[0],
-                message=(
-                    "Phase 12 override executor did not produce the root "
-                    f"instance '{root_instance_key[0]}'."
-                ),
-            )
-        return instance_results[root_instance_key]
+    source = _build_phase12_overrides_executor_source(
+        step_count=len(steps),
+    )
+    namespace = _build_phase12_overrides_executor_namespace(
+        steps=steps,
+        step_override_targets=step_override_targets,
+        root_instance_key=root_instance_key,
+        root_spell_id=root_spell_id,
+        path_registry=path_registry,
+        any_overrides_present=any_overrides_present,
+    )
+    local_namespace: Dict[str, Any] = {}
+    try:
+        exec(
+            compile(source, "<melder_phase12_overrides_executor>", "exec"),
+            namespace,
+            local_namespace,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "Phase 12 overrides executor code generation failed."
+        ) from exc
 
-    return _phase12_executor
+    compiled_executor = local_namespace.get("_phase12_executor")
+    if callable(compiled_executor):
+        return compiled_executor
+    raise RuntimeError(
+        "Phase 12 overrides executor source did not define a callable _phase12_executor."
+    )
+
+
+def _build_phase12_overrides_executor_namespace(
+        *,
+        steps: Tuple[Any, ...],
+        step_override_targets: Tuple[Tuple[Any, ...], ...],
+        root_instance_key: Tuple[str, Optional[int]],
+        root_spell_id: Optional[str],
+        path_registry: Optional[Any],
+        any_overrides_present: bool,
+) -> Dict[str, Any]:
+    """
+    Build namespace values for generated override specialization source.
+
+    Contract:
+        - Captures immutable specialization constants as function defaults.
+        - Exposes helper callables required by generated executor source.
+    """
+    return {
+        "MeldExecutionError": MeldExecutionError,
+        "_resolve_step_instance_with_overrides": _resolve_step_instance_with_overrides,
+        "steps": steps,
+        "step_override_targets": step_override_targets,
+        "root_instance_key": root_instance_key,
+        "root_spell_id": root_spell_id,
+        "path_registry": path_registry,
+        "any_overrides_present": any_overrides_present,
+    }
+
+
+def _build_phase12_overrides_executor_source(
+        *,
+        step_count: int,
+) -> str:
+    """
+    Build generated Python source for override specialization execution.
+
+    Contract:
+        - Emits one direct step-resolution statement per Phase11 step.
+        - Uses prebound defaults for specialization constants.
+        - Preserves root-result verification semantics.
+    """
+    if step_count < 0:
+        raise ValueError("step_count must not be negative.")
+
+    lines = [
+        "def _phase12_executor(",
+        "        context,",
+        "        override_map,",
+        "        root_positional_override,",
+        "        *,",
+        "        steps=steps,",
+        "        step_override_targets=step_override_targets,",
+        "        root_instance_key=root_instance_key,",
+        "        root_spell_id=root_spell_id,",
+        "        path_registry=path_registry,",
+        "        any_overrides_present=any_overrides_present,",
+        "        _resolve_step_instance_with_overrides=_resolve_step_instance_with_overrides,",
+        "        MeldExecutionError=MeldExecutionError,",
+        "    ):",
+        "    instance_results = {}",
+    ]
+
+    for index in range(step_count):
+        lines.append(f"    plan_step_{index} = steps[{index}]")
+        lines.append(
+            f"    instance_{index} = _resolve_step_instance_with_overrides("
+            f"context=context, "
+            f"plan_step=plan_step_{index}, "
+            f"instance_results=instance_results, "
+            f"override_targets=step_override_targets[{index}], "
+            f"override_map=override_map, "
+            f"any_overrides_present=any_overrides_present, "
+            f"root_spell_id=root_spell_id, "
+            f"path_registry=path_registry, "
+            f"root_positional_override=root_positional_override)"
+        )
+        lines.append(f"    instance_results[plan_step_{index}.instance_key] = instance_{index}")
+
+    lines.extend([
+        "    if root_instance_key not in instance_results:",
+        "        raise MeldExecutionError(",
+        "            spell_id=root_instance_key[0],",
+        "            spell_name=root_instance_key[0],",
+        "            message=(",
+        "                \"Phase 12 override executor did not produce the root \"",
+        "                f\"instance '{root_instance_key[0]}'.\"",
+        "            ),",
+        "        )",
+        "    return instance_results[root_instance_key]",
+    ])
+    return "\n".join(lines)
 
 
 def _hydrate_steps_from_rows(

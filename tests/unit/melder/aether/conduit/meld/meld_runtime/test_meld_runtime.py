@@ -351,6 +351,100 @@ def test_execute_mutation_with_overrides_requires_patch_map() -> None:
         runtime.execute(_ctx(spell, overrides={"x": 1}))
 
 
+def test_execute_with_root_args_only_skips_patch_map_apply(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    `__args__`-only overrides skip Phase10 patch-map application.
+    """
+    runtime = MeldRuntime()
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(
+            executor=lambda c: "x",
+            patch_map=None,
+            override_plan=_override_plan(),
+        ),
+    )
+
+    def _unexpected_apply(**kwargs: Any) -> Dict[Any, Any]:
+        raise AssertionError("patch-map apply should not run for __args__-only overrides")
+
+    monkeypatch.setattr(
+        runtime_module,
+        "apply_phase10_override_payload",
+        _unexpected_apply,
+    )
+
+    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
+        assert kwargs["override_targets_by_spell_id"] == {}
+        assert kwargs["any_overrides_present"] is True
+
+        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
+            assert override_map == {}
+            assert root_args == (1, 2)
+            return "ok"
+
+        return _executor
+
+    monkeypatch.setattr(
+        runtime_module,
+        "compile_phase12_overrides_executor",
+        _compile_phase12_overrides_executor,
+    )
+
+    assert runtime.execute(_ctx(spell, overrides={"__args__": [1, 2]})) == "ok"
+
+
+def test_execute_mutation_with_root_args_only_skips_patch_map_apply(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Mutation route allows `__args__`-only payloads without a Phase10 patch map.
+    """
+    runtime = MeldRuntime()
+    mutation_plan = _override_plan(plan_variant="overrides_with_mutations")
+    spell = _Spell(
+        spell_id="s1",
+        has_mutation_override=True,
+        crafter=_crafter(
+            executor=lambda c: "x",
+            patch_map=None,
+            override_plan=_override_plan(),
+            mutation_plan=mutation_plan,
+        ),
+    )
+
+    def _unexpected_apply(**kwargs: Any) -> Dict[Any, Any]:
+        raise AssertionError("patch-map apply should not run for __args__-only overrides")
+
+    monkeypatch.setattr(
+        runtime_module,
+        "apply_phase10_override_payload",
+        _unexpected_apply,
+    )
+
+    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
+        assert kwargs["execution_plan"] is mutation_plan
+        assert kwargs["override_targets_by_spell_id"] == {}
+        assert kwargs["any_overrides_present"] is True
+
+        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
+            assert override_map == {}
+            assert root_args == (3,)
+            return "mutation-args-only-ok"
+
+        return _executor
+
+    monkeypatch.setattr(
+        runtime_module,
+        "compile_phase12_overrides_executor",
+        _compile_phase12_overrides_executor,
+    )
+
+    assert runtime.execute(_ctx(spell, overrides={"__args__": [3]})) == "mutation-args-only-ok"
+
+
 def test_execute_none_result_rules() -> None:
     """Factory spells reject None; non-factory spells allow None."""
     runtime = MeldRuntime()

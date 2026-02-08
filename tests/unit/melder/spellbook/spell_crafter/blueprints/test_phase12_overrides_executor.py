@@ -6,6 +6,7 @@ from typing import Any, Dict
 
 import pytest
 
+import melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor as phase12_module
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanTargetKind
 from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
@@ -48,6 +49,36 @@ def _make_plan_row(spell_id: str) -> Dict[str, Any]:
         "use_spell_lock_hint": False,
         "must_register": False,
     }
+
+
+class _SocketKind:
+    """Socket kind value wrapper for override map keys."""
+
+    def __init__(self, value: str) -> None:
+        self.value = value
+
+
+class _SocketRef:
+    """Hashable socket ref used to drive override substitution in tests."""
+
+    def __init__(self, node_id: str, param_name: str, path_id: int, kind: str) -> None:
+        self.node_id = node_id
+        self.param_name = param_name
+        self.param_path_id = path_id
+        self.socket_kind = _SocketKind(kind)
+
+    def __hash__(self) -> int:
+        return hash((self.node_id, self.param_name, self.param_path_id, self.socket_kind.value))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, _SocketRef):
+            return False
+        return (
+            self.node_id == other.node_id
+            and self.param_name == other.param_name
+            and self.param_path_id == other.param_path_id
+            and self.socket_kind.value == other.socket_kind.value
+        )
 
 
 def test_compile_phase12_overrides_executor_requires_spell_lookup_for_schema_rows() -> None:
@@ -130,3 +161,98 @@ def test_compile_phase12_overrides_executor_supports_schema_rows_execution() -> 
     result = executor(context, {}, None)
 
     assert result == "value:root"
+
+
+def test_compile_phase12_overrides_executor_raises_on_codegen_error(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compilation fails fast when generated source cannot compile."""
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_phase12_overrides_executor_source",
+        lambda step_count: "def _phase12_executor(:\n    pass",
+    )
+
+    with pytest.raises(RuntimeError, match="code generation failed"):
+        phase12_module.compile_phase12_overrides_executor(
+            execution_plan=None,
+            plan_rows=(_make_plan_row("root"),),
+            root_spell_id="root",
+            spell_lookup={"root": _make_spell("root")},
+            override_targets_by_spell_id={},
+            any_overrides_present=False,
+            path_registry=None,
+        )
+
+
+def test_compile_phase12_overrides_executor_raises_when_callable_missing(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compilation fails when generated source omits `_phase12_executor`."""
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_phase12_overrides_executor_source",
+        lambda step_count: "x = 1",
+    )
+
+    with pytest.raises(RuntimeError, match="did not define a callable _phase12_executor"):
+        phase12_module.compile_phase12_overrides_executor(
+            execution_plan=None,
+            plan_rows=(_make_plan_row("root"),),
+            root_spell_id="root",
+            spell_lookup={"root": _make_spell("root")},
+            override_targets_by_spell_id={},
+            any_overrides_present=False,
+            path_registry=None,
+        )
+
+
+def test_compile_phase12_overrides_executor_contract_and_root_override_precedence() -> None:
+    """
+    Root positional overrides and socket overrides outrank contract payload defaults.
+    """
+    captured: Dict[str, Any] = {}
+
+    def _callable(*args: Any, **kwargs: Any) -> Dict[str, Any]:
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+        return {"args": args, "kwargs": kwargs}
+
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = _callable
+
+    row = _make_plan_row("root")
+    row["uses_positional_override"] = True
+    row["contract_positional_override"] = ("contract-positional",)
+    row["has_contract_payload"] = True
+    row["contract_payload_items"] = (
+        ("value", "contract-value"),
+        ("__args__", ("contract-args",)),
+    )
+
+    socket_ref = _SocketRef("root", "value", 7, "normal")
+    executor = compile_phase12_overrides_executor(
+        execution_plan=None,
+        plan_rows=(row,),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+        override_targets_by_spell_id={"root": (socket_ref,)},
+        any_overrides_present=True,
+        path_registry=None,
+    )
+
+    context = SimpleNamespace(
+        caller_creations=SimpleNamespace(_lock=threading.RLock()),
+        caller_creations_lock_held=False,
+    )
+    result = executor(
+        context,
+        {socket_ref: "override-value"},
+        ("runtime-positional",),
+    )
+
+    assert result["args"] == ("runtime-positional",)
+    assert result["kwargs"]["value"] == "override-value"
+    assert captured["args"] == ("runtime-positional",)
+    assert captured["kwargs"]["value"] == "override-value"
