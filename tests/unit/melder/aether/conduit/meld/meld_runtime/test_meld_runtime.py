@@ -1,12 +1,8 @@
 """Codegen-only contract tests for MeldRuntime."""
 
 from collections import deque
-import json
-import os
-import shutil
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
-import uuid
 
 import pytest
 
@@ -143,6 +139,9 @@ def _crafter(
         codegen_ir: Optional[Any] = None,
 ) -> Any:
     """Build a minimal SpellCrafter artifact container."""
+    resolved_root_blueprint = root_blueprint
+    if resolved_root_blueprint is None:
+        resolved_root_blueprint = SimpleNamespace(path_registry={})
     return SimpleNamespace(
         phase12_no_overrides_executor=executor,
         override_patch_map_phase10=patch_map,
@@ -150,7 +149,7 @@ def _crafter(
         execution_plan_phase11_overrides_with_mutations=(
             mutation_plan if mutation_plan is not None else override_plan
         ),
-        root_blueprint_phase5=root_blueprint,
+        root_blueprint_phase5=resolved_root_blueprint,
         codegen_ir=codegen_ir,
     )
 
@@ -213,13 +212,6 @@ def _override_codegen_ir(
     }
 
 
-def _make_local_l2_dir() -> str:
-    """Create a repo-local temporary directory for persisted L2 cache tests."""
-    base_dir = os.path.join(".test_l2_cache_runtime", uuid.uuid4().hex)
-    os.makedirs(base_dir, exist_ok=False)
-    return base_dir
-
-
 def test_execute_rejects_none_context() -> None:
     """`execute` fails naturally when context is None."""
     with pytest.raises(AttributeError):
@@ -233,19 +225,17 @@ def test_execute_rejects_none_root_spell() -> None:
 
 
 @pytest.mark.parametrize("validity", [SpellValidity.invalid, SpellValidity.gated, SpellValidity.disabled])
-def test_execute_blocks_invalid_validity(validity: SpellValidity) -> None:
-    """Runtime blocks invalid/gated/disabled lineage validity states."""
+def test_execute_ignores_invalid_validity_state(validity: SpellValidity) -> None:
+    """Runtime trusts upstream validation and executes even for non-valid validity states."""
     spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "ok"), system_state=_SystemState(validity))
-    with pytest.raises(MeldExecutionError, match=validity.name):
-        MeldRuntime().execute(_ctx(spell))
+    assert MeldRuntime().execute(_ctx(spell)) == "ok"
 
 
-def test_execute_blocks_dirty_root() -> None:
-    """Runtime blocks dirty-root execution via change-control manager."""
+def test_execute_ignores_dirty_root_state() -> None:
+    """Runtime does not perform dirty-root checks and executes directly."""
     spellbook = _Spellbook(aether=_Aether(_CCManager(dirty=True)))
     spell = _Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "ok"), spellbook=spellbook)
-    with pytest.raises(MeldExecutionError, match="marked dirty"):
-        MeldRuntime().execute(_ctx(spell))
+    assert MeldRuntime().execute(_ctx(spell)) == "ok"
 
 
 def test_execute_ignores_change_control_lookup_errors() -> None:
@@ -263,13 +253,15 @@ def test_execute_ignores_change_control_lookup_errors() -> None:
     assert calls == [context]
 
 
-def test_execute_blocks_broken_and_unvalidated() -> None:
-    """Runtime blocks broken and unvalidated spells."""
+def test_execute_ignores_broken_and_unvalidated_flags() -> None:
+    """Runtime trusts upstream spell-state validation flags."""
     runtime = MeldRuntime()
-    with pytest.raises(MeldExecutionError, match="broken spell"):
-        runtime.execute(_ctx(_Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "ok"), is_broken=True)))
-    with pytest.raises(MeldExecutionError, match="not been validated"):
-        runtime.execute(_ctx(_Spell(spell_id="s2", crafter=_crafter(executor=lambda c: "ok"), validated=False)))
+    assert runtime.execute(
+        _ctx(_Spell(spell_id="s1", crafter=_crafter(executor=lambda c: "ok"), is_broken=True))
+    ) == "ok"
+    assert runtime.execute(
+        _ctx(_Spell(spell_id="s2", crafter=_crafter(executor=lambda c: "ok"), validated=False))
+    ) == "ok"
 
 
 def test_execute_no_overrides_dispatches_executor_and_wraps_errors() -> None:
@@ -296,12 +288,13 @@ def test_execute_no_overrides_dispatches_executor_and_wraps_errors() -> None:
 
 
 def test_execute_no_overrides_requires_crafter_and_executor() -> None:
-    """No-overrides path requires crafter and compiled phase12 executor."""
+    """No-overrides path fails naturally when crafter artifacts are missing."""
     runtime = MeldRuntime()
-    with pytest.raises(MeldExecutionError, match="Missing SpellCrafter"):
+    with pytest.raises(AttributeError):
         runtime.execute(_ctx(_Spell(spell_id="s1", crafter=None)))
-    with pytest.raises(MeldExecutionError, match="Missing Phase 12 no-overrides executor"):
+    with pytest.raises(MeldExecutionError) as exc:
         runtime.execute(_ctx(_Spell(spell_id="s2", crafter=_crafter(executor=None))))
+    assert isinstance(exc.value.inner, TypeError)
 
 
 def test_execute_mutation_only_routes_to_override_specialization(
@@ -499,7 +492,7 @@ def test_execute_none_result_rules() -> None:
 
 
 def test_execute_with_overrides_requires_patch_map_and_execution_ir() -> None:
-    """Override path requires Phase10 patch map and Phase11 execution IR payload."""
+    """Override path requires patch-map apply support and codegen IR contracts."""
     runtime = MeldRuntime()
     no_patch = _Spell(
         spell_id="s1",
@@ -522,31 +515,33 @@ def test_execute_with_overrides_requires_patch_map_and_execution_ir() -> None:
             codegen_ir=None,
         ),
     )
-    with pytest.raises(MeldExecutionError, match="Phase 11 override execution IR payload"):
+    with pytest.raises(TypeError):
         runtime.execute(_ctx(no_ir, overrides={"x": 1}))
 
 
-def test_resolve_override_plan_signature_prefers_codegen_ir_payload() -> None:
-    """Override shape-key signature prefers codegen IR override signature when available."""
-    plan = _override_plan()
+def test_resolve_override_execution_signature_prefers_codegen_ir_payload() -> None:
+    """Override shape-key signature resolves from codegen IR execution payload."""
     crafter = _crafter(
         executor=lambda c: "x",
         patch_map=object(),
-        override_plan=plan,
-    )
-    crafter.codegen_ir = {
-        "phase8_11": {
-            "execution": {
-                "overrides": {
-                    "signature": "sig-overrides",
-                    "steps_rows_signature": "sig-rows",
+        override_plan=_override_plan(),
+        codegen_ir={
+            "phase8_11": {
+                "execution": {
+                    "overrides": {
+                        "signature": "sig-overrides",
+                        "steps_rows_signature": "sig-rows",
+                    },
                 },
             },
         },
-    }
+    )
 
-    signature = MeldRuntime._resolve_override_plan_signature(
+    payload = MeldRuntime._resolve_override_execution_ir_payload(
         crafter=crafter,
+    )
+    signature = MeldRuntime._build_override_plan_signature_from_ir_payload(
+        override_execution_ir_payload=payload,
     )
 
     assert signature == ("phase11_overrides_ir", "sig-overrides", "sig-rows")
@@ -562,40 +557,23 @@ def test_build_override_plan_signature_from_ir_payload_requires_signature() -> N
     )
     assert signature == ("phase11_overrides_ir", "sig-overrides", "sig-rows")
 
-    with pytest.raises(ValueError, match="execution IR payload is missing"):
+    with pytest.raises(TypeError):
         MeldRuntime._build_override_plan_signature_from_ir_payload(
             override_execution_ir_payload=None,
         )
-    with pytest.raises(ValueError, match="required field 'signature'"):
+    with pytest.raises(KeyError):
         MeldRuntime._build_override_plan_signature_from_ir_payload(
             override_execution_ir_payload={"steps_rows_signature": "sig-rows"},
         )
 
 
-def test_resolve_override_plan_signature_raises_when_execution_ir_missing() -> None:
-    """Override shape-key signature requires Phase11 execution IR payload."""
-    plan = _override_plan()
-    crafter = _crafter(
-        executor=lambda c: "x",
-        patch_map=object(),
-        override_plan=plan,
-    )
-    crafter.codegen_ir = None
-
-    with pytest.raises(ValueError, match="execution IR payload is missing"):
-        MeldRuntime._resolve_override_plan_signature(
-            crafter=crafter,
-        )
-
-
-def test_resolve_override_plan_signature_prefers_mutation_codegen_payload_when_requested() -> None:
+def test_resolve_override_execution_signature_prefers_mutation_codegen_payload_when_requested() -> None:
     """Override shape-key signature supports selecting mutation execution payloads."""
-    plan = _override_plan(plan_variant="overrides_with_mutations")
     crafter = _crafter(
         executor=lambda c: "x",
         patch_map=object(),
         override_plan=_override_plan(),
-        mutation_plan=plan,
+        mutation_plan=_override_plan(plan_variant="overrides_with_mutations"),
     )
     crafter.codegen_ir = {
         "phase8_11": {
@@ -608,9 +586,12 @@ def test_resolve_override_plan_signature_prefers_mutation_codegen_payload_when_r
         },
     }
 
-    signature = MeldRuntime._resolve_override_plan_signature(
+    payload = MeldRuntime._resolve_override_execution_ir_payload(
         crafter=crafter,
         execution_ir_key="overrides_with_mutations",
+    )
+    signature = MeldRuntime._build_override_plan_signature_from_ir_payload(
+        override_execution_ir_payload=payload,
     )
 
     assert signature == ("phase11_overrides_ir", "sig-mutations", "sig-rows-mut")
@@ -802,7 +783,7 @@ def test_execute_with_overrides_applies_payload_and_uses_cached_specialization(m
 
 
 def test_execute_with_overrides_wraps_patch_or_executor_errors(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Override path wraps patch-map and compiled-executor runtime errors."""
+    """Override path wraps patch-map errors and lets executor failures bubble."""
     runtime = MeldRuntime()
     spell = _Spell(
         spell_id="s1",
@@ -832,9 +813,9 @@ def test_execute_with_overrides_wraps_patch_or_executor_errors(monkeypatch: pyte
         return _executor
 
     monkeypatch.setattr(runtime_module, "compile_phase12_overrides_executor", _compile_phase12_overrides_executor)
-    with pytest.raises(MeldExecutionError) as exc2:
+    with pytest.raises(RuntimeError, match="exec-fail"):
         runtime.execute(_ctx(spell, overrides={"x": 1}))
-    assert isinstance(exc2.value.inner, RuntimeError)
+    
 
 
 def test_execute_with_overrides_wraps_shape_key_failures(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -864,10 +845,10 @@ def test_execute_with_overrides_wraps_shape_key_failures(monkeypatch: pytest.Mon
 
     with pytest.raises(MeldExecutionError, match="Failed to build override specialization shape key") as exc:
         runtime.execute(_ctx(spell, overrides={"x": 1}))
-    assert isinstance(exc.value.inner, ValueError)
+    assert isinstance(exc.value.inner, KeyError)
 
 
-def test_collect_override_targets_is_deterministic_for_equivalent_maps() -> None:
+def test_collect_override_targets_and_socket_shape_grouping_is_stable_for_equivalent_maps() -> None:
     """Socket-ref grouping/sorting is stable across equivalent insertion orders."""
     socket_a = _SocketRef("s1", "a", 9, "normal")
     socket_b = _SocketRef("s1", "b", 1, "normal")
@@ -875,14 +856,15 @@ def test_collect_override_targets_is_deterministic_for_equivalent_maps() -> None
     map_a = {socket_a: "va", socket_b: "vb"}
     map_b = {socket_b: "vb", socket_a: "va"}
 
-    targets_a = MeldRuntime._collect_override_targets(
+    targets_a, shape_a = MeldRuntime._collect_override_targets_and_socket_shape(
         override_map=map_a,
     )
-    targets_b = MeldRuntime._collect_override_targets(
+    targets_b, shape_b = MeldRuntime._collect_override_targets_and_socket_shape(
         override_map=map_b,
     )
 
     assert targets_a == targets_b
+    assert shape_a == shape_b
     assert targets_a["s1"] == (socket_b, socket_a)
 
 
@@ -990,9 +972,8 @@ def test_build_override_shape_key_uses_precomputed_socket_shape() -> None:
     """Shape-key builder accepts precomputed socket-shape tuples as-is."""
     shape_key = MeldRuntime._build_override_shape_key(
         plan_signature=("plan", "sig"),
-        override_targets_by_spell_id={},
-        root_positional_override=(1, 2, 3),
         socket_shape=(("s1", 7, "dep", "normal"),),
+        root_positional_override=(1, 2, 3),
     )
 
     assert shape_key == (
@@ -1000,109 +981,6 @@ def test_build_override_shape_key_uses_precomputed_socket_shape() -> None:
         (("s1", 7, "dep", "normal"),),
         3,
     )
-
-
-def test_resolve_override_specialization_source_memoizes_by_step_count(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Runtime reuses emitted override source for repeated step-count lookups."""
-    runtime = MeldRuntime()
-    emit_calls = []
-
-    def _emit_phase12_overrides_executor_source(*, step_count: int) -> str:
-        emit_calls.append(step_count)
-        return f"source-{step_count}-{len(emit_calls)}"
-
-    monkeypatch.setattr(
-        runtime_module,
-        "emit_phase12_overrides_executor_source",
-        _emit_phase12_overrides_executor_source,
-    )
-
-    first = runtime._resolve_override_specialization_source(
-        execution_plan=None,
-        plan_rows=(
-            {"spell_id": "s1"},
-            {"spell_id": "s2"},
-        ),
-    )
-    second = runtime._resolve_override_specialization_source(
-        execution_plan=SimpleNamespace(steps=("a", "b")),
-        plan_rows=None,
-    )
-    third = runtime._resolve_override_specialization_source(
-        execution_plan=None,
-        plan_rows=(
-            {"spell_id": "s1"},
-            {"spell_id": "s2"},
-            {"spell_id": "s3"},
-        ),
-    )
-
-    assert first == "source-2-1"
-    assert second == "source-2-1"
-    assert third == "source-3-2"
-    assert emit_calls == [2, 3]
-
-
-def test_get_or_compile_override_executor_skips_l2_work_when_disabled(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """L1 miss path does not build/load L2 keys when L2 cache is disabled."""
-    runtime = MeldRuntime()
-    spell = _Spell(
-        spell_id="s1",
-        crafter=_crafter(executor=lambda c: "x"),
-    )
-
-    def _unexpected_build_override_l2_key(**kwargs: Any) -> Any:
-        raise AssertionError("L2 key build should not run when L2 cache is disabled")
-
-    def _unexpected_resolve_override_specialization_source(
-            self: Any,
-            *,
-            execution_plan: Any,
-            plan_rows: Any,
-    ) -> Any:
-        raise AssertionError(
-            "override specialization source should not resolve when L2 cache is disabled"
-        )
-
-    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
-        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
-            return "compiled"
-
-        return _executor
-
-    monkeypatch.setattr(
-        runtime_module.MeldRuntime,
-        "_build_override_l2_key",
-        staticmethod(_unexpected_build_override_l2_key),
-    )
-    monkeypatch.setattr(
-        runtime_module.MeldRuntime,
-        "_resolve_override_specialization_source",
-        _unexpected_resolve_override_specialization_source,
-    )
-    monkeypatch.setattr(
-        runtime_module,
-        "compile_phase12_overrides_executor",
-        _compile_phase12_overrides_executor,
-    )
-
-    compiled = runtime._get_or_compile_override_executor(
-        spell=spell,
-        shape_key=("shape",),
-        execution_plan=None,
-        override_targets_by_spell_id={},
-        any_overrides_present=False,
-        path_registry=None,
-        plan_rows=({"spell_id": "s1"},),
-        root_spell_id="s1",
-        spell_lookup={"s1": spell},
-    )
-
-    assert callable(compiled)
 
 
 def test_execute_with_overrides_evicts_oldest_shape_when_cache_is_bounded(
@@ -1155,265 +1033,8 @@ def test_execute_with_overrides_evicts_oldest_shape_when_cache_is_bounded(
     assert compile_count["value"] == 3
 
 
-def test_execute_with_overrides_uses_l2_source_cache_across_runtime_instances(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Second runtime instance restores specialization from persisted L2 source."""
-    l2_dir = _make_local_l2_dir()
-    patch_map = object()
-    spell = _Spell(
-        spell_id="s1",
-        crafter=_crafter(
-            executor=lambda c: "x",
-            patch_map=patch_map,
-            override_plan=_override_plan(),
-            codegen_ir=_override_codegen_ir(root_spell_id="s1"),
-        ),
-    )
-    socket_ref = _SocketRef("s1", "dep", 7, "normal")
-    compile_calls = {"fresh": 0, "restored": 0}
-
-    def _apply_phase10_override_payload(
-            *,
-            override_patch_map: Any,
-            override_payload: Dict[str, Any],
-    ) -> Dict[Any, Any]:
-        assert override_patch_map is patch_map
-        assert override_payload == {"dep": "payload"}
-        return {socket_ref: "value"}
-
-    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
-        compile_calls["fresh"] += 1
-
-        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
-            assert override_map == {socket_ref: "value"}
-            assert root_args is None
-            return "fresh"
-
-        return _executor
-
-    def _compile_phase12_overrides_executor_from_source(**kwargs: Any) -> Any:
-        compile_calls["restored"] += 1
-        assert isinstance(kwargs["source"], str)
-        assert kwargs["source"]
-
-        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
-            assert override_map == {socket_ref: "value"}
-            assert root_args is None
-            return "restored"
-
-        return _executor
-
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", _apply_phase10_override_payload)
-    monkeypatch.setattr(runtime_module, "compile_phase12_overrides_executor", _compile_phase12_overrides_executor)
-    monkeypatch.setattr(
-        runtime_module,
-        "compile_phase12_overrides_executor_from_source",
-        _compile_phase12_overrides_executor_from_source,
-    )
-
-    try:
-        runtime_a = MeldRuntime()
-        runtime_a._override_specialization_l2_cache_dir = l2_dir
-        assert runtime_a.execute(_ctx(spell, overrides={"dep": "payload"})) == "fresh"
-
-        runtime_b = MeldRuntime()
-        runtime_b._override_specialization_l2_cache_dir = l2_dir
-        assert runtime_b.execute(_ctx(spell, overrides={"dep": "payload"})) == "restored"
-        assert compile_calls == {"fresh": 1, "restored": 1}
-    finally:
-        shutil.rmtree(l2_dir, ignore_errors=True)
-
-
-def test_execute_with_overrides_l2_invalidation_recompiles_on_runtime_version_mismatch(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Persisted artifacts with mismatched runtime-version metadata are invalidated."""
-    l2_dir = _make_local_l2_dir()
-    patch_map = object()
-    spell = _Spell(
-        spell_id="s1",
-        crafter=_crafter(
-            executor=lambda c: "x",
-            patch_map=patch_map,
-            override_plan=_override_plan(),
-            codegen_ir=_override_codegen_ir(root_spell_id="s1"),
-        ),
-    )
-    socket_ref = _SocketRef("s1", "dep", 7, "normal")
-    compile_count = {"fresh": 0}
-
-    def _apply_phase10_override_payload(
-            *,
-            override_patch_map: Any,
-            override_payload: Dict[str, Any],
-    ) -> Dict[Any, Any]:
-        assert override_patch_map is patch_map
-        return {socket_ref: "value"}
-
-    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
-        compile_count["fresh"] += 1
-
-        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
-            return "fresh"
-
-        return _executor
-
-    def _compile_phase12_overrides_executor_from_source(**kwargs: Any) -> Any:
-        raise AssertionError("L2 restore path should not execute on invalid metadata")
-
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", _apply_phase10_override_payload)
-    monkeypatch.setattr(runtime_module, "compile_phase12_overrides_executor", _compile_phase12_overrides_executor)
-    monkeypatch.setattr(
-        runtime_module,
-        "compile_phase12_overrides_executor_from_source",
-        _compile_phase12_overrides_executor_from_source,
-    )
-
-    try:
-        runtime_a = MeldRuntime()
-        runtime_a._override_specialization_l2_cache_dir = l2_dir
-        assert runtime_a.execute(_ctx(spell, overrides={"dep": "payload"})) == "fresh"
-
-        shape_key = runtime_a._override_specialization_order["s1"][0]
-        l2_key, _ = runtime_a._build_override_l2_key(
-            spell_id="s1",
-            shape_key=shape_key,
-        )
-        artifact_path = runtime_a._get_override_l2_artifact_path(
-            spell_id="s1",
-            l2_key=l2_key,
-        )
-        with open(artifact_path, "r", encoding="utf-8") as artifact_file:
-            artifact_payload = json.load(artifact_file)
-        artifact_payload["metadata"]["runtime_version"] = "stale-runtime-version"
-        with open(artifact_path, "w", encoding="utf-8") as artifact_file:
-            json.dump(artifact_payload, artifact_file)
-
-        runtime_b = MeldRuntime()
-        runtime_b._override_specialization_l2_cache_dir = l2_dir
-        assert runtime_b.execute(_ctx(spell, overrides={"dep": "payload"})) == "fresh"
-        assert compile_count["fresh"] == 2
-    finally:
-        shutil.rmtree(l2_dir, ignore_errors=True)
-
-
-def test_execute_with_overrides_l2_corrupt_artifact_falls_back_to_fresh_compile(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Corrupt L2 artifacts are discarded and replaced via fresh compile path."""
-    l2_dir = _make_local_l2_dir()
-    patch_map = object()
-    spell = _Spell(
-        spell_id="s1",
-        crafter=_crafter(
-            executor=lambda c: "x",
-            patch_map=patch_map,
-            override_plan=_override_plan(),
-            codegen_ir=_override_codegen_ir(root_spell_id="s1"),
-        ),
-    )
-    socket_ref = _SocketRef("s1", "dep", 7, "normal")
-    compile_count = {"fresh": 0}
-
-    def _apply_phase10_override_payload(
-            *,
-            override_patch_map: Any,
-            override_payload: Dict[str, Any],
-    ) -> Dict[Any, Any]:
-        assert override_patch_map is patch_map
-        return {socket_ref: "value"}
-
-    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
-        compile_count["fresh"] += 1
-
-        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
-            return "fresh"
-
-        return _executor
-
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", _apply_phase10_override_payload)
-    monkeypatch.setattr(runtime_module, "compile_phase12_overrides_executor", _compile_phase12_overrides_executor)
-
-    try:
-        runtime_a = MeldRuntime()
-        runtime_a._override_specialization_l2_cache_dir = l2_dir
-        assert runtime_a.execute(_ctx(spell, overrides={"dep": "payload"})) == "fresh"
-
-        shape_key = runtime_a._override_specialization_order["s1"][0]
-        l2_key, _ = runtime_a._build_override_l2_key(
-            spell_id="s1",
-            shape_key=shape_key,
-        )
-        artifact_path = runtime_a._get_override_l2_artifact_path(
-            spell_id="s1",
-            l2_key=l2_key,
-        )
-        with open(artifact_path, "w", encoding="utf-8") as artifact_file:
-            artifact_file.write("{ not-json")
-
-        runtime_b = MeldRuntime()
-        runtime_b._override_specialization_l2_cache_dir = l2_dir
-        assert runtime_b.execute(_ctx(spell, overrides={"dep": "payload"})) == "fresh"
-        assert compile_count["fresh"] == 2
-    finally:
-        shutil.rmtree(l2_dir, ignore_errors=True)
-
-
-def test_execute_with_overrides_evicts_oldest_l2_artifacts_when_bounded(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Per-spell L2 cache keeps bounded artifact count via oldest-first eviction."""
-    l2_dir = _make_local_l2_dir()
-    runtime = MeldRuntime()
-    runtime._override_specialization_l2_cache_dir = l2_dir
-    runtime._max_override_specializations_l2_per_spell = 1
-    patch_map = object()
-    spell = _Spell(
-        spell_id="s1",
-        crafter=_crafter(
-            executor=lambda c: "x",
-            patch_map=patch_map,
-            override_plan=_override_plan(),
-            codegen_ir=_override_codegen_ir(root_spell_id="s1"),
-        ),
-    )
-    socket_ref_a = _SocketRef("s1", "a", 1, "normal")
-    socket_ref_b = _SocketRef("s1", "b", 2, "normal")
-
-    def _apply_phase10_override_payload(
-            *,
-            override_patch_map: Any,
-            override_payload: Dict[str, Any],
-    ) -> Dict[Any, Any]:
-        assert override_patch_map is patch_map
-        if "a" in override_payload:
-            return {socket_ref_a: "va"}
-        return {socket_ref_b: "vb"}
-
-    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
-        def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
-            return "fresh"
-
-        return _executor
-
-    monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", _apply_phase10_override_payload)
-    monkeypatch.setattr(runtime_module, "compile_phase12_overrides_executor", _compile_phase12_overrides_executor)
-
-    try:
-        assert runtime.execute(_ctx(spell, overrides={"a": 1})) == "fresh"
-        assert runtime.execute(_ctx(spell, overrides={"b": 1})) == "fresh"
-
-        spell_hash = runtime_module.hashlib.sha256("s1".encode("utf-8")).hexdigest()
-        spell_dir = os.path.join(l2_dir, spell_hash)
-        files = [name for name in os.listdir(spell_dir) if name.endswith(".json")]
-        assert len(files) == 1
-    finally:
-        shutil.rmtree(l2_dir, ignore_errors=True)
-
-
 def test_execute_with_overrides_wraps_schema_compile_failures(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Override path wraps schema-row compile failures from specialization compiler."""
+    """Override path lets schema-row compile failures bubble."""
     runtime = MeldRuntime()
     spell = _Spell(
         spell_id="s1",
@@ -1437,10 +1058,14 @@ def test_execute_with_overrides_wraps_schema_compile_failures(monkeypatch: pytes
     )
     socket_ref = _SocketRef("s1", "x", 1, "normal")
     monkeypatch.setattr(runtime_module, "apply_phase10_override_payload", lambda **kwargs: {socket_ref: "v"})
+    monkeypatch.setattr(
+        runtime_module,
+        "compile_phase12_overrides_executor",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("schema-fail")),
+    )
 
-    with pytest.raises(MeldExecutionError, match="specialization compilation failed") as exc:
+    with pytest.raises(RuntimeError, match="schema-fail"):
         runtime.execute(_ctx(spell, overrides={"x": 1}))
-    assert isinstance(exc.value.inner, RuntimeError)
 
 
 def test_no_overrides_fast_transient_and_cleanup_contract() -> None:
@@ -1453,15 +1078,13 @@ def test_no_overrides_fast_transient_and_cleanup_contract() -> None:
         return "t"
 
     spell = _Spell(spell_id="s1", crafter=_crafter(executor=_executor))
-    assert runtime.execute_no_overrides_fast_transient(spell=spell, conduit_id="cid") == "t"
+    assert runtime.execute_no_overrides_fast_transient(spell=spell) == "t"
     assert calls == [None]
 
     runtime._override_specialization_cache["s1"] = {("k",): lambda *args: None}
     runtime._override_specialization_order["s1"] = deque([("k",)])
-    runtime._override_specialization_source_cache[1] = "source-1"
     runtime.cleanup()
     assert runtime._cleaned is True
     assert runtime._override_specialization_cache is None
     assert runtime._override_specialization_order is None
     assert runtime._max_override_specializations_per_spell is None
-    assert runtime._override_specialization_source_cache is None

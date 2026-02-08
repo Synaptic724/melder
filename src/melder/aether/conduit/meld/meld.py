@@ -1731,7 +1731,6 @@ class Meld(Cleanable, IMeld):
         ):
             return self._runtime.execute_no_overrides_fast_transient(
                 spell=spell,
-                conduit_id=self._resolution_conduit_id,
             )
 
         context = self._create_meld_context(
