@@ -1246,6 +1246,83 @@ def test_codegen_benchmark_gate_helpers_validate_inputs() -> None:
         )
 
 
+def test_evaluate_codegen_benchmark_baseline_deltas_reports_pass() -> None:
+    """Baseline delta evaluator reports deterministic ratios and pass state."""
+    current = {
+        "cold_compile_median_ns": 100,
+        "warm_execute_median_ns": 25,
+        "mixed_execute_median_ns": 40,
+    }
+    baseline = {
+        "cold_compile_median_ns": 120,
+        "warm_execute_median_ns": 30,
+        "mixed_execute_median_ns": 45,
+    }
+
+    report = MeldRuntime.evaluate_codegen_benchmark_baseline_deltas(
+        current_gate_report=current,
+        baseline_gate_report=baseline,
+        cold_compile_max_regression_ratio=1.10,
+        warm_execute_max_regression_ratio=1.10,
+        mixed_execute_max_regression_ratio=1.10,
+    )
+
+    assert report["passed"] is True
+    assert report["failures"] == ()
+    assert report["ratios"]["cold_compile_ratio"] == pytest.approx(100 / 120)
+    assert report["ratios"]["warm_execute_ratio"] == pytest.approx(25 / 30)
+    assert report["ratios"]["mixed_execute_ratio"] == pytest.approx(40 / 45)
+    assert report["deltas_ns"]["cold_compile_delta_ns"] == -20
+    assert report["deltas_ns"]["warm_execute_delta_ns"] == -5
+    assert report["deltas_ns"]["mixed_execute_delta_ns"] == -5
+
+
+def test_evaluate_codegen_benchmark_baseline_deltas_reports_failures() -> None:
+    """Baseline delta evaluator emits deterministic failure reasons on regressions."""
+    report = MeldRuntime.evaluate_codegen_benchmark_baseline_deltas(
+        current_gate_report={
+            "cold_compile_median_ns": 200,
+            "warm_execute_median_ns": 60,
+            "mixed_execute_median_ns": 70,
+        },
+        baseline_gate_report={
+            "cold_compile_median_ns": 100,
+            "warm_execute_median_ns": 30,
+            "mixed_execute_median_ns": 50,
+        },
+        cold_compile_max_regression_ratio=1.50,
+        warm_execute_max_regression_ratio=1.80,
+        mixed_execute_max_regression_ratio=1.20,
+    )
+
+    assert report["passed"] is False
+    assert "cold_compile_ratio" in report["failures"][0]
+    assert "warm_execute_ratio" in report["failures"][1]
+    assert "mixed_execute_ratio" in report["failures"][2]
+
+
+def test_evaluate_codegen_benchmark_baseline_deltas_validates_inputs() -> None:
+    """Baseline delta evaluator fails fast on malformed reports and thresholds."""
+    with pytest.raises(ValueError, match="must be > 0"):
+        MeldRuntime.evaluate_codegen_benchmark_baseline_deltas(
+            current_gate_report={"cold_compile_median_ns": 1, "warm_execute_median_ns": 1, "mixed_execute_median_ns": 1},
+            baseline_gate_report={"cold_compile_median_ns": 1, "warm_execute_median_ns": 1, "mixed_execute_median_ns": 1},
+            cold_compile_max_regression_ratio=0,
+        )
+
+    with pytest.raises(ValueError, match="must be an int"):
+        MeldRuntime.evaluate_codegen_benchmark_baseline_deltas(
+            current_gate_report={"cold_compile_median_ns": "1", "warm_execute_median_ns": 1, "mixed_execute_median_ns": 1},
+            baseline_gate_report={"cold_compile_median_ns": 1, "warm_execute_median_ns": 1, "mixed_execute_median_ns": 1},
+        )
+
+    with pytest.raises(ValueError, match="must be >= 1"):
+        MeldRuntime.evaluate_codegen_benchmark_baseline_deltas(
+            current_gate_report={"cold_compile_median_ns": 1, "warm_execute_median_ns": 1, "mixed_execute_median_ns": 1},
+            baseline_gate_report={"cold_compile_median_ns": 0, "warm_execute_median_ns": 1, "mixed_execute_median_ns": 1},
+        )
+
+
 def test_fast_transient_and_cleanup_contract() -> None:
     """Fast transient executes phase12 executor with None context; cleanup clears cache state."""
     runtime = MeldRuntime()

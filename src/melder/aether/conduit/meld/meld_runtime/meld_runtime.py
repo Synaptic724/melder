@@ -337,6 +337,173 @@ class MeldRuntime(Cleanable):
         }
 
     @staticmethod
+    def evaluate_codegen_benchmark_baseline_deltas(
+            *,
+            current_gate_report: Dict[str, Any],
+            baseline_gate_report: Dict[str, Any],
+            cold_compile_max_regression_ratio: float = 1.20,
+            warm_execute_max_regression_ratio: float = 1.20,
+            mixed_execute_max_regression_ratio: float = 1.20,
+    ) -> Dict[str, Any]:
+        """
+        Compare current benchmark medians against a baseline report.
+
+        Purpose:
+            Provide deterministic milestone delta reporting for codegen benchmark
+            medians so runtime regressions can be evaluated from saved reports.
+
+        Contract:
+            - Expects gate reports shaped like `evaluate_codegen_benchmark_gates`.
+            - Compares median nanosecond values for cold, warm, and mixed paths.
+            - Uses ratio thresholds to classify regressions path-by-path.
+            - Declares pass only when all ratios are <= configured thresholds.
+
+        Args:
+            current_gate_report:
+                Current benchmark gate report containing median fields.
+            baseline_gate_report:
+                Baseline benchmark gate report containing median fields.
+            cold_compile_max_regression_ratio:
+                Maximum allowed `current_cold / baseline_cold` ratio.
+            warm_execute_max_regression_ratio:
+                Maximum allowed `current_warm / baseline_warm` ratio.
+            mixed_execute_max_regression_ratio:
+                Maximum allowed `current_mixed / baseline_mixed` ratio.
+
+        Returns:
+            Dict[str, Any]:
+                Report containing medians, deltas, ratios, thresholds, failures,
+                and overall pass state.
+
+        Raises:
+            ValueError:
+                If reports are missing, malformed, or thresholds are invalid.
+        """
+        if current_gate_report is None:
+            raise ValueError("current_gate_report must not be None.")
+        if baseline_gate_report is None:
+            raise ValueError("baseline_gate_report must not be None.")
+        if cold_compile_max_regression_ratio <= 0:
+            raise ValueError("cold_compile_max_regression_ratio must be > 0.")
+        if warm_execute_max_regression_ratio <= 0:
+            raise ValueError("warm_execute_max_regression_ratio must be > 0.")
+        if mixed_execute_max_regression_ratio <= 0:
+            raise ValueError("mixed_execute_max_regression_ratio must be > 0.")
+
+        current_cold = MeldRuntime._require_benchmark_report_median(
+            report=current_gate_report,
+            key="cold_compile_median_ns",
+            report_name="current_gate_report",
+        )
+        current_warm = MeldRuntime._require_benchmark_report_median(
+            report=current_gate_report,
+            key="warm_execute_median_ns",
+            report_name="current_gate_report",
+        )
+        current_mixed = MeldRuntime._require_benchmark_report_median(
+            report=current_gate_report,
+            key="mixed_execute_median_ns",
+            report_name="current_gate_report",
+        )
+
+        baseline_cold = MeldRuntime._require_benchmark_report_median(
+            report=baseline_gate_report,
+            key="cold_compile_median_ns",
+            report_name="baseline_gate_report",
+        )
+        baseline_warm = MeldRuntime._require_benchmark_report_median(
+            report=baseline_gate_report,
+            key="warm_execute_median_ns",
+            report_name="baseline_gate_report",
+        )
+        baseline_mixed = MeldRuntime._require_benchmark_report_median(
+            report=baseline_gate_report,
+            key="mixed_execute_median_ns",
+            report_name="baseline_gate_report",
+        )
+
+        cold_ratio = current_cold / baseline_cold
+        warm_ratio = current_warm / baseline_warm
+        mixed_ratio = current_mixed / baseline_mixed
+
+        failures: List[str] = []
+        if cold_ratio > cold_compile_max_regression_ratio:
+            failures.append(
+                "cold_compile_ratio {0:.4f} exceeded {1:.4f}".format(
+                    cold_ratio,
+                    cold_compile_max_regression_ratio,
+                )
+            )
+        if warm_ratio > warm_execute_max_regression_ratio:
+            failures.append(
+                "warm_execute_ratio {0:.4f} exceeded {1:.4f}".format(
+                    warm_ratio,
+                    warm_execute_max_regression_ratio,
+                )
+            )
+        if mixed_ratio > mixed_execute_max_regression_ratio:
+            failures.append(
+                "mixed_execute_ratio {0:.4f} exceeded {1:.4f}".format(
+                    mixed_ratio,
+                    mixed_execute_max_regression_ratio,
+                )
+            )
+
+        return {
+            "current_medians_ns": {
+                "cold_compile_median_ns": current_cold,
+                "warm_execute_median_ns": current_warm,
+                "mixed_execute_median_ns": current_mixed,
+            },
+            "baseline_medians_ns": {
+                "cold_compile_median_ns": baseline_cold,
+                "warm_execute_median_ns": baseline_warm,
+                "mixed_execute_median_ns": baseline_mixed,
+            },
+            "deltas_ns": {
+                "cold_compile_delta_ns": current_cold - baseline_cold,
+                "warm_execute_delta_ns": current_warm - baseline_warm,
+                "mixed_execute_delta_ns": current_mixed - baseline_mixed,
+            },
+            "ratios": {
+                "cold_compile_ratio": cold_ratio,
+                "warm_execute_ratio": warm_ratio,
+                "mixed_execute_ratio": mixed_ratio,
+            },
+            "thresholds": {
+                "cold_compile_max_regression_ratio": cold_compile_max_regression_ratio,
+                "warm_execute_max_regression_ratio": warm_execute_max_regression_ratio,
+                "mixed_execute_max_regression_ratio": mixed_execute_max_regression_ratio,
+            },
+            "failures": tuple(failures),
+            "passed": len(failures) == 0,
+        }
+
+    @staticmethod
+    def _require_benchmark_report_median(
+            *,
+            report: Dict[str, Any],
+            key: str,
+            report_name: str,
+    ) -> int:
+        """
+        Validate and read one median field from a benchmark gate report.
+
+        Contract:
+            - Requires `report` to be a dict.
+            - Requires `key` to exist with an int value >= 1.
+            - Returns the validated median value.
+        """
+        if not isinstance(report, dict):
+            raise ValueError("{0} must be a dict.".format(report_name))
+        value = report.get(key)
+        if not isinstance(value, int):
+            raise ValueError("{0}.{1} must be an int.".format(report_name, key))
+        if value < 1:
+            raise ValueError("{0}.{1} must be >= 1.".format(report_name, key))
+        return value
+
+    @staticmethod
     def _sample_callable_ns(
             *,
             fn: Callable[[], Any],

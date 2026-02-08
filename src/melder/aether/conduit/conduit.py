@@ -2414,7 +2414,6 @@ class Conduit(Cleanable, IConduit):
         try:
             # Track active melds for shutdown/drain semantics.
             self._meld_gate.register_ticket()
-
             self._fire_conduit_hooks("on_meld_pre_resolve", self)
 
             result = self._meld.meld(
