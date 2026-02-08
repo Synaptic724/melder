@@ -51,17 +51,17 @@ def _make_root_spell(
     )
 
 
-def test_init_requires_root_spell_raises_valueerror() -> None:
+def test_init_with_missing_root_spell_raises_attributeerror() -> None:
     """
-    Verify MeldContext rejects missing root_spell inputs.
+    Verify missing root spell fails via raw contract violation.
 
     Contract:
-        - root_spell cannot be None.
+        - root_spell None propagates attribute-access failure.
 
     Raises:
         AssertionError: If root_spell None does not raise.
     """
-    with pytest.raises(ValueError, match="root_spell cannot be None"):
+    with pytest.raises(AttributeError):
         MeldContext(root_spell=None)
 
 

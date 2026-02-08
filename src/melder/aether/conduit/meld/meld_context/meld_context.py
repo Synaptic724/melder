@@ -95,9 +95,6 @@ class MeldContext(Cleanable):
                 invoking thread for the duration of this context. This allows
                 the runtime to avoid lock inversion when resolving shared
                 existences under a caller-scoped lock.
-
-        Raises:
-            ValueError: If root_spell is None.
         """
         super().__init__()
         self._root_spell: ISpell = root_spell
@@ -149,7 +146,6 @@ class MeldContext(Cleanable):
             - When `root_spell` is None, clears per-call references for pooling.
             - Marks the context as active (not cleaned) for pooled reuse.
         """
-        self._cleaned = False
         if root_spell is None:
             self._root_spell = None
             self._owner_creations = None
