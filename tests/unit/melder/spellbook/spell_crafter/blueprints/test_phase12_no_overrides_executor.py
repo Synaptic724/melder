@@ -743,6 +743,126 @@ def test_build_kwargs_no_overrides_fast_path_returns_empty_dict() -> None:
     assert kwargs == {}
 
 
+def test_build_kwargs_no_overrides_contract_payload_only_returns_copy() -> None:
+    """No-overrides kwargs helper returns a copy for contract-payload-only steps."""
+    contract_payload = {"value": "contract"}
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(),
+        contract_positional_override=None,
+        has_contract_payload=True,
+        contract_payload=contract_payload,
+        uses_positional_override=False,
+    )
+
+    kwargs = phase12_module._build_kwargs_no_overrides(
+        plan_step=plan_step,
+        instance_results={},
+    )
+
+    assert kwargs == {"value": "contract"}
+    assert kwargs is not contract_payload
+
+
+def test_build_kwargs_no_overrides_contract_payload_only_filters_args_key() -> None:
+    """No-overrides contract-only fast path filters `__args__` when positional override is enabled."""
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(),
+        contract_positional_override=None,
+        has_contract_payload=True,
+        contract_payload={
+            "__args__": ("contract-arg",),
+            "value": "contract",
+        },
+        uses_positional_override=True,
+    )
+
+    kwargs = phase12_module._build_kwargs_no_overrides(
+        plan_step=plan_step,
+        instance_results={},
+    )
+
+    assert kwargs == {"value": "contract"}
+
+
+def test_build_kwargs_no_overrides_single_and_multi_dependency_shapes() -> None:
+    """No-overrides kwargs helper maps one dependency to scalar and many to list."""
+    dep_key_one = ("dep-a", None)
+    dep_key_two = ("dep-b", None)
+    dep_key_three = ("dep-c", None)
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(
+            ("single", (dep_key_one,)),
+            ("multi", (dep_key_two, dep_key_three)),
+        ),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = phase12_module._build_kwargs_no_overrides(
+        plan_step=plan_step,
+        instance_results={
+            dep_key_one: "v1",
+            dep_key_two: "v2",
+            dep_key_three: "v3",
+        },
+    )
+
+    assert kwargs == {
+        "single": "v1",
+        "multi": ["v2", "v3"],
+    }
+
+
+def test_build_kwargs_no_overrides_two_dependency_fast_path_skips_iteration() -> None:
+    """No-overrides kwargs helper resolves two dependencies without sequence iteration."""
+    first_dependency_key = ("dep-a", None)
+    second_dependency_key = ("dep-b", None)
+
+    class _TwoDependencyKeys:
+        """Two-key sequence that fails if fallback iteration path is used."""
+
+        def __len__(self) -> int:
+            return 2
+
+        def __getitem__(self, index: int) -> Any:
+            if index == 0:
+                return first_dependency_key
+            if index == 1:
+                return second_dependency_key
+            raise IndexError(index)
+
+        def __iter__(self) -> Any:
+            raise AssertionError("two-dependency fast path must not iterate dependency keys")
+
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(
+            ("multi", _TwoDependencyKeys()),
+        ),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = phase12_module._build_kwargs_no_overrides(
+        plan_step=plan_step,
+        instance_results={
+            first_dependency_key: "v1",
+            second_dependency_key: "v2",
+        },
+    )
+
+    assert kwargs == {
+        "multi": ["v1", "v2"],
+    }
+
+
 def test_construct_spell_instance_rejects_invalid_positional_payload() -> None:
     """No-overrides construct helper rejects invalid non-sequence positional payloads."""
     spell = _make_spell("root")

@@ -828,17 +828,31 @@ class MeldRuntime(Cleanable):
         raw_args = override_payload.get("__args__")
         if raw_args is None:
             return override_payload, None
-        if not isinstance(raw_args, (list, tuple)):
+        if isinstance(raw_args, tuple):
+            normalized_root_args = raw_args
+        elif isinstance(raw_args, list):
+            normalized_root_args = tuple(raw_args)
+        else:
             raise MeldExecutionError(
                 spell_id=spell.spell_index.current,
                 spell_name=spell.spell_name,
                 message="__args__ override must be a list or tuple.",
             )
         if len(override_payload) == 1:
-            return {}, tuple(raw_args)
-        normalized_payload = dict(override_payload)
-        normalized_payload.pop("__args__", None)
-        return normalized_payload, tuple(raw_args)
+            return {}, normalized_root_args
+        if len(override_payload) == 2:
+            for param_name, value in override_payload.items():
+                if param_name != "__args__":
+                    return {
+                        param_name: value,
+                    }, normalized_root_args
+
+        normalized_payload: Dict[str, Any] = {}
+        for param_name, value in override_payload.items():
+            if param_name == "__args__":
+                continue
+            normalized_payload[param_name] = value
+        return normalized_payload, normalized_root_args
 
     @staticmethod
     def _collect_override_targets(
@@ -1279,17 +1293,18 @@ class MeldRuntime(Cleanable):
                     message="Phase 12 override specialization compilation failed.",
                     inner=exc,
                 ) from exc
-            source = self._resolve_override_specialization_source(
-                execution_plan=execution_plan,
-                plan_rows=plan_rows,
-            )
-            if source is not None and l2_enabled:
-                self._persist_override_executor_source_to_l2(
-                    spell_id=spell_id,
-                    l2_key=l2_key,
-                    shape_signature=shape_signature,
-                    source=source,
+            if l2_enabled:
+                source = self._resolve_override_specialization_source(
+                    execution_plan=execution_plan,
+                    plan_rows=plan_rows,
                 )
+                if source is not None:
+                    self._persist_override_executor_source_to_l2(
+                        spell_id=spell_id,
+                        l2_key=l2_key,
+                        shape_signature=shape_signature,
+                        source=source,
+                    )
 
         if shape_key not in cache:
             if len(order) >= self._max_override_specializations_per_spell:

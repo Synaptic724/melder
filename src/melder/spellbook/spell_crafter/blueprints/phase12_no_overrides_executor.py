@@ -776,20 +776,43 @@ def _build_kwargs_no_overrides(
         - Single dependency maps to one value; multiple map to a list.
         - Includes plan-time contract payload values.
     """
+    dependency_resolution_order = plan_step.dependency_resolution_order
+    contract_positional_override = plan_step.contract_positional_override
     if (
-            not plan_step.dependency_resolution_order
-            and plan_step.contract_positional_override is None
+            not dependency_resolution_order
+            and contract_positional_override is None
             and not plan_step.has_contract_payload
     ):
         return {}
+    if (
+            not dependency_resolution_order
+            and contract_positional_override is None
+            and plan_step.has_contract_payload
+    ):
+        contract_payload = plan_step.contract_payload
+        if not contract_payload:
+            return {}
+        if not plan_step.uses_positional_override:
+            return dict(contract_payload)
+        kwargs: Dict[str, Any] = {}
+        for param_name, value in contract_payload.items():
+            if param_name == "__args__":
+                continue
+            kwargs[param_name] = value
+        return kwargs
 
     spell = plan_step.spell
     spell_id = spell.spell_index.current
     kwargs: Dict[str, Any] = {}
-    for param_name, dependency_keys in plan_step.dependency_resolution_order:
-        values = []
-        for dependency_key in dependency_keys:
-            if dependency_key not in instance_results:
+    for param_name, dependency_keys in dependency_resolution_order:
+        dependency_count = len(dependency_keys)
+        if dependency_count == 0:
+            continue
+        if dependency_count == 1:
+            dependency_key = dependency_keys[0]
+            try:
+                kwargs[param_name] = instance_results[dependency_key]
+            except KeyError as exc:
                 raise MeldExecutionError(
                     spell_id=spell_id,
                     spell_name=spell_id,
@@ -799,8 +822,58 @@ def _build_kwargs_no_overrides(
                         f"Dependency '{dependency_key[0]}' missing while "
                         f"building args for '{spell_id}'."
                     ),
-                )
-            values.append(instance_results[dependency_key])
+                ) from exc
+            continue
+        if dependency_count == 2:
+            first_dependency_key = dependency_keys[0]
+            second_dependency_key = dependency_keys[1]
+            try:
+                first_value = instance_results[first_dependency_key]
+            except KeyError as exc:
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell_id,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        f"Dependency '{first_dependency_key[0]}' missing while "
+                        f"building args for '{spell_id}'."
+                    ),
+                ) from exc
+            try:
+                second_value = instance_results[second_dependency_key]
+            except KeyError as exc:
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell_id,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        f"Dependency '{second_dependency_key[0]}' missing while "
+                        f"building args for '{spell_id}'."
+                    ),
+                ) from exc
+            kwargs[param_name] = [
+                first_value,
+                second_value,
+            ]
+            continue
+
+        values = []
+        for dependency_key in dependency_keys:
+            try:
+                values.append(instance_results[dependency_key])
+            except KeyError as exc:
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell_id,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        f"Dependency '{dependency_key[0]}' missing while "
+                        f"building args for '{spell_id}'."
+                    ),
+                ) from exc
         if not values:
             continue
         if len(values) == 1:
@@ -808,8 +881,8 @@ def _build_kwargs_no_overrides(
         else:
             kwargs[param_name] = values
 
-    if plan_step.contract_positional_override is not None:
-        kwargs["__args__"] = plan_step.contract_positional_override
+    if contract_positional_override is not None:
+        kwargs["__args__"] = contract_positional_override
 
     if plan_step.has_contract_payload:
         contract_payload = plan_step.contract_payload

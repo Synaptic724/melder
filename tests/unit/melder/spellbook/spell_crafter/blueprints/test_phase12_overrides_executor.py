@@ -691,6 +691,153 @@ def test_build_kwargs_with_overrides_fast_path_returns_override_copy() -> None:
     assert kwargs is not override_values
 
 
+def test_build_kwargs_with_overrides_contract_payload_only_returns_copy() -> None:
+    """Overrides kwargs helper returns a copy for contract-payload-only steps."""
+    contract_payload = {"value": "contract"}
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(),
+        contract_positional_override=None,
+        has_contract_payload=True,
+        contract_payload=contract_payload,
+        uses_positional_override=False,
+    )
+
+    kwargs = phase12_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values={},
+    )
+
+    assert kwargs == {"value": "contract"}
+    assert kwargs is not contract_payload
+
+
+def test_build_kwargs_with_overrides_contract_payload_only_filters_args_key() -> None:
+    """Overrides contract-only fast path filters `__args__` when positional override is enabled."""
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(),
+        contract_positional_override=None,
+        has_contract_payload=True,
+        contract_payload={
+            "__args__": ("contract-arg",),
+            "value": "contract",
+        },
+        uses_positional_override=True,
+    )
+
+    kwargs = phase12_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values={},
+    )
+
+    assert kwargs == {"value": "contract"}
+
+
+def test_build_kwargs_with_overrides_single_and_multi_dependency_shapes() -> None:
+    """Overrides kwargs helper maps one dependency to scalar and many to list."""
+    dep_key_one = ("dep-a", None)
+    dep_key_two = ("dep-b", None)
+    dep_key_three = ("dep-c", None)
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(
+            ("single", (dep_key_one,)),
+            ("multi", (dep_key_two, dep_key_three)),
+        ),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = phase12_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={
+            dep_key_one: "v1",
+            dep_key_two: "v2",
+            dep_key_three: "v3",
+        },
+        override_values={},
+    )
+
+    assert kwargs == {
+        "single": "v1",
+        "multi": ["v2", "v3"],
+    }
+
+
+def test_build_kwargs_with_overrides_override_precedence_skips_dependency_lookup() -> None:
+    """Override values take precedence and bypass dependency lookup for the same param."""
+    dep_key_missing = ("dep-missing", None)
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(
+            ("value", (dep_key_missing,)),
+        ),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = phase12_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values={"value": "override"},
+    )
+
+    assert kwargs == {"value": "override"}
+
+
+def test_build_kwargs_with_overrides_two_dependency_fast_path_skips_iteration() -> None:
+    """Overrides kwargs helper resolves two dependencies without sequence iteration."""
+    first_dependency_key = ("dep-a", None)
+    second_dependency_key = ("dep-b", None)
+
+    class _TwoDependencyKeys:
+        """Two-key sequence that fails if fallback iteration path is used."""
+
+        def __len__(self) -> int:
+            return 2
+
+        def __getitem__(self, index: int) -> Any:
+            if index == 0:
+                return first_dependency_key
+            if index == 1:
+                return second_dependency_key
+            raise IndexError(index)
+
+        def __iter__(self) -> Any:
+            raise AssertionError("two-dependency fast path must not iterate dependency keys")
+
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(
+            ("multi", _TwoDependencyKeys()),
+        ),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = phase12_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={
+            first_dependency_key: "v1",
+            second_dependency_key: "v2",
+        },
+        override_values={},
+    )
+
+    assert kwargs == {
+        "multi": ["v1", "v2"],
+    }
+
+
 def test_build_step_override_values_fast_path_returns_empty_when_no_targets(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -776,6 +923,65 @@ def test_build_step_override_values_single_target_fast_path_with_root_args(
 
     assert values == {
         "value": "override-value",
+        "__args__": ("arg-1",),
+    }
+
+
+def test_build_step_override_values_two_target_fast_path_without_root_args(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Two-target helper path materializes direct param mapping without generic helper."""
+    first_socket_ref = _SocketRef("root", "value_a", 7, "normal")
+    second_socket_ref = _SocketRef("root", "value_b", 8, "normal")
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_instance_override_map",
+        lambda override_targets, override_map: (_ for _ in ()).throw(
+            AssertionError("generic target helper must not be called for two targets")
+        ),
+    )
+
+    values = phase12_module._build_step_override_values(
+        override_targets=(first_socket_ref, second_socket_ref),
+        override_map={
+            first_socket_ref: "override-a",
+            second_socket_ref: "override-b",
+        },
+        root_positional_override=None,
+    )
+
+    assert values == {
+        "value_a": "override-a",
+        "value_b": "override-b",
+    }
+
+
+def test_build_step_override_values_two_target_fast_path_with_root_args(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Two-target helper path merges direct param mapping with root positional args."""
+    first_socket_ref = _SocketRef("root", "value_a", 7, "normal")
+    second_socket_ref = _SocketRef("root", "value_b", 8, "normal")
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_instance_override_map",
+        lambda override_targets, override_map: (_ for _ in ()).throw(
+            AssertionError("generic target helper must not be called for two targets")
+        ),
+    )
+
+    values = phase12_module._build_step_override_values(
+        override_targets=(first_socket_ref, second_socket_ref),
+        override_map={
+            first_socket_ref: "override-a",
+            second_socket_ref: "override-b",
+        },
+        root_positional_override=("arg-1",),
+    )
+
+    assert values == {
+        "value_a": "override-a",
+        "value_b": "override-b",
         "__args__": ("arg-1",),
     }
 

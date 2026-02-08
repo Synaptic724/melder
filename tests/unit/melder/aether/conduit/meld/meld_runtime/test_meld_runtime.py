@@ -721,6 +721,25 @@ def test_split_override_payload_root_args_only_returns_empty_target_payload() ->
     assert root_args == (7, 8)
 
 
+def test_split_override_payload_tuple_root_args_preserves_tuple_identity() -> None:
+    """Tuple root args are preserved by split normalization without rebuilding tuple values."""
+    spell = _Spell(
+        spell_id="s1",
+        crafter=_crafter(executor=lambda c: "x"),
+    )
+    root_args_payload = (9, 10)
+    stripped_payload, root_args = MeldRuntime._split_override_payload(
+        spell=spell,
+        override_payload={
+            "__args__": root_args_payload,
+            "dep": "value",
+        },
+    )
+
+    assert stripped_payload == {"dep": "value"}
+    assert root_args is root_args_payload
+
+
 def test_execute_with_overrides_applies_payload_and_uses_cached_specialization(monkeypatch: pytest.MonkeyPatch) -> None:
     """Override path applies payload, compiles specialization once per shape, and reuses cache."""
     runtime = MeldRuntime()
@@ -1039,6 +1058,16 @@ def test_get_or_compile_override_executor_skips_l2_work_when_disabled(
     def _unexpected_build_override_l2_key(**kwargs: Any) -> Any:
         raise AssertionError("L2 key build should not run when L2 cache is disabled")
 
+    def _unexpected_resolve_override_specialization_source(
+            self: Any,
+            *,
+            execution_plan: Any,
+            plan_rows: Any,
+    ) -> Any:
+        raise AssertionError(
+            "override specialization source should not resolve when L2 cache is disabled"
+        )
+
     def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
         def _executor(context: Any, override_map: Dict[Any, Any], root_args: Any) -> str:
             return "compiled"
@@ -1049,6 +1078,11 @@ def test_get_or_compile_override_executor_skips_l2_work_when_disabled(
         runtime_module.MeldRuntime,
         "_build_override_l2_key",
         staticmethod(_unexpected_build_override_l2_key),
+    )
+    monkeypatch.setattr(
+        runtime_module.MeldRuntime,
+        "_resolve_override_specialization_source",
+        _unexpected_resolve_override_specialization_source,
     )
     monkeypatch.setattr(
         runtime_module,
