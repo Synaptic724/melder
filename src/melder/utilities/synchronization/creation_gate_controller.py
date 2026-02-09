@@ -1,6 +1,5 @@
-from __future__ import annotations
-
-from typing import Dict
+import threading
+from typing import Dict, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.creation_gate import CreationGate
@@ -13,7 +12,9 @@ class CreationGateController(Cleanable):
     Purpose:
         Provide one orchestration surface for creation gates across two scopes:
 
-        - Conduit-scope gates keyed by ``conduit_id``.
+        - Conduit-scope gates indexed by
+          ``root_conduit_id -> conduit_id -> CreationGate`` and a reverse
+          ``conduit_id -> root_conduit_id`` map.
         - Spell-lineage gates keyed by ``lineage_id``.
 
         This split allows the same gate primitive to be reused for both
@@ -28,34 +29,78 @@ class CreationGateController(Cleanable):
         - All public methods enforce ``check_cleaned()``.
 
     Threading:
-        - The controller intentionally avoids internal locks to remain low
-          overhead and composable; callers are expected to serialize registry
-          mutation if concurrent writes are possible.
+        - The controller uses an internal ``RLock`` to make teardown
+          deterministic under concurrent access.
+        - Callers should still serialize concurrent registry mutations.
     """
 
-    __slots__ = ("_conduit_creation_gates", "_spell_lineage_creation_gates")
+    __slots__ = (
+        "_lock",
+        "_conduit_creation_gates",
+        "_conduit_creation_gates_by_root",
+        "_conduit_root_by_conduit",
+        "_spell_lineage_creation_gates",
+    )
 
     def __init__(self) -> None:
         """
         Public API
 
         Initialize empty conduit and spell-lineage gate registries.
+
+        Registry layout:
+            - ``_lock``:
+                Internal synchronization lock used by cleanup paths.
+            - ``_conduit_creation_gates``:
+                Flat index for O(1) lookup by conduit_id.
+            - ``_conduit_creation_gates_by_root``:
+                Hierarchical index for lineage operations:
+                ``root_conduit_id -> conduit_id -> gate``.
+            - ``_conduit_root_by_conduit``:
+                Reverse index for O(1) root lookup by conduit_id.
         """
         super().__init__()
+        self._lock: Optional[threading.RLock] = threading.RLock()
         self._conduit_creation_gates: Dict[str, CreationGate] = {}
+        self._conduit_creation_gates_by_root: Dict[str, Dict[str, CreationGate]] = {}
+        self._conduit_root_by_conduit: Dict[str, str] = {}
         self._spell_lineage_creation_gates: Dict[str, CreationGate] = {}
 
     def cleanup(self) -> None:
         """
         Public API
 
-        Idempotently clear both registries and mark the controller cleaned.
+        Idempotently tear down all registered gates and clear controller state.
+
+        Contract:
+            - Calls ``cleanup()`` on all unique registered gates.
+            - Clears and nulls all registries/indexes.
+            - Marks the controller cleaned.
+
+        Threading:
+            - Cleanup is lock-guarded and re-checks cleaned state inside lock.
         """
         if self._cleaned:
             return
-        self._conduit_creation_gates.clear()
-        self._spell_lineage_creation_gates.clear()
-        self._cleaned = True
+
+        with self._lock:
+            if self._cleaned:
+                return
+            gates = set(self._conduit_creation_gates.values())
+            gates.update(self._spell_lineage_creation_gates.values())
+            for gate in gates:
+                gate.cleanup()
+            self._conduit_creation_gates.clear()
+            self._conduit_creation_gates_by_root.clear()
+            self._conduit_root_by_conduit.clear()
+            self._spell_lineage_creation_gates.clear()
+            self._cleaned = True
+            self._conduit_creation_gates = None
+            self._conduit_creation_gates_by_root = None
+            self._conduit_root_by_conduit = None
+            self._spell_lineage_creation_gates = None
+
+        self._lock = None
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -116,29 +161,90 @@ class CreationGateController(Cleanable):
     # ------------------------------------------------------------------
     # Conduit-scope registry
     # ------------------------------------------------------------------
-    def create_conduit_gate(self, conduit_id: str) -> CreationGate:
+    @staticmethod
+    def _normalize_root_conduit_id(
+        *,
+        conduit_id: str,
+        root_conduit_id: Optional[str],
+    ) -> str:
+        """
+        Internal
+
+        Normalize root id for conduit registration.
+
+        Contract:
+            - When no explicit root is provided, root defaults to conduit_id.
+        """
+        if root_conduit_id is None:
+            return conduit_id
+        return root_conduit_id
+
+    def create_conduit_gate(
+        self,
+        conduit_id: str,
+        *,
+        root_conduit_id: Optional[str] = None,
+    ) -> CreationGate:
         """
         Public API
 
         Create and register a conduit-scope CreationGate.
+
+        Args:
+            conduit_id:
+                Unique conduit key for the flat conduit index.
+            root_conduit_id:
+                Optional lineage root key. When omitted, defaults to
+                ``conduit_id`` (single-node lineage).
         """
         self.check_cleaned()
         self._require_key(conduit_id, "conduit_id")
         self._ensure_absent(self._conduit_creation_gates, conduit_id, "conduit_id")
+        normalized_root = self._normalize_root_conduit_id(
+            conduit_id=conduit_id,
+            root_conduit_id=root_conduit_id,
+        )
+        self._require_key(normalized_root, "root_conduit_id")
         gate = CreationGate()
         self._conduit_creation_gates[conduit_id] = gate
+        root_map = self._conduit_creation_gates_by_root.setdefault(normalized_root, {})
+        root_map[conduit_id] = gate
+        self._conduit_root_by_conduit[conduit_id] = normalized_root
         return gate
 
-    def register_conduit_gate(self, conduit_id: str, gate: CreationGate) -> None:
+    def register_conduit_gate(
+        self,
+        conduit_id: str,
+        gate: CreationGate,
+        *,
+        root_conduit_id: Optional[str] = None,
+    ) -> None:
         """
         Public API
 
         Register an existing conduit-scope CreationGate.
+
+        Args:
+            conduit_id:
+                Unique conduit key for the flat conduit index.
+            gate:
+                Existing gate instance to attach.
+            root_conduit_id:
+                Optional lineage root key. When omitted, defaults to
+                ``conduit_id`` (single-node lineage).
         """
         self.check_cleaned()
         self._require_key(conduit_id, "conduit_id")
         self._ensure_absent(self._conduit_creation_gates, conduit_id, "conduit_id")
+        normalized_root = self._normalize_root_conduit_id(
+            conduit_id=conduit_id,
+            root_conduit_id=root_conduit_id,
+        )
+        self._require_key(normalized_root, "root_conduit_id")
         self._conduit_creation_gates[conduit_id] = gate
+        root_map = self._conduit_creation_gates_by_root.setdefault(normalized_root, {})
+        root_map[conduit_id] = gate
+        self._conduit_root_by_conduit[conduit_id] = normalized_root
 
     def unregister_conduit_gate(self, conduit_id: str) -> None:
         """
@@ -147,9 +253,18 @@ class CreationGateController(Cleanable):
         Remove conduit-scope registration by key.
         """
         self.check_cleaned()
-        self._conduit_creation_gates.pop(conduit_id, None)
+        gate = self._conduit_creation_gates.pop(conduit_id, None)
+        root_conduit_id = self._conduit_root_by_conduit.pop(conduit_id, None)
+        if gate is None or root_conduit_id is None:
+            return
+        root_map = self._conduit_creation_gates_by_root.get(root_conduit_id)
+        if root_map is None:
+            return
+        root_map.pop(conduit_id, None)
+        if not root_map:
+            self._conduit_creation_gates_by_root.pop(root_conduit_id, None)
 
-    def get_conduit_gate(self, conduit_id: str) -> CreationGate | None:
+    def get_conduit_gate(self, conduit_id: str) -> Optional[CreationGate]:
         """
         Public API
 
@@ -157,6 +272,37 @@ class CreationGateController(Cleanable):
         """
         self.check_cleaned()
         return self._conduit_creation_gates.get(conduit_id)
+
+    def get_root_conduit_id_for_conduit(self, conduit_id: str) -> Optional[str]:
+        """
+        Public API
+
+        Return lineage root id for a conduit id, or None when missing.
+        """
+        self.check_cleaned()
+        return self._conduit_root_by_conduit.get(conduit_id)
+
+    def get_conduit_lineage_gates(self, root_conduit_id: str) -> Dict[str, CreationGate]:
+        """
+        Public API
+
+        Return a detached conduit->gate map for one root lineage.
+
+        Args:
+            root_conduit_id:
+                Root lineage key.
+
+        Returns:
+            Dict[str, CreationGate]:
+                Detached snapshot map for the lineage. Empty if root missing.
+        """
+        self.check_cleaned()
+        if not root_conduit_id:
+            return {}
+        root_map = self._conduit_creation_gates_by_root.get(root_conduit_id)
+        if not root_map:
+            return {}
+        return dict(root_map)
 
     def count_active_threads_for_conduit(self, conduit_id: str) -> int:
         """
@@ -175,6 +321,20 @@ class CreationGateController(Cleanable):
         """
         self.check_cleaned()
         return sum(gate.active_ticket_count() for gate in self._conduit_creation_gates.values())
+
+    def count_active_threads_for_conduit_lineage(self, root_conduit_id: str) -> int:
+        """
+        Public API
+
+        Return active ticket count summed across one root lineage.
+        """
+        self.check_cleaned()
+        if not root_conduit_id:
+            return 0
+        root_map = self._conduit_creation_gates_by_root.get(root_conduit_id)
+        if not root_map:
+            return 0
+        return sum(gate.active_ticket_count() for gate in root_map.values())
 
     def close_and_wait_until_conduit_free(
         self,
@@ -251,7 +411,7 @@ class CreationGateController(Cleanable):
         self.check_cleaned()
         self._spell_lineage_creation_gates.pop(lineage_id, None)
 
-    def get_spell_lineage_gate(self, lineage_id: str) -> CreationGate | None:
+    def get_spell_lineage_gate(self, lineage_id: str) -> Optional[CreationGate]:
         """
         Public API
 
@@ -354,70 +514,3 @@ class CreationGateController(Cleanable):
         self.disable_all_conduit_gates()
         self.disable_all_spell_lineage_gates()
 
-    # ------------------------------------------------------------------
-    # Compatibility aliases for conduit-level meld replacement
-    # ------------------------------------------------------------------
-    def create_gate(self, conduit_id: str) -> CreationGate:
-        """
-        Public API
-
-        Back-compat alias for conduit gate creation.
-        """
-        return self.create_conduit_gate(conduit_id)
-
-    def register_gate(self, conduit_id: str, gate: CreationGate) -> None:
-        """
-        Public API
-
-        Back-compat alias for conduit gate registration.
-        """
-        self.register_conduit_gate(conduit_id, gate)
-
-    def unregister_gate(self, conduit_id: str) -> None:
-        """
-        Public API
-
-        Back-compat alias for conduit gate unregistration.
-        """
-        self.unregister_conduit_gate(conduit_id)
-
-    def get_gate(self, conduit_id: str) -> CreationGate | None:
-        """
-        Public API
-
-        Back-compat alias for conduit gate lookup.
-        """
-        return self.get_conduit_gate(conduit_id)
-
-    def count_active_threads(self, conduit_id: str) -> int:
-        """
-        Public API
-
-        Back-compat alias for conduit gate active count.
-        """
-        return self.count_active_threads_for_conduit(conduit_id)
-
-    def count_active_threads_lineage(self) -> int:
-        """
-        Public API
-
-        Back-compat alias for summing conduit-scope active tickets.
-        """
-        return self.count_active_threads_conduits()
-
-    def close_and_wait_until_free(
-        self,
-        conduit_id: str,
-        timeout: float = 30.0,
-        interval: float = 0.1,
-    ) -> None:
-        """
-        Public API
-
-        Back-compat alias for conduit gate close-and-drain.
-        """
-        self.close_and_wait_until_conduit_free(
-            conduit_id=conduit_id,
-            timeout=timeout,
-            interval=interval,
-        )

@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 import time
 from contextvars import ContextVar
 from contextlib import contextmanager
@@ -19,8 +19,8 @@ from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, ICondui
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.meld import Meld
-from melder.aether.conduit.meld.meld_gate import MeldGate
-from melder.aether.conduit.meld.meld_gate_controller import MeldGateController
+from melder.utilities.synchronization.creation_gate import CreationGate
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
@@ -39,7 +39,7 @@ class Conduit(Cleanable, IConduit):
     and manage the lifecycle of services registered inside itself.
 
     Meld gating:
-        Each conduit owns a MeldGate that can block or deny new meld calls.
+        Each conduit owns a CreationGate that can block or deny new meld calls.
         The gate tracks active melds via ticket registration so the system
         can drain in-flight work before shutdown or dynamic reconfiguration.
     """
@@ -74,8 +74,8 @@ class Conduit(Cleanable, IConduit):
             logger: Any | None = None,
             conduit_id: Optional[str] = None,
             root_conduit_id: Optional[str] = None,
-            meld_gate: MeldGate | None = None,
-            meld_gate_controller: MeldGateController | None = None,
+            creation_gate: CreationGate | None = None,
+            creation_gate_controller: CreationGateController | None = None,
     ):
         """
         Public API
@@ -104,12 +104,13 @@ class Conduit(Cleanable, IConduit):
                 via IDBuilder.create_id().
             root_conduit_id (str | None, optional):
                 Root conduit id for this lineage. Required for lesser conduits.
-            meld_gate (MeldGate | None, optional):
-                Optional MeldGate to register for this conduit. When None,
-                a new gate is created via the MeldGateController.
-            meld_gate_controller (MeldGateController | None, optional):
-                Optional controller used to create and register MeldGates for
-                this conduit and its lineage. Normal conduits own the controller.
+            creation_gate (CreationGate | None, optional):
+                Optional CreationGate to register for this conduit. When None,
+                a new gate is created via the active CreationGateController.
+            creation_gate_controller (CreationGateController | None, optional):
+                Optional override controller. When omitted, Conduit resolves the
+                per-frame controller from DevOpsManager and uses it as a facade
+                through `_creation_gate_controller`.
 
         Raises:
             TypeError:
@@ -155,20 +156,17 @@ class Conduit(Cleanable, IConduit):
         else:
             self._root_conduit_id: str = self._id
 
-        self._creations: Creations = self._creations_configuration(configuration)
-        self._meld_gate_controller: MeldGateController | None = meld_gate_controller
-        self._owns_meld_gate_controller: bool = False
-        if self._meld_gate_controller is None:
-            self._meld_gate_controller = MeldGateController()
-            self._owns_meld_gate_controller = (conduit_state == ConduitState.normal)
-        elif conduit_state == ConduitState.normal:
-            self._owns_meld_gate_controller = True
-        if meld_gate is None:
-            meld_gate = self._meld_gate_controller.create_gate(conduit_id)
-        else:
-            self._meld_gate_controller.register_gate(conduit_id, meld_gate)
-        self._meld_gate: MeldGate = meld_gate
         self._spellbook: ISpellbook = spellbook
+        self._creations: Creations = self._creations_configuration(configuration)
+        self._dev_ops_manager: Any | None = self._resolve_dev_ops_manager()
+        self._creation_gate_controller: CreationGateController = self._resolve_creation_gate_controller(
+            creation_gate_controller
+        )
+        if creation_gate is None:
+            creation_gate = self._create_gate_for_current_root(conduit_id)
+        else:
+            self._register_existing_gate_for_current_root(conduit_id, creation_gate)
+        self._creation_gate: CreationGate = creation_gate
 
         # Split hook maps into conduit-owned copies so runtime behavior does not
         # depend on future Configuration hook-map mutations.
@@ -259,15 +257,15 @@ class Conduit(Cleanable, IConduit):
         # Lesser conduits share the parent Spellbook and are not root-registered
         # in Aether. We tear down local runtime and lineage links, but do not
         # touch the shared Spellbook/Aether registries.
-        if self._meld_gate_controller is not None:
+        if self._creation_gate_controller is not None:
             try:
-                self._meld_gate_controller.unregister_gate(self._id)
+                self._creation_gate_controller.unregister_conduit_gate(self._id)
             except Exception:
                 self._logger.error(
-                    "Error unregistering meld gate", "_cleanup_lesser_conduit", exc_info=True
+                    "Error unregistering creation gate", "_cleanup_lesser_conduit", exc_info=True
                 )
-        if self._meld_gate is not None:
-            self._meld_gate.cleanup()
+        if self._creation_gate is not None:
+            self._creation_gate.cleanup()
         try:
             if self._meld is not None:
                 self._meld.cleanup()
@@ -291,9 +289,9 @@ class Conduit(Cleanable, IConduit):
         # Null internal references
         self._conduit_ward = None
         self._meld = None
-        self._meld_gate = None
-        self._meld_gate_controller = None
-        self._owns_meld_gate_controller = None
+        self._creation_gate = None
+        self._creation_gate_controller = None
+        self._dev_ops_manager = None
         self._creations = None
         self._spellspace_stack = None
         self._spellspace_registry = None
@@ -309,15 +307,15 @@ class Conduit(Cleanable, IConduit):
         Cleans up a normal Conduit.
         """
         # 1) Meld runtime (stop new object creation paths)
-        if self._meld_gate_controller is not None:
+        if self._creation_gate_controller is not None:
             try:
-                self._meld_gate_controller.unregister_gate(self._id)
+                self._creation_gate_controller.unregister_conduit_gate(self._id)
             except Exception:
                 self._logger.error(
-                    "Error unregistering meld gate", "_cleanup_normal_conduit", exc_info=True
+                    "Error unregistering creation gate", "_cleanup_normal_conduit", exc_info=True
                 )
-        if self._meld_gate is not None:
-            self._meld_gate.cleanup()
+        if self._creation_gate is not None:
+            self._creation_gate.cleanup()
         try:
             if self._meld is not None:
                 self._meld.cleanup()
@@ -340,15 +338,6 @@ class Conduit(Cleanable, IConduit):
                 self._creations.cleanup()
         except Exception:
             self._logger.error("Error cleaning creations", "_cleanup_normal_conduit", exc_info=True)
-
-        # 3.5) Meld gate controller (normal conduits only)
-        try:
-            if self._owns_meld_gate_controller and self._meld_gate_controller is not None:
-                self._meld_gate_controller.cleanup()
-        except Exception:
-            self._logger.error(
-                "Error cleaning meld gate controller", "_cleanup_normal_conduit", exc_info=True
-            )
 
         # 4) Unregister from Aether (spells + root conduit + cloud)
         try:
@@ -378,9 +367,9 @@ class Conduit(Cleanable, IConduit):
         # 6) Null internal references
         self._conduit_ward = None
         self._meld = None
-        self._meld_gate = None
-        self._meld_gate_controller = None
-        self._owns_meld_gate_controller = None
+        self._creation_gate = None
+        self._creation_gate_controller = None
+        self._dev_ops_manager = None
         self._creations = None
         self._spellbook = None
         self._configuration = None
@@ -963,34 +952,130 @@ class Conduit(Cleanable, IConduit):
 
         return hook_chain
 
-    def _set_meld_gate_controller_for_lineage(
+    def _resolve_dev_ops_manager(self) -> Any | None:
+        """
+        Internal
+
+        Resolve the per-frame DevOpsManager for this conduit.
+
+        Contract:
+            - Returns DevOpsManager when the frame is available.
+            - Returns None when Aether/devops access is unavailable (for
+              isolated unit tests or stubs).
+            - Never raises.
+        """
+        try:
+            return Conduit._aether._get_devops_manager(self._aetheric_frame)
+        except Exception:
+            return None
+
+    def _resolve_creation_gate_controller(
             self,
-            meld_gate_controller: MeldGateController,
+            override_controller: CreationGateController | None,
+    ) -> CreationGateController:
+        """
+        Internal
+
+        Resolve the CreationGateController used by this conduit.
+
+        Resolution order:
+            1) Explicit override provided by caller.
+            2) DevOpsManager.creation_gate_controller for this frame.
+            3) Local fallback controller (for tests/stubs without DevOps).
+        """
+        if override_controller is not None:
+            return override_controller
+
+        dev_ops_manager = self._dev_ops_manager
+        if dev_ops_manager is not None:
+            try:
+                controller = dev_ops_manager.creation_gate_controller
+            except Exception:
+                controller = None
+            if isinstance(controller, CreationGateController):
+                return controller
+
+        return CreationGateController()
+
+    def _create_gate_for_current_root(self, conduit_id: str) -> CreationGate:
+        """
+        Internal
+
+        Create and register a gate under this conduit's current root id.
+        """
+        controller = self._creation_gate_controller
+        return controller.create_conduit_gate(
+            conduit_id,
+            root_conduit_id=self._root_conduit_id,
+        )
+
+    def _register_existing_gate_for_current_root(
+            self,
+            conduit_id: str,
+            gate: CreationGate,
     ) -> None:
         """
         Internal
 
-        Assign a shared MeldGateController and new per-conduit gates across a lineage.
+        Register an existing gate under this conduit's current root id.
+        """
+        controller = self._creation_gate_controller
+        controller.register_conduit_gate(
+            conduit_id,
+            gate,
+            root_conduit_id=self._root_conduit_id,
+        )
+
+    def _set_creation_gate_controller_for_lineage(
+            self,
+            creation_gate_controller: CreationGateController,
+    ) -> None:
+        """
+        Internal
+
+        Assign a shared CreationGateController and rebind per-conduit gates
+        across a lineage.
 
         Purpose:
             Ensure a conduit tree registers per-conduit gates to the same controller
             so the controller can enable/disable all gates at once.
 
         Contract:
-            - Overwrites `_meld_gate_controller` on this conduit and all lesser conduits.
-            - Creates and assigns a new MeldGate for each conduit in the lineage.
+            - Overwrites `_creation_gate_controller` on this conduit and all lesser conduits.
+            - Re-registers each conduit's current gate under the current root id.
+            - Creates a gate when a conduit has no existing gate.
             - Uses the ConduitWard lineage map to find descendants.
-            - Caller owns the controller lifecycle.
         """
-        self._meld_gate_controller = meld_gate_controller
-        self._meld_gate = meld_gate_controller.create_gate(self._id)
+        previous_controller = self._creation_gate_controller
+        self._creation_gate_controller = creation_gate_controller
+        if self._creation_gate is None:
+            existing = creation_gate_controller.get_conduit_gate(self._id)
+            if existing is None:
+                self._creation_gate = self._create_gate_for_current_root(self._id)
+            else:
+                self._creation_gate = existing
+        else:
+            if previous_controller is not None and previous_controller is not creation_gate_controller:
+                try:
+                    previous_controller.unregister_conduit_gate(self._id)
+                except Exception:
+                    pass
+            try:
+                creation_gate_controller.unregister_conduit_gate(self._id)
+            except Exception:
+                pass
+            self._register_existing_gate_for_current_root(self._id, self._creation_gate)
+
         ward = self._conduit_ward
         if ward is None:
             return
         with ward._lock:
             lesser_conduits = list(ward._lesser_conduits.values())
         for lesser_conduit in lesser_conduits:
-            lesser_conduit._set_meld_gate_controller_for_lineage(meld_gate_controller)
+            lesser_conduit._root_conduit_id = self._root_conduit_id
+            if lesser_conduit._meld is not None:
+                lesser_conduit._meld._resolution_conduit_id = self._root_conduit_id
+            lesser_conduit._set_creation_gate_controller_for_lineage(creation_gate_controller)
 
     def upgrade_to_normal(
             self,
@@ -1041,7 +1126,7 @@ class Conduit(Cleanable, IConduit):
             - Preserves the current creations manager during lesser -> normal upgrade.
             - Rewires meld runtime to use the current creations manager.
             - Seeds per-conduit resolution state from the prior root conduit when available.
-            - Replaces the lineage MeldGateController and per-conduit gates for this tree.
+            - Rebinds lineage gates to the frame DevOps CreationGateController.
         """
         with self._lock:
             if not self.__dynamic_environment__:
@@ -1086,12 +1171,14 @@ class Conduit(Cleanable, IConduit):
                 # Step 3: Reconfigure the conduit ward
                 self._conduit_ward._convert_to_normal_conduit()
 
-                # Step 3.5: Replace the meld gate for this upgraded lineage tree.
-                if self._meld_gate_controller is not None:
-                    self._meld_gate_controller.unregister_gate(self._id)
-                self._meld_gate_controller = MeldGateController()
-                self._owns_meld_gate_controller = True
-                self._set_meld_gate_controller_for_lineage(self._meld_gate_controller)
+                # Step 3.5: Rebind gates for this lineage to the DevOps controller.
+                dev_ops_manager = self._resolve_dev_ops_manager()
+                if dev_ops_manager is not None:
+                    self._dev_ops_manager = dev_ops_manager
+                self._creation_gate_controller = self._resolve_creation_gate_controller(
+                    self._creation_gate_controller
+                )
+                self._set_creation_gate_controller_for_lineage(self._creation_gate_controller)
 
                 # Step 4: Reconfigure the spellbook
                 self._spellbook.create_new_preset_spellbook()
@@ -1170,7 +1257,7 @@ class Conduit(Cleanable, IConduit):
 
         The lesser conduit inherits the parent's Spellbook and Configuration but is restricted
         in its ability to establish external links or register new spells. It owns
-        a conduit-local MeldGate created by the lineage MeldGateController.
+        a conduit-local CreationGate created by the lineage CreationGateController.
 
         If this (parent) Conduit has lifecycle hooks attached via the Configuration
         for its Spellbook, the following hooks will be fired in order:
@@ -1231,7 +1318,7 @@ class Conduit(Cleanable, IConduit):
                 policy=Policies.default,
                 automatic=self._automatic,
                 logger=logger,
-                meld_gate_controller=self._meld_gate_controller,
+                creation_gate_controller=self._creation_gate_controller,
                 root_conduit_id=root_conduit_id,
             )
             if new_conduit._conduit_ward is not None:
@@ -1861,13 +1948,13 @@ class Conduit(Cleanable, IConduit):
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
 
-        The `bind()` method registers a class, function, or object into Melderâ€™s system,
+        The `bind()` method registers a class, function, or object into Melder’s system,
         associating it with a lifecycle (`Existence`), a permission policy, and optional metadata.
         Once bound, the spell becomes available for resolution and casting within its conduit
         or across systems (depending on permissions).
 
-        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        ðŸ§  Binding Overview:
+        ──────────────────────────────────────────────
+        🧠 Binding Overview:
             - Profiles the spell via reflection.
             - Computes a unique SHA256 `spell_id`.
             - Stores the spell into the internal spell registry.
@@ -1875,8 +1962,8 @@ class Conduit(Cleanable, IConduit):
             - Applies lifecycle and permission policies.
             - Optionally attaches lifecycle hooks.
 
-        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        ðŸ›¡ï¸ Permissions (access control to other conduits):
+        ──────────────────────────────────────────────
+        🛡️ Permissions (access control to other conduits):
             - `"read"`:
                 Allows other conduits to *use* the spell but not create new instances.
                 Useful for shared utilities or resources.
@@ -1888,20 +1975,20 @@ class Conduit(Cleanable, IConduit):
                 Completely blocks access to the spell from other conduits.
                 Only the owning conduit can use or instantiate it.
 
-        ðŸ”„ Existence (spell lifecycle):
+        🔄 Existence (spell lifecycle):
             Determines how the spell instance is managed (singleton, transient, etc.).
             Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
 
-        ðŸ“¦ Spellframe (optional):
+        📦 Spellframe (optional):
             Logical namespace or grouping label.
             Often corresponds to a shared interface, protocol, or feature group.
 
-        ðŸ”‘ Binding Name (optional):
+        🔑 Binding Name (optional):
             Secondary key used to distinguish different versions or roles of the same type.
             Useful when multiple spells are bound under the same interface.
 
-        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        ðŸª Lifecycle Hooks (optional `**kwargs`):
+        ──────────────────────────────────────────────
+        🪝 Lifecycle Hooks (optional `**kwargs`):
 
             - `pre_hooks`: List[Callable]
                 Executed *before* the spell is constructed or cast.
@@ -1915,9 +2002,9 @@ class Conduit(Cleanable, IConduit):
                 Executed *after* the spell has been cast. Often used for initialization,
                 analytics, or final injection steps.
 
-            âš ï¸ All hooks must be callables.
+            ⚠️ All hooks must be callables.
 
-        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ──────────────────────────────────────────────
         Args:
             spell (Any): The class, function, or object to bind into the spellbook.
             existence (Existence): The lifecycle scope for this spell.
@@ -1988,7 +2075,7 @@ class Conduit(Cleanable, IConduit):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduitâ€™s own spellbook**.
+        conduit’s own spellbook**.
 
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
@@ -2027,7 +2114,7 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Create a new conduit cluster in this conduitâ€™s aetheric frame.
+        Create a new conduit cluster in this conduit’s aetheric frame.
         """
         self.check_cleaned()
         Conduit._aether._create_cluster(cluster_name, self._aetheric_frame)
@@ -2036,7 +2123,7 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Delete an existing conduit cluster in this conduitâ€™s aetheric frame.
+        Delete an existing conduit cluster in this conduit’s aetheric frame.
         """
         self.check_cleaned()
         Conduit._aether._remove_cluster(cluster_name, self._aetheric_frame)
@@ -2130,14 +2217,14 @@ class Conduit(Cleanable, IConduit):
             Release any blocked meld calls and allow new melds to proceed.
 
         Contract:
-            - Delegates to the local MeldGate for this conduit.
-            - Use MeldGateController to enable all registered gates.
+            - Delegates to the local CreationGate for this conduit.
+            - Gate governance is provided by DevOps CreationGateController.
 
         Raises:
             RuntimeError: If the Conduit has been cleaned.
         """
         self.check_cleaned()
-        self._meld_gate.open()
+        self._creation_gate.open()
 
     def disable_meld(self) -> None:
         """
@@ -2149,14 +2236,14 @@ class Conduit(Cleanable, IConduit):
             Block meld calls until enable_meld() is invoked.
 
         Contract:
-            - Delegates to the local MeldGate for this conduit.
-            - Use MeldGateController to disable all registered gates.
+            - Delegates to the local CreationGate for this conduit.
+            - Gate governance is provided by DevOps CreationGateController.
 
         Raises:
             RuntimeError: If the Conduit has been cleaned.
         """
         self.check_cleaned()
-        self._meld_gate.close()
+        self._creation_gate.close()
 
     def meld(
             self,
@@ -2186,7 +2273,7 @@ class Conduit(Cleanable, IConduit):
         Resolution, reuse, and lifecycle behavior are delegated to
         the underlying ``Meld`` instance.
 
-        In dynamic mode, this method uses the Conduit's MeldGate to control
+        In dynamic mode, this method uses the Conduit's CreationGate to control
         meld entry and track active meld tickets. In automatic mode, meld
         bypasses gate checks for a minimal hot path.
 
@@ -2225,7 +2312,7 @@ class Conduit(Cleanable, IConduit):
             RuntimeError:
                 - If the Conduit has been cleaned.
                 - If the underlying ``Meld`` instance is missing.
-                - If the MeldGate is closed.
+                - If the CreationGate is closed.
             ValueError:
                 - If none of `spell_name`, `spell`, or `spellframe` are provided.
             TypeError:
@@ -2267,17 +2354,17 @@ class Conduit(Cleanable, IConduit):
                 return result
 
         else:
-            if self._meld_gate.is_closed():
-                raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
+            if self._creation_gate.is_closed():
+                raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
 
-            if not self._meld_gate.enabled:
-                self._meld_gate.wait()
-                if self._meld_gate.is_closed():
-                    raise RuntimeError(f"[CONDUIT: {self.id}] MeldGate is closed.")
+            if not self._creation_gate.enabled:
+                self._creation_gate.wait()
+                if self._creation_gate.is_closed():
+                    raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
 
             try:
                 # Track active melds for shutdown/drain semantics.
-                self._meld_gate.register_ticket()
+                self._creation_gate.register_ticket()
                 if not self._has_meld_phase_hooks:
                     return self._meld.meld(
                         spell_name=spell_name,
@@ -2301,7 +2388,7 @@ class Conduit(Cleanable, IConduit):
 
                     return result
             finally:
-                self._meld_gate.unregister_ticket()
+                self._creation_gate.unregister_ticket()
 
 
 
@@ -3410,7 +3497,7 @@ class Conduit(Cleanable, IConduit):
         Produces a detailed diagnostic summary of a contract established with a specific conduit.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
-        including the peer conduitâ€™s name, the number of active spells involved, and permission levels.
+        including the peer conduit’s name, the number of active spells involved, and permission levels.
         Primarily used for debugging, introspection, and UI inspection tools.
 
         Args:

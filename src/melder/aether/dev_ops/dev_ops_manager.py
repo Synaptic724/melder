@@ -6,6 +6,7 @@ from melder.aether.dev_ops.incident_manager.incident_manager import IncidentMana
 from melder.aether.dev_ops.risk_manager.risk_manager import RiskManager
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IDevOpsManager, ISpellSystemStates
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -17,6 +18,7 @@ class DevOpsManager(Cleanable, IDevOpsManager):
       - IncidentManager        (descriptive: what went wrong, where)
       - ChangeControlManager   (process-level view of pending changes / releases)
       - SpellSystemStates      (graph + dirty/impact state)
+      - CreationGateController (conduit creation-gate governance)
 
     This is the place higher-level tools / AI consult when they want to
     understand or manipulate the health and changes of a frame.
@@ -28,6 +30,7 @@ class DevOpsManager(Cleanable, IDevOpsManager):
         "_incident_manager",
         "_change_control_manager",
         "_risk_manager",
+        "_creation_gate_controller",
     ]
 
     def __init__(self, spell_system_states: ISpellSystemStates) -> None:
@@ -42,13 +45,15 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             spell_system_states=spell_system_states
         )
         self._risk_manager: RiskManager = RiskManager(spell_system_states)
+        self._creation_gate_controller: CreationGateController = CreationGateController()
         spell_system_states.set_risk_manager(self._risk_manager)
 
     def cleanup(self) -> None:
         """
         Idempotent cleanup.
 
-        Cleans up owned managers and SpellSystemStates, then nulls references
+        Cleans up owned managers, CreationGateController, and SpellSystemStates,
+        then nulls references
         and the lock for GC friendliness.
 
         After cleanup():
@@ -74,6 +79,10 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             if self._risk_manager is not None:
                 self._risk_manager.cleanup()
                 self._risk_manager = None
+
+            if self._creation_gate_controller is not None:
+                self._creation_gate_controller.cleanup()
+                self._creation_gate_controller = None
 
             if self._spell_system_states is not None:
                 self._spell_system_states.cleanup()
@@ -102,6 +111,15 @@ class DevOpsManager(Cleanable, IDevOpsManager):
         self.check_cleaned()
         with self._lock:
             return self._risk_manager
+
+    @property
+    def creation_gate_controller(self) -> Optional[CreationGateController]:
+        """
+        Read-only exposure of the per-frame CreationGateController.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._creation_gate_controller
 
     def revalidate_dirty_roots(
             self,

@@ -206,7 +206,7 @@ def test_component_conduit_meld_with_creation_gate_blocks_until_enabled() -> Non
     )
     conduit = spellbook.conjure(name="root", automatic=False)
     try:
-        conduit._meld_gate = CreationGate()
+        conduit._creation_gate = CreationGate()
         conduit.disable_meld()
         started = threading.Event()
         finished = threading.Event()
@@ -242,9 +242,9 @@ def test_component_conduit_meld_with_creation_gate_terminal_close_raises() -> No
     )
     conduit = spellbook.conjure(name="root", automatic=False)
     try:
-        conduit._meld_gate = CreationGate()
-        conduit._meld_gate.close_and_wait_until_free(timeout=0.1, interval=0.01)
-        with pytest.raises(RuntimeError, match="MeldGate is closed"):
+        conduit._creation_gate = CreationGate()
+        conduit._creation_gate.close_and_wait_until_free(timeout=0.1, interval=0.01)
+        with pytest.raises(RuntimeError, match="CreationGate is closed"):
             conduit.meld(spell=spell_id)
     finally:
         conduit.cleanup()
@@ -258,11 +258,11 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_success() -> 
     spellbook = _make_dynamic_spellbook()
     conduit = spellbook.conjure(name="root", automatic=False)
     try:
-        conduit._meld_gate = CreationGate()
+        conduit._creation_gate = CreationGate()
         conduit._meld.meld = MagicMock(return_value="ok")
         result = conduit.meld(spell="spell-id")
         assert result == "ok"
-        assert conduit._meld_gate.active_ticket_count() == 0
+        assert conduit._creation_gate.active_ticket_count() == 0
     finally:
         conduit.cleanup()
 
@@ -275,11 +275,11 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_exception() -
     spellbook = _make_dynamic_spellbook()
     conduit = spellbook.conjure(name="root", automatic=False)
     try:
-        conduit._meld_gate = CreationGate()
+        conduit._creation_gate = CreationGate()
         conduit._meld.meld = MagicMock(side_effect=RuntimeError("boom"))
         with pytest.raises(RuntimeError, match="boom"):
             conduit.meld(spell="spell-id")
-        assert conduit._meld_gate.active_ticket_count() == 0
+        assert conduit._creation_gate.active_ticket_count() == 0
     finally:
         conduit.cleanup()
 

@@ -191,10 +191,10 @@ def test_component_conduit_meld_blocks_disabled_system_state() -> None:
         conduit.cleanup()
 
 
-def test_component_conduit_meld_gate_blocks_until_enabled() -> None:
+def test_component_conduit_creation_gate_blocks_until_enabled() -> None:
     """
     Purpose:
-        Validate MeldGate blocks melds until re-enabled.
+        Validate CreationGate blocks melds until re-enabled.
     Contract:
         - disable_meld() blocks new meld calls.
         - enable_meld() releases blocked meld calls.
@@ -230,4 +230,44 @@ def test_component_conduit_meld_gate_blocks_until_enabled() -> None:
         assert finished.wait(0.5) is True
         assert isinstance(result["value"], BasicService)
     finally:
+        conduit.cleanup()
+
+
+def test_component_conduit_uses_devops_creation_gate_controller() -> None:
+    """
+    Purpose:
+        Validate Conduit gate/controller wiring resolves through DevOpsManager.
+    Contract:
+        - Conduit uses the frame DevOps CreationGateController facade.
+        - Root and lesser conduit gates are registered in the same controller.
+        - Lesser conduit is indexed under the root conduit lineage id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conduit gate wiring does not use DevOps controller.
+    """
+    spellbook = _make_dynamic_spellbook()
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root", automatic=False)
+    lesser = None
+    try:
+        devops = spellbook._aether._get_devops_manager(spellbook._aetheric_frame)
+        controller = devops.creation_gate_controller
+
+        assert controller is not None
+        assert conduit._creation_gate_controller is controller
+        assert controller.get_conduit_gate(conduit._id) is conduit._creation_gate
+        assert controller.get_root_conduit_id_for_conduit(conduit._id) == conduit._id
+
+        lesser = conduit.create_lesser_conduit()
+        assert lesser._creation_gate_controller is controller
+        assert controller.get_conduit_gate(lesser._id) is lesser._creation_gate
+        assert controller.get_root_conduit_id_for_conduit(lesser._id) == conduit._id
+    finally:
+        if lesser is not None:
+            lesser.cleanup()
         conduit.cleanup()

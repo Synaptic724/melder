@@ -2,13 +2,13 @@ import threading
 
 import pytest
 
-from melder.aether.conduit.meld.meld_gate import MeldGate
+from melder.utilities.synchronization.creation_gate import CreationGate
 
 
-def test_meld_gate_initial_state_enabled() -> None:
+def test_creation_gate_initial_state_enabled() -> None:
     """
     Purpose:
-        Verify the default MeldGate starts enabled and open.
+        Verify the default CreationGate starts enabled and open.
     Contract:
         - enabled=True by default.
         - Gate is not terminally closed.
@@ -18,14 +18,14 @@ def test_meld_gate_initial_state_enabled() -> None:
     Raises:
         AssertionError: If initial state is incorrect.
     """
-    gate = MeldGate()
+    gate = CreationGate()
     assert gate.enabled is True
     assert gate.is_closed() is False
     assert gate.has_active_tickets() is False
     assert gate.active_ticket_count() == 0
 
 
-def test_meld_gate_register_unregister_tickets() -> None:
+def test_creation_gate_register_unregister_tickets() -> None:
     """
     Purpose:
         Verify ticket tracking increments and decrements correctly.
@@ -37,7 +37,7 @@ def test_meld_gate_register_unregister_tickets() -> None:
     Raises:
         AssertionError: If ticket counts do not match.
     """
-    gate = MeldGate()
+    gate = CreationGate()
     gate.register_ticket()
     gate.register_ticket()
     assert gate.active_ticket_count() == 2
@@ -46,7 +46,7 @@ def test_meld_gate_register_unregister_tickets() -> None:
     assert gate.active_ticket_count() == 0
 
 
-def test_meld_gate_unregister_without_ticket_raises() -> None:
+def test_creation_gate_unregister_without_ticket_raises() -> None:
     """
     Purpose:
         Ensure unregister_ticket fails when no tickets exist.
@@ -57,12 +57,12 @@ def test_meld_gate_unregister_without_ticket_raises() -> None:
     Raises:
         AssertionError: If the IndexError is not raised.
     """
-    gate = MeldGate()
+    gate = CreationGate()
     with pytest.raises(IndexError):
         gate.unregister_ticket()
 
 
-def test_meld_gate_wait_blocks_until_open() -> None:
+def test_creation_gate_wait_blocks_until_open() -> None:
     """
     Purpose:
         Verify wait blocks while the gate is disabled and returns after open().
@@ -74,7 +74,7 @@ def test_meld_gate_wait_blocks_until_open() -> None:
     Raises:
         AssertionError: If wait does not block or does not release.
     """
-    gate = MeldGate(enabled=False)
+    gate = CreationGate(enabled=False)
     waiter_started = threading.Event()
     waiter_released = threading.Event()
 
@@ -94,7 +94,7 @@ def test_meld_gate_wait_blocks_until_open() -> None:
     worker.join(timeout=1.0)
 
 
-def test_meld_gate_close_and_wait_until_free_blocks_until_drain() -> None:
+def test_creation_gate_close_and_wait_until_free_blocks_until_drain() -> None:
     """
     Purpose:
         Ensure close_and_wait_until_free blocks until active tickets drain.
@@ -106,7 +106,7 @@ def test_meld_gate_close_and_wait_until_free_blocks_until_drain() -> None:
     Raises:
         AssertionError: If the call does not block or gate state is incorrect.
     """
-    gate = MeldGate()
+    gate = CreationGate()
     ticket_registered = threading.Event()
     allow_release = threading.Event()
     close_started = threading.Event()
@@ -142,7 +142,7 @@ def test_meld_gate_close_and_wait_until_free_blocks_until_drain() -> None:
     assert gate.enabled is False
 
 
-def test_meld_gate_cleanup_marks_closed_and_blocks_ops() -> None:
+def test_creation_gate_cleanup_marks_closed_and_blocks_ops() -> None:
     """
     Purpose:
         Verify cleanup marks the gate as closed and prevents reuse.
@@ -154,14 +154,15 @@ def test_meld_gate_cleanup_marks_closed_and_blocks_ops() -> None:
     Raises:
         AssertionError: If cleanup fails to enforce closed state.
     """
-    gate = MeldGate()
+    gate = CreationGate()
     gate.register_ticket()
     gate.cleanup()
 
-    assert gate.is_closed() is True
-    assert gate.has_active_tickets() is False
+    assert gate._cleaned is True
+    assert gate._event is None
+    assert gate._tickets is None
 
-    with pytest.raises(RuntimeError, match="MeldGate has already been cleaned"):
+    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
         gate.open()
-    with pytest.raises(RuntimeError, match="MeldGate has already been cleaned"):
+    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
         gate.close()

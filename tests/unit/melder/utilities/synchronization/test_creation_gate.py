@@ -136,8 +136,9 @@ def test_creation_gate_cleanup_sets_closed_and_unblocks_waiters() -> None:
     gate.cleanup()
     assert waiter_released.wait(timeout=1.0) is True
     worker.join(timeout=1.0)
-    assert gate.is_closed() is True
-    assert gate.enabled is True
+    assert gate._cleaned is True
+    assert gate._event is None
+    assert gate._tickets is None
 
 
 def test_creation_gate_cleanup_idempotent() -> None:
@@ -149,8 +150,8 @@ def test_creation_gate_cleanup_idempotent() -> None:
     gate.register_ticket()
     gate.cleanup()
     gate.cleanup()
-    assert gate.is_closed() is True
-    assert gate.has_active_tickets() is False
+    assert gate._cleaned is True
+    assert gate._lock is None
 
 
 def test_creation_gate_cleanup_returns_when_marked_clean_inside_lock() -> None:
@@ -171,7 +172,7 @@ def test_creation_gate_cleanup_returns_when_marked_clean_inside_lock() -> None:
     gate._lock = _LockThatFlipsCleaned()
     gate.cleanup()
     assert gate._cleaned is True
-    assert gate.is_closed() is False
+    assert gate._closed is False
 
 
 @pytest.mark.parametrize(
@@ -179,7 +180,12 @@ def test_creation_gate_cleanup_returns_when_marked_clean_inside_lock() -> None:
     [
         ("open", ()),
         ("close", ()),
+        ("wait", ()),
+        ("register_ticket", ()),
+        ("unregister_ticket", ()),
+        ("has_active_tickets", ()),
         ("active_ticket_count", ()),
+        ("is_closed", ()),
         ("close_and_wait_until_free", ()),
     ],
 )
@@ -281,7 +287,8 @@ def test_creation_gate_is_closed_after_cleanup() -> None:
     gate = CreationGate()
     assert gate.is_closed() is False
     gate.cleanup()
-    assert gate.is_closed() is True
+    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
+        gate.is_closed()
 
 
 def test_creation_gate_is_closed_after_close_and_wait() -> None:
@@ -332,7 +339,8 @@ def test_creation_gate_cleanup_clears_existing_tickets() -> None:
     gate.register_ticket()
     assert gate.active_ticket_count() == 2
     gate.cleanup()
-    assert gate.has_active_tickets() is False
+    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
+        gate.has_active_tickets()
 
 
 def test_creation_gate_close_keeps_non_terminal_state() -> None:

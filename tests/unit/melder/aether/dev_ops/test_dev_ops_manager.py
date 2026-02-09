@@ -60,6 +60,7 @@ def test_init_success(manager, mock_dependencies, mock_sss):
     assert manager._spell_system_states is mock_sss
     assert manager._incident_manager is mock_dependencies["mock_im"]
     assert manager._change_control_manager is mock_dependencies["mock_ccm"]
+    assert manager._creation_gate_controller is not None
     assert not manager._cleaned
 
 def test_init_validates_sss_not_none():
@@ -125,7 +126,28 @@ def test_prop_ccm_thread_safety(manager):
         mock_lock.__exit__.assert_called()
 
 # ----------------------------------------------------------------------
-# 4. Property Tests: SpellSystemStates
+# 4. Property Tests: CreationGateController
+# ----------------------------------------------------------------------
+
+def test_prop_creation_gate_controller_success(manager):
+    """Verify property returns the initialized creation gate controller."""
+    assert manager.creation_gate_controller is manager._creation_gate_controller
+
+def test_prop_creation_gate_controller_raises_if_cleaned(manager):
+    """Verify accessing creation_gate_controller after cleanup raises RuntimeError."""
+    manager.cleanup()
+    with pytest.raises(RuntimeError):
+        _ = manager.creation_gate_controller
+
+def test_prop_creation_gate_controller_thread_safety(manager):
+    """Verify property access is thread-safe (acquires lock)."""
+    with patch.object(manager, "_lock") as mock_lock:
+        _ = manager.creation_gate_controller
+        mock_lock.__enter__.assert_called()
+        mock_lock.__exit__.assert_called()
+
+# ----------------------------------------------------------------------
+# 5. Property Tests: SpellSystemStates
 # ----------------------------------------------------------------------
 
 def test_prop_sss_success(manager, mock_sss):
@@ -146,7 +168,7 @@ def test_prop_sss_thread_safety(manager):
         mock_lock.__exit__.assert_called()
 
 # ----------------------------------------------------------------------
-# 5. Method Tests: revalidate_dirty_roots
+# 6. Method Tests: revalidate_dirty_roots
 # ----------------------------------------------------------------------
 
 def test_revalidate_delegates_to_ccm(manager, mock_dependencies):
@@ -198,7 +220,7 @@ def test_revalidate_propagates_exceptions(manager, mock_dependencies):
         manager.revalidate_dirty_roots("conduit-1")
 
 # ----------------------------------------------------------------------
-# 6. Cleanup Tests
+# 7. Cleanup Tests
 # ----------------------------------------------------------------------
 
 def test_cleanup_basic(manager, mock_dependencies, mock_sss):
@@ -232,6 +254,7 @@ def test_cleanup_clears_references(manager):
     manager.cleanup()
     assert manager._incident_manager is None
     assert manager._change_control_manager is None
+    assert manager._creation_gate_controller is None
     assert manager._spell_system_states is None
     assert manager._lock is None
 
@@ -287,7 +310,7 @@ def test_cleanup_uses_lock(manager):
     mock_lock.__exit__.assert_called()
 
 # ----------------------------------------------------------------------
-# 7. Lifecycle & Interaction Edge Cases
+# 8. Lifecycle & Interaction Edge Cases
 # ----------------------------------------------------------------------
 
 def test_init_fails_if_incident_manager_fails(mock_sss):

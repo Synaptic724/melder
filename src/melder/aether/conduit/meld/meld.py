@@ -353,11 +353,9 @@ class Meld(Cleanable, IMeld):
             self._ensure_lineage_resolvable(target_spell)
 
         if not (self._meld_hooks or target_spell._hooks_enabled):
-            creation_context = target_spell._creation_context
-            if creation_context is None or creation_context._cleaned:
-                creation_context_factory = self._creation_context_factory
-                creation_context = creation_context_factory.get_or_build_for_spell(
-                    target_spell
+            creation_context_factory = self._creation_context_factory
+            creation_context = creation_context_factory.get_or_build_for_spell(
+                target_spell
                 )
             if override_map is None:
                 execute_no_hooks_no_overrides_compiled = (

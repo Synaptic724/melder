@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 import threading
 import time
 from collections import deque
+from typing import Deque, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -53,10 +52,10 @@ class CreationGate(Cleanable):
                 False starts in blocking mode until ``open()`` is called.
         """
         super().__init__()
-        self._lock: threading.RLock = threading.RLock()
-        self.enabled: bool = enabled
-        self._event: threading.Event = threading.Event()
-        self._tickets: deque[None] = deque()
+        self._lock: Optional[threading.RLock] = threading.RLock()
+        self.enabled: Optional[bool] = enabled
+        self._event: Optional[threading.Event] = threading.Event()
+        self._tickets: Optional[Deque[None]] = deque()
         self._closed: bool = False
 
         if enabled:
@@ -74,7 +73,13 @@ class CreationGate(Cleanable):
             - Marks gate terminally closed.
             - Forces ``enabled=True`` and signals event to unblock waiters.
             - Clears outstanding tickets as teardown intent.
-            - Marks this instance cleaned.
+            - Marks this instance cleaned and nulls owned references.
+
+        Threading:
+            - Cleanup is lock-guarded to avoid interleaving teardown with gate
+              state transitions.
+            - The event is signalled before references are nulled so blocked
+              waiters are released deterministically.
         """
         if self._cleaned:
             return
@@ -86,6 +91,11 @@ class CreationGate(Cleanable):
             self._event.set()
             self._tickets.clear()
             self._cleaned = True
+            self.enabled = None
+            self._event = None
+            self._tickets = None
+
+        self._lock = None
 
     def open(self) -> None:
         """
@@ -120,6 +130,7 @@ class CreationGate(Cleanable):
             - Callers that care about terminal closure should check
               ``is_closed()`` before and after waiting.
         """
+        self.check_cleaned()
         if self.enabled:
             return
         self._event.wait()
@@ -130,6 +141,7 @@ class CreationGate(Cleanable):
 
         Register an active in-flight operation.
         """
+        self.check_cleaned()
         self._tickets.append(None)
 
     def unregister_ticket(self) -> None:
@@ -142,6 +154,7 @@ class CreationGate(Cleanable):
             IndexError:
                 If no tickets exist (caller pairing bug).
         """
+        self.check_cleaned()
         self._tickets.pop()
 
     def has_active_tickets(self) -> bool:
@@ -150,6 +163,7 @@ class CreationGate(Cleanable):
 
         Return True when at least one active ticket is present.
         """
+        self.check_cleaned()
         return bool(self._tickets)
 
     def active_ticket_count(self) -> int:
@@ -167,6 +181,7 @@ class CreationGate(Cleanable):
 
         Return True when gate is terminally closed.
         """
+        self.check_cleaned()
         return self._closed
 
     def close_and_wait_until_free(

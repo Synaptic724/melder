@@ -114,7 +114,7 @@ class CreationContextFactory(Cleanable):
         """
         self.check_cleaned()
         creation_context = spell._creation_context
-        if creation_context is not None and not creation_context.is_cleaned:
+        if creation_context is not None:
             return creation_context
 
         built_creation_context = self._builder.build(

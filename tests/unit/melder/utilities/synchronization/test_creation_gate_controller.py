@@ -28,8 +28,28 @@ def test_creation_gate_controller_cleanup_clears_registries() -> None:
     controller.create_conduit_gate("c1")
     controller.create_spell_lineage_gate("l1")
     controller.cleanup()
-    assert controller._conduit_creation_gates == {}
-    assert controller._spell_lineage_creation_gates == {}
+    assert controller._conduit_creation_gates is None
+    assert controller._spell_lineage_creation_gates is None
+    assert controller._conduit_creation_gates_by_root is None
+    assert controller._conduit_root_by_conduit is None
+    assert controller._lock is None
+
+
+def test_creation_gate_controller_cleanup_cleans_registered_gates() -> None:
+    """
+    Purpose:
+        Verify cleanup cascades into all registered conduit/lineage gates.
+    """
+    controller = CreationGateController()
+    conduit_gate = controller.create_conduit_gate("c1")
+    lineage_gate = controller.create_spell_lineage_gate("l1")
+
+    controller.cleanup()
+
+    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
+        conduit_gate.open()
+    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
+        lineage_gate.open()
 
 
 def test_creation_gate_controller_cleanup_idempotent() -> None:
@@ -135,6 +155,52 @@ def test_count_active_threads_for_conduit_missing_returns_zero() -> None:
     """
     controller = CreationGateController()
     assert controller.count_active_threads_for_conduit("missing") == 0
+
+
+def test_conduit_root_index_maps_lineage_members() -> None:
+    """
+    Purpose:
+        Verify root->conduit index and reverse conduit->root index are tracked.
+    """
+    controller = CreationGateController()
+    controller.create_conduit_gate("c1", root_conduit_id="root-1")
+    controller.create_conduit_gate("c2", root_conduit_id="root-1")
+    assert controller.get_root_conduit_id_for_conduit("c1") == "root-1"
+    assert controller.get_root_conduit_id_for_conduit("c2") == "root-1"
+    lineage = controller.get_conduit_lineage_gates("root-1")
+    assert set(lineage.keys()) == {"c1", "c2"}
+
+
+def test_conduit_root_index_lineage_count_uses_root_map() -> None:
+    """
+    Purpose:
+        Verify root-scoped active count sums only one lineage map.
+    """
+    controller = CreationGateController()
+    g1 = controller.create_conduit_gate("c1", root_conduit_id="root-1")
+    g2 = controller.create_conduit_gate("c2", root_conduit_id="root-1")
+    g3 = controller.create_conduit_gate("c3", root_conduit_id="root-2")
+    g1.register_ticket()
+    g2.register_ticket()
+    g3.register_ticket()
+    try:
+        assert controller.count_active_threads_for_conduit_lineage("root-1") == 2
+        assert controller.count_active_threads_for_conduit_lineage("root-2") == 1
+    finally:
+        g1.unregister_ticket()
+        g2.unregister_ticket()
+        g3.unregister_ticket()
+
+
+def test_unregister_conduit_gate_prunes_empty_root_bucket() -> None:
+    """
+    Purpose:
+        Verify removing last conduit under a root deletes the root bucket.
+    """
+    controller = CreationGateController()
+    controller.create_conduit_gate("c1", root_conduit_id="root-1")
+    controller.unregister_conduit_gate("c1")
+    assert controller.get_conduit_lineage_gates("root-1") == {}
 
 
 def test_count_active_threads_conduits_sums_registry() -> None:
@@ -466,98 +532,6 @@ def test_disable_all_closes_both_registries() -> None:
     assert lg.enabled is False
 
 
-def test_create_gate_alias_uses_conduit_registry() -> None:
-    """
-    Purpose:
-        Verify compatibility alias create_gate maps to conduit registry.
-    """
-    controller = CreationGateController()
-    gate = controller.create_gate("c1")
-    assert controller.get_conduit_gate("c1") is gate
-
-
-def test_register_gate_alias_uses_conduit_registry() -> None:
-    """
-    Purpose:
-        Verify compatibility alias register_gate maps to conduit registry.
-    """
-    controller = CreationGateController()
-    gate = CreationGate()
-    controller.register_gate("c1", gate)
-    assert controller.get_conduit_gate("c1") is gate
-
-
-def test_get_gate_alias_reads_conduit_registry() -> None:
-    """
-    Purpose:
-        Verify compatibility alias get_gate maps to conduit lookup.
-    """
-    controller = CreationGateController()
-    gate = controller.create_conduit_gate("c1")
-    assert controller.get_gate("c1") is gate
-
-
-def test_count_active_threads_alias_reads_conduit_registry() -> None:
-    """
-    Purpose:
-        Verify compatibility alias count_active_threads maps to conduit count.
-    """
-    controller = CreationGateController()
-    gate = controller.create_conduit_gate("c1")
-    gate.register_ticket()
-    try:
-        assert controller.count_active_threads("c1") == 1
-    finally:
-        gate.unregister_ticket()
-
-
-def test_count_active_threads_lineage_alias_sums_conduit_registry_only() -> None:
-    """
-    Purpose:
-        Verify conduit-compat aggregate alias excludes lineage registry.
-    """
-    controller = CreationGateController()
-    conduit_gate = controller.create_conduit_gate("c1")
-    lineage_gate = controller.create_spell_lineage_gate("l1")
-    conduit_gate.register_ticket()
-    lineage_gate.register_ticket()
-    try:
-        assert controller.count_active_threads_lineage() == 1
-    finally:
-        conduit_gate.unregister_ticket()
-        lineage_gate.unregister_ticket()
-
-
-def test_close_and_wait_until_free_alias_drains_conduit_gate() -> None:
-    """
-    Purpose:
-        Verify compatibility alias close_and_wait_until_free maps to conduit gate.
-    """
-    controller = CreationGateController()
-    gate = controller.create_conduit_gate("c1")
-    gate.register_ticket()
-
-    def _release() -> None:
-        gate.unregister_ticket()
-
-    releaser = threading.Timer(0.05, _release)
-    releaser.start()
-    controller.close_and_wait_until_free("c1", timeout=1.0, interval=0.01)
-    releaser.cancel()
-    assert gate.is_closed() is True
-
-
-def test_unregister_gate_alias_removes_conduit_gate() -> None:
-    """
-    Purpose:
-        Verify compatibility alias unregister_gate removes conduit entry.
-    """
-    controller = CreationGateController()
-    controller.create_gate("c1")
-    controller.unregister_gate("c1")
-    assert controller.get_conduit_gate("c1") is None
-
-
 @pytest.mark.parametrize(
     "method_name,args",
     [
@@ -567,6 +541,9 @@ def test_unregister_gate_alias_removes_conduit_gate() -> None:
         ("get_conduit_gate", ("c1",)),
         ("count_active_threads_for_conduit", ("c1",)),
         ("count_active_threads_conduits", ()),
+        ("get_root_conduit_id_for_conduit", ("c1",)),
+        ("get_conduit_lineage_gates", ("root-1",)),
+        ("count_active_threads_for_conduit_lineage", ("root-1",)),
         ("create_spell_lineage_gate", ("l1",)),
         ("register_spell_lineage_gate", ("l1", CreationGate())),
         ("unregister_spell_lineage_gate", ("l1",)),
@@ -576,12 +553,8 @@ def test_unregister_gate_alias_removes_conduit_gate() -> None:
         ("count_active_threads_total", ()),
         ("enable_all", ()),
         ("disable_all", ()),
-        ("create_gate", ("c1",)),
-        ("register_gate", ("c1", CreationGate())),
-        ("get_gate", ("c1",)),
-        ("count_active_threads", ("c1",)),
-        ("count_active_threads_lineage", ()),
-        ("close_and_wait_until_free", ("c1",)),
+        ("close_and_wait_until_conduit_free", ("c1",)),
+        ("close_and_wait_until_spell_lineage_free", ("l1",)),
     ],
 )
 def test_creation_gate_controller_methods_raise_after_cleanup(

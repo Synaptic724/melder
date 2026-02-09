@@ -3503,7 +3503,7 @@ class IConduit(ICleanable, Protocol):
     _creations: 'Creations'
     _spellbook: 'ISpellbook'
     _meld: 'Meld'
-    _meld_gate: 'MeldGate'
+    _creation_gate: 'CreationGate'
 
     _conduit_ward: 'ConduitWard'
 
@@ -6816,8 +6816,8 @@ class ISpellSystemStates(ICleanable, Protocol):
         Enable meld execution for this conduit lineage.
 
         Contract:
-            - Delegates to the local MeldGate for this conduit.
-            - MeldGateController can enable all registered gates when needed.
+            - Delegates to the local CreationGate for this conduit.
+            - CreationGateController can enable all registered gates when needed.
         """
         ...
 
@@ -6828,8 +6828,8 @@ class ISpellSystemStates(ICleanable, Protocol):
         Disable meld execution for this conduit lineage.
 
         Contract:
-            - Delegates to the local MeldGate for this conduit.
-            - MeldGateController can disable all registered gates when needed.
+            - Delegates to the local CreationGate for this conduit.
+            - CreationGateController can disable all registered gates when needed.
         """
         ...
 
@@ -7176,6 +7176,7 @@ class IDevOpsManager(ICleanable, Protocol):
     _incident_manager: 'IncidentManager'
     _change_control_manager: 'ChangeControlManager'
     _risk_manager: object
+    _creation_gate_controller: object
     # ------------------------------------------------------------------
     # Public API Properties
     # ------------------------------------------------------------------
@@ -7197,6 +7198,13 @@ class IDevOpsManager(ICleanable, Protocol):
     def risk_manager(self) -> Optional[object]:
         """
         Read-only exposure of the RiskManager (validation gating state).
+        """
+        ...
+
+    @property
+    def creation_gate_controller(self) -> Optional[object]:
+        """
+        Read-only exposure of the CreationGateController used for gate governance.
         """
         ...
     @property

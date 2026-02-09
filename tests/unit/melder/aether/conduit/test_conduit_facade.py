@@ -739,7 +739,7 @@ def test_dynamic_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
 
     assert result == "result"
     conduit_dynamic_normal._fire_conduit_hooks.assert_not_called()
-    assert conduit_dynamic_normal._meld_gate.active_ticket_count() == 0
+    assert conduit_dynamic_normal._creation_gate.active_ticket_count() == 0
 
 
 def test_get_conduit_by_id_rejects_non_string_frame(
