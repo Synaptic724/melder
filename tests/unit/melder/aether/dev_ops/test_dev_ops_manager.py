@@ -202,16 +202,17 @@ def test_revalidate_thread_safety(manager):
         mock_lock.__enter__.assert_called()
         mock_lock.__exit__.assert_called()
 
-def test_revalidate_safe_if_ccm_none(manager):
+def test_revalidate_raises_if_ccm_contract_is_broken(manager):
     """
-    Verify method is safe even if ccm is somehow None (edge case).
-    This simulates a scenario where state might be inconsistent but not fully cleaned?
-    Or mostly just verifying the `if ccm is None: return` check logic if it exists (it does).
+    Verify method fails fast when owned CCM contract is manually broken.
+
+    Contract:
+    - DevOpsManager assumes owned CCM exists while not cleaned.
+    - Manually setting CCM to None should raise AttributeError.
     """
-    # Force state bypassing cleanup logic
     manager._change_control_manager = None
-    # Should not raise AttributeError
-    manager.revalidate_dirty_roots("conduit-1")
+    with pytest.raises(AttributeError):
+        manager.revalidate_dirty_roots("conduit-1")
 
 def test_revalidate_propagates_exceptions(manager, mock_dependencies):
     """Verify exceptions from CCM are propagated (not swallowed)."""
@@ -220,7 +221,142 @@ def test_revalidate_propagates_exceptions(manager, mock_dependencies):
         manager.revalidate_dirty_roots("conduit-1")
 
 # ----------------------------------------------------------------------
-# 7. Cleanup Tests
+# 7. Method Tests: Creation Gate Facade
+# ----------------------------------------------------------------------
+
+def test_enable_conduit_gate_opens_registered_gate(manager):
+    """
+    Verify enable_conduit_gate opens a registered conduit gate.
+    """
+    gate = manager.creation_gate_controller.create_conduit_gate("c1")
+    gate.close()
+
+    manager.enable_conduit_gate("c1")
+
+    assert gate.enabled is True
+
+
+def test_disable_conduit_gate_closes_registered_gate(manager):
+    """
+    Verify disable_conduit_gate closes a registered conduit gate.
+    """
+    gate = manager.creation_gate_controller.create_conduit_gate("c1")
+
+    manager.disable_conduit_gate("c1")
+
+    assert gate.enabled is False
+
+
+def test_enable_disable_conduit_gate_missing_is_noop(manager):
+    """
+    Verify per-conduit gate toggles are no-op when conduit gate is missing.
+    """
+    manager.enable_conduit_gate("missing")
+    manager.disable_conduit_gate("missing")
+
+
+def test_close_and_wait_conduit_delegates_to_controller(manager):
+    """
+    Verify close_and_wait_conduit delegates to controller API.
+    """
+    controller = MagicMock()
+    manager._creation_gate_controller = controller
+
+    manager.close_and_wait_conduit("c1", timeout=1.5, interval=0.05)
+
+    controller.close_and_wait_until_conduit_free.assert_called_once_with(
+        "c1",
+        timeout=1.5,
+        interval=0.05,
+    )
+
+
+def test_enable_conduit_lineage_opens_only_target_lineage(manager):
+    """
+    Verify enabling one lineage opens only that lineage's gates.
+    """
+    controller = manager.creation_gate_controller
+    g1 = controller.create_conduit_gate("c1", root_conduit_id="root-1")
+    g2 = controller.create_conduit_gate("c2", root_conduit_id="root-1")
+    g3 = controller.create_conduit_gate("c3", root_conduit_id="root-2")
+    g1.close()
+    g2.close()
+    g3.close()
+
+    manager.enable_conduit_lineage("root-1")
+
+    assert g1.enabled is True
+    assert g2.enabled is True
+    assert g3.enabled is False
+
+
+def test_disable_conduit_lineage_closes_only_target_lineage(manager):
+    """
+    Verify disabling one lineage closes only that lineage's gates.
+    """
+    controller = manager.creation_gate_controller
+    g1 = controller.create_conduit_gate("c1", root_conduit_id="root-1")
+    g2 = controller.create_conduit_gate("c2", root_conduit_id="root-1")
+    g3 = controller.create_conduit_gate("c3", root_conduit_id="root-2")
+
+    manager.disable_conduit_lineage("root-1")
+
+    assert g1.enabled is False
+    assert g2.enabled is False
+    assert g3.enabled is True
+
+
+def test_enable_disable_conduit_lineage_missing_is_noop(manager):
+    """
+    Verify lineage gate toggles are no-op when root lineage is missing.
+    """
+    manager.enable_conduit_lineage("missing")
+    manager.disable_conduit_lineage("missing")
+
+
+def test_close_and_wait_conduit_lineage_delegates_to_controller(manager):
+    """
+    Verify close_and_wait_conduit_lineage delegates to controller API.
+    """
+    controller = MagicMock()
+    manager._creation_gate_controller = controller
+
+    manager.close_and_wait_conduit_lineage("root-1", timeout=1.0, interval=0.02)
+
+    controller.close_and_wait_until_conduit_lineage_free.assert_called_once_with(
+        "root-1",
+        timeout=1.0,
+        interval=0.02,
+    )
+
+
+@pytest.mark.parametrize(
+    "method_name,args,kwargs",
+    [
+        ("enable_conduit_gate", ("c1",), {}),
+        ("disable_conduit_gate", ("c1",), {}),
+        ("close_and_wait_conduit", ("c1",), {}),
+        ("enable_conduit_lineage", ("root-1",), {}),
+        ("disable_conduit_lineage", ("root-1",), {}),
+        ("close_and_wait_conduit_lineage", ("root-1",), {}),
+    ],
+)
+def test_creation_gate_facade_methods_raise_if_cleaned(
+        manager,
+        method_name,
+        args,
+        kwargs,
+):
+    """
+    Verify creation gate facade methods enforce cleaned guard.
+    """
+    manager.cleanup()
+    with pytest.raises(RuntimeError):
+        getattr(manager, method_name)(*args, **kwargs)
+
+
+# ----------------------------------------------------------------------
+# 8. Cleanup Tests
 # ----------------------------------------------------------------------
 
 def test_cleanup_basic(manager, mock_dependencies, mock_sss):
@@ -273,14 +409,17 @@ def test_cleanup_is_idempotent(manager, mock_dependencies):
     # Sub-cleanups should still only be called once
     mock_im.cleanup.assert_called_once()
 
-def test_cleanup_handles_none_children(manager):
-    """Verify cleanup doesn't crash if children are already None."""
+def test_cleanup_raises_if_owned_children_contract_is_broken(manager):
+    """
+    Verify cleanup fails fast when owned child contract is manually broken.
+
+    Contract:
+    - Cleanup assumes owned managers exist while not cleaned.
+    - Manually setting owned managers to None should raise AttributeError.
+    """
     manager._incident_manager = None
-    manager._change_control_manager = None
-    manager._spell_system_states = None
-    
-    manager.cleanup()
-    assert manager._cleaned
+    with pytest.raises(AttributeError):
+        manager.cleanup()
 
 def test_cleanup_propagates_exceptions(manager, mock_dependencies):
     """
@@ -310,7 +449,7 @@ def test_cleanup_uses_lock(manager):
     mock_lock.__exit__.assert_called()
 
 # ----------------------------------------------------------------------
-# 8. Lifecycle & Interaction Edge Cases
+# 9. Lifecycle & Interaction Edge Cases
 # ----------------------------------------------------------------------
 
 def test_init_fails_if_incident_manager_fails(mock_sss):

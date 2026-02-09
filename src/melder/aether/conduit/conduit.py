@@ -75,7 +75,6 @@ class Conduit(Cleanable, IConduit):
             conduit_id: Optional[str] = None,
             root_conduit_id: Optional[str] = None,
             creation_gate: CreationGate | None = None,
-            creation_gate_controller: CreationGateController | None = None,
     ):
         """
         Public API
@@ -107,10 +106,6 @@ class Conduit(Cleanable, IConduit):
             creation_gate (CreationGate | None, optional):
                 Optional CreationGate to register for this conduit. When None,
                 a new gate is created via the active CreationGateController.
-            creation_gate_controller (CreationGateController | None, optional):
-                Optional override controller. When omitted, Conduit resolves the
-                per-frame controller from DevOpsManager and uses it as a facade
-                through `_creation_gate_controller`.
 
         Raises:
             TypeError:
@@ -159,9 +154,7 @@ class Conduit(Cleanable, IConduit):
         self._spellbook: ISpellbook = spellbook
         self._creations: Creations = self._creations_configuration(configuration)
         self._dev_ops_manager: Any | None = self._resolve_dev_ops_manager()
-        self._creation_gate_controller: CreationGateController = self._resolve_creation_gate_controller(
-            creation_gate_controller
-        )
+        self._creation_gate_controller: CreationGateController = self._resolve_creation_gate_controller()
         if creation_gate is None:
             creation_gate = self._create_gate_for_current_root(conduit_id)
         else:
@@ -952,56 +945,73 @@ class Conduit(Cleanable, IConduit):
 
         return hook_chain
 
-    def _resolve_dev_ops_manager(self) -> Any | None:
+    def _resolve_dev_ops_manager(self) -> Any:
         """
         Internal
 
         Resolve the per-frame DevOpsManager for this conduit.
 
+        Purpose:
+            Resolve frame-level DevOps services used by conduit gate/controller
+            governance.
+
         Contract:
-            - Returns DevOpsManager when the frame is available.
-            - Returns None when Aether/devops access is unavailable (for
-              isolated unit tests or stubs).
-            - Never raises.
+            - Delegates directly to the Aether frame lookup path.
+            - Returns the frame-owned DevOpsManager instance.
+
+        Returns:
+            Any:
+                Resolved DevOpsManager instance for this frame.
         """
-        try:
-            return Conduit._aether._get_devops_manager(self._aetheric_frame)
-        except Exception:
-            return None
+        return Conduit._aether._get_devops_manager(self._aetheric_frame)
 
     def _resolve_creation_gate_controller(
             self,
-            override_controller: CreationGateController | None,
     ) -> CreationGateController:
         """
         Internal
 
-        Resolve the CreationGateController used by this conduit.
+        Resolve the CreationGateController used by this conduit from DevOps.
 
-        Resolution order:
-            1) Explicit override provided by caller.
-            2) DevOpsManager.creation_gate_controller for this frame.
-            3) Local fallback controller (for tests/stubs without DevOps).
+        Purpose:
+            Enforce single ownership of CreationGateController by the
+            frame DevOpsManager.
+
+        Contract:
+            - Conduit does not accept controller overrides.
+            - Controller resolution is delegated to DevOpsManager only.
+            - DevOps manager and controller are assumed to exist for conduit
+              lifetime.
+
+        Returns:
+            CreationGateController:
+                The frame-owned controller resolved from DevOpsManager.
         """
-        if override_controller is not None:
-            return override_controller
-
-        dev_ops_manager = self._dev_ops_manager
-        if dev_ops_manager is not None:
-            try:
-                controller = dev_ops_manager.creation_gate_controller
-            except Exception:
-                controller = None
-            if isinstance(controller, CreationGateController):
-                return controller
-
-        return CreationGateController()
+        return self._dev_ops_manager.creation_gate_controller
 
     def _create_gate_for_current_root(self, conduit_id: str) -> CreationGate:
         """
         Internal
 
         Create and register a gate under this conduit's current root id.
+
+        Purpose:
+            Centralize conduit gate creation so root-lineage indexing is
+            always applied consistently.
+
+        Args:
+            conduit_id (str):
+                Conduit id used as the gate registry key.
+
+        Returns:
+            CreationGate:
+                Newly created gate registered on the active controller.
+
+        Raises:
+            RuntimeError:
+                Propagated if the controller has been cleaned.
+            ValueError:
+                Propagated for invalid or duplicate conduit/root keys.
         """
         controller = self._creation_gate_controller
         return controller.create_conduit_gate(
@@ -1018,6 +1028,25 @@ class Conduit(Cleanable, IConduit):
         Internal
 
         Register an existing gate under this conduit's current root id.
+
+        Purpose:
+            Attach caller-provided gate instances into controller lineage
+            indices using current conduit root metadata.
+
+        Args:
+            conduit_id (str):
+                Conduit id used as the gate registry key.
+            gate (CreationGate):
+                Existing gate instance to register.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                Propagated if the controller has been cleaned.
+            ValueError:
+                Propagated for invalid or duplicate conduit/root keys.
         """
         controller = self._creation_gate_controller
         controller.register_conduit_gate(
@@ -1026,28 +1055,34 @@ class Conduit(Cleanable, IConduit):
             root_conduit_id=self._root_conduit_id,
         )
 
-    def _set_creation_gate_controller_for_lineage(
-            self,
-            creation_gate_controller: CreationGateController,
-    ) -> None:
+    def _set_creation_gate_controller_for_lineage(self) -> None:
         """
         Internal
 
-        Assign a shared CreationGateController and rebind per-conduit gates
-        across a lineage.
+        Rebind this conduit lineage into the frame-owned CreationGateController.
 
         Purpose:
-            Ensure a conduit tree registers per-conduit gates to the same controller
-            so the controller can enable/disable all gates at once.
+            Ensure every conduit in the lineage is registered in the same
+            DevOps-owned controller under the current root conduit id.
 
         Contract:
-            - Overwrites `_creation_gate_controller` on this conduit and all lesser conduits.
+            - Requires a live conduit instance (`check_cleaned()` enforced).
+            - Requires a live ConduitWard lineage on this conduit.
+            - Uses `self._creation_gate_controller` as the single authority.
             - Re-registers each conduit's current gate under the current root id.
             - Creates a gate when a conduit has no existing gate.
             - Uses the ConduitWard lineage map to find descendants.
+            - Uses strict controller calls (no swallowed errors or legacy paths).
+
+        Threading:
+            - Reads descendant snapshots under ``ConduitWard`` lock before
+              recursive rebinding.
+
+        Returns:
+            None.
         """
-        previous_controller = self._creation_gate_controller
-        self._creation_gate_controller = creation_gate_controller
+        self.check_cleaned()
+        creation_gate_controller = self._creation_gate_controller
         if self._creation_gate is None:
             existing = creation_gate_controller.get_conduit_gate(self._id)
             if existing is None:
@@ -1055,27 +1090,17 @@ class Conduit(Cleanable, IConduit):
             else:
                 self._creation_gate = existing
         else:
-            if previous_controller is not None and previous_controller is not creation_gate_controller:
-                try:
-                    previous_controller.unregister_conduit_gate(self._id)
-                except Exception:
-                    pass
-            try:
-                creation_gate_controller.unregister_conduit_gate(self._id)
-            except Exception:
-                pass
+            creation_gate_controller.unregister_conduit_gate(self._id)
             self._register_existing_gate_for_current_root(self._id, self._creation_gate)
 
         ward = self._conduit_ward
-        if ward is None:
-            return
         with ward._lock:
             lesser_conduits = list(ward._lesser_conduits.values())
         for lesser_conduit in lesser_conduits:
+            lesser_conduit._creation_gate_controller = creation_gate_controller
             lesser_conduit._root_conduit_id = self._root_conduit_id
-            if lesser_conduit._meld is not None:
-                lesser_conduit._meld._resolution_conduit_id = self._root_conduit_id
-            lesser_conduit._set_creation_gate_controller_for_lineage(creation_gate_controller)
+            lesser_conduit._meld._resolution_conduit_id = self._root_conduit_id
+            lesser_conduit._set_creation_gate_controller_for_lineage()
 
     def upgrade_to_normal(
             self,
@@ -1172,13 +1197,9 @@ class Conduit(Cleanable, IConduit):
                 self._conduit_ward._convert_to_normal_conduit()
 
                 # Step 3.5: Rebind gates for this lineage to the DevOps controller.
-                dev_ops_manager = self._resolve_dev_ops_manager()
-                if dev_ops_manager is not None:
-                    self._dev_ops_manager = dev_ops_manager
-                self._creation_gate_controller = self._resolve_creation_gate_controller(
-                    self._creation_gate_controller
-                )
-                self._set_creation_gate_controller_for_lineage(self._creation_gate_controller)
+                self._dev_ops_manager = self._resolve_dev_ops_manager()
+                self._creation_gate_controller = self._resolve_creation_gate_controller()
+                self._set_creation_gate_controller_for_lineage()
 
                 # Step 4: Reconfigure the spellbook
                 self._spellbook.create_new_preset_spellbook()
@@ -1318,7 +1339,6 @@ class Conduit(Cleanable, IConduit):
                 policy=Policies.default,
                 automatic=self._automatic,
                 logger=logger,
-                creation_gate_controller=self._creation_gate_controller,
                 root_conduit_id=root_conduit_id,
             )
             if new_conduit._conduit_ward is not None:

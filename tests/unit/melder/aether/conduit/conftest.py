@@ -7,6 +7,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.configuration import Configuration
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 
 
 @pytest.fixture()
@@ -106,6 +107,9 @@ def aether_stub() -> MagicMock:
     stub._get_clusters_for_conduit.return_value = []
     stub._refresh_cluster_shares_for_conduit.return_value = None
     stub._get_mutation_research.return_value = MagicMock()
+    dev_ops_manager = MagicMock()
+    dev_ops_manager.creation_gate_controller = CreationGateController()
+    stub._get_devops_manager.return_value = dev_ops_manager
     previous = Conduit._aether
     Conduit._aether = stub
     try:

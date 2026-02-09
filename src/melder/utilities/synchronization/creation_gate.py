@@ -46,10 +46,24 @@ class CreationGate(Cleanable):
 
         Initialize the gate in an enabled or disabled state.
 
+        Purpose:
+            Construct a low-overhead gate instance that tracks both admission
+            state and in-flight ticket count for one protected creation path.
+
+        Contract:
+            - ``_closed`` starts ``False``.
+            - ``enabled`` reflects constructor input.
+            - ``_event`` state mirrors ``enabled``:
+              set when enabled, cleared when disabled.
+            - Ticket queue starts empty.
+
         Args:
             enabled:
                 True starts with immediate pass-through behavior.
                 False starts in blocking mode until ``open()`` is called.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: Optional[threading.RLock] = threading.RLock()
@@ -69,17 +83,25 @@ class CreationGate(Cleanable):
 
         Idempotently close and release the gate for teardown.
 
+        Purpose:
+            Deterministically terminate gate usage and drop owned
+            synchronization/ticket resources.
+
         Contract:
             - Marks gate terminally closed.
             - Forces ``enabled=True`` and signals event to unblock waiters.
             - Clears outstanding tickets as teardown intent.
             - Marks this instance cleaned and nulls owned references.
+            - Leaves the object unusable for all guarded operations.
 
         Threading:
             - Cleanup is lock-guarded to avoid interleaving teardown with gate
               state transitions.
             - The event is signalled before references are nulled so blocked
               waiters are released deterministically.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -102,6 +124,23 @@ class CreationGate(Cleanable):
         Public API
 
         Enable entry and release waiting callers.
+
+        Purpose:
+            Transition the gate into pass-through mode.
+
+        Contract:
+            - Sets ``enabled=True``.
+            - Sets the gate event so callers blocked in ``wait()`` resume.
+
+        Raises:
+            RuntimeError:
+                If called after ``cleanup()``.
+
+        Threading:
+            - State transition is protected by the gate lock.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -113,6 +152,24 @@ class CreationGate(Cleanable):
         Public API
 
         Disable entry so callers block in ``wait()``.
+
+        Purpose:
+            Transition the gate into blocking mode without terminal closure.
+
+        Contract:
+            - Sets ``enabled=False``.
+            - Clears the gate event so future ``wait()`` calls block.
+            - Does not modify ``_closed``.
+
+        Raises:
+            RuntimeError:
+                If called after ``cleanup()``.
+
+        Threading:
+            - State transition is protected by the gate lock.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -125,10 +182,26 @@ class CreationGate(Cleanable):
 
         Block until the gate event is signalled.
 
+        Purpose:
+            Provide an admission barrier for callers that must pause while
+            gate entry is disabled.
+
+        Contract:
+            - Returns immediately when ``enabled`` is truthy.
+            - Blocks on the event when ``enabled`` is falsy until another
+              thread signals via ``open()`` or terminal close paths.
+
         Notes:
             - Returns immediately when already enabled.
             - Callers that care about terminal closure should check
               ``is_closed()`` before and after waiting.
+
+        Raises:
+            RuntimeError:
+                If called after ``cleanup()``.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self.enabled:
@@ -140,6 +213,24 @@ class CreationGate(Cleanable):
         Public API
 
         Register an active in-flight operation.
+
+        Purpose:
+            Mark one unit of work as inside the guarded region.
+
+        Contract:
+            - Appends one ticket marker to the internal ticket queue.
+            - Must be paired with ``unregister_ticket()`` by caller code.
+
+        Raises:
+            RuntimeError:
+                If called after ``cleanup()``.
+
+        Threading:
+            - Ticket operations are intentionally minimal and rely on caller
+              discipline for correct pairing semantics.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._tickets.append(None)
@@ -150,9 +241,21 @@ class CreationGate(Cleanable):
 
         Unregister a previously registered in-flight operation.
 
+        Purpose:
+            Remove one in-flight marker when guarded work exits.
+
+        Contract:
+            - Removes exactly one ticket marker.
+            - Caller must only unregister tickets it previously registered.
+
         Raises:
             IndexError:
                 If no tickets exist (caller pairing bug).
+            RuntimeError:
+                If called after ``cleanup()``.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._tickets.pop()
@@ -162,6 +265,17 @@ class CreationGate(Cleanable):
         Public API
 
         Return True when at least one active ticket is present.
+
+        Purpose:
+            Provide a low-cost boolean check used by drain loops and tests.
+
+        Returns:
+            bool:
+                True when at least one ticket is registered.
+
+        Raises:
+            RuntimeError:
+                If called after ``cleanup()``.
         """
         self.check_cleaned()
         return bool(self._tickets)
@@ -171,6 +285,17 @@ class CreationGate(Cleanable):
         Public API
 
         Return active ticket count.
+
+        Purpose:
+            Return exact in-flight ticket cardinality.
+
+        Returns:
+            int:
+                Number of currently registered tickets.
+
+        Raises:
+            RuntimeError:
+                If called after ``cleanup()``.
         """
         self.check_cleaned()
         return len(self._tickets)
@@ -180,6 +305,19 @@ class CreationGate(Cleanable):
         Public API
 
         Return True when gate is terminally closed.
+
+        Purpose:
+            Expose terminal-close state to callers that distinguish
+            temporary blocking from final shutdown.
+
+        Returns:
+            bool:
+                True when ``close_and_wait_until_free()`` or ``cleanup()``
+                has marked terminal closure.
+
+        Raises:
+            RuntimeError:
+                If called after ``cleanup()``.
         """
         self.check_cleaned()
         return self._closed
@@ -193,6 +331,10 @@ class CreationGate(Cleanable):
         Public API
 
         Terminally close the gate and wait for all tickets to drain.
+
+        Purpose:
+            Seal gate entry for shutdown/reconfiguration and wait until all
+            in-flight guarded work has exited.
 
         Contract:
             - Sets ``_closed=True`` to indicate no new work should be accepted.
@@ -209,6 +351,15 @@ class CreationGate(Cleanable):
         Raises:
             RuntimeError:
                 If ticket drain does not complete before ``timeout``.
+                Also raised when called after ``cleanup()``.
+
+        Threading:
+            - Close-state transition is lock-guarded.
+            - Drain wait loop is cooperative polling based on ticket queue
+              length.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
 

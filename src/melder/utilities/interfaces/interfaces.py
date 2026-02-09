@@ -7207,6 +7207,53 @@ class IDevOpsManager(ICleanable, Protocol):
         Read-only exposure of the CreationGateController used for gate governance.
         """
         ...
+
+    def enable_conduit_gate(self, conduit_id: str) -> None:
+        """
+        Open one conduit-scoped creation gate by conduit id.
+        """
+        ...
+
+    def disable_conduit_gate(self, conduit_id: str) -> None:
+        """
+        Close one conduit-scoped creation gate by conduit id.
+        """
+        ...
+
+    def close_and_wait_conduit(
+            self,
+            conduit_id: str,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """
+        Terminally close one conduit-scoped gate and wait for drain.
+        """
+        ...
+
+    def enable_conduit_lineage(self, root_conduit_id: str) -> None:
+        """
+        Open all conduit-scoped gates under one root lineage id.
+        """
+        ...
+
+    def disable_conduit_lineage(self, root_conduit_id: str) -> None:
+        """
+        Close all conduit-scoped gates under one root lineage id.
+        """
+        ...
+
+    def close_and_wait_conduit_lineage(
+            self,
+            root_conduit_id: str,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """
+        Terminally close all conduit gates under one root lineage and wait for drain.
+        """
+        ...
+
     @property
     def spell_system_states(self) -> Optional['ISpellSystemStates']:
         """

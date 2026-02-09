@@ -267,6 +267,61 @@ def test_close_and_wait_until_conduit_free_drains_tickets() -> None:
     assert gate.is_closed() is True
 
 
+def test_close_and_wait_until_conduit_lineage_free_missing_is_noop() -> None:
+    """
+    Purpose:
+        Verify close-and-drain on missing conduit lineage key is no-op.
+    """
+    controller = CreationGateController()
+    controller.close_and_wait_until_conduit_lineage_free(
+        "missing",
+        timeout=0.01,
+        interval=0.001,
+    )
+
+
+def test_close_and_wait_until_conduit_lineage_free_drains_tickets() -> None:
+    """
+    Purpose:
+        Verify lineage close-and-drain waits until all lineage tickets release.
+    """
+    controller = CreationGateController()
+    gate_one = controller.create_conduit_gate("c1", root_conduit_id="root-1")
+    gate_two = controller.create_conduit_gate("c2", root_conduit_id="root-1")
+    registered = threading.Event()
+    release = threading.Event()
+
+    def _worker() -> None:
+        gate_one.register_ticket()
+        registered.set()
+        release.wait(timeout=1.0)
+        gate_one.unregister_ticket()
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+    assert registered.wait(timeout=1.0) is True
+
+    closer_done = threading.Event()
+
+    def _close() -> None:
+        controller.close_and_wait_until_conduit_lineage_free(
+            "root-1",
+            timeout=2.0,
+            interval=0.01,
+        )
+        closer_done.set()
+
+    closer = threading.Thread(target=_close, daemon=True)
+    closer.start()
+    assert closer_done.wait(timeout=0.05) is False
+    release.set()
+    assert closer_done.wait(timeout=1.0) is True
+    thread.join(timeout=1.0)
+    closer.join(timeout=1.0)
+    assert gate_one.is_closed() is True
+    assert gate_two.is_closed() is True
+
+
 def test_enable_all_conduit_gates_opens_all() -> None:
     """
     Purpose:
@@ -554,6 +609,7 @@ def test_disable_all_closes_both_registries() -> None:
         ("enable_all", ()),
         ("disable_all", ()),
         ("close_and_wait_until_conduit_free", ("c1",)),
+        ("close_and_wait_until_conduit_lineage_free", ("root-1",)),
         ("close_and_wait_until_spell_lineage_free", ("l1",)),
     ],
 )
