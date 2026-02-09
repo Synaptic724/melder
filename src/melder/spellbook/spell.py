@@ -295,7 +295,7 @@ class Spell(Cleanable, ISpell):
         self.execution_plan_dispatch_route: Optional[str] = None
 
         # Per-spell compiler / resolution helper (SpellCrafter).
-        # This owns all Phase 1â€“7 artifacts and is disposable.
+        # This owns all Phase artifacts and is disposable.
         self._crafter: Optional["SpellCrafter"] = None
         # Spell-owned meld execution context (created lazily by Meld).
         self._creation_context: Optional[Any] = None

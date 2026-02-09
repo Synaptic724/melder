@@ -1550,10 +1550,10 @@ class Spellbook(Cleanable, ISpellbook):
         removed_spells: List[ISpell] = []
         with self._lock:
             if (
-                    conduit_id not in self._contracted_spells
-                    or conduit_id not in self._lookup_contracted_spells
-                    or conduit_id not in self._contracted_versions
-                    or conduit_id not in self._contracted_spells_by_id
+                conduit_id not in self._contracted_spells
+                or conduit_id not in self._lookup_contracted_spells
+                or conduit_id not in self._contracted_versions
+                or conduit_id not in self._contracted_spells_by_id
             ):
                 self._logger.error(
                     f"No contracted spell maps for conduit {conduit_id}",
@@ -1617,13 +1617,10 @@ class Spellbook(Cleanable, ISpellbook):
         self.check_cleaned()
         if not conduit_id:
             return
-        owner = self._conduit
-        if owner is None:
-            return
         change_control = self._aether._get_change_control_manager(self._aetheric_frame)
         transaction_manager = change_control.transaction_manager()
         transaction_manager.register_link(
-            borrower_conduit_id=owner._id,
+            borrower_conduit_id=self._conduit._id,
             provider_conduit_id=conduit_id,
         )
 
@@ -1649,13 +1646,10 @@ class Spellbook(Cleanable, ISpellbook):
         self.check_cleaned()
         if not conduit_id:
             return
-        owner = self._conduit
-        if owner is None:
-            return
         change_control = self._aether._get_change_control_manager(self._aetheric_frame)
         transaction_manager = change_control.transaction_manager()
         transaction_manager.unregister_link(
-            borrower_conduit_id=owner._id,
+            borrower_conduit_id=self._conduit._id,
             provider_conduit_id=conduit_id,
         )
 

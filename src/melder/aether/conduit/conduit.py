@@ -186,6 +186,7 @@ class Conduit(Cleanable, IConduit):
             spellbook=self._spellbook,
             conduit_id=self._id,
             resolution_conduit_id=self._root_conduit_id,
+            dynamic_environment=self.__dynamic_environment__,
             meld_hooks=self._meld_hooks,
         )
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(

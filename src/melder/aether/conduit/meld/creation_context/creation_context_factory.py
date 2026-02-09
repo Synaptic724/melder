@@ -23,12 +23,13 @@ class CreationContextFactory(Cleanable):
         - Factory delegates all shape rules to `CreationContextBuilder`.
     """
 
-    __slots__ = Cleanable.__slots__ + ["_builder"]
+    __slots__ = Cleanable.__slots__ + ["_builder", "_dynamic_environment"]
 
     def __init__(
             self,
             *,
             builder: Optional[CreationContextBuilder] = None,
+            dynamic_environment: bool = False,
     ) -> None:
         """
         Initialize one factory.
@@ -36,11 +37,15 @@ class CreationContextFactory(Cleanable):
         Args:
             builder:
                 Optional custom builder. Defaults to `CreationContextBuilder`.
+            dynamic_environment:
+                True when the owning conduit runs in dynamic mode. Propagated
+                to built CreationContext instances.
         """
         super().__init__()
         if builder is None:
             builder = CreationContextBuilder()
         self._builder: CreationContextBuilder = builder
+        self._dynamic_environment: bool = bool(dynamic_environment)
 
     def build_for_spell(self, spell: ISpell) -> CreationContext:
         """
@@ -55,7 +60,10 @@ class CreationContextFactory(Cleanable):
                 New spell-shaped context ready for runtime execution.
         """
         self.check_cleaned()
-        return self._builder.build(spell)
+        return self._builder.build(
+            spell,
+            dynamic_environment=self._dynamic_environment,
+        )
 
     def build_and_bind_for_spell(self, spell: ISpell) -> CreationContext:
         """
@@ -67,7 +75,10 @@ class CreationContextFactory(Cleanable):
             - Best-effort cleans replaced context.
         """
         self.check_cleaned()
-        built_creation_context = self._builder.build(spell)
+        built_creation_context = self._builder.build(
+            spell,
+            dynamic_environment=self._dynamic_environment,
+        )
         previous_creation_context: Optional[CreationContext] = None
         publish_error: Optional[Exception] = None
 
@@ -106,7 +117,10 @@ class CreationContextFactory(Cleanable):
         if creation_context is not None and not creation_context.is_cleaned:
             return creation_context
 
-        built_creation_context = self._builder.build(spell)
+        built_creation_context = self._builder.build(
+            spell,
+            dynamic_environment=self._dynamic_environment,
+        )
         publish_error: Optional[Exception] = None
         published_creation_context: Optional[CreationContext] = None
 
@@ -175,6 +189,7 @@ class CreationContextFactory(Cleanable):
             except Exception:
                 pass
         self._builder = None
+        self._dynamic_environment = None
 
     @staticmethod
     def _cleanup_creation_context(

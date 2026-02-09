@@ -67,6 +67,7 @@ class Meld(Cleanable, IMeld):
             spellbook: ISpellbook,
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
+            dynamic_environment: bool = False,
             meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = None,
     ) -> None:
         """
@@ -86,6 +87,10 @@ class Meld(Cleanable, IMeld):
             resolution_conduit_id:
                 Optional identifier used for per-conduit resolution/change-control
                 state lookups. For lesser conduits this should be the root conduit id.
+            dynamic_environment:
+                True when the owning conduit runs in dynamic mode. This flag is
+                propagated into creation-context construction so runtime context
+                policy can branch by mode without re-reading conduit state.
             meld_hooks:
                 Optional hook map passed by Conduit. When provided, Meld stores
                 this map by reference so shared hook mutations are immediately
@@ -99,6 +104,7 @@ class Meld(Cleanable, IMeld):
         self._resolution_conduit_id: Optional[str] = (
             resolution_conduit_id if resolution_conduit_id is not None else conduit_id
         )
+        self._dynamic_environment: bool = bool(dynamic_environment)
         self._spellbook: ISpellbook = spellbook
 
         # Spellbook references (used for resolution)
@@ -126,7 +132,9 @@ class Meld(Cleanable, IMeld):
 
         # Builder-backed factory used for spell-owned CreationContext builds.
         self._creation_context_factory: CreationContextFactory = (
-            CreationContextFactory()
+            CreationContextFactory(
+                dynamic_environment=self._dynamic_environment,
+            )
         )
 
         # Optional hook map pulled from Configuration (via Conduit).
@@ -180,6 +188,7 @@ class Meld(Cleanable, IMeld):
             self._creations = None
             self._conduit_id = None
             self._resolution_conduit_id = None
+            self._dynamic_environment = None
             creation_context_factory = self._creation_context_factory
             if creation_context_factory is not None:
                 try:

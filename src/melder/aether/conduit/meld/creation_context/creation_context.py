@@ -137,6 +137,7 @@ class CreationContext(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_spell",
         "_spell_id",
+        "_dynamic_environment",
         "_owner_creations",
         "_execute_hooks_overrides_compiled",
         "_execute_hooks_no_overrides_compiled",
@@ -155,6 +156,7 @@ class CreationContext(Cleanable):
             self,
             *,
             spell: ISpell,
+            dynamic_environment: bool = False,
             resolve_route_key: str,
             fast_transient_no_overrides_enabled: bool = False,
             no_overrides_executor: Optional[Callable[..., Any]] = None,
@@ -169,6 +171,9 @@ class CreationContext(Cleanable):
             spell:
                 Spell this context is bound to. All execution logic and caches
                 are scoped to this spell only.
+            dynamic_environment:
+                True when the owning conduit runs in dynamic mode. Stored as
+                context-level runtime mode metadata.
             resolve_route_key:
                 Preselected existence route key from `CreationContextBuilder`.
             fast_transient_no_overrides_enabled:
@@ -186,6 +191,7 @@ class CreationContext(Cleanable):
         super().__init__()
         self._spell: ISpell = spell
         self._spell_id: str = spell.spell_id
+        self._dynamic_environment: bool = bool(dynamic_environment)
         self._owner_creations: Any = spell._owner_creations
         self._no_overrides_executor: Optional[Callable[..., Any]] = (
             no_overrides_executor
@@ -316,6 +322,7 @@ class CreationContext(Cleanable):
 
         self._spell = None
         self._spell_id = None
+        self._dynamic_environment = None
         self._owner_creations = None
         self._execute_hooks_overrides_compiled = None
         self._execute_hooks_no_overrides_compiled = None

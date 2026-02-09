@@ -47,13 +47,21 @@ class CreationContextBuilder(Cleanable):
             return
         self._cleaned = True
 
-    def build(self, spell: ISpell) -> CreationContext:
+    def build(
+            self,
+            spell: ISpell,
+            *,
+            dynamic_environment: bool = False,
+    ) -> CreationContext:
         """
         Build one `CreationContext` bound to the provided spell.
 
         Args:
             spell:
                 Spell to bind to the created runtime context.
+            dynamic_environment:
+                True when the owning conduit runs in dynamic mode. This flag is
+                carried into the CreationContext for runtime policy selection.
 
         Returns:
             CreationContext:
@@ -92,6 +100,7 @@ class CreationContextBuilder(Cleanable):
 
         return CreationContext(
             spell=spell,
+            dynamic_environment=dynamic_environment,
             resolve_route_key=resolve_route_key,
             fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
             no_overrides_executor=no_overrides_executor,
