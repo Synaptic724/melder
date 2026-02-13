@@ -4,6 +4,7 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from tests.mocks.spellbook.core_classes import BasicLogger
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -32,6 +33,35 @@ def reset_aether_singleton_for_component_contracts() -> None:
     Conduit._aether = aether
 
 
+class _ConduitStub:
+    """
+    Purpose:
+        Provide the minimal active-conduit surface for Spellbook contract tests.
+    Contract:
+        - Exposes conduit identity for borrower/provider mirror registration.
+        - Exposes dynamic mode and CreationGateController fields required by
+          spell ownership stamping paths.
+    """
+    def __init__(self, conduit_id: str = "owner", name: str = "owner") -> None:
+        """
+        Purpose:
+            Initialize contract test conduit state.
+        Contract:
+            - Stores id/name and an empty creations map.
+            - Enables dynamic mode for contract test realism.
+        Args:
+            conduit_id: Conduit identifier used by link-mirror bookkeeping.
+            name: Human-readable conduit name.
+        Returns:
+            None.
+        """
+        self._id = conduit_id
+        self._name = name
+        self._creations = {}
+        self.__dynamic_environment__ = True
+        self._creation_gate_controller = CreationGateController()
+
+
 def _make_spellbook() -> Spellbook:
     """
     Purpose:
@@ -44,6 +74,7 @@ def _make_spellbook() -> Spellbook:
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook._conduit = _ConduitStub(conduit_id="borrower", name="borrower")
     return spellbook
 
 

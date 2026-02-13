@@ -5,6 +5,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.spellbook.spellbook_creation_system import SpellbookCreationSystem
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from tests.mocks.spellbook.core_classes import BasicService
 
 
@@ -95,6 +96,8 @@ class _ConduitStub:
         self._id = conduit_id
         self._name = name
         self._creations = {}
+        self.__dynamic_environment__ = True
+        self._creation_gate_controller = CreationGateController()
         self._raise_on_register = raise_on_register
         self.registered: list[tuple[object, object]] = []
 

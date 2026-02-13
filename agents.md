@@ -15,3 +15,4 @@
 
 - Before running tools, editing files, or executing commands, complete onboarding from `codex_todo/AGENTS.MD`.
 - If there is any conflict between this file and `codex_todo/AGENTS.MD`, `codex_todo/AGENTS.MD` is authoritative.
+- During debugging/fix work, apply `codex_todo/agent_onboarding/agent/general/skills/technical_expertise.md` (root-cause first, no blind defensive guards).

@@ -5,6 +5,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
@@ -46,6 +47,7 @@ def _make_spellbook() -> Spellbook:
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook._conduit = _ConduitStub(conduit_id="borrower", name="borrower")
     return spellbook
 
 
@@ -139,6 +141,8 @@ class _ConduitStub:
         self._id = conduit_id
         self._name = name
         self._creations = {}
+        self.__dynamic_environment__ = True
+        self._creation_gate_controller = CreationGateController()
         self.registered: list[tuple[object, object]] = []
 
     def _register_to_creations(self, spell: object, obj: object) -> None:
