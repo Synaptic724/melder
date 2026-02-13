@@ -86,6 +86,9 @@ def _make_override_harness(
     context._cleaned = False
     context._spell = _make_spell()
     context._spell_id = "s1"
+    context._dynamic_environment = False
+    context._creation_gate = None
+    context._creation_gate_lineage_id = None
     context._owner_creations = object()
     context._execute_hooks_overrides_compiled = None
     context._execute_hooks_no_overrides_compiled = None

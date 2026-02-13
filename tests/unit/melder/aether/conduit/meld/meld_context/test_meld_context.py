@@ -251,3 +251,50 @@ def test_builder_allows_existing_creation_without_crafter() -> None:
     finally:
         context.cleanup()
         builder.cleanup()
+
+
+def test_factory_build_for_spell_dynamic_attaches_lineage_gate() -> None:
+    """
+    Verify dynamic factory build injects shared spell-lineage gate metadata.
+
+    Contract:
+        - Built context stores dynamic mode.
+        - Built context stores shared lineage gate reference.
+        - Built context stores lineage id used by runtime gate diagnostics.
+    """
+    spell = _SpellStub(spell_id="spell-dynamic")
+    controller = CreationGateController()
+    factory = CreationContextFactory(
+        dynamic_environment=True,
+        creation_gate_controller=controller,
+    )
+    context = factory.build_for_spell(spell)
+    try:
+        lineage_id = spell.spell_index.id
+        assert context._dynamic_environment is True
+        assert context._creation_gate_lineage_id == lineage_id
+        assert context._creation_gate is controller.get_spell_lineage_gate(lineage_id)
+    finally:
+        context.cleanup()
+        factory.cleanup()
+
+
+def test_builder_dynamic_requires_creation_gate() -> None:
+    """
+    Verify dynamic context build rejects missing gate wiring.
+
+    Contract:
+        - CreationContext requires a creation gate when dynamic mode is enabled.
+    """
+    spell = _SpellStub(spell_id="spell-dynamic")
+    builder = CreationContextBuilder()
+    try:
+        with pytest.raises(ValueError, match="creation_gate cannot be None"):
+            builder.build(
+                spell,
+                dynamic_environment=True,
+                creation_gate=None,
+                creation_gate_lineage_id=spell.spell_index.id,
+            )
+    finally:
+        builder.cleanup()

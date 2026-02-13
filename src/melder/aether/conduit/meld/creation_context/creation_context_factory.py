@@ -183,7 +183,7 @@ class CreationContextFactory(Cleanable):
     def _run_with_optional_spell_lineage_gate(
             self,
             spell: ISpell,
-            operation: Callable[[], CreationContext],
+            operation: Callable[[Optional[CreationGate], Optional[str]], CreationContext],
     ) -> CreationContext:
         """
         Internal
@@ -200,21 +200,50 @@ class CreationContextFactory(Cleanable):
                 Spell target for lineage lookup.
             operation:
                 Operation callback to execute under gate governance.
+                Receives `(creation_gate, lineage_id)` in dynamic mode and
+                `(None, None)` in automatic mode.
 
         Returns:
             CreationContext:
                 Operation result.
         """
         if not self._dynamic_environment:
-            return operation()
+            return operation(None, None)
 
         lineage_id = self._lineage_id_for_spell(spell)
         gate = self._resolve_or_create_spell_lineage_gate(lineage_id)
         self._enter_spell_lineage_gate(gate, lineage_id)
         try:
-            return operation()
+            return operation(gate, lineage_id)
         finally:
             self._leave_spell_lineage_gate(gate)
+
+    def _resolve_runtime_gate_for_spell(
+            self,
+            spell: ISpell,
+    ) -> tuple[Optional[CreationGate], Optional[str]]:
+        """
+        Internal
+
+        Resolve runtime gate metadata injected into built CreationContext objects.
+
+        Contract:
+            - Automatic mode returns `(None, None)`.
+            - Dynamic mode returns a shared spell-lineage gate and lineage id.
+
+        Args:
+            spell:
+                Spell target whose lineage gate should be attached.
+
+        Returns:
+            tuple[Optional[CreationGate], Optional[str]]:
+                `(gate, lineage_id)` for context runtime admission checks.
+        """
+        if not self._dynamic_environment:
+            return None, None
+        lineage_id = self._lineage_id_for_spell(spell)
+        gate = self._resolve_or_create_spell_lineage_gate(lineage_id)
+        return gate, lineage_id
 
     def build_for_spell(self, spell: ISpell) -> CreationContext:
         """
@@ -229,9 +258,12 @@ class CreationContextFactory(Cleanable):
                 New spell-shaped context ready for runtime execution.
         """
         self.check_cleaned()
+        creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
         return self._builder.build(
             spell,
             dynamic_environment=self._dynamic_environment,
+            creation_gate=creation_gate,
+            creation_gate_lineage_id=lineage_id,
         )
 
     def build_and_bind_for_spell(self, spell: ISpell) -> CreationContext:
@@ -244,10 +276,15 @@ class CreationContextFactory(Cleanable):
             - Best-effort cleans replaced context.
         """
         self.check_cleaned()
-        def _operation() -> CreationContext:
+        def _operation(
+                creation_gate: Optional[CreationGate],
+                lineage_id: Optional[str],
+        ) -> CreationContext:
             built_creation_context = self._builder.build(
                 spell,
                 dynamic_environment=self._dynamic_environment,
+                creation_gate=creation_gate,
+                creation_gate_lineage_id=lineage_id,
             )
             with spell._lock:
                 spell.check_cleaned()
@@ -273,7 +310,10 @@ class CreationContextFactory(Cleanable):
             - Context ownership remains on Spell (`spell._creation_context`).
         """
         self.check_cleaned()
-        def _operation() -> CreationContext:
+        def _operation(
+                creation_gate: Optional[CreationGate],
+                lineage_id: Optional[str],
+        ) -> CreationContext:
             current_creation_context = spell._creation_context
             if (
                     current_creation_context is not None
@@ -284,6 +324,8 @@ class CreationContextFactory(Cleanable):
             built_creation_context = self._builder.build(
                 spell,
                 dynamic_environment=self._dynamic_environment,
+                creation_gate=creation_gate,
+                creation_gate_lineage_id=lineage_id,
             )
             with spell._lock:
                 spell.check_cleaned()

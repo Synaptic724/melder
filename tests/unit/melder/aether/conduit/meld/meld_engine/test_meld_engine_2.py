@@ -1,4 +1,6 @@
 """Contract tests for CreationContext execution routing and planning helpers."""
+import threading
+import time
 from types import SimpleNamespace
 from typing import Any, Iterable
 
@@ -10,6 +12,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
 from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.utilities.synchronization.creation_gate import CreationGate
 
 
 def _make_socket_ref(
@@ -65,6 +68,9 @@ def _make_execute_dispatch_harness() -> tuple[CreationContext, list[str]]:
     calls: list[str] = []
     context = object.__new__(CreationContext)
     context._cleaned = False
+    context._dynamic_environment = False
+    context._creation_gate = None
+    context._creation_gate_lineage_id = None
 
     def _hooks_no_overrides(caller_creations: Any) -> tuple[str, bool]:
         calls.append("hooks_no_overrides")
@@ -129,6 +135,82 @@ def test_execute_no_hooks_routes_to_no_overrides_when_payload_missing() -> None:
     context, calls = _make_execute_dispatch_harness()
     assert context.execute_no_hooks(object(), overrides=None) == "no-hooks-no-overrides"
     assert calls == ["no_hooks_no_overrides"]
+
+
+def test_execute_dynamic_gate_closed_raises() -> None:
+    """
+    Verify dynamic execute fails fast when spell-lineage gate is terminally closed.
+    """
+    context, _calls = _make_execute_dispatch_harness()
+    context._dynamic_environment = True
+    context._creation_gate_lineage_id = "lineage-s1"
+    gate = CreationGate()
+    gate.close_and_wait_until_free(timeout=0.1, interval=0.01)
+    context._creation_gate = gate
+
+    with pytest.raises(RuntimeError, match="CreationGate is closed"):
+        context.execute(object(), overrides=None)
+
+
+def test_execute_dynamic_gate_registers_and_unregisters_ticket() -> None:
+    """
+    Verify dynamic execute tracks one gate ticket around compiled dispatch.
+    """
+    context, calls = _make_execute_dispatch_harness()
+    context._dynamic_environment = True
+    context._creation_gate_lineage_id = "lineage-s1"
+    gate = CreationGate()
+    context._creation_gate = gate
+
+    assert gate.active_ticket_count() == 0
+    assert context.execute(object(), overrides=None) == ("no-overrides", False)
+    assert calls == ["hooks_no_overrides"]
+    assert gate.active_ticket_count() == 0
+
+
+def test_execute_no_hooks_dynamic_gate_registers_and_unregisters_ticket() -> None:
+    """
+    Verify dynamic execute_no_hooks tracks one gate ticket around dispatch.
+    """
+    context, calls = _make_execute_dispatch_harness()
+    context._dynamic_environment = True
+    context._creation_gate_lineage_id = "lineage-s1"
+    gate = CreationGate()
+    context._creation_gate = gate
+
+    assert gate.active_ticket_count() == 0
+    assert context.execute_no_hooks(object(), overrides=None) == "no-hooks-no-overrides"
+    assert calls == ["no_hooks_no_overrides"]
+    assert gate.active_ticket_count() == 0
+
+
+def test_execute_dynamic_gate_blocks_until_open() -> None:
+    """
+    Verify dynamic execute waits while gate is disabled and resumes after open.
+    """
+    context, calls = _make_execute_dispatch_harness()
+    context._dynamic_environment = True
+    context._creation_gate_lineage_id = "lineage-s1"
+    gate = CreationGate()
+    gate.close()
+    context._creation_gate = gate
+
+    result_box: list[tuple[str, bool]] = []
+    done = threading.Event()
+
+    def _worker() -> None:
+        result_box.append(context.execute(object(), overrides=None))
+        done.set()
+
+    thread = threading.Thread(target=_worker)
+    thread.start()
+    time.sleep(0.03)
+    gate.open()
+    done.wait(timeout=1.0)
+    thread.join(timeout=1.0)
+
+    assert result_box == [("no-overrides", False)]
+    assert calls == ["hooks_no_overrides"]
 
 
 def test_collect_override_targets_groups_by_spell_id() -> None:

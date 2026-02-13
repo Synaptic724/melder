@@ -7,6 +7,7 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpell
+from melder.utilities.synchronization.creation_gate import CreationGate
 
 
 class CreationContextBuilder(Cleanable):
@@ -52,6 +53,8 @@ class CreationContextBuilder(Cleanable):
             spell: ISpell,
             *,
             dynamic_environment: bool = False,
+            creation_gate: Optional[CreationGate] = None,
+            creation_gate_lineage_id: Optional[str] = None,
     ) -> CreationContext:
         """
         Build one `CreationContext` bound to the provided spell.
@@ -62,6 +65,11 @@ class CreationContextBuilder(Cleanable):
             dynamic_environment:
                 True when the owning conduit runs in dynamic mode. This flag is
                 carried into the CreationContext for runtime policy selection.
+            creation_gate:
+                Shared spell-lineage CreationGate used by the built context
+                for dynamic-mode execution admission.
+            creation_gate_lineage_id:
+                Stable spell-lineage id used for gate diagnostics.
 
         Returns:
             CreationContext:
@@ -101,6 +109,8 @@ class CreationContextBuilder(Cleanable):
         return CreationContext(
             spell=spell,
             dynamic_environment=dynamic_environment,
+            creation_gate=creation_gate,
+            creation_gate_lineage_id=creation_gate_lineage_id,
             resolve_route_key=resolve_route_key,
             fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
             no_overrides_executor=no_overrides_executor,

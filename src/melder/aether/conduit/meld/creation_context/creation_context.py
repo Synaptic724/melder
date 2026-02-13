@@ -18,6 +18,7 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ICreations, ISpell
+from melder.utilities.synchronization.creation_gate import CreationGate
 
 
 class OverrideRouteConfig(Cleanable):
@@ -138,6 +139,8 @@ class CreationContext(Cleanable):
         "_spell",
         "_spell_id",
         "_dynamic_environment",
+        "_creation_gate",
+        "_creation_gate_lineage_id",
         "_owner_creations",
         "_execute_hooks_overrides_compiled",
         "_execute_hooks_no_overrides_compiled",
@@ -157,6 +160,8 @@ class CreationContext(Cleanable):
             *,
             spell: ISpell,
             dynamic_environment: bool = False,
+            creation_gate: Optional[CreationGate] = None,
+            creation_gate_lineage_id: Optional[str] = None,
             resolve_route_key: str,
             fast_transient_no_overrides_enabled: bool = False,
             no_overrides_executor: Optional[Callable[..., Any]] = None,
@@ -174,6 +179,11 @@ class CreationContext(Cleanable):
             dynamic_environment:
                 True when the owning conduit runs in dynamic mode. Stored as
                 context-level runtime mode metadata.
+            creation_gate:
+                Shared spell-lineage CreationGate used for dynamic-mode
+                admission and ticket tracking during execute paths.
+            creation_gate_lineage_id:
+                Stable spell-lineage id used for gate diagnostics.
             resolve_route_key:
                 Preselected existence route key from `CreationContextBuilder`.
             fast_transient_no_overrides_enabled:
@@ -192,6 +202,12 @@ class CreationContext(Cleanable):
         self._spell: ISpell = spell
         self._spell_id: str = spell.spell_id
         self._dynamic_environment: bool = bool(dynamic_environment)
+        if self._dynamic_environment and creation_gate is None:
+            raise ValueError(
+                "creation_gate cannot be None when dynamic_environment is True."
+            )
+        self._creation_gate: Optional[CreationGate] = creation_gate
+        self._creation_gate_lineage_id: Optional[str] = creation_gate_lineage_id
         self._owner_creations: Any = spell._owner_creations
         self._no_overrides_executor: Optional[Callable[..., Any]] = (
             no_overrides_executor
@@ -323,6 +339,8 @@ class CreationContext(Cleanable):
         self._spell = None
         self._spell_id = None
         self._dynamic_environment = None
+        self._creation_gate = None
+        self._creation_gate_lineage_id = None
         self._owner_creations = None
         self._execute_hooks_overrides_compiled = None
         self._execute_hooks_no_overrides_compiled = None
@@ -354,14 +372,49 @@ class CreationContext(Cleanable):
             tuple[Any, bool]:
                 `(instance, created)` where `created=True` means this call
                 instantiated the spell object.
+
+        Dynamic gate policy:
+            - Automatic mode bypasses gate checks.
+            - Dynamic mode mirrors Conduit.meld gate admission:
+              fail-fast on terminal close, wait while disabled, then
+              register/unregister one ticket around execution.
+
+        Raises:
+            RuntimeError:
+                If dynamic-mode spell lineage gate is terminally closed.
         """
-        if overrides is None:
-            execute_hooks_no_overrides_compiled = (
-                self._execute_hooks_no_overrides_compiled
+        if not self._dynamic_environment:
+            if overrides is None:
+                execute_hooks_no_overrides_compiled = (
+                    self._execute_hooks_no_overrides_compiled
+                )
+                return execute_hooks_no_overrides_compiled(caller_creations)
+            execute_hooks_overrides_compiled = self._execute_hooks_overrides_compiled
+            return execute_hooks_overrides_compiled(caller_creations, overrides)
+
+        creation_gate = self._creation_gate
+        lineage_id = self._creation_gate_lineage_id
+        if creation_gate.is_closed():
+            raise RuntimeError(
+                f"CreationGate is closed for spell lineage '{lineage_id}'."
             )
-            return execute_hooks_no_overrides_compiled(caller_creations)
-        execute_hooks_overrides_compiled = self._execute_hooks_overrides_compiled
-        return execute_hooks_overrides_compiled(caller_creations, overrides)
+        if not creation_gate.enabled:
+            creation_gate.wait()
+            if creation_gate.is_closed():
+                raise RuntimeError(
+                    f"CreationGate is closed for spell lineage '{lineage_id}'."
+                )
+        try:
+            creation_gate.register_ticket()
+            if overrides is None:
+                execute_hooks_no_overrides_compiled = (
+                    self._execute_hooks_no_overrides_compiled
+                )
+                return execute_hooks_no_overrides_compiled(caller_creations)
+            execute_hooks_overrides_compiled = self._execute_hooks_overrides_compiled
+            return execute_hooks_overrides_compiled(caller_creations, overrides)
+        finally:
+            creation_gate.unregister_ticket()
 
     def execute_no_hooks(
             self,
@@ -375,16 +428,53 @@ class CreationContext(Cleanable):
             - `overrides is None` uses the no-overrides compiled door.
             - Override payloads route through the no-hooks compiled override door.
             - Caller must supply frontdoor-normalized overrides from Meld.
+
+        Dynamic gate policy:
+            - Automatic mode bypasses gate checks.
+            - Dynamic mode mirrors Conduit.meld gate admission:
+              fail-fast on terminal close, wait while disabled, then
+              register/unregister one ticket around execution.
+
+        Raises:
+            RuntimeError:
+                If dynamic-mode spell lineage gate is terminally closed.
         """
-        if overrides is None:
-            execute_no_hooks_no_overrides_compiled = (
-                self._execute_no_hooks_no_overrides_compiled
+        if not self._dynamic_environment:
+            if overrides is None:
+                execute_no_hooks_no_overrides_compiled = (
+                    self._execute_no_hooks_no_overrides_compiled
+                )
+                return execute_no_hooks_no_overrides_compiled(caller_creations)
+            execute_no_hooks_overrides_compiled = (
+                self._execute_no_hooks_overrides_compiled
             )
-            return execute_no_hooks_no_overrides_compiled(caller_creations)
-        execute_no_hooks_overrides_compiled = (
-            self._execute_no_hooks_overrides_compiled
-        )
-        return execute_no_hooks_overrides_compiled(caller_creations, overrides)
+            return execute_no_hooks_overrides_compiled(caller_creations, overrides)
+
+        creation_gate = self._creation_gate
+        lineage_id = self._creation_gate_lineage_id
+        if creation_gate.is_closed():
+            raise RuntimeError(
+                f"CreationGate is closed for spell lineage '{lineage_id}'."
+            )
+        if not creation_gate.enabled:
+            creation_gate.wait()
+            if creation_gate.is_closed():
+                raise RuntimeError(
+                    f"CreationGate is closed for spell lineage '{lineage_id}'."
+                )
+        try:
+            creation_gate.register_ticket()
+            if overrides is None:
+                execute_no_hooks_no_overrides_compiled = (
+                    self._execute_no_hooks_no_overrides_compiled
+                )
+                return execute_no_hooks_no_overrides_compiled(caller_creations)
+            execute_no_hooks_overrides_compiled = (
+                self._execute_no_hooks_overrides_compiled
+            )
+            return execute_no_hooks_overrides_compiled(caller_creations, overrides)
+        finally:
+            creation_gate.unregister_ticket()
 
     def _seed_baseline_override_executor(
             self,
