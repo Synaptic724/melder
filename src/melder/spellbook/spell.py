@@ -479,12 +479,7 @@ class Spell(Cleanable, ISpell):
             RuntimeError:
                 If the spell has no configured CreationContextFactory.
         """
-        self.check_cleaned()
         creation_context_factory = self._creation_context_factory
-        if creation_context_factory is None:
-            raise RuntimeError(
-                "CreationContextFactory is not configured for this spell."
-            )
         return creation_context_factory.get_or_build_for_spell(self)
 
     #region Disposal

@@ -309,7 +309,6 @@ class CreationContextFactory(Cleanable):
             - Duplicate concurrent builds are accepted if output is equivalent.
             - Context ownership remains on Spell (`spell._creation_context`).
         """
-        self.check_cleaned()
         def _operation(
                 creation_gate: Optional[CreationGate],
                 lineage_id: Optional[str],
