@@ -485,7 +485,6 @@ def test_register_conduit_hooks_local_allowed_after_configuration_freeze(
     Contract:
         - Local registration succeeds after freeze.
         - Shared hook map remains unchanged.
-        - Meld hook presence cache updates for meld-phase local hooks.
     """
     conduit_dynamic_normal._configuration.freeze()
 
@@ -506,7 +505,6 @@ def test_register_conduit_hooks_local_allowed_after_configuration_freeze(
     assert conduit_dynamic_normal._local_conduit_hooks["on_meld_pre_resolve"][0] is hook
     assert conduit_dynamic_normal._meld._meld_hooks is not None
     assert "on_meld_pre_resolve" not in conduit_dynamic_normal._meld._meld_hooks
-    assert conduit_dynamic_normal._has_meld_phase_hooks is True
 
 
 def test_register_conduit_hooks_local_does_not_wire_non_meld_hooks_to_meld(

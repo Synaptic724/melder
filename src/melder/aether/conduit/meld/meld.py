@@ -1177,4 +1177,3 @@ class Meld(Cleanable, IMeld):
             except Exception as e:
                 hook_name = getattr(hook, "__name__", repr(hook))
                 raise HookExecutionError("activation", hook_name, e) from e
-

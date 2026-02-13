@@ -167,8 +167,6 @@ class Conduit(Cleanable, IConduit):
 
         # Local hook overlays for this conduit only.
         self._local_conduit_hooks: dict[str, list[Any]] | None = None
-        # Fast gate for conduit-level meld pre/post hook dispatch.
-        self._has_meld_phase_hooks: bool = bool(self._conduit_hooks)
 
         self._meld: Meld = Meld(
             creations=self._creations,
@@ -224,7 +222,6 @@ class Conduit(Cleanable, IConduit):
             self._conduit_hooks = None
             self._meld_hooks = None
             self._local_conduit_hooks = None
-            self._has_meld_phase_hooks = False
 
         # Logger last
         if self._logger is not None:
@@ -782,8 +779,6 @@ class Conduit(Cleanable, IConduit):
 
         self._ensure_local_conduit_hooks()
         self._merge_conduit_hooks(self._local_conduit_hooks, hooks)
-        if not self._has_meld_phase_hooks:
-            self._has_meld_phase_hooks = bool(self._conduit_hooks or self._local_conduit_hooks)
 
     def unregister_conduit_cloud(self, conduit: IConduit):
         """

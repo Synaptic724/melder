@@ -259,7 +259,7 @@ class CreationContextFactory(Cleanable):
                 creation_gate_lineage_id=lineage_id,
             )
             spell._creation_context = built_creation_context
-            self._set_creation_context_switch_open(spell)
+            creation_context_switch.advance(1)
             return built_creation_context
         return spell._creation_context
 
