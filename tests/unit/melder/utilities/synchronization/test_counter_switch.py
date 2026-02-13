@@ -1,5 +1,4 @@
 import threading
-import time
 
 import pytest
 
@@ -9,11 +8,11 @@ from melder.utilities.synchronization.counter_switch import CounterSwitch
 def test_counter_switch_defaults_to_open_latch() -> None:
     """
     Purpose:
-        Verify default construction starts in open latch mode.
+        Verify default construction starts in open state.
     Contract:
         - Default state is ``2``.
-        - Bool view is true.
-        - Selector returns ``2`` immediately.
+        - Bool view is True.
+        - Selector returns immediately with ``2``.
     """
     switch = CounterSwitch()
     assert switch.state == 2
@@ -24,10 +23,10 @@ def test_counter_switch_defaults_to_open_latch() -> None:
 def test_counter_switch_selector_claims_leader_from_idle() -> None:
     """
     Purpose:
-        Verify selector performs owner election from idle state.
+        Verify selector performs leader claim from idle.
     Contract:
-        - ``0 -> 1`` transition occurs on selector call.
-        - Selector returns ``1`` for elected leader.
+        - ``0 -> 1`` on first selector call.
+        - Returned mode is ``1``.
     """
     switch = CounterSwitch(0)
     assert switch.selector() == 1
@@ -35,33 +34,17 @@ def test_counter_switch_selector_claims_leader_from_idle() -> None:
     assert bool(switch) is False
 
 
-def test_counter_switch_close_selector_promotes_pending_to_open() -> None:
+def test_counter_switch_selector_follower_waits_until_open() -> None:
     """
     Purpose:
-        Verify leader close operation opens latch and releases waiters.
+        Verify follower selector waits while pending.
     Contract:
-        - Pending ``1`` becomes open ``2`` after close.
-        - Selector then returns ``2``.
+        - Leader claim sets state ``1``.
+        - Follower blocks while pending.
+        - Advancing to ``2`` releases follower.
     """
     switch = CounterSwitch(0)
     assert switch.selector() == 1
-    switch.close_selector()
-    assert switch.state == 2
-    assert switch.selector() == 2
-
-
-def test_counter_switch_selector_waits_while_pending_until_closed() -> None:
-    """
-    Purpose:
-        Verify followers block while state is pending.
-    Contract:
-        - Follower selector call blocks at ``1``.
-        - Follower resumes after leader close.
-        - Follower receives open state.
-    """
-    switch = CounterSwitch(0)
-    leader_mode = switch.selector()
-    assert leader_mode == 1
 
     done = threading.Event()
     result_holder: dict[str, int] = {}
@@ -73,18 +56,19 @@ def test_counter_switch_selector_waits_while_pending_until_closed() -> None:
     thread = threading.Thread(target=_follower, daemon=True)
     thread.start()
     assert done.wait(timeout=0.05) is False
-    switch.close_selector()
+    assert switch.advance(1) == 2
     assert done.wait(timeout=1.0) is True
     thread.join(timeout=1.0)
     assert result_holder["state"] >= 2
 
 
-def test_counter_switch_selector_timeout_raises_when_stuck_pending() -> None:
+def test_counter_switch_selector_timeout_raises_while_pending() -> None:
     """
     Purpose:
-        Verify selector timeout when leader never closes pending state.
+        Verify pending follower wait can time out.
     Contract:
-        - Pending wait with finite timeout raises ``TimeoutError``.
+        - After leader claim (`1`), follower selector with short timeout
+          raises ``TimeoutError`` when state does not change.
     """
     switch = CounterSwitch(0)
     assert switch.selector() == 1
@@ -92,17 +76,19 @@ def test_counter_switch_selector_timeout_raises_when_stuck_pending() -> None:
         switch.selector(timeout_seconds=0.01)
 
 
-def test_counter_switch_selector_returns_real_state_after_wait_to_idle() -> None:
+def test_counter_switch_selector_returns_idle_after_pending_dropped() -> None:
     """
     Purpose:
-        Verify selector returns actual state, not a synthetic busy code.
+        Verify pending follower observes idle when pending is cleared.
     Contract:
-        - Follower blocks at pending.
-        - External reset to idle wakes follower.
+        - Leader claim sets ``1``.
+        - Follower waits.
+        - ``advance(-1)`` transitions ``1 -> 0`` and releases follower.
         - Follower returns ``0``.
     """
     switch = CounterSwitch(0)
     assert switch.selector() == 1
+
     done = threading.Event()
     result_holder: dict[str, int] = {}
 
@@ -113,122 +99,16 @@ def test_counter_switch_selector_returns_real_state_after_wait_to_idle() -> None
     thread = threading.Thread(target=_follower, daemon=True)
     thread.start()
     assert done.wait(timeout=0.05) is False
-    switch.reset_idle()
+    assert switch.advance(-1) == 0
     assert done.wait(timeout=1.0) is True
     thread.join(timeout=1.0)
     assert result_holder["state"] == 0
 
 
-def test_counter_switch_close_selector_is_noop_when_not_pending() -> None:
-    """
-    Purpose:
-        Verify close operation only acts on pending state.
-    Contract:
-        - Close on idle keeps state idle.
-        - Close on open keeps state open.
-    """
-    idle = CounterSwitch(0)
-    idle.close_selector()
-    assert idle.state == 0
-
-    open_switch = CounterSwitch(2)
-    open_switch.close_selector()
-    assert open_switch.state == 2
-
-
-def test_counter_switch_wait_if_pending_exits_after_close_selector() -> None:
-    """
-    Purpose:
-        Verify explicit pending waiter exits after leader close.
-    Contract:
-        - Waiter blocks while state equals ``1``.
-        - Waiter exits once close promotes to ``2``.
-    """
-    switch = CounterSwitch(0)
-    assert switch.selector() == 1
-    done = threading.Event()
-    result_holder: dict[str, int] = {}
-
-    def _waiter() -> None:
-        result_holder["state"] = switch.wait_if_pending()
-        done.set()
-
-    thread = threading.Thread(target=_waiter, daemon=True)
-    thread.start()
-    assert done.wait(timeout=0.05) is False
-    switch.close_selector()
-    assert done.wait(timeout=1.0) is True
-    thread.join(timeout=1.0)
-    assert result_holder["state"] >= 2
-
-
-def test_counter_switch_wait_until_complete_blocks_from_idle() -> None:
-    """
-    Purpose:
-        Verify complete wait blocks below threshold.
-    Contract:
-        - Idle state blocks completion waiter.
-        - Completion publish releases waiter.
-    """
-    switch = CounterSwitch(0)
-    done = threading.Event()
-
-    def _waiter() -> None:
-        switch.wait_until_complete()
-        done.set()
-
-    thread = threading.Thread(target=_waiter, daemon=True)
-    thread.start()
-    assert done.wait(timeout=0.05) is False
-    switch.set_complete()
-    assert done.wait(timeout=1.0) is True
-    thread.join(timeout=1.0)
-
-
-def test_counter_switch_cleanup_wakes_selector_waiters() -> None:
-    """
-    Purpose:
-        Verify cleanup releases selector waiters blocked on pending state.
-    Contract:
-        - Pending selector follower exits after cleanup.
-        - Cleanup tears down condition reference.
-    """
-    switch = CounterSwitch(0)
-    assert switch.selector() == 1
-    done = threading.Event()
-    result_holder: dict[str, int] = {}
-
-    def _follower() -> None:
-        result_holder["state"] = switch.selector(timeout_seconds=1.0)
-        done.set()
-
-    thread = threading.Thread(target=_follower, daemon=True)
-    thread.start()
-    assert done.wait(timeout=0.05) is False
-    switch.cleanup()
-    assert done.wait(timeout=1.0) is True
-    thread.join(timeout=1.0)
-    assert result_holder["state"] >= 2
-    assert switch._condition is None
-
-
-def test_counter_switch_mutation_after_cleanup_breaks_fast() -> None:
-    """
-    Purpose:
-        Verify non-defensive post-cleanup usage fails quickly.
-    Contract:
-        - Methods using torn condition raise.
-    """
-    switch = CounterSwitch()
-    switch.cleanup()
-    with pytest.raises(TypeError):
-        switch.set_complete()
-
-
 def test_counter_switch_selector_returns_full_state_value() -> None:
     """
     Purpose:
-        Verify selector returns raw state count when above open threshold.
+        Verify selector returns raw state above open threshold.
     Contract:
         - State ``3`` is returned as ``3``.
     """
@@ -236,43 +116,114 @@ def test_counter_switch_selector_returns_full_state_value() -> None:
     assert switch.selector() == 3
 
 
-def test_counter_switch_advance_and_reset_maintain_counter_model() -> None:
+def test_counter_switch_advance_updates_counter_and_bool_view() -> None:
     """
     Purpose:
-        Verify signed adjustments and explicit resets.
+        Verify signed advance updates state and bool view.
     Contract:
-        - Positive advance appends tickets.
-        - Reset replaces ticket cardinality exactly.
+        - Positive delta appends tickets.
+        - Negative delta pops tickets.
+        - Bool is true only for state >= 2.
     """
     switch = CounterSwitch(0)
     assert switch.advance(3) == 3
     assert switch.state == 3
-    switch.reset(1)
+    assert bool(switch) is True
+    assert switch.advance(-2) == 1
     assert switch.state == 1
-    switch.close_selector()
+    assert bool(switch) is False
+    assert switch.advance(-1) == 0
+    assert switch.state == 0
+    assert bool(switch) is False
+
+
+def test_counter_switch_advance_zero_is_noop() -> None:
+    """
+    Purpose:
+        Verify zero delta leaves state unchanged.
+    Contract:
+        - ``advance(0)`` returns current state.
+        - State remains unchanged.
+    """
+    switch = CounterSwitch(2)
+    assert switch.advance(0) == 2
     assert switch.state == 2
 
 
-def test_counter_switch_leader_follower_sequence_under_repeated_cycles() -> None:
+def test_counter_switch_repeated_cycles_with_selector_and_advance() -> None:
     """
     Purpose:
-        Verify repeated leader/follower cycles preserve latch behavior.
+        Verify repeated ``0 -> 1 -> 2 -> 0`` cycles.
     Contract:
-        - Each cycle performs ``0 -> 1 -> 2``.
-        - Selector from follower returns open after close.
+        - Selector claims leader from idle each cycle.
+        - Follower returns open after ``advance(1)``.
+        - ``advance(-2)`` returns to idle.
     """
     switch = CounterSwitch(0)
     for _ in range(5):
         assert switch.selector() == 1
+        done = threading.Event()
         follower_state: list[int] = []
 
         def _follower() -> None:
             follower_state.append(switch.selector(timeout_seconds=1.0))
+            done.set()
 
         thread = threading.Thread(target=_follower, daemon=True)
         thread.start()
-        time.sleep(0.002)
-        switch.close_selector()
+        assert done.wait(timeout=0.05) is False
+        assert switch.advance(1) == 2
+        assert done.wait(timeout=1.0) is True
         thread.join(timeout=1.0)
         assert follower_state[0] >= 2
-        switch.reset_idle()
+        assert switch.advance(-2) == 0
+
+
+def test_counter_switch_cleanup_wakes_pending_selector_waiter() -> None:
+    """
+    Purpose:
+        Verify cleanup releases waiters blocked in selector.
+    Contract:
+        - Pending follower selector exits after cleanup.
+        - Internal references are nulled.
+    """
+    switch = CounterSwitch(0)
+    assert switch.selector() == 1
+
+    done = threading.Event()
+    result_holder: dict[str, object] = {}
+
+    def _follower() -> None:
+        try:
+            result_holder["state"] = switch.selector(timeout_seconds=1.0)
+        except Exception as exc:
+            result_holder["error"] = exc
+        finally:
+            done.set()
+
+    thread = threading.Thread(target=_follower, daemon=True)
+    thread.start()
+    assert done.wait(timeout=0.05) is False
+    switch.cleanup()
+    assert done.wait(timeout=1.0) is True
+    thread.join(timeout=1.0)
+    assert switch._event is None
+    assert switch._tickets is None
+    assert switch._lock is None
+    if "state" in result_holder:
+        assert isinstance(result_holder["state"], int)
+    else:
+        assert isinstance(result_holder.get("error"), TypeError)
+
+
+def test_counter_switch_post_cleanup_usage_breaks_fast() -> None:
+    """
+    Purpose:
+        Verify non-defensive post-cleanup usage fails.
+    Contract:
+        - Calling stateful methods after cleanup raises due torn internals.
+    """
+    switch = CounterSwitch()
+    switch.cleanup()
+    with pytest.raises(TypeError):
+        _ = switch.selector()

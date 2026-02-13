@@ -13,6 +13,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import ISpell, ISpellbook, ISpellSystemStates
+from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
@@ -128,6 +129,7 @@ class Spell(Cleanable, ISpell):
         "_activation_hooks",
         "_creation_context",
         "_creation_context_factory",
+        "_creation_context_switch",
         "_crafter",
         "_dynamic_environment",
         "_hooks_enabled",
@@ -309,6 +311,8 @@ class Spell(Cleanable, ISpell):
         self._creation_context: Optional[Any] = None
         # Spell-owned context factory configured at conduit ownership stamp time.
         self._creation_context_factory: Optional[CreationContextFactory] = None
+        # Spell-owned selector latch for one-leader CreationContext publication.
+        self._creation_context_switch: CounterSwitch = CounterSwitch(state=0)
         # Runtime mode carried from owning conduit for context factory wiring.
         self._dynamic_environment: bool = False
 
@@ -386,6 +390,8 @@ class Spell(Cleanable, ISpell):
             - Best-effort cleanup; exceptions are
               swallowed so callers can continue ownership/dirty transitions.
             - Leaves `_creation_context` as `None`.
+            - Resets `_creation_context_switch` to idle state (`0`) so
+              future `get_or_build` calls can elect a new leader.
         """
         if self._creation_context is not None:
             try:
@@ -393,6 +399,10 @@ class Spell(Cleanable, ISpell):
             except Exception:
                 pass
             self._creation_context = None
+        if self._creation_context_switch.state > 0:
+            self._creation_context_switch.advance(
+                -self._creation_context_switch.state
+            )
 
     def _cleanup_creation_context_factory(self) -> None:
         """
@@ -547,6 +557,11 @@ class Spell(Cleanable, ISpell):
             # Drop references to help GC and enforce immutability after cleanup.
             self._cleanup_creation_context()
             self._cleanup_creation_context_factory()
+            if self._creation_context_switch is not None:
+                try:
+                    self._creation_context_switch.cleanup()
+                except Exception:
+                    pass
             self._owner_creations = None
             self.user_created_object = None
             self._spell_system_states = None
@@ -599,6 +614,7 @@ class Spell(Cleanable, ISpell):
             self._owner_creations = None
             self._creation_context = None
             self._creation_context_factory = None
+            self._creation_context_switch = None
             self._dynamic_environment = None
             self.aetheric_frame = None
             self.spell_index = None

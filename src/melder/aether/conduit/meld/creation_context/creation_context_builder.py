@@ -79,7 +79,6 @@ class CreationContextBuilder(Cleanable):
             RuntimeError:
                 If the spell is not in a runnable state for context creation.
         """
-        self.check_cleaned()
         spell.check_cleaned()
         if not spell.is_existing_creation and spell._crafter is None:
             raise RuntimeError(
@@ -254,9 +253,7 @@ class CreationContextBuilder(Cleanable):
             path_registry = root_blueprint_phase5.path_registry
 
         spellbook = spell._spellbook
-        spell_lookup = None
-        if spellbook is not None:
-            spell_lookup = spellbook._spell_id_pool
+        spell_lookup = spellbook._spell_id_pool
 
         plan_rows = override_execution_ir_payload.get("steps_rows")
         root_spell_id = override_execution_ir_payload.get("root_spell_id")

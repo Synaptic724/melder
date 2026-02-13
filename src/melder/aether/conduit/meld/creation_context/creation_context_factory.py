@@ -72,6 +72,44 @@ class CreationContextFactory(Cleanable):
         )
         self._created_spell_lineage_ids: Set[str] = set()
 
+    def cleanup(self) -> None:
+        """
+        Deterministically release the factory and its builder reference.
+
+        Contract:
+            - Idempotent cleanup.
+            - Best-effort cleanup is forwarded to the owned builder.
+            - Clears builder reference to prevent post-clean usage.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+        try:
+            self._builder.cleanup()
+        except Exception:
+            pass
+        self._builder = None
+        self._dynamic_environment = None
+        self._creation_gate_controller = None
+        self._created_spell_lineage_ids.clear()
+        self._created_spell_lineage_ids = None
+
+    @staticmethod
+    def _cleanup_creation_context(
+            creation_context: Optional[CreationContext],
+    ) -> None:
+        """
+        Best-effort cleanup helper for detached CreationContext instances.
+        """
+        if creation_context is None:
+            return
+        try:
+            creation_context.cleanup()
+        except Exception:
+            pass
+
+
     def _lineage_id_for_spell(self, spell: ISpell) -> str:
         """
         Internal
@@ -174,6 +212,8 @@ class CreationContextFactory(Cleanable):
             - Always builds a fresh context from current spell state.
             - Replaces any existing spell-owned context reference.
             - Best-effort cleans replaced context.
+            - Opens the spell-owned CounterSwitch latch after publish.
+            - Does not use spell lock primitives.
         """
         self.check_cleaned()
         creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
@@ -183,73 +223,74 @@ class CreationContextFactory(Cleanable):
             creation_gate=creation_gate,
             creation_gate_lineage_id=lineage_id,
         )
-        previous_creation_context: Optional[CreationContext] = None
-        publish_error: Optional[Exception] = None
-
-        with spell._lock:
-            try:
-                spell.check_cleaned()
-            except Exception as exc:
-                publish_error = exc
-            else:
-                previous_creation_context = spell._creation_context
-                if built_creation_context.is_cleaned:
-                    publish_error = RuntimeError(
-                        "Cannot publish a cleaned CreationContext to spell cache."
-                    )
-                else:
-                    spell._creation_context = built_creation_context
-
-        if publish_error is not None:
-            self._cleanup_creation_context(built_creation_context)
-            raise publish_error
-
+        previous_creation_context = spell._creation_context
+        spell._creation_context = built_creation_context
+        self._set_creation_context_switch_open(spell)
         self._cleanup_creation_context(previous_creation_context)
         return built_creation_context
 
     def get_or_build_for_spell(self, spell: ISpell) -> CreationContext:
         """
-        Resolve one spell-owned context and build on miss without locks.
+        Resolve one spell-owned context via spell-level CounterSwitch election.
 
         Contract:
-            - Lock-free miss path by design.
-            - Duplicate concurrent builds are accepted if output is equivalent.
+            - Uses `spell._creation_context_switch.selector()` for one-leader
+              get-or-build election.
+            - Leader builds/publishes context and opens latch to state `2`.
+            - Followers block while pending (`state == 1`) and then read cache.
             - Context ownership remains on Spell (`spell._creation_context`).
+            - Does not use `spell._lock` for hot-path access/publication.
+            - Does not inspect `CreationContext.is_cleaned`; switch state is
+              treated as the single source of truth for readiness.
+            - Single selector pass: no retry loops.
+
+        Returns:
+            CreationContext:
+                Spell-owned cached or newly built context.
         """
         self.check_cleaned()
-        current_creation_context = spell._creation_context
-        if (
-                current_creation_context is not None
-                and not current_creation_context.is_cleaned
-        ):
-            return current_creation_context
+        switch_state = spell._creation_context_switch.selector()
+        if switch_state == 1:
+            creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
+            built_creation_context = self._builder.build(
+                spell,
+                dynamic_environment=self._dynamic_environment,
+                creation_gate=creation_gate,
+                creation_gate_lineage_id=lineage_id,
+            )
+            spell._creation_context = built_creation_context
+            self._set_creation_context_switch_open(spell)
+            return built_creation_context
+        return spell._creation_context
 
-        creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
-        built_creation_context = self._builder.build(
-            spell,
-            dynamic_environment=self._dynamic_environment,
-            creation_gate=creation_gate,
-            creation_gate_lineage_id=lineage_id,
-        )
+    @staticmethod
+    def _set_creation_context_switch_open(spell: ISpell) -> None:
+        """
+        Internal
 
-        with spell._lock:
-            current_creation_context = spell._creation_context
-            if (
-                    current_creation_context is None
-                    or current_creation_context.is_cleaned
-            ):
-                if built_creation_context.is_cleaned:
-                    self._cleanup_creation_context(built_creation_context)
-                    raise RuntimeError(
-                        "Cannot publish a cleaned CreationContext to spell cache."
-                    )
-                spell._creation_context = built_creation_context
-                return built_creation_context
+        Force a spell-owned CounterSwitch into open latch state (`2`).
 
-        self._cleanup_creation_context(built_creation_context)
-        if current_creation_context is None:
-            raise RuntimeError("Failed to publish CreationContext for spell.")
-        return current_creation_context
+        Purpose:
+            Normalize switch state after successful context publication so
+            readers can take the hot path without waiting.
+
+        Contract:
+            - `state < 2` is advanced upward to `2`.
+            - `state > 2` is reduced down to `2`.
+            - Uses only CounterSwitch public API (`state`, `advance`).
+
+        Args:
+            spell:
+                Spell whose switch should be normalized to open state.
+
+        Returns:
+            None.
+        """
+        current_state = spell._creation_context_switch.state
+        if current_state < 2:
+            spell._creation_context_switch.advance(2 - current_state)
+        elif current_state > 2:
+            spell._creation_context_switch.advance(-(current_state - 2))
 
     def rebuild_for_spell(self, spell: ISpell) -> CreationContext:
         """
@@ -261,43 +302,3 @@ class CreationContextFactory(Cleanable):
         """
         self.check_cleaned()
         return self.build_and_bind_for_spell(spell)
-
-    def cleanup(self) -> None:
-        """
-        Deterministically release the factory and its builder reference.
-
-        Contract:
-            - Idempotent cleanup.
-            - Best-effort cleanup is forwarded to the owned builder.
-            - Clears builder reference to prevent post-clean usage.
-        """
-        if self._cleaned:
-            return
-        self._cleaned = True
-
-        builder = self._builder
-        if builder is not None:
-            try:
-                builder.cleanup()
-            except Exception:
-                pass
-        self._builder = None
-        self._dynamic_environment = None
-        self._creation_gate_controller = None
-        created_spell_lineage_ids = self._created_spell_lineage_ids
-        created_spell_lineage_ids.clear()
-        self._created_spell_lineage_ids = None
-
-    @staticmethod
-    def _cleanup_creation_context(
-            creation_context: Optional[CreationContext],
-    ) -> None:
-        """
-        Best-effort cleanup helper for detached CreationContext instances.
-        """
-        if creation_context is None:
-            return
-        try:
-            creation_context.cleanup()
-        except Exception:
-            pass

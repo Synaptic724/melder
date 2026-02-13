@@ -7,57 +7,47 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 class CounterSwitch(Cleanable):
     """
-    Deque-backed counter latch with event-gated selector wait behavior.
+    Deque-backed selector latch with minimal leader election.
 
     Purpose:
-        Provide a low-overhead primitive where deque ticket cardinality is the
-        state value and an event controls when blocked selector callers are
-        released.
+        Provide one fast coordination primitive where deque cardinality is the
+        state and leader election is performed only by ``selector()``.
 
-    Counter model:
-        - ``0``: idle; no owner, no completion.
-        - ``1``: pending; one owner is building.
-        - ``>=2``: complete/open latch; all entrants pass fast.
+    State model:
+        - ``0``: idle
+        - ``1``: pending (leader claimed)
+        - ``>=2``: open/ready
 
-    Selector contract:
-        - ``selector()`` returns immediately when state is already open
-          (``>=2``).
-        - For state below open threshold (``0`` or ``1``), selector waits on
-          the internal event.
-        - Once the event is signalled, selector returns current ticket count.
-        - Selector timeout raises ``TimeoutError``.
+    Selector model:
+        - ``selector()`` returns immediately for ``>=2``.
+        - For ``0``, one caller claims leader by appending one ticket.
+          This is the only place a lock is used.
+        - For ``1``, followers wait on the event until signalled.
 
-    Ownership model:
-        - Ticket mutation is explicit and externalized.
-        - ``push_ticket()`` is owned by the leader path and intentionally does
-          not perform wake signalling by itself.
+    Advance model:
+        - ``advance(delta)`` mutates raw counter tickets.
+        - Positive deltas append; negative deltas pop.
+        - Event is cleared only for state ``1`` and set for all other states.
 
     Design intent:
-        - This primitive is intentionally non-defensive for speed.
-        - It does not call ``check_cleaned()``.
-        - It does not guard cleanup idempotence.
+        - Minimal API surface for hot paths.
+        - Non-defensive by design.
     """
 
-    __slots__ = ("_event", "_tickets")
+    __slots__ = ("_lock", "_event", "_tickets")
 
     def __init__(self, state: int = 2) -> None:
         """
         Public API
 
-        Initialize counter state from a starting ticket count.
+        Initialize counter state from ticket cardinality.
 
         Args:
             state:
-                Initial ticket count encoded into deque cardinality. The
-                default ``2`` starts this switch in open-latch mode.
-                Event state mapping at construction:
-                - ``state == 1``: event is cleared (pending gate).
-                - otherwise: event is set (open gate).
-
-        Returns:
-            None.
+                Initial ticket count. Default ``2`` starts open.
         """
         super().__init__()
+        self._lock: Optional[threading.Lock] = threading.Lock()
         self._event: Optional[threading.Event] = threading.Event()
         self._tickets: Optional[Deque[None]] = deque()
         if state > 0:
@@ -71,35 +61,20 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Wake waiters and break this primitive.
-
-        Purpose:
-            Release currently waiting selector callers, then invalidate this
-            primitive.
-
-        Contract:
-            - Clears all tickets.
-            - Sets event so current waiters can leave ``Event.wait()``.
-            - Marks cleaned and nulls event reference.
-            - No guard checks are performed.
-
-        Returns:
-            None.
+        Tear down this primitive and release waiters.
         """
         self._tickets.clear()
         self._event.set()
         self._cleaned = True
         self._event = None
+        self._tickets = None
+        self._lock = None
 
     def __len__(self) -> int:
         """
         Public API
 
-        Return current ticket count.
-
-        Returns:
-            int:
-                Current deque cardinality.
+        Return current state value.
         """
         return len(self._tickets)
 
@@ -107,90 +82,78 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Return True when counter has reached complete/open threshold.
-
-        Returns:
-            bool:
-                True when ticket count is two or greater.
+        Return True when state is open.
         """
-        return self.state >= 2
+        return len(self._tickets) >= 2
 
     @property
     def state(self) -> int:
         """
         Public API
 
-        Expose current counter value derived from ticket count.
-
-        Returns:
-            int:
-                Current ticket count.
+        Return raw state value.
         """
         return len(self._tickets)
 
-    def reset(self) -> None:
+    def advance(self, delta: int) -> int:
         """
         Public API
 
-        Reset this primitive to idle-and-blocking state.
+        Apply signed state delta.
 
-        Contract:
-            - Clears all tickets (state becomes ``0``).
-            - Clears event so selector callers block until signalled.
-
-        Returns:
-            None.
-        """
-        self._tickets.clear()
-        self._event.clear()
-
-    def push_ticket(self) -> None:
-        """
-        Public API
-
-        Append one leader-owned ticket.
-
-        Contract:
-            - Appends one ticket to the deque.
-            - Performs no event signalling.
-            - Does not guard against overflow or ownership misuse.
-            - Intended to be called by the leader path only.
+        Args:
+            delta:
+                Positive appends tickets, negative pops tickets.
 
         Returns:
-            None.
+            int:
+                Resulting state.
         """
-        self._tickets.append(None)
-
+        if delta == 0:
+            return len(self._tickets)
+        if delta > 0:
+            self._tickets.extend([None] * delta)
+        else:
+            for _ in range(-delta):
+                self._tickets.pop()
+        count = len(self._tickets)
+        if count == 1:
+            self._event.clear()
+        else:
+            self._event.set()
+        return count
 
     def selector(self, timeout_seconds: float | None = None) -> int:
         """
         Public API
 
-        Enter selector admission and return current state.
-
-        Contract:
-            - Fast path:
-                - Returns immediately when state is already open ``>=2``.
-            - Wait path:
-                - For state ``0`` or ``1``, waits on the internal event.
-            - Returns actual state value after admission/wait logic.
+        Enter selector and return current state.
 
         Args:
             timeout_seconds:
-                Optional timeout passed directly to ``Event.wait``.
+                Optional follower wait timeout.
 
         Returns:
             int:
-                Current state after selector admission:
-                ``0`` idle, ``1`` leader-claimed pending, ``>=2`` open latch.
+                Current state after admission.
 
         Raises:
             TimeoutError:
-                If timeout expires before the event is signalled.
+                If waiting at pending state times out.
         """
         count = len(self._tickets)
         if count >= 2:
             return count
+
+        if count == 0:
+            with self._lock:
+                count = len(self._tickets)
+                if count >= 2:
+                    return count
+                if count == 0:
+                    self._tickets.append(None)
+                    self._event.clear()
+                    return 1
 
         completed = self._event.wait(timeout=timeout_seconds)
         if not completed:

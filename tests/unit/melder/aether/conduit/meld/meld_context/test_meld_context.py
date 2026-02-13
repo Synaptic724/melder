@@ -12,6 +12,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
     CreationContextFactory,
 )
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
@@ -101,7 +102,14 @@ class _SpellStub:
             self._crafter = _CrafterStub()
         else:
             self._crafter = crafter
-        self._creation_context = creation_context
+        if creation_context is not None and creation_context.is_cleaned:
+            self._creation_context = None
+        else:
+            self._creation_context = creation_context
+        if self._creation_context is None:
+            self._creation_context_switch = CounterSwitch(state=0)
+        else:
+            self._creation_context_switch = CounterSwitch(state=2)
         self._lock = RLock()
         self._cleaned = False
 

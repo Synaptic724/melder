@@ -640,61 +640,67 @@ class _TicketFlagPrimitive:
         return count
 
 
-class _CounterSwitchSelectorPrimitive:
+class _CounterSwitchStatePrimitive:
     """
-    Adapter over ``CounterSwitch`` selector semantics.
+    Adapter over ``CounterSwitch`` state semantics.
 
     Purpose:
-        Benchmark the selector fast-latch path specifically when complete state
-        is represented by ticket cardinality ``>=2``.
+        Benchmark raw state checks (``== 2``) against bool/lock/rlock/deque
+        strategies.
     """
 
     __slots__ = ("_switch",)
 
     def __init__(self) -> None:
         """
-        Initialize with default open latch state.
+        Initialize in closed state.
 
         Contract:
-            - ``CounterSwitch`` defaults to state ``2``.
+            - Starts at state ``0`` (closed).
         """
-        self._switch = CounterSwitch()
+        self._switch = CounterSwitch(0)
 
-    def is_open(self) -> bool:
+    def is_open(self) -> int:
         """
-        Check latch state through selector API.
+        Return raw state.
 
         Returns:
-            bool:
-                ``True`` when selector returns open state ``>=2``.
+            int:
+                Current counter state.
         """
-        return self._switch.selector() >= 2
+        return self._switch.state
 
     def set_open(self) -> None:
         """
-        Force complete/open state.
+        Force state to open threshold ``2``.
 
         Returns:
             None.
         """
-        self._switch.set_complete()
+        switch = self._switch
+        count = switch.state
+        if count < 2:
+            switch.advance(2 - count)
 
     def set_closed(self) -> None:
         """
-        Force pending/closed state.
+        Force state to closed ``0``.
 
         Returns:
             None.
         """
-        self._switch.set_pending()
+        switch = self._switch
+        count = switch.state
+        if count > 0:
+            switch.advance(-count)
 
     def run_access(self, iterations: int) -> int:
         """
-        Execute selector reads against open latch state.
+        Execute bool reads against closed state.
 
         Contract:
-            - State remains open for the full loop.
-            - Count increments on selector open state ``>=2``.
+            - State remains closed for the full loop.
+            - Count increments on non-open state observations.
 
         Args:
             iterations:
@@ -702,23 +708,21 @@ class _CounterSwitchSelectorPrimitive:
 
         Returns:
             int:
-                Count of complete selector results.
+                Count of closed observations.
         """
         count = 0
-        selector = self._switch.selector
+        state = self.is_open
         for _ in range(iterations):
-            if selector() >= 2:
+            if state() != 2:
                 count += 1
         return count
 
     def run_update(self, iterations: int) -> int:
         """
-        Execute pending->complete latch cycles.
+        Execute closed->open->closed cycles.
 
         Contract:
-            - Each iteration starts from open latch state.
-            - Transition goes ``2 -> 1 -> 2``.
-            - Uses direct methods only (no context manager).
+            - Each iteration performs ``0 -> 2 -> 0``.
 
         Args:
             iterations:
@@ -729,24 +733,21 @@ class _CounterSwitchSelectorPrimitive:
                 Count of successful publish cycles.
         """
         count = 0
-        switch = self._switch
-        set_pending = switch.set_pending
-        close_selector = switch.close_selector
+        set_open = self.set_open
+        set_closed = self.set_closed
         for _ in range(iterations):
-            set_pending()
-            close_selector()
+            set_open()
+            set_closed()
             count += 1
         return count
 
     def run_change(self, iterations: int) -> int:
         """
-        Execute selector-verified completion cycles.
+        Execute change cycles with bool open check.
 
         Contract:
-            - Each iteration starts from open latch state.
-            - Transition goes ``2 -> 1 -> 2``.
-            - Selector validates complete mode after publication.
-            - Second selector call validates complete mode ``2``.
+            - Each iteration performs ``0 -> 2 -> 0``.
+            - State check validates open state after open transition.
 
         Args:
             iterations:
@@ -757,15 +758,14 @@ class _CounterSwitchSelectorPrimitive:
                 Count of successful complete validations.
         """
         count = 0
-        switch = self._switch
-        selector = switch.selector
-        set_pending = switch.set_pending
-        close_selector = switch.close_selector
+        state = self.is_open
+        set_open = self.set_open
+        set_closed = self.set_closed
         for _ in range(iterations):
-            set_pending()
-            close_selector()
-            if selector() >= 2:
+            set_open()
+            if state() == 2:
                 count += 1
+            set_closed()
         return count
 
 
@@ -1120,7 +1120,7 @@ def test_fast_switch_three_mode_perf_single_thread() -> None:
 
     Contract:
         - Compares ``bool_only``, ``lock_bool``, ``rlock_bool``,
-          ``deque_flag``, ``fast_switch``, and ``counter_switch_selector``.
+          ``deque_flag``, ``fast_switch``, and ``counter_switch_state``.
         - Runs access/update/change workloads for each strategy.
         - Uses 1,000,000 iterations and 5 rounds.
         - Prints ranked totals and per-op timings.
@@ -1135,7 +1135,7 @@ def test_fast_switch_three_mode_perf_single_thread() -> None:
         ("rlock_bool", _RLockBoolPrimitive),
         ("deque_flag", _TicketFlagPrimitive),
         ("fast_switch", _FastSwitchPrimitive),
-        ("counter_switch_selector", _CounterSwitchSelectorPrimitive),
+        ("counter_switch_state", _CounterSwitchStatePrimitive),
     ]
 
     aggregates: List[_AggregateStats] = []
@@ -1187,7 +1187,7 @@ def test_fast_switch_three_mode_perf_threaded_orchestrated() -> None:
 
     Contract:
         - Compares ``bool_only``, ``lock_bool``, ``rlock_bool``,
-          ``deque_flag``, ``fast_switch``, and ``counter_switch_selector``.
+          ``deque_flag``, ``fast_switch``, and ``counter_switch_state``.
         - Uses thread counts ``2, 3, 4, 5``.
         - Uses 3 rounds per strategy/thread pair.
         - Uses deterministic checksum validation for every round.
@@ -1205,7 +1205,7 @@ def test_fast_switch_three_mode_perf_threaded_orchestrated() -> None:
         ("rlock_bool", _RLockBoolPrimitive),
         ("deque_flag", _TicketFlagPrimitive),
         ("fast_switch", _FastSwitchPrimitive),
-        ("counter_switch_selector", _CounterSwitchSelectorPrimitive),
+        ("counter_switch_state", _CounterSwitchStatePrimitive),
     ]
 
     print("")
@@ -1250,3 +1250,45 @@ def test_fast_switch_three_mode_perf_threaded_orchestrated() -> None:
 
     if not measurements:
         raise AssertionError("Expected threaded orchestrated benchmark measurements.")
+
+
+def test_counter_switch_state_check_only_perf() -> None:
+    """
+    Benchmark pure ``CounterSwitch.state == 2`` hot-path cost.
+
+    Contract:
+        - Uses one ``CounterSwitch`` fixed at open state ``2``.
+        - Performs state checks only (no updates, no orchestrator).
+        - Prints average ns/op for direct state checks.
+    """
+    iterations = 5_000_000
+    rounds = 5
+    switch = CounterSwitch(2)
+
+    def _state_check_loop(loop_iterations: int) -> int:
+        count = 0
+        local_switch = switch
+        for _ in range(loop_iterations):
+            if local_switch.state == 2:
+                count += 1
+        return count
+
+    rows: List[tuple[int, int]] = [
+        _measure_ns(_state_check_loop, iterations)
+        for _ in range(rounds)
+    ]
+
+    for _elapsed_ns, checksum in rows:
+        if checksum != iterations:
+            raise AssertionError(
+                f"counter_switch_state_only checksum mismatch: {checksum}"
+            )
+
+    avg_elapsed_ns = sum(elapsed for elapsed, _ in rows) / rounds
+    avg_op_ns = avg_elapsed_ns / iterations
+    print("")
+    print(
+        "counter_switch_state_only_perf: "
+        f"iterations={iterations}, rounds={rounds}, "
+        f"avg_elapsed_ns={avg_elapsed_ns:.0f}, avg_op_ns={avg_op_ns:.2f}/op"
+    )
