@@ -308,7 +308,7 @@ class Meld(Cleanable, IMeld):
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
             try:
-                hash(cache_key)
+                target_spell = input_resolution_cache.get(cache_key)
             except TypeError:
                 cache_key = (
                     spell_name,
@@ -316,7 +316,7 @@ class Meld(Cleanable, IMeld):
                     id(spellframe),
                     binding_name,
                 )
-            target_spell = input_resolution_cache.get(cache_key)
+                target_spell = input_resolution_cache.get(cache_key)
             if target_spell is None:
                 target_spell = self._resolve_spell(
                     spell=spell,

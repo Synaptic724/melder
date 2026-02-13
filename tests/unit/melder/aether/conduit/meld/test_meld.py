@@ -755,6 +755,91 @@ def test_meld_no_hooks_uses_cached_context_overrides_door() -> None:
     assert context.last_overrides == {"__args__": [1, 2]}
 
 
+def test_meld_non_string_cache_hit_reuses_input_resolution_entry() -> None:
+    """
+    Verify non-string meld calls reuse the input-resolution cache entry.
+
+    Contract:
+        - First call resolves via `_resolve_spell`.
+        - Second call with the same non-string identity key reuses cache.
+        - `_resolve_spell` is called exactly once.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    meld._spellbook._spellbook_validation_required = False
+
+    context = _CreationContextStub(no_hooks_no_overrides_result="instance")
+    target_spell = _SpellStub(
+        spell_id="spell-cache-hit",
+        owner_creations=creations,
+        creation_context=context,
+    )
+    target_spell._hooks_enabled = False
+
+    spell_token = object()
+    meld._resolve_spell = MagicMock(return_value=target_spell)
+
+    first = meld.meld(spell=spell_token, spellframe="frame", binding_name="primary")
+    second = meld.meld(spell=spell_token, spellframe="frame", binding_name="primary")
+
+    assert first == "instance"
+    assert second == "instance"
+    meld._resolve_spell.assert_called_once_with(
+        spell=spell_token,
+        spell_name=None,
+        spellframe="frame",
+        binding_name="primary",
+    )
+    assert context.calls == ["no_hooks_no_overrides", "no_hooks_no_overrides"]
+
+
+def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key() -> None:
+    """
+    Verify unhashable non-string inputs use the id-based fallback cache key.
+
+    Contract:
+        - Unhashable inputs do not raise during cache lookup.
+        - Cache stores and reuses the id-based fallback key.
+        - `_resolve_spell` is called once across two identical calls.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    meld._spellbook._spellbook_validation_required = False
+
+    context = _CreationContextStub(no_hooks_no_overrides_result="instance")
+    target_spell = _SpellStub(
+        spell_id="spell-unhashable",
+        owner_creations=creations,
+        creation_context=context,
+    )
+    target_spell._hooks_enabled = False
+
+    class _Unhashable:
+        """
+        Minimal unhashable object for cache-key fallback tests.
+        """
+
+        __hash__ = None
+
+    unhashable_spell = _Unhashable()
+    meld._resolve_spell = MagicMock(return_value=target_spell)
+
+    first = meld.meld(spell=unhashable_spell)
+    fallback_key = (None, id(unhashable_spell), id(None), None)
+    assert first == "instance"
+    assert fallback_key in meld._input_resolution_cache
+
+    second = meld.meld(spell=unhashable_spell)
+    assert second == "instance"
+    meld._resolve_spell.assert_called_once_with(
+        spell=unhashable_spell,
+        spell_name=None,
+        spellframe=None,
+        binding_name=None,
+    )
+    assert context.calls == ["no_hooks_no_overrides", "no_hooks_no_overrides"]
+
+
 def test_meld_hooks_lane_runs_activation_on_created_instance() -> None:
     """
     Verify hooks lane executes activation hooks only when context reports created.
