@@ -12,6 +12,9 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
     CreationContextFactory,
 )
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.synchronization.creation_gate_controller import (
+    CreationGateController,
+)
 
 
 class _CrafterStub:
@@ -82,7 +85,10 @@ class _SpellStub:
         """
         self.spell_id = spell_id
         self.spell_name = spell_id
-        self.spell_index = SimpleNamespace(current=spell_id)
+        self.spell_index = SimpleNamespace(
+            current=spell_id,
+            id=f"lineage-{spell_id}",
+        )
         self.existence = existence
         self.is_existing_creation = is_existing_creation
         self.user_created_object = object() if is_existing_creation else None
@@ -116,7 +122,9 @@ def test_build_for_spell_returns_creation_context_instance() -> None:
         - The returned context is bound to the same spell.
     """
     spell = _SpellStub()
-    factory = CreationContextFactory()
+    factory = CreationContextFactory(
+        creation_gate_controller=CreationGateController(),
+    )
     context = factory.build_for_spell(spell)
     try:
         assert isinstance(context, CreationContext)
@@ -136,7 +144,9 @@ def test_get_or_build_for_spell_publishes_and_reuses_context() -> None:
         - Second call returns the same published context.
     """
     spell = _SpellStub()
-    factory = CreationContextFactory()
+    factory = CreationContextFactory(
+        creation_gate_controller=CreationGateController(),
+    )
     context_a = factory.get_or_build_for_spell(spell)
     context_b = factory.get_or_build_for_spell(spell)
     try:
@@ -157,7 +167,9 @@ def test_get_or_build_for_spell_replaces_cleaned_cache_entry() -> None:
     """
     stale_context = _CachedContextStub(cleaned=True)
     spell = _SpellStub(creation_context=stale_context)
-    factory = CreationContextFactory()
+    factory = CreationContextFactory(
+        creation_gate_controller=CreationGateController(),
+    )
     new_context = factory.get_or_build_for_spell(spell)
     try:
         assert new_context is not stale_context
@@ -177,7 +189,9 @@ def test_build_and_bind_for_spell_replaces_previous_context() -> None:
     """
     previous_context = _CachedContextStub(cleaned=False)
     spell = _SpellStub(creation_context=previous_context)
-    factory = CreationContextFactory()
+    factory = CreationContextFactory(
+        creation_gate_controller=CreationGateController(),
+    )
     new_context = factory.build_and_bind_for_spell(spell)
     try:
         assert previous_context.cleanup_calls == 1

@@ -15,6 +15,9 @@ from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
+from melder.utilities.synchronization.creation_gate_controller import (
+    CreationGateController,
+)
 import melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership as transfer_module
 
 SOURCE_ID = "source"
@@ -741,6 +744,7 @@ class FakeConduit:
         self._spellbook = spellbook
         self._creations = creations
         self._conduit_ward = ward
+        self._creation_gate_controller = CreationGateController()
         self._lock = threading.RLock()
 
     def get_spell_by_id(self, spell_id: str, frame_name: str) -> Optional[Any]:
@@ -876,6 +880,9 @@ def build_spell(
         conduit_id: str,
         conduit_name: Optional[str] = None,
         creations: Any = None,
+        *,
+        dynamic_environment: bool = False,
+        creation_gate_controller: Optional[CreationGateController] = None,
     ) -> None:
         """
         Record conduit ownership for the test spell.
@@ -884,10 +891,14 @@ def build_spell(
             conduit_id: Conduit id that owns the spell.
             conduit_name: Optional conduit name.
             creations: Optional creations container for ownership.
+            dynamic_environment: Dynamic-mode flag for ownership stamp.
+            creation_gate_controller: Creation gate controller passed by caller.
         """
         spell._owner_conduit_id = conduit_id
         spell._owner_conduit_name = conduit_name
         spell._owner_creations = creations
+        spell._dynamic_environment = dynamic_environment
+        spell._creation_gate_controller = creation_gate_controller
         spell.owned_spell = True
 
     spell._add_owned_conduit = _add_owned_conduit

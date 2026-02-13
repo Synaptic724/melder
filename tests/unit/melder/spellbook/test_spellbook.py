@@ -16,6 +16,9 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.utilities.synchronization.creation_gate_controller import (
+    CreationGateController,
+)
 
 
 # -------------------------
@@ -217,20 +220,36 @@ class DummySpell:
         """
         return ("change_control", self.spell_id, conduit_id, cancel_event)
 
-    def _add_owned_conduit(self, cid, cname=None, creations=None):
+    def _add_owned_conduit(
+            self,
+            cid,
+            cname=None,
+            creations=None,
+            *,
+            dynamic_environment=False,
+            creation_gate_controller=None,
+    ):
         """
         Purpose:
             Capture conduit ownership metadata for assertions.
         Contract:
-            Stores the conduit id, name, and creations on the stub.
+            Stores ownership metadata on the stub.
         Args:
             cid: Conduit identifier.
             cname: Optional conduit name.
             creations: Optional creation map.
+            dynamic_environment: Dynamic-mode flag for the owning conduit.
+            creation_gate_controller: Gate controller passed by caller.
         Returns:
             None.
         """
-        self._owner = (cid, cname, creations)
+        self._owner = (
+            cid,
+            cname,
+            creations,
+            dynamic_environment,
+            creation_gate_controller,
+        )
 
     @property
     def is_broken(self):
@@ -330,6 +349,8 @@ class DummyConduit:
         self._id = cid
         self._name = name
         self._creations = {}
+        self.__dynamic_environment__ = False
+        self._creation_gate_controller = CreationGateController()
         self.registered = []
 
     def _register_to_creations(self, spell, obj):
@@ -3187,6 +3208,7 @@ def test_create_link_contract_initializes_maps():
     sb._lookup_contracted_spells = {}
     sb._contracted_versions = {}
     sb._contracted_spells_by_id = {}
+    sb._conduit = DummyConduit(cid="borrower", name="borrower")
     sb._create_link_contract("cid")
     assert "cid" in sb._contracted_spells
     assert "cid" in sb._lookup_contracted_spells
@@ -3267,6 +3289,7 @@ def test_spell_id_pool_matches_owned_and_contracted_union() -> None:
     owned_spell = DummySpell(spell_id="owned-id")
     contracted_spell = DummySpell(spell_id="contracted-id")
     sb._register_owned_spell_id("owned-id", owned_spell)
+    sb._conduit = DummyConduit(cid="borrower", name="borrower")
     sb._create_link_contract("peer")
     sb._register_contracted_spell_id("peer", "contracted-id", contracted_spell)
 
@@ -3344,6 +3367,7 @@ def test_register_contracted_spell_id_adds_mapping():
         AssertionError: If the contracted id map is missing the entry.
     """
     sb = Spellbook()
+    sb._conduit = DummyConduit(cid="borrower", name="borrower")
     sb._create_link_contract("peer")
     spell = DummySpell(spell_id="contracted-id")
     sb._register_contracted_spell_id("peer", "contracted-id", spell)
@@ -3362,6 +3386,7 @@ def test_update_contracted_spell_id_updates_map_and_versions():
         AssertionError: If the map or version cache is not updated.
     """
     sb = Spellbook()
+    sb._conduit = DummyConduit(cid="borrower", name="borrower")
     sb._create_link_contract("peer")
     spell = DummySpell(spell_id="old-id")
     sb._register_contracted_spell_id("peer", "old-id", spell)
@@ -3384,6 +3409,7 @@ def test_unregister_contracted_spell_id_removes_mapping():
         AssertionError: If the id map entry remains after removal.
     """
     sb = Spellbook()
+    sb._conduit = DummyConduit(cid="borrower", name="borrower")
     sb._create_link_contract("peer")
     spell = DummySpell(spell_id="contracted-id")
     sb._register_contracted_spell_id("peer", "contracted-id", spell)

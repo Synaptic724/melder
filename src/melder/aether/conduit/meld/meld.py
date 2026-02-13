@@ -2,9 +2,6 @@ import inspect
 from threading import RLock
 from typing import Optional, Dict, Any, Callable, List, Tuple, Sequence
 
-from melder.aether.conduit.meld.creation_context.creation_context_factory import (
-    CreationContextFactory,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -130,13 +127,6 @@ class Meld(Cleanable, IMeld):
         self._spell_id_resolution_cache: Dict[str, ISpell] = {}
         self._max_resolution_cache_size: int = 2048
 
-        # Builder-backed factory used for spell-owned CreationContext builds.
-        self._creation_context_factory: CreationContextFactory = (
-            CreationContextFactory(
-                dynamic_environment=self._dynamic_environment,
-            )
-        )
-
         # Optional hook map pulled from Configuration (via Conduit).
         # This is stored by reference when provided.
         self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = (
@@ -189,13 +179,6 @@ class Meld(Cleanable, IMeld):
             self._conduit_id = None
             self._resolution_conduit_id = None
             self._dynamic_environment = None
-            creation_context_factory = self._creation_context_factory
-            if creation_context_factory is not None:
-                try:
-                    creation_context_factory.cleanup()
-                except Exception:
-                    pass
-            self._creation_context_factory = None
             self._meld_hooks = None
             self._input_resolution_cache = None
             self._spell_id_resolution_cache = None
@@ -210,7 +193,6 @@ class Meld(Cleanable, IMeld):
         Returns:
             Meld: The instance itself.
         """
-        self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -225,7 +207,8 @@ class Meld(Cleanable, IMeld):
         Returns:
             None.
         """
-        self._lock.release()
+        pass
+
     # endregion Context Manager
     def meld(
             self,
@@ -353,10 +336,7 @@ class Meld(Cleanable, IMeld):
             self._ensure_lineage_resolvable(target_spell)
 
         if not (self._meld_hooks or target_spell._hooks_enabled):
-            creation_context_factory = self._creation_context_factory
-            creation_context = creation_context_factory.get_or_build_for_spell(
-                target_spell
-                )
+            creation_context = target_spell._get_or_build_creation_context()
             if override_map is None:
                 execute_no_hooks_no_overrides_compiled = (
                     creation_context._execute_no_hooks_no_overrides_compiled
@@ -380,10 +360,7 @@ class Meld(Cleanable, IMeld):
 
             creation_context = target_spell._creation_context
             if creation_context is None or creation_context._cleaned:
-                creation_context_factory = self._creation_context_factory
-                creation_context = creation_context_factory.get_or_build_for_spell(
-                    target_spell
-                )
+                creation_context = target_spell._get_or_build_creation_context()
             if override_map is None:
                 execute_hooks_no_overrides_compiled = (
                     creation_context._execute_hooks_no_overrides_compiled

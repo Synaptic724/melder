@@ -434,6 +434,8 @@ class ISpell(ICleanable, Protocol):
     resolution_profile: Optional['SpellResolutionProfile']
     _crafter: Optional[Any] # 'SpellCrafter'
     _creation_context: Optional[Any]
+    _creation_context_factory: Optional[Any]
+    _dynamic_environment: bool
 
     # Phase 11 execution-plan metrics (populated during conjure)
     execution_plan_step_count: Optional[int]
@@ -529,6 +531,15 @@ class ISpell(ICleanable, Protocol):
 
         This is used when spell ownership or structural runtime artifacts
         change and the context must be rebuilt on next meld execution.
+        """
+        ...
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Internal
+
+        Resolve or build the spell-owned CreationContext through the spell's
+        configured CreationContextFactory.
         """
         ...
 
@@ -660,6 +671,9 @@ class ISpell(ICleanable, Protocol):
             conduit_id: str,
             conduit_name: Optional[str] = None,
             creations: Any = None,
+            *,
+            dynamic_environment: bool,
+            creation_gate_controller: 'CreationGateController',
     ) -> None:
         """
         Internal
@@ -669,6 +683,7 @@ class ISpell(ICleanable, Protocol):
         This is used to:
         - Attach the spell to a specific Conduit identity (for logging, diagnostics, and scoping).
         - Provide a handle to the Conduit's creation scope (e.g., for singletons tied to that conduit).
+        - Reconfigure spell-owned CreationContextFactory ownership wiring.
 
         Args:
             conduit_id:
@@ -677,6 +692,10 @@ class ISpell(ICleanable, Protocol):
                 Human-readable name of the owning conduit, if available.
             creations:
                 Conduit-level creations container used for managing shared instances.
+            dynamic_environment:
+                True when the owning conduit runs in dynamic mode.
+            creation_gate_controller:
+                Frame-owned CreationGateController used by CreationContextFactory.
         """
         ...
 

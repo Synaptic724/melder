@@ -8,6 +8,9 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell import Spell
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.synchronization.creation_gate_controller import (
+    CreationGateController,
+)
 
 
 class _SpellbookStub:
@@ -698,7 +701,13 @@ def test_existing_creation_object_presence(existing_obj, expected):
 def test_owner_conduit_info_before_and_after_assignment():
     spell = _make_spell()
     assert spell.owner_conduit_info == (None, None)
-    spell._add_owned_conduit("conduit-1", "c1", creations="creations")
+    spell._add_owned_conduit(
+        "conduit-1",
+        "c1",
+        creations="creations",
+        dynamic_environment=False,
+        creation_gate_controller=CreationGateController(),
+    )
     assert spell.owner_conduit_info == ("conduit-1", "c1")
     assert spell.owned_spell is True
 
@@ -1000,7 +1009,13 @@ def test_cleanup_swallows_child_cleanup_errors():
 
 def test_owned_conduit_marks_owned_spell_true():
     spell = _make_spell()
-    spell._add_owned_conduit("cid", "cname", creations="creations")
+    spell._add_owned_conduit(
+        "cid",
+        "cname",
+        creations="creations",
+        dynamic_environment=False,
+        creation_gate_controller=CreationGateController(),
+    )
     assert spell.owned_spell is True
     assert spell._owner_creations == "creations"
 

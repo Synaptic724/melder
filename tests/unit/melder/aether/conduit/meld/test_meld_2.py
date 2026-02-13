@@ -363,19 +363,16 @@ def test_resolve_spell_by_lookup_key_finds_contracted_spell() -> None:
     assert meld._resolve_spell_by_lookup_key(lookup_key) is spell
 
 
-def test_meld_initializes_creation_context_factory() -> None:
+def test_meld_does_not_own_creation_context_factory() -> None:
     """
-    Verify Meld initializes an owned creation-context factory.
+    Verify Meld no longer owns a creation-context factory.
 
     Contract:
-        - `_creation_context_factory` is present after initialization.
-        - Factory exposes build/get-or-build API.
+        - Meld instance has no `_creation_context_factory` attribute.
+        - CreationContextFactory ownership is on Spell.
     """
     meld = _make_meld(creations=object())
-    factory = meld._creation_context_factory
-    assert factory is not None
-    assert hasattr(factory, "build_for_spell")
-    assert hasattr(factory, "get_or_build_for_spell")
+    assert hasattr(meld, "_creation_context_factory") is False
 
 
 def test_execute_hooks_runs_all_hooks() -> None:

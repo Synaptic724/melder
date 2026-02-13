@@ -950,6 +950,8 @@ class TransferOfOwnership:
                 self.target_conduit._id,
                 self.target_conduit._name,
                 self.target_conduit._creations,
+                dynamic_environment=self.target_conduit.__dynamic_environment__,
+                creation_gate_controller=self.target_conduit._creation_gate_controller,
             )
         except Exception as e:
             raise RuntimeError(f"Failed to flip spellbooks: {e}")

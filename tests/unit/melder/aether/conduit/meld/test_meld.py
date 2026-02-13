@@ -291,6 +291,7 @@ class _SpellStub:
         self.spell_type = spell_type
         self._lock = RLock()
         self._creation_context = creation_context
+        self._creation_context_factory = None
         self._pre_hooks: list[Callable[..., Any]] = []
         self._activation_hooks: list[Callable[..., Any]] = []
         self._post_hooks: list[Callable[..., Any]] = []
@@ -330,6 +331,25 @@ class _SpellStub:
         """
         if self._cleaned:
             raise RuntimeError("Spell has been cleaned.")
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Resolve or build the spell-owned creation context through a stub factory.
+
+        Contract:
+            - Returns cached context when present and not cleaned.
+            - Uses `_creation_context_factory.get_or_build_for_spell(self)` on miss.
+            - Publishes built context back onto `_creation_context`.
+        """
+        creation_context = self._creation_context
+        if creation_context is not None and not creation_context._cleaned:
+            return creation_context
+        factory = self._creation_context_factory
+        if factory is None:
+            raise RuntimeError("CreationContextFactory is not configured.")
+        creation_context = factory.get_or_build_for_spell(self)
+        self._creation_context = creation_context
+        return creation_context
 
 
 class _SpellbookStub:
@@ -674,31 +694,26 @@ def _make_creations(
     return Creations(conduit), conduit
 
 
-def test_cleanup_clears_references_and_creation_context_factory() -> None:
+def test_cleanup_clears_references() -> None:
     """
-    Verify Meld.cleanup releases references and cleans the context factory.
+    Verify Meld.cleanup releases owned references.
 
     Contract:
         - Spellbook maps and creations references are cleared.
-        - CreationContextFactory cleanup is called.
         - Meld hooks are cleared and removed.
     """
     meld = _make_meld()
     hook_list: list[Callable[..., Any]] = [lambda: None]
-    factory = MagicMock()
-    meld._creation_context_factory = factory
     meld._meld_hooks = {"on_meld_pre_resolve": hook_list}
 
     meld.cleanup()
 
-    factory.cleanup.assert_called_once()
     assert hook_list == [hook_list[0]]
     assert meld._owned_spells is None
     assert meld._contracted_spells is None
     assert meld._lookup_owned_spells is None
     assert meld._lookup_contracted_spells is None
     assert meld._creations is None
-    assert meld._creation_context_factory is None
     assert meld._meld_hooks is None
 
 
@@ -804,8 +819,8 @@ def test_meld_builds_context_on_cache_miss() -> None:
     built_context = _CreationContextStub(no_hooks_no_overrides_result="built")
     factory = MagicMock()
     factory.get_or_build_for_spell.return_value = built_context
-    meld._creation_context_factory = factory
     spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=None)
+    spell._creation_context_factory = factory
     spell._hooks_enabled = False
     spell._crafter = SimpleNamespace(root_blueprint_phase5=None)
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
@@ -825,12 +840,12 @@ def test_meld_rebuilds_context_when_cached_context_is_cleaned() -> None:
     fresh_context = _CreationContextStub(no_hooks_no_overrides_result="fresh")
     factory = MagicMock()
     factory.get_or_build_for_spell.return_value = fresh_context
-    meld._creation_context_factory = factory
     spell = _SpellStub(
         spell_id="spell-1",
         owner_creations=creations,
         creation_context=stale_context,
     )
+    spell._creation_context_factory = factory
     spell._hooks_enabled = False
     spell._crafter = SimpleNamespace(root_blueprint_phase5=None)
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
@@ -1416,7 +1431,7 @@ def test_meld_reuses_cached_context_without_factory_rebuild() -> None:
     spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
     spell._hooks_enabled = False
     factory = MagicMock()
-    meld._creation_context_factory = factory
+    spell._creation_context_factory = factory
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
 
     assert meld.meld(spell="spell-1") == "reuse"
@@ -1586,22 +1601,18 @@ def test_gated_validation_required_change_control_error_falls_back() -> None:
         meld._gated_validation_required(spell)
 
 
-def test_cleanup_clears_creation_context_factory_reference() -> None:
+def test_cleanup_does_not_depend_on_creation_context_factory() -> None:
     """
-    Verify Meld.cleanup clears creation-context factory reference.
+    Verify Meld.cleanup does not manage spell-owned creation-context factories.
 
     Contract:
-        - Factory cleanup is invoked.
-        - Factory reference is nulled after cleanup.
+        - Cleanup completes without a Meld-owned factory.
     """
     meld = _make_meld()
-    factory = MagicMock()
-    meld._creation_context_factory = factory
 
     meld.cleanup()
 
-    factory.cleanup.assert_called_once()
-    assert meld._creation_context_factory is None
+    assert meld._cleaned is True
 
 
 def test_resolve_spell_by_id_raises_when_maps_missing() -> None:

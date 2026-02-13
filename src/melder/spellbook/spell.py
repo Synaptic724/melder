@@ -3,6 +3,9 @@ import ulid
 from threading import RLock
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.conduit.meld.creation_context.creation_context_factory import (
+    CreationContextFactory,
+)
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionProfile,
 )
@@ -10,6 +13,9 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.interfaces import ISpell, ISpellbook, ISpellSystemStates
+from melder.utilities.synchronization.creation_gate_controller import (
+    CreationGateController,
+)
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -121,7 +127,9 @@ class Spell(Cleanable, ISpell):
     __slots__ = Cleanable.__slots__ + [
         "_activation_hooks",
         "_creation_context",
+        "_creation_context_factory",
         "_crafter",
+        "_dynamic_environment",
         "_hooks_enabled",
         "_id",
         "_is_class_spell",
@@ -297,8 +305,12 @@ class Spell(Cleanable, ISpell):
         # Per-spell compiler / resolution helper (SpellCrafter).
         # This owns all Phase artifacts and is disposable.
         self._crafter: Optional["SpellCrafter"] = None
-        # Spell-owned meld execution context (created lazily by Meld).
+        # Spell-owned meld execution context (created lazily by CreationContextFactory).
         self._creation_context: Optional[Any] = None
+        # Spell-owned context factory configured at conduit ownership stamp time.
+        self._creation_context_factory: Optional[CreationContextFactory] = None
+        # Runtime mode carried from owning conduit for context factory wiring.
+        self._dynamic_environment: bool = False
 
         # Created after Conduit made (ownership / scope integration)
         self._owner_conduit_id: Optional[str] = None
@@ -382,6 +394,99 @@ class Spell(Cleanable, ISpell):
                 pass
             self._creation_context = None
 
+    def _cleanup_creation_context_factory(self) -> None:
+        """
+        Internal
+
+        Dispose and clear the spell-owned CreationContextFactory, if present.
+
+        Contract:
+            - Idempotent and safe to call repeatedly.
+            - Best-effort cleanup; exceptions are swallowed so ownership
+              transitions can continue.
+            - Leaves `_creation_context_factory` as `None`.
+        """
+        if self._creation_context_factory is not None:
+            try:
+                self._creation_context_factory.cleanup()
+            except Exception:
+                pass
+            self._creation_context_factory = None
+
+    def _configure_creation_context_factory(
+            self,
+            *,
+            dynamic_environment: bool,
+            creation_gate_controller: CreationGateController,
+    ) -> None:
+        """
+        Internal
+
+        Rebuild the spell-owned CreationContextFactory for current conduit ownership.
+
+        Purpose:
+            Ensure CreationContextFactory dependencies track the latest owner
+            conduit runtime mode and frame gate-governance surface.
+
+        Contract:
+            - Replaces any existing factory instance.
+            - Stores dynamic mode on the spell for runtime metadata.
+            - Requires a non-null CreationGateController.
+
+        Args:
+            dynamic_environment:
+                True when the owning conduit runs in dynamic mode.
+            creation_gate_controller:
+                Frame-owned CreationGateController used by the factory for
+                spell-lineage gate operations.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If `creation_gate_controller` is None.
+        """
+        if creation_gate_controller is None:
+            raise ValueError("creation_gate_controller cannot be None.")
+        self._cleanup_creation_context_factory()
+        self._dynamic_environment = bool(dynamic_environment)
+        self._creation_context_factory = CreationContextFactory(
+            dynamic_environment=self._dynamic_environment,
+            creation_gate_controller=creation_gate_controller,
+        )
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Internal
+
+        Resolve or build the spell-owned CreationContext through its factory.
+
+        Purpose:
+            Provide one spell-local runtime entrypoint for creation-context
+            retrieval so callers do not directly own factory references.
+
+        Contract:
+            - Requires the spell to have an initialized factory.
+            - Delegates build/get policy to CreationContextFactory.
+            - Returns a live CreationContext instance bound to this spell.
+
+        Returns:
+            Any:
+                Spell-owned CreationContext instance.
+
+        Raises:
+            RuntimeError:
+                If the spell has no configured CreationContextFactory.
+        """
+        self.check_cleaned()
+        creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+            raise RuntimeError(
+                "CreationContextFactory is not configured for this spell."
+            )
+        return creation_context_factory.get_or_build_for_spell(self)
+
     #region Disposal
     def cleanup(self) -> None:
         """
@@ -446,6 +551,7 @@ class Spell(Cleanable, ISpell):
 
             # Drop references to help GC and enforce immutability after cleanup.
             self._cleanup_creation_context()
+            self._cleanup_creation_context_factory()
             self._owner_creations = None
             self.user_created_object = None
             self._spell_system_states = None
@@ -497,6 +603,8 @@ class Spell(Cleanable, ISpell):
             self.owned_spell = None
             self._owner_creations = None
             self._creation_context = None
+            self._creation_context_factory = None
+            self._dynamic_environment = None
             self.aetheric_frame = None
             self.spell_index = None
 
@@ -689,7 +797,15 @@ class Spell(Cleanable, ISpell):
     #endregion Introspection Helpers
 
     #region Configuration
-    def _add_owned_conduit(self, conduit_id: str, conduit_name: Optional[str] = None, creations: Any = None) -> None:
+    def _add_owned_conduit(
+            self,
+            conduit_id: str,
+            conduit_name: Optional[str] = None,
+            creations: Any = None,
+            *,
+            dynamic_environment: bool,
+            creation_gate_controller: CreationGateController,
+    ) -> None:
         """
         Internal
 
@@ -698,6 +814,7 @@ class Spell(Cleanable, ISpell):
         This is used to:
         - Attach the spell to a specific Conduit identity (for logging, diagnostics, and scoping).
         - Provide a handle to the Conduit's creation scope (e.g., for singletons tied to that conduit).
+        - Reconfigure CreationContextFactory dependencies for the new owner.
         - Invalidate the spell-owned CreationContext because ownership/scoping changed.
 
         Args:
@@ -707,10 +824,21 @@ class Spell(Cleanable, ISpell):
                 Human-readable name of the owning conduit, if available.
             creations (Any):
                 Conduit-level creations container used for managing shared instances.
+            dynamic_environment (bool):
+                True when the owning conduit runs in dynamic mode.
+            creation_gate_controller (CreationGateController):
+                Frame-owned CreationGateController used by CreationContextFactory.
+
+        Returns:
+            None.
         """
         with self._lock:
             # Ownership changes invalidate spell-bound runtime context shape.
             self._cleanup_creation_context()
+            self._configure_creation_context_factory(
+                dynamic_environment=dynamic_environment,
+                creation_gate_controller=creation_gate_controller,
+            )
             self._owner_conduit_id = conduit_id
             self._owner_conduit_name = conduit_name
             self.owned_spell = True
