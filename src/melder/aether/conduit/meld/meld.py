@@ -358,9 +358,7 @@ class Meld(Cleanable, IMeld):
             self._execute_hooks(target_spell._pre_hooks, "pre_cast")
             self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
-            creation_context = target_spell._creation_context
-            if creation_context is None or creation_context._cleaned:
-                creation_context = target_spell._get_or_build_creation_context()
+            creation_context = target_spell._get_or_build_creation_context()
             if override_map is None:
                 execute_hooks_no_overrides_compiled = (
                     creation_context._execute_hooks_no_overrides_compiled
@@ -940,7 +938,6 @@ class Meld(Cleanable, IMeld):
 
         lookup_key = (frame_key, bind_key)
         resolved = self._resolve_spell_by_lookup_key(lookup_key)
-        resolved.check_cleaned()
         return resolved
 
     def _resolve_spell_by_id(self, spell_id: str) -> ISpell:

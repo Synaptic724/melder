@@ -79,7 +79,6 @@ class CreationContextBuilder(Cleanable):
             RuntimeError:
                 If the spell is not in a runnable state for context creation.
         """
-        spell.check_cleaned()
         if not spell.is_existing_creation and spell._crafter is None:
             raise RuntimeError(
                 "Cannot build CreationContext before spell crafter artifacts "

@@ -489,6 +489,9 @@ class Spell(Cleanable, ISpell):
             RuntimeError:
                 If the spell has no configured CreationContextFactory.
         """
+        creation_context_switch = self._creation_context_switch
+        if creation_context_switch.state >= 2:
+            return self._creation_context
         creation_context_factory = self._creation_context_factory
         return creation_context_factory.get_or_build_for_spell(self)
 

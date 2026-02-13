@@ -292,6 +292,10 @@ class _SpellStub:
         self._lock = RLock()
         self._creation_context = creation_context
         self._creation_context_factory = None
+        if creation_context is None:
+            self._creation_context_switch = SimpleNamespace(state=0)
+        else:
+            self._creation_context_switch = SimpleNamespace(state=2)
         self._pre_hooks: list[Callable[..., Any]] = []
         self._activation_hooks: list[Callable[..., Any]] = []
         self._post_hooks: list[Callable[..., Any]] = []
@@ -349,6 +353,7 @@ class _SpellStub:
             raise RuntimeError("CreationContextFactory is not configured.")
         creation_context = factory.get_or_build_for_spell(self)
         self._creation_context = creation_context
+        self._creation_context_switch.state = 2
         return creation_context
 
 

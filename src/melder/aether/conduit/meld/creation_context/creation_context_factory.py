@@ -195,7 +195,6 @@ class CreationContextFactory(Cleanable):
             CreationContext:
                 New spell-shaped context ready for runtime execution.
         """
-        self.check_cleaned()
         creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
         return self._builder.build(
             spell,
@@ -215,7 +214,6 @@ class CreationContextFactory(Cleanable):
             - Opens the spell-owned CounterSwitch latch after publish.
             - Does not use spell lock primitives.
         """
-        self.check_cleaned()
         creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
         built_creation_context = self._builder.build(
             spell,
@@ -248,8 +246,10 @@ class CreationContextFactory(Cleanable):
             CreationContext:
                 Spell-owned cached or newly built context.
         """
-        self.check_cleaned()
-        switch_state = spell._creation_context_switch.selector()
+        creation_context_switch = spell._creation_context_switch
+        if creation_context_switch.state >= 2:
+            return spell._creation_context
+        switch_state = creation_context_switch.selector()
         if switch_state == 1:
             creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
             built_creation_context = self._builder.build(
@@ -300,5 +300,4 @@ class CreationContextFactory(Cleanable):
             - Ignores existing context cache hit.
             - Useful for explicit runtime rebind flows.
         """
-        self.check_cleaned()
         return self.build_and_bind_for_spell(spell)
