@@ -835,9 +835,9 @@ def test_meld_builds_context_on_cache_miss() -> None:
     assert built_context.calls == ["no_hooks_no_overrides"]
 
 
-def test_meld_rebuilds_context_when_cached_context_is_cleaned() -> None:
+def test_meld_rebuilds_context_when_switch_is_not_open() -> None:
     """
-    Verify meld rebuilds spell context when cached context is marked cleaned.
+    Verify meld rebuilds spell context when CounterSwitch is not open.
     """
     creations, _ = _make_creations()
     meld = _make_meld(creations=creations)
@@ -853,6 +853,7 @@ def test_meld_rebuilds_context_when_cached_context_is_cleaned() -> None:
     spell._creation_context_factory = factory
     spell._hooks_enabled = False
     spell._crafter = SimpleNamespace(root_blueprint_phase5=None)
+    spell._creation_context_switch.state = 0
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
 
     assert meld.meld(spell="spell-1") == "fresh"

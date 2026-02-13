@@ -335,19 +335,26 @@ class Meld(Cleanable, IMeld):
         if self._spellbook._spellbook_validation_required:
             self._ensure_lineage_resolvable(target_spell)
 
-        if not (self._meld_hooks or target_spell._hooks_enabled):
-            creation_context = target_spell._get_or_build_creation_context()
+        creations = self._creations
+        meld_hooks = self._meld_hooks
+        spell_hooks_enabled = target_spell._hooks_enabled
+
+        if not (meld_hooks or spell_hooks_enabled):
+            if target_spell._creation_context_switch.state >= 2:
+                creation_context = target_spell._creation_context
+            else:
+                creation_context = target_spell._get_or_build_creation_context()
             if override_map is None:
                 execute_no_hooks_no_overrides_compiled = (
                     creation_context._execute_no_hooks_no_overrides_compiled
                 )
-                instance = execute_no_hooks_no_overrides_compiled(self._creations)
+                instance = execute_no_hooks_no_overrides_compiled(creations)
             else:
                 execute_no_hooks_overrides_compiled = (
                     creation_context._execute_no_hooks_overrides_compiled
                 )
                 instance = execute_no_hooks_overrides_compiled(
-                    self._creations,
+                    creations,
                     override_map,
                 )
 
@@ -358,20 +365,23 @@ class Meld(Cleanable, IMeld):
             self._execute_hooks(target_spell._pre_hooks, "pre_cast")
             self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
-            creation_context = target_spell._get_or_build_creation_context()
+            if target_spell._creation_context_switch.state >= 2:
+                creation_context = target_spell._creation_context
+            else:
+                creation_context = target_spell._get_or_build_creation_context()
             if override_map is None:
                 execute_hooks_no_overrides_compiled = (
                     creation_context._execute_hooks_no_overrides_compiled
                 )
                 instance, created = execute_hooks_no_overrides_compiled(
-                    self._creations
+                    creations
                 )
             else:
                 execute_hooks_overrides_compiled = (
                     creation_context._execute_hooks_overrides_compiled
                 )
                 instance, created = execute_hooks_overrides_compiled(
-                    self._creations,
+                    creations,
                     override_map,
                 )
 

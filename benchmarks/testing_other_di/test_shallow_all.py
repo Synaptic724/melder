@@ -58,6 +58,24 @@ def _warmup_rotation_ops(ops: _RotationOps, *, iters: int) -> None:
             ops.get_root_b(gix)
         ops.spellspace_cycle(gix)
 
+
+def _average_call_ns(call: Callable[[], Any], *, iters: int) -> float:
+    """
+    Measure average call cost for one lane over N iterations.
+
+    Contract:
+        - Executes `call` exactly `iters` times.
+        - Returns average nanoseconds per call as a float.
+        - Caller controls warmup separately.
+    """
+    if iters <= 0:
+        raise AssertionError("iters must be > 0")
+    t0 = time.perf_counter_ns()
+    for _ in range(iters):
+        call()
+    total = time.perf_counter_ns() - t0
+    return total / float(iters)
+
 # ======================================================================================
 # Synthetic graphs: solo / shallow / wide / diamond
 #
@@ -1556,28 +1574,26 @@ def test_single_resolve_timings(graph: str, lib: str) -> None:
     g = gspecs[graph]
     ops = _build_ops(lib, g)
     _maybe_print_gil_status(f"{ops.name}/single")
+    avg_iters = _env_int_nonneg("DI_SINGLE_AVG_ITERS", 1000)
+    warmup_iters = _env_int_nonneg("DI_SINGLE_AVG_WARMUP_ITERS", 100)
+    if avg_iters <= 0:
+        raise AssertionError("DI_SINGLE_AVG_ITERS must be > 0")
 
     try:
-        t0 = time.perf_counter_ns()
-        _ = ops.get_root_a()
-        cold_a = time.perf_counter_ns() - t0
+        for _ in range(warmup_iters):
+            ops.get_root_a()
+            ops.get_root_b()
+            ops.spellspace_cycle()
 
-        t0 = time.perf_counter_ns()
-        _ = ops.get_root_a()
-        second_a = time.perf_counter_ns() - t0
-
-        t0 = time.perf_counter_ns()
-        _ = ops.get_root_b()
-        cold_b = time.perf_counter_ns() - t0
-
-        t0 = time.perf_counter_ns()
-        _ = ops.get_root_b()
-        second_b = time.perf_counter_ns() - t0
+        avg_a_ns = _average_call_ns(ops.get_root_a, iters=avg_iters)
+        avg_b_ns = _average_call_ns(ops.get_root_b, iters=avg_iters)
+        avg_spellspace_ns = _average_call_ns(ops.spellspace_cycle, iters=avg_iters)
 
         print(
             f"[{ops.name}] single ({g.name}) "
-            f"A cold={cold_a/1_000.0:.2f}us second={second_a/1_000.0:.2f}us | "
-            f"B cold={cold_b/1_000.0:.2f}us second={second_b/1_000.0:.2f}us"
+            f"A avg({avg_iters})={avg_a_ns/1_000.0:.2f}us | "
+            f"B avg({avg_iters})={avg_b_ns/1_000.0:.2f}us | "
+            f"spellspace avg({avg_iters})={avg_spellspace_ns/1_000.0:.2f}us"
         )
     finally:
         ops.cleanup()
