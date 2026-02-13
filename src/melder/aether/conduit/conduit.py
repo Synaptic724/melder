@@ -55,8 +55,6 @@ class Conduit(Cleanable, IConduit):
         "on_conduit_post_unlink",
         "on_contract_created",
         "on_contract_removed",
-        "on_meld_pre_resolve",
-        "on_meld_post_resolve",
     )
     _MELD_HOOK_NAMES_FROM_CONFIGURATION = (
         "on_meld_pre_resolve",
@@ -2349,31 +2347,7 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
 
-        if not self.__dynamic_environment__:
-            if not self._has_meld_phase_hooks:
-                return self._meld.meld(
-                    spell_name=spell_name,
-                    spell=spell,
-                    spellframe=spellframe,
-                    binding_name=binding_name,
-                    spell_override=spell_override,
-                )
-            else:
-                self._fire_conduit_hooks("on_meld_pre_resolve", self)
-
-                result = self._meld.meld(
-                    spell_name=spell_name,
-                    spell=spell,
-                    spellframe=spellframe,
-                    binding_name=binding_name,
-                    spell_override=spell_override,
-                )
-
-                self._fire_conduit_hooks("on_meld_post_resolve", self)
-
-                return result
-
-        else:
+        if self.__dynamic_environment__:
             if self._creation_gate.is_closed():
                 raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
 
@@ -2385,30 +2359,23 @@ class Conduit(Cleanable, IConduit):
             try:
                 # Track active melds for shutdown/drain semantics.
                 self._creation_gate.register_ticket()
-                if not self._has_meld_phase_hooks:
-                    return self._meld.meld(
-                        spell_name=spell_name,
-                        spell=spell,
-                        spellframe=spellframe,
-                        binding_name=binding_name,
-                        spell_override=spell_override,
-                    )
-                else:
-                    self._fire_conduit_hooks("on_meld_pre_resolve", self)
-
-                    result = self._meld.meld(
-                        spell_name=spell_name,
-                        spell=spell,
-                        spellframe=spellframe,
-                        binding_name=binding_name,
-                        spell_override=spell_override,
-                    )
-
-                    self._fire_conduit_hooks("on_meld_post_resolve", self)
-
-                    return result
+                return self._meld.meld(
+                    spell_name=spell_name,
+                    spell=spell,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                    spell_override=spell_override,
+                )
             finally:
                 self._creation_gate.unregister_ticket()
+
+        return self._meld.meld(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            spell_override=spell_override,
+        )
 
 
 

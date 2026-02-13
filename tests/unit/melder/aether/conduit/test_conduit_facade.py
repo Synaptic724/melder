@@ -628,19 +628,22 @@ def test_meld_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
     assert result == "result"
 
 
-def test_meld_fires_pre_and_post_hooks(conduit_lesser: Conduit) -> None:
+def test_meld_does_not_fire_conduit_level_meld_hooks(
+    conduit_lesser: Conduit,
+) -> None:
     """
-    Verify meld fires configured pre- and post-resolve hooks.
+    Verify Conduit.meld does not dispatch conduit-level meld hook names.
 
     Contract:
-        - on_meld_pre_resolve fires before meld resolution.
-        - on_meld_post_resolve fires after meld resolution.
+        - Registering local conduit hooks named ``on_meld_*`` does not create
+          conduit-side meld hook dispatch.
+        - Meld delegation still executes and returns normally.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
 
     Raises:
-        AssertionError: If hook invocation order is incorrect.
+        AssertionError: If conduit-level hook callbacks fire.
     """
     events: list[tuple[str, Conduit]] = []
 
@@ -680,7 +683,7 @@ def test_meld_fires_pre_and_post_hooks(conduit_lesser: Conduit) -> None:
     result = conduit_lesser.meld(spell="sha-1")
 
     assert result == "result"
-    assert events == [("pre", conduit_lesser), ("post", conduit_lesser)]
+    assert events == []
 
 
 def test_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
